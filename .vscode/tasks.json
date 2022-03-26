@@ -1,0 +1,134 @@
+{
+    "tasks": [
+        {
+            "label": "config-main-simulator",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Simulator",
+                "-DFIRMWARE_TYPE=Main",
+                "-G=Ninja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-main-simulator",
+            "command": "ninja",
+            "args": [
+                "-j"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-main-simulator"],
+            "group": "build"
+        },
+
+        {
+            "label": "config-initial-simulator",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Simulator",
+                "-DFIRMWARE_TYPE=Initial",
+                "-G=Ninja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-initial-simulator",
+            "command": "ninja",
+            "args": [
+                "-j"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-initial-simulator"],
+            "group": "build"
+        },
+
+        {
+            "label": "config-main-device",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Device",
+                "-DFIRMWARE_TYPE=Main",
+                "-G=Ninja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-main-device",
+            "command": "ninja",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-main-device"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+
+        {
+            "label": "config-initial-device",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Device",
+                "-DFIRMWARE_TYPE=Initial",
+                "-G=Ninja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-initial-device",
+            "command": "ninja",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-initial-device"]
+        }
+    ],
+    "version": "2.0.0"
+}

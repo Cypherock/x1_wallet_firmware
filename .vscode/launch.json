@@ -1,0 +1,90 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Simulator Debug",
+            "type": "cdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/Cypherock_Simulator",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceRoot}/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "buildsimulator"
+        },
+        {
+            "name": "Main Debug [Launch]",
+            "cwd": "${workspaceRoot}",
+            "executable": "build/Cypherock-Main.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32L486RGTx",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32l4x.cfg"
+            ],
+            "svdFile": "STM32L4x6.svd",
+            "preLaunchTask": "${defaultBuildTask}",
+            "postLaunchCommands": ["break main"],
+        },
+        {
+            "name": "Main Debug [Attach]",
+            "cwd": "${workspaceRoot}",
+            "executable": "build/Cypherock-Main.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32L486RGTx",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32l4x.cfg"
+            ],
+            "svdFile": "STM32L4x6.svd",
+        },
+
+        {
+            "name": "Initial Debug [Launch]",
+            "cwd": "${workspaceRoot}",
+            "executable": "build/Cypherock-Initial.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32L486RGTx",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32l4x.cfg"
+            ],
+            "svdFile": "STM32L4x6.svd",
+            "preLaunchTask": "build-initial-device",
+            "postLaunchCommands": ["break main"],
+        },
+        {
+            "name": "Initial Debug [Attach]",
+            "cwd": "${workspaceRoot}",
+            "executable": "build/Cypherock-Initial.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32L486RGTx",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32l4x.cfg"
+            ],
+            "svdFile": "STM32L4x6.svd",
+        },
+    ]
+}

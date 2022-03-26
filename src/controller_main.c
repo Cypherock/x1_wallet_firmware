@@ -1,0 +1,740 @@
+/**
+ * @file    controller_main.c
+ * @author  Cypherock X1 Team
+ * @brief   Main controller.
+ *          This file defines global variables and functions used by other flows.
+ * @details
+ * This is main file for controller module.
+ *
+ * Controller module is divided into levels which are traversed recursively.
+ *
+ * Each state of the device is uniquely represented by two variables counter
+ * flow_level.
+ *
+ * Each level has a task file and a controller file. The task file contains
+ * task such as showing a particular screen. The controller file decides which
+ * task it to be executed next. Sometimes the controller file needs to take decision
+ * based on the input by user as to which screen needs to be shown next.
+ *
+ * The change of global Flow_level and Counter variable must be done in controller files
+ * if possible.
+ *
+ * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * 
+ ******************************************************************************
+ * @attention
+ *
+ * (c) Copyright 2022 by HODL TECH PTE LTD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject
+ * to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *  
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  
+ *  
+ * "Commons Clause" License Condition v1.0
+ *  
+ * The Software is provided to you by the Licensor under the License,
+ * as defined below, subject to the following condition.
+ *  
+ * Without limiting other conditions in the License, the grant of
+ * rights under the License will not include, and the License does not
+ * grant to you, the right to Sell the Software.
+ *  
+ * For purposes of the foregoing, "Sell" means practicing any or all
+ * of the rights granted to you under the License to provide to third
+ * parties, for a fee or other consideration (including without
+ * limitation fees for hosting or consulting/ support services related
+ * to the Software), a product or service whose value derives, entirely
+ * or substantially, from the functionality of the Software. Any license
+ * notice or attribution required by the License must also include
+ * this Commons Clause License Condition notice.
+ *  
+ * Software: All X1Wallet associated files.
+ * License: MIT
+ * Licensor: HODL TECH PTE LTD
+ *
+ ******************************************************************************
+ */
+
+/**
+ * @defgroup controller_main The event handler
+ * @brief This the heart of event handling logic. All the reactions (handling) to an user action (events)
+ * is done via respective controllers.
+ * @{
+ */
+
+#include "controller_main.h"
+#include "btc.h"
+#include "communication.h"
+#include "constant_texts.h"
+#include "controller_level_four.h"
+#include "controller_level_one.h"
+#include "ui_instruction.h"
+#include "rfc7539.h"
+#include "chacha20poly1305.h"
+#include "cryptoauthlib.h"
+#include <string.h>
+
+/**
+ * @brief A task declared to periodically execute a callback which checks for a success from the desktop.
+ * 
+ * This task is called when the user is prompted to wait while an action is being performed in background.
+ * It executes the callback function _success_listener periodically which checks for a success/abort from the desktop.
+ */
+lv_task_t* success_task;
+
+/**
+ * @brief A task declared to execute a callback after a timeout.
+ * 
+ * This task is called when the user is prompted to wait while an action is being performed in background.
+ * It executes the callback function _timeout_listener once and resets the flow of the device.
+ */
+lv_task_t* timeout_task;
+
+/**
+ * @brief A task declared to execute a callback after timeout when displaying scrolling address.
+ *
+ * This timeout task in used in ui_address for showing the hidden buttons after timeout when user verifies the scrolling receipt address.
+ */
+lv_task_t* address_timeout_task = NULL;
+
+/// Used to determine the state of authentication
+uint8_t device_auth_flag = 0;
+
+/// Used to track user inactivity
+uint32_t inactivity_counter = 0;
+
+/// Used to determine if the application is ready
+bool main_app_ready = false;
+
+/// lvgl task to listen for desktop start command
+lv_task_t* listener_task;
+
+/// Stores arbitrary data during flows
+char arbitrary_data[4096 / 8 + 1];
+
+/**
+ * @brief Global Flow_level instance.
+ *        Will be used in other files using getter function
+ */
+Flow_level flow_level;
+/**
+ * @brief Global Counter instance.
+ *        Will be used in other files using getter function
+ */
+Counter counter;
+
+/**
+ * @brief Global Flash_Wallet instance
+ * 
+ */
+Flash_Wallet wallet_for_flash;
+
+Flow_level* get_flow_level()
+{
+    ASSERT((&flow_level) != NULL);
+
+    return &flow_level;
+}
+
+Counter* get_counter()
+{
+    ASSERT((&counter) != NULL);
+
+    return &counter;
+}
+
+Wallet* get_wallet()
+{
+    ASSERT((&wallet) != NULL);
+
+    return &wallet;
+}
+
+Flash_Wallet* get_flash_wallet()
+{
+    ASSERT((&wallet_for_flash) != NULL);
+
+    return &wallet_for_flash;
+}
+
+void mark_event_over()
+{
+    counter.next_event_flag = true;
+#if X1WALLET_MAIN
+    level_one_controller();
+#elif X1WALLET_INITIAL
+    level_one_controller_initial();
+#else
+#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
+#endif
+}
+
+
+void mark_list_choice(uint16_t list_choice)
+{
+    LOG_INFO("choice %d", list_choice);
+    flow_level.screen_input.list_choice = list_choice;
+}
+
+void mark_event_cancel()
+{
+    counter.next_event_flag = true;
+    level_one_controller_b();
+}
+
+void reset_flow_level()
+{
+    CY_Reset_Not_Allow(true);
+    counter.next_event_flag = true;
+    reset_cancel_event_flag();
+    flow_level.show_desktop_start_screen = false;
+    counter.level = LEVEL_ONE;
+    flow_level.level_one = 1;
+    flow_level.level_two = 1;
+    flow_level.level_three = 1;
+    flow_level.level_four = 1;
+    flow_level.level_five = 1;
+    mark_device_state(true);
+    memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
+    cy_free();
+}
+
+void reset_next_event_flag()
+{
+    counter.next_event_flag = false;
+}
+
+void increase_level_counter()
+{
+    counter.level++;
+}
+
+void clear_list_choice()
+{
+    flow_level.screen_input.list_choice = 0x00;
+}
+
+void decrease_level_counter()
+{
+    counter.level--;
+}
+
+void mark_error_screen(const char* error_msg)
+{
+    ASSERT(error_msg != NULL);
+
+    flow_level.show_error_screen = true;
+    snprintf(flow_level.error_screen_text, sizeof(flow_level.error_screen_text), "%s", error_msg);
+}
+
+void reset_cancel_event_flag()
+{
+    counter.previous_event_flag = 0;
+}
+
+void mark_input(char* text)
+{
+    ASSERT(text != NULL);
+    snprintf(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text), "%s", text);
+}
+
+void mark_expected_list_choice(uint8_t expected_list_choice)
+{
+    LOG_INFO("expected choice %d", expected_list_choice);
+    flow_level.screen_input.expected_list_choice = expected_list_choice;
+}
+
+// TODO: fill all these values from flash
+void set_wallet_init()
+{
+    wallet.number_of_mnemonics = MAX_NUMBER_OF_MNEMONIC_WORDS;
+    wallet.minimum_number_of_shares = MINIMUM_NO_OF_SHARES;
+    wallet.total_number_of_shares = TOTAL_NUMBER_OF_SHARES;
+}
+
+void reset_flow_level_greater_than(enum LEVEL level)
+{
+    if (level < LEVEL_FIVE)
+        flow_level.level_five = 1;
+    else if (level < LEVEL_FOUR)
+        flow_level.level_four = 1;
+    else if (level < LEVEL_THREE)
+        flow_level.level_three = 1;
+    else if (level < LEVEL_TWO)
+        flow_level.level_two = 1;
+    else if (level < LEVEL_ONE)
+        flow_level.level_one = 1;
+    else
+        reset_flow_level();
+}
+
+void _success_listener(lv_task_t* task)
+{
+    uint8_t *msg = NULL;
+    uint16_t msg_len = 1;
+    if (get_usb_msg_by_cmd_type(STATUS_PACKET, &msg, &msg_len)) {
+        switch (msg[0]) {
+        case STATUS_CMD_ABORT:
+            mark_error_screen(ui_text_operation_has_been_cancelled);
+            reset_flow_level();
+            lv_task_del(success_task);
+            lv_task_del(timeout_task);
+            break;
+
+        case STATUS_CMD_SUCCESS:
+            mark_event_over();
+            lv_task_del(success_task);
+            lv_task_del(timeout_task);
+            break;
+        default:
+            break;
+        }
+        clear_message_received_data();
+    }
+}
+
+
+void _timeout_listener(lv_task_t* task)
+{
+    mark_error_screen(ui_text_no_response_from_desktop);
+    instruction_scr_destructor();
+    reset_flow_level();
+    if(success_task != NULL)
+    	lv_task_del(success_task);
+}
+
+#if X1WALLET_MAIN
+/**
+ * @brief Checks the state of wallet for the wallet id passed before loading the into Wallet instance.
+ * @details The functions looks for an operational wallet instance with the requested wallet id. If
+ * the wallet is found to be in a non-operational state, the function returns false with an appropriate
+ * response wrapped in the WALLET_DOES_NOT_EXISTS command sent to the desktop app.<br/>
+ * Payload transmitted along with command type (WALLET_DOES_NOT_EXISTS) data byte is the rejection reason
+ * - 0x00 - No wallets found
+ * - 0x01 - Wallet not verified/locked
+ * - 0x02 - Wallet not present
+ * And a rejection with command type WALLET_IS_LOCKED
+ * 
+ * @param data_array    Wallet id of the wallet
+ *
+ * @return bool Indicates the status for the search
+ * @retval true if an operational wallet is found
+ * @retval false otherwise
+ *
+ * @see wallet, WALLET_DOES_NOT_EXISTS, get_wallet_count(), is_wallet_partial(), get_wallet_id(), get_wallet_state(),
+ * WALLET_IS_LOCKED, VALID_WALLET, is_wallet_locked()
+ * @since v1.0.0
+ *
+ * @note
+ */
+static bool wallet_selector(uint8_t *data_array)
+{
+    uint8_t wallet_id[WALLET_ID_SIZE];
+    uint16_t offset = 0;
+    uint8_t number_of_options = get_wallet_count();
+
+    // No wallets found on device
+    if(number_of_options == 0)
+    {
+        transmit_one_byte(WALLET_DOES_NOT_EXISTS, 0);
+        return false;
+    }
+
+    memcpy(wallet_id, data_array + offset, WALLET_ID_SIZE);
+    offset += WALLET_ID_SIZE;
+
+    uint8_t walletIndex = 0;
+
+    for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+        if (memcmp(wallet_id, get_wallet_id(walletIndex), WALLET_ID_SIZE) == 0) {
+            if (get_wallet_state(walletIndex) == VALID_WALLET) {
+                memcpy(wallet.wallet_name, get_wallet_name(walletIndex), NAME_SIZE);
+                wallet.wallet_info = get_wallet_info(walletIndex);
+                if (is_wallet_partial(walletIndex)) {
+                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 1);
+                    return false;
+                }
+                // if wallet is locked
+                if (is_wallet_locked(walletIndex)) {
+                    transmit_one_byte_reject(WALLET_IS_LOCKED);
+                    return false;
+                }
+                // Found a valid wallet
+                return true;
+
+            } else {
+                // Wallet is unverified 
+                transmit_one_byte(WALLET_DOES_NOT_EXISTS, 1);
+                return false;
+            }
+        }
+    }
+
+    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 2);
+    return false;
+}
+#endif
+
+extern Add_Coin_Data add_coin_data;
+extern Receive_Transaction_Data receive_transaction_data;
+
+void desktop_listener_task(lv_task_t* data)
+{
+    En_command_type_t command;
+    uint8_t *data_array = NULL;
+    uint16_t msg_size = 0;
+    if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
+        switch (command) {
+#if X1WALLET_MAIN
+            case START_EXPORT_WALLET: {
+                CY_Reset_Not_Allow(false);
+                // Using these two variable for temporarily saving new flow and controller variables
+                if (get_wallet_count() == 0) {
+                    // No wallets present on device
+                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 0);
+                } else if (get_valid_wallet_count() == 0) {
+                    // No valid wallets found
+                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 3);
+                } else {
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_do_you_want_import_wallet_to_desktop);
+                    flow_level.show_desktop_start_screen = true;
+                    flow_level.level_two = LEVEL_THREE_EXPORT_TO_DESKTOP;
+                }
+                clear_message_received_data();
+
+            } break;
+#ifdef DEBUG_BUILD
+            case START_CARD_UPGRADE: {
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_card_update);
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.show_desktop_start_screen = true;
+                flow_level.level_two = LEVEL_THREE_CARD_UPGRADE;
+                clear_message_received_data();
+            } break;
+#endif
+            case START_CARD_AUTH: {
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_verification_of_card);
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.show_desktop_start_screen = true;
+                flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
+                clear_message_received_data();
+            } break;
+
+            case ADD_COIN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset = WALLET_ID_SIZE;
+                    flow_level.show_desktop_start_screen = true;
+                    flow_level.level_two = LEVEL_THREE_ADD_COIN;
+                    add_coin_data.resync = data_array[offset++] == 1;
+                    add_coin_data.number_of_coins = data_array[offset++];
+
+                    uint8_t coinIndex = 0;
+
+                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
+                        add_coin_data.coin_indexes[coinIndex] = U32_READ_BE_ARRAY(data_array + offset);
+                        offset += INDEX_SIZE;
+                    }
+
+                    coinIndex = 0;
+
+                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
+                        add_coin_data.network_chain_ids[coinIndex] = data_array[offset];
+                        offset += 1;
+                    }
+
+                    snprintf(flow_level.confirmation_screen_text,
+                        sizeof(flow_level.confirmation_screen_text),
+                        (add_coin_data.resync ? ui_text_do_you_want_to_resync_coins_to : ui_text_do_you_want_to_add_coins_to),
+                        wallet.wallet_name);
+                }
+                clear_message_received_data();
+            } break;
+
+            case SEND_TXN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset = WALLET_ID_SIZE;
+                    uint32_t coin_index;
+                    flow_level.show_desktop_start_screen = true;
+                    var_send_transaction_data.transaction_confirmation_list_index = 0;
+
+
+                    byte_array_to_txn_metadata(data_array + offset, msg_size - offset, &var_send_transaction_data.transaction_metadata);
+                    
+                    coin_index = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index);
+                    
+                    if(coin_index == ETHEREUM) {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                            ui_text_eth_send_transaction_with,
+                            var_send_transaction_data.transaction_metadata.token_name,wallet.wallet_name,
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id));
+                    } else {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                    }
+                    if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
+                        transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+                        reset_flow_level();
+                    }
+                }
+                clear_message_received_data();
+            } break;
+
+            case RECV_TXN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset = WALLET_ID_SIZE;
+                    uint32_t coin_index;
+                    flow_level.show_desktop_start_screen = true;
+                    // 29 is the size of the purpose, coin index, account index, chain index, address index, token name and network chain id
+                    memcpy(&receive_transaction_data, data_array + offset, 29);
+
+                    coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
+
+                    if(BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index) == ETHEREUM) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name);
+                    } else {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                    }
+                }
+                clear_message_received_data();
+            } break;
+#ifdef DEBUG_BUILD
+            case EXPORT_ALL: {
+                const Flash_Wallet* flash_wallet;
+                uint8_t allWalletsID[(WALLET_ID_SIZE + NAME_SIZE + 1) * MAX_WALLETS_ALLOWED];
+                memset(allWalletsID, 0, (WALLET_ID_SIZE + NAME_SIZE + 01) * MAX_WALLETS_ALLOWED);
+                uint8_t walletCounter = 0;
+                uint8_t walletsAdded = 0;
+                uint8_t allWalletsIDOffset = 1;
+                for (; walletCounter < MAX_WALLETS_ALLOWED; walletCounter++) {
+                    flash_wallet = get_wallet_by_index(walletCounter);
+                    ASSERT(flash_wallet != NULL);
+                    if (flash_wallet->state == VALID_WALLET) {
+                        memcpy(allWalletsID + allWalletsIDOffset, flash_wallet->wallet_name, NAME_SIZE);
+                        allWalletsIDOffset += NAME_SIZE;
+                        memcpy(allWalletsID + allWalletsIDOffset, &flash_wallet->wallet_info, 1);
+                        allWalletsIDOffset += 1;
+                        memcpy(allWalletsID + allWalletsIDOffset, flash_wallet->wallet_id, WALLET_ID_SIZE);
+                        allWalletsIDOffset += WALLET_ID_SIZE;
+                        walletsAdded++;
+                    }
+                }
+                memset(allWalletsID + 0, walletsAdded, 1);
+                clear_message_received_data();
+                transmit_data_to_app(EXPORT_ALL_SEND, allWalletsID, allWalletsIDOffset);
+                return;
+            } break;
+#endif
+            case START_DEVICE_AUTHENTICATION: {
+                CY_Reset_Not_Allow(false);
+                 if(data_array[0] == 1){
+                    flow_level.level_three = SIGN_SERIAL_NUMBER;
+                    clear_message_received_data();
+
+                }
+
+                if(data_array[0] == 2){
+                    memcpy(&challenge_no, &data_array[1], 32);
+                    flow_level.level_three = SIGN_CHALLENGE;
+                    clear_message_received_data();
+                }
+
+                if(data_array[0] == 3){
+                    flow_level.level_three = AUTHENTICATION_SUCCESS;
+                    clear_message_received_data();
+                }
+
+                if(data_array[0] == 4){
+                    flow_level.level_three = AUTHENTICATION_UNSUCCESSFUL;
+                    clear_message_received_data();
+                }
+                if (main_app_ready) {
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_device_verification);
+                    flow_level.show_desktop_start_screen = true;
+                }
+                device_auth_flag = 1;
+            
+            } break;
+
+#elif X1WALLET_INITIAL
+            case START_CARD_AUTH: {
+                reset_flow_level();
+                counter.level = LEVEL_THREE;
+                lv_obj_clean(lv_scr_act());
+                auth_card_number = data_array[0];
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
+                flow_level.level_three = VERIFY_CARD_START_MESSAGE;
+                clear_message_received_data();
+            } break;
+
+            case START_DEVICE_PROVISION: {	//81,02 success and external keys sent to device, 81,03 failure
+                switch (data_array[0]) {
+                    case 1:{
+                        if(msg_size<5)
+                            break;
+                        lv_obj_clean(lv_scr_act());
+                        memcpy(provision_date, data_array+1, 4);
+                        counter.level = LEVEL_THREE;
+                        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                        flow_level.level_two = LEVEL_THREE_START_DEVICE_PROVISION;
+                        flow_level.level_three = data_array[0];
+                        counter.next_event_flag = true;
+                        lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                    }break;
+                    case 2:
+                        if(msg_size<183)
+                            break;
+                        memcpy(&provision_keys_data, data_array+1, sizeof(Provision_Data_struct));
+                    case 3:
+                        counter.level = LEVEL_THREE;
+                        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                        flow_level.level_two = LEVEL_THREE_START_DEVICE_PROVISION;
+                        flow_level.level_three = data_array[0];
+                        counter.next_event_flag = true;
+                        lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                        break;
+
+                    default:
+                        _abort_();
+                }
+                clear_message_received_data();
+            } break;
+
+            case START_DEVICE_AUTHENTICATION: {
+                switch (data_array[0]) {
+                    case 1: lv_obj_clean(lv_scr_act());
+                    case 2:
+                    case 3:
+                    case 4:
+                        counter.level = 3;
+                        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                        flow_level.level_two = LEVEL_THREE_START_DEVICE_AUTHENTICATION;
+                        flow_level.level_three = SIGN_SERIAL_NUMBER + data_array[0] - 1;
+                        counter.next_event_flag = true;
+                        lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                        break;
+
+                    default:
+                        _abort_();
+                }
+                if(data_array[0] == 2)
+                    memcpy(&challenge_no, &data_array[1], 32);
+                clear_message_received_data();
+            } break;
+#else
+#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
+#endif
+            case START_FIRMWARE_UPGRADE: {
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_start_firmware_update, data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.show_desktop_start_screen = true;
+                flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;
+                clear_message_received_data();
+            } break;
+
+            case DEVICE_INFO: {
+                clear_message_received_data();
+                uint8_t device_info[37] = {0};
+                ATCAIfaceCfg *atca_cfg;
+                atca_cfg = cfg_atecc608a_iface;
+                if (atcab_init(atca_cfg) != ATCA_SUCCESS ||
+                    ATCA_SUCCESS != atcab_read_zone(2, 8, 0, 0, device_info + 1, 32)) {
+                    LOG_ERROR("ER xx4");
+                }
+                device_info[0] = is_device_authenticated() ? 1 : 0;
+                uint32_t fwVer = get_fwVer();
+                fwVer = U32_SWAP_ENDIANNESS(fwVer);
+                memcpy(device_info+33, &fwVer, sizeof(fwVer));
+
+                transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
+            } break;
+#ifdef ALLOW_LOG_EXPORT
+            case APP_LOG_DATA_REQUEST: {
+#if X1WALLET_MAIN
+                if (!is_logging_enabled()) {
+                    clear_message_received_data();
+                    transmit_one_byte(APP_LOG_DATA_REQUEST, 2);
+                } else
+#endif
+                {
+                    CY_Reset_Not_Allow(false);
+                    flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                    flow_level.level_two = LEVEL_THREE_FETCH_LOGS_INIT;
+                    clear_message_received_data();
+                    counter.level = LEVEL_THREE;
+                    flow_level.show_desktop_start_screen = true;
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s",
+                             ui_text_send_logs_prompt);
+                }
+            } break;
+#endif  // end X1WALLET_
+            default:  clear_message_received_data();
+                break;
+        }
+
+        if (flow_level.show_desktop_start_screen) {
+            CY_Set_External_Triggered(true);
+            counter.level = LEVEL_THREE;
+            clear_message_received_data();
+            counter.next_event_flag = true;
+            lv_obj_clean(lv_scr_act());
+            lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+        }
+    }
+}
+
+bool abort_from_desktop()
+{
+    uint8_t *data_array = NULL;
+    uint16_t msg_len = 1;
+    if (get_usb_msg_by_cmd_type(STATUS_PACKET, &data_array, &msg_len)
+        && data_array[0] == STATUS_CMD_ABORT) {
+        CY_Reset_Flow();
+        clear_message_received_data();
+        return true;
+    }
+    return false;
+}
+
+void _abort_()
+{
+    if(address_timeout_task != NULL)
+        address_timeout_task->task_cb(NULL);
+
+    lv_obj_clean(lv_scr_act());
+    sys_flow_cntrl_u.bits.reset_flow = false;
+    reset_flow_level();
+    device_auth_flag = false;
+#if X1WALLET_INITIAL
+    flow_level.level_one = 6;
+#endif
+    counter.next_event_flag = true;
+}
+
+/** @} */ // end of Controller

@@ -1,0 +1,5 @@
+cx-Freeze==6.8
+ecdsa==0.16.1
+importlib-metadata==4.8.1
+six==1.16.0
+zipp==3.5.0

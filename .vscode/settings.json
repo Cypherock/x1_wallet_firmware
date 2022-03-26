@@ -1,0 +1,17 @@
+// Install CMake extensions for vscode marketplace and add this to your settings.json
+// Set CMAKE_BUILD_PLATFORM to Device to build the code for Device
+// Set CMAKE_BUILD_PLATFORM to Simulator to build the code for Simulator
+
+{
+    "cmake.configureSettings": {
+        "CMAKE_BUILD_PLATFORM":"Device"
+    },
+    "files.associations": {
+        "*.html": "html",
+        "usbd_cdc_if.h": "c",
+        "lv_port_fs.h": "c",
+        "rand.h": "c",
+        "atca_helpers.h": "c",
+        "atca_crypto_sw_sha2.h": "c"
+    }
+}
