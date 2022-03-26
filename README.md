@@ -1,1 +1,1 @@
-# x1wallet_firmware
+# X1Wallet_Firmware
