@@ -1,114 +1,83 @@
-# X1Wallet Firmware
+# Cypherock_X1_Wallet
+The X1Wallet ships with a minimal funtionality (allowing for device authentication and [setup process](#device-setup-flow)) and later updates to a fully-functional firmware ([go through feature list](#functionality-of-x1wallet)) via the desktop application which communicates with the secure servers.
 
-# Cypherock Secure Wallet Simulator
+### Responsible disclosure policy
+At cypherock, we believe that coordinated vulnerability disclosure is the right approach to better protect users. When submitting a vulnerability report, you enter a form of coorporation in which you allow cypherock the opportunity to diagnose and remedy the vulnerability before disclosing its details to third parties and/or general public. We will ensure that you get proper credits for all your works
 
-The future is privacy first and decentralized enabled through Blockchain. Personal data will be personal wealth. The current issues with key management pose massive barriers to the adoption of decentralized technologies. We believe digital assets will have exponentially more value in the future and that will just not be limited to Cryptocurrency. Our mission to empower the people to be self-sovereign, trust themselves and to have the same peace of mind and control with their crypto and personal data that they have with their savings in the bank vaults.
+You should use PGP encrypted emails. Please use our [PGP public key](0x70D75D95C3A16AA7.asc), as necessary. Start with a cleartext message with your public key, and we'll reply appropriately.
 
-**TODO: Add about device**
-* What this project does
-  * This project provide a desktop simulator for Cypherock's novel hardware wallet. 
-  * This simulator allows users to test their code on the systems before touching the wallet.
-  * This simulator mimics the experience that users will have while using an actual hardware wallet.
-* Why people should consider using your project
-  * This project allows developers from any background to contribute to the hardware wallet code without ever using any hardware.
+Please include:
+- Code which reproduces the issue as a proof of concept.
+- Detailed description and potential impact of your bug.
+- Your name and link for attribution (or a comment if you don't want that).
 
-# Table of Contents
+## Device setup flow
+The X1Wallet ships with a firmware to take the user through the device setup flow. The device setup flow includes following steps:
+- Some introductory instructions and information about basic operations of the device (such as operating the joystick to navigate, tap cards with device NFC).
+- Next comes the setup screen where user is supposed to open the Desktop application to continue the setup process of a new device. The further process involves following operations:
+  - The device is verified with the Cypherock servers for its authenticity.
+  - Upon successful device verification, next comes the card verification process. The desktop application performs the verification of cards with the servers for their authenticity as well. This process happens one-by-one for each of the four cards (each card needs to be verified individually).
+  - Upon successful verification, each card is then paired with the device individually. The pairing between a card and the devices establishes a mutual authentication and encryption schemes between the components. This ensures that any data exchange happens securely via NFC eliminating any risks of NFC spoofing.
 
-- [Cypherock Secure Wallet Simulator](#cypherock-secure-wallet-simulator)
-- [Table of Contents](#table-of-contents)
-- [About the Project](#about-the-project)
-- [Directories](#directories)
-- [Project Status](#project-status)
-- [Getting Started](#getting-started)
-  - [Dependencies](#dependencies)
-    - [Device](#device)
-    - [Simulator](#simulator)
-  - [Getting the Source](#getting-the-source)
-  - [Building](#building)
-    - [Device](#device-1)
-    - [Device (using build script)](#device-alternative-using-build-script)
-    - [Simulator](#simulator-1)
-  - [Using node cli tool](#using-node-cli-tool-build-from-source)
-    - [Building the cli tool](#building-the-cli-tool)
-    - [Flash firmware (using CLI tool)](#update-the-device-firmware-only-for-developers)
-- [Containerised build](#containerised-build)
-- [Release Process](#release-process)
-- [How to Get Help](#how-to-get-help)
-- [Contributing](#contributing)
-- [Further Reading](#further-reading)
-- [License](#license)
+Website link for getting started with new device: [cypherock.com/gs](https://www.cypherock.com/get-started/)
 
+## Functionality of X1Wallet
+After the device is setup ([steps to setup device](#device-setup-flow)), the X1Wallet is ready to use by the end-users. To use the functionality, the user must have access to the X1Wallet and CyCards; CySync is required for on-chain operations such as send operations and balance viewing.
 
-# About the Project
-**TODO: Add about device**
-* Cypherock Simulator uses the lvgl and SDL2 library to run device code on the desktop.
-* It uses the file system in place of the flash to mimic cards, storage and desktop communication
+### List of features:
+#### 1. Create wallet (on CyCards)
+This is the most secure way (and recommended option) for users to create and own a wallet. If this method is used for creating a wallet for storing funds, users can rest assured that none of the private (or citical) information leaves the secure operating environment of the X1Wallet ever (provided that the user does not knowingly/unknowingly exposes the private information).
 
-**[Back to top](#table-of-contents)**
+The X1Wallet can create a wallet from scratch and set it up for the user. The entire process of creating a wallet is as follows:
+   - From the main menu, choose "Create wallet" -> "Generate new wallet"
+   - In next steps, user is asked for basic wallet configurations (name, PIN, passphrase, etc.)
+   - After processing, user is expected to go through list of mnemonics and cross-verify with 3 words.
+   - Upon success, the wallet is supposed to saved on CyCards (**NOTE: User will need all the 4 CyCards to successfully complete the step.**)
+   - As the final step of wallet creation, user is asked to tap all the CyCards one-by-one (___this is a mandatory step before the new wallet is ready to use___). Once the data on CyCards is verified to be correct, the wallet is ready for normal use.
 
-# Directories
+#### 2. Restore 3rd party (or external) wallet (to CyCards)
+This is not a recommended method to own a wallet on X1Wallet because it is possible that the menmonics are already spoofed.
 
-```
-├── Application     # Contains Application Side files, common for both Device and Simulator
-│   └── common      # Core libraries and utilities required by application
-│       └── flash             # Contains wrappers for flash
-│       └── interfaces        # Contains interfaces files for desktop , flash , card and USB
-│       └── libraries         # Contains libraries for proof of work , Shamir's and utils.
-│       └── logger            # Contains logger files for Debugging
-│       └── lvgl              # Contains lvgl library
-│       └── src               # Contains source code
-│       └── coin_support      # Contains headers and source files required for various Cryptocurrency wallets
-│   └── config      # Configuration files
-│   └── flows       # Contains files to handle various flows of different levels consisting of controllers and tasks
-│
-├── bin            # Contains dll for SDL2 and binaries of the built simulator
-├── build          # Contains build files of CMake and hex, bin, map and out files for device (Created only after build starts)
-├── Device         # Contains external required libraries
-├── Simulator      # Contains files required for various peripherals connectivity
+X1Wallet supports the feature to import any BIP39 compliant wallets that have been created at other places (such as Hot wallets like MEW/Metamask, Cold wallets like Coldcard, etc.). The supported method of import is via BIP39 mnemonic word list of the wallet that is to be imported. ***X1Wallet allows importing a mnemonic with word list count of 12, 18 & 24.*** The complete process of restoring a wallet is as follows:
+   - From the main menu, choose "Create wallet" -> "Generate new wallet"
+   - In next steps, user is asked for basic wallet configurations (name, PIN, passphrase, etc.)
+   - Now, user is expected to enter the list of words on-by-one and go through the entered word-list.
+   - Upon success, the wallet is supposed to saved on CyCards (**NOTE: User will need all the 4 CyCards to successfully complete the step.**)
+   - As the final step of wallet creation, user is asked to tap all the CyCards one-by-one (___this is a mandatory step before the new wallet is ready to use___). Once the data on CyCards is verified to be correct, the wallet is ready for normal use.
 
+#### 3. View wallet word-list/seed (of existing wallets)
+A user or owner of X1Wallet has an option to view the critical information of their wallet (the mnemonic word list). Since, the word list is a very sensitive piece of information, it is important that the end user handles it accordingly. With the wordlist, user has the flexibility to export their wallet to a new X1Wallet (or other platforms if the need be; it is not recommended to use the wallet on any other platform for users benefit).
 
+To view the word-list, a user needs to have one CyCard (and knowledge of PIN, if the wallet is PIN protected).
 
-```
-# Project Status
+#### 4. Import wallet to CySync (Desktop application)
+Since, the X1Wallet is a cold storage, it cannot directly interact with Blockchain on the internet to view the balances. To facilitate this, the desktop application, enables users to view their account balances and funds on their wallet/accounts. In order to enable the tracking of funds for any particular wallet (for a particular type of crypto), users have to sync their X1Wallet with CySync and then [enable coin support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) of that particular cryptocurrency. To sync a wallet with CySync, user will trigger the request via CySync and confirm the request on the X1Wallet.
 
+***NOTE: This process only sends the public information about the wallet. No private critical information leaves the X1Wallet.***
 
-The project is currently in beta stage of its development.
+#### 5. Enable coin support for a wallet on CySync (Desktop application)
+X1Wallet allows tracking a cryptocurrency balances linked to a users wallet. This is possible via CySync interface. To enable a coin tracking support, the user will require to have one CyCard with the wallet. To enable coin tracking support (make sure that the desired wallet is [synced with CySync](#4-import-wallet-to-cysync-desktop-application)), user will trigger the request via CySync and confirm the request on the X1Wallet.
 
-**[Back to top](#table-of-contents)**
+***NOTE: This process only sends the public information about the accounts for the selected crypto. No private critical information leaves the X1Wallet.***
 
+#### 6. Receive funds into wallet address present on CyCards
+To receive funds into their X1Wallet, first the user must have at least one active wallet on their X1Wallet device ([create a wallet](#1-create-wallet-on-cycards) if you do not have one). If you already have a wallet, then make sure to have access to one CyCard for receiving funds. Now make sure the [wallet is synced with CySync](#4-import-wallet-to-cysync-desktop-application) and [coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) is enabled for the preferred coin.
 
-# Getting Started
-TODO
+Trigger the request to generate a receiving public address for your wallet. ***It is recommended to verify the address on the X1Wallet and never skip this step for security reasons.***
 
-## Dependencies
+#### 7. Send funds from wallet present on CyCards
+To enable transfer of funds from user's wallet to a different wallet, following things are necessary:
+   - Correct knowledge of receiver's public address for that particular crypto
+   - Access to one CyCard
+   - Wallets with sufficient funds ([create a wallet](#1-create-wallet-on-cycards) if you do not have one and [receive funds](#6-receive-funds-into-wallet-address-present-on-cycards) before proceeding)
+   - Knowledge of PIN in case of PIN protected wallets
+   - Wallet synced with CySync ([sync wallet with CySync](#4-import-wallet-to-cysync-desktop-application)) and coin tracking support enabled on CySync ([enabled coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application))
 
-### Device
-1. git
-2. arm-none-eabi-gcc
-3. cmake (version 3.15.3)
-4. mingw32-make or make or ninja
+The operation can be started from CySync and confirm the request on X1Wallet to continue. The user is expected to verify the transaction details such as receiver's address and amount being transferred along with a required fee used by the network for processing the transaction. If any descrepancy is observed by the user, the transaction should not be signed and cancelled immediately.
 
-### Simulator
+***NOTE: The transaction signing starts once the user has tapped the CyCard. It is recommended to not tap the CyCard if any descrepancy is observed by the user.***
 
-1. gcc version 7 or higher
-2. make/mingw32-make
-3. CMake version 3.XX
-4. SDL2
-
-## Getting the Source
-The project repo consists of several modules maintained on individual repository and managed using `git submodules`.
-
-Because of the existance of submodules, the correct way to clone this repo would be as follows:
-- `git clone git@gitlab.com:cypherock-tech/device_stm32.git --recursive`
-
-#### Alternative
-If you have already cloned the repo w/o using the `--recursive` flag, execute the following commands in sqeuence to get the submodules ready.
-- `git submodule init`
-- `git submodule update`
-
-**[Back to top](#table-of-contents)**
-
-## Building
+## Building project
 
 ### Device
 1. Install the required build tools
@@ -137,179 +106,12 @@ This method uses the build script for generating a signed binary of the firmware
    - git
    - ninja or make
    - cmake
-   - python3
-2. Make sure the cli tool is built [(steps here)](#building-the-cli-tool)
-3. copy all the `.h` and `-version.txt` files from [this repo](https://gitlab.com/cypherock-tech/privatekeypairs) into communication-testing (cli tool source directory) folder
-4. specify the cli tool source directory using the following command
-  - `export CLI_ROOT_DIR=<path to cli tool source directory>`
-5. Start the build process by calling the build script as `./stm-build.sh`
+2. Start the build process by calling the build script as `./utilities/build.sh`
 
-### Simulator
-
-1. Install GCC 64 bit and Make
-
-    [https://jmeubank.github.io/tdm-gcc/download/](https://jmeubank.github.io/tdm-gcc/download/)
-
-
-2. Install CMake
-
-   [https://cmake.org/download/](https://cmake.org/download/)
-
-3. Install SDL2
-   1. Download SDL2 64 bit
-   
-        [https://www.libsdl.org/download-2.0.php](https://www.libsdl.org/download-2.0.php)
- 
-   2. Extract the folder
-        ```
-        The 32-bit files are in i686-w64-mingw32
-        The 64-bit files are in x86_64-w64-mingw32
-        ```
-
-   3. Folders in `x86_64-w64-mingw32` 
-        ```
-        bin
-        include
-        lib
-        share
-        ```
-
-   4.  Find the installation location of TDM GCC (TDM-GCC-64)
-       1.   Copy the contents from `x86_64-w64-mingw32/include` to include folder of `your_tdm_installation_directory/TDM-GCC-64/include`
-       2.   Copy the contents from `x86_64-w64-mingw32/lib` to include folder of `your_tdm_installation_directory/TDM-GCC-64/lib`
-
-   5. Restart your system
-
-4. Clone this repository
-5. Change directory to the root folder of the project
-6. Create a `build` folder
-7. Run CMake
-    ```
-    cmake --no-warn-unused-cli -DCMAKE_BUILD_PLATFORM:STRING=Simulator -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=Debug -G "MinGW Makefiles"
-    ```
-8. Build
-   ```
-   cmake --build --config Debug --target Cypherock_Simulator -j 6 --
-   ```
-9. The generated exe will be present the bin folder
-
-10. Copy `SDL2.dll` and `sdl2-config` to the bin folder
-
-11. Run executable to start the simulator
-
-12. To enable support for USB communication into simulator follow the steps
-    - Download the package for required platform [Windows](https://drive.google.com/file/d/1QjpRdPnI9if6y8WtWz0FTfbj051bSAVS/view?usp=sharing) | [Linux](https://drive.google.com/file/d/13sLbiav0SAbvQ0rorZRRthLiOFX4oSC6/view?usp=sharing)
-    - Make sure that the `.env` file containes the line `MOCK=true` in it
-    - Now start the cli using the command `./custom`
-    - NOTE: ***It is required that the cli tool is started after starting the device simulator***
-
-#### Valid data packet from cli to X1Wallet
-After starting the cli by following step 12, it is possible to send commands to Simulator
-- Initiate the add wallet flow
-  - type `43,00` from cli
-  - the device will respond hex array in the structure `<16-byte wallet name ASCII encoded value><1-byte wallet-info><32-byte wallet-id>`. exmaple output `Received Command 44 : 4141000000000000000000000000000000c372af88f64e0a40439f97ee98a3a0a03e9b2ac348b464d0cab7f32ee8482298`
-  - optionally to complete the flow, send `42,01` from cli for confirmation (if not sent, X1Wallet will show error prompt after it times out)
-- Initiate the add coin flow
-  - type `45,<32-byte wallet-id>00<1-byte coin count><4-byte coin-index><1-byte chain-id>` from cli. example `45,c372af88f64e0a40439f97ee98a3a0a03e9b2ac348b464d0cab7f32ee84822980002800000008000003c0003`. Where wallet-id is fetched from previous step. We mean to add 2 coins so `02` and followed by `80000000` for bitcoin and `8000003c` for ethereum. Followed by `00` for bitcoin (fixed for compatibility) and `03` for ropsten network id.
-  - follow the prompt on device to continue
-  - the device will respond
-  - optionally to complete the flow, send `42,01` from cli for confirmation (if not sent, X1Wallet will show error prompt after it times out)
-- Initiate the add wallet flow
-  ``
-
-## Using [node cli tool](https://gitlab.com/cypherock-tech/communication-testing) (build from source)
-
-### Building the cli tool
-- Clone the cli tool source code
-- make sure to install the following tools
-  - `node`
-  - `yarn`
-  - `python3`
-- copy/rename the provided `.env.example` to `.env`
-- execute the following command to build the tool before using
-  - `yarn && yarn build`
-
-### Update the device firmware (only for developers)
-- download the firmware from [gitlab releases](https://gitlab.com/cypherock-tech/device_stm32/-/releases) (pick one of the bin file named '...signed', preferably x1wallet-main-release-signed.bin)
-- follow the steps to build cli tool using the [build steps mentioned](#building-the-cli-tool)
-- put device in bootloader mode (**It is important the device is connected to laptop via USB before starting the next step**)
-- start cli using the command (`yarn start`)
-- choose from the command line options - "STM CLI" --> "STM Update"
-- locate the path to downloaded binary file
-- the device should finish the process and restart to "Main menu"
-
-### Signing firmware binary
-1. Build a normal binary of the project [steps here](#device)
-2. Make sure the cli tool is built [(steps here)](#building-the-cli-tool)
-3. copy all the `.h` and `-version.txt` files from [this repo](https://gitlab.com/cypherock-tech/privatekeypairs) into communication-testing (cli tool source directory) folder
-4. Start the cli using the command (`yarn start`)
-5. First step: 
-   - In the command line options choose "STM CLI" --> "Add Header" and add header to the binary
-   - input binary: the bin file generated in step 1
-   - output binary: output file name
-   - version file: The '-version.txt' downloaded in step 3
-   - private key file: The `private_key1.h` file downloaded in step 3
-6. Second step: 
-   - Restart the cli tool (`yarn start`)
-   - Choose from the command line options "STM CLI" --> "Sign Header" and add signature to the binary
-   - input file: the bin file generated in step 5
-   - output file: final signed binary
-   - private key file: The `private_key2.h` file downloaded in step 3
-
-**NOTE**: If any of the step 5 or step 6 fail, then try the [build script](#device-alternative-using-build-script) to generate a signed binary.
-
-# Containerised build
-- Create a docker image and run the build process inside it.<br/>
-  ```
-  docker image build --tag x1-wallet-main-app .
-  ```
-
-- Now from the docker image, copy the application binaries to build folder.<br/>
-  ```
-  mkdir -p build
-  docker run -v $(pwd)/build:/out x1-wallet-main-app cp -a dist/. /out
-  ```
-
-### Output files (binaries)
-The output of the build process can be found inside `~/build` folder
-
-### Next steps
-The generated binaries should be appended with signed header to be useable with device.
-
-# Release Process (Gitlab)
-
-- Create a tag on gitlab 
-  - Provide the tag name (ex: v0.0.7). This will be used as the release title.
-  - Optionally add a message (**NOTE: This message should not include any line breaks. Keep it a simple text.**). This will be used as the release description.
-- A CI/CD job will run on gitlab which will create the release and add the binaries.
-  - `firmware.bin` - Unsigned binary
-  - `firmware-signed.bin` - Signed binary with headers from `version.txt`
-
-**[Back to top](#table-of-contents)**
-
-# How to Get Help
-
-We can be contacted through our [mail](mailto:info@cypherock.com).
-
-# Contributing
-
-Currently only developer within the company are allowed to contribute or make commits on their specific branches.
-
-**[Back to top](#table-of-contents)**
-
-# Further Reading
-
-[Security](https://www.cypherock.com/security/)
-
-[Hardware Wallets](https://www.cypherock.com/hardware/)
-
-**[Back to top](#table-of-contents)**
-
-# License
-
-Copyright (c) 2017 Cypherock
-
-This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) file for details.
-
-
-**[Back to top](#table-of-contents)**
+# Documents
+### [Device authentication](docs/device_provision_auth.md)
+### [Shamir secret sharing](docs/shamir_secret_sharing.md)
+### [USB communication](docs/usb_communication.md)
+### [Secure NFC communication](docs/nfc_secure_communication.md)
+### [CyLock (Proof of Work)](docs/cylock__proof_of_work.md)
+### [Bootloader Doc(with Memory map)](docs/bootloader.md)
