@@ -29,10 +29,11 @@ The DFU package includes 2 header packets and the binary file for an upgrade.
 
   
 
-| <br>**Signed DFU Package data Header**<br><br><br>(128 bytes)<br> |
-| --- |
-| <br>**DFU package signature Header**<br><br><br>(128 bytes)<br> |
-| <br><br><br><br><br><br><br><br><br><br><br><br><br>**Firmware Data**<br><br><br>(firmware size)<br><br><br><br><br><br><br><br><br><br> |
+| | | | <br>**Signed DFU Package data Header** (128 bytes) | | | | 
+| --- | --- |--- |--- |--- |--- |--- |
+| | | | <br>**DFU package signature Header** (128 bytes)<br>| | | |
+| | | | <br><br><br>**Firmware Data** (firmware size)<br><br><br> | | | |
+| | | | 
 
 #### Data header packet of 128 bytes contains the following information:-
 
@@ -119,27 +120,7 @@ In our implementation Firewall Code Segment is defined in Flash, the code segmen
 
 ### Non Volatile Segment:-
 
-Non Volatile Segment is used to store constant data which is critical for secure firmware upgrade and verifies flash integrity. The following data is stored in the Non-Volatile protected segment. Pages containing important keys are prevented from page erase and READ//WRITE protection is implemented:-
-
-Firewall data has 4 pages:-
-
-#### 1\. Primary Bootloader Data
-
-Firmware Version, Firmware state, flash SHA256 digest, etc
-
-#### 2\. Backup Bootloader Data
-
-To be retrieved if the primary page is empty
-
-#### 3\. Permanent Key Storage
-
-This page can only be written to and not deleted
-
-#### 4\. Secure Data Storage
-
-This page is used to store data that can be updated
-
-  
+Non Volatile Segment is used to store constant data which is critical for secure firmware upgrade and verifies flash integrity. The following data is stored in the Non-Volatile protected segment. This flash section is protected from READ//WRITE via firewall.
 
 Security Checks:-
 -----------------
@@ -151,8 +132,8 @@ Security Checks:-
 Following Security checks have been used:-
 
 *   Read Protection (RDP):- The read protection is activated by setting the RDP option byte and then, by applying a system reset to reload the new RDP option byte. When RDP level 2 is programmed, it prevents data read from flash and disables debugging. Any attempt to read/erase/write from debugger or option bytes will lead to a reset. Bootloader verifies after every bootup if option bytes for RDP is set to level 2 or not. If not, RDP is changed to level 2 again.
-*   Application Flash validation:- It is important to make sure that no malicious code is written to empty flash memory. This empty flash space is filled with zeros to prevent writing to flash without a page erase. A sha256 digest of Application Flash including zero-filled area is calculated and saved to protected Non-Volatile Segment after successful firmware upgrade. Flash validation is done at every bootup if the current digest does not match the previously-stored digest, the empty flash area is again erased and filled with zeros, effectively deleting any malicious code.
-*   Firmware and Hardware version check:- Bootloader does not allow the device to be programmed with a firmware with lower version or a different hardware version.
+*   Application Flash validation:- A sha256 digest of firmware is stored at bootmarker page after a successful firmware update. Flash validation is done at every bootup if the current digest does not match the digest in bootmarker, boot state is changed to misconfigured state and application firmware is erased.
+*   Firmware and Hardware version check:- Bootloader does not allow the device to be programmed with a firmware with lower version or a different hardware version. Redundant checks are added for lower firmware versions and is protected from 
 *   DFU signature verification:- The firmware binary file is signed twice with two of four available private keys. The public key pairs are stored in protected flash memory, which verifies the DFU package source. If the two signatures are not verified, application space is deleted and Bootloader remains in upgrade mode.
 
   
@@ -182,7 +163,7 @@ After MCU has been initialized, bootdata from the Firewall region is checked to 
 *   Firmware Binary CRC is also calculated to check for any errors.
 *   Verify signatures with Firmware digest and public keys available. If not verified, abort and erase programmed firmware from flash.
 *   Update Boot Data with new Firmware Version, firmware size, and change boot state to Upgrade Complete. Auth State and First boot values are set prompting a Device Authentication sequence on Bootup.
-*   Fill the Remaining Empty Flash space with zeros and calculate and save the SHA256 digest of Application Flash.
+*   Calculate and save the SHA256 digest of Application Flash.
 *   Reset MCU.
 
   
@@ -191,8 +172,7 @@ After MCU has been initialized, bootdata from the Firewall region is checked to 
 
 *   Validate application flash - Calculate Application flash SHA256 and compare with stored digest.
 *   If validated, Boot Count is incremented, and the jump function (to application reset handler) is called.
-*   If there is a mismatch between the two hashes, either the empty area or firmware area has been overwritten/erased.
-*   The bootloader then fills the empty code area with zeros and compares the hash again; if the comparison fails again, the Bootloader state is changed to MIS-CONFIGURED and the jump would not occur.
+*   If there is a mismatch between the two hashes, the Bootloader state is changed to Misconfigured and firmware is erased.
 *   MCU is reset
 
   
@@ -219,10 +199,9 @@ Flash is divided into 2Kb pages with a granularity of 8bytes(word)
 | 0x08000000 | 36K | Bootloader |
 | 0x08009004 | 56K | Firewall Code Area |
 | 0x08017000 | 8K | Firewall Data Storage |
-| 0x08019000 | 14K | Application User Data |
-| 0x0801C800 | 24K | Logger Data |
-| 0x08022800 | 86K | Unused Space |
-| 0x08038000 | 800K | Application Firmware |
+| 0x08019000 | 16K | Application User Data |
+| 0x0801D000 | 24K | Logger Data |
+| 0x08023000 | 884K | Application Firmware |
 | 0x20000000 | 96K | Application Firmware RAM |
 | 0x10000000 | 32K | Bootloader and Firewall RAM |
 
@@ -247,7 +226,7 @@ To be retrieved if primary page is empty
 
 Permanent Key Storage (0x08018000)
 
-This page can only be written to and not be deleted
+This page is only written once and never erased by application
 
 Secure Data Storage (0x08018800)
 
