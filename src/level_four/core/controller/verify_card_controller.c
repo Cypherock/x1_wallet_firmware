@@ -66,6 +66,7 @@
 
 static uint8_t signature[ECDSA_SIGNATURE_SIZE];
 static uint16_t length;
+static uint8_t coded_card_number = 0;
 
 /* Serial Number = Family ID appended with Card Number
  * Return serial number
@@ -125,6 +126,10 @@ void verify_card_controller()
                 transmit_data_to_app(SEND_SIGNATURE_TO_APP, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                 flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
                 buzzer_start(BUZZER_DURATION);
+                instruction_scr_change_text(ui_text_remove_card_prompt, true);
+                nfc_detect_card_removal();
+
+                coded_card_number = tap_card_data.tapped_card;
                 break;
             } else if (tap_card_handle_applet_errors()) {
                 break;
@@ -156,7 +161,7 @@ void verify_card_controller()
         length = CARD_AUTH_RAND_NUMBER_SIZE;
         tap_card_data.lvl3_retry_point = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
         while (1) {
-            tap_card_data.acceptable_cards = tap_card_data.tapped_card;
+            tap_card_data.acceptable_cards = coded_card_number;
             tap_card_data.tapped_card = 0;
             if (!tap_card_applet_connection())
                 break;

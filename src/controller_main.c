@@ -420,7 +420,7 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
 
             } break;
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
             case START_CARD_UPGRADE: {
                 CY_Reset_Not_Allow(false);
                 snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_card_update);
@@ -522,7 +522,7 @@ void desktop_listener_task(lv_task_t* data)
                 }
                 clear_message_received_data();
             } break;
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
             case EXPORT_ALL: {
                 const Flash_Wallet* flash_wallet;
                 uint8_t allWalletsID[(WALLET_ID_SIZE + NAME_SIZE + 1) * MAX_WALLETS_ALLOWED];

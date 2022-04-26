@@ -12,7 +12,6 @@ target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx 
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
-    add_compile_definitions(DEBUG_BUILD)
 ENDIF(DEV_SWITCH)
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")

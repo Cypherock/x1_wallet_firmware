@@ -61,6 +61,7 @@
 #include "controller_level_two.h"
 #include "application_startup.h"
 #include "ui_instruction.h"
+#include "apdu.h"
 #include <inttypes.h>
 #include <string.h>
 
@@ -79,6 +80,11 @@ void level_one_controller()
 
     if (flow_level.show_desktop_start_screen) {
         flow_level.show_desktop_start_screen = false;
+        return;
+    }
+
+    if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
+        reset_card_data_health();
         return;
     }
 

@@ -70,11 +70,12 @@
 #include "ui_instruction.h"
 #include "flash_api.h"
 
-#if X1WALLET_INITIAL
-
 #define ATECC_CFG_88_MASK   0x4C
 #define ATECC_CFG_89_MASK   0x01
 
+#define ATECC_CFG_88_MASK_OLD_PROV  44
+
+#if X1WALLET_INITIAL
 uint8_t provision_date[4];
 Provision_Data_struct provision_keys_data;
 
@@ -82,22 +83,31 @@ extern lv_task_t* listener_task;
 static lv_task_t *timeout_task;
 
 static void __timeout_listener();
+#endif
 
-static uint8_t check_provision_status(){
+provision_status_t check_provision_status(){
     uint8_t cfg[128];
     memset(cfg, 0, 128);
     atcab_read_config_zone(cfg);
-    if(cfg[86]==0x00 && cfg[87]==0x00 && (cfg[88] & ATECC_CFG_88_MASK)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00 ){     //check if config zone, data zone and slot 2,3,6 and 8 are locked
-        return 2;
+    if(cfg[86]==0x00 || cfg[87]==0x00){ //config zone and data zones are locked
+
+        if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
+            return provision_incomplete;
+        }
+        else if((cfg[88] & ATECC_CFG_88_MASK)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00){   //private key slots are locked
+            return provision_complete;
+        }
+        else if((cfg[88] & ATECC_CFG_88_MASK_OLD_PROV)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00 ){     //NFC private key slot not locked
+            return provision_v1_complete;
+        }
+        else{
+            return provision_empty;
+        }
     }
-    else if(cfg[86]==0x00 && cfg[87]==0x00 && cfg[88]==0xBF && cfg[89]==0xFE ){
-        return 1;
-    }
-    else{
-        return 0;
+    else {
+        return provision_empty;
     }
 }
-#endif
 
 void device_provision_controller(){
 #if X1WALLET_INITIAL
@@ -166,9 +176,9 @@ void device_provision_controller(){
 				status = atcab_lock_data_zone();
             }
 
-            uint8_t provision_status = check_provision_status();
+            provision_status_t provision_status = check_provision_status();
             //check if device already provisioned
-            if(provision_status == 0){
+            if(provision_status == provision_empty){
                 //called again if not locked in previous configuration
             	is_locked = false;
 				status = atcab_is_locked(LOCK_ZONE_CONFIG, &is_locked);
@@ -238,7 +248,7 @@ void device_provision_controller(){
                 }
 
             }
-            else if(provision_status == 1){
+            else if(provision_status == provision_incomplete){
                 status = atcab_read_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, serial_no, 32);
             }
             else{

@@ -131,9 +131,13 @@ static void _tap_card_backend(uint8_t xcor)
         tap_card_data.status = nfc_retrieve_wallet(&wallet);
 
         if (tap_card_data.status == SW_NO_ERROR) {
+            buzzer_start(BUZZER_DURATION);
+            instruction_scr_change_text(ui_text_remove_card_prompt, true);
+            if(xcor != 3){
+                nfc_detect_card_removal();
+            }
             _handle_retrieve_wallet_success(xcor);
             instruction_scr_destructor();
-            buzzer_start(BUZZER_DURATION);
             break;
         } else if (tap_card_handle_applet_errors()) {
             break;

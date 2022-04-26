@@ -19,6 +19,12 @@
 #include "tasks.h"
 #include "flash_config.h"
 
+#define SLOT_DEVICE_KEY     2
+#define SLOT_NFC_PRIV_KEY   3
+#define SLOT_CHALLENGE_DATA 5
+#define SLOT_IO_PROT_KEY    6
+#define SLOT_DEVICE_SERIAL  8
+
 #define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
 #define INDEX_SIZE 4
 
@@ -40,6 +46,13 @@ typedef enum{
     slot_14_unused=14,
     slot_15_unused=15
 }slot_definition;
+
+typedef enum{
+    provision_empty=0,
+    provision_incomplete=1,
+    provision_complete=2,
+    provision_v1_complete=3
+}provision_status_t;
 
 extern uint8_t provision_date[4];
 extern uint8_t auth_card_number;
@@ -419,5 +432,28 @@ void sync_cards_controller();
  * @since v1.0.0
  */
 void sync_cards_controller_b();
+
+/**
+ * @brief The function handles post-processing successful execution of card pairing on the card.
+ * @details The function verifies the signature of the card's response received. Upon successful verification, the
+ * shared secret is generated and stored in the device for further use in secure communication with the card.
+ *
+ * @param [in] card_number       - card number currently being processed
+ * @param [in] session_nonce     - session nonce of the device
+ * @param [in] card_pairing_data - card pairing data received from the card
+ */
+void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8_t *card_pairing_data);
+
+/**
+ * @brief
+ * @details
+ *
+ * @return uint8_t Provision status of the device
+ * @retval 0    Not provisioned
+ * @retval 1    Semi-provisioned (serial and IO-Protection Key present)
+ * @retval 2    Fully provisioned
+ * @retval 3    External auth configuration
+ */
+provision_status_t check_provision_status();
 
 #endif

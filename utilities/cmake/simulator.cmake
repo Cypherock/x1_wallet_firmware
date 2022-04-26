@@ -2,7 +2,6 @@ file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*")
 add_compile_definitions(USE_SIMULATOR=1 ATCAPRINTF USE_MONERO=1 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
-    add_compile_definitions(DEBUG_BUILD)
 ENDIF(DEV_SWITCH)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

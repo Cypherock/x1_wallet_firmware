@@ -94,7 +94,6 @@ void tap_cards_for_delete_flow()
         break;
 
     case TAP_CARD_TWO_BACKEND:
-		BSP_DelayMs(900);
         mark_event_over();
         break;
 
@@ -105,7 +104,6 @@ void tap_cards_for_delete_flow()
         break;
 
     case TAP_CARD_THREE_BACKEND:
-		BSP_DelayMs(900);
         mark_event_over();
         break;
 
@@ -116,7 +114,6 @@ void tap_cards_for_delete_flow()
         break;
 
     case TAP_CARD_FOUR_BACKEND:
-		BSP_DelayMs(900);
         mark_event_over();
         break;
 

@@ -96,7 +96,7 @@ void tap_a_card_and_sync_task()
         if(no_wallet_on_cards == true){
             reset_flow_level();
             flow_level.show_error_screen = true;
-            snprintf(flow_level.error_screen_text, 90, "%s", ui_text_wallet_not_found_on_cycard);
+            snprintf(flow_level.error_screen_text, 90, "%s", ui_text_wallet_not_found_on_x1card);
         }
         else{
             delay_scr_init(ui_text_sync_wallets_next_steps, DELAY_TIME);
@@ -109,7 +109,7 @@ void tap_a_card_and_sync_task()
 }
 
 static void get_card_version(char * arr, char message[22]){
-    snprintf(message, 22, "CyCard version\n ");
+    snprintf(message, 22, "X1 Card version\n ");
     message[15] = arr[0],message[16] = '.',message[17] = arr[1] , message[18] = '.' ;
     if(arr[2] != '0')
         message[19] = arr[2] , message[20] = arr[3];

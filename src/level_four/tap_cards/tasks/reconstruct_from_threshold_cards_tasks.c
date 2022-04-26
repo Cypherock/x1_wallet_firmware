@@ -87,7 +87,6 @@ void tap_threshold_cards_for_reconstruction()
         break;
 
     case TAP_CARD_TWO_BACKEND:
-		BSP_DelayMs(900);
         mark_event_over();
         break;
 

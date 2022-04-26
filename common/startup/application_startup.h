@@ -213,4 +213,18 @@ bool fault_in_prev_boot();
  */
 void handle_fault_in_prev_boot();
 
+/**
+ * @brief Detect hardware related faults
+ * 
+ * @since v1.0.0
+ */
+void device_hardware_check();
+
+/**
+ * @brief Handle cases if device is not provisioned
+ * 
+ * @since v1.0.0
+ */
+void device_provision_check();
+
 #endif

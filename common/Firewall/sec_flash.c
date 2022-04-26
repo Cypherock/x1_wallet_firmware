@@ -344,12 +344,13 @@ const Sec_Flash_Struct* get_sec_flash_ram_instance()
 }
 
 /**
- * @brief   should only be called for factory reset and syncing CyCards
+ * @brief   should only be called for factory reset and syncing X1 Cards
  *
  * @since   v1.0.0
  */
 void sec_flash_erase(){
     FW_delete_flash_data(FIREWALL_APPLICATION_DATA_START_ADDR);
+    is_sec_flash_ram_instance_loaded = false;
 }
 
 

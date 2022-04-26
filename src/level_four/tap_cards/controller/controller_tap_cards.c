@@ -65,7 +65,7 @@ NFC_connection_data tap_card_data;
 
 bool tap_card_applet_connection()
 {
-    uint8_t acceptable_cards;
+    uint8_t acceptable_cards, recovery_mode = 0;
     if (tap_card_data.desktop_control) {
         set_instant_abort(&abort_from_desktop);
         set_abort_now(&_abort_);
@@ -78,8 +78,17 @@ bool tap_card_applet_connection()
         if (nfc_select_card() != STM_SUCCESS) // Stuck here until card is detected
             return false;
 
+        instruction_scr_change_text(ui_text_card_detected, true);
+
         acceptable_cards = tap_card_data.acceptable_cards;
-        tap_card_data.status = nfc_select_applet(tap_card_data.family_id, &tap_card_data.acceptable_cards, NULL, tap_card_data.card_key_id);
+        tap_card_data.status = nfc_select_applet(tap_card_data.family_id, &tap_card_data.acceptable_cards, NULL, tap_card_data.card_key_id, &recovery_mode);
+
+        /* Card is in recovery mode. This is a critical situation. Instruct user to safely recover/export
+         * wallets to different set of cards in limited attempts.
+         * NOTE: Errors such as invalid card & invalid family id have higher priority than this.
+         */
+        if (recovery_mode == 1)
+            mark_error_screen(ui_critical_card_health_migrate_data);
         if (tap_card_data.tapped_card != 0 && tap_card_data.tapped_card == (acceptable_cards ^ tap_card_data.acceptable_cards))
             continue;
 
@@ -115,14 +124,21 @@ bool tap_card_applet_connection()
             mark_error_screen(ui_text_incompatible_card_version);
             reset_flow_level();
         } else {
-        	tap_card_data.tapped_card = 0;
-        	tap_card_data.acceptable_cards = acceptable_cards;
-            if (!(--tap_card_data.retries)) {
+            tap_card_data.tapped_card = 0;
+            tap_card_data.acceptable_cards = acceptable_cards;
+            if((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)){
+                instruction_scr_change_text(ui_text_card_removed_fast, true);
+            }
+            else if (!(--tap_card_data.retries)) {
                 mark_error_screen(ui_text_unknown_error_contact_support);
                 reset_flow_level();
             }
+            else if((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE){
+                instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
+                nfc_deselect_card();
+            }
         }
-        LOG_ERROR("err (0x%02X%02X)\n", tap_card_data.status >> 8, tap_card_data.status & 0xff);
+        LOG_ERROR("err (0x%04X)\n", tap_card_data.status);
 
         if (flow_level.show_error_screen) {
             buzzer_start(BUZZER_DURATION);
@@ -141,7 +157,7 @@ bool tap_card_applet_connection()
 
 bool tap_card_handle_applet_errors()
 {
-    LOG_ERROR("err (0x%02X%02X)\n", tap_card_data.status >> 8, tap_card_data.status & 0xff);
+    LOG_ERROR("err (0x%04X)\n", tap_card_data.status);
     switch (tap_card_data.status) {
         case SW_NO_ERROR: return true;
         case SW_SECURITY_CONDITIONS_NOT_SATISFIED:
@@ -149,6 +165,7 @@ bool tap_card_handle_applet_errors()
             reset_flow_level();
             break;
         case SW_NOT_PAIRED:
+            invalidate_keystore();
             tap_card_take_to_pairing();
             return true;
         case SW_CONDITIONS_NOT_SATISFIED:
@@ -182,6 +199,10 @@ bool tap_card_handle_applet_errors()
             mark_error_screen(ui_text_card_error_contact_support);
             reset_flow_level();
             break;
+        case SW_INS_BLOCKED:
+            mark_error_screen(ui_critical_card_health_migrate_data);
+            reset_flow_level();
+            break;
         default:
             if ((tap_card_data.status & 0xFF00) == POW_SW_WALLET_LOCKED) {
                 uint8_t target[SHA256_SIZE], random_number[POW_RAND_NUMBER_SIZE];
@@ -204,14 +225,18 @@ bool tap_card_handle_applet_errors()
             } else if ((tap_card_data.status & 0xFF00) == SW_CRYPTO_EXCEPTION) {
                 mark_error_screen(ui_text_card_crypto_exception);
                 reset_flow_level();
-            } else if ((tap_card_data.status & PN532_ERROR_BASE) == PN532_ERROR_BASE) {
-                mark_error_screen("NFC hardware issue detected");
-                reset_flow_level();
             } else {
-            	tap_card_data.tapped_card = 0;
-                if (!(--tap_card_data.retries)) {
+                tap_card_data.tapped_card = 0;
+                if((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)){
+                    instruction_scr_change_text(ui_text_card_removed_fast, true);
+                }
+                else if (!(--tap_card_data.retries)) {
                     mark_error_screen(ui_text_unknown_error_contact_support);
                     reset_flow_level();
+                }
+                else if((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE){
+                    instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
+                    nfc_deselect_card();
                 }
             }
             break;

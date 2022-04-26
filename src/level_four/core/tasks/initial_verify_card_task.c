@@ -85,7 +85,9 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_place_card_wait_for_three_beep[auth_card_number - 1]);
+        instruction_scr_init("Dummy");
+        instruction_scr_change_text(ui_text_place_card_wait_for_three_beep[auth_card_number - 1], true);
+        BSP_DelayMs(500);
         mark_event_over();
         break;
 
@@ -102,7 +104,9 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_place_card_wait_for_two_beep[auth_card_number - 1]);
+        instruction_scr_init("Dummy");
+        instruction_scr_change_text(ui_text_place_card_wait_for_two_beep, true);
+        BSP_DelayMs(500);
         mark_event_over();
         break;
 
@@ -119,7 +123,9 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_PAIR_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_place_card_wait_for_one_beep[auth_card_number - 1]);
+        instruction_scr_init("Dummy");
+        instruction_scr_change_text(ui_text_place_card_wait_for_one_beep, true);
+        BSP_DelayMs(500);
         mark_event_over();
         break;
 

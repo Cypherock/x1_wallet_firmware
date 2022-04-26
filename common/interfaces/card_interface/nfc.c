@@ -67,7 +67,6 @@
 #define SEND_PACKET_MAX_LEN 236
 #define RECV_PACKET_MAX_ENC_LEN 242
 #define RECV_PACKET_MAX_LEN 225
-#define NFC_HAL_RETRIES_THRESHOLD 3
 
 static void (*abort_now)() = NULL;
 static bool (*instant_abort)() = NULL;
@@ -75,7 +74,6 @@ static void (*task_handler)() = NULL;
 static uint8_t nfc_device_key_id[4];
 static bool nfc_secure_comm = true;
 static uint8_t request_chain_pkt[] = {0x00, 0xCF, 0x00, 0x00};
-static uint8_t adafruit_retries = 0;
 
 /**
  * @brief Check if any error is received from NFC.
@@ -90,68 +88,45 @@ void my_error_check(ret_code_t err_code)
     }
 }
 
-/**
- * @brief   check pn532 chip error code and log errors
- * @details PN532 defines multiple error codes for failure of NFC communication, nfc_pn532_error_check
- *          detects the error occurred and returns if retry is allowed for that error
- *
- * @param   [in] error_code error code returned by PN532
- * @param   [in] pc program counter for function call
- * @param   [in] lr link register for calling function
- *
- * @return  bool true if retry is allowed, else false
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static bool nfc_pn532_error_check(uint32_t error_code, const void *pc, const void *lr) {
-    if (error_code == STM_SUCCESS) return false;
-    LOG_ERROR("%u-%X:%X:%X", adafruit_retries, error_code, (uint32_t) pc, (uint32_t) lr);
-
-    /**
-     * Only retry upto NFC_HAL_RETRIES_THRESHOLD attempts for a single exchange.
-     */
-    if (++adafruit_retries > NFC_HAL_RETRIES_THRESHOLD) return false;
-    switch (error_code) {
-        case PN532_TIME_OUT:
-        case PN532_PARITY_ERROR:
-        case PN532_MIFARE_BIT_COUNT_ERROR:
-        case PN532_MIFARE_FRAMING_ERROR:
-        case PN532_ANTI_COLLISION_ERROR:
-        case PN532_BUFFER_SIZE_ERROR:
-        case PN532_BUFFER_OVERFLOW:
-        case PN532_TIME_MISMATCH:
-        case PN532_TEMPERATURE_ERROR:
-        case PN532_INTERNAL_BUFFER_OF:
-        case PN532_INVALID_PARAM:
-        case PN532_DEP_PROTOCOL_ERROR:
-        case PN532_DATA_FORMAT_ERROR:
-        case PN532_MIFARE_AUTH_ERROR:
-        case PN532_UID_CHECK_BYTE_WRONG:
-        case PN532_DEP_INVALID_STATE:
-        case PN532_OP_NA:
-        case PN532_CMD_UNACCEPTABLE:
-        case PN532_TG_RELEASED:
-        case PN532_CARD_ID_MISMATCH:
-        case PN532_CARD_DISAPPEARED:
-        case PN532_TG_IN_MISMATCH:
-        case PN532_OVER_CURRENT:
-        case PN532_NAD_MISSING:
-            return true;
-        case PN532_CRC_ERROR:
-        case PN532_RF_PROTOCOL_ERROR:
-        default:
-            return false;
-    }
-}
-
 ret_code_t nfc_init()
 {
     //Init PN532. Call this at start of program
     return adafruit_pn532_init(false);
+}
+
+uint32_t nfc_diagnose() {
+    uint32_t result = 0;
+    uint32_t err;
+
+    LOG_ERROR("NFC hw error logging");
+
+    //Poll and log different thresholds for NFC antenna self test
+    for (int i= 0; i<8; i++){
+      err = adafruit_diagnose_self_antenna(0x20 + (i<<1));
+      if(err != 0){
+        LOG_ERROR("NFC-HW l:%dmA, h:%dmA, %02x", 25, 45+(i*15), err);
+      }
+      err = adafruit_diagnose_self_antenna(0x30 + (i<<1));
+      if(err != 0){
+        LOG_ERROR("NFC-HW l:%dmA, h:%dmA, %02x", 35, 45+(i*15), err);
+      }
+    }
+
+    //Detect self antenna fault with 105mA high current threshold and 25mA low current threshold
+    if (adafruit_diagnose_self_antenna(NFC_ANTENNA_CURRENT_TH) != 0) result += (1 << NFC_ANTENNA_STATUS_BIT);
+    return result;
+}
+
+uint32_t nfc_diagnose_card_presence(){
+    return adafruit_diagnose_card_presence();
+}
+
+void nfc_detect_card_removal()
+{
+  uint32_t err = 0;
+  do {
+    err = adafruit_diagnose_card_presence();
+  } while (!err);
 }
 
 ret_code_t nfc_select_card()
@@ -159,7 +134,7 @@ ret_code_t nfc_select_card()
     //tag_info stores data of card selected like UID. Useful for identifying card.
     ret_code_t err_code = STM_ERROR_NULL; //random error. added to remove warning
     nfc_a_tag_info tag_info;
-
+    sys_flow_cntrl_u.bits.nfc_off = false;
     while (err_code != STM_SUCCESS && !CY_Read_Reset_Flow()) 
     {
         reset_inactivity_timer();
@@ -175,14 +150,22 @@ ret_code_t nfc_select_card()
     return err_code;
 }
 
+void nfc_deselect_card()
+{
+  sys_flow_cntrl_u.bits.nfc_off = true;
+  adafruit_pn532_release();
+  adafruit_pn532_field_off();
+  BSP_DelayMs(50);
+}
+
 ret_code_t nfc_wait_for_card(const uint16_t wait_time)
 {
     nfc_a_tag_info tag_info;
-
+    sys_flow_cntrl_u.bits.nfc_off = false;
     return adafruit_pn532_nfc_a_target_init(&tag_info, wait_time);
 }
 
-ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t* acceptable_cards, uint8_t *version, uint8_t *card_key_id)
+ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t* acceptable_cards, uint8_t *version, uint8_t *card_key_id, uint8_t *recovery_mode)
 {
     ASSERT(expected_family_id != NULL);
     ASSERT(acceptable_cards != NULL);
@@ -197,11 +180,12 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t* acceptable_card
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         uint8_t actual_family_id[FAMILY_ID_SIZE + 2], card_number;
 
-        status_word = extract_card_detail_from_apdu(recv_apdu, recv_len, actual_family_id, _version, &card_number, card_key_id);
+        status_word = extract_card_detail_from_apdu(recv_apdu, recv_len, actual_family_id, _version, &card_number, card_key_id, recovery_mode);
+        LOG_ERROR("cno %08X%02X", U32_READ_BE_ARRAY(actual_family_id), card_number);
 
         if (status_word == SW_NO_ERROR) {
             bool first_time = true;
@@ -256,7 +240,7 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut)
 
     memset(send_apdu, 0, sizeof(send_apdu));
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] << 8);
         status_word += recv_apdu[recv_len - 1];
@@ -283,7 +267,7 @@ ISO7816 nfc_unpair()
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] << 8);
         status_word += recv_apdu[recv_len - 1];
@@ -307,7 +291,7 @@ ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len)
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[*recv_len - 2] * 256);
         status_word += recv_apdu[*recv_len - 1];
@@ -335,7 +319,7 @@ ISO7816 nfc_add_wallet(const struct Wallet* wallet)
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         if (recv_len != ADD_WALLET_EXPECTED_LENGTH)
             my_error_check(STM_ERROR_INVALID_LENGTH);
@@ -363,7 +347,7 @@ ISO7816 nfc_retrieve_wallet(struct Wallet* wallet)
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     }
     else {
         status_word = (recv_apdu[recv_len - 2] * 256);
@@ -394,7 +378,7 @@ ISO7816 nfc_delete_wallet(const struct Wallet* wallet)
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         if (recv_len != DELETE_WALLET_EXPECTED_LENGTH)
             my_error_check(STM_ERROR_INVALID_LENGTH);
@@ -420,7 +404,7 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE], uint16_t* length_inO
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] * 256);
         status_word += recv_apdu[recv_len - 1];
@@ -452,7 +436,7 @@ ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE], const uint8_t nonce[
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] * 256);
         status_word += recv_apdu[recv_len - 1];
@@ -478,7 +462,7 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE], uint8_t target[SHA256_S
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] * 256);
         status_word += recv_apdu[recv_len - 1];
@@ -509,7 +493,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE], const uint8_t* plain_dat
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] * 256);
         status_word += recv_apdu[recv_len - 1];
@@ -541,7 +525,7 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE], uint8_t* plain_data, uin
     nfc_secure_comm = true;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
     if (err_code != STM_SUCCESS) {
-        my_error_check(err_code);
+        return err_code;
     } else {
         status_word = (recv_apdu[recv_len - 2] * 256);
         status_word += recv_apdu[recv_len - 1];
@@ -564,10 +548,9 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
     ASSERT(recv_len != NULL);
     ASSERT(send_len != 0);
 
-    ret_code_t err_code = STM_SUCCESS;
-    adafruit_retries = 0;
+    ret_code_t err_code = adafruit_diagnose_card_presence();
+    if (err_code != 0) return NFC_CARD_ABSENT;
 
-    const void *pc;
     uint8_t total_packets = 0, header[5], status[2] = {0};
     uint8_t recv_pkt_len = 236, send_pkt_len;
     uint16_t off = OFFSET_CDATA;
@@ -611,12 +594,12 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
 
         /** Exchange the C-APDU */
         err_code = adafruit_pn532_in_data_exchange(send_apdu + off - OFFSET_CDATA, send_pkt_len + OFFSET_CDATA, recv_apdu, &recv_pkt_len);
-#if USE_SIMULATOR == 0
-        GET_PC(pc);
-        if (nfc_pn532_error_check(err_code, pc, GET_LR())) continue;    // If error is on PN532 side, retry with current packet
-#endif
+
         /** Verify card's response. */
-        if (err_code != STM_SUCCESS) return err_code;
+        if(err_code != STM_SUCCESS){
+            LOG_ERROR("err:%08X\n", err_code);
+            return err_code;
+        }
         if (recv_pkt_len < 2) return STM_ERROR_INVALID_LENGTH;
         if (packet == total_packets) break;
         off += SEND_PACKET_MAX_LEN;
@@ -637,17 +620,18 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
     /** Prepare to request next packet from the card */
     *recv_len = recv_pkt_len;
     recv_pkt_len = RECV_PACKET_MAX_ENC_LEN;
-    request_chain_pkt[2] = *recv_len / RECV_PACKET_MAX_LEN + 1;
+    request_chain_pkt[2] = ceil(*recv_len * 1.0 / RECV_PACKET_MAX_LEN);
 
     /** Request all the remaining packets of multi-packet response */
     while (recv_apdu[*recv_len - 2] == 0x61) {
+        *recv_len -= 2;
         err_code = adafruit_pn532_in_data_exchange(request_chain_pkt, sizeof(request_chain_pkt), recv_apdu + *recv_len, &recv_pkt_len);
-#if USE_SIMULATOR == 0
-        GET_PC(pc);
-        if (nfc_pn532_error_check(err_code, pc, GET_LR())) continue;    // If error is on PN532 side, retry with current packet
-#endif
+
         /** Verify card's response */
-        if (err_code != STM_SUCCESS) return err_code;
+        if(err_code != STM_SUCCESS){
+            LOG_ERROR("err:%08X\n", err_code);
+            return err_code;
+        }
         if (recv_pkt_len < 2) return STM_ERROR_INVALID_LENGTH;
 
         /** Check response status of the packet then decrypt the packet if necessary */
@@ -657,12 +641,13 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
         if (err_code != STM_SUCCESS) return err_code;
 
         /** Prepare to request next packet from the card */
-        *recv_len += recv_pkt_len - 2;
+        *recv_len += recv_pkt_len;
         recv_pkt_len = RECV_PACKET_MAX_ENC_LEN;
         request_chain_pkt[2] = *recv_len / RECV_PACKET_MAX_LEN + 1;
     }
 
     adafruit_pn532_clear_buffers();
+    *recv_len = extract_card_data_health(recv_apdu, *recv_len);
     return err_code;
 }
 

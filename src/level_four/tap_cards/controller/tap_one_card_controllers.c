@@ -91,13 +91,13 @@ void tap_a_card_and_sync_controller()
         flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_BACKEND;
         break;
     case TAP_ONE_CARD_TAP_A_CARD_BACKEND: {
-        uint8_t no_restrictions[6] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
-        uint8_t recv_apdu[255] = {0};
+        uint8_t recv_apdu[400] = {0};
         uint16_t recv_len = 236;
 
+        tap_card_data.retries = 5;
         while (1) {
             tap_card_data.acceptable_cards = 15;
-            memcpy(tap_card_data.family_id, no_restrictions, 6);
+            memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
             tap_card_data.tapped_card = 0;
             if (!tap_card_applet_connection())
                 break;
@@ -121,6 +121,7 @@ void tap_a_card_and_sync_controller()
     } break;
     case TAP_ONE_CARD_SUCCESS_MESSAGE:
         reset_flow_level();
+        counter.level = LEVEL_THREE;
         flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
         flow_level.level_two = LEVEL_THREE_SYNC_SELECT_WALLET;
         break;
@@ -137,6 +138,7 @@ void controller_read_card_id()
             flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_BACKEND;
             break;
         case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
+            tap_card_data.retries = 5;
             while (1) {
                 uint8_t version[CARD_VERSION_SIZE];
                 // todo log
@@ -144,12 +146,15 @@ void controller_read_card_id()
                 // todo log
                 uint8_t no_restrictions[6] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
                 uint8_t all_cards = 15;
+                tap_card_data.status = nfc_select_applet(no_restrictions, &all_cards, version, NULL, NULL);
 
-                if (nfc_select_applet(no_restrictions, &all_cards, version, NULL) == SW_NO_ERROR) {
+                if (tap_card_data.status == SW_NO_ERROR) {
                     no_restrictions[CARD_ID_SIZE - 1] = all_cards ^ 15;
                     byte_array_to_hex_string(no_restrictions, CARD_ID_SIZE, card_id_fetched, 2 * CARD_ID_SIZE + 1);
                     byte_array_to_hex_string(version, CARD_VERSION_SIZE, card_version, 2 * CARD_VERSION_SIZE + 1);
                     flow_level.level_three = TAP_ONE_CARD_SUCCESS_MESSAGE;
+                    break;
+                } else if (tap_card_handle_applet_errors()) {
                     break;
                 }
             }
@@ -188,7 +193,7 @@ void controller_update_card_id()
                 // todo log
                 uint8_t no_restrictions[6] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
                 uint8_t all_cards = 15;
-                nfc_select_applet(no_restrictions, &all_cards, NULL, NULL);
+                nfc_select_applet(no_restrictions, &all_cards, NULL, NULL, NULL);
 
                 if (nfc_exchange_apdu(send_apdu, sizeof(send_apdu), recv_apdu, &recv_len) == STM_SUCCESS) {
                     flow_level.level_three++;

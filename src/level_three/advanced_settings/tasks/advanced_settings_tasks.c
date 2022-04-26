@@ -102,7 +102,7 @@ void level_three_advanced_settings_tasks()
             break;
         }
     #endif
-        confirm_scr_init(ui_text_sync_cycard_confirm);
+        confirm_scr_init(ui_text_sync_x1card_confirm);
 
     } break;
 
@@ -157,7 +157,7 @@ void level_three_advanced_settings_tasks()
     } break;
 
 #if X1WALLET_MAIN
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
         tasks_update_card_id();
     } break;

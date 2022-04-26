@@ -75,13 +75,13 @@ void verify_card_task() {
 	switch(flow_level.level_three) {
 
     case VERIFY_CARD_START_MESSAGE:
-        instruction_scr_init(ui_text_tap_cycard_auth_instruction_1);
+        instruction_scr_init(ui_text_tap_x1card_auth_instruction_1);
         mark_event_over();
         break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_tap_cycard_auth_instruction_1);
+        instruction_scr_init(ui_text_tap_x1card_auth_instruction_1);
         mark_event_over();
         break;
 
@@ -98,7 +98,7 @@ void verify_card_task() {
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_tap_cycard_auth_instruction_2);
+        instruction_scr_init(ui_text_tap_x1card_auth_instruction_2);
         mark_event_over();
         break;
 

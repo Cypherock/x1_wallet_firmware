@@ -225,24 +225,19 @@ void byte_array_re(uint8_t* input_output, uint16_t len)
     free(temp_output);
 }
 
-char * decode_card_number(const uint8_t encoded_card_number)
+uint8_t decode_card_number(const uint8_t encoded_card_number)
 {
     switch (encoded_card_number) {
     case 1U:
-        return "Red";
-        break;
+        return 1;
     case 2U:
-        return "Blue";
-        break;
+        return 2;
     case 4U:
-        return "Green";
-        break;
+        return 3;
     case 8U:
-        return "Yellow";
-        break;
+        return 4;
     default:
-        return NULL;
-        break;
+        return 1;
     }
 }
 

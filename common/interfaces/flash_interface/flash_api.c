@@ -835,6 +835,14 @@ int is_paired(const uint8_t *card_key_id)
     return -1;
 }
 
+void invalidate_keystore() {
+    get_sec_flash_ram_instance();
+    for (int index = 0; index < MAX_KEYSTORE_ENTRY; index++) {
+        sec_flash_instance.keystore[index].used = 0;
+    }
+    sec_flash_struct_save();
+}
+
 /***************************************
  *         GETTERS AND SETTERS         *
  ***************************************/

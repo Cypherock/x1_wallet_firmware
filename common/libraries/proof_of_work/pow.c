@@ -158,12 +158,13 @@ void stop_proof_of_work_task()
     log_hex_array("nonce", nonce, sizeof(nonce));
     log_hex_array("target", flash_wallet->challenge.target, sizeof(flash_wallet->challenge.target));
     BSP_App_Timer_Stop(BSP_POW_TIMER);
+    pow_timer_handler();
 }
 
 void proof_of_work_task()
 {
-    reset_inactivity_timer();
     if (status) {
+        reset_inactivity_timer();
         uint16_t limit = SECS_TO_HASHES(1); // The counter will run for x secs if limit = SECS_TO_HASHES(x)
         //        uint32_t ticks = app_timer_cnt_get();
 

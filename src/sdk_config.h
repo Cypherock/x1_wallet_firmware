@@ -32,7 +32,11 @@ typedef uint8_t atecc_interface_type;
 extern atecc_interface_type atecc_mode; 
 
 #define BSP_USB_VID		0x3503
+#if (X1WALLET_INITIAL == 1)
 #define BSP_USB_PID		0x0102  ///PID Wallet X1[8:15]:0x01, HARDWARE version Major[4:7]:0x0, Initial[0:3]:0x2
+#elif (X1WALLET_MAIN == 1)
+#define BSP_USB_PID		0x0103  ///PID Wallet X1[8:15]:0x01, HARDWARE version Major[4:7]:0x0, Main[0:3]:0x3
+#endif
 
 #define BSP_I2C_SPEED_FAST				0x00702991
 #define BSP_I2C_SPEED_STANDARD			0x10909CEC
@@ -82,7 +86,7 @@ extern atecc_interface_type atecc_mode;
 #define BSP_BUZZER_PWM_FREQ				4000
 #define BSP_BUZZER_TIMER_PRESCALAR		0
 #define BSP_BUZZER_TIMER_PERIOD			19999
-#define BSP_BUZZER_TIMER_COUNTER		9999
+#define BSP_BUZZER_TIMER_COUNTER		3799
 #define BSP_BUZZER_GPIO_PORT			GPIOA
 #define BSP_BUZZER_GPIO_PIN				GPIO_PIN_0
 #define BSP_BUZZER_PWM_CHANNEL			TIM_CHANNEL_1

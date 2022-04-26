@@ -145,10 +145,13 @@ static void _tap_card_backend(uint8_t card_number)
         if (tap_card_data.status == SW_NO_ERROR) { // wallet added
             wallet_for_flash->cards_states = (1 << card_number) - 1;
             flow_level.level_four++;
+            buzzer_start(BUZZER_DURATION);
             if (card_number == 1) {
                 wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
                 set_family_id_flash(tap_card_data.family_id);
                 add_wallet_to_flash(wallet_for_flash, &wallet_index);
+                instruction_scr_change_text(ui_text_remove_card_prompt, true);
+                nfc_detect_card_removal();
             } else if (card_number == 4) {
                 lv_obj_clean(lv_scr_act());
                 flow_level.level_four = 1;
@@ -156,8 +159,9 @@ static void _tap_card_backend(uint8_t card_number)
                 put_wallet_flash(wallet_index, wallet_for_flash);
             } else {
                 put_wallet_flash(wallet_index, wallet_for_flash);
+                instruction_scr_change_text(ui_text_remove_card_prompt, true);
+                nfc_detect_card_removal();
             }
-            buzzer_start(BUZZER_DURATION);
             memset(wallet_shamir_data.share_encryption_data[card_number - 1], 0, sizeof(wallet_shamir_data.share_encryption_data[card_number - 1]));
             memset(((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + (card_number - 1) * wallet.arbitrary_data_size, 0, wallet.arbitrary_data_size);
             break;

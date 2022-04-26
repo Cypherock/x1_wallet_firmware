@@ -63,7 +63,7 @@
  * NOTE :
  * Wallet Share is Wallet_Share + Chacha Polly Mac + Nonce
  */
-
+static Card_Data_Health card_data_health = DATA_HEALTH_UNKNOWN;
 static uint8_t session_enc_key[32];
 static uint8_t session_mac_key[32];
 static uint8_t session_iv[16];
@@ -501,7 +501,7 @@ void extract_from_apdu(struct Wallet* wallet, const uint8_t apdu[], const uint16
     }
 }
 
-ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], const uint8_t len, uint8_t family_id[], uint8_t *version, uint8_t* card_number, uint8_t *card_key_id)
+ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], const uint8_t len, uint8_t family_id[], uint8_t *version, uint8_t* card_number, uint8_t *card_key_id, uint8_t *recovery_mode)
 {
     ASSERT(apdu != NULL);
     ASSERT(family_id != NULL);
@@ -535,6 +535,10 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], const uint8_t len, u
         case TAG_CARD_IV:
             memcpy(session_iv, apdu + index + 1, apdu[index]);
             index += (apdu[index] + 1);
+            break;
+        case TAG_RECOVERY_MODE:
+            if (recovery_mode)
+                *recovery_mode = apdu[++index];
             break;
         default:
             break;
@@ -614,4 +618,25 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len)
     *len = data_len + 2;
 
     return 0;
+}
+
+uint16_t extract_card_data_health(uint8_t apdu[], const uint16_t len) {
+    card_data_health = DATA_HEALTH_UNKNOWN;
+    ASSERT(apdu != NULL);
+
+    if (len < 5) return len;
+    if (apdu[len - 5] != TAG_DATA_DISCREPANCY || apdu[len - 4] != 1) return len;
+    card_data_health = apdu[len - 3] == 0xFF ? DATA_HEALTH_CORRUPT : DATA_HEALTH_OK;
+    apdu[len - 5] = apdu[len - 2];
+    apdu[len - 4] = apdu[len - 1];
+
+    return len - 3;
+}
+
+Card_Data_Health get_card_data_health() {
+    return card_data_health;
+}
+
+void reset_card_data_health() {
+    card_data_health = DATA_HEALTH_UNKNOWN;
 }

@@ -17,8 +17,9 @@
  * @defgroup app_error Application wide error class
  * @{
  */
-#define NFC_ERROR_BASE          0x0100                    ///< Base error code for errors thrown by NFC module
-#define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0xC0)   ///< Base error code for errors thrown by PN532 chip
+#define NFC_ERROR_BASE          0x10000UL
+#define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
+#define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
 
 /**
  * @defgroup nfc_error_codes NFC Error codes
@@ -27,20 +28,21 @@
  *
  * @{
  */
-#define NFC_TIME_OUT            (NFC_ERROR_BASE +  1)    ///< Time Out, the target has not answered
-#define NFC_RSP_VERSION_ERROR   (NFC_ERROR_BASE +  2)    ///< Error, version not as expected according to m_pn532_rsp_firmware_ver
-#define NFC_INVALID_PREAMBLE    (NFC_ERROR_BASE +  3)    ///< Packet preamble is invalid
-#define NFC_INVALID_PARAM       (NFC_ERROR_BASE +  4)    ///< Some invalid param for PN532 command
-#define NFC_INVALID_RESPONSE    (NFC_ERROR_BASE +  5)    ///< Response did not match expected command
-#define NFC_INVALID_LENGTH      (NFC_ERROR_BASE +  6)    ///< Invalid length provided for the command
-#define NFC_DATA_LENGTH_EXCEED  (NFC_ERROR_BASE +  7)    ///< Data length exceeds library buffer
-#define NFC_CRC_ERROR           (NFC_ERROR_BASE +  8)    ///< A CRC error has been detected
-#define NFC_LENGTH_CS_ERROR     (NFC_ERROR_BASE +  9)    ///< Checksum verification on length field failed
-#define NFC_EXCHANGE_DIR_ERROR  (NFC_ERROR_BASE + 10)    ///< Invalid data exchange direction in packet
-#define NFC_INVALID_SW          (NFC_ERROR_BASE + 11)    ///< Invalid status word received from applet
-#define NFC_IO_ERROR_BASE       (NFC_ERROR_BASE + 12)    ///< Used as base for IO error in NFC module operations (read/write)
+#define NFC_TIME_OUT            (NFC_APP_ERROR_BASE +  0x01)    ///< Time Out, the target has not answered
+#define NFC_RSP_VERSION_ERROR   (NFC_APP_ERROR_BASE +  0x02)    ///< Error, version not as expected according to m_pn532_rsp_firmware_ver
+#define NFC_INVALID_PREAMBLE    (NFC_APP_ERROR_BASE +  0x03)    ///< Packet preamble is invalid
+#define NFC_INVALID_PARAM       (NFC_APP_ERROR_BASE +  0x04)    ///< Some invalid param for PN532 command
+#define NFC_INVALID_RESPONSE    (NFC_APP_ERROR_BASE +  0x05)    ///< Response did not match expected command
+#define NFC_INVALID_LENGTH      (NFC_APP_ERROR_BASE +  0x06)    ///< Invalid length provided for the command
+#define NFC_DATA_LENGTH_EXCEED  (NFC_APP_ERROR_BASE +  0x07)    ///< Data length exceeds library buffer
+#define NFC_CRC_ERROR           (NFC_APP_ERROR_BASE +  0x08)    ///< A CRC error has been detected
+#define NFC_LENGTH_CS_ERROR     (NFC_APP_ERROR_BASE +  0x09)    ///< Checksum verification on length field failed
+#define NFC_EXCHANGE_DIR_ERROR  (NFC_APP_ERROR_BASE +  0x0A)    ///< Invalid data exchange direction in packet
+#define NFC_INVALID_SW          (NFC_APP_ERROR_BASE +  0x0B)    ///< Invalid status word received from applet
+#define NFC_IO_ERROR_BASE       (NFC_APP_ERROR_BASE +  0x0C)    ///< Used as base for IO error in NFC module operations (read/write)
                                                          ///< 13, 14, 15 are reserved for HAL_StatusTypeDef members
-#define NFC_INTERNAL_ERROR      (NFC_ERROR_BASE + 16)    ///< Internal error due to wrong interface access or ack packet mismatch
+#define NFC_INTERNAL_ERROR      (NFC_APP_ERROR_BASE +  0x10)    ///< Internal error due to wrong interface access or ack packet mismatch
+#define NFC_CARD_ABSENT         (NFC_APP_ERROR_BASE +  0x11)    ///< Internal error due to wrong interface access or ack packet mismatch
 /** @}
  *
  * @defgroup pn532_error_codes PN532 Error codes

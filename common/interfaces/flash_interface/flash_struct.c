@@ -215,6 +215,7 @@ void flash_erase()
     if (flash_ram_instance.wallet_count == DEFAULT_UINT32_IN_FLASH) {
         flash_ram_instance.wallet_count = 0;
     }
+    is_flash_ram_instance_loaded = false;
 }
 
 

@@ -87,7 +87,6 @@ void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold)
     case TAP_CARD_ONE_BACKEND:
         remaining_cards = 15;
         _tap_card_backend(0);
-        buzzer_start(BUZZER_DURATION);
         instruction_scr_destructor();
         if(threshold == 1 && flow_level.level_four == TAP_CARD_TWO_FRONTEND){
             flow_level.level_three++;
@@ -129,6 +128,9 @@ static void _tap_card_backend(uint8_t xcor)
                 transmit_one_byte_confirm(USER_ENTERED_PIN);
             _handle_retrieve_wallet_success(xcor);
             buzzer_start(BUZZER_DURATION);
+            instruction_scr_change_text(ui_text_remove_card_prompt, true);
+            if(xcor == 0)
+                nfc_detect_card_removal();
             instruction_scr_destructor();
             break;
         } else if (tap_card_handle_applet_errors()) {

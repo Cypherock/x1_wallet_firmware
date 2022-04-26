@@ -199,7 +199,7 @@ void print_hex_array(const char text[], const uint8_t *arr, uint8_t length);
  * @note
  * @example (0100)b is converted into 3
  */
-char* decode_card_number(uint8_t encoded_card_number);
+uint8_t decode_card_number(uint8_t encoded_card_number);
 
 /**
  * @brief Converts integer representation of card number into

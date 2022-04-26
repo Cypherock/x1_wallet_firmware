@@ -155,7 +155,7 @@ void verify_wallet_tasks()
     } break;
 
     case VERIFY_WALLET_COMPLETE_INSTRUCTION:
-        multi_instruction_init(ui_text_verification_is_now_complete_messages, 6, DELAY_LONG_STRING, true);
+        multi_instruction_init(ui_text_verification_is_now_complete_messages, 5, DELAY_LONG_STRING, true);
         break;
 
     case VERIFY_WALLET_SUCCESS:

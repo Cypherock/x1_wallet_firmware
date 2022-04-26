@@ -29,6 +29,13 @@
 #define POW_RAND_NUMBER_SIZE 32
 #define POW_NONCE_SIZE 32
 
+/// enum to define health of data on cards
+typedef enum {
+    DATA_HEALTH_OK        = 0x00,
+    DATA_HEALTH_UNKNOWN   = 0x01,
+    DATA_HEALTH_CORRUPT   = 0xFF,
+} Card_Data_Health;
+
 /// enum defined with expected lengths for different APDUs
 typedef enum {
     ADD_WALLET_EXPECTED_LENGTH = 2,
@@ -87,6 +94,7 @@ typedef enum {
     TAG_CARD_NUMBER,
     TAG_CARD_KEYID,
     TAG_CARD_IV,
+    TAG_RECOVERY_MODE,
 
     TAG_SIGNED_DATA = 0xEB,
 
@@ -97,7 +105,8 @@ typedef enum {
 
     // Tag for inheritance
     TAG_INHERITANCE_PLAIN_DATA = 0xD5,
-    TAG_INHERITANCE_ENCRYPTED_DATA = 0xD6
+    TAG_INHERITANCE_ENCRYPTED_DATA = 0xD6,
+    TAG_DATA_DISCREPANCY = 0xD7,
 } Tag_value;
 
 /// ISO7816 values
@@ -130,7 +139,9 @@ typedef enum {
     SW_FILE_NOT_FOUND = 0x6A82,
     SW_INVALID_INS = 0x6D00,
     POW_SW_WALLET_LOCKED = 0x7D00,
-    POW_SW_CHALLENGE_FAILED = 0x6A88
+    SW_INS_BLOCKED = 0x7E00,
+    POW_SW_CHALLENGE_FAILED = 0x6A88,
+    DEFAULT_UINT32_IN_FLASH_ENUM = 0xFFFFFFFFUL
 } ISO7816;
 
 /**
@@ -404,6 +415,7 @@ void extract_from_apdu(struct Wallet* wallet, const uint8_t apdu[], uint16_t len
  * @param[in]   len   Response apdu length
  * @param[out]  family_id Family ID of the card
  * @param[out]  card_number Member number of the family-id
+ * @param[out]  recovery_mode Recovery mode of the card
  *
  * @returns     ISO7816 Status Word
  * @retval
@@ -413,7 +425,7 @@ void extract_from_apdu(struct Wallet* wallet, const uint8_t apdu[], uint16_t len
  *
  * @note
  */
-ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], uint8_t len, uint8_t family_id[], uint8_t *version, uint8_t* card_number, uint8_t *card_key_id);
+ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], uint8_t len, uint8_t family_id[], uint8_t *version, uint8_t* card_number, uint8_t *card_key_id, uint8_t *recovery_mode);
 
 /**
  * @brief
@@ -462,5 +474,44 @@ int apdu_encrypt_data(uint8_t *InOut_data, uint16_t *len);
  * @note
  */
 int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len);
+
+/**
+ * @brief Extract the card data health status from the response apdu.
+ * @details The function checks for TAG_DATA_DISCREPANCY byte in the response apdu and extracts the status
+ * reported by the card. If the TAG_DATA_DISCREPANCY byte is found in the apdu, the function also strips it
+ * off of the input apdu. The status signifies the checksum health of the data (shares and important flags)
+ * stored on the card. If the status is not 0x00, the data is considered to be corrupted.
+ *
+ * @param [in] apdu - APDU bytes received from the card
+ * @param [in] len  - Length of the received APDU
+ *
+ * @return uint16_t - Length of the APDU after removing the card data health tag (i.e. `len - 3`)
+ *
+ * @see get_card_data_health(), Card_Data_Health, TAG_DATA_DISCREPANCY, reset_card_data_health()
+ * @since v1.0.0
+ */
+uint16_t extract_card_data_health(uint8_t apdu[], uint16_t len);
+
+/**
+ * @brief Gets the card data health stored in the apdu class.
+ *
+ * @return Card_Data_Health Signifying the health of the data on card as reported by the card
+ * @retval DATA_HEALTH_OK       - Card data is healthy
+ * @retval DATA_HEALTH_CORRUPT  - Card data is corrupted
+ * @retval DATA_HEALTH_UNKNOWN  - Card data health is unknown
+ *
+ * @see Card_Data_Health, extract_card_data_health(), reset_card_data_health()
+ * @since v1.0.0
+ */
+Card_Data_Health get_card_data_health();
+
+/**
+ * @brief Clear the card data health stored in the apdu class.
+ * @details Sets the card data health to DATA_HEALTH_UNKNOWN.
+ *
+ * @see Card_Data_Health, extract_card_data_health(), get_card_data_health()
+ * @since v1.0.0
+ */
+void reset_card_data_health();
 
 #endif

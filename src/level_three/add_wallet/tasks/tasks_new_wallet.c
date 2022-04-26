@@ -242,7 +242,7 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_cycards);
+        message_scr_init(ui_text_wallet_synced_with_x1cards);
     } break;
 
     case GENERATE_WALLET_DELETE:

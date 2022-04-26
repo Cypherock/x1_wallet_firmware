@@ -1,8 +1,8 @@
 /**
  * @file    sync_cards_controller_b.c
  * @author  Cypherock X1 Team
- * @brief   Sync with CyCard back controller.
- *          Handles post event (only back/cancel events) operations for sync with cycards flow.
+ * @brief   Sync with X1 Card back controller.
+ *          Handles post event (only back/cancel events) operations for sync with X1 Cards flow.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 

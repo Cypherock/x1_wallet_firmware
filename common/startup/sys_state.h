@@ -19,7 +19,7 @@ typedef union{
   /*Bit 02*/ uint32_t reset_not_allowed:1;
   /*Bit 03*/ uint32_t external_triggered:1;
   /*Bit 04*/ uint32_t usb_buffer_free:1;
-  /*Bit 05*/ uint32_t unused_05:1;
+  /*Bit 05*/ uint32_t nfc_off:1;
   /*Bit 06*/ uint32_t unused_06:1;
   /*Bit 07*/ uint32_t unused_07:1;
   /*Bit 08*/ uint32_t unused_08:1;

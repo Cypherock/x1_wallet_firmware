@@ -76,7 +76,7 @@ typedef enum wallet_name_opt {
 } wallet_name_opt_t;
 
 /**
- * @brief Wallet struct for cycard
+ * @brief Wallet struct for X1 Card
  * @details
  *
  * @see

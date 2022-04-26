@@ -28,6 +28,12 @@
 #ifndef NFC_H
 #define NFC_H
 
+#define NFC_COMM_LINE_STATUS_BIT        0
+#define NFC_CARD_PRESENCE_BIT           1
+#define NFC_ANTENNA_STATUS_BIT          2
+
+#define NFC_ANTENNA_CURRENT_TH          0x28        ///< Defines the preferred threshold range (25-105 mA) of current in antenna. @see adafruit_diagnose_self_antenna
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -62,6 +68,28 @@
  * @note
  */
 ret_code_t nfc_init();
+
+/**
+ * @brief Diagnose nfc antenna and PN532 module
+ */
+uint32_t nfc_diagnose();
+
+/**
+ * @brief Diagnose if card present in feild or not
+ * 
+ * @return uint32_t 0 for card presence detected
+ */
+uint32_t nfc_diagnose_card_presence();
+
+/**
+ * @brief Wait for card being deselected
+ */
+void nfc_deselect_card();
+
+/**
+ * @brief Wait for card being removed
+ */
+void nfc_detect_card_removal();
 
 /**
  * @brief Wait for card indefinitely
@@ -165,6 +193,7 @@ ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len);
  * @param[in,out]   acceptable_cards    If the ith card is tapped then it is accepted iff (i-1)th bit is set in acceptable_cards
  * @param[out]      version             Data byte array for storing getting applet version
  * @param[out]      card_key_id         Data byte array for storing output key id of card
+ * @param[out]      recovery_mode       Records whether the card is in recovery mode
  * 
  * @returns  ISO7816                     Status Word
  * @retval  SW_NO_ERROR                 No error
@@ -176,7 +205,7 @@ ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len);
  *
  * @note
  */
-ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t *acceptable_cards, uint8_t *version, uint8_t *card_key_id);
+ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t *acceptable_cards, uint8_t *version, uint8_t *card_key_id, uint8_t *recovery_mode);
 
 /**
  * @brief Adds wallet in card

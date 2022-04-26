@@ -62,6 +62,7 @@
 #include "ui_confirmation.h"
 #include "ui_menu.h"
 #include "ui_message.h"
+#include "apdu.h"
 
 extern lv_task_t* listener_task;
 
@@ -73,6 +74,12 @@ void level_one_tasks()
     if (flow_level.show_error_screen) {
         mark_device_state(false);
         message_scr_init(flow_level.error_screen_text);
+        return;
+    }
+
+    if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
+        mark_device_state(false);
+        message_scr_init(ui_text_unreliable_cards);
         return;
     }
 

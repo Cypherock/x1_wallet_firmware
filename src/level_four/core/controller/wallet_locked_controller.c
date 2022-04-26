@@ -111,6 +111,7 @@ static void _wallet_locked_tap_card()
 
     get_index_by_name((const char *) wallet.wallet_name, &wallet_index);
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    tap_card_data.retries = 5;
     while (1) {
         tap_card_data.acceptable_cards = get_wallet_card_locked(wallet_index);
         tap_card_data.lvl3_retry_point = WALLET_LOCKED_TAP_CARD_FRONTEND;
@@ -126,6 +127,17 @@ static void _wallet_locked_tap_card()
             buzzer_start(BUZZER_DURATION);
             instruction_scr_destructor();
             break;
+        } else if (tap_card_data.status == POW_SW_CHALLENGE_FAILED) {
+            uint8_t target[SHA256_SIZE], random_number[POW_RAND_NUMBER_SIZE];
+            tap_card_data.status = nfc_get_challenge(wallet.wallet_name, target, random_number);
+            if (tap_card_data.status == SW_NO_ERROR) {
+                mark_error_screen(ui_text_pow_challenge_failed);
+                add_challenge_flash((const char *) wallet.wallet_name, target, random_number,
+                                    tap_card_data.tapped_card);
+                reset_flow_level();
+                buzzer_start(BUZZER_DURATION);
+                break;
+            }
         } else if (tap_card_handle_applet_errors()) {
             break;
         }

@@ -142,8 +142,11 @@ static void _tap_card_backend(uint8_t card_number)
         tap_card_data.status = nfc_delete_wallet(&wallet);
 
         if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND) {
-            _handle_delete_wallet_success(card_number, flash_wallet_index);
             buzzer_start(BUZZER_DURATION);
+            instruction_scr_change_text(ui_text_remove_card_prompt, true);
+            if(card_number != 4)
+                nfc_detect_card_removal();
+            _handle_delete_wallet_success(card_number, flash_wallet_index);
             break;
         } else if (tap_card_handle_applet_errors()) {
             break;

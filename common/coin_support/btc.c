@@ -614,13 +614,24 @@ uint64_t get_transaction_fee_threshold(const unsigned_txn *unsigned_txn_ptr, con
 
 bool btc_validate_unsigned_txn(const unsigned_txn *utxn_ptr) {
     if (utxn_ptr->input_count[0] == 0 || utxn_ptr->output_count[0] == 0) return false;
+    uint8_t zero_value_transaction = 1;
 
-    // P2PK 65, P2PKH 21, P2WPKH 22, P2MS ~, P2SH 21 (excluding OP_CODES)
+    // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21 excluding OP_CODES)
     // refer https://learnmeabitcoin.com/technical/script for explaination
     // Currently the device can spend P2PKH or P2WPKH UTXOs only
     for (int i = 0; i < utxn_ptr->input_count[0]; i++)
-        if (utxn_ptr->input[i].script_length[0] != 22 && utxn_ptr->input[i].script_length[0] != 21)
+        if (utxn_ptr->input[i].script_length[0] != 22 && utxn_ptr->input[i].script_length[0] != 25)
             return false;
+
+    for (int i = 0; i < utxn_ptr->output_count[0]; i++) {
+        if (utxn_ptr->output[i].script_public_key[0] == OP_RETURN &&
+            !is_zero(utxn_ptr->output[i].value, sizeof utxn_ptr->output[i].value))
+            return false;
+        if (!is_zero(utxn_ptr->output[i].value, sizeof utxn_ptr->output[i].value))
+            zero_value_transaction = 0;
+    }
+
+    if (zero_value_transaction == 1) return false;
 
     // Only accept SIGHASH_ALL for sighash type
     // More info: https://wiki.bitcoinsv.io/index.php/SIGHASH_flags
@@ -631,17 +642,26 @@ bool btc_validate_unsigned_txn(const unsigned_txn *utxn_ptr) {
 bool validate_change_address(const unsigned_txn *utxn_ptr, const txn_metadata *txn_metadata_ptr,
                              const char* mnemonic, const char* passphrase) {
     if (txn_metadata_ptr->change_count[0] == 0) return true;
-    uint8_t index = utxn_ptr->output_count[0] - 1;
+    uint8_t index = utxn_ptr->output_count[0] - 1, *change_address;
     uint8_t digest[SHA256_DIGEST_LENGTH];
     uint8_t rip[RIPEMD160_DIGEST_LENGTH];
     HDNode hdnode;
 
-    dec_to_hex(0x80000054, (uint8_t *) txn_metadata_ptr->purpose_index, 4);
+    if (utxn_ptr->output[index].script_public_key[0] == OP_RETURN) return false;
+
+    if (utxn_ptr->output[index].script_length[0] == 22)
+        change_address = utxn_ptr->output[index].script_public_key + 2;
+    else if (utxn_ptr->output[index].script_length[0] == 25)
+        change_address = utxn_ptr->output[index].script_public_key + 3;
+    else return false;
+
+    if (U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BITCOIN || U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BTC_TEST)
+        dec_to_hex(0x80000054, (uint8_t *) txn_metadata_ptr->purpose_index, 4);
     get_address_node(txn_metadata_ptr, -1, mnemonic, passphrase, &hdnode);
     memzero(hdnode.chain_code, sizeof(hdnode.chain_code));
     memzero(hdnode.private_key, sizeof(hdnode.private_key));
     memzero(hdnode.private_key_extension, sizeof(hdnode.private_key_extension));
     sha256_Raw(hdnode.public_key, sizeof(hdnode.public_key), digest);
     ripemd160(digest, SHA256_DIGEST_LENGTH, rip);
-    return (memcmp(rip, utxn_ptr->output[index].script_public_key + 2, sizeof(rip)) == 0);
+    return (memcmp(rip, change_address, sizeof(rip)) == 0);
 }

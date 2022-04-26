@@ -161,6 +161,7 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {
         char amount_string[65] = {'\0'}, amount_decimal_string[30] = {'\0'};
+        char display[110] = {'\0'};
         memzero(amount_string, sizeof(amount_string));
         uint8_t len = 0, i = 0, j = 0;
 
@@ -178,7 +179,7 @@ void send_transaction_tasks_eth()
         bool pre_dec_digit = false, post_dec_digit = false;
         uint8_t offset = 0;
         log_hex_array("eth value: ", (uint8_t*)amount_string, len);
-        uint8_t point_index = dec_val_len - 18;
+        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.decimal[0];
         i = 0;
         j = dec_val_len - 1;
 
@@ -213,21 +214,30 @@ void send_transaction_tasks_eth()
 
         LOG_INFO("amt %s %d:%d", amount_string, var_send_transaction_data.transaction_metadata.decimal[0], i);
         instruction_scr_destructor();
-        address_scr_init("Verify ETH amount:", amount_decimal_string, false);
+        snprintf(display, sizeof(display), ui_text_verify_amount, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
         instruction_scr_destructor();
+        uint8_t point_index;
+        char gas_eth_dec_str[30] = {'\0'};
         uint64_t txn_fee = bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]) / 1000000000;
         txn_fee *= bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]);
         LOG_INFO("ethfee %llu", txn_fee);
 
-        double txn_fee_in_eth = 1.0 * txn_fee / 1000000000;
-        char display[225];
-        if(check_digit(txn_fee))
-            snprintf(display, sizeof(display), ui_text_send_transaction_fee_double, txn_fee_in_eth, "ETH");
-        else
-            snprintf(display, sizeof(display), ui_text_send_transaction_fee, txn_fee_in_eth, "ETH");
+        point_index = snprintf(gas_eth_dec_str + 1, sizeof(gas_eth_dec_str) - 1, "%09llu", txn_fee);
+        ASSERT(point_index >= 0 && point_index < sizeof(gas_eth_dec_str));
+        gas_eth_dec_str[0] = point_index > ETH_GWEI_INDEX ? ' ' : '0';
+        gas_eth_dec_str[point_index + 1] = '\0';
+        point_index++;
+        for (int i = 0; i < ETH_GWEI_INDEX; i++, point_index--) {
+            gas_eth_dec_str[point_index] = gas_eth_dec_str[point_index - 1];
+        }
+        gas_eth_dec_str[point_index] = '.';
+
+        char display[125];
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, gas_eth_dec_str, "ETH");
         confirm_scr_init(display);
     } break;
 

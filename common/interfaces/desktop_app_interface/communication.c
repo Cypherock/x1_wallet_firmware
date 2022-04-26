@@ -68,6 +68,7 @@
 #include "utils.h"
 #if USE_SIMULATOR == 0
 #include "controller_main.h"
+#include "libusb.h"
 
 #else
 #include <unistd.h>
@@ -103,6 +104,20 @@ static uint8_t current_packet_num = 0;
 static msg_detail_t msg_send;
 static msg_detail_t msg_rec;
 static bool use_v0_header = false;
+
+typedef enum packet_states {
+    WAIT4_SOF,              ///< Can be 0xAA or 0x5A for v0 & v1 respectively @see START_OF_FRAME, START_OF_FRAME_U16
+    WAIT4_SOF_V1,           ///< Should be 0x5A
+    WAIT4_CMD1,             ///< Highest order of byte
+    WAIT4_CMD2,             ///< 3rd highest order of byte
+    WAIT4_CMD3,             ///< 2nd highest order of byte
+    WAIT4_CMD4,             ///< Lowest order of byte
+    WAIT4_PKT_LEN,          ///< Length of current packet
+    WAIT4_PAYLOAD,          ///< Payload of current packet
+    WAIT4_CHECKSUM1,        ///< High order byte of CRC-16
+    WAIT4_CHECKSUM2,        ///< Low order byte of CRC-16
+    WAIT4_PKT_PROCESS,      ///< Wait for application to process the packet
+} packet_states;
 
 /**
  * @brief Sends a response to desktop.
@@ -215,6 +230,16 @@ static command_status_t process_rx_frame(const uint8_t *packet, const uint8_t si
  */
 static void software_timer_start();
 
+/**
+ * @brief Read data received in USB buffer and call receive packet parser for valid packet
+ * 
+ * @param pData   USB receive data buffer address
+ * @param size    USB receive data buffer size
+ * 
+ * @since v1.0.0
+ */
+static void USB_readPacket(const uint8_t *pData, uint16_t size);
+
 static uint8_t packet_send_status = 1;
 static uint8_t send_previous_packet = 0;
 
@@ -243,6 +268,9 @@ static void communication_timer_handler(){//(void *p_context) {
   }
 }
 
+void comm_init(){
+  lusb_register_parserFunction(USB_readPacket);
+}
 
 void software_timer_create(void) {
   BSP_App_Timer_Create(BSP_COM_TIMER, communication_timer_handler);
@@ -342,6 +370,7 @@ bool usb_send_task() {
       send_retry_packet_counter++;
       if (send_retry_packet_counter <= MAX_RETRY_NUM) {
         send_packet = 1;
+        LOG_CRITICAL("xxx25 %08X", msg_send.msg_type);
       } else {
 
         ack_received = 0;
@@ -352,6 +381,7 @@ bool usb_send_task() {
         trans_len = 0;
         packet_send_status = 1;
         send_retry_packet_counter = 0;
+        LOG_ERROR("xxx26 %08X", msg_send.msg_type);
       }
     }
     if ((current_packet_num <= total_pkt) && send_packet) {
@@ -494,6 +524,76 @@ static void USB_writePacket(const uint32_t command_type, const uint8_t *payload,
   BSP_DebugPort_Write(packet, offset + payload_size);
 }
 
+static void USB_readPacket(const uint8_t *pData, uint16_t size)
+{
+    static packet_states state = WAIT4_SOF;
+    static uint8_t rec_buffer[BYTE_STUFFED_DATA_SIZE + COMM_HEADER_SIZE] = {0};
+    static uint8_t rec_counter = 0, payload_size = 0;
+
+    for (int i = 0; i < size; i++) {
+        uint8_t byte = pData[i];
+        switch (state) {
+            case WAIT4_SOF:
+                payload_size = 0;
+                rec_counter = 0;
+                if (byte == (START_OF_FRAME_U16 >> 8 & 0x00FF))
+                    state = WAIT4_SOF_V1;
+                else if (byte == START_OF_FRAME)
+                    state = WAIT4_CMD4;
+                break;
+            case WAIT4_SOF_V1:
+                if (byte == (START_OF_FRAME_U16 & 0xFF))
+                    state = WAIT4_CMD1;
+                else
+                    state = WAIT4_SOF;
+                break;
+            case WAIT4_CMD1:
+                state = WAIT4_CMD2;
+                break;
+            case WAIT4_CMD2:
+                state = WAIT4_CMD3;
+                break;
+            case WAIT4_CMD3:
+                state = WAIT4_CMD4;
+                break;
+            case WAIT4_CMD4:
+                state = WAIT4_PKT_LEN;
+                break;
+            case WAIT4_PKT_LEN:
+                payload_size = byte - 2;
+                if (byte > BYTE_STUFFED_DATA_SIZE)
+                    state = WAIT4_SOF;
+                else
+                    state = WAIT4_PAYLOAD;
+                break;
+            case WAIT4_PAYLOAD:
+                if (--payload_size == 0)
+                    state = WAIT4_CHECKSUM1;
+                break;
+            case WAIT4_CHECKSUM1:
+                state = WAIT4_CHECKSUM2;
+                break;
+            case WAIT4_CHECKSUM2:
+                state = WAIT4_PKT_PROCESS;
+                break;
+            case WAIT4_PKT_PROCESS:
+                receive_packet_parser(rec_buffer, rec_counter);
+                state = WAIT4_SOF;
+                i--;
+                break;
+            default:
+                state = WAIT4_SOF;
+                break;
+        }
+        rec_buffer[rec_counter++] = byte;
+        if (state == WAIT4_PKT_PROCESS) {
+            receive_packet_parser(rec_buffer, rec_counter);
+            state = WAIT4_SOF;
+            i--;
+        }
+    }
+}
+
 /**
  * @brief Used to send acknowledgement for received data packets
  * @details
@@ -555,41 +655,50 @@ static void protocol_sendResponsePacket(const uint32_t command_type, const uint1
 }
 
 void receive_packet_parser(const uint8_t *recData, const uint8_t size) {
-  if (!CY_Usb_Buffer_Free()) {
-      //TODO:Send BUSY packet instead of ERROR, so desktop will resend packet after a specific delay
-      protocol_sendErrorPacket(rx_packet_number);
-      return;
-  }
-  comm_header_t header;
+  comm_header_t header = {0, 0, 0};
   command_status_t status = CMD_RECEIVED;
   comm_data_t *comm_data;
   status = process_rx_frame(recData, size, &header, &comm_data);
 
-  if (status == CMD_RECEIVED && header.command_type != ACK_PACKET) {
-    protocol_sendAckPacket(rx_packet_number);
-  } else if (status != CMD_RECEIVED) {
+  if (header.command_type == ERROR_PACKET) {
+    // TODO: handle nack events
+    LOG_CRITICAL("xxx24");
+    return;
+  }
+
+  if (header.command_type == ACK_PACKET) {
+    if (rx_packet_number == tx_packet_number)
+      ack_received = 1;
+    LOG_CRITICAL("ACK %08X", msg_send.msg_type);
+    return;
+  }
+
+  if (status != CMD_RECEIVED) {
+    LOG_CRITICAL("xxx27 %08X:%d", header.command_type, status);
     protocol_sendErrorPacket(rx_packet_number);
     return;
-  } else if (header.command_type == ERROR_PACKET) {
-      return;
   }
+
+ if (!CY_Usb_Buffer_Free()) {
+   //TODO: Send BUSY packet instead of ERROR, so desktop will resend packet after a specific delay
+   LOG_CRITICAL("xxx23");    // Application buffer busy
+   protocol_sendErrorPacket(rx_packet_number);
+   return;
+ }
+
 #if USE_SIMULATOR == 1
   usleep(200 * 1000);
 #endif
   switch (header.command_type) {
 
-  case ACK_PACKET:
-    if (rx_packet_number == tx_packet_number) {
-      ack_received = 1;
-    }
-    break;
-
   case USB_CONNECTION_STATE_PACKET:
+    protocol_sendAckPacket(rx_packet_number);
     usb_conn_status = 1;
     break;
 
   case READY_STATE_PACKET: {
     uint8_t arr[4] = {0};
+    protocol_sendAckPacket(rx_packet_number);
     if (device_ready_state) {
       arr[0] = STATUS_CMD_READY;
       transmit_data_to_app(STATUS_PACKET, arr, sizeof(arr));
@@ -601,9 +710,11 @@ void receive_packet_parser(const uint8_t *recData, const uint8_t size) {
 
   case DEVICE_FLOW_RESET_REQ:
     CY_Reset_Flow();
+    protocol_sendAckPacket(rx_packet_number);
     transmit_one_byte_confirm(1);
     break;
   case COMM_SDK_VERSION_REQ: {
+    protocol_sendAckPacket(rx_packet_number);
     uint8_t version[6];
     version[0] = USB_COMM_V1.major_version >> 8; version[1] = USB_COMM_V1.major_version & 0xFF;
     version[2] = USB_COMM_V1.minor_version >> 8; version[3] = USB_COMM_V1.minor_version & 0xFF;
@@ -630,7 +741,7 @@ void receive_packet_parser(const uint8_t *recData, const uint8_t size) {
 #endif
   case STATUS_PACKET:
   case START_CARD_AUTH:
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
   case START_CARD_UPGRADE:
   case APDU_PACKET:
   case EXPORT_ALL:
@@ -643,6 +754,7 @@ void receive_packet_parser(const uint8_t *recData, const uint8_t size) {
   case TRANSACTION_PACKET: {
     static uint16_t total_received_packet = 0;
     static uint16_t current_index = 0;
+    protocol_sendAckPacket(rx_packet_number);
     if ((comm_data->current_packet_no < comm_data->total_Packet) && total_received_packet + 1 == comm_data->current_packet_no) {
       total_received_packet++;
       memcpy(&msg_rec.data_array[current_index], comm_data->data , header.data_size - (PKT_HEAD_SIZE + CRC16_SIZE));
@@ -665,6 +777,7 @@ void receive_packet_parser(const uint8_t *recData, const uint8_t size) {
     }
   } break;
   default:
+    LOG_CRITICAL("xxx24 %08X", header.command_type);
     protocol_sendErrorPacket(rx_packet_number);
     break;
   }

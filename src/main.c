@@ -100,6 +100,8 @@
 #include "main.h"
 #include "cmsis_gcc.h"
 #include "usbd_core.h"
+#include "nfc.h"
+#include "ui_message.h"
 
 #endif //USE_SIMULATOR
 
@@ -139,6 +141,8 @@ int main(void)
     if(!fault_in_prev_boot()) {
 #endif
         logo_scr_init(2000);
+        device_hardware_check();
+        device_provision_check();
         reset_flow_level();
 #if X1WALLET_MAIN
         device_auth();
@@ -159,6 +163,10 @@ int main(void)
         main_app_ready = true;
         if (abort_from_desktop() && (sys_flow_cntrl_u.bits.reset_flow == true) && (sys_flow_cntrl_u.bits.reset_not_allowed == false))
             _abort_();
+
+        if(sys_flow_cntrl_u.bits.nfc_off == false){
+            nfc_deselect_card();
+        }
 
         if (counter.next_event_flag != 0)
         {

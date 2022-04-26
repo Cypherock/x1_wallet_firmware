@@ -185,7 +185,7 @@ void tasks_arbitrary_data()
     } break;
 
     case ARBITRARY_DATA_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_cycards);
+        message_scr_init(ui_text_wallet_synced_with_x1cards);
     } break;
 
     default: {

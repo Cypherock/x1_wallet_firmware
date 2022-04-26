@@ -39,11 +39,13 @@
 void instruction_scr_init(const char *message);
 
 /**
- * @brief Updates the text on the instruction text
+ * @brief Updates the text on the instruction text, lv_task_handler needs to be called
+ * to udpate the screen, if immediate is set to true it is called internally
  * 
  * @param new_message New instruction message text
+ * @param immediate   bool parameter, set true to update the screen immediately
  */
-void instruction_scr_change_text(const char *new_message);
+void instruction_scr_change_text(const char *new_message, bool immediate);
 
 /**
  * @brief Clear screen

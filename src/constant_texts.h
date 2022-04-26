@@ -27,7 +27,7 @@ extern const char* ui_text_options_old_wallet[];
 #define NUMBER_OF_OPTIONS_NEW_WALLET 2
 extern const char* ui_text_options_new_wallet[];
 
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 8
 #else
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 7
@@ -87,8 +87,8 @@ extern const char* ui_text_wallet_verification_failed;
 
 extern const char* ui_text_invalid_card_tap_card[];
 extern const char* ui_text_place_card_wait_for_three_beep[];
-extern const char* ui_text_place_card_wait_for_two_beep[];
-extern const char* ui_text_place_card_wait_for_one_beep[];
+extern const char* ui_text_place_card_wait_for_two_beep;
+extern const char* ui_text_place_card_wait_for_one_beep;
 extern const char* ui_text_device_authenticating[];
 extern const char* ui_text_device_provisioning[];
 
@@ -151,8 +151,7 @@ extern const char* ui_text_receive_on;
 extern const char* ui_text_verify_address;
 extern const char* ui_text_verify_contract;
 extern const char* ui_text_unverified_contract;
-extern const char* ui_text_verify_amount_float;
-extern const char* ui_text_verify_amount_integer;
+extern const char* ui_text_verify_amount;
 extern const char* ui_text_confirm_wallet_name;
 extern const char* ui_text_enter_data;
 extern const char* ui_text_confirm_data;
@@ -165,8 +164,8 @@ extern const char* ui_text_family_id_hex;
 extern const char* ui_text_use_passphrase_question;
 extern const char* ui_text_wallet_name_size_limit;
 extern const char* ui_text_check_cysync;
-extern const char* ui_text_tap_cycard_auth_instruction_1;
-extern const char* ui_text_tap_cycard_auth_instruction_2;
+extern const char* ui_text_tap_x1card_auth_instruction_1;
+extern const char* ui_text_tap_x1card_auth_instruction_2;
 extern const char* ui_text_fetching_recipient_amount;
 extern const char* ui_text_tap_card_to_start;
 extern const char* ui_text_verification_cancelled_delete_wallet;
@@ -175,7 +174,7 @@ extern const char* ui_text_wallet_redirecting_to_new_wallet;
 extern const char* ui_text_recovery_successfull;
 extern const char* ui_text_generating_seed;
 extern const char* ui_text_seed_generated_successfully;
-extern const char* ui_text_wallet_synced_with_cycards;
+extern const char* ui_text_wallet_synced_with_x1cards;
 extern const char* ui_text_wallet_created_successfully;
 extern const char* ui_text_press_enter_to_start_verification;
 extern const char* ui_text_now_enter_your_seed_phrase;
@@ -199,7 +198,7 @@ extern const char* ui_text_start_verification_of_card;
 extern const char* ui_text_wallet_lock_continue_to_unlock;
 extern const char* ui_text_wallet_partial_continue_to_delete;
 extern const char* ui_text_wallet_not_verified_continue_to_verify;
-extern const char* ui_text_wallet_out_of_sync_continue_to_sync_with_cycards;
+extern const char* ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards;
 extern const char* ui_text_wallet_not_verified_prompt;
 extern const char* ui_text_wallet_out_of_sync_prompt;
 extern const char* ui_text_wallet_partial_state_prompt;
@@ -240,7 +239,7 @@ extern const char* ui_text_output_send_value_double;
 extern const char* ui_text_firmware_update_process;
 extern const char* ui_text_auth_process;
 
-extern const char* ui_text_sync_cycard_confirm;
+extern const char* ui_text_sync_x1card_confirm;
 extern const char* ui_text_rotate_display_confirm;
 
 extern const char* ui_text_factory_reset_confirm;
@@ -250,9 +249,9 @@ extern const char* ui_text_unauthenticate_via_cysync;
 extern const char* ui_text_start_device_verification;
 extern const char* ui_text_its_a_while_check_your_cards;
 extern const char* ui_text_delete_this_wallet;
-extern const char* ui_text_need_all_cycards_to_delete_wallet_entirely;
+extern const char* ui_text_need_all_x1cards_to_delete_wallet_entirely;
 extern const char* ui_text_20_spaces;
-extern const char* ui_text_wallet_not_found_on_cycard;
+extern const char* ui_text_wallet_not_found_on_x1card;
 extern const char* ui_text_sync_wallets_next_steps;
 extern const char* ui_text_corrupted_card_contact_support;
 extern const char* ui_text_incompatible_card_version;
@@ -268,12 +267,24 @@ extern const char* ui_text_cannot_verify_card_contact_support;
 extern const char* ui_text_wrong_btc_transaction;
 extern const char* ui_text_btc_change_address_mismatch;
 extern const char* ui_text_worng_eth_transaction;
-extern const char* ui_text_pair_red_card;
-extern const char* ui_text_pair_blue_card;
-extern const char* ui_text_pair_green_card;
-extern const char* ui_text_pair_yellow_card;
+extern const char* ui_text_pair_card_1;
+extern const char* ui_text_pair_card_2;
+extern const char* ui_text_pair_card_3;
+extern const char* ui_text_pair_card_4;
 extern const char* ui_text_card_pairing_success;
 extern const char* ui_text_continue_with_pairing;
+extern const char* ui_text_device_compromised;
+extern const char* ui_text_device_compromised_not_provisioned;
+extern const char* ui_text_device_compromised_partially_provisioned;
+extern const char* ui_text_device_compromised_v1_config;
+extern const char* ui_text_pow_challenge_failed;
+extern const char* ui_text_card_removed_fast;
+extern const char* ui_text_card_align_with_device_screen;
+extern const char* ui_text_remove_card_prompt;
+extern const char* ui_text_card_detected;
+extern const char* ui_text_nfc_hardware_fault_detected;
+extern const char* ui_text_unreliable_cards;
+extern const char* ui_critical_card_health_migrate_data;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char* ui_text_send_logs_prompt;

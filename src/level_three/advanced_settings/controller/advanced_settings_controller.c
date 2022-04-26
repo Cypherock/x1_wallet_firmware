@@ -88,6 +88,8 @@ void level_three_advanced_settings_controller()
     } break;
 
     case LEVEL_THREE_FACTORY_RESET: {
+        if (get_display_rotation() == LEFT_HAND_VIEW)
+            ui_rotate();
         sec_flash_erase();
         flash_erase();
         logger_reset_flash();
@@ -113,7 +115,7 @@ void level_three_advanced_settings_controller()
         controller_read_card_id();
     } break;
 #if X1WALLET_MAIN
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
         controller_update_card_id();
     } break;

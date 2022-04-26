@@ -151,14 +151,14 @@ typedef enum commandType {
     RECV_TXN_USER_VERIFIED_ADDRESS = 64,    ///< Prompt for user confirmation or rejection of receive address
     RECV_TXN_XPUBS_EXISTS_ON_DEVICE = 65,   ///< Prompt for finding/deriving XPUB on device
 
-    #ifdef DEBUG_BUILD
+    #ifdef DEV_BUILD
     START_CARD_UPGRADE = 60,
     APDU_PACKET = 61,
     STOP_CARD_UPGRADE = 62,
     #endif
     START_CARD_AUTH = 70,                   ///< Request by desktop for start card auth
     CARD_ERROR_FACED = 71,                  ///< Response by device for card auth error faced
-    #ifdef DEBUG_BUILD
+    #ifdef DEV_BUILD
     EXPORT_ALL = 72,
     EXPORT_ALL_SEND = 73,
     #endif
@@ -204,6 +204,13 @@ typedef struct msg_detail {
     uint16_t msg_size;
     uint8_t data_array[data_array_SIZE];
 } msg_detail_t;
+
+/**
+ * @brief Initialize communication by registering USB receive function in libusb
+ * 
+ * @since v1.0.0
+ */
+void comm_init();
 
 /**
  * @brief Processes the received frame.

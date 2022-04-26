@@ -234,7 +234,7 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_cycards);
+        message_scr_init(ui_text_wallet_synced_with_x1cards);
     } break;
 
     default: {

@@ -69,7 +69,7 @@ void tap_card_pair_card_tasks()
         break;
 
     case PAIR_CARD_RED_FRONTEND:
-        instruction_scr_init(ui_text_pair_red_card);
+        instruction_scr_init(ui_text_pair_card_1);
         mark_event_over();
         break;
 
@@ -78,7 +78,7 @@ void tap_card_pair_card_tasks()
         break;
 
     case PAIR_CARD_BLUE_FRONTEND:
-        instruction_scr_init(ui_text_pair_blue_card);
+        instruction_scr_init(ui_text_pair_card_2);
         mark_event_over();
         break;
 
@@ -87,7 +87,7 @@ void tap_card_pair_card_tasks()
         break;
 
     case PAIR_CARD_GREEN_FRONTEND:
-        instruction_scr_init(ui_text_pair_green_card);
+        instruction_scr_init(ui_text_pair_card_3);
         mark_event_over();
         break;
 
@@ -96,7 +96,7 @@ void tap_card_pair_card_tasks()
         break;
 
     case PAIR_CARD_YELLOW_FRONTEND:
-        instruction_scr_init(ui_text_pair_yellow_card);
+        instruction_scr_init(ui_text_pair_card_4);
         mark_event_over();
         break;
 

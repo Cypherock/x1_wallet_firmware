@@ -65,19 +65,18 @@
 #include "base58.h"
 #include "nist256p1.h"
 #include "flash_api.h"
+#include "controller_tap_cards.h"
 
 #define CARD_AUTH_RAND_NUMBER_SIZE 32
 
 #if X1WALLET_INITIAL
 
-static uint8_t family_id[FAMILY_ID_SIZE];
 static uint8_t signature[ECDSA_SIGNATURE_SIZE];
 static uint16_t length;
 
 uint8_t auth_card_number = 0;
 
 static void _tap_card_backend(uint8_t card_number);
-static void _handle_pair_card_success(uint8_t *session_nonce, uint8_t *card_pairing_data);
 
 /* Serial Number = Family ID appended with Card Number
  * Return serial number
@@ -104,76 +103,52 @@ static uint8_t get_card_serial_number(uint8_t family_id[], uint8_t cards_state, 
 void initial_verify_card_controller()
 {
 #if X1WALLET_INITIAL
-    ISO7816 status_word;
-    uint8_t retries = 5;
-//    set_task_handler(&contunue_loop);
-    set_instant_abort(&abort_from_desktop);
-    set_abort_now(&_abort_);
 
     switch (flow_level.level_three) {
 
     case VERIFY_CARD_START_MESSAGE:
+        tap_card_data.desktop_control = true;
+        tap_card_data.active_cmd_type = START_CARD_AUTH;
         transmit_one_byte_confirm(START_CARD_AUTH);
         flow_level.level_three = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
         break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
+        tap_card_data.retries = 5;
         flow_level.level_three = VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND;
         break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
 
-        memset(family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+        memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
 
+        tap_card_data.lvl3_retry_point = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
         while (1) {
-            if (nfc_select_card() != STM_SUCCESS)       //Stuck here until card is detected
-                return;
-
-            uint8_t cards_state = (1 << (auth_card_number - 1));
-            status_word = nfc_select_applet(family_id, &cards_state, NULL, NULL); // Family ID of card tapped is returned
-            cards_state = 15 - (1 << (auth_card_number - 1));
-            if (status_word == SW_NO_ERROR) {
-                length = get_card_serial_number(family_id, cards_state, signature /*Serial Number Out*/);
-                status_word = nfc_ecdsa(signature, &length);
-
-                if (status_word == SW_NO_ERROR) {
-                    uint8_t data_out[ECDSA_SIGNATURE_SIZE + FAMILY_ID_SIZE + 1];
-
-                    memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
-                    get_card_serial_number(family_id, cards_state, data_out + ECDSA_SIGNATURE_SIZE);
-
-                    transmit_data_to_app(SEND_SIGNATURE_TO_APP, data_out, ECDSA_SIGNATURE_SIZE + FAMILY_ID_SIZE + 1);
-                    flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
-                    break;
-                } else {
-                    if (!(--retries)) {
-                        LOG_ERROR("err (0x%02X%02X)\n", status_word >> 8, status_word & 0xff);
-                        instruction_scr_destructor();
-                        mark_error_screen(ui_text_unknown_error_contact_support);
-                        reset_flow_level();
-                        flow_level.level_one = 6;   // take to get-started screen
-                        transmit_one_byte_reject(START_CARD_AUTH);
-                        break;
-                    }
-                }
-            } else if (status_word == SW_CONDITIONS_NOT_SATISFIED) {
-                mark_error_screen(ui_text_invalid_card_tap_card[auth_card_number - 1]);
-                instruction_scr_destructor();
-                flow_level.level_three = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
-                break;
-            } else {
-                if (!(--retries)) {
-                    LOG_ERROR("err (0x%02X%02X)\n", status_word >> 8, status_word & 0xff);
-                    instruction_scr_destructor();
-                    mark_error_screen(ui_text_unknown_error_contact_support);
-                    reset_flow_level();
+            tap_card_data.acceptable_cards = (1 << (auth_card_number - 1));
+            tap_card_data.tapped_card = 0;
+            if (!tap_card_applet_connection()) {
+                if (counter.level == LEVEL_ONE)
                     flow_level.level_one = 6;   // take to get-started screen
-                    transmit_one_byte_reject(START_CARD_AUTH);
-                    break;
-                }
+                break;
+            }
+            length = get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, signature /*Serial Number Out*/);
+            tap_card_data.status = nfc_ecdsa(signature, &length);
+
+            if (tap_card_data.status == SW_NO_ERROR) {
+                uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
+
+                memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
+                get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
+                transmit_data_to_app(SEND_SIGNATURE_TO_APP, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
+                flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
+                buzzer_start(BUZZER_DURATION);
+                break;
+            } else if (tap_card_handle_applet_errors()) {
+                if (counter.level == LEVEL_ONE)
+                    flow_level.level_one = 6;   // take to get-started screen
+                break;
             }
         }
-        buzzer_start(150);
         break;
 
     case VERIFY_CARD_FETCH_RANDOM_NUMBER: {
@@ -192,60 +167,40 @@ void initial_verify_card_controller()
     } break;
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
+        tap_card_data.retries = 5;
         flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND;
         break;
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND: {
         length = CARD_AUTH_RAND_NUMBER_SIZE;
+        tap_card_data.lvl3_retry_point = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
         while (1) {
-            if (nfc_select_card() != STM_SUCCESS)       //Stuck here until card is detected
-                return;
-
-            uint8_t cards_state = (1 << (auth_card_number - 1));
-            status_word = nfc_select_applet(family_id, &cards_state, NULL, NULL);
-            cards_state = 15 - (1 << (auth_card_number - 1));
-            if (status_word == SW_NO_ERROR) {
-                status_word = nfc_ecdsa(signature, &length);
-
-                if (status_word == SW_NO_ERROR) {
-
-                    uint8_t data_out[ECDSA_SIGNATURE_SIZE + FAMILY_ID_SIZE + 1];
-
-                    memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
-                    get_card_serial_number(family_id, cards_state, data_out + ECDSA_SIGNATURE_SIZE);
-
-                    transmit_data_to_app(SIGNED_CHALLENGE, data_out, ECDSA_SIGNATURE_SIZE + FAMILY_ID_SIZE + 1);
-                    flow_level.level_three++;
-                    break;
-                } else {
-                    if (!(--retries)) {
-                        LOG_ERROR("err (0x%02X%02X)\n", status_word >> 8, status_word & 0xff);
-                        instruction_scr_destructor();
-                        mark_error_screen(ui_text_unknown_error_contact_support);
-                        reset_flow_level();
-                        flow_level.level_one = 6;   // take to get-started screen
-                        transmit_one_byte_reject(START_CARD_AUTH);
-                        break;
-                    }
-                }
-            } else if (status_word == SW_CONDITIONS_NOT_SATISFIED) {
-                mark_error_screen(ui_text_invalid_card_tap_card[auth_card_number - 1]);
-                instruction_scr_destructor();
-                flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
+            tap_card_data.acceptable_cards = (1 << (auth_card_number - 1));
+            tap_card_data.tapped_card = 0;
+            if (!tap_card_applet_connection()) {
+                if (counter.level == LEVEL_ONE)
+                    flow_level.level_one = 6;   // take to get-started screen
                 break;
             } else {
-                if (!(--retries)) {
-                    LOG_ERROR("err (0x%02X%02X)\n", status_word >> 8, status_word & 0xff);
-                    instruction_scr_destructor();
-                    mark_error_screen(ui_text_unknown_error_contact_support);
-                    reset_flow_level();
+                tap_card_data.status = nfc_ecdsa(signature, &length);
+            }
+
+            if (tap_card_data.status == SW_NO_ERROR) {
+                uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
+
+                memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
+                get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
+                transmit_data_to_app(SIGNED_CHALLENGE, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
+                buzzer_start(BUZZER_DURATION);
+
+                flow_level.level_three = VERIFY_CARD_AUTH_STATUS;
+                break;
+            } else if (tap_card_handle_applet_errors()) {
+                if (counter.level == LEVEL_ONE)
                     flow_level.level_one = 6;   // take to get-started screen
-                    transmit_one_byte_reject(START_CARD_AUTH);
-                    break;
-                }
+                break;
             }
         }
-        buzzer_start(150);
     } break;
 
     case VERIFY_CARD_AUTH_STATUS: {
@@ -288,114 +243,59 @@ void initial_verify_card_controller()
 
 static void _tap_card_backend(uint8_t card_number)
 {
-    uint8_t card_pairing_data[128] = {0}, pairing_data_len = 44, retries = 5;
-    uint8_t digest[64], sig[64], session_nonce[32], card_key_id[4];
-    ISO7816 status_word;
+    uint8_t card_pairing_data[128] = {0}, pairing_data_len = 44;
+    uint8_t digest[64] = {0}, sig[65] = {0}, session_nonce[32] = {0};
+    uint8_t invalid_self_keyid[8] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH,
+                                     DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
 
     random_generate(session_nonce, sizeof(session_nonce));
     memcpy(card_pairing_data, get_perm_self_key_id(), 4);
     memcpy(card_pairing_data + 4, session_nonce, sizeof(session_nonce));
     memcpy(card_pairing_data + 36, get_perm_self_key_path(), 8);
+    if (memcmp(get_perm_self_key_path(), invalid_self_keyid, sizeof(invalid_self_keyid)) == 0) {
+        /* Device is not provisioned */
+        reset_flow_level();
+        instruction_scr_destructor();
+        mark_error_screen(ui_text_device_compromised);
+        return;
+    }
 
     sha256_Raw(card_pairing_data, pairing_data_len, digest);
-    ecdsa_sign_digest(&nist256p1, get_priv_key(), digest, sig, NULL, NULL);
     atecc_nfc_sign_hash(digest, sig);
     pairing_data_len += ecdsa_sig_to_der(sig, card_pairing_data + pairing_data_len);
+    tap_card_data.retries = 5;
 
     while (1) {
-        if (nfc_select_card() != STM_SUCCESS)       //Stuck here until card is detected
-            return;
-
-        uint8_t cards_state = (1 << (auth_card_number - 1));
-        status_word = nfc_select_applet(family_id, &cards_state, NULL, card_key_id);
-        if (status_word == SW_NO_ERROR) {
-            if (is_paired(card_key_id) > -1) {
-                buzzer_start(BUZZER_DURATION);
-                transmit_one_byte_confirm(START_CARD_AUTH);
-                instruction_scr_destructor();
-                flow_level.level_three++;
-                return;
-            }
-            status_word = nfc_pair(card_pairing_data, &pairing_data_len);
-
-            if (status_word == SW_NO_ERROR) {
-                transmit_one_byte_confirm(START_CARD_AUTH);
-                buzzer_start(BUZZER_DURATION);
-                _handle_pair_card_success(session_nonce, card_pairing_data);
-                instruction_scr_destructor();
-                break;
-            } else {
-                LOG_ERROR("err (0x%02X%02X)", status_word >> 8, status_word & 0xff);
-                if (!(--retries)) {
-                    buzzer_start(BUZZER_DURATION);
-                    instruction_scr_destructor();
-                    mark_error_screen(ui_text_unknown_error_contact_support);
-                    reset_flow_level();
-                    flow_level.level_one = 6;   // take to get-started screen
-                    transmit_one_byte_reject(START_CARD_AUTH);
-                    break;
-                }
-            }
-        } else if (status_word == SW_CONDITIONS_NOT_SATISFIED) {
-            buzzer_start(BUZZER_DURATION);
-            mark_error_screen(ui_text_invalid_card_tap_card[auth_card_number - 1]);
-            instruction_scr_destructor();
-            flow_level.level_three = VERIFY_CARD_PAIR_FRONTEND;
-            break;
-        } else {
-            LOG_ERROR("err (0x%02X%02X)", status_word >> 8, status_word & 0xff);
-            if (!(--retries)) {
-                buzzer_start(BUZZER_DURATION);
-                instruction_scr_destructor();
-                mark_error_screen(ui_text_unknown_error_contact_support);
-                reset_flow_level();
+        tap_card_data.tapped_card = 0;
+        tap_card_data.acceptable_cards = (1 << (card_number - 1));
+        tap_card_data.lvl3_retry_point = VERIFY_CARD_PAIR_FRONTEND;
+        memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+        if (!tap_card_applet_connection()) {
+            if (counter.level == LEVEL_ONE)
                 flow_level.level_one = 6;   // take to get-started screen
-                transmit_one_byte_reject(START_CARD_AUTH);
-                break;
-            }
+            break;
+        }
+        if (is_paired(tap_card_data.card_key_id) > -1) {
+            buzzer_start(BUZZER_DURATION);
+            transmit_one_byte_confirm(START_CARD_AUTH);
+            instruction_scr_destructor();
+            flow_level.level_three++;
+            return;
+        }
+        tap_card_data.status = nfc_pair(card_pairing_data, &pairing_data_len);
+        if (tap_card_data.status == SW_NO_ERROR) {
+            transmit_one_byte_confirm(START_CARD_AUTH);
+            buzzer_start(BUZZER_DURATION);
+            instruction_scr_change_text(ui_text_remove_card_prompt, true);
+            nfc_detect_card_removal();
+            handle_pair_card_success(card_number, session_nonce, card_pairing_data);
+            instruction_scr_destructor();
+            break;
+        } else if (tap_card_handle_applet_errors()) {
+            if (counter.level == LEVEL_ONE)
+                flow_level.level_one = 6;   // take to get-started screen
+            break;
         }
     }
-}
-
-static void _handle_pair_card_success(uint8_t *session_nonce, uint8_t *card_pairing_data)
-{
-    HDNode guest_card_node;
-    SHA512_CTX ctx;
-    uint8_t keystore_index, digest[32] = {0}, buffer[64] = {0};
-    uint8_t public_key_uncompressed[65] = {0};
-    uint32_t index;
-    char xpub[112] = {'\0'};
-
-    base58_encode_check(get_card_root_xpub(),
-                        FS_KEYSTORE_XPUB_LEN,
-                        nist256p1_info.hasher_base58, xpub, 112);
-    hdnode_deserialize_public((char *) xpub, 0x0488b21e, NIST256P1_NAME, &guest_card_node, NULL);
-
-    index = read_be(card_pairing_data + 36);
-    hdnode_public_ckd(&guest_card_node, index);
-
-    index = read_be(card_pairing_data + 40);
-    hdnode_public_ckd(&guest_card_node, index);
-
-    der_to_sig(card_pairing_data + 44, buffer);
-    sha256_Raw(card_pairing_data, 44, digest);
-    if (ecdsa_verify_digest(&nist256p1, guest_card_node.public_key, buffer, digest)) {
-    	reset_flow_level();
-    	mark_error_screen(ui_text_cannot_verify_card_contact_support);
-    	return;
-    }
-    keystore_index =  auth_card_number - 1;
-    ecdsa_uncompress_pubkey(&nist256p1, guest_card_node.public_key, public_key_uncompressed);
-    atecc_nfc_ecdh(&public_key_uncompressed[1], card_pairing_data + 45);
-    sha512_Init(&ctx);
-    sha512_Update(&ctx, card_pairing_data + 45, 32);
-    sha512_Update(&ctx, card_pairing_data + 4, 32);
-    sha512_Update(&ctx, session_nonce, 32);
-    sha512_Final(&ctx, buffer);
-    set_keystore_pairing_key(keystore_index, buffer, sizeof(buffer), FLASH_SAVE_LATER);
-    set_keystore_key_id(keystore_index, card_pairing_data, 4, FLASH_SAVE_LATER);
-    set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);
-
-    flow_level.level_three++;
 #endif
 }

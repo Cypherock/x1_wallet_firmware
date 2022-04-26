@@ -125,7 +125,7 @@ void level_two_tasks()
         if(is_wallet_share_not_present(wallet_index)){
             mark_list_choice(LEVEL_THREE_SYNC_WALLET);
             mark_event_over();
-            mark_error_screen(ui_text_wallet_out_of_sync_continue_to_sync_with_cycards);
+            mark_error_screen(ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards);
             return;
         }
 

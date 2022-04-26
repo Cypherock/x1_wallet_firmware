@@ -84,6 +84,7 @@
 
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
+#include "controller_level_four.h"
 
 #else
 #include "lv_drivers/display/monitor.h"
@@ -388,6 +389,7 @@ void application_init() {
     clock_init();
 
     //Peripherals initialize
+    comm_init();
     BSP_USB_Clock_Init();
     BSP_GPIO_Init(FW_get_hardware_version());
     BSP_TIM2_Init();
@@ -435,7 +437,7 @@ void application_init() {
     CY_Reset_Not_Allow(true);
 #endif
     nfc_set_device_key_id(get_perm_self_key_id());
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
     buzzer_disabled = true;
 #endif
 }
@@ -530,9 +532,47 @@ bool fault_in_prev_boot() {
 
 void handle_fault_in_prev_boot() {
 #if USE_SIMULATOR == 0
+    log_error_handler_faults();
     WRITE_REG(RTC->BKP1R, 0x00);
     delay_scr_init(ui_text_something_went_wrong_contact_support_send_logs, DELAY_TIME);
     reset_flow_level();
+#endif
+}
+
+void device_hardware_check(){
+#if USE_SIMULATOR == 0
+        ui_set_event_over_cb(NULL);
+        if (nfc_diagnose() & (1 << NFC_ANTENNA_STATUS_BIT))
+            delay_scr_init(ui_text_nfc_hardware_fault_detected, DELAY_LONG_STRING);
+        ui_set_event_over_cb(&mark_event_over);
+#endif
+}
+
+void device_provision_check() {
+#if USE_SIMULATOR == 0
+    const char *msg;
+
+    switch (check_provision_status()) {
+        default:
+        case provision_empty:
+            msg = ui_text_device_compromised_not_provisioned;
+            break;
+        case provision_incomplete:
+            msg = ui_text_device_compromised_partially_provisioned;
+            break;
+        case provision_complete:
+            return;
+        case provision_v1_complete:
+            msg = ui_text_device_compromised_v1_config;
+            break;
+    }
+#if NDEBUG
+    msg = ui_text_device_compromised;
+#endif
+    ui_set_event_over_cb(NULL);
+    delay_scr_init(msg, DELAY_TIME);
+    ui_set_event_over_cb(&mark_event_over);
+    instruction_scr_destructor();
 #endif
 }
 

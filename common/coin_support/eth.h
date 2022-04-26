@@ -34,6 +34,7 @@
 #define BYTE_ARRAY_TO_UINT32(x) (x[0] << 24 | x[1] << 16 | x[2] << 8 | x[3])
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
+#define ETH_GWEI_INDEX       (9U)
 
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;

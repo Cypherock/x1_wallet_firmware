@@ -40,6 +40,8 @@
 #define APPLICATION_ADDRESS                 ((__IO uint64_t*)APPLICATION_ADDRESS_BASE)
 #define MAX_APPLICATION_FILE_SIZE	        ((0x08100000) - (APPLICATION_ADDRESS_BASE))     ///Max storage which can be allocated for Firmware
 
+#define FIRMWARE_START_ADDRESS              APPLICATION_ADDRESS_BASE    ///< firmware boot address
+
 #define OTP_HARDWARE_VERSION_ADDRESS        0x1FFF7000
 #define OTP_BOOTLOADER_VERSION_ADDRESS      0x1FFF7004
 

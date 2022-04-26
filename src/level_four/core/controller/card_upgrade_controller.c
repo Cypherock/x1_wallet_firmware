@@ -67,14 +67,14 @@ extern Wallet wallet;
 char* textDisplay;
 char text[80];
 
-#ifdef DEBUG_BUILD
+#ifdef DEV_BUILD
 static uint16_t number_of_apdus_sent;
-#endif // DEBUG_BUILD
+#endif // DEV_BUILD
 
 void card_upgrade_controller()
 {
 
-    #ifdef DEBUG_BUILD
+    #ifdef DEV_BUILD
     switch (flow_level.level_three) {
     case CARD_UPGRADE_TAP_CARD_MESSAGE:
         flow_level.level_three = CARD_UPGRADE_SELECT_CARD;
@@ -87,7 +87,7 @@ void card_upgrade_controller()
         number_of_apdus_sent = 0;
         snprintf(text, sizeof(text), ui_text_card_sending_apdu, number_of_apdus_sent);
         textDisplay = text;
-        instruction_scr_change_text(textDisplay);
+        instruction_scr_change_text(textDisplay, false);
         uint8_t arr[4];
         arr[0] = STATUS_CMD_SUCCESS;
         transmit_data_to_app(STATUS_PACKET, arr, 4);
@@ -114,7 +114,7 @@ void card_upgrade_controller()
                 number_of_apdus_sent++;
                 snprintf(text, sizeof(text), ui_text_card_sending_apdu, number_of_apdus_sent);
                 textDisplay = text;
-                instruction_scr_change_text(textDisplay);
+                instruction_scr_change_text(textDisplay, false);
             } else {
                 uint8_t arr[4];
                 arr[0] = STATUS_CMD_FAILURE;
