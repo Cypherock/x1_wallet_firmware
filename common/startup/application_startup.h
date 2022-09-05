@@ -49,7 +49,7 @@
  * @brief Interval defined to repeatedly call callback repeated_timer_handler
  * 
  */
-#define POLLING_TIME 50
+#define POLLING_TIME 10
 /// Interval defined for user inactivity in a flow in milli seconds
 #define INACTIVITY_TIME (120 * 1000)
 

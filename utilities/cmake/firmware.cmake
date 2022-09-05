@@ -42,6 +42,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         src/level_three/old_wallet/tasks
         src/level_four/core/controller
         src/level_four/core/tasks
+        src/level_four/factory_reset/
         src/level_four/tap_cards/controller
         src/level_four/tap_cards/tasks
 

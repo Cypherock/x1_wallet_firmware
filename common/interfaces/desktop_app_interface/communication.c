@@ -354,7 +354,7 @@ bool usb_send_task() {
 
   if (data_trans_app) {
     if (current_packet_num == 0) {
-      total_pkt = (msg_send.msg_size / MAXIMUM_DATA_SIZE_SEND) + 1;
+      total_pkt = ceil(msg_send.msg_size * 1.0 / MAXIMUM_DATA_SIZE_SEND);
 
       current_packet_num = 1;
       ack_received = 0;
@@ -387,10 +387,13 @@ bool usb_send_task() {
     if ((current_packet_num <= total_pkt) && send_packet) {
       ack_received = 0;
       send_packet = 0;
-      if (total_pkt == current_packet_num)
+
+      if (total_pkt == current_packet_num) {
         trans_len = msg_send.msg_size % MAXIMUM_DATA_SIZE_SEND;
-      else
+        trans_len = trans_len == 0 ? MAXIMUM_DATA_SIZE_SEND : trans_len;
+      } else {
         trans_len = MAXIMUM_DATA_SIZE_SEND;
+      }
       protocol_sendResponsePacket(msg_send.msg_type, current_packet_num,
           total_pkt, &msg_send.data_array[current_index], trans_len);
 

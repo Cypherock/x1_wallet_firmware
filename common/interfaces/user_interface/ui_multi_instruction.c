@@ -123,6 +123,8 @@ static void change_current_index(const lv_key_t PRESSED_KEY)
         if (data->index_of_current_string < (data->total_strings - 1))
         {
             data->index_of_current_string++;
+            if (!data->one_cycle_completed)
+                data->one_cycle_completed = data->index_of_current_string == data->total_strings - 1;
         }
         else
         {
@@ -344,6 +346,7 @@ void multi_instruction_create()
     lv_group_add_obj(ui_get_group(), obj->left_arrow);
     lv_group_add_obj(ui_get_group(), obj->right_arrow);
 
+    lv_indev_set_group(ui_get_indev(), ui_get_group());
     lv_obj_set_hidden(obj->left_arrow, true);
     if (data->total_strings == 1)
     {

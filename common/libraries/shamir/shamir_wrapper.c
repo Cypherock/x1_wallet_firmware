@@ -56,7 +56,7 @@
  ******************************************************************************
  */
 #include "crypto_random.h"
-#include "cryptoauthlib.h"
+#include "string.h"
 #include "wallet.h"
 #include "logger.h"
 #include "utils.h"

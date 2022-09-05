@@ -31,7 +31,6 @@
 #include "coin_utils.h"
 
 /// Convert byte array to unit32_t
-#define BYTE_ARRAY_TO_UINT32(x) (x[0] << 24 | x[1] << 16 | x[2] << 8 | x[3])
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)

@@ -512,9 +512,11 @@ void desktop_listener_task(lv_task_t* data)
 
                     coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
-                    if(BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index) == ETHEREUM) {
+                    if(coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                 ui_text_eth_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name,
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id));
                     } else {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
@@ -626,6 +628,7 @@ void desktop_listener_task(lv_task_t* data)
             } break;
 
             case START_DEVICE_AUTHENTICATION: {
+                CY_Reset_Not_Allow(false);
                 switch (data_array[0]) {
                     case 1: lv_obj_clean(lv_scr_act());
                     case 2:
@@ -661,11 +664,11 @@ void desktop_listener_task(lv_task_t* data)
             case DEVICE_INFO: {
                 clear_message_received_data();
                 uint8_t device_info[37] = {0};
-                ATCAIfaceCfg *atca_cfg;
-                atca_cfg = cfg_atecc608a_iface;
-                if (atcab_init(atca_cfg) != ATCA_SUCCESS ||
-                    ATCA_SUCCESS != atcab_read_zone(2, 8, 0, 0, device_info + 1, 32)) {
-                    LOG_ERROR("ER xx4");
+                if (get_device_serial() == SUCCESS) {
+                    memcpy(device_info+1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+                }
+                else{
+                    LOG_CRITICAL("err xx4: %d", atecc_data.fault_status);
                 }
                 device_info[0] = is_device_authenticated() ? 1 : 0;
                 uint32_t fwVer = get_fwVer();

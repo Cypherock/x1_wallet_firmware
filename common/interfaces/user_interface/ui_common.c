@@ -249,6 +249,22 @@ void ui_next_btn(lv_obj_t* next_btn, const lv_event_cb_t event_cb, const bool hi
     lv_group_add_obj(ui->g, next_btn);
 }
 
+void ui_skip_btn(lv_obj_t* skip_btn, const lv_event_cb_t event_cb, const bool hidden)
+{
+    ASSERT(skip_btn != NULL);
+
+    lv_obj_set_size(skip_btn, 46, LV_DPI / 5 - 5);
+    lv_obj_align(skip_btn, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -3, 0);
+    lv_obj_set_event_cb(skip_btn, event_cb);
+
+    lv_obj_t* label = lv_label_create(skip_btn, NULL);
+    lv_label_set_text(label, "Skip " LV_SYMBOL_RIGHT );
+    lv_obj_set_hidden(skip_btn, hidden);
+    lv_group_add_obj(ui->g, skip_btn);
+
+    lv_btn_set_style(skip_btn, LV_BTN_STYLE_REL, &ui->btn_rel);
+}
+
 void ui_backspace(lv_obj_t* backspace, const lv_event_cb_t event_cb)
 {
     ASSERT(backspace != NULL);

@@ -18,34 +18,42 @@
 #include "controller_main.h"
 #include "tasks.h"
 #include "flash_config.h"
+#include "cryptoauthlib.h"
 
-#define SLOT_DEVICE_KEY     2
-#define SLOT_NFC_PRIV_KEY   3
-#define SLOT_CHALLENGE_DATA 5
-#define SLOT_IO_PROT_KEY    6
-#define SLOT_DEVICE_SERIAL  8
+#define DEFAULT_ATECC_RETRIES   5
 
-#define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
+#define DEVICE_SERIAL_SIZE      32
+#define MAXIMUM_COIN_SUPPORTED  (7 + 5)  // 5 for segwit support
 #define INDEX_SIZE 4
 
 typedef enum{
-    slot_0_unused=0,
-    slot_1_unused=1,
-    slot_2_auth_key=2,
-    slot_3_nfc_pair_key=3,
-    slot_4_unused=4,
-    slot_5_challenge=5,
-    slot_6_io_key=6,
-    slot_7_unused=7,
-    slot_8_serial=8,
-    slot_9_unused=9,
-    slot_10_unused=10,
-    slot_11_unused=11,
-    slot_12_unused=12,
-    slot_13_unused=13,
-    slot_14_unused=14,
-    slot_15_unused=15
-}slot_definition;
+    slot_0_unused=0U,
+    slot_1_unused=1U,
+    slot_2_auth_key=2U,
+    slot_3_nfc_pair_key=3U,
+    slot_4_unused=4U,
+    slot_5_challenge=5U,
+    slot_6_io_key=6U,
+    slot_7_unused=7U,
+    slot_8_serial=8U,
+    slot_9_unused=9U,
+    slot_10_unused=10U,
+    slot_11_unused=11U,
+    slot_12_unused=12U,
+    slot_13_unused=13U,
+    slot_14_unused=14U,
+    slot_15_unused=15U
+}atecc_slot_define_t;
+
+typedef struct{
+    uint8_t         device_serial[DEVICE_SERIAL_SIZE],
+                    retries;
+    ATCA_STATUS     status,
+                    fault_status;
+    ATCAIfaceCfg    *cfg_atecc608a_iface;
+} atecc_data_t;
+
+extern atecc_data_t atecc_data;
 
 typedef enum{
     provision_empty=0,
@@ -387,39 +395,11 @@ void verify_wallet_controller();
 void verify_wallet_controller_b();
 
 /**
- * @brief Request ATECC to generate signature on the hash with private available on SLOT-3
- * @details
- *
- * @param [in] hash     - hash to be signed
- * @param [out] sign    - signature generated
- *
- * @return    ATCA_SUCCESS on success, otherwise an error code.
- *
- * @see atcab_init(), atcab_sign(), ATCAIfaceCfg, cfg_atecc608a_iface
- * @since v1.0.0
- */
-uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign);
-
-/**
- * @brief Request ATECC to perform ECDH operation on pub_key with private key from SLOT-3
- * @details
- *
- * @param [in] pub_key          - public key to be used for ECDH
- * @param [out] shared_secret   - shared secret generated
- *
- * @return    ATCA_SUCCESS on success, otherwise an error code.
- *
- * @see atcab_init(), atcab_ecdh(), atcab_ecdh_ioenc(), ATCAIfaceCfg, cfg_atecc608a_iface
- * @since v1.0.0
- */
-uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret);
-
-/**
  * @brief Sync all the available wallets on the cards with the device.
  * @details This controller is used to sync all the available wallets on the cards with the device. The sync is done
  * one wallet at a time.
  *
- * @see sync_wallet_controller_b(), sync_cards_task(), slot_definition
+ * @see sync_wallet_controller_b(), sync_cards_task()
  * @since v1.0.0
  */
 void sync_cards_controller();
@@ -428,7 +408,7 @@ void sync_cards_controller();
  * @brief Back button controller for sync wallet flow.
  * @details This controller is used to handle back button events during sync wallet flow.
  *
- * @see sync_cards_controller(), sync_cards_task(), slot_definition
+ * @see sync_cards_controller(), sync_cards_task()\
  * @since v1.0.0
  */
 void sync_cards_controller_b();
@@ -455,5 +435,43 @@ void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8
  * @retval 3    External auth configuration
  */
 provision_status_t check_provision_status();
+
+/**
+ * @brief   fetch device serial and check if UID in the serial matches MCU UID or not
+ * @details
+ *
+ * @return uint32_t device serial fetch status or failure status
+ * @retval 0    fetched successfully
+ * @retval 1    device UID doesn't match with serial UID
+ */
+uint32_t get_device_serial();
+
+/**
+ * @brief Request ATECC to generate signature on the hash with private available on SLOT-3
+ * @details
+ *
+ * @param [in] hash     - hash to be signed
+ * @param [out] sign    - signature generated
+ *
+ * @return    ATCA_SUCCESS on success, otherwise an error code.
+ *
+ * @see atcab_init(), atcab_sign(), ATCAIfaceCfg, cfg_atecc608a_iface
+ * @since v1.0.0
+ */
+uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign);
+
+/**
+ * @brief Request ATECC to perform ECDH operation on pub_key with private key from SLOT-3
+ * @details
+ *
+ * @param [in] pub_key          - public key to be used for ECDH
+ * @param [out] shared_secret   - shared secret generated
+ *
+ * @return    ATCA_SUCCESS on success, otherwise an error code.
+ *
+ * @see atcab_init(), atcab_ecdh(), atcab_ecdh_ioenc(), ATCAIfaceCfg, cfg_atecc608a_iface
+ * @since v1.0.0
+ */
+uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret);
 
 #endif

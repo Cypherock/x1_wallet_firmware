@@ -113,7 +113,7 @@ const char* ui_text_verification_is_now_complete_messages[] = {
     "You may now safely wipe out any written seed phrase",
     "You'll need X1 Wallet and one X1 Card to transact",
     "To transact, export this wallet to the CySync app",
-    "Press the center button to continue"
+    "Press the center button to return to the main menu",
 };
 
 const char* ui_text_seed_phrase_will_be_shown_copy_to_verify[] = {
@@ -138,12 +138,6 @@ const char* ui_text_startup_instruction_screen_4[] = {
     "Now visit cypherock.com/gs",
     "And download CySync desktop application to set up the device"
 
-};
-
-const char* ui_text_verification_failed_initiating_delete_wallet_flow[] = {
-    "Verification failed",
-    "Now we will delete wallet and try again",
-    "Press the center button to continue"
 };
 
 const char* ui_text_mnemonics_number_options[] = {
@@ -303,11 +297,11 @@ const char* ui_text_verification_cancelled_delete_wallet = "Verification cancell
 const char* ui_text_wallet_deleted_successfully = "Wallet deleted successfully!";
 const char* ui_text_wallet_redirecting_to_new_wallet = "Let's try again";
 const char* ui_text_recovery_successfull = "Recovery\nSuccessful!";
-const char* ui_text_generating_seed = "Generating seed...";
+const char* ui_text_generating_seed = "Processing ...";
 const char* ui_text_seed_generated_successfully = "Seed generated\nsuccessfully";
 const char* ui_text_wallet_synced_with_x1cards = "Wallet synced with X1 Cards!";
 const char* ui_text_wallet_created_successfully = "Wallet created successfully!";
-const char* ui_text_press_enter_to_start_verification = "Press the center button to verify it";
+const char* ui_text_press_enter_to_start_verification = "Proceed to verify wallet on X1 Cards";
 const char* ui_text_now_enter_your_seed_phrase = "Now enter your\nseed phrase";
 const char* ui_text_now_enter_your_data = "Now enter your\ndata";
 const char* ui_text_please_verify_entered_words = "Please verify the entered words.";
@@ -326,10 +320,10 @@ const char* ui_text_signing_transaction = "Signing transaction \n...";
 const char* ui_text_exported_signed_transaction_to_desktop = "Exported signed transaction to desktop!!";
 const char* ui_text_start_card_update = "Start X1 Card update?\nThis will format the X1 Card";
 const char* ui_text_start_verification_of_card = "Start verification of X1 Card?";
-const char* ui_text_wallet_lock_continue_to_unlock = "Wallet is locked. Continue to unlock.";
-const char* ui_text_wallet_partial_continue_to_delete = "Wallet in partial state. Continue to delete.";
-const char* ui_text_wallet_not_verified_continue_to_verify = "Wallet not verified. Continue to verify.";
-const char* ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards = "Continue to Sync with X1 Cards.";
+const char* ui_text_wallet_lock_continue_to_unlock = "Wallet is locked. Proceed to unlock.";
+const char* ui_text_wallet_partial_continue_to_delete = "Wallet in partial state. Proceed to delete.";
+const char* ui_text_wallet_not_verified_continue_to_verify = "Wallet not verified. Proceed to verify.";
+const char* ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards = "Proceed to Sync with X1 Cards.";
 const char* ui_text_wallet_not_verified_prompt = "'%s' is in unverified state";
 const char* ui_text_wallet_out_of_sync_prompt = "'%s' is out of Sync with X1 Cards";
 const char* ui_text_wallet_partial_state_prompt = "'%s' is in partial delete state";
@@ -346,13 +340,13 @@ const char* ui_text_successfull = "Successful";
 const char* ui_text_view_seed_messages[] = {
     "Do not give the seed phrase to anyone",
     "You will lose your coins if the seed phrase gets stolen",
-    "Press the center button to continue"
+    "Press the center button to proceed"
 };
 const char* ui_text_card_authentication_success = "Card authentication success";
 const char* ui_text_card_authentication_failed = "Card authentication failed";
 const char* ui_text_enable_passphrase_step = "Do you want to enable passphrase step on wallet creation?";
 const char* ui_text_disable_passphrase_step = "Do you want to disable passphrase step on wallet creation?";
-const char* ui_text_warning_transaction_fee_too_high = "WARNING\nTransaction fees too high. Continue?";
+const char* ui_text_warning_transaction_fee_too_high = "WARNING\nTransaction fees too high. Proceed?";
 const char* ui_text_enable_log_export = "Do you want to enable logging?";
 const char* ui_text_disable_log_export = "Do you want to disable logging?";
 
@@ -363,6 +357,7 @@ const char* ui_text_do_you_want_to_resync_coins_to = "Do you want to resync coin
 const char* ui_text_send_transaction_with = "Send %s transaction with %s ?";
 const char* ui_text_eth_send_transaction_with = "Send %s transaction with %s on %s?";
 const char* ui_text_recv_transaction_with = "Receive %s with %s ?";
+const char* ui_text_eth_recv_transaction_with = "Receive %s with %s on %s ?";
 const char* ui_text_do_you_want_to_set_pin = "Do you want to set a PIN ?";
 const char* ui_text_output_send_value = "Receiver #%d\nSend %f\n%s?";
 const char* ui_text_output_send_to_address = "Receiver #%d Address";
@@ -379,7 +374,12 @@ const char* ui_text_auth_process = "Waiting for device authentication\n...";
 
 const char* ui_text_sync_x1card_confirm = "Device will be synced with wallets in X1 Card. Confirm?";
 const char* ui_text_rotate_display_confirm = "Display will rotate 180 degrees. Confirm?";
-const char* ui_text_factory_reset_confirm = "This will erase all wallets from device. Confirm?";
+const char* ui_text_factory_reset_confirm[] = {
+    "You will need 2 X1 cards to perform factory reset.",
+    "Make sure at least 2 X1 cards are accessible.",
+    "Press the center button to proceed",
+};
+const char* ui_text_confirm_factory_reset = "This will erase all accounts from X1 Wallet. Confirm?";
 const char* ui_text_device_verification_success = "Device successfully authenticated";
 const char* ui_text_device_verification_failure = "Device authentication failed";
 const char* ui_text_unauthenticate_via_cysync = "Please authenticate the device via CySync";
@@ -404,12 +404,16 @@ const char* ui_text_cannot_verify_card_contact_support = "Couldn't verify card. 
 const char* ui_text_wrong_btc_transaction = "Wrong transaction formatting.";
 const char* ui_text_btc_change_address_mismatch = "Change address mismatch.";
 const char* ui_text_worng_eth_transaction = "Invalid transaction detected";
+const char* ui_text_error_no_card_paired = "No card paired with device";
+const char* ui_text_error_pair_all_cards = "Pair all four X1 Cards first";
+const char* ui_text_error_pair_atleast_2_cards = "Pair atleast two X1 Cards to restore";
 const char* ui_text_pair_card_1 = "Tap Card #1 to pair";
 const char* ui_text_pair_card_2 = "Tap Card #2 to pair";
 const char* ui_text_pair_card_3 = "Tap Card #3 to pair";
 const char* ui_text_pair_card_4 = "Tap Card #4 to pair";
+const char* ui_text_card_pairing_skipped_count = "%d card pairing skipped, pair all cards for proper use";
 const char* ui_text_card_pairing_success = "Card pairing success";
-const char* ui_text_continue_with_pairing = "Continue with with pairing?";
+const char* ui_text_continue_with_pairing = "Proceed with pairing?";
 const char* ui_text_device_compromised = "Device is compromised. Contact support";
 const char* ui_text_device_compromised_not_provisioned = "Device is not provisioned";
 const char* ui_text_device_compromised_partially_provisioned = "Device partially provisioned";
@@ -422,6 +426,13 @@ const char* ui_text_card_detected = "Card detected. Processing ...";
 const char* ui_text_nfc_hardware_fault_detected = "NFC antenna fault detected. Contact Support";
 const char* ui_text_unreliable_cards = "Warning!! Your cards are unreliable. Contact support.";
 const char* ui_critical_card_health_migrate_data = "Card health is critical. Migrate to new set of cards.";
+const char* ui_text_reset_exit[] = {
+    "Wallet '%s' not found on X1 Card(s)",
+    "Exiting without factory reset",
+    "Press the center button to proceed",
+};
+const char* ui_text_erasing = "Factory reset done, device will restart";
+const char* ui_text_performing_checks = "Performing checks";
 
 #ifdef ALLOW_LOG_EXPORT
 const char* ui_text_send_logs_prompt = "Send logs to desktop?";

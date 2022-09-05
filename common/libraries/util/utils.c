@@ -62,6 +62,7 @@
 #include "curves.h"
 #include "wallet.h"
 #include "crypto_random.h"
+#include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "assert_conf.h"
 #include "logger.h"
@@ -275,18 +276,21 @@ void get_firmaware_version(uint16_t pid, const char *product_hash , char message
 void random_generate(uint8_t* arr,int len){
     if(len > 32) return ;
 
-     crypto_random_generate(arr,len);
+    ASSERT(crypto_random_generate(arr,len) == true);
 
-     //using atecc
-     uint8_t temp[32] = {0};
-     ATCAIfaceCfg *atca_cfg;
-     atca_cfg = cfg_atecc608a_iface;
-     ATCA_STATUS status = atcab_init(atca_cfg);
-     status = atcab_random(temp);
+    //using atecc
+    uint8_t temp[32] = {0};
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    do{
+        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        atecc_data.status = atcab_random(temp);
+    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
 
-     for(int i=0; i<len; ++i){
+    ASSERT(atecc_data.status == ATCA_SUCCESS);
+
+    for(int i=0; i<len; ++i){
         arr[i]^=temp[i];
-     }
+    }
 }
 
 int check_digit(uint64_t value)

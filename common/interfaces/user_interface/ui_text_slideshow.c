@@ -172,6 +172,7 @@ void ui_text_slideshow_init(const char* arr[MAX_NUM_OF_CHARS_IN_A_SLIDE], const 
     ui_paragraph(text, data->strings[0], LV_LABEL_ALIGN_CENTER);
     lv_obj_align(text, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_group_add_obj(ui_get_group(), text);
+    lv_indev_set_group(ui_get_indev(), ui_get_group());
     lv_obj_set_event_cb(text, event_handler); // The screen will destruct if the button is pressed
 
     if (slideshow_task == NULL) {

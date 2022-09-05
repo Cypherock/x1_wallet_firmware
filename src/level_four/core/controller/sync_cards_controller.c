@@ -67,7 +67,7 @@
 #include "sha2.h"
 #include "flash_api.h"
 #include "shamir_wrapper.h"
-
+#if X1WALLET_MAIN == 1
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 extern Flash_Wallet wallet_for_flash;
@@ -103,6 +103,14 @@ void sync_cards_controller()
     case SYNC_CARDS_TAP_TWO_CARDS_FLOW:{
         tap_card_data.desktop_control = false;
         tap_threshold_cards_for_reconstruction_flow_controller(2);
+        if (counter.level == LEVEL_ONE || flow_level.level_two == LEVEL_THREE_WALLET_LOCKED) {
+            // if wallet is locked, then we need to go to next wallet
+            counter.level = LEVEL_THREE;
+            flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+            flow_level.level_two = LEVEL_THREE_SYNC_WALLET_FLOW;
+            flow_level.level_three = SYNC_CARDS_CHECK_NEXT_WALLET;
+        }
+
     } break;
 
     case SYNC_CARDS_GENERATE_DEVICE_SHARE:{
@@ -164,3 +172,4 @@ void sync_cards_controller()
     } break;
     }
 }
+#endif

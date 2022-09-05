@@ -60,6 +60,7 @@
 #include "ui_delay.h"
 #include "tasks_tap_cards.h"
 #include "ui_confirmation.h"
+#include "ui_card_detect.h"
 
 void tap_card_pair_card_tasks()
 {
@@ -69,46 +70,78 @@ void tap_card_pair_card_tasks()
         break;
 
     case PAIR_CARD_RED_FRONTEND:
-        instruction_scr_init(ui_text_pair_card_1);
-        mark_event_over();
+        if(get_keystore_used_status(0) == 1){
+            mark_event_cancel();
+        }
+        else{
+            card_detect_scr_init(ui_text_pair_card_1);
+        }
         break;
 
     case PAIR_CARD_RED_BACKEND:
+        card_detect_scr_destructor();
+        instruction_scr_init("Dummy");
         mark_event_over();
         break;
 
     case PAIR_CARD_BLUE_FRONTEND:
-        instruction_scr_init(ui_text_pair_card_2);
-        mark_event_over();
+        if(get_keystore_used_status(1) == 1){
+            mark_event_cancel();
+        }
+        else{
+            card_detect_scr_init(ui_text_pair_card_2);
+        }
         break;
 
     case PAIR_CARD_BLUE_BACKEND:
+        card_detect_scr_destructor();
+        instruction_scr_init("Dummy");
         mark_event_over();
         break;
 
     case PAIR_CARD_GREEN_FRONTEND:
-        instruction_scr_init(ui_text_pair_card_3);
-        mark_event_over();
+        if(get_keystore_used_status(2) == 1){
+            mark_event_cancel();
+        }
+        else{
+            card_detect_scr_init(ui_text_pair_card_3);
+        }
         break;
 
     case PAIR_CARD_GREEN_BACKEND:
+        card_detect_scr_destructor();
+        instruction_scr_init("Dummy");
         mark_event_over();
         break;
 
     case PAIR_CARD_YELLOW_FRONTEND:
-        instruction_scr_init(ui_text_pair_card_4);
-        mark_event_over();
+        if(get_keystore_used_status(3) == 1){
+            mark_event_cancel();
+        }
+        else{
+            card_detect_scr_init(ui_text_pair_card_4);
+        }
         break;
 
     case PAIR_CARD_YELLOW_BACKEND:
+        card_detect_scr_destructor();
+        instruction_scr_init("Dummy");
         mark_event_over();
         break;
 
-    case PAIR_CARD_SUCCESS_MESSAGE:
-    	delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
-    	break;
+    case PAIR_CARD_SUCCESS_MESSAGE:{
+        uint8_t pair_count=0;
+        if((pair_count = get_keystore_used_count()) < 4){
+            char str[100]="";
+            snprintf(str, sizeof(str), ui_text_card_pairing_skipped_count, 4-pair_count);
+            delay_scr_init(str, DELAY_LONG_STRING);
+        }
+        else{
+            delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
+        }
+    }break;
 
     default:
-    	break;
+        break;
     }
 }

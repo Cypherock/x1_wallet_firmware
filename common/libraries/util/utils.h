@@ -26,19 +26,23 @@
 #include "wallet.h"
 
 /// Convert bit array of size 4 to uint32
-#define BYTE_ARRAY_TO_UINT32(x) (x[0] << 24 | x[1] << 16 | x[2] << 8 | x[3])
+#define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 32-bit value from big-endian serialised byte-array
 #define U32_READ_BE_ARRAY(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 32-bit value from little-endian serialised byte-array
-#define U32_READ_LE_ARRAY(x) ((x)[3] << 24 | (x)[3] << 16 | (x)[1] << 8 | (x)[0])
+#define U32_READ_LE_ARRAY(x) ((x)[3] << 24 | (x)[2] << 16 | (x)[1] << 8 | (x)[0])
 /// Read 16-bit value from big-endian serialised byte-array
 #define U16_READ_BE_ARRAY(x) ((x)[0] << 8 | (x)[1])
+/// Read 16-bit value from little-endian serialised byte-array
+#define U16_READ_LE_ARRAY(x) ((x)[1] << 8 | (x)[0])
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U16_SWAP_ENDIANNESS(x) ((x) >> 8 | (x) << 8)
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U32_SWAP_ENDIANNESS(x) ((x) << 24 | ((x) & 0xff00) << 8 | ((x) & 0xff0000) >> 8 | (x) >> 24)
 /// Find maximum of two values
 #define CY_MAX(a,b) ((a) > (b) ? (a) : (b))
+/// Find minimum of two values
+#define CY_MIN(a,b) ((a) < (b) ? (a) : (b))
 
 /**
  * @brief Allocates memory via malloc and makes an entry for each allocation into its global list

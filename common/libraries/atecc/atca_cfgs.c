@@ -40,8 +40,6 @@
 
 /* if the number of these configurations grows large, we can #ifdef them based on required device support */
 
-ATCAIfaceCfg *cfg_atecc608a_iface;
-
 /** \brief default configuration for an ECCx08A device */
 ATCAIfaceCfg cfg_ateccx08a_i2c_default = {
     .iface_type             = ATCA_I2C_IFACE,

@@ -189,6 +189,24 @@ void ui_cancel_btn(lv_obj_t *cancel_btn, lv_event_cb_t event_cb, bool hidden);
 void ui_next_btn(lv_obj_t *next_btn, lv_event_cb_t event_cb, bool hidden);
 
 /**
+ * @brief Create UI for skip button
+ * @details
+ * 
+ * @param skip_btn Lvgl object for skip button
+ * @param event_cb Event callback fot skip button
+ * @param hidden Is the skip button hidden
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+void ui_skip_btn(lv_obj_t *skip_btn, lv_event_cb_t event_cb, bool hidden);
+
+/**
  * @brief UI for backspace button
  * @details
  * 

@@ -38,10 +38,15 @@ typedef enum {
 
 /// enum defined with expected lengths for different APDUs
 typedef enum {
+    PAIRING_EXPECTED_MIN_LENGTH = 52,    ///< Minimum length of pairing APDU
+    PAIRING_EXPECTED_MAX_LENGTH = 116,   ///< Maximum length of pairing APDU. Refer https://blog.eternitywall.com/2017/12/12/shortest-transaction/
     ADD_WALLET_EXPECTED_LENGTH = 2,
     RETRIEVE_WALLET_EXPECTED_LENGTH = 152,
     DELETE_WALLET_EXPECTED_LENGTH = 2,
-    ECDSA_EXPECTED_LENGTH = 68
+    LIST_WALLET_EXPECTED_LENGTH = 56,
+    ECDSA_EXPECTED_LENGTH = 68,
+    GET_CHALLENGE_EXPECTED_LENGTH = 70,
+    VERIFY_CHALLENGE_EXPECTED_LENGTH = 2,
 } Apdu_expected_length;
 
 /// enum defined with command type for different APDUs

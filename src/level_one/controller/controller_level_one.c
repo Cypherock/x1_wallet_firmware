@@ -61,6 +61,8 @@
 #include "controller_level_two.h"
 #include "application_startup.h"
 #include "ui_instruction.h"
+#include "flash_api.h"
+#include "controller_tap_cards.h"
 #include "apdu.h"
 #include <inttypes.h>
 #include <string.h>
@@ -127,10 +129,16 @@ void level_one_controller()
     }
 
     if (screen_choice > wallet_count) { //New wallet is selected
-        flow_level.level_one = screen_choice - wallet_count + 1;
+        flow_level.level_one = screen_choice - wallet_count + 1;    // sets to LEVEL_TWO_NEW_WALLET or LEVEL_TWO_ADVANCED_SETTINGS
         if(wallet_count == MAX_WALLETS_ALLOWED){
             flow_level.level_one += 1;
         }
+        if((flow_level.level_one == LEVEL_TWO_NEW_WALLET) && (get_keystore_used_count() != MAX_KEYSTORE_ENTRY)){
+            tap_card_take_to_pairing();
+            mark_error_screen(ui_text_error_pair_all_cards);
+            return;
+        }
+
     } else { //Old wallet is selected
         uint8_t index;
         if (get_ith_valid_wallet_index(screen_choice - 1, &index) != SUCCESS_){

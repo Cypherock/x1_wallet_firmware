@@ -76,7 +76,6 @@ bool no_wallet_on_cards = false;
 
 #if X1WALLET_MAIN
 static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len);
-static void protected_flash_erase();
 #endif
 
 void tap_a_card_and_sync_controller()
@@ -97,7 +96,7 @@ void tap_a_card_and_sync_controller()
         tap_card_data.retries = 5;
         while (1) {
             tap_card_data.acceptable_cards = 15;
-            memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+            memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
             tap_card_data.tapped_card = 0;
             if (!tap_card_applet_connection())
                 break;
@@ -105,7 +104,7 @@ void tap_a_card_and_sync_controller()
             tap_card_data.status = nfc_list_all_wallet(recv_apdu, &recv_len);
             if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND) {
                 no_wallet_on_cards = false;
-                protected_flash_erase();
+                flash_delete_all_wallets();
                 if (tap_card_data.status == SW_NO_ERROR)
                     _handle_wallet_fetch_success(recv_apdu, recv_len);
                 else
@@ -214,7 +213,6 @@ void controller_update_card_id()
 #if X1WALLET_MAIN
 static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len)
 {
-    set_family_id_flash(tap_card_data.family_id); //it now contains the family id
     int i = 0;
     for (; i < recv_apdu[0]; i++) {
         Flash_Wallet wallet;
@@ -248,17 +246,5 @@ static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len)
         uint32_t dummy;
         add_wallet_to_flash(&wallet, &dummy);
     }
-}
-
-static void protected_flash_erase()
-{
-	display_rotation _display_rotation = get_display_rotation();
-	passphrase_config enable_passphrase = get_enable_passphrase();
-    log_config _log_config = is_logging_enabled() ? LOGGING_ENABLED : LOGGING_DISABLED;
-
-	flash_erase();
-	set_enable_passphrase(enable_passphrase, FLASH_SAVE_LATER);
-    set_logging_config(_log_config, FLASH_SAVE_LATER);
-	set_display_rotation(_display_rotation, FLASH_SAVE_NOW);
 }
 #endif

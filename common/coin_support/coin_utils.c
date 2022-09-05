@@ -200,7 +200,7 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
     }
 }
 
-const char *get_coin_name(int coin_index, uint8_t chain_id) {
+const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";

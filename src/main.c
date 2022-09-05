@@ -138,8 +138,13 @@ int main(void)
     listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_HIGH, NULL);
 
 #if USE_SIMULATOR == 0
-    if(!fault_in_prev_boot()) {
-#endif
+    if(fault_in_prev_boot())
+    {
+        handle_fault_in_prev_boot();
+    }
+    else
+#endif //USE_SIMULATOR
+    {
         logo_scr_init(2000);
         device_hardware_check();
         device_provision_check();
@@ -149,11 +154,9 @@ int main(void)
         instruction_scr_destructor();
         check_invalid_wallets();
 #endif
-#if USE_SIMULATOR == 0
-    } else {
-        handle_fault_in_prev_boot();
     }
-#endif //USE_SIMULATOR
+
+
 
     while (true)
     {

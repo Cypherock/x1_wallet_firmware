@@ -64,9 +64,10 @@
 #include "application_startup.h"
 #include "app_error.h"
 
-#define SEND_PACKET_MAX_LEN 236
-#define RECV_PACKET_MAX_ENC_LEN 242
-#define RECV_PACKET_MAX_LEN 225
+#define DEFAULT_NFC_TG_INIT_TIME    25
+#define SEND_PACKET_MAX_LEN         236
+#define RECV_PACKET_MAX_ENC_LEN     242
+#define RECV_PACKET_MAX_LEN         225
 
 static void (*abort_now)() = NULL;
 static bool (*instant_abort)() = NULL;
@@ -94,7 +95,7 @@ ret_code_t nfc_init()
     return adafruit_pn532_init(false);
 }
 
-uint32_t nfc_diagnose() {
+uint32_t nfc_diagnose_antenna_hw() {
     uint32_t result = 0;
     uint32_t err;
 
@@ -138,7 +139,7 @@ ret_code_t nfc_select_card()
     while (err_code != STM_SUCCESS && !CY_Read_Reset_Flow()) 
     {
         reset_inactivity_timer();
-        err_code = adafruit_pn532_nfc_a_target_init(&tag_info, 0);
+        err_code = adafruit_pn532_nfc_a_target_init(&tag_info, DEFAULT_NFC_TG_INIT_TIME);
             if (instant_abort && (*instant_abort)() && abort_now) {
                 (*abort_now)();
                 return STM_ERROR_NULL;
@@ -163,6 +164,11 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time)
     nfc_a_tag_info tag_info;
     sys_flow_cntrl_u.bits.nfc_off = false;
     return adafruit_pn532_nfc_a_target_init(&tag_info, wait_time);
+}
+
+void nfc_card_presence_detect(){
+    if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS)
+        nfc_tapped=true;
 }
 
 ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t* acceptable_cards, uint8_t *version, uint8_t *card_key_id, uint8_t *recovery_mode)

@@ -55,6 +55,7 @@
  *
  ******************************************************************************
  */
+#include "controller_tap_cards.h"
 #include "controller_level_four.h"
 #include "controller_main.h"
 #include "board.h"
@@ -67,6 +68,8 @@
 #include "tasks_tap_cards.h"
 #include "tasks_level_four.h"
 #include "ui_delay.h"
+#include "cy_factory_reset.h"
+
 extern lv_task_t* timeout_task;
 
 extern const char *GIT_REV;
@@ -80,14 +83,6 @@ void level_three_advanced_settings_tasks()
 #endif
     switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-#if X1WALLET_MAIN
-        if (valid_wallets != get_wallet_count()) {
-            transmit_one_byte_reject(USER_FIRMWARE_UPGRADE_CHOICE);
-            reset_flow_level();
-            mark_error_screen(ui_text_wallet_partial_fix);
-            break;
-        }
-#endif
         transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
         instruction_scr_init(ui_text_firmware_update_process);
         mark_event_over();
@@ -102,8 +97,12 @@ void level_three_advanced_settings_tasks()
             break;
         }
     #endif
+        if(get_keystore_used_count() < 2){
+            tap_card_take_to_pairing();
+            mark_error_screen(ui_text_error_pair_atleast_2_cards);
+            break;
+        }
         confirm_scr_init(ui_text_sync_x1card_confirm);
-
     } break;
 
 
@@ -120,16 +119,9 @@ void level_three_advanced_settings_tasks()
         }
     } break;
 
-    case LEVEL_THREE_FACTORY_RESET: {
-#ifndef DEV_BUILD
-        if (valid_wallets != get_wallet_count()) {
-            reset_flow_level();
-            mark_error_screen(ui_text_wallet_partial_fix);
-            break;
-        }
-#endif
-        confirm_scr_init(ui_text_factory_reset_confirm);
-    } break;
+    case LEVEL_THREE_FACTORY_RESET:
+        cyt_factory_reset();
+        break;
 #endif
 
     case LEVEL_THREE_VIEW_DEVICE_VERSION: {

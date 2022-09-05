@@ -156,6 +156,7 @@ static void flash_struct_load()
         serialized_flash_instance = NULL;
     }
     else {
+        LOG_CRITICAL("xxxa");
         erase_cmd(FLASH_DATA_ADDRESS, FLASH_STRUCT_TLV_SIZE);
         memset(&flash_ram_instance, DEFAULT_VALUE_IN_FLASH, FLASH_WRITE_STRUCTURE_SIZE);
     }

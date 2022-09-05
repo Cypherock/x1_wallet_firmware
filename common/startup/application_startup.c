@@ -78,13 +78,14 @@
 #include "lv_port_disp.h"
 #include "sys_state.h"
 #include "nfc.h"
-#include "atca_cfgs.h"
-#include "atca_basic.h"
+#include "cryptoauthlib.h"
 #include "sec_flash.h"
+#include "flash_api.h"
+#include "controller_level_four.h"
+#include "controller_tap_cards.h"
 
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
-#include "controller_level_four.h"
 
 #else
 #include "lv_drivers/display/monitor.h"
@@ -361,29 +362,28 @@ static void atecc_mode_detect(){
     switch(++atecc_mode){
       case ATECC_MODE_I2C2:
         BSP_I2C2_Init(BSP_ATECC_I2C_MODE_STANDARD);
-        cfg_atecc608a_iface = &cfg_ateccx08a_i2c_def;
-        status = atcab_init(cfg_atecc608a_iface);
+        atecc_data.cfg_atecc608a_iface = &cfg_ateccx08a_i2c_def;
       break;
       case ATECC_MODE_I2C2_ALT:
         BSP_I2C2_Init(BSP_ATECC_I2C_MODE_STANDARD);
-        cfg_atecc608a_iface = &cfg_ateccx08a_i2c_def;
-        status = atcab_init(cfg_atecc608a_iface);
+        atecc_data.cfg_atecc608a_iface = &cfg_ateccx08a_i2c_def;
       break;
       case ATECC_MODE_SWI:
         BSP_I2C2_DeInit();
-        cfg_atecc608a_iface = &cfg_ateccx08a_swi_default;
-        status = atcab_init(cfg_atecc608a_iface);
+        atecc_data.cfg_atecc608a_iface = &cfg_ateccx08a_swi_default;
       break;
       default:
       atecc_mode = 0;
       return;
     }
-  }while(status != ATCA_SUCCESS);
+    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+  }while(atecc_data.status != ATCA_SUCCESS);
 #endif
 }
 
 void application_init() {
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
+    sys_flow_cntrl_u.bits.nfc_off = true;
 #if USE_SIMULATOR == 0
     uint32_t ret;
     clock_init();
@@ -447,6 +447,12 @@ void check_invalid_wallets()
 {
     bool fix = false;
     char display[64];
+
+    if(get_keystore_used_count() == 0){
+        tap_card_take_to_pairing();
+        mark_error_screen(ui_text_error_no_card_paired);
+        return;
+    }
 
     for (uint8_t i = 0; i < MAX_WALLETS_ALLOWED; i++) {
         if (get_wallet_state(i) != VALID_WALLET
@@ -542,7 +548,7 @@ void handle_fault_in_prev_boot() {
 void device_hardware_check(){
 #if USE_SIMULATOR == 0
         ui_set_event_over_cb(NULL);
-        if (nfc_diagnose() & (1 << NFC_ANTENNA_STATUS_BIT))
+        if (nfc_diagnose_antenna_hw() & (1 << NFC_ANTENNA_STATUS_BIT))
             delay_scr_init(ui_text_nfc_hardware_fault_detected, DELAY_LONG_STRING);
         ui_set_event_over_cb(&mark_event_over);
 #endif
@@ -550,7 +556,7 @@ void device_hardware_check(){
 
 void device_provision_check() {
 #if USE_SIMULATOR == 0
-    const char *msg;
+    const char *msg = NULL;
 
     switch (check_provision_status()) {
         default:
@@ -560,12 +566,18 @@ void device_provision_check() {
         case provision_incomplete:
             msg = ui_text_device_compromised_partially_provisioned;
             break;
-        case provision_complete:
+        case provision_complete:{
+            if(get_device_serial() != SUCCESS){
+                msg = ui_text_device_compromised;
+                break;
+            }
             return;
+        }
         case provision_v1_complete:
             msg = ui_text_device_compromised_v1_config;
             break;
     }
+
 #if NDEBUG
     msg = ui_text_device_compromised;
 #endif

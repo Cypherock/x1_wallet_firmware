@@ -121,7 +121,6 @@ static void _tap_card_backend(uint8_t card_number)
     if (get_index_by_name((const char *)wallet.wallet_name, &flash_wallet_index) != SUCCESS_) return;
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     tap_card_data.retries = 5;
-    tap_card_data.acceptable_cards = encode_card_number(card_number);
 
     if (card_already_deleted_flash(flash_wallet_index, card_number)) {
         if (card_number < 4)
@@ -136,6 +135,7 @@ static void _tap_card_backend(uint8_t card_number)
     while (1) {
         tap_card_data.lvl3_retry_point = flow_level.level_three;
         tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
+        tap_card_data.acceptable_cards = encode_card_number(card_number);
         if (card_number == 1) tap_card_data.tapped_card = 0;
         if (!tap_card_applet_connection())
             return;

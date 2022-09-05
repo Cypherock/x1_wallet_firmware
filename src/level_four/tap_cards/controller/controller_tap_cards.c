@@ -69,6 +69,7 @@ bool tap_card_applet_connection()
     if (tap_card_data.desktop_control) {
         set_instant_abort(&abort_from_desktop);
         set_abort_now(&_abort_);
+        CY_Reset_Not_Allow(false);
     } else {
         set_instant_abort(NULL);
         set_abort_now(NULL);
@@ -98,17 +99,17 @@ bool tap_card_applet_connection()
         * It is the knowledge of previous round of card tapping, hence it's update should happen only here
         * or at the fresh start of a card tap flow. */
         tap_card_data.tapped_card = (acceptable_cards ^ tap_card_data.acceptable_cards);
-#if X1WALLET_MAIN
-        tap_card_data.keystore_index = is_paired(tap_card_data.card_key_id);
-        if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
-            flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
-            tap_card_data.keystore_index == -1) {
-            tap_card_take_to_pairing();
-            return false;
-        }
-#endif
 
         if (tap_card_data.status == SW_NO_ERROR) {
+#if X1WALLET_MAIN
+            tap_card_data.keystore_index = is_paired(tap_card_data.card_key_id);
+            if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
+                flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
+                tap_card_data.keystore_index == -1) {
+                tap_card_take_to_pairing();
+                return false;
+            }
+#endif
             const uint8_t *pairing_key = get_keystore_pairing_key(tap_card_data.keystore_index);
         	if (tap_card_data.keystore_index >= 0)
                 init_session_keys(pairing_key, pairing_key + 32, NULL);

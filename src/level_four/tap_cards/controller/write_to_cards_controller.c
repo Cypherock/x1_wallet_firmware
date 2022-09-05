@@ -125,7 +125,6 @@ static void _tap_card_backend(uint8_t card_number)
     Flash_Wallet *wallet_for_flash = get_flash_wallet();
     wallet.xcor = card_number;
     tap_card_data.retries = 5;
-    tap_card_data.acceptable_cards = 1 << (card_number - 1);
     tap_card_data.lvl3_retry_point = flow_level.level_three;
     tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
@@ -137,6 +136,7 @@ static void _tap_card_backend(uint8_t card_number)
     memcpy(wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE, wallet_shamir_data.share_encryption_data[card_number - 1], NONCE_SIZE + WALLET_MAC_SIZE);
 
     while (1) {
+        tap_card_data.acceptable_cards = 1 << (card_number - 1);
         if (card_number == 1) tap_card_data.tapped_card = 0;
         if (!tap_card_applet_connection())
             return;
@@ -148,7 +148,6 @@ static void _tap_card_backend(uint8_t card_number)
             buzzer_start(BUZZER_DURATION);
             if (card_number == 1) {
                 wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
-                set_family_id_flash(tap_card_data.family_id);
                 add_wallet_to_flash(wallet_for_flash, &wallet_index);
                 instruction_scr_change_text(ui_text_remove_card_prompt, true);
                 nfc_detect_card_removal();

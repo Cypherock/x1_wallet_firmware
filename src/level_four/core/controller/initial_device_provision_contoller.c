@@ -63,9 +63,7 @@
 #include "curves.h"
 #include "nist256p1.h"
 #include "ui_delay.h"
-#include "atca_host.h"
-#include "atca_cfgs.h"
-#include "atca_basic.h"
+#include "cryptoauthlib.h"
 #include "string.h"
 #include "ui_instruction.h"
 #include "flash_api.h"
@@ -85,10 +83,39 @@ static lv_task_t *timeout_task;
 static void __timeout_listener();
 #endif
 
+uint32_t get_device_serial(){
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    do{
+        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        atecc_data.status = atcab_read_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+
+    if(atecc_data.status == ATCA_SUCCESS){
+        if(0 != memcmp(atecc_data.device_serial+8, (void*)UID_BASE, 12)){
+            return 1;
+        }
+        else{
+            return SUCCESS;
+        }
+    }
+    return atecc_data.fault_status = atecc_data.status;
+}
+
 provision_status_t check_provision_status(){
     uint8_t cfg[128];
     memset(cfg, 0, 128);
-    atcab_read_config_zone(cfg);
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    do{
+        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        atecc_data.status = atcab_read_config_zone(cfg);
+    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+
+    if(atecc_data.status != ATCA_SUCCESS){
+        atecc_data.fault_status = atecc_data.status;
+        LOG_CRITICAL("xxx30: %d", atecc_data.fault_status);
+        return -1;
+    }
+
     if(cfg[86]==0x00 || cfg[87]==0x00){ //config zone and data zones are locked
 
         if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
@@ -112,7 +139,7 @@ provision_status_t check_provision_status(){
 void device_provision_controller(){
 #if X1WALLET_INITIAL
     switch (flow_level.level_three) {
-        
+
         case GENERATE_PROVSION_DATA: {
             uint8_t io_protection_key[IO_KEY_SIZE] = {0};
             uint8_t serial_no[38] = {0};
@@ -148,119 +175,134 @@ void device_provision_controller(){
             0x00, 0x00, 0x00, 0x00, //certificate formatting disabled
             0x53, 0x00, 0x53, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x38, 0x00, 0x7C, 0x00, 0x1C, 0x00, 0x3C, 0x00, 0x1A, 0x00, 0x1C, 0x00, 0x10, 0x00, 0x1C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00
             };
-            
-            //atecc initialize
-            ATCA_STATUS fault_status = ATCA_SUCCESS;
-            ATCA_STATUS status = atcab_init(cfg_atecc608a_iface);
-            if(status!=ATCA_SUCCESS){
-            	fault_status = status;
-            }
 
-            //check atecc config and data zone lock status
-            bool is_locked = false;
-            status = atcab_is_locked(LOCK_ZONE_CONFIG, &is_locked);
+            atecc_data.retries = DEFAULT_ATECC_RETRIES;
+            do{
+                if(atecc_data.fault_status != ATCA_SUCCESS){
+                    LOG_ERROR("PERR0-0x%02x", atecc_data.fault_status);
+                    atecc_data.fault_status = ATCA_SUCCESS;
+                }
 
-            if(!is_locked  || status != ATCA_SUCCESS){
-				status = atcab_write_config_zone(test_ecc608_configdata);
-				if(status!=ATCA_SUCCESS){
-	            	fault_status = status;
-				}
+                //atecc initialize
+                atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+                if(atecc_data.status!=ATCA_SUCCESS){
+                    atecc_data.fault_status = atecc_data.status;
+                    continue;
+                }
 
-				status = atcab_lock_config_zone();
-            }
+                //check atecc config and data zone lock atecc_data.status
+                bool is_locked = false;
+                atecc_data.status = atcab_is_locked(LOCK_ZONE_CONFIG, &is_locked);
 
-            is_locked = false;
-            status = atcab_is_locked(LOCK_ZONE_DATA, &is_locked);
+                if(!is_locked  || atecc_data.status != ATCA_SUCCESS){
+                    atecc_data.status = atcab_write_config_zone(test_ecc608_configdata);
+                    if(atecc_data.status!=ATCA_SUCCESS){
+                        atecc_data.fault_status = atecc_data.status;
+                        continue;
+                    }
 
-            if(!is_locked  || status != ATCA_SUCCESS){
-				status = atcab_lock_data_zone();
-            }
+                    atecc_data.status = atcab_lock_config_zone();
+                }
 
-            provision_status_t provision_status = check_provision_status();
-            //check if device already provisioned
-            if(provision_status == provision_empty){
-                //called again if not locked in previous configuration
-            	is_locked = false;
-				status = atcab_is_locked(LOCK_ZONE_CONFIG, &is_locked);
+                is_locked = false;
+                atecc_data.status = atcab_is_locked(LOCK_ZONE_DATA, &is_locked);
 
-				if(!is_locked  || status != ATCA_SUCCESS){
-					status = atcab_lock_config_zone();
-				}
+                if(!is_locked  || atecc_data.status != ATCA_SUCCESS){
+                    atecc_data.status = atcab_lock_data_zone();
+                }
 
-	            is_locked = false;
-	            status = atcab_is_locked(LOCK_ZONE_DATA, &is_locked);
+                memset(atecc_data.device_serial, 0, DEVICE_SERIAL_SIZE);
 
-	            if(!is_locked  || status != ATCA_SUCCESS){
-					status = atcab_lock_data_zone();
-	            }
+                provision_status_t provision_status = check_provision_status();
+                //check if device already provisioned
+                if(provision_status == provision_empty){
+                    //called again if not locked in previous configuration
+                    is_locked = false;
+                    atecc_data.status = atcab_is_locked(LOCK_ZONE_CONFIG, &is_locked);
 
-                //fill whole serial_no with random
-                status = atcab_random(serial_no);
+                    if(!is_locked  || atecc_data.status != ATCA_SUCCESS){
+                        atecc_data.status = atcab_lock_config_zone();
+                    }
 
-                //overwrite date 4bytes
-                memcpy(serial_no, provision_date, 4);
+                    is_locked = false;
+                    atecc_data.status = atcab_is_locked(LOCK_ZONE_DATA, &is_locked);
 
-                //overwrite hw no 4bytes
-                uint32_t u32Temp = (uint32_t)DEVICE_HARDWARE_VERSION;
-                memcpy(serial_no+4, &u32Temp, 4);
+                    if(!is_locked  || atecc_data.status != ATCA_SUCCESS){
+                        atecc_data.status = atcab_lock_data_zone();
+                    }
+
+                    //fill whole serial_no with random
+                    atecc_data.status = atcab_random(serial_no);
+
+                    //overwrite date 4bytes
+                    memcpy(serial_no, provision_date, 4);
+
+                    //overwrite hw no 4bytes
+                    uint32_t u32Temp = FW_get_hardware_version();
+                    memcpy(serial_no+4, &u32Temp, 4);
 
 #if USE_SIMULATOR == 0
-                //overwrite MCU UID 12 bytes
-                u32Temp = HAL_GetUIDw0();
-                memcpy(serial_no+8, &u32Temp, 4);
-                u32Temp = HAL_GetUIDw1();
-                memcpy(serial_no+12, &u32Temp, 4);
-                u32Temp = HAL_GetUIDw2();
-                memcpy(serial_no+16, &u32Temp, 4);
+                    //overwrite MCU UID 12 bytes
+                    u32Temp = HAL_GetUIDw0();
+                    memcpy(serial_no+8, &u32Temp, 4);
+                    u32Temp = HAL_GetUIDw1();
+                    memcpy(serial_no+12, &u32Temp, 4);
+                    u32Temp = HAL_GetUIDw2();
+                    memcpy(serial_no+16, &u32Temp, 4);
 #endif
 
-                status = atcab_write_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, serial_no, 32);
-                if(status != ATCA_SUCCESS){
-                	fault_status = status;
-                }
+                    atecc_data.status = atcab_write_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, serial_no, 32);
+                    if(atecc_data.status != ATCA_SUCCESS){
+                        atecc_data.fault_status = atecc_data.status;
+                        continue;
+                    }
 
-                //generate and write IO key
-                random_generate(io_protection_key, IO_KEY_SIZE);
-                if(status != ATCA_SUCCESS){
-                	fault_status = status;
-                }
+                    //generate and write IO key
+                    random_generate(io_protection_key, IO_KEY_SIZE);
+                    if(atecc_data.status != ATCA_SUCCESS){
+                        atecc_data.fault_status = atecc_data.status;
+                        continue;
+                    }
 
-                status = atcab_write_zone(ATCA_ZONE_DATA, slot_6_io_key, 0, 0, io_protection_key, IO_KEY_SIZE);
-                if(status != ATCA_SUCCESS){
-                	fault_status = status;
-                }
+                    atecc_data.status = atcab_write_zone(ATCA_ZONE_DATA, slot_6_io_key, 0, 0, io_protection_key, IO_KEY_SIZE);
+                    if(atecc_data.status != ATCA_SUCCESS){
+                        atecc_data.fault_status = atecc_data.status;
+                        continue;
+                    }
 
-                if(fault_status == ATCA_SUCCESS){
-                    if(set_io_protection_key(io_protection_key) == SUCCESS_){
-                        //locking IO_KEY and serial number slots
-                        status = atcab_lock_data_slot(slot_6_io_key);
-                        status = atcab_lock_data_slot(slot_8_serial);
+                    if(atecc_data.fault_status == ATCA_SUCCESS){
+                        if(set_io_protection_key(io_protection_key) == SUCCESS_){
+                            //locking IO_KEY and serial number slots
+                            atecc_data.status = atcab_lock_data_slot(slot_6_io_key);
+                            atecc_data.status = atcab_lock_data_slot(slot_8_serial);
+                            get_device_serial();
+                        }
+                        else{
+                            memset(serial_no, 0, 32);
+                            LOG_ERROR("PERR1-IO");
+                            continue;
+                        }
                     }
                     else{
                         memset(serial_no, 0, 32);
-                        LOG_ERROR("PERR1-IO");
-
+                        LOG_ERROR("PERR1-0x%02x", atecc_data.fault_status);
+                        continue;
                     }
                 }
-                else{
-                	memset(serial_no, 0, 32);
-                    LOG_ERROR("PERR1-0x%02x", fault_status);
+                else if(provision_status == provision_incomplete){
+                    get_device_serial();
                 }
+                else{
+                    lv_obj_clean(lv_scr_act());
+                    mark_error_screen(ui_text_device_already_provisioned);
+                    reset_flow_level();
+                    flow_level.level_one = 6;
+                    flow_level.show_error_screen = true;
+                    return;
+                }
+            }while((atecc_data.fault_status != ATCA_SUCCESS) && (--atecc_data.retries));
 
-            }
-            else if(provision_status == provision_incomplete){
-                status = atcab_read_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, serial_no, 32);
-            }
-            else{
-                 lv_obj_clean(lv_scr_act());
-                 mark_error_screen(ui_text_device_already_provisioned);
-                 reset_flow_level();
-                 flow_level.level_one = 6;
-                 flow_level.show_error_screen = true;
-                 break;
-            }
-
-            transmit_data_to_app(ADD_DEVICE_PROVISION, serial_no, 32);
+            transmit_data_to_app(ADD_DEVICE_PROVISION, atecc_data.device_serial, 32);
 
             flow_level.level_three = PROVISION_STATUS_WAIT;
             lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);  // explicitly enable task listener
@@ -274,7 +316,6 @@ void device_provision_controller(){
         } break;
 
         case PROVISION_SAVE_EXT_KEYS: {
-            ATCA_STATUS status;
             uint8_t private_write_key[36] = {0};
             Perm_Key_Data_Struct perm_key_data;
             uint8_t digest[SHA256_DIGEST_LENGTH];
@@ -289,27 +330,33 @@ void device_provision_controller(){
                 break;
             }
 
-            memcpy(&private_write_key[4], provision_keys_data.device_private_key, 32);
+            atecc_data.retries = DEFAULT_ATECC_RETRIES;
+            do{
+                atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+                if(atecc_data.status!=ATCA_SUCCESS){
+                    continue;
+                }
 
-            BSP_DelayMs(500);
-            status = atcab_priv_write(slot_2_auth_key, private_write_key, slot_6_io_key, perm_key_data.io_protection_key);
-            if(status!=ATCA_SUCCESS){
+                memset(private_write_key, 0, sizeof(private_write_key));
+                memcpy(&private_write_key[4], provision_keys_data.device_private_key, 32);
+                atecc_data.status = atcab_priv_write(slot_2_auth_key, private_write_key, slot_6_io_key, perm_key_data.io_protection_key);
+                if(atecc_data.status!=ATCA_SUCCESS){
+                    LOG_ERROR("PERR2-0x%02x", atecc_data.status);
+                    continue;
+                }
+
+                memset(private_write_key, 0, sizeof(private_write_key));
+                memcpy(&private_write_key[4], provision_keys_data.priv_key, 32);
+                atecc_data.status = atcab_priv_write(slot_3_nfc_pair_key, private_write_key, slot_6_io_key, perm_key_data.io_protection_key);
+                if(atecc_data.status!=ATCA_SUCCESS){
+                    LOG_ERROR("PERR3-0x%02x", atecc_data.status);
+                    continue;
+                }
+            }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+
+            if(atecc_data.status != ATCA_SUCCESS){
                 transmit_one_byte_reject(CONFIRM_PROVISION);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
-                LOG_ERROR("PERR2-0x%02x", status);
-                break;
-            }
-
-
-            memset(private_write_key, 0, sizeof(private_write_key));
-            memcpy(&private_write_key[4], provision_keys_data.priv_key, 32);
-
-            BSP_DelayMs(500);
-            status = atcab_priv_write(slot_3_nfc_pair_key, private_write_key, slot_6_io_key, perm_key_data.io_protection_key);
-            if(status!=ATCA_SUCCESS){
-                transmit_one_byte_reject(CONFIRM_PROVISION);
-                flow_level.level_three = PROVISION_UNSUCCESSFUL;
-                LOG_ERROR("PERR2-0x%02x", status);
                 break;
             }
 
@@ -369,30 +416,4 @@ static void __timeout_listener() {
     flow_level.level_one = 6;   // on command not received take to get-started screen
     lv_task_del(timeout_task);
 #endif
-}
-
-uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign){
-    ATCAIfaceCfg *atca_cfg;
-        atca_cfg = cfg_atecc608a_iface;
-
-    ATCA_STATUS status = atcab_init(atca_cfg);
-
-    if(status == ATCA_SUCCESS)
-        status = atcab_sign(slot_3_nfc_pair_key, hash, sign);
-
-    return status;
-}
-
-uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret){
-    ATCAIfaceCfg *atca_cfg;
-    atca_cfg = cfg_atecc608a_iface;
-    uint8_t io_key[IO_KEY_SIZE];
-
-    ATCA_STATUS status = atcab_init(atca_cfg);
-
-    if(get_io_protection_key(io_key) == SUCCESS_)
-
-    if(status == ATCA_SUCCESS)
-        status = atcab_ecdh_ioenc(slot_3_nfc_pair_key, pub_key, shared_secret, io_key);
-    return status;
 }

@@ -66,7 +66,6 @@
 #include "shamir_wrapper.h"
 #include "tasks.h"
 #include "wallet_utilities.h"
-#include "cryptoauthlib.h"
 #include <inttypes.h>
 #include <stdlib.h>
 #include "ui_message.h"

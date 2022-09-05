@@ -61,6 +61,7 @@
 #include "controller_tap_cards.h"
 #include "controller_advanced_settings.h"
 #include "application_startup.h"
+#include "cy_factory_reset.h"
 #include <stdio.h>
 
 extern lv_task_t* timeout_task;
@@ -87,14 +88,9 @@ void level_three_advanced_settings_controller()
         counter.level = LEVEL_TWO;
     } break;
 
-    case LEVEL_THREE_FACTORY_RESET: {
-        if (get_display_rotation() == LEFT_HAND_VIEW)
-            ui_rotate();
-        sec_flash_erase();
-        flash_erase();
-        logger_reset_flash();
-        reset_flow_level();
-    } break;
+    case LEVEL_THREE_FACTORY_RESET:
+        cyc_factory_reset();
+        break;
 #endif
 
     case LEVEL_THREE_VIEW_DEVICE_VERSION:{

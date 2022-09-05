@@ -795,7 +795,7 @@ int set_io_protection_key(const uint8_t* key) {
         return SUCCESS_;
     }
 
-    return SUCCESS_;
+    return INCONSISTENT_STATE;
 }
 
 int set_ext_key(const Perm_Ext_Keys_Struct* ext_keys) {
@@ -985,6 +985,24 @@ const uint32_t get_wallet_time_to_unlock(uint8_t wallet_index) {
     return flash_ram_instance.wallets[wallet_index].challenge.time_to_unlock_in_secs;
 }
 
+const uint8_t get_keystore_used_status(uint8_t keystore_index){
+    if (keystore_index >= MAX_KEYSTORE_ENTRY)
+        return -1;
+
+    get_sec_flash_ram_instance();
+    return sec_flash_instance.keystore[keystore_index].used;
+}
+
+const uint8_t get_keystore_used_count(){
+    uint8_t paired_card_count = 0;
+    for(uint8_t i = 0; i < MAX_KEYSTORE_ENTRY; i++){
+        if(get_keystore_used_status(i) == 1){
+            paired_card_count++;
+        }
+    }
+    return paired_card_count;
+}
+
 const uint8_t* get_keystore_pairing_key(uint8_t keystore_index) {
     if (keystore_index >= MAX_KEYSTORE_ENTRY)
         return NULL;
@@ -1037,4 +1055,11 @@ uint8_t set_keystore_used_status(uint8_t keystore_index, uint8_t _used, flash_sa
         sec_flash_struct_save();
     
     return SUCCESS_;
+}
+
+void flash_delete_all_wallets() {
+    get_flash_ram_instance();
+    memzero(&flash_ram_instance.wallets, MAX_WALLETS_ALLOWED * sizeof(Flash_Wallet));
+    flash_ram_instance.wallet_count = 0;
+    flash_struct_save();
 }

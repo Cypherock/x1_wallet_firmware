@@ -822,6 +822,28 @@ const uint32_t get_wallet_time_to_unlock(uint8_t wallet_index);
  * @note
  */
 const Flash_Wallet* get_wallet_by_index(uint8_t wallet_index);
+/**
+ * @brief Returns if the requested keystore entry is used or empty.
+ *
+ * @return uint8_t  Usage status of the specified keystore entry index.
+ * @retval 0        Keystore entry unused
+ * @retval 1        Keystore entry used
+ * @retval 255      Keystore entry index is invalid
+ *
+ * @see card_keystore
+ * @since v1.0.0
+ */
+const uint8_t get_keystore_used_status(uint8_t keystore_index);
+
+/**
+ * @brief Returns number of used keystore entries.
+ *
+ * @return uint8_t   Number of used keystore entries
+ *
+ * @see card_keystore
+ * @since v1.0.0
+ */
+const uint8_t get_keystore_used_count();
 
 /**
  * @brief
@@ -886,5 +908,15 @@ uint8_t set_keystore_key_id(uint8_t keystore_index, const uint8_t* _key_id, uint
  * @note
  */
 uint8_t set_keystore_used_status(uint8_t keystore_index, uint8_t _used, flash_save_mode save_mode);
+
+/**
+ * @brief Delete all wallet data from the flash
+ * @details The function deletes all wallet data from the flash and sets the wallet count to 0.
+ * The other wallet data (such as family-id, device configuration like display rotation, etc.) is not deleted.
+ *
+ * @see Flash_Wallet, Flash_Struct
+ * @since v1.0.0
+ */
+void flash_delete_all_wallets();
 
 #endif

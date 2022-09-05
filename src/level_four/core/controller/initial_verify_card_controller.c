@@ -71,8 +71,18 @@
 
 #if X1WALLET_INITIAL
 
-static uint8_t signature[ECDSA_SIGNATURE_SIZE];
-static uint16_t length;
+static uint8_t signature[ECDSA_SIGNATURE_SIZE] = {0};
+static uint16_t length = 0;
+
+/**
+ * @brief Track the Family-ID of the card during one device session.
+ * @details Initialized to allow any card for a new session.
+ * The actual Family-ID is read from the card during the first session (at VERIFY_CARD_FETCH_RANDOM_NUMBER in
+ * get_card_serial_number()).
+ *
+ * @see VERIFY_CARD_FETCH_RANDOM_NUMBER, get_card_serial_number()
+ */
+static uint8_t cyi_verify_fid[FAMILY_ID_SIZE] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
 
 uint8_t auth_card_number = 0;
 
@@ -120,7 +130,7 @@ void initial_verify_card_controller()
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
 
-        memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+        memcpy(tap_card_data.family_id, cyi_verify_fid, FAMILY_ID_SIZE);
 
         tap_card_data.lvl3_retry_point = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
         while (1) {
@@ -158,6 +168,8 @@ void initial_verify_card_controller()
         get_usb_msg(&msg_type, &data_array, &msg_size);
 
         if(msg_type == APP_SEND_RAND_NUM){
+            // Save the family id for this session; good point to save after server verification
+            memcpy(cyi_verify_fid, tap_card_data.family_id, FAMILY_ID_SIZE);
             memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
             flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
         } else {
@@ -269,7 +281,7 @@ static void _tap_card_backend(uint8_t card_number)
         tap_card_data.tapped_card = 0;
         tap_card_data.acceptable_cards = (1 << (card_number - 1));
         tap_card_data.lvl3_retry_point = VERIFY_CARD_PAIR_FRONTEND;
-        memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+        memcpy(tap_card_data.family_id, cyi_verify_fid, FAMILY_ID_SIZE);
         if (!tap_card_applet_connection()) {
             if (counter.level == LEVEL_ONE)
                 flow_level.level_one = 6;   // take to get-started screen
@@ -286,6 +298,8 @@ static void _tap_card_backend(uint8_t card_number)
         if (tap_card_data.status == SW_NO_ERROR) {
             transmit_one_byte_confirm(START_CARD_AUTH);
             buzzer_start(BUZZER_DURATION);
+            if (U32_READ_BE_ARRAY(get_family_id()) != U32_READ_BE_ARRAY(cyi_verify_fid))
+                set_family_id_flash(cyi_verify_fid);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
             nfc_detect_card_removal();
             handle_pair_card_success(card_number, session_nonce, card_pairing_data);
@@ -298,4 +312,27 @@ static void _tap_card_backend(uint8_t card_number)
         }
     }
 #endif
+}
+
+uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign){
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    do{
+        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        atecc_data.status = atcab_sign(slot_3_nfc_pair_key, hash, sign);
+    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    return atecc_data.fault_status = atecc_data.status;
+}
+
+uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret){
+    uint8_t io_key[IO_KEY_SIZE];
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+    if(get_io_protection_key(io_key) != SUCCESS_)
+    return -1;
+
+    do{
+        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        atecc_data.status = atcab_ecdh_ioenc(slot_3_nfc_pair_key, pub_key, shared_secret, io_key);
+    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    return atecc_data.fault_status = atecc_data.status;
 }

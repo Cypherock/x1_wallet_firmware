@@ -123,6 +123,28 @@ void level_two_controller_b()
 #endif
 #if X1WALLET_MAIN
             if (flow_level.level_two == LEVEL_THREE_PAIR_CARD){
+                if(flow_level.show_error_screen){
+                    reset_flow_level();
+                }
+                else{
+                    switch (flow_level.level_four)
+                    {
+                    case PAIR_CARD_RED_FRONTEND:
+                    case PAIR_CARD_BLUE_FRONTEND:
+                    case PAIR_CARD_GREEN_FRONTEND:
+                    case PAIR_CARD_YELLOW_FRONTEND:
+                        flow_level.level_four+=2;
+                        /* code */
+                        break;
+                    
+                    default:
+                        reset_flow_level();
+                        break;
+                    }
+                }
+                return;
+            }
+            if (flow_level.level_two == LEVEL_THREE_FACTORY_RESET){
                 reset_flow_level();
                 return;
             }

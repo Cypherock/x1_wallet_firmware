@@ -67,12 +67,13 @@
 #include "sec_flash_priv.h"
 #include "board.h"
 #include "buzzer.h"
+#include "utils.h"
+#include "coin_utils.h"
 
 
 #define SEC_FLASH_STRUCT_TLV_SIZE (6 +                                                             \
                                3 + (MAX_WALLETS_ALLOWED * (9 + sizeof(Wallet_Share_Data))) +       \
                                3 + (MAX_KEYSTORE_ENTRY * ((4 * 3) + sizeof(Card_Keystore))))
-
 
 #define FLASH_WRITE_PERM_STRUCTURE_SIZE sizeof(Flash_Perm_Struct)/4
 typedef enum Sec_Flash_tlv_tags {
@@ -90,6 +91,16 @@ typedef enum Sec_Flash_tlv_tags {
     TAG_SEC_FLASH_KEYSTORE_PAIRING_KEY = 0x33,
 } Sec_Flash_tlv_tags;
 
+typedef enum Flash_Perm_tlv_tags {
+    TAG_PERM_STRUCT = 0x7B7B7B7B,
+    TAG_PERM_FLASH_EXT_DATA_IOKEY = 0x01,
+    TAG_PERM_FLASH_DEVICE_AUTH_PUBK = 0x02,
+    TAG_PERM_FLASH_DEVICE_KEY_ID = 0x03,
+    TAG_PERM_FLASH_DEVICE_KEY_PATH = 0x04,
+    TAG_PERM_FLASH_DEVICE_NFC_PRIV = 0x05,
+    TAG_PERM_FLASH_CARD_ROOT_XPUB = 0x06,
+} Flash_Perm_tlv_tags;
+
 Sec_Flash_Struct sec_flash_instance;
 Flash_Perm_Struct flash_perm_instance;
 
@@ -97,9 +108,10 @@ Flash_Perm_Struct flash_perm_instance;
 bool is_flash_perm_instance_loaded = false;
 bool is_sec_flash_ram_instance_loaded = false;
 
-
+static void fill_flash_tlv(uint8_t* array, uint16_t* starting_index, uint8_t tag, uint16_t length, const uint8_t* data);
 static uint16_t serialize_sec_fs(const Sec_Flash_Struct* sec_fs, uint8_t* tlv);
 static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs, const uint8_t *tlv);
+static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs, const uint8_t *tlv, uint32_t size);
 
 /**
  * @brief   Function used to call firewall callgate
@@ -362,22 +374,49 @@ void sec_flash_erase(){
 static void flash_perm_struct_load()
 {
     ASSERT((&flash_perm_instance) != NULL);
-
-	FW_read_NVData(FIREWALL_IO_PROTECTION_KEY_ADDR, (uint8_t*)&flash_perm_instance.permKeyData, sizeof(Perm_Key_Data_Struct));
+    uint8_t fw_raw_data[FLASH_PAGE_SIZE];
+	FW_read_NVData(FIREWALL_NVDATA_APP_KEYS_ADDR, fw_raw_data, FLASH_PAGE_SIZE);
+    deserialize_perm_fs_key_data(&flash_perm_instance, fw_raw_data, FLASH_PAGE_SIZE);
 	FW_GetBootData(&(flash_perm_instance.bootData));
 	flash_perm_instance.bootCount = FW_GetBootCount();
+}
+
+static void flash_perm_key_save(uint8_t tag, uint16_t size, const uint8_t* data) {
+    uint16_t length = 0, fs_offset = 0;
+    uint8_t tlv[8 + 3 + size + 8];
+    uint8_t fw_raw_data[FLASH_PAGE_SIZE] = {0};
+
+    memset(tlv, DEFAULT_VALUE_IN_FLASH, sizeof(tlv));
+    FW_read_NVData(FIREWALL_NVDATA_APP_KEYS_ADDR, fw_raw_data, FLASH_PAGE_SIZE);
+    for (int index = 0; index < FLASH_PAGE_SIZE; index += 8) {
+        if ((*((uint32_t *)(fw_raw_data + index)) != DEFAULT_UINT32_IN_FLASH) ||
+            (*((uint32_t *)(fw_raw_data + index + 4)) != DEFAULT_UINT32_IN_FLASH))
+            fs_offset = index + 8;
+    }
+    ASSERT(fs_offset < FLASH_PAGE_SIZE);
+
+    if (fs_offset == 0) {
+        memset(tlv, TAG_PERM_STRUCT & 0xFF, 2 * sizeof(uint32_t));
+        length = 8;
+    }
+    fill_flash_tlv(tlv, &length, tag, size, data);
+    if (length % 8 != 0) length += (8 - length % 8);
+    FW_write_oneTime(FIREWALL_NVDATA_APP_KEYS_ADDR + fs_offset, tlv, length);
 }
 
 void flash_perm_struct_save_IOProtectKey()
 {
     ASSERT((&flash_perm_instance) != NULL);
-    
-	FW_write_oneTime(FIREWALL_IO_PROTECTION_KEY_ADDR, flash_perm_instance.permKeyData.io_protection_key, IO_KEY_SIZE);
+    flash_perm_key_save(TAG_PERM_FLASH_EXT_DATA_IOKEY, IO_KEY_SIZE, flash_perm_instance.permKeyData.io_protection_key);
 }
 
-void flash_perm_struct_save_ext_keys(){
+void flash_perm_struct_save_ext_keys() {
     ASSERT((&flash_perm_instance) != NULL);
-    FW_write_oneTime(FIREWALL_EXTERNAL_KEYS_ADDR, (uint8_t*)&flash_perm_instance.permKeyData.ext_keys, sizeof(Perm_Ext_Keys_Struct));
+    flash_perm_key_save(TAG_PERM_FLASH_DEVICE_AUTH_PUBK, ECDSA_PUB_KEY_SIZE, flash_perm_instance.permKeyData.ext_keys.device_auth_public_key);
+    flash_perm_key_save(TAG_PERM_FLASH_DEVICE_KEY_ID, FS_KEYSTORE_KEYID_LEN, flash_perm_instance.permKeyData.ext_keys.self_key_id);
+    flash_perm_key_save(TAG_PERM_FLASH_DEVICE_KEY_PATH, FS_KEYSTORE_KEYPATH_LEN, flash_perm_instance.permKeyData.ext_keys.self_key_path);
+    flash_perm_key_save(TAG_PERM_FLASH_DEVICE_NFC_PRIV, FS_KEYSTORE_PRIVKEY_LEN, flash_perm_instance.permKeyData.ext_keys.priv_key);
+    flash_perm_key_save(TAG_PERM_FLASH_CARD_ROOT_XPUB, FS_KEYSTORE_XPUB_LEN, flash_perm_instance.permKeyData.ext_keys.card_root_xpub);
 }
 
 /**
@@ -652,5 +691,48 @@ static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs, const uint8_t *tlv)
             }
         }
         index += (size + 2);
+    }
+}
+
+static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs, const uint8_t *tlv, uint32_t size) {
+    int64_t index = 0, tag, length;
+    if (U32_READ_LE_ARRAY(tlv) == DEFAULT_UINT32_IN_FLASH && U32_READ_LE_ARRAY(tlv + 4) == DEFAULT_UINT32_IN_FLASH) {
+        // This is an older version of serialisation (without TLV); copy as it is and de-serialise remaining data
+        memcpy((uint8_t *) &perm_fs->permKeyData, tlv + 2 * sizeof(uint32_t), sizeof(Perm_Key_Data_Struct));
+        index = (2 * sizeof(uint32_t) + sizeof(Perm_Key_Data_Struct));
+        if (index % 8 != 0) index += (8 - index % 8);
+    } else if (U32_READ_LE_ARRAY(tlv) == TAG_PERM_STRUCT && U32_READ_LE_ARRAY(tlv + 4) == TAG_PERM_STRUCT) {
+        index += 8;
+    }else {
+        LOG_CRITICAL("xxx10");
+        return;
+    }
+    while (index < size) {
+        tag = tlv[index++];
+        length = U16_READ_LE_ARRAY(tlv + index);
+        index += 2;
+        switch (tag) {
+            case TAG_PERM_FLASH_EXT_DATA_IOKEY:
+                s_memcpy(perm_fs->permKeyData.io_protection_key, tlv, size, CY_MIN(length, IO_KEY_SIZE), &index);
+                break;
+            case TAG_PERM_FLASH_DEVICE_AUTH_PUBK:
+                s_memcpy(perm_fs->permKeyData.ext_keys.device_auth_public_key, tlv, size, CY_MIN(length, ECDSA_PUB_KEY_SIZE), &index);
+                break;
+            case TAG_PERM_FLASH_DEVICE_KEY_ID:
+                s_memcpy(perm_fs->permKeyData.ext_keys.self_key_id, tlv, size, CY_MIN(length, FS_KEYSTORE_KEYID_LEN), &index);
+                break;
+            case TAG_PERM_FLASH_DEVICE_KEY_PATH:
+                s_memcpy(perm_fs->permKeyData.ext_keys.self_key_path, tlv, size, CY_MIN(length, FS_KEYSTORE_KEYPATH_LEN), &index);
+                break;
+            case TAG_PERM_FLASH_DEVICE_NFC_PRIV:
+                s_memcpy(perm_fs->permKeyData.ext_keys.priv_key, tlv, size, CY_MIN(length, FS_KEYSTORE_PRIVKEY_LEN), &index);
+                break;
+            case TAG_PERM_FLASH_CARD_ROOT_XPUB:
+                s_memcpy(perm_fs->permKeyData.ext_keys.card_root_xpub, tlv, size, CY_MIN(length, FS_KEYSTORE_XPUB_LEN), &index);
+                break;
+            default:
+                return;
+        }
+        if (index % 8 != 0) index += (8 - index % 8);
     }
 }

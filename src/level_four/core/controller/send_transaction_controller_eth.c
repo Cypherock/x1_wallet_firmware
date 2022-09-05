@@ -119,13 +119,13 @@ void send_transaction_controller_eth()
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
         if (eth_unsigned_txn_ptr.contract_verified)
-            flow_level.level_three = SEND_TXN_VERIFY_TXN_NONCE_ETH;
+            flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH;
         else
             flow_level.level_three = SEND_TXN_VERIFY_CONTRACT_ADDRESS;
     } break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS: {
-        flow_level.level_three = SEND_TXN_VERIFY_TXN_NONCE_ETH;
+        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH;
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {

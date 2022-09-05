@@ -74,43 +74,43 @@ void tap_card_pair_card_controller()
         break;
 
     case PAIR_CARD_RED_FRONTEND:
-        tap_card_data.desktop_control = false;
-        tap_card_data.lvl4_retry_point = PAIR_CARD_RED_FRONTEND;
-        tap_card_data.tapped_card = 0;
         flow_level.level_four = PAIR_CARD_RED_BACKEND;
         break;
 
     case PAIR_CARD_RED_BACKEND:
+        tap_card_data.desktop_control = false;
+        tap_card_data.lvl4_retry_point = PAIR_CARD_RED_FRONTEND;
+        tap_card_data.tapped_card = 0;
         _tap_card_backend(1);
         break;
 
     case PAIR_CARD_BLUE_FRONTEND:
-        tap_card_data.lvl4_retry_point = PAIR_CARD_BLUE_FRONTEND;
-        tap_card_data.tapped_card = 0;
         flow_level.level_four = PAIR_CARD_BLUE_BACKEND;
         break;
 
     case PAIR_CARD_BLUE_BACKEND:
+        tap_card_data.lvl4_retry_point = PAIR_CARD_BLUE_FRONTEND;
+        tap_card_data.tapped_card = 0;
         _tap_card_backend(2);
         break;
 
     case PAIR_CARD_GREEN_FRONTEND:
-        tap_card_data.lvl4_retry_point = PAIR_CARD_GREEN_FRONTEND;
-        tap_card_data.tapped_card = 0;
         flow_level.level_four = PAIR_CARD_GREEN_BACKEND;
         break;
 
     case PAIR_CARD_GREEN_BACKEND:
+        tap_card_data.lvl4_retry_point = PAIR_CARD_GREEN_FRONTEND;
+        tap_card_data.tapped_card = 0;
         _tap_card_backend(3);
         break;
 
     case PAIR_CARD_YELLOW_FRONTEND:
-        tap_card_data.lvl4_retry_point = PAIR_CARD_YELLOW_FRONTEND;
-        tap_card_data.tapped_card = 0;
         flow_level.level_four = PAIR_CARD_YELLOW_BACKEND;
         break;
 
     case PAIR_CARD_YELLOW_BACKEND:
+        tap_card_data.lvl4_retry_point = PAIR_CARD_YELLOW_FRONTEND;
+        tap_card_data.tapped_card = 0;
         _tap_card_backend(4);
         break;
 
@@ -161,6 +161,8 @@ static void _tap_card_backend(uint8_t card_number)
 
         if (tap_card_data.status == SW_NO_ERROR) {
             buzzer_start(BUZZER_DURATION);
+            if (*(uint32_t*)get_family_id() == DEFAULT_UINT32_IN_FLASH)
+                set_family_id_flash(tap_card_data.family_id);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
             handle_pair_card_success(card_number, session_nonce, card_pairing_data);
             nfc_detect_card_removal();

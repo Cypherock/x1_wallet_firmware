@@ -49,9 +49,6 @@ extern const char* ui_text_startup_instruction_screen_3[];
 
 extern const char* ui_text_startup_instruction_screen_4[];
 
-
-extern const char* ui_text_verification_failed_initiating_delete_wallet_flow[];
-
 extern const char* ui_text_mnemonics_number_options[];
 
 extern const char* ui_text_view_data;
@@ -228,6 +225,7 @@ extern const char* ui_text_do_you_want_to_resync_coins_to;
 extern const char* ui_text_send_transaction_with;
 extern const char* ui_text_eth_send_transaction_with;
 extern const char* ui_text_recv_transaction_with;
+extern const char* ui_text_eth_recv_transaction_with;
 extern const char* ui_text_do_you_want_to_set_pin;
 extern const char* ui_text_output_send_value;
 extern const char* ui_text_output_send_to_address;
@@ -242,7 +240,8 @@ extern const char* ui_text_auth_process;
 extern const char* ui_text_sync_x1card_confirm;
 extern const char* ui_text_rotate_display_confirm;
 
-extern const char* ui_text_factory_reset_confirm;
+extern const char* ui_text_factory_reset_confirm[];
+extern const char* ui_text_confirm_factory_reset;
 extern const char* ui_text_device_verification_success;
 extern const char* ui_text_device_verification_failure;
 extern const char* ui_text_unauthenticate_via_cysync;
@@ -267,10 +266,14 @@ extern const char* ui_text_cannot_verify_card_contact_support;
 extern const char* ui_text_wrong_btc_transaction;
 extern const char* ui_text_btc_change_address_mismatch;
 extern const char* ui_text_worng_eth_transaction;
+extern const char* ui_text_error_no_card_paired;
+extern const char* ui_text_error_pair_all_cards;
+extern const char* ui_text_error_pair_atleast_2_cards;
 extern const char* ui_text_pair_card_1;
 extern const char* ui_text_pair_card_2;
 extern const char* ui_text_pair_card_3;
 extern const char* ui_text_pair_card_4;
+extern const char* ui_text_card_pairing_skipped_count;
 extern const char* ui_text_card_pairing_success;
 extern const char* ui_text_continue_with_pairing;
 extern const char* ui_text_device_compromised;
@@ -285,6 +288,9 @@ extern const char* ui_text_card_detected;
 extern const char* ui_text_nfc_hardware_fault_detected;
 extern const char* ui_text_unreliable_cards;
 extern const char* ui_critical_card_health_migrate_data;
+extern const char* ui_text_reset_exit[];
+extern const char* ui_text_erasing;
+extern const char* ui_text_performing_checks;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char* ui_text_send_logs_prompt;

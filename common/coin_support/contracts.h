@@ -21,10 +21,10 @@
  *
  * @see <a href="https://ethereum.stackexchange.com/a/117645" target="_blank">StackExchange question</a>
  */
-#define ETHEREUM_TOKEN_SYMBOL_LENGTH    8
+#define ETHEREUM_TOKEN_SYMBOL_LENGTH    20
 
 /// Number of entries in whitelisted contracts list
-#define WHITELISTED_CONTRACTS_COUNT     5
+#define WHITELISTED_CONTRACTS_COUNT     1778
 
 /**
  * @brief Class to maintain a mapping of contract address and its token symbol

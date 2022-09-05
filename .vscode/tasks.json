@@ -11,7 +11,7 @@
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Simulator",
                 "-DFIRMWARE_TYPE=Main",
-                "-G=Ninja"
+                "-GNinja"
             ],
             "options": {
                 "cwd": "${workspaceRoot}/build"
@@ -43,7 +43,7 @@
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Simulator",
                 "-DFIRMWARE_TYPE=Initial",
-                "-G=Ninja"
+                "-GNinja"
             ],
             "options": {
                 "cwd": "${workspaceRoot}/build"
@@ -75,7 +75,7 @@
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Device",
                 "-DFIRMWARE_TYPE=Main",
-                "-G=Ninja"
+                "-GNinja"
             ],
             "options": {
                 "cwd": "${workspaceRoot}/build"
@@ -110,7 +110,7 @@
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Device",
                 "-DFIRMWARE_TYPE=Initial",
-                "-G=Ninja"
+                "-GNinja"
             ],
             "options": {
                 "cwd": "${workspaceRoot}/build"

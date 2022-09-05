@@ -199,7 +199,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(int coin_index, uint8_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint8_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
