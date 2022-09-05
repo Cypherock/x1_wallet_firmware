@@ -78,18 +78,25 @@ void initial_verify_card_task() {
 #if X1WALLET_INITIAL
 	switch(flow_level.level_three) {
 
-    case VERIFY_CARD_START_MESSAGE:
-        instruction_scr_init(ui_text_place_card_wait_for_three_beep[auth_card_number - 1]);
-        mark_event_over();
-        break;
+    case VERIFY_CARD_START_MESSAGE: {
+            char str[50], heading[50];
+            snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
+            snprintf(heading, sizeof(heading), ui_text_place_card_x_heading, auth_card_number);
+            instruction_scr_init(str,heading);
+            mark_event_over();
+          } break;
 
-    case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
-        instruction_scr_destructor();
-        instruction_scr_init("Dummy");
-        instruction_scr_change_text(ui_text_place_card_wait_for_three_beep[auth_card_number - 1], true);
-        BSP_DelayMs(500);
-        mark_event_over();
-        break;
+    case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND: {
+            char str[50], heading[50];
+            snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
+            snprintf(heading, sizeof(heading), ui_text_place_card_x_heading,
+                     auth_card_number);
+            instruction_scr_destructor();
+            instruction_scr_init("Dummy", heading);
+            instruction_scr_change_text(str,true);
+            BSP_DelayMs(500);
+            mark_event_over();
+          } break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
         mark_event_over();
@@ -102,13 +109,17 @@ void initial_verify_card_task() {
         lv_task_once(timeout_task);
         break;
 
-    case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
-        instruction_scr_destructor();
-        instruction_scr_init("Dummy");
-        instruction_scr_change_text(ui_text_place_card_wait_for_two_beep, true);
-        BSP_DelayMs(500);
-        mark_event_over();
-        break;
+    case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND: {
+      char str[50], heading[50];
+      snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 2);
+      snprintf(heading, sizeof(heading), ui_text_place_card_x_heading,
+               auth_card_number);
+      instruction_scr_destructor();
+      instruction_scr_init("Dummy", heading);
+      instruction_scr_change_text(str, true);
+      BSP_DelayMs(500);
+      mark_event_over();
+    } break;
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND:
         mark_event_over();
@@ -121,13 +132,18 @@ void initial_verify_card_task() {
         lv_task_once(timeout_task);
         break;
 
-    case VERIFY_CARD_PAIR_FRONTEND:
-        instruction_scr_destructor();
-        instruction_scr_init("Dummy");
-        instruction_scr_change_text(ui_text_place_card_wait_for_one_beep, true);
-        BSP_DelayMs(500);
-        mark_event_over();
-        break;
+    case VERIFY_CARD_PAIR_FRONTEND: {
+      char str[50], heading[50];
+      snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 1);
+      snprintf(heading, sizeof(heading), ui_text_place_card_x_heading,
+               auth_card_number);
+
+      instruction_scr_destructor();
+      instruction_scr_init("Dummy", heading);
+      instruction_scr_change_text(str, true);
+      BSP_DelayMs(500);
+      mark_event_over();
+    } break;
 
     case VERIFY_CARD_PAIR_BACKEND:
         mark_event_over();

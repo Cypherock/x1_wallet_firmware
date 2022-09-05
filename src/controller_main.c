@@ -211,7 +211,7 @@ void reset_flow_level()
     flow_level.level_three = 1;
     flow_level.level_four = 1;
     flow_level.level_five = 1;
-    mark_device_state(true);
+    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
     memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
     cy_free();
 }
@@ -271,18 +271,22 @@ void set_wallet_init()
 
 void reset_flow_level_greater_than(enum LEVEL level)
 {
-    if (level < LEVEL_FIVE)
-        flow_level.level_five = 1;
-    else if (level < LEVEL_FOUR)
-        flow_level.level_four = 1;
-    else if (level < LEVEL_THREE)
-        flow_level.level_three = 1;
-    else if (level < LEVEL_TWO)
-        flow_level.level_two = 1;
-    else if (level < LEVEL_ONE)
-        flow_level.level_one = 1;
-    else
+    switch (level)
+    {
+        default:
         reset_flow_level();
+        break;
+
+        case LEVEL_ONE:
+            flow_level.level_two = 1;
+        case LEVEL_TWO:
+            flow_level.level_three = 1;
+        case LEVEL_THREE:
+            flow_level.level_four = 1;
+        case LEVEL_FOUR:
+            flow_level.level_five = 1;
+        break;
+    }
 }
 
 void _success_listener(lv_task_t* task)
@@ -353,7 +357,7 @@ static bool wallet_selector(uint8_t *data_array)
     // No wallets found on device
     if(number_of_options == 0)
     {
-        transmit_one_byte(WALLET_DOES_NOT_EXISTS, 0);
+        comm_reject_request(WALLET_DOES_NOT_EXISTS, 0);
         return false;
     }
 
@@ -368,12 +372,12 @@ static bool wallet_selector(uint8_t *data_array)
                 memcpy(wallet.wallet_name, get_wallet_name(walletIndex), NAME_SIZE);
                 wallet.wallet_info = get_wallet_info(walletIndex);
                 if (is_wallet_partial(walletIndex)) {
-                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 1);
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 1);
                     return false;
                 }
                 // if wallet is locked
                 if (is_wallet_locked(walletIndex)) {
-                    transmit_one_byte_reject(WALLET_IS_LOCKED);
+                    comm_reject_request(WALLET_IS_LOCKED, 0);
                     return false;
                 }
                 // Found a valid wallet
@@ -381,13 +385,13 @@ static bool wallet_selector(uint8_t *data_array)
 
             } else {
                 // Wallet is unverified 
-                transmit_one_byte(WALLET_DOES_NOT_EXISTS, 1);
+                comm_reject_request(WALLET_DOES_NOT_EXISTS, 1);
                 return false;
             }
         }
     }
 
-    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 2);
+    comm_reject_request(WALLET_DOES_NOT_EXISTS, 2);
     return false;
 }
 #endif
@@ -408,10 +412,10 @@ void desktop_listener_task(lv_task_t* data)
                 // Using these two variable for temporarily saving new flow and controller variables
                 if (get_wallet_count() == 0) {
                     // No wallets present on device
-                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 0);
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 0);
                 } else if (get_valid_wallet_count() == 0) {
                     // No valid wallets found
-                    transmit_one_byte(WALLET_DOES_NOT_EXISTS, 3);
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 3);
                 } else {
                     snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_do_you_want_import_wallet_to_desktop);
                     flow_level.show_desktop_start_screen = true;
@@ -494,7 +498,7 @@ void desktop_listener_task(lv_task_t* data)
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                     }
                     if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
-                        transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+                        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
                         reset_flow_level();
                     }
                 }
@@ -584,6 +588,7 @@ void desktop_listener_task(lv_task_t* data)
 
 #elif X1WALLET_INITIAL
             case START_CARD_AUTH: {
+                CY_Set_External_Triggered(true);
                 reset_flow_level();
                 counter.level = LEVEL_THREE;
                 lv_obj_clean(lv_scr_act());
@@ -595,6 +600,7 @@ void desktop_listener_task(lv_task_t* data)
             } break;
 
             case START_DEVICE_PROVISION: {	//81,02 success and external keys sent to device, 81,03 failure
+                CY_Set_External_Triggered(true);
                 switch (data_array[0]) {
                     case 1:{
                         if(msg_size<5)
@@ -629,6 +635,7 @@ void desktop_listener_task(lv_task_t* data)
 
             case START_DEVICE_AUTHENTICATION: {
                 CY_Reset_Not_Allow(false);
+                CY_Set_External_Triggered(true);
                 switch (data_array[0]) {
                     case 1: lv_obj_clean(lv_scr_act());
                     case 2:
@@ -668,7 +675,7 @@ void desktop_listener_task(lv_task_t* data)
                     memcpy(device_info+1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
                 }
                 else{
-                    LOG_CRITICAL("err xx4: %d", atecc_data.fault_status);
+                    LOG_CRITICAL("err xx4: %d", atecc_data.status);
                 }
                 device_info[0] = is_device_authenticated() ? 1 : 0;
                 uint32_t fwVer = get_fwVer();
@@ -678,11 +685,11 @@ void desktop_listener_task(lv_task_t* data)
                 transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
             } break;
 #ifdef ALLOW_LOG_EXPORT
-            case APP_LOG_DATA_REQUEST: {
+            case APP_LOG_DATA_SEND: {
 #if X1WALLET_MAIN
                 if (!is_logging_enabled()) {
                     clear_message_received_data();
-                    transmit_one_byte(APP_LOG_DATA_REQUEST, 2);
+                    comm_reject_request(APP_LOG_DATA_REJECT, 2);
                 } else
 #endif
                 {
@@ -698,6 +705,7 @@ void desktop_listener_task(lv_task_t* data)
             } break;
 #endif  // end X1WALLET_
             default:  clear_message_received_data();
+                comm_reject_invalid_cmd();
                 break;
         }
 
@@ -710,19 +718,6 @@ void desktop_listener_task(lv_task_t* data)
             lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
         }
     }
-}
-
-bool abort_from_desktop()
-{
-    uint8_t *data_array = NULL;
-    uint16_t msg_len = 1;
-    if (get_usb_msg_by_cmd_type(STATUS_PACKET, &data_array, &msg_len)
-        && data_array[0] == STATUS_CMD_ABORT) {
-        CY_Reset_Flow();
-        clear_message_received_data();
-        return true;
-    }
-    return false;
 }
 
 void _abort_()

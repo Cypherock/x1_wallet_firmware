@@ -90,7 +90,7 @@ void level_two_controller_b()
         if (counter.level > LEVEL_TWO) {
             if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM){
             
-                transmit_one_byte_reject(USER_FIRMWARE_UPGRADE_CHOICE);
+                comm_reject_request(USER_FIRMWARE_UPGRADE_CHOICE, 0);
                 reset_flow_level();
                 flow_level.level_one = 6;
                 counter.next_event_flag = true;
@@ -99,7 +99,7 @@ void level_two_controller_b()
 
             if (flow_level.level_two == LEVEL_THREE_VERIFY_CARD){
             
-                transmit_one_byte_reject(START_CARD_AUTH);
+                comm_reject_request(START_CARD_AUTH, 0);
                 reset_flow_level();
                 counter.next_event_flag = true;
                 return;
@@ -114,7 +114,7 @@ void level_two_controller_b()
 #ifdef ALLOW_LOG_EXPORT
             if (flow_level.level_two == LEVEL_THREE_FETCH_LOGS_INIT){
 
-                transmit_one_byte_reject(APP_LOG_DATA_REQUEST);
+                comm_reject_request(APP_LOG_DATA_REJECT, 0);
                 reset_flow_level();
                 flow_level.level_one = 6;
                 counter.next_event_flag = true;

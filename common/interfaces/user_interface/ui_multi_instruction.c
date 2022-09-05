@@ -354,7 +354,7 @@ void multi_instruction_create()
     }
 }
 
-void multi_instruction_init(const char *arr[MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION], const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
+void multi_instruction_init(const char **arr, const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
 {
 
     data = NULL;

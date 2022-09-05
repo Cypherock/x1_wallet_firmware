@@ -150,7 +150,8 @@ void view_seed_task()
             list_init(
                 words,
                 wallet.number_of_mnemonics,
-                ui_text_word_hash);
+                ui_text_word_hash,
+                true);
             reset_theme();
         }
         memzero(secret, sizeof(secret));

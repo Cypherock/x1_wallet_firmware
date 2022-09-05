@@ -69,6 +69,6 @@ struct Multi_Instruction_Object
  *
  * @note
  */
-void multi_instruction_init(const char *arr[MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION], uint8_t count, uint16_t delay_in_ms, bool destruct_on_click);
+void multi_instruction_init(const char **arr, uint8_t count, uint16_t delay_in_ms, bool destruct_on_click);
 
 #endif // UI_MULTI_INSTRUCTION_H

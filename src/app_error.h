@@ -43,6 +43,14 @@
                                                          ///< 13, 14, 15 are reserved for HAL_StatusTypeDef members
 #define NFC_INTERNAL_ERROR      (NFC_APP_ERROR_BASE +  0x10)    ///< Internal error due to wrong interface access or ack packet mismatch
 #define NFC_CARD_ABSENT         (NFC_APP_ERROR_BASE +  0x11)    ///< Internal error due to wrong interface access or ack packet mismatch
+#define NFC_SC_ENC_KEY_ERROR    (NFC_APP_ERROR_BASE +  0x12)    ///< NFC Secure Channel AES encryption key initialization error
+#define NFC_SC_ENC_ERROR        (NFC_APP_ERROR_BASE +  0x13)    ///< NFC Secure Channel AES encryption error
+#define NFC_SC_MAC_KEY_ERROR    (NFC_APP_ERROR_BASE +  0x14)    ///< NFC Secure Channel AES mac key initialization error
+#define NFC_SC_MAC_ERROR        (NFC_APP_ERROR_BASE +  0x15)    ///< NFC Secure Channel AES mac calculation error
+#define NFC_SC_MAC_MISMATCH     (NFC_APP_ERROR_BASE +  0x16)    ///< NFC Secure Channel AES mac mismatch
+#define NFC_SC_DEC_KEY_ERROR    (NFC_APP_ERROR_BASE +  0x17)    ///< NFC Secure Channel AES decryption key initialization error
+#define NFC_SC_DEC_ERROR        (NFC_APP_ERROR_BASE +  0x18)    ///< NFC Secure Channel AES decryption error
+#define NFC_NULL_PTR_ERROR      (NFC_APP_ERROR_BASE +  0x19)    ///< NFC null pointer exception had occured in this card and is in recovery mode
 /** @}
  *
  * @defgroup pn532_error_codes PN532 Error codes

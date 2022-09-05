@@ -145,7 +145,8 @@ void verify_wallet_tasks()
             list_init(
                 verify_words,
                 wallet.number_of_mnemonics,
-                ui_text_verify_word_hash);
+                ui_text_verify_word_hash,
+                true);
             reset_theme();
             memzero(secret, BLOCK_SIZE);
             mnemonic_clear();

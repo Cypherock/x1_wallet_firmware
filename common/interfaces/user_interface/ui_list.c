@@ -63,7 +63,7 @@
 static struct List_Data* data = NULL;
 static struct List_Object* obj = NULL;
 
-void list_init(const char option_list[24][15], const int number_of_options, const char* heading)
+void list_init(const char option_list[24][15], const int number_of_options, const char* heading, bool dynamic_heading)
 {
     ASSERT(option_list != NULL);
     ASSERT(heading != NULL);
@@ -81,6 +81,7 @@ void list_init(const char option_list[24][15], const int number_of_options, cons
             snprintf(data->option_list[i], sizeof(data->option_list[i]), "%s", option_list[i]);
         }
     }
+    data->dynamic_heading = dynamic_heading;
     list_create();
     LOG_INFO("list %s, %d", heading, number_of_options);
 }
@@ -239,7 +240,7 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
             change_current_index(LV_KEY_RIGHT);
             lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
             change_arrows();
-            change_heading();
+            if (data->dynamic_heading == true)  change_heading();
             if (data->current_index >= (data->number_of_options - 1)) {
                 lv_obj_set_hidden(obj->next_btn, false);
             }
@@ -250,7 +251,7 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
             change_current_index(LV_KEY_LEFT);
             lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
             change_arrows();
-            change_heading();
+            if (data->dynamic_heading == true)  change_heading();
             break;
         case LV_KEY_DOWN:
             lv_group_focus_obj(lv_obj_get_hidden(obj->next_btn) ? obj->back_btn : obj->next_btn);
@@ -364,8 +365,13 @@ void list_create()
     ASSERT(data != NULL);
     ASSERT(obj != NULL);
 
-    char buffer[36];
-    snprintf(buffer, sizeof(buffer), "%s%d", data->heading, data->current_index + 1);
+    char buffer[36] = {0};
+
+    if (data->dynamic_heading == true) {
+        snprintf(buffer, sizeof(buffer), "%s%d", data->heading, data->current_index + 1);
+    } else {
+        strcpy(buffer, data->heading);
+    }
 
     obj->heading = lv_label_create(lv_scr_act(), NULL);
     obj->options = lv_btn_create(lv_scr_act(), NULL);

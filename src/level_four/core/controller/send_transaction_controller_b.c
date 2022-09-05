@@ -65,46 +65,43 @@ void send_transaction_controller_b()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN: {
-        transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS: {
-        uint8_t resp = 0x00;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT: {
-        uint8_t resp = 0x02;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
-        transmit_one_byte_reject(SEND_TXN_USER_VERIFIES_ADDRESS);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
         reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES: {
-        uint8_t resp = 0x03;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PIN: {
-        transmit_one_byte_reject(USER_REJECT_PIN_INPUT);
+        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE: {
-        transmit_one_byte_reject(USER_REJECTED_PASSPHRASE_INPUT);
+        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;

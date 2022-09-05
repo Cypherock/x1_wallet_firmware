@@ -66,6 +66,7 @@
 #include "nist256p1.h"
 #include "flash_api.h"
 #include "controller_tap_cards.h"
+#include "stm32l4xx_it.h"
 
 #define CARD_AUTH_RAND_NUMBER_SIZE 32
 
@@ -119,7 +120,6 @@ void initial_verify_card_controller()
     case VERIFY_CARD_START_MESSAGE:
         tap_card_data.desktop_control = true;
         tap_card_data.active_cmd_type = START_CARD_AUTH;
-        transmit_one_byte_confirm(START_CARD_AUTH);
         flow_level.level_three = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
         break;
 
@@ -239,11 +239,13 @@ void initial_verify_card_controller()
 
     case VERIFY_CARD_FINAL_MESSAGE: {
         instruction_scr_destructor();
+        comm_process_complete();
         reset_flow_level();
         flow_level.level_one = 7;
     } break;
 
     case VERIFY_CARD_FAILED:
+        comm_process_complete();
         reset_flow_level();
         flow_level.level_one = 6;
         break;
@@ -266,6 +268,7 @@ static void _tap_card_backend(uint8_t card_number)
     memcpy(card_pairing_data + 36, get_perm_self_key_path(), 8);
     if (memcmp(get_perm_self_key_path(), invalid_self_keyid, sizeof(invalid_self_keyid)) == 0) {
         /* Device is not provisioned */
+        comm_reject_request(START_CARD_AUTH, 0);
         reset_flow_level();
         instruction_scr_destructor();
         mark_error_screen(ui_text_device_compromised);
@@ -273,6 +276,7 @@ static void _tap_card_backend(uint8_t card_number)
     }
 
     sha256_Raw(card_pairing_data, pairing_data_len, digest);
+    LOG_CRITICAL("start pair sign");
     atecc_nfc_sign_hash(digest, sig);
     pairing_data_len += ecdsa_sig_to_der(sig, card_pairing_data + pairing_data_len);
     tap_card_data.retries = 5;
@@ -288,8 +292,8 @@ static void _tap_card_backend(uint8_t card_number)
             break;
         }
         if (is_paired(tap_card_data.card_key_id) > -1) {
-            buzzer_start(BUZZER_DURATION);
             transmit_one_byte_confirm(START_CARD_AUTH);
+            buzzer_start(BUZZER_DURATION);
             instruction_scr_destructor();
             flow_level.level_three++;
             return;
@@ -316,11 +320,19 @@ static void _tap_card_backend(uint8_t card_number)
 
 uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign){
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
     do{
-        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        if (atecc_data.status != ATCA_SUCCESS)
+            LOG_CRITICAL("PAIR SG: %04x, count:%d", atecc_data.status, DEFAULT_ATECC_RETRIES - atecc_data.retries);
+        atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_sign(slot_3_nfc_pair_key, hash, sign);
     }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
-    return atecc_data.fault_status = atecc_data.status;
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
+
+    return atecc_data.status;
 }
 
 uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret){
@@ -328,11 +340,18 @@ uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret){
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
 
     if(get_io_protection_key(io_key) != SUCCESS_)
-    return -1;
+      return -1;
 
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
     do{
-        atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+        if (atecc_data.status != ATCA_SUCCESS)
+            LOG_CRITICAL("ECDH: %04x, count:%d", atecc_data.status, DEFAULT_ATECC_RETRIES - atecc_data.retries);
+        atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_ecdh_ioenc(slot_3_nfc_pair_key, pub_key, shared_secret, io_key);
     }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
-    return atecc_data.fault_status = atecc_data.status;
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
+
+    return atecc_data.status;
 }

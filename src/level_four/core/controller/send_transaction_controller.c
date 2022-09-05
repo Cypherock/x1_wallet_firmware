@@ -123,7 +123,7 @@ void send_transaction_controller()
             lv_task_del(timeout_task);
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
             if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
-                transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+                comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
                 reset_flow_level();
                 mark_error_screen(ui_text_wrong_btc_transaction);
                 return;
@@ -158,7 +158,6 @@ void send_transaction_controller()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD: {
-        transmit_one_byte_confirm(SEND_TXN_USER_VERIFIES_ADDRESS);
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
@@ -174,7 +173,6 @@ void send_transaction_controller()
     case SEND_TXN_CONFIRM_PASSPHRASE: {
         snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        transmit_one_byte_confirm(USER_CONFIRMED_PASSPHRASE);
         flow_level.level_three = SEND_TXN_CHECK_PIN;
     
     } break;
@@ -201,7 +199,6 @@ void send_transaction_controller()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD: {
-        transmit_one_byte_confirm(USER_TAPPED_CARDS);
         flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE;
     } break;
 
@@ -227,7 +224,7 @@ void send_transaction_controller()
         if (input_index == 0 && !validate_change_address(&var_send_transaction_data.unsigned_transaction,
             &var_send_transaction_data.transaction_metadata, mnemo, wallet_credential_data.passphrase)) {
             instruction_scr_destructor();
-            transmit_one_byte(SEND_TXN_SENDING_SIGNED_TXN, 0x02);
+            comm_reject_request(SEND_TXN_SENDING_SIGNED_TXN, 0x02);
             mark_error_screen(ui_text_btc_change_address_mismatch);
             reset_flow_level();
             return;
@@ -236,17 +233,22 @@ void send_transaction_controller()
         memzero(&preimage, sizeof(txn_preimage));
         send_transaction_cmd.signed_txn_byte_array = (uint8_t *) malloc(128 /* max size for script_sig */ * sizeof(uint8_t));
         ASSERT(send_transaction_cmd.signed_txn_byte_array != NULL);
-        int signed_txn_length = sig_from_unsigned_txn(&var_send_transaction_data.unsigned_transaction,
+        send_transaction_cmd.signed_txn_length = sig_from_unsigned_txn(&var_send_transaction_data.unsigned_transaction,
                                                       &var_send_transaction_data.transaction_metadata,
                                                       input_index, mnemo, wallet_credential_data.passphrase, &preimage,
                                                       send_transaction_cmd.signed_txn_byte_array);
-        transmit_data_to_app(SEND_TXN_SENDING_SIGNED_TXN, send_transaction_cmd.signed_txn_byte_array, signed_txn_length);
         memzero(secret, sizeof(secret));
         mnemonic_clear();
         flow_level.level_three = SEND_TXN_WAITING_SCREEN;
     } break;
 
-    case SEND_TXN_WAITING_SCREEN:
+    case SEND_TXN_WAITING_SCREEN: {
+        uint8_t *data_array = NULL;
+        uint16_t msg_size = 0;
+        if (!get_usb_msg_by_cmd_type(SEND_TXN_SENDING_SIGNED_TXN, &data_array, &msg_size))
+            break;
+        clear_message_received_data();
+        transmit_data_to_app(SEND_TXN_SENDING_SIGNED_TXN, send_transaction_cmd.signed_txn_byte_array, send_transaction_cmd.signed_txn_length);
         if (++input_index < var_send_transaction_data.unsigned_transaction.input_count[0]) {
             flow_level.level_three = SEND_TXN_SIGN_TXN;
         } else {
@@ -257,7 +259,7 @@ void send_transaction_controller()
             memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
             free(send_transaction_cmd.signed_txn_byte_array);
         }
-        break;
+    } break;
 
     case SEND_TXN_FINAL_SCREEN:
         reset_flow_level();
@@ -278,12 +280,12 @@ void send_transaction_controller()
                 instruction_scr_destructor();
                 mark_error_screen(ui_text_invalid_transaction);
                 reset_flow_level();
-                transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+                comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
                 clear_message_received_data();
                 return;
             }
-            transmit_one_byte_confirm(SEND_TXN_REQ_UNSIGNED_TXN);
             clear_message_received_data();
+            transmit_one_byte_confirm(SEND_TXN_REQ_UNSIGNED_TXN);
             var_send_transaction_data.transaction_confirmation_list_index++;
             if (var_send_transaction_data.transaction_confirmation_list_index >= var_send_transaction_data.unsigned_transaction.input_count[0]) {
                 var_send_transaction_data.transaction_confirmation_list_index = 0;

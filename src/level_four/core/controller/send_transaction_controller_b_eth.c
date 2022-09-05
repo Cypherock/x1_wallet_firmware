@@ -65,56 +65,51 @@ void send_transaction_controller_b_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        transmit_one_byte_reject(SEND_TXN_REQ_UNSIGNED_TXN);
+        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {
-        uint8_t resp = 0x04;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 4);
         reset_flow_level();
         counter.next_event_flag = true;
     }
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        uint8_t resp = 0x02;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
         reset_flow_level();
         counter.next_event_flag = true;
     }break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS:
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
-        uint8_t resp = 0x00;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {
-        uint8_t resp = 0x02;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
-        uint8_t resp = 0x03;
-        transmit_data_to_app(SEND_TXN_USER_VERIFIES_ADDRESS, &resp, 1);
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PIN_ETH: {
-        transmit_one_byte_reject(USER_REJECT_PIN_INPUT);
+        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {
-        transmit_one_byte_reject(USER_REJECTED_PASSPHRASE_INPUT);
+        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;

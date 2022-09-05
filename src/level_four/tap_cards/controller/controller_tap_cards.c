@@ -5,7 +5,7 @@
  *          This file contains the functions to control the tap card next controller.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +18,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +29,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,7 +48,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -63,16 +63,17 @@
 
 NFC_connection_data tap_card_data;
 
-bool tap_card_applet_connection()
-{
-    uint8_t acceptable_cards, recovery_mode = 0;
+bool tap_card_applet_connection() {
+    uint8_t acceptable_cards;
+    tap_card_data.recovery_mode = 0;
     if (tap_card_data.desktop_control) {
-        set_instant_abort(&abort_from_desktop);
         set_abort_now(&_abort_);
         CY_Reset_Not_Allow(false);
     } else {
-        set_instant_abort(NULL);
         set_abort_now(NULL);
+    }
+    if (!tap_card_data.card_absent_retries) {
+        tap_card_data.card_absent_retries = 100;
     }
 
     while (1) {
@@ -82,15 +83,17 @@ bool tap_card_applet_connection()
         instruction_scr_change_text(ui_text_card_detected, true);
 
         acceptable_cards = tap_card_data.acceptable_cards;
-        tap_card_data.status = nfc_select_applet(tap_card_data.family_id, &tap_card_data.acceptable_cards, NULL, tap_card_data.card_key_id, &recovery_mode);
+        tap_card_data.status = nfc_select_applet(tap_card_data.family_id, &tap_card_data.acceptable_cards, NULL,
+                                                 tap_card_data.card_key_id, &tap_card_data.recovery_mode);
 
         /* Card is in recovery mode. This is a critical situation. Instruct user to safely recover/export
          * wallets to different set of cards in limited attempts.
          * NOTE: Errors such as invalid card & invalid family id have higher priority than this.
          */
-        if (recovery_mode == 1)
+        if (tap_card_data.recovery_mode == 1)
             mark_error_screen(ui_critical_card_health_migrate_data);
-        if (tap_card_data.tapped_card != 0 && tap_card_data.tapped_card == (acceptable_cards ^ tap_card_data.acceptable_cards))
+        if (tap_card_data.tapped_card != 0 &&
+            tap_card_data.tapped_card == (acceptable_cards ^ tap_card_data.acceptable_cards))
             continue;
 
         /* The tapped_card information should be persistent, as it is used at later stage in the flow
@@ -111,7 +114,7 @@ bool tap_card_applet_connection()
             }
 #endif
             const uint8_t *pairing_key = get_keystore_pairing_key(tap_card_data.keystore_index);
-        	if (tap_card_data.keystore_index >= 0)
+            if (tap_card_data.keystore_index >= 0)
                 init_session_keys(pairing_key, pairing_key + 32, NULL);
             return true;
         } else if (tap_card_data.status == SW_CONDITIONS_NOT_SATISFIED) {
@@ -127,14 +130,16 @@ bool tap_card_applet_connection()
         } else {
             tap_card_data.tapped_card = 0;
             tap_card_data.acceptable_cards = acceptable_cards;
-            if((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)){
+            if ((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)) {
                 instruction_scr_change_text(ui_text_card_removed_fast, true);
-            }
-            else if (!(--tap_card_data.retries)) {
+                if ((!--tap_card_data.card_absent_retries)) {
+                    tap_card_data.status = NFC_CARD_ABSENT;
+                    mark_error_screen(ui_text_card_freq_discon_fault);
+                }
+            } else if (!(--tap_card_data.retries)) {
                 mark_error_screen(ui_text_unknown_error_contact_support);
                 reset_flow_level();
-            }
-            else if((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE){
+            } else if ((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE) {
                 instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
                 nfc_deselect_card();
             }
@@ -148,7 +153,7 @@ bool tap_card_applet_connection()
                 flow_level.level_four = tap_card_data.lvl4_retry_point;
             } else {                            // flow is reset, convey to desktop if needed
                 if (tap_card_data.desktop_control)
-                    transmit_one_byte_reject(tap_card_data.active_cmd_type);
+                    comm_reject_request(tap_card_data.active_cmd_type, 0);
             }
             instruction_scr_destructor();
             return false;
@@ -156,11 +161,11 @@ bool tap_card_applet_connection()
     }
 }
 
-bool tap_card_handle_applet_errors()
-{
+bool tap_card_handle_applet_errors() {
     LOG_ERROR("err (0x%04X)\n", tap_card_data.status);
     switch (tap_card_data.status) {
-        case SW_NO_ERROR: return true;
+        case SW_NO_ERROR:
+            return true;
         case SW_SECURITY_CONDITIONS_NOT_SATISFIED:
             mark_error_screen(ui_text_security_conditions_not_met);
             reset_flow_level();
@@ -212,7 +217,8 @@ bool tap_card_handle_applet_errors()
 
                 mark_error_screen(ui_text_wrong_wallet_is_now_locked);
                 if (tap_card_data.status == SW_NO_ERROR)
-                    add_challenge_flash((const char *) wallet.wallet_name, target, random_number, tap_card_data.tapped_card);
+                    add_challenge_flash((const char *) wallet.wallet_name, target, random_number,
+                                        tap_card_data.tapped_card);
                 tap_card_data.active_cmd_type = USER_ENTERED_PIN;
                 tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
                 flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
@@ -228,14 +234,16 @@ bool tap_card_handle_applet_errors()
                 reset_flow_level();
             } else {
                 tap_card_data.tapped_card = 0;
-                if((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)){
+                if ((tap_card_data.status == NFC_CARD_ABSENT) || (nfc_diagnose_card_presence() != 0)) {
                     instruction_scr_change_text(ui_text_card_removed_fast, true);
-                }
-                else if (!(--tap_card_data.retries)) {
+                    if ((!--tap_card_data.card_absent_retries)) {
+                        tap_card_data.status = NFC_CARD_ABSENT;
+                        mark_error_screen(ui_text_card_freq_discon_fault);
+                    }
+                } else if (!(--tap_card_data.retries)) {
                     mark_error_screen(ui_text_unknown_error_contact_support);
                     reset_flow_level();
-                }
-                else if((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE){
+                } else if ((tap_card_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE) {
                     instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
                     nfc_deselect_card();
                 }
@@ -250,7 +258,7 @@ bool tap_card_handle_applet_errors()
             flow_level.level_four = tap_card_data.lvl4_retry_point;
         } else {                            // flow is reset, convey to desktop if needed
             if (tap_card_data.desktop_control)
-                transmit_one_byte_reject(tap_card_data.active_cmd_type);
+                comm_reject_request(tap_card_data.active_cmd_type, 0);
         }
         instruction_scr_destructor();
         return true;
@@ -261,8 +269,7 @@ bool tap_card_handle_applet_errors()
     return false;
 }
 
-void tap_card_take_to_pairing()
-{
+void tap_card_take_to_pairing() {
 #if X1WALLET_MAIN
     buzzer_start(BUZZER_DURATION);
     mark_error_screen(ui_text_device_and_card_not_paired);
@@ -271,7 +278,7 @@ void tap_card_take_to_pairing()
     flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
     flow_level.level_two = LEVEL_THREE_PAIR_CARD;
     if (tap_card_data.desktop_control)
-        transmit_one_byte_reject(tap_card_data.active_cmd_type);
+        comm_reject_request(tap_card_data.active_cmd_type, 0);
     instruction_scr_destructor();
 #endif
 }

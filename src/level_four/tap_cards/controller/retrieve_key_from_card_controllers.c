@@ -105,7 +105,6 @@ static void _tap_card_backend(uint8_t xcor)
         tap_card_data.status = nfc_retrieve_wallet(&wallet);
 
         if (tap_card_data.status == SW_NO_ERROR) {
-            transmit_one_byte_confirm(USER_ENTERED_PIN);
             _handle_retrieve_wallet_success(xcor);
             buzzer_start(BUZZER_DURATION);
             instruction_scr_destructor();

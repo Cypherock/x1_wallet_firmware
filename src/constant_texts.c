@@ -80,6 +80,7 @@ const char* ui_text_options_new_wallet[] = {
 const char* ui_text_options_advanced_settings[] = {
     "Settings",
     "Restore wallets from X1 Cards",
+    "Check Card Health",
     "Rotate Display",
     "Toggle log export",
     "Toggle Passphrase Step",
@@ -189,16 +190,9 @@ const char* ui_text_invalid_card_tap_card[] = {
     "Invalid X1 Card. Tap Card #4.",
 };
 
-const char* ui_text_place_card_wait_for_three_beep[] = {
-    "Place Card #1 on device. Do not lift until you hear 3 beep sound",
-    "Place Card #2 on device. Do not lift until you hear 3 beep sound",
-    "Place Card #3 on device. Do not lift until you hear 3 beep sound",
-    "Place Card #4 on device. Do not lift until you hear 3 beep sound"
-};
+const char* ui_text_place_card_x_heading = "Place Card #%d";
 
-const char* ui_text_place_card_wait_for_two_beep = "Wait for 2 beep sound";
-
-const char* ui_text_place_card_wait_for_one_beep = "Wait for 1 beep sound";
+const char* ui_text_place_card_wait_for_beep = "Do not lift until you hear %d beep sound";
 
 const char* ui_text_device_authenticating[] = {
         "Device authenticating .",
@@ -217,14 +211,12 @@ const char* ui_text_device_provisioning[] = {
 };
 
 const char* ui_text_tap_a_card_instruction1 = "This device interacts with X1 Cards using NFC";
-const char* ui_text_tap_a_card_instruction2 = "Place any card above or below the device to test card tapping";
-const char* ui_text_tap_1_4_cards = "Please tap Card #1";
-const char* ui_text_tap_2_4_cards = "Please tap Card #2";
-const char* ui_text_tap_3_4_cards = "Please tap Card #3";
-const char* ui_text_tap_4_4_cards = "Please tap Card #4";
+const char* ui_text_tap_a_card_instruction2 = "Place and hold any card below the device to test card tapping";
+const char* ui_text_tap_x_4_cards = "Please tap Card #%d";
 
 const char* ui_text_tap_1_2_cards = "Tap any X1 Card";
-const char* ui_text_tap_2_2_cards = "Now tap any other X1 Card";
+const char* ui_text_tap_2_2_cards = "Tap another X1 Card";
+const char* ui_text_place_card_below = "Place card below device";
 
 const char* ui_text_wallet_with_same_name_already_exist_on_this_card = "Wallet name already exists";
 const char* ui_text_wallet_id_collision = "Wallet already exists";
@@ -379,6 +371,17 @@ const char* ui_text_factory_reset_confirm[] = {
     "Make sure at least 2 X1 cards are accessible.",
     "Press the center button to proceed",
 };
+
+const char* ui_text_card_seems_healthy = "Card seems healthy";
+const char* ui_text_click_to_view_wallets = "Click Ok to view wallets";
+const char* ui_text_no_wallets_fetched = "No Wallets fetched.\nClick Ok to return";
+const char* ui_text_no_wallets_present = "No Wallets Present in card";
+const char* ui_text_wallets_in_card = "Wallets in Card #%d";
+const char* ui_text_card_health_check_start = "Tap X1 card to check it's health";
+const char* ui_text_card_health_check_error[] = {
+    "Card error: ",
+    "Visit cypherock.com/error-codes for more info"
+};
 const char* ui_text_confirm_factory_reset = "This will erase all accounts from X1 Wallet. Confirm?";
 const char* ui_text_device_verification_success = "Device successfully authenticated";
 const char* ui_text_device_verification_failure = "Device authentication failed";
@@ -407,10 +410,7 @@ const char* ui_text_worng_eth_transaction = "Invalid transaction detected";
 const char* ui_text_error_no_card_paired = "No card paired with device";
 const char* ui_text_error_pair_all_cards = "Pair all four X1 Cards first";
 const char* ui_text_error_pair_atleast_2_cards = "Pair atleast two X1 Cards to restore";
-const char* ui_text_pair_card_1 = "Tap Card #1 to pair";
-const char* ui_text_pair_card_2 = "Tap Card #2 to pair";
-const char* ui_text_pair_card_3 = "Tap Card #3 to pair";
-const char* ui_text_pair_card_4 = "Tap Card #4 to pair";
+const char* ui_text_pair_card_x = "Tap Card #%d to pair";
 const char* ui_text_card_pairing_skipped_count = "%d card pairing skipped, pair all cards for proper use";
 const char* ui_text_card_pairing_success = "Card pairing success";
 const char* ui_text_continue_with_pairing = "Proceed with pairing?";
@@ -420,6 +420,7 @@ const char* ui_text_device_compromised_partially_provisioned = "Device partially
 const char* ui_text_device_compromised_v1_config = "Device provisioned with v1 config";
 const char* ui_text_pow_challenge_failed = "Wallet unlock failed. Retry.";
 const char* ui_text_card_removed_fast = "Too fast, Tap again and wait for buzzer sound";
+const char* ui_text_card_freq_discon_fault = "Frequent disconnections detected, contact support";
 const char* ui_text_card_align_with_device_screen = "Please hold the card and align with device screen";
 const char* ui_text_remove_card_prompt = "Process complete. Remove card.";
 const char* ui_text_card_detected = "Card detected. Processing ...";

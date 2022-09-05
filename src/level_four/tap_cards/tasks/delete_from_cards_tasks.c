@@ -72,47 +72,27 @@ extern char* NUMBERS;
 void tap_cards_for_delete_flow()
 {
     uint8_t index;
+    char display[40];
     get_index_by_name((const char *)wallet.wallet_name, &index);
 
     switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        if (!card_already_deleted_flash(index, 1))
-            instruction_scr_init(ui_text_tap_1_4_cards);
-
+    case TAP_CARD_TWO_FRONTEND:
+    case TAP_CARD_THREE_FRONTEND:
+    case TAP_CARD_FOUR_FRONTEND:
+      if (!card_already_deleted_flash(index, ((flow_level.level_four-1)>>1)+1)) {
+        snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
+        instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
-
-        break;
+      } else {
+        flow_level.level_four += 2;
+        counter.next_event_flag = true;
+      }
+      break;
 
     case TAP_CARD_ONE_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_TWO_FRONTEND:
-        if (!card_already_deleted_flash(index, 2))
-            instruction_scr_init(ui_text_tap_2_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_TWO_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_THREE_FRONTEND:
-        if (!card_already_deleted_flash(index, 3))
-            instruction_scr_init(ui_text_tap_3_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_THREE_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_FOUR_FRONTEND:
-        if (!card_already_deleted_flash(index, 4))
-            instruction_scr_init(ui_text_tap_4_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_FOUR_BACKEND:
         mark_event_over();
         break;

@@ -67,7 +67,7 @@ void receive_transaction_controller_b()
     switch (flow_level.level_three) {
 
     case RECV_TXN_FIND_XPUB: {
-        transmit_one_byte_reject(RECV_TXN_USER_VERIFIED_COINS);
+        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
@@ -75,7 +75,7 @@ void receive_transaction_controller_b()
 
     case RECV_TXN_ENTER_PIN: {
 
-        transmit_one_byte_reject(USER_REJECT_PIN_INPUT);
+        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;
@@ -83,7 +83,7 @@ void receive_transaction_controller_b()
     } break;
 
     case RECV_TXN_ENTER_PASSPHRASE: {
-       transmit_one_byte_reject(USER_REJECTED_PASSPHRASE_INPUT);
+       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
        reset_flow_level();
        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
        counter.next_event_flag = true;
@@ -95,7 +95,7 @@ void receive_transaction_controller_b()
    } break;
 
     case RECV_TXN_DISPLAY_ADDR: {
-        transmit_one_byte_reject(RECV_TXN_USER_VERIFIED_ADDRESS);
+        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;

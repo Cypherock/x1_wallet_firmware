@@ -64,14 +64,14 @@ void add_coin_controller_b()
 {
     switch (flow_level.level_three) {
     case ADD_COINS_VERIFY: {
-        transmit_one_byte_reject(ADD_COIN_VERIFIED_BY_USER);
+        comm_reject_request(ADD_COIN_VERIFIED_BY_USER, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;
 
 
      case ADD_COINS_ENTER_PIN: {
-        transmit_one_byte_reject(USER_REJECT_PIN_INPUT);
+        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;
@@ -79,7 +79,7 @@ void add_coin_controller_b()
 
 
      case ADD_COINS_ENTER_PASSPHRASE: {
-        transmit_one_byte_reject(USER_REJECTED_PASSPHRASE_INPUT);
+        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
         reset_flow_level();
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;

@@ -76,7 +76,6 @@ extern char* ALPHA_NUMERIC;
 extern char* NUMBERS;
 extern char* PASSPHRASE;
 
-extern lv_task_t* success_task;
 extern lv_task_t* timeout_task;
 
 
@@ -86,7 +85,7 @@ void send_transaction_tasks_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        instruction_scr_init(ui_text_fetching_unsigned_transaction);
+        instruction_scr_init(ui_text_fetching_unsigned_transaction, NULL);
 
         timeout_task = lv_task_create(_timeout_listener, 100000, LV_TASK_PRIO_HIGH, NULL);
         lv_task_once(timeout_task);
@@ -155,7 +154,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        instruction_scr_init(ui_text_fetching_recipient_amount);
+        instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
         mark_event_over();
     }break;
 
@@ -289,7 +288,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        instruction_scr_init(ui_text_signing_transaction);
+        instruction_scr_init(ui_text_signing_transaction, NULL);
         mark_event_over();
     } break;
 
@@ -302,11 +301,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_WAITING_SCREEN_ETH: {
-        success_task = lv_task_create(_success_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(success_task);
-
-        timeout_task = lv_task_create(_timeout_listener, 6000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
+        mark_event_over();
     } break;
 
     case SEND_TXN_FINAL_SCREEN_ETH:

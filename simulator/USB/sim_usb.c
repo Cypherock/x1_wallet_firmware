@@ -85,24 +85,7 @@ void SIM_Transmit_FS(uint8_t * data, uint8_t size)
 
 static int8_t SIM_Receive_FS(const uint8_t *Buf, const uint32_t *Len)
 {
-    uint32_t dataSize = *Len;
-    for (int i = 0; i < dataSize; i++) {
-        if (Buf[i] == START_OF_FRAME) {
-            rec_buffer[0] = Buf[i];
-            rec_counter = 1;
-        } else if (rec_counter != 0 && rec_counter <= DATA_SIZE_INDEX) {
-            rec_buffer[rec_counter++] = Buf[i];
-        } else if (rec_counter != 0 && rec_counter < (rec_buffer[DATA_SIZE_INDEX] + COMM_HEADER_SIZE - 1)) {
-            rec_buffer[rec_counter++] = Buf[i];
-        } else if (rec_counter != 0 && rec_counter == (rec_buffer[DATA_SIZE_INDEX] + COMM_HEADER_SIZE - 1)) {
-            rec_buffer[rec_counter++] = Buf[i];
-            receive_packet_parser((uint8_t *)rec_buffer, rec_counter);
-            rec_counter = 0;
-        } else {
-            rec_counter = 0;
-        }
-    }
-
+    // TODO
     return (USBD_OK);
     /* USER CODE END 6 */
 }

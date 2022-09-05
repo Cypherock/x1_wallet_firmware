@@ -77,7 +77,10 @@ void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonic
     hdnode_from_seed(seed, 64, SECP256K1_NAME, &node);
     hdnode_fill_public_key(&node);
     //m/44'
-    hdnode_private_ckd(&node, 0x8000002C);
+    hdnode_private_ckd(&node, 0x800003E8);
+    hdnode_private_ckd(&node, 0x80000000);
+    hdnode_private_ckd(&node, 0x80000003);
+    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/3'/1
     hdnode_fill_public_key(&node);
 
     sha256_Raw(node.public_key, sizeof(node.public_key), wallet_id);
@@ -97,8 +100,10 @@ void derive_beneficiary_key(
     memset(passphrase, 0, 256);
     mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
     hdnode_from_seed(seed, 64, SECP256K1_NAME, &node); //m
-    hdnode_private_ckd(&node, 0x800000BE); //m/190'
-    hdnode_private_ckd(&node, 0x80000000); //m/190'/0'
+    hdnode_private_ckd(&node, 0x800003E8);
+    hdnode_private_ckd(&node, 0x80000000);
+    hdnode_private_ckd(&node, 0x80000004);
+    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/4'/1
 
     uint8_t hash[64];
     sha512_Raw(node.private_key, 32, hash);
@@ -119,8 +124,10 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics)
     memset(passphrase, 0, 256);
     mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
     hdnode_from_seed(seed, 64, SECP256K1_NAME, &node); //m
-    hdnode_private_ckd(&node, 0x800000BE); //m/190'
-    hdnode_private_ckd(&node, 0x80000001); //m/190'/1'
+    hdnode_private_ckd(&node, 0x800003E8);
+    hdnode_private_ckd(&node, 0x80000000);
+    hdnode_private_ckd(&node, 0x80000002);
+    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/2'/1
 
     uint8_t hash[KEY_SIZE];
     sha256_Raw(node.private_key, sizeof(node.private_key), hash);

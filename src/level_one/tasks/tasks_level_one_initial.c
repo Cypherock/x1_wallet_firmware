@@ -70,13 +70,23 @@ extern lv_task_t *listener_task;
 
 void level_one_tasks_initial() {
 #if X1WALLET_INITIAL
+  // It is safe to allow reset as all the flows are desktop triggered.
+  CY_Reset_Not_Allow(false);
+  // Since all desktop flows are handled via advanced settings, we can safely say that the app is busy.
+  mark_device_state(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS
+                        ? (CY_TRIGGER_SOURCE | CY_APP_IDLE)
+                        : (CY_APP_IDLE_TASK | CY_APP_IDLE),
+                    0xFF);
   if (flow_level.show_error_screen) {
     message_scr_init(flow_level.error_screen_text);
     return;
   }
 
   if (flow_level.show_desktop_start_screen) {
-    confirm_scr_init(flow_level.confirmation_screen_text);
+    if(flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
+      message_scr_init(flow_level.confirmation_screen_text);
+    else
+      confirm_scr_init(flow_level.confirmation_screen_text);
     return;
   }
 
@@ -105,7 +115,7 @@ void level_one_tasks_initial() {
       flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_FRONTEND;
       tasks_read_card_id();
       instruction_scr_destructor();
-      instruction_scr_init(ui_text_tap_a_card_instruction2);
+      instruction_scr_init(ui_text_tap_a_card_instruction2, NULL);
     } break;
 
     case 5: {
@@ -119,23 +129,23 @@ void level_one_tasks_initial() {
     } break;
 
     case 7: {
-      instruction_scr_init(ui_text_check_cysync_app);
+      instruction_scr_init(ui_text_check_cysync_app, NULL);
     } break;
 
     case 8: {
-      instruction_scr_init(ui_text_device_verification_success);
+      instruction_scr_init(ui_text_device_verification_success, NULL);
     } break;
 
     case 9: {
-      instruction_scr_init(ui_text_device_verification_failure);
+      instruction_scr_init(ui_text_device_verification_failure, NULL);
     } break;
 
     case 10: {
-      instruction_scr_init(ui_text_provision_success);
+      instruction_scr_init(ui_text_provision_success, NULL);
     } break;
 
     case 11: {
-      instruction_scr_init(ui_text_provision_fail);
+      instruction_scr_init(ui_text_provision_fail, NULL);
     } break;
 
     default:

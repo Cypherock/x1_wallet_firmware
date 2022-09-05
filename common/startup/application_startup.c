@@ -159,7 +159,7 @@ static void repeated_timer_handler(void)
             reset_flow_level();
             lv_obj_clean(lv_scr_act());
             if (CY_External_Triggered())
-                transmit_one_byte(STATUS_PACKET, STATUS_CMD_ABORT);
+                comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
         }
     }
 }
@@ -189,7 +189,6 @@ void reset_inactivity_timer() {
 static void create_timers()
 {
     BSP_App_Timer_Create(BSP_APPLICATION_TIMER, repeated_timer_handler);
-    software_timer_create();
 }
 
 /**
@@ -236,7 +235,6 @@ static void device_upgrade(){
 //aman make compatible with firewall
 	switch (flow_level.level_two) {
 		case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-			transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
 			flow_level.level_two = LEVEL_THREE_RESET_DEVICE;
 		} break;
 
@@ -288,7 +286,7 @@ void device_auth(){
 
      // user initiated auth
      if (!get_first_boot_on_update() && device_auth_flag) {
-         instruction_scr_init(ui_text_auth_process);
+         instruction_scr_init(ui_text_auth_process, NULL);
      }
 
     // device startup initiated auth
@@ -297,12 +295,12 @@ void device_auth(){
         if (get_first_boot_on_update()) {
             LOG_ERROR("%X-%s\r\n", get_fwVer(), GIT_REV);
             // start a timer of 16 seconds, which takes to main menu upon timeout
-            instruction_scr_init(ui_text_auth_process);
+            instruction_scr_init(ui_text_auth_process, NULL);
             timeout_task = lv_task_create(_auth_timeout_listener, 16000, LV_TASK_PRIO_HIGH, NULL);
             lv_task_once(timeout_task);
         } else {
             // simply prompt the user
-            mark_device_state(false);
+            mark_device_state(CY_APP_USB_TASK | CY_APP_WAIT_USER_INPUT, SIGN_SERIAL_NUMBER);
             ui_set_event_over_cb(NULL);
             delay_scr_init(ui_text_unauthenticated_device, DELAY_TIME);
             ui_set_event_over_cb(&mark_event_over);
@@ -318,7 +316,7 @@ void device_auth(){
     CY_Reset_Not_Allow(false);
 
      while(device_auth_flag){
-        if (abort_from_desktop()) {
+        if (CY_Read_Reset_Flow()) {
             mark_error_screen(ui_text_aborted);
             reset_flow_level();
             return;
@@ -328,9 +326,7 @@ void device_auth(){
 
         device_authentication_controller();
             flow_level.level_three = 5;
-        
-        usb_send_task();
-        logger_task();
+
         proof_of_work_task();
 
         lv_task_handler();
@@ -357,7 +353,6 @@ void device_auth(){
  */
 static void atecc_mode_detect(){
 #if USE_SIMULATOR == 0
-  ATCA_STATUS status;
   do{
     switch(++atecc_mode){
       case ATECC_MODE_I2C2:
@@ -384,6 +379,8 @@ static void atecc_mode_detect(){
 void application_init() {
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
     sys_flow_cntrl_u.bits.nfc_off = true;
+    CY_Reset_Not_Allow(false);
+    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #if USE_SIMULATOR == 0
     uint32_t ret;
     clock_init();

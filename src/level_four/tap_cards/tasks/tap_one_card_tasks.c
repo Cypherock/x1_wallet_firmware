@@ -86,7 +86,7 @@ void tap_a_card_and_sync_task()
 {
     switch (flow_level.level_three) { // revert back from level_three to level_four if broken
     case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-        instruction_scr_init(ui_text_tap_a_card);
+        instruction_scr_init(ui_text_tap_a_card, NULL);
         mark_event_over();
         break;
     case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
@@ -122,7 +122,7 @@ void tasks_read_card_id()
 {
     switch (flow_level.level_three) { // revert back from level_three to level_four if broken
     case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-        instruction_scr_init(ui_text_tap_a_card);
+        instruction_scr_init(ui_text_tap_a_card, NULL);
         mark_event_over();
         break;
     case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
@@ -155,7 +155,7 @@ void tasks_update_card_id()
     break;
 
     case 2: {
-        instruction_scr_init(ui_text_tap_a_card);
+        instruction_scr_init(ui_text_tap_a_card, NULL);
         mark_event_over();
     } break;
 

@@ -69,6 +69,7 @@
 #include "tasks_level_four.h"
 #include "ui_delay.h"
 #include "cy_factory_reset.h"
+#include "cy_card_hc.h"
 
 extern lv_task_t* timeout_task;
 
@@ -84,7 +85,7 @@ void level_three_advanced_settings_tasks()
     switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
         transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
-        instruction_scr_init(ui_text_firmware_update_process);
+        instruction_scr_init(ui_text_generating_seed, NULL);
         mark_event_over();
     } break;
 
@@ -121,6 +122,10 @@ void level_three_advanced_settings_tasks()
 
     case LEVEL_THREE_FACTORY_RESET:
         cyt_factory_reset();
+        break;
+
+    case LEVEL_THREE_CARD_HEALTH_CHECK:
+        cyt_card_hc();
         break;
 #endif
 
@@ -187,17 +192,14 @@ void level_three_advanced_settings_tasks()
 
     case LEVEL_THREE_RESET_DEVICE: {
         CY_Reset_Not_Allow(true);
+        BSP_DelayMs(500);          // Wait for status pull to desktop (which requests at 200ms)
         FW_enter_DFU();
         BSP_reset();
     } break;
 
 #ifdef ALLOW_LOG_EXPORT
     case LEVEL_THREE_FETCH_LOGS_INIT: {
-        instruction_scr_init(ui_text_sending_logs);
-
-        timeout_task = lv_task_create(_timeout_listener, 3000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
-
+        instruction_scr_init(ui_text_sending_logs, NULL);
         mark_event_over();
     } break;
 
@@ -207,10 +209,7 @@ void level_three_advanced_settings_tasks()
 
     case LEVEL_THREE_FETCH_LOGS: {
         logger_task();
-        counter.next_event_flag = true;
-        if (get_log_read_status() == LOG_READ_FINISH) {
-            mark_event_over();
-        }
+        mark_event_over();
     } break;
 
     case LEVEL_THREE_FETCH_LOGS_FINISH: {

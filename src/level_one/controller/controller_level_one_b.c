@@ -67,7 +67,7 @@ void level_one_controller_b()
         device_auth_flag = 0;
         instruction_scr_destructor();
         reset_flow_level();
-        transmit_one_byte_reject(START_DEVICE_AUTHENTICATION);
+        comm_reject_request(START_DEVICE_AUTHENTICATION, 0);
         return;
     }
 

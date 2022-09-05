@@ -67,6 +67,7 @@
 #include "string.h"
 #include "ui_instruction.h"
 #include "flash_api.h"
+#include "stm32l4xx_it.h"
 
 #define ATECC_CFG_88_MASK   0x4C
 #define ATECC_CFG_89_MASK   0x01
@@ -85,10 +86,15 @@ static void __timeout_listener();
 
 uint32_t get_device_serial(){
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+
+    NVIC_DisableIRQ(OTG_FS_IRQn);
     do{
         atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_read_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
     }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
 
     if(atecc_data.status == ATCA_SUCCESS){
         if(0 != memcmp(atecc_data.device_serial+8, (void*)UID_BASE, 12)){
@@ -98,21 +104,25 @@ uint32_t get_device_serial(){
             return SUCCESS;
         }
     }
-    return atecc_data.fault_status = atecc_data.status;
+    return atecc_data.status;
 }
 
 provision_status_t check_provision_status(){
     uint8_t cfg[128];
     memset(cfg, 0, 128);
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
     do{
         atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_read_config_zone(cfg);
     }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
 
     if(atecc_data.status != ATCA_SUCCESS){
-        atecc_data.fault_status = atecc_data.status;
-        LOG_CRITICAL("xxx30: %d", atecc_data.fault_status);
+        LOG_CRITICAL("xxx30: %d", atecc_data.status);
         return -1;
     }
 
@@ -120,6 +130,7 @@ provision_status_t check_provision_status(){
 
         if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
             return provision_incomplete;
+
         }
         else if((cfg[88] & ATECC_CFG_88_MASK)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00){   //private key slots are locked
             return provision_complete;
@@ -177,16 +188,18 @@ void device_provision_controller(){
             };
 
             atecc_data.retries = DEFAULT_ATECC_RETRIES;
+            
+            bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+            NVIC_DisableIRQ(OTG_FS_IRQn);
             do{
-                if(atecc_data.fault_status != ATCA_SUCCESS){
-                    LOG_ERROR("PERR0-0x%02x", atecc_data.fault_status);
-                    atecc_data.fault_status = ATCA_SUCCESS;
+                OTG_FS_IRQHandler();
+                if(atecc_data.status != ATCA_SUCCESS){
+                    LOG_ERROR("PERR0-0x%02x", atecc_data.status);
                 }
 
                 //atecc initialize
                 atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
                 if(atecc_data.status!=ATCA_SUCCESS){
-                    atecc_data.fault_status = atecc_data.status;
                     continue;
                 }
 
@@ -197,7 +210,6 @@ void device_provision_controller(){
                 if(!is_locked  || atecc_data.status != ATCA_SUCCESS){
                     atecc_data.status = atcab_write_config_zone(test_ecc608_configdata);
                     if(atecc_data.status!=ATCA_SUCCESS){
-                        atecc_data.fault_status = atecc_data.status;
                         continue;
                     }
 
@@ -253,24 +265,21 @@ void device_provision_controller(){
 
                     atecc_data.status = atcab_write_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, serial_no, 32);
                     if(atecc_data.status != ATCA_SUCCESS){
-                        atecc_data.fault_status = atecc_data.status;
                         continue;
                     }
 
                     //generate and write IO key
                     random_generate(io_protection_key, IO_KEY_SIZE);
                     if(atecc_data.status != ATCA_SUCCESS){
-                        atecc_data.fault_status = atecc_data.status;
                         continue;
                     }
 
                     atecc_data.status = atcab_write_zone(ATCA_ZONE_DATA, slot_6_io_key, 0, 0, io_protection_key, IO_KEY_SIZE);
                     if(atecc_data.status != ATCA_SUCCESS){
-                        atecc_data.fault_status = atecc_data.status;
                         continue;
                     }
 
-                    if(atecc_data.fault_status == ATCA_SUCCESS){
+                    if(atecc_data.status == ATCA_SUCCESS){
                         if(set_io_protection_key(io_protection_key) == SUCCESS_){
                             //locking IO_KEY and serial number slots
                             atecc_data.status = atcab_lock_data_slot(slot_6_io_key);
@@ -285,7 +294,7 @@ void device_provision_controller(){
                     }
                     else{
                         memset(serial_no, 0, 32);
-                        LOG_ERROR("PERR1-0x%02x", atecc_data.fault_status);
+                        LOG_ERROR("PERR1-0x%02x", atecc_data.status);
                         continue;
                     }
                 }
@@ -300,7 +309,9 @@ void device_provision_controller(){
                     flow_level.show_error_screen = true;
                     return;
                 }
-            }while((atecc_data.fault_status != ATCA_SUCCESS) && (--atecc_data.retries));
+            }while((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
+            if(usb_irq_enable_on_entry == true)
+                NVIC_EnableIRQ(OTG_FS_IRQn);
 
             transmit_data_to_app(ADD_DEVICE_PROVISION, atecc_data.device_serial, 32);
 
@@ -325,13 +336,16 @@ void device_provision_controller(){
 
             ecdsa_get_public_key33(&nist256p1, provision_keys_data.device_private_key, perm_key_data.ext_keys.device_auth_public_key);
             if(0 != memcmp(provision_keys_data.device_public_key, perm_key_data.ext_keys.device_auth_public_key, 33)){
-                transmit_one_byte_reject(CONFIRM_PROVISION);
+                comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 break;
             }
 
             atecc_data.retries = DEFAULT_ATECC_RETRIES;
+            bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+            NVIC_DisableIRQ(OTG_FS_IRQn);
             do{
+                OTG_FS_IRQHandler();
                 atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
                 if(atecc_data.status!=ATCA_SUCCESS){
                     continue;
@@ -353,9 +367,11 @@ void device_provision_controller(){
                     continue;
                 }
             }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+            if(usb_irq_enable_on_entry == true)
+                NVIC_EnableIRQ(OTG_FS_IRQn);
 
             if(atecc_data.status != ATCA_SUCCESS){
-                transmit_one_byte_reject(CONFIRM_PROVISION);
+                comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 break;
             }
@@ -382,7 +398,7 @@ void device_provision_controller(){
                 transmit_one_byte_confirm(CONFIRM_PROVISION);
             }
             else{
-                transmit_one_byte_reject(CONFIRM_PROVISION);
+                comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 LOG_ERROR("PERR2-KEY");
                 break;

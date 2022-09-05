@@ -26,6 +26,7 @@ struct List_Data {
 	char option_list[24][15];
 	int number_of_options;
 	int current_index;
+	bool dynamic_heading;
 	char *heading;
 };
 
@@ -54,6 +55,7 @@ struct List_Object {
  * @param option_list list options array of char arrays
  * @param number_of_options number of options in the list
  * @param heading heading of the UI
+ * @param dynamic_heading if true, the heading will be appended with the current index of the list
  *
  * @return
  * @retval
@@ -63,7 +65,7 @@ struct List_Object {
  *
  * @note Do not use this if number of options to be displayed in list is 1.
  */
-void list_init(const char option_list[24][15], int number_of_options, const char *heading);
+void list_init(const char option_list[24][15], int number_of_options, const char *heading, bool dynamic_heading);
 
 /**
  * @brief Create UI for list

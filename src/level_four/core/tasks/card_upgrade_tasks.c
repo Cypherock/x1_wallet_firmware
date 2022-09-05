@@ -66,7 +66,7 @@ void card_upgrade_task() {
     #ifdef DEV_BUILD
     switch (flow_level.level_three) {
     case CARD_UPGRADE_TAP_CARD_MESSAGE:
-        instruction_scr_init(ui_text_tap_card_to_start);
+        instruction_scr_init(ui_text_tap_card_to_start, NULL);
         mark_event_over();
         break;
 

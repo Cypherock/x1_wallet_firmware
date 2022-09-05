@@ -87,7 +87,6 @@ void add_coin_controller()
         } else {
             flow_level.level_three = ADD_COINS_CHECK_PIN;
         }
-        transmit_one_byte_confirm(ADD_COIN_VERIFIED_BY_USER);
     } break;
 
     case ADD_COINS_ENTER_PASSPHRASE: {
@@ -97,7 +96,6 @@ void add_coin_controller()
     case ADD_COINS_CONFIRM_PASSPHRASE: {
         snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        transmit_one_byte_confirm(USER_CONFIRMED_PASSPHRASE);
         flow_level.level_three = ADD_COINS_CHECK_PIN;
         flow_level.level_one = 1;
     } break;
@@ -123,7 +121,6 @@ void add_coin_controller()
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        transmit_one_byte_confirm(USER_TAPPED_CARDS);
         flow_level.level_three = ADD_COINS_READ_DEVICE_SHARE;
     } break;
 

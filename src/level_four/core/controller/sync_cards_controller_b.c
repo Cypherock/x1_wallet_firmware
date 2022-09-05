@@ -76,7 +76,7 @@ void sync_cards_controller_b()
         counter.next_event_flag = true;
     } break;
     case SYNC_CARDS_ENTER_PIN_FLOW:{
-        transmit_one_byte_reject(USER_REJECT_PIN_INPUT);
+        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         flow_level.level_three = SYNC_CARDS_CURRENT_WALLET_CONFIRM;
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         counter.next_event_flag = true;

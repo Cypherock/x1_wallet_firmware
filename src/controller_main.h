@@ -47,6 +47,10 @@
 #define SKIP_ENTER_MNEMONICS_DEBUG
 #endif
 
+#define PRINT_FLOW_LVL() LOG_SWV("ar=%d, af=%d, fl1=%d, fl2=%d, fl3=%d, cr=%d, rst=%d\n", main_app_ready, device_auth_flag, flow_level.level_one, \
+                           flow_level.level_two, flow_level.level_three, counter.level, sys_flow_cntrl_u.bits.reset_not_allowed)
+#define CY_TRIGGER_SOURCE (CY_External_Triggered() ? CY_APP_USB_TASK : CY_APP_DEVICE_TASK)
+
 /**
  * @brief LEVELs ENUM for Counter struct.
  * The Counter.level is assigned one of these values which determines the depth in the
@@ -432,21 +436,6 @@ void _success_listener(lv_task_t* task);
  * @since v1.0.0
  */
 void _timeout_listener(lv_task_t* task);
-
-/**
- * @brief Checks if there is an abort command from the desktop
- * @details The function requests for any status packet from the communication.c. If a status packet is received
- * it checks if the packet contains the abort request. If an abort request is processed, the communication buffer
- * is cleared as well.
- *
- * @return bool For indicating if any request to exit was received from desktop
- * @retval true Indicates desktops request for exit
- * @retval false Indicates no request for exit
- *
- * @see STATUS_CMD_ABORT, STATUS_PACKET, get_usb_msg_by_cmd_type(), nfc_select_card(), set_instant_abort()
- * @since v1.0.0
- */
-bool abort_from_desktop();
 
 /**
  * @brief Aborts the events that are currently running and resets the flow of device

@@ -171,7 +171,7 @@ void tasks_arbitrary_data()
     } break;
 
     case ARBITRARY_DATA_CREATING_WAIT_SCREEN: {
-        instruction_scr_init(ui_text_generating_seed);
+        instruction_scr_init(ui_text_generating_seed, NULL);
         mark_event_over();
     } break;
 

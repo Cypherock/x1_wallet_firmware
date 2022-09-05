@@ -48,8 +48,7 @@ typedef enum{
 typedef struct{
     uint8_t         device_serial[DEVICE_SERIAL_SIZE],
                     retries;
-    ATCA_STATUS     status,
-                    fault_status;
+    ATCA_STATUS     status;
     ATCAIfaceCfg    *cfg_atecc608a_iface;
 } atecc_data_t;
 
@@ -173,6 +172,7 @@ typedef struct Send_Transaction_Data {
 #pragma pack(push, 1)
 typedef struct Send_Transaction_Cmd {
     uint8_t* signed_txn_byte_array;
+    int signed_txn_length;
 } Send_Transaction_Cmd;
 #pragma pack(pop)
 

@@ -62,6 +62,7 @@
 #include "controller_advanced_settings.h"
 #include "application_startup.h"
 #include "cy_factory_reset.h"
+#include "cy_card_hc.h"
 #include <stdio.h>
 
 extern lv_task_t* timeout_task;
@@ -90,6 +91,10 @@ void level_three_advanced_settings_controller()
 
     case LEVEL_THREE_FACTORY_RESET:
         cyc_factory_reset();
+        break;
+
+    case LEVEL_THREE_CARD_HEALTH_CHECK:
+        cyc_card_hc();
         break;
 #endif
 
@@ -161,20 +166,25 @@ void level_three_advanced_settings_controller()
 
 #ifdef ALLOW_LOG_EXPORT
     case LEVEL_THREE_FETCH_LOGS_INIT: {
-        transmit_one_byte_confirm(APP_LOG_DATA_REQUEST);
+        set_start_log_read();
+        logger_task();
         flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
     } break;
 
     case LEVEL_THREE_FETCH_LOGS_WAIT: {
         if (get_usb_msg_by_cmd_type(APP_LOG_DATA_SEND, NULL, NULL)) {
-            lv_task_del(timeout_task);
             flow_level.level_two = LEVEL_THREE_FETCH_LOGS;
+            clear_message_received_data();
         }
     } break;
 
     case LEVEL_THREE_FETCH_LOGS: {
-        // logs finished, reset any data and proceed
-        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_FINISH;
+        if (get_log_read_status() == LOG_READ_FINISH) {
+            // logs finished, reset any data and proceed
+            flow_level.level_two = LEVEL_THREE_FETCH_LOGS_FINISH;
+        } else {
+            flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
+        }
     } break;
 
     case LEVEL_THREE_FETCH_LOGS_FINISH: {

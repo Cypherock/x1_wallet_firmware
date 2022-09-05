@@ -62,7 +62,7 @@ void export_wallet_controller_b()
 {
     switch (flow_level.level_three) {
     case EXPORT_WALLET_SELECT_WALLET: {
-        transmit_one_byte_reject(SEND_WALLET_TO_DESKTOP);
+        comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
         reset_flow_level();
         counter.next_event_flag = true;
     } break;

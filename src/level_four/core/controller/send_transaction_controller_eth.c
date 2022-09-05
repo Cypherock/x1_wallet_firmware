@@ -111,7 +111,7 @@ void send_transaction_controller_eth()
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
             if (!eth_validate_unsigned_txn(&eth_unsigned_txn_ptr, &var_send_transaction_data.transaction_metadata)) {
                 mark_error_screen(ui_text_worng_eth_transaction);
-                transmit_one_byte_reject(SEND_TXN_USER_VERIFIES_ADDRESS);
+                comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
                 reset_flow_level();
             }
         }
@@ -151,7 +151,6 @@ void send_transaction_controller_eth()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
-        transmit_one_byte_confirm(SEND_TXN_USER_VERIFIES_ADDRESS);
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
@@ -167,7 +166,6 @@ void send_transaction_controller_eth()
     case SEND_TXN_CONFIRM_PASSPHRASE_ETH: {
         snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        transmit_one_byte_confirm(USER_CONFIRMED_PASSPHRASE);
         flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
     } break;
     
@@ -193,7 +191,6 @@ void send_transaction_controller_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        transmit_one_byte_confirm(USER_TAPPED_CARDS);
         flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_ETH;
     } break;
 

@@ -36,7 +36,7 @@
  * when not in use unlike delay screen.
  *
  */
-void instruction_scr_init(const char *message);
+void instruction_scr_init(const char *message, const char *heading_text);
 
 /**
  * @brief Updates the text on the instruction text, lv_task_handler needs to be called

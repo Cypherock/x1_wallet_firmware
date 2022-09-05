@@ -28,9 +28,9 @@ extern const char* ui_text_options_old_wallet[];
 extern const char* ui_text_options_new_wallet[];
 
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 8
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
 #else
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 7
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 8
 #endif
 extern const char* ui_text_options_advanced_settings[];
 extern const char* ui_text_options_buzzer_adjust[];
@@ -83,22 +83,19 @@ extern const char* ui_text_wrong_wallet_is_now_locked;
 extern const char* ui_text_wallet_verification_failed;
 
 extern const char* ui_text_invalid_card_tap_card[];
-extern const char* ui_text_place_card_wait_for_three_beep[];
-extern const char* ui_text_place_card_wait_for_two_beep;
-extern const char* ui_text_place_card_wait_for_one_beep;
+extern const char* ui_text_place_card_x_heading;
+extern const char* ui_text_place_card_wait_for_beep;
 extern const char* ui_text_device_authenticating[];
 extern const char* ui_text_device_provisioning[];
 
 extern const char* ui_text_tap_a_card_instruction1;
 extern const char* ui_text_tap_a_card_instruction2;
 extern const char* ui_text_tap_a_card;
-extern const char* ui_text_tap_1_4_cards;
-extern const char* ui_text_tap_2_4_cards;
-extern const char* ui_text_tap_3_4_cards;
-extern const char* ui_text_tap_4_4_cards;
+extern const char* ui_text_tap_x_4_cards;
 
 extern const char* ui_text_tap_1_2_cards;
 extern const char* ui_text_tap_2_2_cards;
+extern const char* ui_text_place_card_below;
 
 extern const char* ui_text_wallet_with_same_name_already_exist_on_this_card;
 extern const char* ui_text_card_is_full;
@@ -242,6 +239,13 @@ extern const char* ui_text_rotate_display_confirm;
 
 extern const char* ui_text_factory_reset_confirm[];
 extern const char* ui_text_confirm_factory_reset;
+extern const char* ui_text_no_wallets_present;
+extern const char* ui_text_wallets_in_card;
+extern const char* ui_text_card_seems_healthy;
+extern const char* ui_text_click_to_view_wallets;
+extern const char* ui_text_no_wallets_fetched;
+extern const char* ui_text_card_health_check_start;
+extern const char* ui_text_card_health_check_error[];
 extern const char* ui_text_device_verification_success;
 extern const char* ui_text_device_verification_failure;
 extern const char* ui_text_unauthenticate_via_cysync;
@@ -269,10 +273,7 @@ extern const char* ui_text_worng_eth_transaction;
 extern const char* ui_text_error_no_card_paired;
 extern const char* ui_text_error_pair_all_cards;
 extern const char* ui_text_error_pair_atleast_2_cards;
-extern const char* ui_text_pair_card_1;
-extern const char* ui_text_pair_card_2;
-extern const char* ui_text_pair_card_3;
-extern const char* ui_text_pair_card_4;
+extern const char* ui_text_pair_card_x;
 extern const char* ui_text_card_pairing_skipped_count;
 extern const char* ui_text_card_pairing_success;
 extern const char* ui_text_continue_with_pairing;
@@ -282,6 +283,7 @@ extern const char* ui_text_device_compromised_partially_provisioned;
 extern const char* ui_text_device_compromised_v1_config;
 extern const char* ui_text_pow_challenge_failed;
 extern const char* ui_text_card_removed_fast;
+extern const char* ui_text_card_freq_discon_fault;
 extern const char* ui_text_card_align_with_device_screen;
 extern const char* ui_text_remove_card_prompt;
 extern const char* ui_text_card_detected;

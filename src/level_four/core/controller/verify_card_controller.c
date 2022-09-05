@@ -96,7 +96,6 @@ void verify_card_controller()
     case VERIFY_CARD_START_MESSAGE:
         tap_card_data.desktop_control = true;
         tap_card_data.active_cmd_type = START_CARD_AUTH;
-        transmit_one_byte_confirm(START_CARD_AUTH);
         flow_level.level_three = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
         break;
 
@@ -195,6 +194,7 @@ void verify_card_controller()
         else
             flow_level.level_three = VERIFY_CARD_FAILED;
         clear_message_received_data();
+        comm_process_complete();
     } break;
 
     case VERIFY_CARD_SUCCESS:

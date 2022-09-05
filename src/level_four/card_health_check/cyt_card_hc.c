@@ -1,8 +1,8 @@
 /**
- * @file    cyt_factory_reset.c
+ * @file    cyt_card_hc.c
  * @author  Cypherock X1 Team
- * @brief   Factory reset task.
- *          This file contains the implementation of the factory reset task.
+ * @brief   Card health check task.
+ *          This file contains the implementation of the card health check task.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  *
@@ -55,53 +55,70 @@
  *
  ******************************************************************************
  */
-#include "cy_factory_reset.h"
-#include "ui_delay.h"
+#include "flash_config.h"
+#include "cy_card_hc.h"
 #include "ui_instruction.h"
+#include "ui_delay.h"
+#include "ui_list.h"
+#include "ui_message.h"
+#include "controller_tap_cards.h"
+#include "app_error.h"
 #include "ui_multi_instruction.h"
-#include "ui_confirmation.h"
 
-void cyt_factory_reset() {
+extern uint8_t *wallet_list[MAX_WALLETS_ALLOWED][2];
+extern uint8_t wallet_count;
+extern uint32_t card_fault_status;
+void cyt_card_hc() {
+#if X1WALLET_MAIN
     switch (flow_level.level_three) {
-        case FACTORY_RESET_INFO:
-            multi_instruction_init(ui_text_factory_reset_confirm, 3, DELAY_LONG_STRING, true);
-            break;
-
-        case FACTORY_RESET_CONFIRM:
-            confirm_scr_init(ui_text_confirm_factory_reset);
-            break;
-
-        case FACTORY_RESET_TAP_CARD1:
-            instruction_scr_init("Dummy", ui_text_tap_1_2_cards);
-            instruction_scr_change_text(ui_text_place_card_below, true);
+        case CARD_HC_START:
             mark_event_over();
             break;
 
-        case FACTORY_RESET_TAP_CARD2:
-            instruction_scr_init("Dummy", ui_text_tap_2_2_cards);
-            instruction_scr_change_text(ui_text_place_card_below, true);
+        case CARD_HC_TAP_CARD:{
+            instruction_scr_init(ui_text_place_card_below, ui_text_tap_a_card);
+            instruction_scr_change_text(ui_text_card_health_check_start, true);
             mark_event_over();
-            break;
+        } break;
 
-        case FACTORY_RESET_CHECK:
-            instruction_scr_init(ui_text_performing_checks, NULL);
-            mark_event_over();
-            break;
+        case CARD_HC_DISPLAY_CARD_HEALTH: {
+            char error_scr_list[3][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION]={"","",""};
+            const char *pptr[3] = {error_scr_list[0], error_scr_list[1], error_scr_list[2]};
+            uint8_t str_index=0;
+            if(card_fault_status == 0){
+                pptr[str_index++] = ui_text_card_seems_healthy;
+                pptr[str_index++] = ui_text_click_to_view_wallets;
+            }
+            else{
+                snprintf(error_scr_list[str_index++], MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION, "%s: C%04lx", ui_text_card_health_check_error[0], card_fault_status);
+                pptr[str_index++] = ui_text_card_health_check_error[1];
+                if(wallet_count > MAX_WALLETS_ALLOWED)
+                    pptr[str_index++] = ui_text_no_wallets_fetched;
+                else
+                    pptr[str_index++] = ui_text_click_to_view_wallets;
+            }
+            multi_instruction_init(pptr, str_index, DELAY_TIME, true);
+        } break;
 
-        case FACTORY_RESET_ERASING:
-            instruction_scr_destructor();
-            delay_scr_init(ui_text_erasing, DELAY_TIME);
-            break;
-
-        case FACTORY_RESET_CANCEL: {
-            char msg[64] = "\0";
-            const char *msg_list[3] = {msg, ui_text_reset_exit[1], ui_text_reset_exit[2]};
-            instruction_scr_destructor();
-            snprintf(msg, sizeof(msg), ui_text_reset_exit[0], get_wallet_name(factory_reset_mismatch_wallet_index));
-            multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
+        case CARD_HC_DISPLAY_WALLETS:{
+            if(wallet_count == 0){
+                message_scr_init(ui_text_no_wallets_present);
+            }
+            else if(wallet_count <= MAX_WALLETS_ALLOWED){
+                char choices[MAX_WALLETS_ALLOWED][15]={"","","",""}, heading[50];
+                for(int i=0; i < wallet_count; i++){
+                    strcpy(choices[i], (char*)wallet_list[i][0]);
+                }
+                snprintf(heading, sizeof(heading), ui_text_wallets_in_card, decode_card_number(tap_card_data.tapped_card));
+                list_init(choices, wallet_count, heading, false);
+            }
+            else{
+                mark_event_cancel();
+            }
         } break;
 
         default:
-            mark_event_over();
+            reset_flow_level();
     }
+#endif
 }

@@ -202,7 +202,7 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_CREATING_WAIT_SCREEN: {
-        instruction_scr_init(ui_text_generating_seed);
+        instruction_scr_init(ui_text_generating_seed, NULL);
         mark_event_over();
     } break;
 
@@ -221,7 +221,8 @@ void tasks_restore_wallet()
         list_init(
             wallet_credential_data.mnemonics,
             wallet.number_of_mnemonics,
-            ui_text_verify_word_hash);
+            ui_text_verify_word_hash,
+            true);
         reset_theme();
     } break;
 

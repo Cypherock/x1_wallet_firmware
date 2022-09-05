@@ -72,16 +72,19 @@ static void __timeout_listener();
 static void __desktop_listener();
 
 void verify_card_task() {
-	switch(flow_level.level_three) {
+  char display[40];
+  switch(flow_level.level_three) {
 
     case VERIFY_CARD_START_MESSAGE:
-        instruction_scr_init(ui_text_tap_x1card_auth_instruction_1);
+        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+        instruction_scr_init(display, ui_text_tap_1_2_cards);
         mark_event_over();
         break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_tap_x1card_auth_instruction_1);
+        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+        instruction_scr_init(display, ui_text_tap_1_2_cards);
         mark_event_over();
         break;
 
@@ -98,7 +101,8 @@ void verify_card_task() {
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
         instruction_scr_destructor();
-        instruction_scr_init(ui_text_tap_x1card_auth_instruction_2);
+        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
+        instruction_scr_init(display, ui_text_tap_1_2_cards);
         mark_event_over();
         break;
 
@@ -109,7 +113,7 @@ void verify_card_task() {
     case VERIFY_CARD_FINAL_MESSAGE:
         random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
         lv_task_ready(random_number_task);
-        timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_MID, NULL);
+        timeout_task = lv_task_create(__timeout_listener, 1000, LV_TASK_PRIO_MID, NULL);
         lv_task_once(timeout_task);
         break;
 

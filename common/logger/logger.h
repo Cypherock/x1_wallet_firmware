@@ -1,8 +1,8 @@
 /**
  * @file    logger.h
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   Logger public APIs.
+ *          All the logger public APIs are defined here.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -46,10 +46,9 @@ typedef struct
 {
   uint16_t log_count;
   uint32_t next_write_loc;
-  uint32_t next_read_loc;
   uint8_t page_index;
-  uint8_t read_page_index;
   uint8_t initialized;
+  uint8_t read_page_index;
   log_read_e_t read_sm_e;
   uint8_t total_page_read;
 }logger_data_s_t;
@@ -66,8 +65,10 @@ void logger(char *fmt, ...);
 #if USE_SIMULATOR == 0
 
 #ifndef RELEASE_BUILD
+#define LOG_SWV  printf
 #define LOG_INFO logger
 #else
+#define LOG_SWV(...)
 #define LOG_INFO(...)
 #endif
 
@@ -172,5 +173,6 @@ void log_hex_array(const char text[], const uint8_t *arr, uint8_t length);
  */
 log_read_e_t get_log_read_status();
 
+void set_start_log_read();
 
 #endif //_DEVICE_LOGGER_H

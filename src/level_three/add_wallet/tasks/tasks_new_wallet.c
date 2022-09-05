@@ -192,7 +192,7 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_PROCESSING: {
-        instruction_scr_init(ui_text_generating_seed);
+        instruction_scr_init(ui_text_generating_seed, NULL);
         mark_event_over();
     } break;
 
@@ -217,7 +217,8 @@ void tasks_add_new_wallet()
         set_theme(LIGHT);
         list_init(
             wallet_credential_data.mnemonics,
-            wallet.number_of_mnemonics, ui_text_word_hash);
+            wallet.number_of_mnemonics, ui_text_word_hash,
+            true);
         reset_theme();
     } break;
 

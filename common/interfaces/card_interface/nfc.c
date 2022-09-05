@@ -140,7 +140,7 @@ ret_code_t nfc_select_card()
     {
         reset_inactivity_timer();
         err_code = adafruit_pn532_nfc_a_target_init(&tag_info, DEFAULT_NFC_TG_INIT_TIME);
-            if (instant_abort && (*instant_abort)() && abort_now) {
+            if (CY_Read_Reset_Flow() && abort_now) {
                 (*abort_now)();
                 return STM_ERROR_NULL;
             }
@@ -565,8 +565,8 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
     if (nfc_secure_comm) {
         if (send_apdu[OFFSET_LC] > 0) {
             send_len -= OFFSET_CDATA;
-            if (apdu_encrypt_data(send_apdu + OFFSET_CDATA, &send_len))
-                return STM_ERROR_INVALID_DATA;
+            if ((err_code = apdu_encrypt_data(send_apdu + OFFSET_CDATA, &send_len)) != STM_SUCCESS)
+                return err_code;
             send_len += OFFSET_CDATA;
         }
         memcpy(send_apdu + send_len, nfc_device_key_id, sizeof(nfc_device_key_id));

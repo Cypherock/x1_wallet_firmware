@@ -73,39 +73,21 @@ extern char* NUMBERS;
 
 void tap_cards_for_verification_flow()
 {
+    char display[40];
+
     switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        instruction_scr_init(ui_text_tap_1_4_cards);
+    case TAP_CARD_TWO_FRONTEND:
+    case TAP_CARD_THREE_FRONTEND:
+    case TAP_CARD_FOUR_FRONTEND:
+        snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
+        instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
         break;
 
     case TAP_CARD_ONE_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_TWO_FRONTEND:
-        instruction_scr_init(ui_text_tap_2_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_TWO_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_THREE_FRONTEND:
-        instruction_scr_init(ui_text_tap_3_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_THREE_BACKEND:
-        mark_event_over();
-        break;
-
-    case TAP_CARD_FOUR_FRONTEND:
-        instruction_scr_init(ui_text_tap_4_4_cards);
-        mark_event_over();
-        break;
-
     case TAP_CARD_FOUR_BACKEND:
         mark_event_over();
         break;

@@ -96,7 +96,7 @@ void level_one_controller()
     }
 
     if (device_auth_flag) {
-        mark_device_state(true);
+        mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, SIGN_SERIAL_NUMBER);
         lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);  // tasks are stopped when invoked from main menu; restart the tasks
         device_auth();
         device_auth_flag = 0;
@@ -159,7 +159,7 @@ void level_one_controller()
         flow_level.level_one = LEVEL_TWO_OLD_WALLET;
     }
     lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Task will now not run
-    mark_device_state(false);
+    mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
     increase_level_counter();
     clear_list_choice();
 #endif

@@ -97,7 +97,6 @@ void level_one_controller_initial() {
 
     case 3: {
       flow_level.level_one = 4;
-      mark_device_state(true);
     } break;
 
     case 4: {

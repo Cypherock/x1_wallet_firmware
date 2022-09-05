@@ -73,9 +73,6 @@ extern char* ALPHA_NUMERIC;
 extern char* NUMBERS;
 extern char* PASSPHRASE;
 
-extern lv_task_t* success_task;
-extern lv_task_t* timeout_task;
-
 extern Receive_Transaction_Data receive_transaction_data;
 
 void receive_transaction_tasks()
@@ -136,7 +133,7 @@ void receive_transaction_tasks()
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN: {
-        instruction_scr_init(ui_text_deriving_address);
+        instruction_scr_init(ui_text_deriving_address, NULL);
         mark_event_over();
     } break;
 
@@ -152,12 +149,8 @@ void receive_transaction_tasks()
     } break;
 
     case RECV_TXN_WAITING_SCREEN: {
-        instruction_scr_init(ui_text_sending_confirmation_to_desktop);
-        success_task = lv_task_create(_success_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(success_task);
-
-        timeout_task = lv_task_create(_timeout_listener, 6000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
+        instruction_scr_init(ui_text_sending_confirmation_to_desktop, NULL);
+        mark_event_over();
     } break;
 
     case RECV_TXN_FINAL_SCREEN:

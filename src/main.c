@@ -146,7 +146,6 @@ int main(void)
 #endif //USE_SIMULATOR
     {
         logo_scr_init(2000);
-        device_hardware_check();
         device_provision_check();
         reset_flow_level();
 #if X1WALLET_MAIN
@@ -164,7 +163,7 @@ int main(void)
             reset_inactivity_timer();
         // Flow
         main_app_ready = true;
-        if (abort_from_desktop() && (sys_flow_cntrl_u.bits.reset_flow == true) && (sys_flow_cntrl_u.bits.reset_not_allowed == false))
+        if (CY_Read_Reset_Flow() && (sys_flow_cntrl_u.bits.reset_not_allowed == false))
             _abort_();
 
         if(sys_flow_cntrl_u.bits.nfc_off == false){
@@ -173,6 +172,8 @@ int main(void)
 
         if (counter.next_event_flag != 0)
         {
+            PRINT_FLOW_LVL();
+            mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
             reset_next_event_flag();
 #if X1WALLET_MAIN
             level_one_tasks();
@@ -182,9 +183,6 @@ int main(void)
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif
         }
-
-        // USB
-        usb_send_task();
 
 #if USE_SIMULATOR == 1
         usbsim_continue_loop();
@@ -237,12 +235,22 @@ void Error_Handler(void)
     /* USER CODE END Error_Handler_Debug */
 }
 
+/**
+ * @brief Function to transmit data in real-time over SWV channel
+ * @param file unused
+ * @param *ptr string pointer for data to send
+ * @param len  length of data to send
+ * 
+ * @ret len of data transmitted
+ */
 int _write(int file, char *ptr, int len) {
+#ifndef NDEBUG    // Disable printf in release mode
     int DataIdx;
     for (DataIdx = 0; DataIdx < len; DataIdx++) {
         ITM_SendChar(*ptr++);
     }
     return len;
+#endif
 }
 
 #ifdef USE_FULL_ASSERT

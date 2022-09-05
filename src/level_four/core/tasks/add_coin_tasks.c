@@ -90,7 +90,7 @@ void add_coin_tasks()
         for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
             snprintf(max_coin_supported[coinIndex], sizeof(max_coin_supported[coinIndex]), "%s", get_coin_name(add_coin_data.coin_indexes[coinIndex], add_coin_data.network_chain_ids[coinIndex]));
         }
-        list_init(max_coin_supported, add_coin_data.number_of_coins, (add_coin_data.resync ? ui_text_resync_coins : ui_text_add_coins));
+        list_init(max_coin_supported, add_coin_data.number_of_coins, (add_coin_data.resync ? ui_text_resync_coins : ui_text_add_coins), true);
     } break;
 
     case ADD_COINS_ENTER_PASSPHRASE: {
@@ -135,7 +135,7 @@ void add_coin_tasks()
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        instruction_scr_init(ui_text_generating_xpubs);
+        instruction_scr_init(ui_text_generating_xpubs, NULL);
         mark_event_over();
     } break;
 
@@ -148,13 +148,8 @@ void add_coin_tasks()
     } break;
 
     case ADD_COINS_WAITING_SCREEN: {
-        instruction_scr_init(ui_text_exporting_to_desktop);
-
-        success_task = lv_task_create(_success_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(success_task);
-
-        timeout_task = lv_task_create(_timeout_listener, 10000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
+        instruction_scr_init(ui_text_exporting_to_desktop, NULL);
+        mark_event_over();
     } break;
 
     case ADD_COINS_FINAL_SCREEN:

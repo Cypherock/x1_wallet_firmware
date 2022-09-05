@@ -71,7 +71,7 @@ void export_wallet_controller()
         data.chosen_wallet_index = flow_level.screen_input.list_choice - 1;
         if (get_ith_wallet_to_export(flow_level.screen_input.list_choice - 1, &data.chosen_wallet_index) != SUCCESS_) {
             LOG_ERROR("ERR: xx1");
-            transmit_one_byte_reject(SEND_WALLET_TO_DESKTOP);
+            comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
             reset_flow_level();
             mark_error_screen(ui_text_something_went_wrong);
             flow_level.show_error_screen = true;

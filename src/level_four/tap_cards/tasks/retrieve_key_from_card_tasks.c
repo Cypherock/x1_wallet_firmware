@@ -73,7 +73,7 @@ void retrieve_key_from_card()
 {
     switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        instruction_scr_init(ui_text_tap_1_2_cards);
+        instruction_scr_init(ui_text_tap_1_2_cards, NULL);
         mark_event_over();
         break;
 

@@ -73,7 +73,6 @@ extern char* ALPHA_NUMERIC;
 extern char* NUMBERS;
 extern char* PASSPHRASE;
 
-extern lv_task_t* success_task;
 extern lv_task_t* timeout_task;
 
 extern int input_index;
@@ -83,7 +82,7 @@ void send_transaction_tasks()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN: {
-        instruction_scr_init(ui_text_fetching_unsigned_transaction);
+        instruction_scr_init(ui_text_fetching_unsigned_transaction, NULL);
 
         timeout_task = lv_task_create(_timeout_listener, 10000, LV_TASK_PRIO_HIGH, NULL);
         lv_task_once(timeout_task);
@@ -209,25 +208,15 @@ void send_transaction_tasks()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD: {
-        instruction_scr_init(ui_text_signing_transaction);
+        instruction_scr_init(ui_text_signing_transaction, NULL);
         mark_event_over();
     } break;
 
-    case SEND_TXN_READ_DEVICE_SHARE: {
+    case SEND_TXN_READ_DEVICE_SHARE:
+    case SEND_TXN_SIGN_TXN:
+    case SEND_TXN_WAITING_SCREEN:
         mark_event_over();
-    } break;
-
-    case SEND_TXN_SIGN_TXN: {
-        mark_event_over();
-    } break;
-
-    case SEND_TXN_WAITING_SCREEN: {
-        success_task = lv_task_create(_success_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(success_task);
-
-        timeout_task = lv_task_create(_timeout_listener, 6000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
-    } break;
+        break;
 
     case SEND_TXN_FINAL_SCREEN:
         delay_scr_init(ui_text_exported_signed_transaction_to_desktop, DELAY_TIME);

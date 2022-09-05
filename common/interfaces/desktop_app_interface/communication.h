@@ -1,17 +1,11 @@
 /**
  * @file    communication.h
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   USB communication interface APIs.
+ *          Exposes the APIs for enabling USB communication at application layer.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
  */
-/*********************************************
- * 
- *	Author: Atul
- * 
- * *******************************************/
 #ifndef _COMMUNICATION
 #define _COMMUNICATION
 #include <stdbool.h>
@@ -26,93 +20,31 @@
 #define MAXIMUM_DATA_SIZE 40
 #define PKT_HEAD_SIZE 4
 #define BYTE_STUFFED_DATA_SIZE ((MAXIMUM_DATA_SIZE + PKT_HEAD_SIZE) * 2)
-
-#define data_array_SIZE 6144
-
-/**
- * @brief Communication Header struct
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-#pragma pack(push, 1)
-typedef struct comm_header {
-    uint16_t start_frame;
-    uint32_t command_type;
-    uint8_t data_size; // it will be size of comm_data
-} comm_header_t;
-
-/**
- * @brief Communication Header struct for v0
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-#pragma pack(1)
-typedef struct comm_header_v0 {
-    uint8_t start_frame;
-    uint8_t command_type;
-    uint8_t data_size; // it will be size of comm_data
-} comm_header_v0_t;
-#pragma pack(pop)
-
-/**
- * @brief Communication data struct
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct comm_data {
-    uint16_t current_packet_no;
-    uint16_t total_Packet;
-    uint8_t data[BYTE_STUFFED_DATA_SIZE - PKT_HEAD_SIZE * 2];
-    uint16_t crc;
-} comm_data_t;
-
-/**
- * @brief Single package struct
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct packet {
-    comm_header_t com_header;
-    comm_data_t com_data;
-} packet_t;
-
-
-/// enum Command Status on communication from desktop.
-typedef enum command_status {
-    CMD_RECEIVED,
-    CMD_SIZE_ERROR,
-    CRC_ERROR,
-} command_status_t;
-
 #define CRC16_SIZE sizeof(uint16_t)
-#define COMM_HEADER_SIZE (sizeof(comm_header_t))
+#define COMM_HEADER_SIZE 16
 #define DATA_SIZE_INDEX (COMM_HEADER_SIZE - 1)
 #define COMM_HEADER_SIZE_V0 (sizeof(comm_header_v0_t))
 #define DATA_SIZE_INDEX_V0 (COMM_HEADER_SIZE_V0 - 1)
 
+typedef enum cy_app_task {
+    CY_UNUSED_TASK = 0x00,
+    CY_APP_IDLE_TASK = 0x01,
+    CY_APP_USB_TASK = 0x02,
+    CY_APP_DEVICE_TASK = 0x03,
+} cy_app_task_t;
+
+typedef enum cy_app_status {
+    CY_UNUSED_STATE = 0x00,
+    CY_APP_IDLE = 0x10,
+    CY_APP_WAIT_FOR_CARD = 0x20,
+    CY_APP_WAIT_USER_INPUT = 0x30,
+    CY_APP_BUSY = 0x40,
+} cy_app_status_t;
+
 /// enum for command types received from/sent to desktop.
 typedef enum commandType {
     ACK_PACKET = 1,                         ///< Acknowledge packet
-    TRANSACTION_PACKET = 2,                 ///< Unused enum TODO:remove
     ERROR_PACKET = 7,                       ///< Nak packet for when device is busy or error occurred
-    USB_CONNECTION_STATE_PACKET = 8,        ///< Unused enum TODO:remove
-    RECEIVE_TRANSACTION_PACKET = 11,        ///< Unused enum TODO:remove
 
     /** Start Auth Command **/
     START_AUTH_PROCESS = 12,                ///< deprecated enum NOTE:replace with START_CARD_AUTH
@@ -120,8 +52,7 @@ typedef enum commandType {
     APP_SEND_RAND_NUM = 16,                 ///< Receive random challenge for signing
     SIGNED_CHALLENGE = 17,                  ///< Send challenge signature to desktop
 
-
-    APP_LOG_DATA_REQUEST = 37,              ///< Request by desktop to receive logs
+    APP_LOG_DATA_REJECT = 37,               ///< Request by desktop to receive logs
     APP_LOG_DATA_SEND = 38,                 ///< Response to send log to desktop
 
     READY_STATE_PACKET = 41,                ///< Request by desktop for device status
@@ -185,25 +116,7 @@ typedef enum commandType {
 
     DEVICE_INFO = 87,                       ///< Command for device information
     COMM_SDK_VERSION_REQ = 88,              ///< Command for Communication SDK version
-
-    DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
-
 } En_command_type_t;
-
-/**
- * @brief struct for message received from desktop
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct msg_detail {
-    uint32_t msg_type;
-    uint16_t msg_size;
-    uint8_t data_array[data_array_SIZE];
-} msg_detail_t;
 
 /**
  * @brief Initialize communication by registering USB receive function in libusb
@@ -211,55 +124,6 @@ typedef struct msg_detail {
  * @since v1.0.0
  */
 void comm_init();
-
-/**
- * @brief Processes the received frame.
- * @details
- * 
- * @param recData pointer to buffer containing frame
- * @param size total length
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void receive_packet_parser(const uint8_t* recData, uint8_t size);
-
-/**
- * @brief Set usb connection status usb_conn_status.
- * @details
- * 
- * @param status New status.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void usb_connection_status_change(uint8_t status);
-
-/**
- * @brief Get usb connection status.
- * @details
- * 
- * @return returns the value of usb_conn_status
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-uint8_t usb_connection_status(void);
 
 /**
  * @brief Checks if there is any message received from desktop.
@@ -276,24 +140,7 @@ uint8_t usb_connection_status(void);
  *
  * @note
  */
-uint8_t is_there_any_msg_from_app(void);
-
-/**
- * @brief Helper function to send usb data
- * @details
- *
- * @param
- *
- * @return Status
- * @retval true for success
- * @retval false for failure
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-bool usb_send_task(void);
+bool is_there_any_msg_from_app();
 
 /**
  * @brief This function allows to fetch any available transaction. The caller should provide storage to get the 
@@ -354,6 +201,8 @@ bool get_usb_msg_by_cmd_type(En_command_type_t command_type, uint8_t **msg_data,
  */
 void clear_message_received_data();
 
+void comm_process_complete();
+
 /**
  * @brief Set device state.
  * @details
@@ -368,7 +217,7 @@ void clear_message_received_data();
  *
  * @note
  */
-void mark_device_state(uint8_t ready_state); 
+void mark_device_state(cy_app_status_t state, uint8_t flow_status);
 
 /**
  * @brief Check if device is ready.
@@ -389,20 +238,22 @@ void mark_device_state(uint8_t ready_state);
 bool is_device_ready();
 
 /**
- * @brief Send rejection to desktop with command type.
- * @details
- * 
- * @param command_type Command type to send with rejection byte.
+* @brief Reject any ongoing flow.
+* @details This will internally mark the comm_cmd_state to REJECTED. The point of rejection is conveyed
+* to the desktop based on the value of curr_flow_status.
+*
+* @see
+* @since v1.0.0
+*/
+void comm_reject_request(En_command_type_t command_type, uint8_t byte);
+
+/**
+ * @brief Reject an invalid command id request from the desktop application.
  *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @param command_type
+ * @param byte
  */
-void transmit_one_byte_reject(uint32_t command_type);
+void comm_reject_invalid_cmd();
 
 /**
  * @brief Send confirmation to desktop with command type.
@@ -454,69 +305,5 @@ void transmit_one_byte(uint32_t command_type, uint8_t byte);
  * @note
  */
 void transmit_data_to_app(uint32_t command_type, const uint8_t* transmit_data, uint32_t size);
-
-/**
- * @brief Helper function to check if data has been sent.
- * @details
- *
- * @param
- *
- * @return Send status.
- * @retval 1 if data sent.
- * @retval 0 if data not sent.
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-uint8_t is_data_sent();
-
-/**
- * @brief Get the packat send status.
- * @details
- *
- * @param
- *
- * @return packet_send_status.
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-uint8_t is_all_packet_send(void);
-
-/**
- * @brief Create a software app timer.
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void software_timer_create(void);
-
-/**
- * @brief  struct to store the derivation path for addresses when receiving transaction.
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct Derivation_path {
-    uint32_t coin;
-    uint32_t change;
-    uint32_t address_index;
-} Derivation_path;
 
 #endif //_COMMUNICATION

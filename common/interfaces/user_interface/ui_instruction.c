@@ -69,15 +69,22 @@
  * when not in use unlike delay screen.
  */
 
-static lv_obj_t *instruction;
+static lv_obj_t *instruction=NULL;
+static lv_obj_t *heading=NULL;
 
-void instruction_scr_init(const char *message) {
+void instruction_scr_init(const char *message, const char *heading_text){
 
     ASSERT(message != NULL);
-
+    if(heading_text != NULL){
+      heading = lv_label_create(lv_scr_act(), NULL);
+      ui_heading(heading, heading_text, LV_HOR_RES-(strlen(heading_text)>>1), LV_LABEL_ALIGN_CENTER);
+    }
     instruction = lv_label_create(lv_scr_act(), NULL);
     ui_paragraph(instruction,message, LV_LABEL_ALIGN_CENTER); //Creates task to print text on screen
-    lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
+    if(heading == NULL)
+        lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
+    else
+        lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, lv_obj_get_height(heading)>>1);
 }
 
 void instruction_scr_change_text(const char *new_message, bool immediate) {
@@ -87,8 +94,10 @@ void instruction_scr_change_text(const char *new_message, bool immediate) {
 
     // Make sure instruction_scr_init is called first
     lv_label_set_static_text(instruction, new_message);
-    lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
-
+    if(heading == NULL)
+        lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
+    else
+        lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, lv_obj_get_height(heading)>>1);
     if(immediate == true){
         lv_task_handler();
     }
@@ -96,4 +105,6 @@ void instruction_scr_change_text(const char *new_message, bool immediate) {
 
 void instruction_scr_destructor() {
     lv_obj_clean(lv_scr_act()); //screen will now be cleared
+    heading = NULL;
+    instruction = NULL;
 }

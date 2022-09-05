@@ -58,6 +58,7 @@
 #include "apdu.h"
 #include "assert_conf.h"
 #include "utils.h"
+#include "app_error.h"
 
 /**
  * NOTE :
@@ -566,21 +567,21 @@ int apdu_encrypt_data(uint8_t *InOut_data, uint16_t *data_len)
     uint8_t payload[len + padding_len];
     aes_encrypt_ctx ctx = {0};
 
-    if (aes_encrypt_key256(session_enc_key, &ctx) != EXIT_SUCCESS) return 1;
+    if (aes_encrypt_key256(session_enc_key, &ctx) != EXIT_SUCCESS) return NFC_SC_ENC_KEY_ERROR;
 
     memcpy(payload, InOut_data, len);
 
     payload[len - 1] = 0x80;
     if (padding_len > 0) memset(payload + len, 0, padding_len);
     if (aes_cbc_encrypt(payload, InOut_data + 16, sizeof(payload), session_iv, &ctx) != EXIT_SUCCESS)
-        return 2;
+        return NFC_SC_ENC_ERROR;
 
     memset(&ctx, 0, sizeof(ctx));
     memzero(session_iv, sizeof(session_iv));
 
-    if (aes_encrypt_key256(session_mac_key, &ctx) != EXIT_SUCCESS) return 3;
+    if (aes_encrypt_key256(session_mac_key, &ctx) != EXIT_SUCCESS) return NFC_SC_MAC_KEY_ERROR;
     if (aes_cbc_encrypt(InOut_data + 16, payload, sizeof(payload), session_iv, &ctx) != EXIT_SUCCESS)
-        return 4;
+        return NFC_SC_MAC_ERROR;
     memcpy(InOut_data, payload + sizeof(payload) - 16, 16);
     memcpy(session_iv, payload + sizeof(payload) - 16, 16);
 
@@ -598,18 +599,18 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len)
     aes_decrypt_ctx dec_ctx = {0};
     aes_encrypt_ctx enc_ctx = {0};
 
-    if (aes_encrypt_key256(session_mac_key, &enc_ctx) != EXIT_SUCCESS) return 1;
+    if (aes_encrypt_key256(session_mac_key, &enc_ctx) != EXIT_SUCCESS) return NFC_SC_MAC_KEY_ERROR;
     if (aes_cbc_encrypt(InOut_data + 16, payload, sizeof(payload), iv, &enc_ctx) != EXIT_SUCCESS)
-        return 2;
-    if (memcmp(payload + data_len - 16, InOut_data, 16) != 0) return 3;
-    if (aes_decrypt_key256(session_enc_key, &dec_ctx) != EXIT_SUCCESS) return 4;
+        return NFC_SC_MAC_ERROR;
+    if (memcmp(payload + data_len - 16, InOut_data, 16) != 0) return NFC_SC_MAC_MISMATCH;
+    if (aes_decrypt_key256(session_enc_key, &dec_ctx) != EXIT_SUCCESS) return NFC_SC_DEC_KEY_ERROR;
 
     memcpy(iv, session_iv, sizeof(session_iv));
     memcpy(session_iv, InOut_data, sizeof(session_iv));
     memcpy(payload, InOut_data + 16, data_len);
 
     if (aes_cbc_decrypt(payload, InOut_data, data_len, iv, &dec_ctx) != EXIT_SUCCESS)
-        return 5;
+        return NFC_SC_DEC_ERROR;
     while (InOut_data[data_len - 1] == 0x00)
         data_len--;
     if (InOut_data[data_len - 1] == 0x80) data_len--;

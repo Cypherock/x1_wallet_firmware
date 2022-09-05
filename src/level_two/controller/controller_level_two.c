@@ -84,7 +84,7 @@ void level_two_controller()
         flow_level.level_two = flow_level.screen_input.list_choice;
         counter.level = LEVEL_THREE; // increase level counter from two to three
         lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
-        mark_device_state(false);
+        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_BUSY, 0xFF);
     } break;
 
     case LEVEL_TWO_NEW_WALLET: {

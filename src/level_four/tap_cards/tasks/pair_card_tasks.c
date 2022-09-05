@@ -64,68 +64,32 @@
 
 void tap_card_pair_card_tasks()
 {
+    char display[40];
     switch (flow_level.level_four) {
     case PAIR_CARD_TAP_A_CARD_DUMMY:
         confirm_scr_init(ui_text_continue_with_pairing);
         break;
 
     case PAIR_CARD_RED_FRONTEND:
-        if(get_keystore_used_status(0) == 1){
+    case PAIR_CARD_BLUE_FRONTEND:
+    case PAIR_CARD_GREEN_FRONTEND:
+    case PAIR_CARD_YELLOW_FRONTEND:
+        if(get_keystore_used_status((flow_level.level_four-1)>>1) == 1){
             mark_event_cancel();
         }
         else{
-            card_detect_scr_init(ui_text_pair_card_1);
+            snprintf(display, sizeof(display), ui_text_pair_card_x, ((flow_level.level_four-1)>>1)+1);
+            card_detect_scr_init(display);
         }
         break;
 
     case PAIR_CARD_RED_BACKEND:
-        card_detect_scr_destructor();
-        instruction_scr_init("Dummy");
-        mark_event_over();
-        break;
-
-    case PAIR_CARD_BLUE_FRONTEND:
-        if(get_keystore_used_status(1) == 1){
-            mark_event_cancel();
-        }
-        else{
-            card_detect_scr_init(ui_text_pair_card_2);
-        }
-        break;
-
     case PAIR_CARD_BLUE_BACKEND:
-        card_detect_scr_destructor();
-        instruction_scr_init("Dummy");
-        mark_event_over();
-        break;
-
-    case PAIR_CARD_GREEN_FRONTEND:
-        if(get_keystore_used_status(2) == 1){
-            mark_event_cancel();
-        }
-        else{
-            card_detect_scr_init(ui_text_pair_card_3);
-        }
-        break;
-
     case PAIR_CARD_GREEN_BACKEND:
-        card_detect_scr_destructor();
-        instruction_scr_init("Dummy");
-        mark_event_over();
-        break;
-
-    case PAIR_CARD_YELLOW_FRONTEND:
-        if(get_keystore_used_status(3) == 1){
-            mark_event_cancel();
-        }
-        else{
-            card_detect_scr_init(ui_text_pair_card_4);
-        }
-        break;
-
     case PAIR_CARD_YELLOW_BACKEND:
         card_detect_scr_destructor();
-        instruction_scr_init("Dummy");
+        snprintf(display, sizeof(display), ui_text_pair_card_x, flow_level.level_four>>1);
+        instruction_scr_init("Dummy", display);
         mark_event_over();
         break;
 

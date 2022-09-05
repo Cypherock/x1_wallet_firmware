@@ -75,7 +75,6 @@ void receive_transaction_controller_eth()
     switch (flow_level.level_three) {
 
     case RECV_TXN_FIND_XPUB_ETH: {
-        transmit_one_byte_confirm(RECV_TXN_XPUBS_EXISTS_ON_DEVICE);
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_ETH;
         } else {
@@ -90,7 +89,6 @@ void receive_transaction_controller_eth()
     case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
         snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        transmit_one_byte_confirm(USER_CONFIRMED_PASSPHRASE);
         flow_level.level_three = RECV_TXN_CHECK_PIN_ETH;
         flow_level.level_one = 1;
     } break;

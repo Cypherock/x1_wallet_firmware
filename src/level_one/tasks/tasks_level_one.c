@@ -72,19 +72,19 @@ void level_one_tasks()
 {
 #if X1WALLET_MAIN
     if (flow_level.show_error_screen) {
-        mark_device_state(false);
+        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
         message_scr_init(flow_level.error_screen_text);
         return;
     }
 
     if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
-        mark_device_state(false);
+        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
         message_scr_init(ui_text_unreliable_cards);
         return;
     }
 
     if (flow_level.show_desktop_start_screen) {
-        mark_device_state(false);
+        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
         confirm_scr_init(flow_level.confirmation_screen_text);
         return;
     }
@@ -143,6 +143,7 @@ void level_one_tasks()
     }
     menu_init((const char **) choices, number_of_options, ui_text_options_main_menu[0], false);
     lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
-    mark_device_state(true);
+    CY_Reset_Not_Allow(false);
+    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #endif
 }
