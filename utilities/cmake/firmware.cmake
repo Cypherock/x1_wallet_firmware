@@ -2,12 +2,13 @@
 enable_language(C ASM)
 set(EXECUTABLE ${PROJECT_NAME}.elf)
 set(LINKER_SCRIPT STM32L486RGTX_FLASH.ld)
+set(STARTUP_FILE startup_stm32l486xx.s)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES} ${LINKER_SCRIPT})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
 IF (DEV_SWITCH)
@@ -119,7 +120,6 @@ target_include_directories(${EXECUTABLE} PRIVATE
         stm32-hal/libusb/inc
         stm32-hal/libusb/src
         )
-
 
 target_compile_options(${EXECUTABLE} PRIVATE
         -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
