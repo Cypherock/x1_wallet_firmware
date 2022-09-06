@@ -28,6 +28,8 @@
 
 #define OP_RETURN   0x6A
 
+#define SATOSHI_PER_BTC 100000000
+
 /**
  * @brief Struct to store details of Unsigned Transaction Input.
  * @details

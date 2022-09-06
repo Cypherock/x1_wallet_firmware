@@ -138,11 +138,14 @@ void controller_read_card_id()
             break;
         case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
             tap_card_data.retries = 5;
+            uint32_t start_time = 0, err=0, err_count=0;
             while (1) {
                 uint8_t version[CARD_VERSION_SIZE];
+                start_time = uwTick;
                 // todo log
                 nfc_select_card(); //Stuck here until card is detected
                 // todo log
+                instruction_scr_change_text(ui_text_card_detected, true);
                 uint8_t no_restrictions[6] = {DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH, DEFAULT_VALUE_IN_FLASH};
                 uint8_t all_cards = 15;
                 tap_card_data.status = nfc_select_applet(no_restrictions, &all_cards, version, NULL, NULL);
@@ -152,10 +155,27 @@ void controller_read_card_id()
                     byte_array_to_hex_string(no_restrictions, CARD_ID_SIZE, card_id_fetched, 2 * CARD_ID_SIZE + 1);
                     byte_array_to_hex_string(version, CARD_VERSION_SIZE, card_version, 2 * CARD_VERSION_SIZE + 1);
                     flow_level.level_three = TAP_ONE_CARD_SUCCESS_MESSAGE;
-                    break;
+                    // break;
                 } else if (tap_card_handle_applet_errors()) {
-                    break;
+                    // break;
                 }
+
+                err_count=0;
+                while(((uwTick - start_time) < 2000) && (err_count <= 5) ){
+                    err = nfc_diagnose_card_presence();
+                    if(err != 0){
+                        err_count++;
+                    }
+                    else{
+                        err_count = 0;
+                    }
+                }
+                if(err != 0){
+                    instruction_scr_change_text(ui_text_card_removed_fast, true);
+                    nfc_deselect_card();
+                    continue;
+                }
+                break;
             }
             buzzer_start(BUZZER_DURATION);
             lv_obj_clean(lv_scr_act());

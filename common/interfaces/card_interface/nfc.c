@@ -125,9 +125,17 @@ uint32_t nfc_diagnose_card_presence(){
 void nfc_detect_card_removal()
 {
   uint32_t err = 0;
+  uint8_t err_count=0;
   do {
     err = adafruit_diagnose_card_presence();
-  } while (!err);
+    if(err != 0){
+        err_count++;
+    }
+    else{
+        err_count=0;
+    }
+  } while (err_count <= 5);
+  if(err != 1)  LOG_CRITICAL("xxx34 diag fault:%ld",err);
 }
 
 ret_code_t nfc_select_card()

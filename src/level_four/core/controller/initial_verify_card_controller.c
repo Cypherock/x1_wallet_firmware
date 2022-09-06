@@ -300,13 +300,13 @@ static void _tap_card_backend(uint8_t card_number)
         }
         tap_card_data.status = nfc_pair(card_pairing_data, &pairing_data_len);
         if (tap_card_data.status == SW_NO_ERROR) {
-            transmit_one_byte_confirm(START_CARD_AUTH);
             buzzer_start(BUZZER_DURATION);
             if (U32_READ_BE_ARRAY(get_family_id()) != U32_READ_BE_ARRAY(cyi_verify_fid))
                 set_family_id_flash(cyi_verify_fid);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
             nfc_detect_card_removal();
             handle_pair_card_success(card_number, session_nonce, card_pairing_data);
+            transmit_one_byte_confirm(START_CARD_AUTH);
             instruction_scr_destructor();
             break;
         } else if (tap_card_handle_applet_errors()) {

@@ -157,11 +157,9 @@ void add_coin_controller()
         uint8_t i = 0x0, j = 0x0;
         for (; i < add_coin_data.number_of_coins; i++, j++) {
             generate_xpub(&node, 0x8000002C, add_coin_data.coin_indexes[i], 0x80000000, (char *) cmd_add_coin.xpubs[j]);
-            LOG_INFO("xpub: %s",(char*) cmd_add_coin.xpubs[j]);
 
             if (add_coin_data.coin_indexes[i] == 0x80000000 || add_coin_data.coin_indexes[i] == 0x80000001) {
                 generate_xpub(&node, 0x80000054, add_coin_data.coin_indexes[i], 0x80000000, (char *) cmd_add_coin.xpubs[++j]);
-                LOG_INFO("xpub: %s",(char*) cmd_add_coin.xpubs[j]);
             }
         }
         memzero(secret, sizeof(secret));

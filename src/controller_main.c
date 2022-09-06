@@ -189,7 +189,6 @@ void mark_event_over()
 
 void mark_list_choice(uint16_t list_choice)
 {
-    LOG_INFO("choice %d", list_choice);
     flow_level.screen_input.list_choice = list_choice;
 }
 
@@ -257,7 +256,6 @@ void mark_input(char* text)
 
 void mark_expected_list_choice(uint8_t expected_list_choice)
 {
-    LOG_INFO("expected choice %d", expected_list_choice);
     flow_level.screen_input.expected_list_choice = expected_list_choice;
 }
 

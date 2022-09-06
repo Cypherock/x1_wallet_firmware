@@ -89,8 +89,13 @@ void delete_wallet_controller()
         get_index_by_name((const char *)wallet.wallet_name, &index);
         delete_wallet_share_from_sec_flash(index);
         delete_wallet_from_flash(index);
-        reset_flow_level();
+        flow_level.level_three = DELETE_WALLET_SUCCESS;
     } break;
+
+    case DELETE_WALLET_SUCCESS:
+        reset_flow_level();
+        break;
+
     default:
         break;
     }
