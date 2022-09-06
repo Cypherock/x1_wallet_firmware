@@ -44,6 +44,7 @@
 #include "lvgl.h"
 #include "ui_common.h"
 #include "controller_main.h"
+#include "sec_flash.h"
 
 /**
  * @brief Interval defined to repeatedly call callback repeated_timer_handler
@@ -226,5 +227,21 @@ void device_hardware_check();
  * @since v1.0.0
  */
 void device_provision_check();
+
+/**
+ * @brief returns auth state
+ * @return DEVICE_AUTHENTICATED if auth state is Authenticated and not first boot after update
+ *         else DEVICE_NOT_AUTHENTICATED 
+ */
+device_auth_state device_auth_check();
+
+/**
+ * @brief Sets device state to restricted
+ * @details device state is changed to restricted mode where desktop app listener is
+ *          replaced with __authentication_listener and device waits for authentication to start
+ * 
+ * @see __authentication_listener
+ *  */
+void restrict_app();
 
 #endif

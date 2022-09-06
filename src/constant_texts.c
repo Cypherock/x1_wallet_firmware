@@ -174,6 +174,8 @@ const char* ui_wallet_passphrase_instruction_4 = "You will be entering it each t
 const char* ui_text_invalid_transaction = "Invalid transaction";
 
 // errors X1 Card flows
+const char* ui_text_authentication_required = "Device authentication required";
+const char* ui_text_start_auth_from_CySync = "Authenticate device from CySync App";
 const char* ui_text_invalid_card_contact_cypherock = "Authentication failed. Contact Cypherock.";
 const char* ui_text_this_card_is_not_valid = "This X1 Card is invalid";
 const char* ui_text_wrong_remaining_attempts = "Incorrect PIN! Remaining %d attempts";
@@ -273,6 +275,16 @@ const char* ui_text_confirm_wallet_name = "Confirm wallet name";
 const char* ui_text_enter_data = "Enter data";
 const char* ui_text_confirm_data = "Confirm data";
 const char* ui_text_verification_cancelled = "Verification cancelled";
+const char* ui_text_verify_nonce = "Verify nonce";
+const char* ui_text_waiting_for_desktop = "Waiting for desktop...";
+
+// headings near specific
+const char* ui_text_verify_create_from = "Verify Create From";
+const char* ui_text_verify_new_account_id = "Verify New Account Id";
+const char* ui_text_new_account_id= "new_account_id";
+const char* ui_text_new_public_key= "new_public_key";
+const char* ui_text_replace_account= "Replace Account";
+const char* ui_text_confirm_account = "Confirm Account";
 
 // headings X1 Card flow
 const char* ui_text_family_id_hex = "F. Id (Hex)";
@@ -301,8 +313,7 @@ const char* ui_text_generating_xpubs = "Adding coins!";
 const char* ui_text_exporting_to_desktop = "Exporting to desktop...";
 const char* ui_text_successfully_exported_xpub_to_desktop = "Successfully added coin to CySync app!!";
 const char* ui_text_wait_while_balance_fetching = "Please wait while balance is fetched on the CySync app";
-const char* ui_text_successfully_exported_wallet_to_desktop = "Successfully added wallet to CySync app!!";
-const char* ui_text_deriving_address = "Deriving address";
+const char* ui_text_deriving_address = "Deriving address ...";
 const char* ui_text_receive_on_address = "%s";
 const char* ui_text_sending_confirmation_to_desktop = "Sending confirmation to desktop...";
 const char* ui_text_success_received_from_desktop = "Success received from desktop";
@@ -348,6 +359,7 @@ const char* ui_text_do_you_want_to_add_coins_to = "Do you want to add coins to %
 const char* ui_text_do_you_want_to_resync_coins_to = "Do you want to resync coins to %s ?";
 const char* ui_text_send_transaction_with = "Send %s transaction with %s ?";
 const char* ui_text_eth_send_transaction_with = "Send %s transaction with %s on %s?";
+const char* ui_text_near_add_account_with= "Add %s account with %s ?";
 const char* ui_text_recv_transaction_with = "Receive %s with %s ?";
 const char* ui_text_eth_recv_transaction_with = "Receive %s with %s on %s ?";
 const char* ui_text_do_you_want_to_set_pin = "Do you want to set a PIN ?";
@@ -356,8 +368,8 @@ const char* ui_text_output_send_to_address = "Receiver #%d Address";
 
 const char* ui_text_send_transaction_fee = "Transaction fee\n%s\n%s?";
 
-const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.8f\n%s?";
-const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.8f\n%s?";
+const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.*f\n%s?";
+const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.*f\n%s?";
 
 const char* ui_text_start_firmware_update = "Update firmware to version %d.%d.%d ?";
 

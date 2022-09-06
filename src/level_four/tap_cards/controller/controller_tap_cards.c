@@ -67,10 +67,10 @@ bool tap_card_applet_connection() {
     uint8_t acceptable_cards;
     tap_card_data.recovery_mode = 0;
     if (tap_card_data.desktop_control) {
-        set_abort_now(&_abort_);
+        nfc_set_early_exit_handler(&cy_exit_flow);
         CY_Reset_Not_Allow(false);
     } else {
-        set_abort_now(NULL);
+        nfc_set_early_exit_handler(NULL);
     }
     if (!tap_card_data.card_absent_retries) {
         tap_card_data.card_absent_retries = 100;

@@ -172,21 +172,11 @@ void receive_transaction_controller_eth()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        flow_level.level_three = RECV_TXN_WAITING_SCREEN_ETH;
         uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
         data[0] = 1;  // confirmation byte
         memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
-    } break;
-
-    case RECV_TXN_WAITING_SCREEN_ETH: {
-        instruction_scr_destructor();
-        flow_level.level_three = RECV_TXN_FINAL_SCREEN_ETH;
-    } break;
-
-    case RECV_TXN_FINAL_SCREEN_ETH: {
         reset_flow_level();
-
     } break;
 
     default:

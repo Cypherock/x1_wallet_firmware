@@ -51,10 +51,21 @@
 #define SHA256_SIZE 32
 #define POW_RAND_NUMBER_SIZE 32
 #define POW_NONCE_SIZE 32
-
-#define HASH_RATE 2270 // This is in secs
-#define SECS_TO_HASHES(sec) sec* HASH_RATE
 #define POW_TIMER_MS 180000
+
+/**
+ * This is in hashes per second adjusted with 5% delay (50ms delay in each event loop)
+ * b/w each hash. Recorded hash rate is approx 7775 hashes per second in internal tests.
+ */
+extern size_t pow_hash_rate;
+
+/**
+ * @brief Initializes the application with hash rate capacity of the device.
+ * @details This function must be called when the application is started. It is necessary
+ * that the hash rate is initialized before the proof of work is started. The best
+ * way to do this is to call this function during the application start up.
+ */
+void pow_init_hash_rate();
 
 /**
  * @brief This function is called from controller to start

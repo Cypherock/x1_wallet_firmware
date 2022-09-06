@@ -71,14 +71,10 @@ void task_device_authentication(){
 
         case DEVICE_AUTH_INFINITE_WAIT:
         case SIGN_CHALLENGE:
-        case AUTHENTICATION_SUCCESS: {
-            mark_event_over();
-        } break;
-
-        case AUTHENTICATION_UNSUCCESSFUL: {
-            lv_obj_clean(lv_scr_act());
-            delay_scr_init(ui_text_provision_fail, DELAY_TIME);
-        } break;
+        case AUTHENTICATION_SUCCESS:
+        case AUTHENTICATION_UNSUCCESSFUL:
+          mark_event_over();
+          break;
 
         default: break;
     }

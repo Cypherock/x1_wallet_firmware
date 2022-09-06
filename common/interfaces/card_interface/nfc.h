@@ -394,7 +394,7 @@ ret_code_t nfc_exchange_apdu(uint8_t send_apdu[], uint16_t send_len, uint8_t rec
  * Aborts the ongoing flow and resets the Flow_level.
  * @details
  * 
- * @param abort_now_fun Abort callback function.
+ * @param handler Abort callback function.
  *
  * @return
  * @retval
@@ -404,39 +404,7 @@ ret_code_t nfc_exchange_apdu(uint8_t send_apdu[], uint16_t send_len, uint8_t rec
  *
  * @note
  */
-void set_abort_now(void (*abort_now_fun)());
-
-/**
- * @brief Set the instant abort callback function.
- * @details
- * 
- * @param abort_fun Abort callback function.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void set_instant_abort(bool (*abort_fun)());
-
-/**
- * @brief Set the task handler function.
- * @details
- * 
- * @param task_handler_fun Task handler callback function.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void set_task_handler(void (*task_handler_fun)());
+void nfc_set_early_exit_handler(void (*handler)());
 
 /**
  * @brief Set device key id for nfc secure comm

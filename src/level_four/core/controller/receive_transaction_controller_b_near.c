@@ -1,8 +1,8 @@
 /**
- * @file    tasks_delete_wallet.c
+ * @file    receive_transaction_controller_b.c
  * @author  Cypherock X1 Team
- * @brief   Delete wallet task.
- *          Handles pre-processing & display updates for delete wallet tasks.
+ * @brief   Receive transaction back controller for BTC.
+ *          Handles post event (only back/cancel events) operations for receive transaction flow initiated by desktop app.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -55,53 +55,59 @@
  *
  ******************************************************************************
  */
-#include "constant_texts.h"
-#include "shamir_wrapper.h"
-#include "tasks.h"
+#include "communication.h"
+#include "controller_level_four.h"
 #include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_message.h"
-#include "wallet.h"
-#include "tasks_tap_cards.h"
-#include <stdint.h>
-#include <stdio.h>
+#include "ui_instruction.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-
-void delete_wallet_task()
+void receive_transaction_controller_b_near()
 {
     switch (flow_level.level_three) {
-    case DELETE_WALLET_DUMMY_TASK:
-        confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
-        break;
-    case DELETE_WALLET_ENTER_PIN:
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = DELETE_WALLET_DUMMY_TASK;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
-        break;
 
-    case DELETE_WALLET_TAP_CARDS:
-        tap_cards_for_delete_flow();
-        break;
+    case RECV_TXN_FIND_XPUB_NEAR: {
+        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS,0);
+        reset_flow_level();
+    } break;
 
-    case DELETE_WALLET_FROM_DEVICE:
-        mark_event_over();
-        break;
 
-    case DELETE_WALLET_SUCCESS:
-        message_scr_init(ui_text_wallet_deleted_successfully);
-        break;
+    case RECV_TXN_ENTER_PIN_NEAR: {
+        comm_reject_request(USER_REJECT_PIN_INPUT,0);
+        reset_flow_level();
+        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+
+    } break;
+
+    case RECV_TXN_ENTER_PASSPHRASE_NEAR: {
+       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT,0);
+       reset_flow_level();
+       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+   } break;
+
+   case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
+       memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+       flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
+   } break;
+
+    case RECV_TXN_DISPLAY_ACC_NEAR:{
+        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
+        reset_flow_level();
+    } break;
+
+    case RECV_TXN_DISPLAY_ADDR_NEAR:{
+        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
+        reset_flow_level();
+    } break;
+
+
+    case RECV_TXN_SELECT_REPLACE_ACC_NEAR:{
+        comm_reject_request(RECV_TXN_REPLACE_ACCOUNT,0);
+        reset_flow_level();
+        
+    } break;
+
+    case RECV_TXN_VERIFY_SAVE_ACC_NEAR:{
+       flow_level.level_three = RECV_TXN_SELECT_REPLACE_ACC_NEAR;
+    } break;
 
     default:
         reset_flow_level();

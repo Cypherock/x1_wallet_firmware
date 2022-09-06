@@ -66,7 +66,7 @@
 void read_cmd(const uint32_t addr, uint32_t* source_addr, const uint32_t len)
 {
     ASSERT(addr != 0);
-    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))));
+    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))) || ((FLASH_END - (8 * FLASH_PAGE_SIZE) < addr) && (addr <= FLASH_END)));
     ASSERT(len != 0);
     ASSERT(source_addr != NULL);
 
@@ -76,7 +76,7 @@ void read_cmd(const uint32_t addr, uint32_t* source_addr, const uint32_t len)
 void write_cmd(const uint32_t addr, const uint32_t* data, const uint32_t len)
 {
     ASSERT(addr != 0);
-    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))));
+    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))) || ((FLASH_END - (8 * FLASH_PAGE_SIZE) < addr) && (addr <= FLASH_END)));
     ASSERT(len != 0);
     ASSERT(data != NULL);
 
@@ -92,7 +92,7 @@ void erase_cmd(const uint32_t addr, const uint32_t erase_size)
     uint16_t pages_cnt = erase_size/FLASH_PAGE_SIZE + ((erase_size%FLASH_PAGE_SIZE == 0)? 0:1);
 
     ASSERT(addr != 0);
-    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))));
+    ASSERT((addr >= FLASH_DATA_ADDRESS && addr <= FLASH_DATA_END_ADDRESS) || (addr >= FLASH_DATA_LOGGER_ADDRESS && addr <= (FLASH_DATA_LOGGER_ADDRESS + (LOG_MAX_PAGES * LOG_PAGE_SIZE))) || ((FLASH_END - (8 * FLASH_PAGE_SIZE) < addr) && (addr <= FLASH_END)));
     ASSERT(pages_cnt != 0);
 
     if(BSP_FlashSectorErase(addr, pages_cnt) != BSP_OK){

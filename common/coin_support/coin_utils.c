@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 #include "coin_utils.h"
+#include "near.h"
 
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
@@ -132,21 +133,27 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     return offset;
 }
 
-void generate_xpub(const HDNode *node, const uint32_t purpose_id, const uint32_t coin_id, const uint32_t account_id, char *str)
+void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)
 {
     uint32_t fingerprint = 0x0, version;
     HDNode t_node;
 
-    memcpy(&t_node, node, sizeof(HDNode));
-    hdnode_private_ckd(&t_node, purpose_id);
-    hdnode_private_ckd(&t_node, coin_id);
+	derive_hdnode_from_path(path, path_length-1, curve, seed, &t_node);
     fingerprint = hdnode_fingerprint(&t_node);
-    hdnode_private_ckd(&t_node, account_id);
+    hdnode_private_ckd(&t_node, path[path_length-1]);
     hdnode_fill_public_key(&t_node);
 
-    get_version(purpose_id, coin_id, NULL, &version);
+    get_version(path[0], path[1], NULL, &version);
     hdnode_serialize_public(&t_node, fingerprint, version, str, 113);
     memzero(&t_node, sizeof(HDNode));
+}
+
+void derive_hdnode_from_path(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, HDNode *hdnode)
+{
+    hdnode_from_seed(seed, 512 / 8, curve, hdnode);
+    for (size_t i = 0;i<path_length;i++)
+        hdnode_private_ckd(hdnode, path[i]);
+    hdnode_fill_public_key(hdnode);
 }
 
 void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
@@ -193,6 +200,8 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
                 }
             }
         }
+        case NEAR_COIN_INDEX:
+            return "NEAR";
         default: {
             ASSERT(false);
             return "invalid";
@@ -224,6 +233,8 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
                 }
             }
         }
+        case NEAR_COIN_INDEX:
+            return "NEAR";
         default: {
             ASSERT(false);
             return "invalid";
@@ -290,6 +301,10 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
+            case NEAR:
+                assigned_pub_version = 0x0488b21e;
+                assigned_add_version = 0x00;
+                break;
             default:
                 break;
             }
@@ -312,6 +327,13 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
     if (mdata_ptr->purpose_index[0] < 0x80 || mdata_ptr->coin_index[0] < 0x80 ||
         mdata_ptr->account_index[0] < 0x80)
         return false;
+    if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
+        BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR){
+        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
+                mdata_ptr->input->address_index[0] < 0x80))
+            return false;
+        return true;
+    }
     if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] >= 0x80 ||
             mdata_ptr->input->address_index[0] >= 0x80))
         return false;

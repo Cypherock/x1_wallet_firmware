@@ -282,8 +282,6 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
         
         case AUTHENTICATION_SUCCESS: {
             comm_process_complete();
-            set_auth_state(DEVICE_AUTHENTICATED);
-            device_auth_flag = 0;   // resets the flag set via desktop request during boot up
             reset_flow_level();
             lv_obj_clean(lv_scr_act());
 #if X1WALLET_MAIN
@@ -308,7 +306,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
             delay_scr_init(ui_text_device_verification_failure, DELAY_TIME);
             counter.next_event_flag = false;    /// do not allow processing further events
 #elif X1WALLET_INITIAL
-            flow_level.level_one = 6;
+            flow_level.level_one = 9;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif
