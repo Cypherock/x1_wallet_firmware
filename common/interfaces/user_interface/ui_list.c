@@ -256,6 +256,9 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
         case LV_KEY_DOWN:
             lv_group_focus_obj(lv_obj_get_hidden(obj->next_btn) ? obj->back_btn : obj->next_btn);
             break;
+        case LV_KEY_UP:
+            lv_btn_set_state(options, LV_BTN_STATE_REL);
+            break;
         default: break;
         }
         break;

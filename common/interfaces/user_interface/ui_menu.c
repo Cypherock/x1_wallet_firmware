@@ -145,11 +145,13 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
             lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
             break;
         case LV_KEY_UP:
-            //nothing to focus above this button
+            lv_btn_set_state(options, LV_BTN_STATE_REL);
             break;
         case LV_KEY_DOWN:
             if (data->back_button_allowed)
                 lv_group_focus_obj(obj->back_btn);
+            else
+                lv_btn_set_state(options, LV_BTN_STATE_REL);
             break;
         default: break;
         }
