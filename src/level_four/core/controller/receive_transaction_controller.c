@@ -185,21 +185,11 @@ void receive_transaction_controller()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR: {
-        flow_level.level_three = RECV_TXN_WAITING_SCREEN;
         uint8_t data[1 + sizeof(receive_transaction_data.address)];
         data[0] = 1;  // confirmation byte
         memcpy(data + 1, receive_transaction_data.address, sizeof(receive_transaction_data.address));
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, strlen((const char *)data));
-    } break;
-
-    case RECV_TXN_WAITING_SCREEN: {
-        instruction_scr_destructor();
-        flow_level.level_three = RECV_TXN_FINAL_SCREEN;
-    } break;
-
-    case RECV_TXN_FINAL_SCREEN: {
         reset_flow_level();
-
     } break;
 
     default:

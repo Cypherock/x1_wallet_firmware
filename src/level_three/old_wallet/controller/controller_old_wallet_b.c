@@ -88,6 +88,10 @@ void level_three_old_wallet_controller_b()
         send_transaction_controller_b_eth();
     } break;
 
+    case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
+        send_transaction_controller_near_b();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
         receive_transaction_controller_b();
     } break;
@@ -95,7 +99,11 @@ void level_three_old_wallet_controller_b()
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
         receive_transaction_controller_b_eth();
     } break;
-    
+
+    case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
+        receive_transaction_controller_b_near();
+    } break;
+
     case LEVEL_THREE_WALLET_LOCKED: {
       wallet_locked_controller_b();
       break;

@@ -442,12 +442,12 @@ void _timeout_listener(lv_task_t* task);
  * @details The function wraps the exit method from ongoing flow to default view. This is responsible for exiting flows
  * in situations of errors or if requested by desktop only in case of desktop initiated flows.
  *
- * @see START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION, nfc_select_card(), set_instant_abort(), set_abort_now()
+ * @see START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION, nfc_select_card(), set_instant_abort(), nfc_set_early_exit_handler()
  * @since v1.0.0
  *
- * @note In case of nfc flow, the set_instant_abort(), set_abort_now() should be set to NULL for device local flows. This
+ * @note In case of nfc flow, the set_instant_abort(), nfc_set_early_exit_handler() should be set to NULL for device local flows. This
  * is necessary for restricting accidental flow exits when not expected.
  */
-void _abort_();
+void cy_exit_flow();
 
 #endif

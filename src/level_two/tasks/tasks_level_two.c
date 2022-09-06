@@ -91,7 +91,7 @@ void level_two_tasks()
         uint8_t wallet_index, status = get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
         if (status != SUCCESS_) {
             LOG_ERROR("get %s fail %d", wallet.wallet_name, status);
-            _abort_();
+            cy_exit_flow();
             return;
         }
         LOG_INFO("wallet %d %d %d %s",

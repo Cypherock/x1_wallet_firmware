@@ -104,12 +104,20 @@ void level_three_old_wallet_tasks()
         send_transaction_tasks_eth();
     } break;
 
+    case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
+        send_transaction_tasks_near();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
         receive_transaction_tasks();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
         receive_transaction_tasks_eth();
+    } break;
+
+    case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
+        receive_transaction_tasks_near();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED:

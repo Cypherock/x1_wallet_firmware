@@ -85,13 +85,8 @@ void export_wallet_controller()
         uint8_t out_arr[sizeof(Cmd_Export_Wallet_t)];
         serialize_cmd_export_wallet(out_arr, out_data);
         transmit_data_to_app(SEND_WALLET_TO_DESKTOP, out_arr, sizeof(out_arr));
-        flow_level.level_three = EXPORT_WALLET_WAITING_SCREEN;
-    } break;
-
-    case EXPORT_WALLET_WAITING_SCREEN:
-        instruction_scr_destructor();
         flow_level.level_three = EXPORT_WALLET_FINAL_SCREEN;
-        break;
+    } break;
 
     case EXPORT_WALLET_FINAL_SCREEN:
         reset_flow_level();

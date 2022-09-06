@@ -57,6 +57,7 @@
  */
 #include "controller_level_one.h"
 #include "controller_level_two.h"
+#include "application_startup.h"
 #include "ui_instruction.h"
 
 extern uint8_t device_auth_flag;
@@ -64,7 +65,6 @@ extern uint8_t device_auth_flag;
 void level_one_controller_b()
 {
     if (device_auth_flag) {
-        device_auth_flag = 0;
         instruction_scr_destructor();
         reset_flow_level();
         comm_reject_request(START_DEVICE_AUTHENTICATION, 0);

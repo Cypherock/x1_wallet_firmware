@@ -20,7 +20,7 @@ typedef union{
   /*Bit 03*/ uint32_t external_triggered:1;
   /*Bit 04*/ uint32_t usb_buffer_free:1;
   /*Bit 05*/ uint32_t nfc_off:1;
-  /*Bit 06*/ uint32_t unused_06:1;
+  /*Bit 06*/ uint32_t app_restricted:1;
   /*Bit 07*/ uint32_t unused_07:1;
   /*Bit 08*/ uint32_t unused_08:1;
   /*Bit 09*/ uint32_t unused_09:1;
@@ -64,5 +64,7 @@ extern volatile sys_flow_control_u_t sys_flow_cntrl_u;
 #define CY_reset_not_allowed() (sys_flow_cntrl_u.bits.reset_not_allowed)
 #define CY_External_Triggered() (sys_flow_cntrl_u.bits.external_triggered)
 #define CY_Set_External_Triggered(a) (sys_flow_cntrl_u.bits.external_triggered = a)
+#define CY_set_app_restricted(a) (sys_flow_cntrl_u.bits.app_restricted = a)
+#define CY_is_app_restricted() (sys_flow_cntrl_u.bits.app_restricted)
 
 #endif

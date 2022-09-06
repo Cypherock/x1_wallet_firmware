@@ -21,6 +21,10 @@
 #define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
 #define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
 
+#define RNG_ERROR_BASE          0x20000UL
+#define RNG_MCU_ERROR_BASE       (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
+#define RNG_ATECC_ERROR_BASE     (RNG_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by ATECC
+
 /**
  * @defgroup nfc_error_codes NFC Error codes
  * @brief Macros related to the error codes returned by NFC module.

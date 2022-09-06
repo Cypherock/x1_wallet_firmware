@@ -1,11 +1,11 @@
 /**
- * @file    tasks_delete_wallet.c
+ * @file    send_transaction_controller_b.c
  * @author  Cypherock X1 Team
- * @brief   Delete wallet task.
- *          Handles pre-processing & display updates for delete wallet tasks.
+ * @brief   Send transaction back controller for NEAR.
+ *          Handles post event (only back/cancel events) operations for send transaction flow initiated by desktop app.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +18,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +29,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,60 +48,64 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
  *
  ******************************************************************************
  */
-#include "constant_texts.h"
-#include "shamir_wrapper.h"
-#include "tasks.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_message.h"
-#include "wallet.h"
-#include "tasks_tap_cards.h"
-#include <stdint.h>
-#include <stdio.h>
+#include "controller_level_four.h"
+#include "communication.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-
-void delete_wallet_task()
-{
+void send_transaction_controller_near_b() {
     switch (flow_level.level_three) {
-    case DELETE_WALLET_DUMMY_TASK:
-        confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
-        break;
-    case DELETE_WALLET_ENTER_PIN:
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = DELETE_WALLET_DUMMY_TASK;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
-        break;
 
-    case DELETE_WALLET_TAP_CARDS:
-        tap_cards_for_delete_flow();
-        break;
+    case SEND_TXN_VERIFY_COIN_NEAR: {
+        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN,0);
+        reset_flow_level();
+    } break;
 
-    case DELETE_WALLET_FROM_DEVICE:
-        mark_event_over();
-        break;
+    case SEND_TXN_VERIFY_TXN_NONCE_NEAR: {
+        reset_flow_level();
+    } break;
 
-    case DELETE_WALLET_SUCCESS:
-        message_scr_init(ui_text_wallet_deleted_successfully);
-        break;
+    case SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR: {
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,0);
+        reset_flow_level();
+    } break;
+
+    case SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR: {
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,0);
+        reset_flow_level();
+    } break;
+
+    case SEND_TXN_VERIFY_RECEIPT_AMOUNT_NEAR: {
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,2);
+        reset_flow_level();
+    } break;
+
+    case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
+        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,3);
+        reset_flow_level();
+    } break;
+
+    case SEND_TXN_ENTER_PIN_NEAR: {
+        comm_reject_request(USER_REJECT_PIN_INPUT,0);
+        reset_flow_level();
+        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+    } break;
+
+    case SEND_TXN_ENTER_PASSPHRASE_NEAR: {
+        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT,0);
+        reset_flow_level();
+        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+    } break;
+
+    case SEND_TXN_CONFIRM_PASSPHRASE_NEAR: {
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+        flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
+    } break;
 
     default:
         reset_flow_level();

@@ -18,6 +18,7 @@
 #include "controller_main.h"
 #include "tasks.h"
 #include "flash_config.h"
+#include "near.h"
 #include "cryptoauthlib.h"
 
 #define DEFAULT_ATECC_RETRIES   5
@@ -63,6 +64,7 @@ typedef enum{
 
 extern uint8_t provision_date[4];
 extern uint8_t auth_card_number;
+extern near_unsigned_txn near_utxn;
 
 /**
  * @brief Stores the device specific information during provisioning process.
@@ -186,20 +188,30 @@ typedef struct Send_Transaction_Cmd {
  */
 #pragma pack(push, 1)
 typedef struct Receive_Transaction_Data {
-    uint8_t purpose[4];
-    uint8_t coin_index[4];
-    uint8_t account_index[4];
-    uint8_t chain_index[4];
-    uint8_t address_index[4];
-    char token_name[8];
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  uint8_t purpose[4];
+  uint8_t coin_index[4];
+  uint8_t account_index[4];
+  uint8_t chain_index[4];
+  uint8_t address_index[4];
+  char token_name[8];
+  union {
     uint8_t network_chain_id;
-    uint8_t xpub[112];
-    char address[43];
-    uint8_t eth_pubkeyhash[20];
+    uint8_t near_account_type;
+  };
+  char near_registered_account[65];
+  uint8_t xpub[112];
+  char address[43];
+  uint8_t eth_pubkeyhash[20];
+  uint8_t near_pubkey[32];
+  bool near_acc_found;
+  size_t near_acc_count;
+  uint8_t near_acc_index;
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
 
+extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;
 extern Send_Transaction_Data var_send_transaction_data;
 extern Send_Transaction_Cmd send_transaction_cmd;
@@ -314,6 +326,18 @@ void send_transaction_controller();
 void send_transaction_controller_b();
 
 /**
+ * @brief Next button controller is executed for processing and signing unsigned
+ * transaction.
+ */
+void send_transaction_controller_near();
+
+/**
+ * @brief Back button controller is executed for handling cancellation of the
+ * ongoing process.
+ */
+void send_transaction_controller_near_b();
+
+/**
  * @brief Next button controller is executed for processing and signing unsigned transaction of Ethereum.
  * @details This controller is used to process and sign the unsigned transaction for ETH that is requested from the desktop app.
  *
@@ -342,6 +366,30 @@ void send_transaction_controller_b_eth();
  * @since v1.0.0
  */
 void receive_transaction_controller();
+
+/**
+ * @brief Next button controller is executed for generating address using xpub.
+ * @details This controller handles is used to generate receiving address for
+ * the BTC coins requested by desktop from a list of supported coins.
+ *
+ * @see receive_transaction_controller_b(), receive_transaction_tasks(),
+ * desktop_listener_task(), RECV_TXN_START,
+ * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
+ * @since v1.0.0
+ */
+void receive_transaction_controller_near();
+
+/**
+ * @brief Next button controller is executed for generating address using xpub.
+ * @details This controller handles is used to generate receiving address for
+ * the BTC coins requested by desktop from a list of supported coins.
+ *
+ * @see receive_transaction_controller_b(), receive_transaction_tasks(),
+ * desktop_listener_task(), RECV_TXN_START,
+ * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
+ * @since v1.0.0
+ */
+void receive_transaction_controller_near_b();
 
 /**
  * @brief Back button controller for receive transaction flow.
@@ -373,6 +421,18 @@ void receive_transaction_controller_eth();
  * @since v1.0.0
  */
 void receive_transaction_controller_b_eth();
+
+/**
+ * @brief Back button controller for receive transaction Near flow.
+ * @details This controller is used to handle back button events during
+ * receiving flow for Near.
+ *
+ * @see receive_transaction_controller_eth(), receive_transaction_tasks_eth(),
+ * desktop_listener_task(), RECV_TXN_START, receive_transaction_controller(),
+ * receive_transaction_tasks()
+ * @since v1.0.0
+ */
+void receive_transaction_controller_b_near();
 
 /**
  * @brief This controller is executed for verifying wallet added or restored on the device and cards.

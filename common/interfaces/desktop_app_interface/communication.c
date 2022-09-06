@@ -632,7 +632,7 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
     if (comm_status.curr_cmd_state == CMD_STATE_EXECUTING) return BUSY_PREVIOUS_CMD;
 
     comm_status.curr_cmd_state = CMD_STATE_RECEIVING;
-    if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no)
+    if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no || rx_packet->header.chunk_number == 1)
         comm_reset();       // Clear current status and start new command
 
     if (comm_status.curr_cmd_chunk_no + 1 < rx_packet->header.chunk_number) return OUT_OF_ORDER_CHUNK;

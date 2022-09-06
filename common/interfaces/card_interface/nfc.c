@@ -69,9 +69,7 @@
 #define RECV_PACKET_MAX_ENC_LEN     242
 #define RECV_PACKET_MAX_LEN         225
 
-static void (*abort_now)() = NULL;
-static bool (*instant_abort)() = NULL;
-static void (*task_handler)() = NULL;
+static void (*early_exit_handler)() = NULL;
 static uint8_t nfc_device_key_id[4];
 static bool nfc_secure_comm = true;
 static uint8_t request_chain_pkt[] = {0x00, 0xCF, 0x00, 0x00};
@@ -125,9 +123,17 @@ uint32_t nfc_diagnose_card_presence(){
 void nfc_detect_card_removal()
 {
   uint32_t err = 0;
+  uint8_t err_count=0;
   do {
     err = adafruit_diagnose_card_presence();
-  } while (!err);
+    if(err != 0){
+        err_count++;
+    }
+    else{
+        err_count=0;
+    }
+  } while (err_count <= 5);
+  if(err != 1)  LOG_CRITICAL("xxx34 diag fault:%ld",err);
 }
 
 ret_code_t nfc_select_card()
@@ -136,17 +142,19 @@ ret_code_t nfc_select_card()
     ret_code_t err_code = STM_ERROR_NULL; //random error. added to remove warning
     nfc_a_tag_info tag_info;
     sys_flow_cntrl_u.bits.nfc_off = false;
+    uint32_t system_clock = uwTick;
     while (err_code != STM_SUCCESS && !CY_Read_Reset_Flow()) 
     {
         reset_inactivity_timer();
         err_code = adafruit_pn532_nfc_a_target_init(&tag_info, DEFAULT_NFC_TG_INIT_TIME);
-            if (CY_Read_Reset_Flow() && abort_now) {
-                (*abort_now)();
+            if (CY_Read_Reset_Flow() && early_exit_handler) {
+                (*early_exit_handler)();
                 return STM_ERROR_NULL;
             }
 //        }
         //TAG_DETECT_TIMEOUT is used to specify the wait time for a card. Defined in sdk_config.h
     }
+    LOG_SWV("Card selected in %lums\n", uwTick - system_clock);
 
     return err_code;
 }
@@ -183,7 +191,9 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t* acceptable_card
     send_len = create_apdu_select_applet(send_apdu);
 
     nfc_secure_comm = false;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Applet selected in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -242,7 +252,9 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut)
     send_len = create_apdu_pair(data_inOut, *length_inOut, send_apdu);
 
     nfc_secure_comm = false;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Pairing in %lums\n", uwTick - system_clock);
 
     memset(send_apdu, 0, sizeof(send_apdu));
     if (err_code != STM_SUCCESS) {
@@ -294,7 +306,9 @@ ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len)
     send_len = create_apdu_list_wallet(send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, recv_len);
+    LOG_SWV("List wallet in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -322,7 +336,9 @@ ISO7816 nfc_add_wallet(const struct Wallet* wallet)
         send_len = create_apdu_add_wallet(wallet, send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Add wallet in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -350,7 +366,9 @@ ISO7816 nfc_retrieve_wallet(struct Wallet* wallet)
     send_len = create_apdu_retrieve_wallet(wallet, send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Retrieve wallet in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -381,7 +399,9 @@ ISO7816 nfc_delete_wallet(const struct Wallet* wallet)
     send_len = create_apdu_delete_wallet(wallet, send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Delete wallet in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -407,7 +427,9 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE], uint16_t* length_inO
     send_len = create_apdu_ecdsa(data_inOut, *length_inOut, send_apdu);
 
     nfc_secure_comm = false;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("ECDSA in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -439,7 +461,9 @@ ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE], const uint8_t nonce[
     send_len = create_apdu_verify_challenge(name, nonce, password, send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Verify challenge in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -465,7 +489,9 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE], uint8_t target[SHA256_S
     send_len = create_apdu_get_challenge(name, send_apdu);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Get challenge in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -496,7 +522,9 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE], const uint8_t* plain_dat
     send_len = create_apdu_inheritance(name, plain_data, plain_data_size, send_apdu, P1_INHERITANCE_ENCRYPT_DATA);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Encrypt data in %lums\n", uwTick - system_clock);
 
     if (err_code != STM_SUCCESS) {
         return err_code;
@@ -529,7 +557,9 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE], uint8_t* plain_data, uin
     send_len = create_apdu_inheritance(name, encrypted_data, encrypted_data_size, send_apdu, P1_INHERITANCE_DECRYPT_DATA);
 
     nfc_secure_comm = true;
+    uint32_t system_clock = uwTick;
     ret_code_t err_code = nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+    LOG_SWV("Decrypt data in %lums\n", uwTick - system_clock);
     if (err_code != STM_SUCCESS) {
         return err_code;
     } else {
@@ -657,19 +687,9 @@ ret_code_t nfc_exchange_apdu(uint8_t* send_apdu, uint16_t send_len, uint8_t* rec
     return err_code;
 }
 
-void set_abort_now(void (*abort_now_fun)())
+void nfc_set_early_exit_handler(void (*handler)())
 {
-    abort_now = abort_now_fun;
-}
-
-void set_instant_abort(bool (*abort_fun)())
-{
-    instant_abort = abort_fun;
-}
-
-void set_task_handler(void (*task_handler_fun)())
-{
-    task_handler = task_handler_fun;
+    early_exit_handler = handler;
 }
 
 void nfc_set_device_key_id(const uint8_t *device_key_id)

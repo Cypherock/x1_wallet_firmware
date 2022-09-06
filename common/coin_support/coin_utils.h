@@ -46,11 +46,24 @@
 /// ETHEREUM coin index
 #define ETHEREUM (BITCOIN + 0x3c)
 
+/// NEAR coin index
+#define NEAR (BITCOIN + 0x18d)
+
 /// NATIVE SEGWIT purpose id
 #define NATIVE_SEGWIT 0x80000054
 
 /// NON SEGWIT purpose id
 #define NON_SEGWIT 0x8000002C
+
+typedef enum Coin_Type {
+    COIN_TYPE_BITCOIN = 0x01,
+    COIN_TYPE_BTC_TEST = 0x02,
+    COIN_TYPE_LITCOIN = 0x03,
+    COIN_TYPE_DOGE = 0x04,
+    COIN_TYPE_DASH = 0x05,
+    COIN_TYPE_ETHEREUM = 0x06,
+    COIN_TYPE_NEAR = 0x07,
+}Coin_Type;
 
 /**
  * @brief Struct to store the type of address.
@@ -146,13 +159,12 @@ int32_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
- * @details
- *
- * @param [in] node         HDNode instance to calculate xpub.
- * @param [in] purpose_id   Purpose Id value.
- * @param [in] coin_id      Coin Id value.
- * @param [in] account_id   Account Id value .
- * @param [out] str         char array of generated xpub
+ * 
+ * @param [in] path             Path of the node to derive xpub uses fingerprint of second last node. and assumes first two nodes are purpose and coin index.
+ * @param [in] path_length      Length of the given path.
+ * @param [in] curve            Curve to be used.
+ * @param [in] seed             Seed to generate the master node.
+ * @param [out] str              String to store the xpub.
  *
  * @return
  * @retval
@@ -162,7 +174,27 @@ int32_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  *
  * @note
  */
-void generate_xpub(const HDNode *node, uint32_t purpose_id, uint32_t coin_id, uint32_t account_id, char *str);
+void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str);
+
+/**
+ * @brief Get the hdnode at given path from seed.
+ * @details
+ *
+ * @param [in] path                 Path to derive the hdnode.
+ * @param [in] path_length          Length of the path.
+ * @param [in] curve                Curve name.
+ * @param [in] seed                 Seed to derive the hdnode.
+ * @param [out] hdnode              Pointer to the HDNode instance used to store the derived hdnode.
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+void derive_hdnode_from_path(const uint32_t *path, const size_t path_length, const char *curve, const uint8_t *seed, HDNode *hdnode);
 
 /**
  * @brief Get the address from HDNode.
@@ -252,5 +284,21 @@ void get_version(uint32_t purpose_id, uint32_t coin_index, uint8_t* address_vers
  * @note
  */
 bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
+
+/**
+ * @brief Validates transaction metadata for near coin.
+ * @details
+ *
+ * @param [in] metadata_ptr
+ *
+ * @return bool
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
 
 #endif

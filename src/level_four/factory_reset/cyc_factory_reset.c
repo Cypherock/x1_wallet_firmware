@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 #include "cy_factory_reset.h"
+#include "coin_specific_data.h"
 #include "controller_tap_cards.h"
 #include "ui_instruction.h"
 
@@ -145,7 +146,12 @@ void cyc_factory_reset() {
                 ui_rotate();
             sec_flash_erase();
             flash_erase();
+            erase_flash_coin_specific_data();
             logger_reset_flash();
+            flow_level.level_three = FACTORY_RESET_DONE;
+            break;
+
+        case FACTORY_RESET_DONE:
             BSP_reset();
             break;
 

@@ -211,7 +211,6 @@ void send_transaction_tasks_eth()
             snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0.0");
         }
 
-        LOG_INFO("amt %s %d:%d", amount_string, var_send_transaction_data.transaction_metadata.decimal[0], i);
         instruction_scr_destructor();
         snprintf(display, sizeof(display), ui_text_verify_amount, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
         confirm_scr_init(display);
@@ -223,7 +222,6 @@ void send_transaction_tasks_eth()
         char gas_eth_dec_str[30] = {'\0'};
         uint64_t txn_fee = bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]) / 1000000000;
         txn_fee *= bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]);
-        LOG_INFO("ethfee %llu", txn_fee);
 
         point_index = snprintf(gas_eth_dec_str + 1, sizeof(gas_eth_dec_str) - 1, "%09llu", txn_fee);
         ASSERT(point_index >= 0 && point_index < sizeof(gas_eth_dec_str));
