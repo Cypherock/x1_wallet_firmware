@@ -573,14 +573,18 @@ void desktop_listener_task(lv_task_t* data)
             case RECV_TXN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
-                    uint16_t offset = WALLET_ID_SIZE;
-                    uint32_t coin_index;
                     flow_level.show_desktop_start_screen = true;
-                    // 29 is the size of the purpose, coin index, account index, chain index, address index, token name and network chain id
-                    memcpy(&receive_transaction_data, data_array , offset+ 29);
-                    offset+=29;
 
-                    coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
+                    uint16_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,data_array,msg_size);
+
+                    if(offset == -1){
+                        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS,0);
+                        reset_flow_level();
+                        clear_message_received_data();
+                        break;
+                    }
+                    
+                    uint32_t coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
                     if (coin_index == NEAR_COIN_INDEX && receive_transaction_data.near_account_type == 1) {
                         memcpy(&receive_transaction_data.near_registered_account, data_array + offset, 65);

@@ -65,6 +65,7 @@ typedef enum Coin_Type {
     COIN_TYPE_NEAR = 0x07,
 }Coin_Type;
 
+#pragma pack(push, 1)
 /**
  * @brief Struct to store the type of address.
  * @details Used in the derivation of address.
@@ -74,7 +75,6 @@ typedef enum Coin_Type {
  *
  * @note
  */
-#pragma pack(push, 1)
 typedef struct
 {
     uint8_t chain_index[4];
@@ -82,6 +82,7 @@ typedef struct
 } address_type;
 #pragma pack(pop)
 
+#pragma pack(push, 1)
 /**
  * @brief Struct to store the meta data details of a transaction.
  * @details
@@ -91,7 +92,6 @@ typedef struct
  *
  * @note
  */
-#pragma pack(push, 1)
 typedef struct
 {
     uint8_t wallet_index[1];
@@ -108,16 +108,49 @@ typedef struct
     uint8_t change_count[1];
     address_type *change;
 
-    uint8_t transactionFees[4];
+    uint8_t transaction_fees[8];
 
     uint8_t decimal[1];
 
-    char token_name[8];
+    char *token_name;
 
     uint8_t network_chain_id;
 
 } txn_metadata;
 #pragma pack(pop)
+
+#pragma pack(push, 1)
+/**
+ * @brief Stores the deserialized information from desktop for the receive transaction process.
+ * @details
+ *
+ * @see receive_transaction_controller(), receive_transaction_controller_eth(), receive_transaction_tasks(),
+ * desktop_listener_task(), RECV_TXN_START
+ * @since v1.0.0
+ */
+typedef struct Receive_Transaction_Data {
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  uint8_t purpose[4];
+  uint8_t coin_index[4];
+  uint8_t account_index[4];
+  uint8_t chain_index[4];
+  uint8_t address_index[4];
+  char *token_name;
+  union {
+    uint8_t network_chain_id;
+    uint8_t near_account_type;
+  };
+  char near_registered_account[65];
+  uint8_t xpub[112];
+  char address[43];
+  uint8_t eth_pubkeyhash[20];
+  uint8_t near_pubkey[32];
+  bool near_acc_found;
+  size_t near_acc_count;
+  uint8_t near_acc_index;
+} Receive_Transaction_Data;
+#pragma pack(pop)
+
 
 /**
  * @brief Copies the byte values from source after offset to destination under the given size limit.
@@ -156,6 +189,16 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int
  * @note
  */
 int32_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint32_t size, txn_metadata *txn_metadata_ptr);
+
+/**
+ * @brief Deserialize byte array to receive transaction data
+ * 
+ * @param [out] txn_data_ptr            Pointer to the receive transaction data instance 
+ * @param [in] data_byte_array          Byte array to be deserialized    
+ * @param [in] size                     Size of the byte array data_byte_array
+ * @return int32_t Offset used in conversion
+ */
+int32_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.

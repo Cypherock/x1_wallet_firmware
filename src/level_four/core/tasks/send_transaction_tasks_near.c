@@ -162,7 +162,7 @@ void send_transaction_tasks_near() {
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
         char amount_string[40] = { '\0' }, amount_decimal_string[30] = { '\0' };
         char display[110] = { '\0' };
-        byte_array_to_hex_string((const uint8_t*)var_send_transaction_data.transaction_metadata.token_name, 8, amount_string, sizeof(amount_string));
+        byte_array_to_hex_string((const uint8_t*)var_send_transaction_data.transaction_metadata.transaction_fees, 8, amount_string, sizeof(amount_string));
         uint8_t decimal_val_s[32 * 3] = { 0 };
         if (sizeof(decimal_val_s) / sizeof(decimal_val_s[0]) > UINT8_MAX) {
             LOG_ERROR("0xxx#");

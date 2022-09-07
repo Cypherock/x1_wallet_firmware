@@ -178,38 +178,6 @@ typedef struct Send_Transaction_Cmd {
 } Send_Transaction_Cmd;
 #pragma pack(pop)
 
-/**
- * @brief Stores the deserialized information from desktop for the receive transaction process.
- * @details
- *
- * @see receive_transaction_controller(), receive_transaction_controller_eth(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Receive_Transaction_Data {
-  uint8_t wallet_id[WALLET_ID_SIZE];
-  uint8_t purpose[4];
-  uint8_t coin_index[4];
-  uint8_t account_index[4];
-  uint8_t chain_index[4];
-  uint8_t address_index[4];
-  char token_name[8];
-  union {
-    uint8_t network_chain_id;
-    uint8_t near_account_type;
-  };
-  char near_registered_account[65];
-  uint8_t xpub[112];
-  char address[43];
-  uint8_t eth_pubkeyhash[20];
-  uint8_t near_pubkey[32];
-  bool near_acc_found;
-  size_t near_acc_count;
-  uint8_t near_acc_index;
-} Receive_Transaction_Data;
-#pragma pack(pop)
-
 
 extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;
