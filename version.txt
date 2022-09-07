@@ -1,3 +1,3 @@
-firmware version=000:004:000:000
+firmware version=000:004:000:008
 hardware version=000:001:000:000
 magic number=45227A01
