@@ -578,7 +578,7 @@ void desktop_listener_task(lv_task_t* data)
                     uint16_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,data_array,msg_size);
 
                     if(offset == -1){
-                        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS,0);
+                        comm_reject_invalid_cmd();
                         reset_flow_level();
                         clear_message_received_data();
                         break;
