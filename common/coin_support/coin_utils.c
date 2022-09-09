@@ -70,7 +70,7 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
     *offset += len;
 }
 
-int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
+int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
 
@@ -142,7 +142,7 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 }
 
                                    
-int32_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
+int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
 
     int64_t offset = 0;
 

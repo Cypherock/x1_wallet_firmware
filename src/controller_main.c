@@ -573,16 +573,15 @@ void desktop_listener_task(lv_task_t* data)
             case RECV_TXN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
-                    flow_level.show_desktop_start_screen = true;
 
-                    uint16_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,data_array,msg_size);
+                    int64_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,data_array,msg_size);
 
                     if(offset == -1){
                         comm_reject_invalid_cmd();
-                        reset_flow_level();
                         clear_message_received_data();
-                        break;
+                        return;
                     }
+                    flow_level.show_desktop_start_screen = true;
                     
                     uint32_t coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
