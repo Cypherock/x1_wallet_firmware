@@ -70,7 +70,7 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
     *offset += len;
 }
 
-int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
+int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
 
@@ -107,7 +107,7 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
         s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
-    }
+    } 
 
     s_memcpy(txn_metadata_ptr->change_count, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->change_count), &offset);
@@ -122,14 +122,47 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
         s_memcpy(change->address_index, metadata_byte_array, size, sizeof(change->address_index), &offset);
     }
 
-    s_memcpy(txn_metadata_ptr->transactionFees, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->transactionFees), &offset);
+    s_memcpy(txn_metadata_ptr->transaction_fees, metadata_byte_array,
+             size, sizeof(txn_metadata_ptr->transaction_fees), &offset);
     s_memcpy(txn_metadata_ptr->decimal, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->decimal), &offset);
+
+    size_t token_name_len = strnlen((const char*)(metadata_byte_array+offset),size - offset ) + 1;
+
+    if (metadata_byte_array[offset+token_name_len-1] != 0) return -1;
+
+    txn_metadata_ptr->token_name =(char *) cy_malloc(token_name_len);
+
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->token_name), &offset);
+             size, token_name_len, &offset);
+    
     s_memcpy(&(txn_metadata_ptr->network_chain_id), metadata_byte_array,
              size, sizeof(txn_metadata_ptr->network_chain_id), &offset);
+    return offset;
+}
+
+                                   
+int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
+
+    int64_t offset = 0;
+
+    s_memcpy(txn_data_ptr->wallet_id, data_byte_array, size, sizeof(txn_data_ptr->wallet_id), &offset);
+    s_memcpy(txn_data_ptr->purpose, data_byte_array, size, sizeof(txn_data_ptr->purpose), &offset);
+    s_memcpy(txn_data_ptr->coin_index, data_byte_array, size, sizeof(txn_data_ptr->coin_index), &offset);
+    s_memcpy(txn_data_ptr->account_index, data_byte_array, size, sizeof(txn_data_ptr->account_index), &offset);
+    s_memcpy(txn_data_ptr->chain_index, data_byte_array, size, sizeof(txn_data_ptr->chain_index), &offset);
+    s_memcpy(txn_data_ptr->address_index, data_byte_array, size, sizeof(txn_data_ptr->address_index), &offset);
+
+    size_t token_name_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
+
+    if (data_byte_array[offset+token_name_len-1] != 0) return -1;
+
+    txn_data_ptr->token_name =(char *) cy_malloc(token_name_len);
+
+    s_memcpy((uint8_t *) txn_data_ptr->token_name, data_byte_array, size, token_name_len, &offset);
+
+    s_memcpy(&(txn_data_ptr->network_chain_id), data_byte_array, size, sizeof(txn_data_ptr->network_chain_id), &offset);
+
     return offset;
 }
 

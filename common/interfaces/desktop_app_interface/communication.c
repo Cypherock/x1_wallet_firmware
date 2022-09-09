@@ -267,8 +267,8 @@ static uint8_t SDK_RESP_PACKET[] = {
     0x12, 0x30,                             // Checksum
     COMM_V0_START_OF_HEADER, COMM_SDK_VERSION_REQ,       // SDK response packet
     0x0C, 0x00, 0x01, 0x00, 0x01,           // data length (1 byte), current packet (2 bytes), packet count (2 bytes)
-    0x00, 0x02, 0x00, 0x00, 0x00, 0x00,     // SDK version 2 for current working protocol
-    0x17, 0xC1                              // Checksum
+    0x00, 0x02, 0x00, 0x01, 0x00, 0x00,     // SDK version 2.1 for current working protocol
+    0x20, 0xF1                              // Checksum
 };
 
 static inline void comm_reset() {
