@@ -161,7 +161,7 @@ int main(void)
         // Flow
         main_app_ready = true;
         if (CY_Read_Reset_Flow()){
-            if(sys_flow_cntrl_u.bits.reset_not_allowed == false){
+            if(!CY_reset_not_allowed()){
                 cy_exit_flow();
             }
             else{
