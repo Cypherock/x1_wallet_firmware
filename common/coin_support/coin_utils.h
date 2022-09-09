@@ -188,7 +188,7 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int
  *
  * @note
  */
-int32_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint32_t size, txn_metadata *txn_metadata_ptr);
+int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint32_t size, txn_metadata *txn_metadata_ptr);
 
 /**
  * @brief Deserialize byte array to receive transaction data
@@ -198,7 +198,7 @@ int32_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  * @param [in] size                     Size of the byte array data_byte_array
  * @return int32_t Offset used in conversion
  */
-int32_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
+int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
