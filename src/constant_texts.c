@@ -281,8 +281,8 @@ const char* ui_text_waiting_for_desktop = "Follow the\ninstructions on\nCysync a
 // headings near specific
 const char* ui_text_verify_create_from = "Verify Create From";
 const char* ui_text_verify_new_account_id = "Verify New Account Id";
-const char* ui_text_new_account_id= "new_account_id ?";
-const char* ui_text_new_public_key= "new_public_key ?";
+const char* ui_text_new_account_id= "new_account_id :";
+const char* ui_text_new_public_key= "new_public_key :";
 const char* ui_text_replace_account= "Replace Account";
 const char* ui_text_confirm_account = "Confirm Account";
 
