@@ -75,6 +75,22 @@
 #define ATECC_CFG_88_MASK_OLD_PROV  44
 
 #if X1WALLET_INITIAL
+uint8_t atecc_slot_to_lock[]={
+    slot_2_auth_key,
+    slot_3_nfc_pair_key,
+    slot_0_unused,
+    slot_1_unused,
+    slot_4_unused,
+    slot_7_unused,
+    slot_9_unused,
+    slot_10_unused,
+    slot_11_unused,
+    slot_12_unused,
+    slot_13_unused,
+    slot_14_unused,
+    slot_15_unused
+};
+
 uint8_t provision_date[4];
 Provision_Data_struct provision_keys_data;
 
@@ -82,6 +98,7 @@ extern lv_task_t* listener_task;
 static lv_task_t *timeout_task;
 
 static void __timeout_listener();
+static void lock_all_slots();
 #endif
 
 uint32_t get_device_serial(){
@@ -382,20 +399,16 @@ void device_provision_controller(){
             memcpy(perm_key_data.ext_keys.card_root_xpub, provision_keys_data.card_root_xpub, FS_KEYSTORE_XPUB_LEN);
 
             if(set_ext_key(&perm_key_data.ext_keys) == SUCCESS_){
-                atcab_lock_data_slot(slot_2_auth_key);
-                atcab_lock_data_slot(slot_3_nfc_pair_key);
-                atcab_lock_data_slot(slot_0_unused);
-                atcab_lock_data_slot(slot_1_unused);
-                atcab_lock_data_slot(slot_4_unused);
-                atcab_lock_data_slot(slot_7_unused);
-                atcab_lock_data_slot(slot_9_unused);
-                atcab_lock_data_slot(slot_10_unused);
-                atcab_lock_data_slot(slot_11_unused);
-                atcab_lock_data_slot(slot_12_unused);
-                atcab_lock_data_slot(slot_13_unused);
-                atcab_lock_data_slot(slot_14_unused);
-                atcab_lock_data_slot(slot_15_unused);
-                transmit_one_byte_confirm(CONFIRM_PROVISION);
+                lock_all_slots();
+
+                if(check_provision_status() == provision_complete)
+                    transmit_one_byte_confirm(CONFIRM_PROVISION);
+                else{
+                    comm_reject_request(CONFIRM_PROVISION, 0);
+                    flow_level.level_three = PROVISION_UNSUCCESSFUL;
+                    LOG_ERROR("PERR5-LOCK");
+                    break;
+                }
             }
             else{
                 comm_reject_request(CONFIRM_PROVISION, 0);
@@ -423,6 +436,37 @@ void device_provision_controller(){
     }
 
 
+}
+
+void lock_all_slots(){
+    uint8_t usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
+
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    bool lock = false;
+    do
+    {
+        if(atecc_data.status != ATCA_SUCCESS){
+            LOG_CRITICAL("PERR4-0x%02x, retry-%d", atecc_data.status, atecc_data.retries);
+        }
+        for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
+        {
+            atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
+            if(atecc_data.status != ATCA_SUCCESS){
+                break;
+            }
+            else if(lock == true){
+                continue;
+            }
+            atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
+            if(atecc_data.status != ATCA_SUCCESS){
+                break;
+            }
+        }
+    } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
 static void __timeout_listener() {
