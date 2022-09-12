@@ -142,14 +142,14 @@ void receive_transaction_tasks_near() {
     } break;
 
     case RECV_TXN_DISPLAY_ACC_NEAR: {
-      char display[90];
-      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces,
+      char display[110];
+      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces,
                receive_transaction_data.near_registered_account);
       address_scr_init(ui_text_new_account_id, display, true);
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_NEAR: {
-      char display[90];
+      char display[110];
       char heading[20] = {0};
       snprintf(heading, sizeof(heading), "%s", ui_text_receive_on);
       char address_s[2 * sizeof(receive_transaction_data.near_pubkey) + 1] =
@@ -168,7 +168,7 @@ void receive_transaction_tasks_near() {
                                  sizeof(receive_transaction_data.near_pubkey),
                                  address_s, sizeof(address_s));
       }
-      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address_s);
+      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces, address_s);
 
       address_scr_init(heading, display, true);
 
