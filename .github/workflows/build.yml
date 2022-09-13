@@ -1,0 +1,20 @@
+name: X1 Wallet Firmware
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - release**
+
+jobs:
+  build-firmwares:
+    strategy:
+      matrix:
+        firmware: [main, initial]
+        target: [dev, debug, release]
+    uses: ./.github/workflows/containerized-build.yml
+    with:
+      firmware: ${{ matrix.firmware }}
+      target: ${{ matrix.target }}
+    secrets: inherit

@@ -1,3 +1,3 @@
 [submodule "stm32-hal"]
 	path = stm32-hal
-	url = ../X1Wallet_Hal_Stm32
+	url = ../x1_wallet_hal_stm32
