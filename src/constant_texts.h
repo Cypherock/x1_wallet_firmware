@@ -183,7 +183,7 @@ extern const char* ui_text_wallet_created_successfully;
 extern const char* ui_text_press_enter_to_start_verification;
 extern const char* ui_text_now_enter_your_seed_phrase;
 extern const char* ui_text_now_enter_your_data;
-extern const char* ui_text_please_verify_entered_words;
+extern const char*ui_text_verify_entered_words;
 extern const char* ui_text_generating_xpubs;
 extern const char* ui_text_exporting_to_desktop;
 extern const char* ui_text_successfully_exported_xpub_to_desktop;

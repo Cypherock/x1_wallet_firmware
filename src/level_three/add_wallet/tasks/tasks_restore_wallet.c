@@ -212,7 +212,7 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION: {
-        delay_scr_init(ui_text_please_verify_entered_words, DELAY_TIME);
+        delay_scr_init(ui_text_verify_entered_words, DELAY_TIME);
 
     } break;
 
