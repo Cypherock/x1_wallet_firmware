@@ -70,6 +70,22 @@ static SHA256_CTX sha2;
 static Flash_Wallet* flash_wallet; // Pointer to wallet which the device is currently trying to unlock
 extern Wallet wallet;
 //APP_TIMER_DEF(pow_timer_id);
+size_t pow_hash_rate = 1;
+
+#define SECS_TO_HASHES(sec) ((sec) *pow_hash_rate)
+
+void pow_init_hash_rate() {
+    uint8_t bytes_1[64] = {0};
+    size_t start_time = uwTick, hashes = 8192;
+    for (size_t i = 0; i < hashes; i++) {
+        sha256_Raw(bytes_1, sizeof(bytes_1), bytes_1);
+    }
+    size_t duration = uwTick - start_time;
+    pow_hash_rate = (hashes * 1000 / duration);
+
+    // Adjust for 5% margin of error due to 50ms hard delay in the main event loop
+    pow_hash_rate = (pow_hash_rate * 95 / 100);
+}
 
 /**
  * @brief Proof of work timer handler

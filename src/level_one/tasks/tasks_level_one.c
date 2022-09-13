@@ -55,7 +55,7 @@
  *
  ******************************************************************************
  */
-
+#include "application_startup.h"
 #include "tasks_level_one.h"
 #include "flash_api.h"
 #include "tasks_level_two.h"
@@ -98,6 +98,12 @@ void level_one_tasks()
         level_two_tasks();
         return;
     }
+
+    if(device_auth_check() != DEVICE_AUTHENTICATED){
+        restrict_app();
+        return;
+    }
+
 
     uint8_t number_of_options = get_wallet_count();
     LOG_INFO("wallet count %d", number_of_options);
@@ -143,7 +149,8 @@ void level_one_tasks()
     }
     menu_init((const char **) choices, number_of_options, ui_text_options_main_menu[0], false);
     lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
-    CY_Reset_Not_Allow(false);
+    CY_set_app_restricted(false);
+    CY_Reset_Not_Allow(true);
     mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #endif
 }

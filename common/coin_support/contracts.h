@@ -41,7 +41,7 @@ typedef struct erc20_contracts {
     /// 20-byte hex coded public address of the contract
     const uint8_t address[ETHEREUM_ADDRESS_LENGTH];
     /// Symbol (short alphabetical representation) of the contract token
-    const char symbol[ETHEREUM_TOKEN_SYMBOL_LENGTH];
+    const char *symbol;
 } erc20_contracts_t;
 
 /**

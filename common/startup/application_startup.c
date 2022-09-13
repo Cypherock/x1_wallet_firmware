@@ -83,6 +83,7 @@
 #include "flash_api.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
+#include "ui_multi_instruction.h"
 
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
@@ -104,7 +105,12 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
+#if X1WALLET_MAIN == 1
+extern void __authentication_listener(lv_task_t* task);
+extern lv_task_t* authentication_task;
+#endif
 
+extern lv_task_t *listener_task;
 extern lv_task_t* success_task;
 extern lv_task_t* timeout_task;
 extern lv_indev_t * indev_keypad;
@@ -219,125 +225,61 @@ static void display_init()
     ui_init(indev_keypad);
 }
 
-/**
- * @brief Handles device upgrade flow on startup
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void device_upgrade(){
-//aman make compatible with firewall
-	switch (flow_level.level_two) {
-		case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-			flow_level.level_two = LEVEL_THREE_RESET_DEVICE;
-		} break;
-
-		case LEVEL_THREE_RESET_DEVICE: {
-            FW_enter_DFU();
-			BSP_reset();
-		} break;
-
-        default: break;
-	}
-
+#if X1WALLET_MAIN
+device_auth_state device_auth_check(){
+    if((is_device_authenticated() == true) && (get_first_boot_on_update() == false)){
+        return DEVICE_AUTHENTICATED;
+    }
+    return DEVICE_NOT_AUTHENTICATED;
 }
 
-/**
- * @brief Callback method executed after authentication timeout
- * @details
- *
- * @param [in] task Task passed by the callback caller.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void _auth_timeout_listener(lv_task_t* task)
-{
-    set_auth_state(get_auth_state());  /// Since we do not have setter for boot_flag, this indirectly disables the first_boot flag
-
-    device_auth_flag = 0;
-    lv_task_del(timeout_task);
+void restrict_app(){
+    reset_flow_level();
+    const char *pptr[2] = {ui_text_authentication_required, ui_text_start_auth_from_CySync};
+    multi_instruction_init(pptr, 2, DELAY_TIME, false);
+    lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
+    lv_task_set_prio(authentication_task, LV_TASK_PRIO_HIGH);
+    counter.next_event_flag=false;
+    CY_Reset_Not_Allow(true);
+    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
+    CY_set_app_restricted(true);
 }
 
 void device_auth(){
-
-     if (is_device_authenticated() && !device_auth_flag && !get_first_boot_on_update())
-          return;
-
-     // impossible cases, log and make them valid
-     if (device_auth_flag && get_first_boot_on_update()) {
-         set_auth_state(get_auth_state());
-     }
-
-     if (is_device_authenticated() && get_first_boot_on_update()) {
-         set_auth_state(DEVICE_NOT_AUTHENTICATED);
-     }
-
-     // user initiated auth
-     if (!get_first_boot_on_update() && device_auth_flag) {
-         instruction_scr_init(ui_text_auth_process, NULL);
-     }
-
-    // device startup initiated auth
-    if (!is_device_authenticated() && !device_auth_flag) {
-        device_auth_flag = 1;     // this governs the event loop
-        if (get_first_boot_on_update()) {
-            LOG_ERROR("%X-%s\r\n", get_fwVer(), GIT_REV);
-            // start a timer of 16 seconds, which takes to main menu upon timeout
-            instruction_scr_init(ui_text_auth_process, NULL);
-            timeout_task = lv_task_create(_auth_timeout_listener, 16000, LV_TASK_PRIO_HIGH, NULL);
-            lv_task_once(timeout_task);
-        } else {
-            // simply prompt the user
-            mark_device_state(CY_APP_USB_TASK | CY_APP_WAIT_USER_INPUT, SIGN_SERIAL_NUMBER);
-            ui_set_event_over_cb(NULL);
-            delay_scr_init(ui_text_unauthenticated_device, DELAY_TIME);
-            ui_set_event_over_cb(&mark_event_over);
-            message_scr_init(ui_text_unauthenticate_via_cysync);
-        }
+    if(!device_auth_flag){
+        return;
     }
 
-    if (main_app_ready)
-        flow_level.level_three = 1;   // when initiated through main menu, desktop already requested for first step
-    else
-        flow_level.level_three = 5;
+    flow_level.level_three = SIGN_SERIAL_NUMBER;
+    mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, flow_level.level_three);
+    instruction_scr_init(" ", NULL);
+    instruction_scr_change_text(ui_text_auth_process, true);
+    if(main_app_ready)
+        lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
 
-    CY_Reset_Not_Allow(false);
-
-     while(device_auth_flag){
+    while(device_auth_flag){
         if (CY_Read_Reset_Flow()) {
-            mark_error_screen(ui_text_aborted);
-            reset_flow_level();
-            return;
+          cy_exit_flow();
+          break;
         }
         main_app_ready = false;
-        device_upgrade();
 
         device_authentication_controller();
-            flow_level.level_three = 5;
+        mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
+        flow_level.level_three = 5;
 
         proof_of_work_task();
 
         lv_task_handler();
         BSP_DelayMs(50);
+    }
 
-     
-     }
+    // Mark device state busy for the rest of the bootup checks
+    lv_task_set_prio(authentication_task, LV_TASK_PRIO_OFF);
+    instruction_scr_destructor();
     reset_flow_level();
 }
+#endif
 
 /**
  * @brief
@@ -382,7 +324,7 @@ void application_init() {
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
     sys_flow_cntrl_u.bits.nfc_off = true;
     CY_Reset_Not_Allow(false);
-    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
+    mark_device_state(CY_APP_DEVICE_TASK | CY_APP_BUSY, 0xFF);
 #if USE_SIMULATOR == 0
     uint32_t ret;
     clock_init();
@@ -434,8 +376,11 @@ void application_init() {
     reset_flow_level();
 #if X1WALLET_MAIN
     CY_Reset_Not_Allow(true);
+    authentication_task = lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
 #endif
+    listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
     nfc_set_device_key_id(get_perm_self_key_id());
+    pow_init_hash_rate();
 #ifdef DEV_BUILD
     buzzer_disabled = true;
 #endif

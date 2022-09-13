@@ -90,13 +90,8 @@ void export_wallet_task()
         menu_init((const char**) wallet_names, walletAdded, ui_text_choose_wallet, false);
     } break;
 
-    case EXPORT_WALLET_WAITING_SCREEN: {
-        instruction_scr_init(ui_text_exporting_to_desktop, NULL);
-        mark_event_over();
-    } break;
-
     case EXPORT_WALLET_FINAL_SCREEN:
-        delay_scr_init(ui_text_successfully_exported_wallet_to_desktop, DELAY_TIME);
+        mark_event_over();
         CY_Reset_Not_Allow(true);
         break;
     

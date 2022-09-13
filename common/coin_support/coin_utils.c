@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 #include "coin_utils.h"
+#include "near.h"
 
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
@@ -69,7 +70,7 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
     *offset += len;
 }
 
-int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
+int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
 
@@ -106,7 +107,7 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
         s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
-    }
+    } 
 
     s_memcpy(txn_metadata_ptr->change_count, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->change_count), &offset);
@@ -121,32 +122,71 @@ int32_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
         s_memcpy(change->address_index, metadata_byte_array, size, sizeof(change->address_index), &offset);
     }
 
-    s_memcpy(txn_metadata_ptr->transactionFees, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->transactionFees), &offset);
+    s_memcpy(txn_metadata_ptr->transaction_fees, metadata_byte_array,
+             size, sizeof(txn_metadata_ptr->transaction_fees), &offset);
     s_memcpy(txn_metadata_ptr->decimal, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->decimal), &offset);
+
+    size_t token_name_len = strnlen((const char*)(metadata_byte_array+offset),size - offset ) + 1;
+
+    if (metadata_byte_array[offset+token_name_len-1] != 0) return -1;
+
+    txn_metadata_ptr->token_name =(char *) cy_malloc(token_name_len);
+
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->token_name), &offset);
+             size, token_name_len, &offset);
+    
     s_memcpy(&(txn_metadata_ptr->network_chain_id), metadata_byte_array,
              size, sizeof(txn_metadata_ptr->network_chain_id), &offset);
     return offset;
 }
 
-void generate_xpub(const HDNode *node, const uint32_t purpose_id, const uint32_t coin_id, const uint32_t account_id, char *str)
+                                   
+int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
+
+    int64_t offset = 0;
+
+    s_memcpy(txn_data_ptr->wallet_id, data_byte_array, size, sizeof(txn_data_ptr->wallet_id), &offset);
+    s_memcpy(txn_data_ptr->purpose, data_byte_array, size, sizeof(txn_data_ptr->purpose), &offset);
+    s_memcpy(txn_data_ptr->coin_index, data_byte_array, size, sizeof(txn_data_ptr->coin_index), &offset);
+    s_memcpy(txn_data_ptr->account_index, data_byte_array, size, sizeof(txn_data_ptr->account_index), &offset);
+    s_memcpy(txn_data_ptr->chain_index, data_byte_array, size, sizeof(txn_data_ptr->chain_index), &offset);
+    s_memcpy(txn_data_ptr->address_index, data_byte_array, size, sizeof(txn_data_ptr->address_index), &offset);
+
+    size_t token_name_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
+
+    if (data_byte_array[offset+token_name_len-1] != 0) return -1;
+
+    txn_data_ptr->token_name =(char *) cy_malloc(token_name_len);
+
+    s_memcpy((uint8_t *) txn_data_ptr->token_name, data_byte_array, size, token_name_len, &offset);
+
+    s_memcpy(&(txn_data_ptr->network_chain_id), data_byte_array, size, sizeof(txn_data_ptr->network_chain_id), &offset);
+
+    return offset;
+}
+
+void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)
 {
     uint32_t fingerprint = 0x0, version;
     HDNode t_node;
 
-    memcpy(&t_node, node, sizeof(HDNode));
-    hdnode_private_ckd(&t_node, purpose_id);
-    hdnode_private_ckd(&t_node, coin_id);
+	derive_hdnode_from_path(path, path_length-1, curve, seed, &t_node);
     fingerprint = hdnode_fingerprint(&t_node);
-    hdnode_private_ckd(&t_node, account_id);
+    hdnode_private_ckd(&t_node, path[path_length-1]);
     hdnode_fill_public_key(&t_node);
 
-    get_version(purpose_id, coin_id, NULL, &version);
+    get_version(path[0], path[1], NULL, &version);
     hdnode_serialize_public(&t_node, fingerprint, version, str, 113);
     memzero(&t_node, sizeof(HDNode));
+}
+
+void derive_hdnode_from_path(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, HDNode *hdnode)
+{
+    hdnode_from_seed(seed, 512 / 8, curve, hdnode);
+    for (size_t i = 0;i<path_length;i++)
+        hdnode_private_ckd(hdnode, path[i]);
+    hdnode_fill_public_key(hdnode);
 }
 
 void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
@@ -193,6 +233,8 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
                 }
             }
         }
+        case NEAR_COIN_INDEX:
+            return "NEAR";
         default: {
             ASSERT(false);
             return "invalid";
@@ -224,6 +266,8 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
                 }
             }
         }
+        case NEAR_COIN_INDEX:
+            return "NEAR";
         default: {
             ASSERT(false);
             return "invalid";
@@ -290,6 +334,10 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
+            case NEAR:
+                assigned_pub_version = 0x0488b21e;
+                assigned_add_version = 0x00;
+                break;
             default:
                 break;
             }
@@ -312,6 +360,13 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
     if (mdata_ptr->purpose_index[0] < 0x80 || mdata_ptr->coin_index[0] < 0x80 ||
         mdata_ptr->account_index[0] < 0x80)
         return false;
+    if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
+        BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR){
+        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
+                mdata_ptr->input->address_index[0] < 0x80))
+            return false;
+        return true;
+    }
     if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] >= 0x80 ||
             mdata_ptr->input->address_index[0] >= 0x80))
         return false;

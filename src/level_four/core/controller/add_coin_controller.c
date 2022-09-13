@@ -146,25 +146,32 @@ void add_coin_controller()
         const char* mnemo = mnemonic_from_data(secret,wallet.number_of_mnemonics * 4 / 3);
 
         ASSERT(mnemo != NULL);
-        HDNode node;
-        uint8_t seed[64];
+        uint8_t seed[64]={0};
 
-        memzero(seed, sizeof(seed));
         mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
         mnemonic_clear();
-        hdnode_from_seed(seed, sizeof(seed), SECP256K1_NAME, &node);
 
         uint8_t i = 0x0, j = 0x0;
         for (; i < add_coin_data.number_of_coins; i++, j++) {
-            generate_xpub(&node, 0x8000002C, add_coin_data.coin_indexes[i], 0x80000000, (char *) cmd_add_coin.xpubs[j]);
-
+            if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
+                uint32_t path[] = {
+                    NEAR_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
+                    NEAR_ACCOUNT_INDEX, NEAR_CHAIN_INDEX, NEAR_ADDRESS_INDEX};
+                generate_xpub(path, 5, ED25519_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
+                memzero(path, sizeof(path));
+            }else{
+                uint32_t path[] = { NON_SEGWIT, add_coin_data.coin_indexes[i], 0x80000000 };
+                generate_xpub(path, 3, SECP256K1_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
+                memzero(path, sizeof(path));
+            }
             if (add_coin_data.coin_indexes[i] == 0x80000000 || add_coin_data.coin_indexes[i] == 0x80000001) {
-                generate_xpub(&node, 0x80000054, add_coin_data.coin_indexes[i], 0x80000000, (char *) cmd_add_coin.xpubs[++j]);
+                uint32_t path[] = { NATIVE_SEGWIT, add_coin_data.coin_indexes[i], 0x80000000 };
+                generate_xpub(path, 3, SECP256K1_NAME, seed, (char *) cmd_add_coin.xpubs[++j]);
+                memzero(path, sizeof(path));
             }
         }
         memzero(secret, sizeof(secret));
         memzero(seed, sizeof(seed));
-        memzero(&node, sizeof(HDNode));
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         uint8_t out_arr[sizeof(Cmd_Add_Coin_t)];
         memcpy(out_arr, cmd_add_coin.xpubs, XPUB_SIZE * j);

@@ -95,7 +95,7 @@ void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* ti
     }
 
     uint32_t time_in_secs = 1U;
-    time_in_secs = (uint32_t)(time_in_secs << (256U - number_bits_set)) / HASH_RATE;
+    time_in_secs = (uint32_t)(time_in_secs << (256U - number_bits_set)) / pow_hash_rate;
 
     *time_in_secs_out = time_in_secs;
 

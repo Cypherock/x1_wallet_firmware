@@ -1,6 +1,7 @@
 #include "crypto_random.h"
 #include <stdlib.h>
-
+#include "logger.h"
+#include "app_error.h"
 
 static bool begun = false;
 
@@ -19,8 +20,10 @@ bool crypto_random_generate(uint8_t* buf, uint16_t bufsize)
 {
 	uint32_t random_32bit;
 	uint16_t i=0;
+	uint32_t rng_status;
 	do{
-		if(BSP_RNG_Generate(&random_32bit) != 0){
+		if(rng_status = BSP_RNG_Generate(&random_32bit) != 0){
+			LOG_ERROR("err:%08X\n", RNG_MCU_ERROR_BASE | rng_status);
 			return false;
 		}
 		buf[i++]=random_32bit%256;

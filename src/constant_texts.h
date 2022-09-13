@@ -150,6 +150,16 @@ extern const char* ui_text_confirm_wallet_name;
 extern const char* ui_text_enter_data;
 extern const char* ui_text_confirm_data;
 extern const char* ui_text_verification_cancelled;
+extern const char* ui_text_verify_nonce;
+extern const char* ui_text_waiting_for_desktop;
+
+// headings near specific
+extern const char* ui_text_verify_create_from;
+extern const char* ui_text_verify_new_account_id;
+extern const char* ui_text_new_account_id;
+extern const char* ui_text_new_public_key;
+extern const char* ui_text_replace_account;
+extern const char* ui_text_confirm_account;
 
 // headings card flow
 extern const char* ui_text_family_id_hex;
@@ -178,7 +188,6 @@ extern const char* ui_text_generating_xpubs;
 extern const char* ui_text_exporting_to_desktop;
 extern const char* ui_text_successfully_exported_xpub_to_desktop;
 extern const char* ui_text_wait_while_balance_fetching;
-extern const char* ui_text_successfully_exported_wallet_to_desktop;
 extern const char* ui_text_deriving_address;
 extern const char* ui_text_receive_on_address;
 extern const char* ui_text_sending_confirmation_to_desktop;
@@ -209,6 +218,8 @@ extern const char* ui_text_successfull;
 extern const char* ui_text_view_seed_messages[];
 extern const char* ui_text_card_authentication_success;
 extern const char* ui_text_card_authentication_failed;
+extern const char* ui_text_authentication_required;
+extern const char* ui_text_start_auth_from_CySync;
 extern const char* ui_text_enable_passphrase_step;
 extern const char* ui_text_disable_passphrase_step;
 extern const char* ui_text_warning_transaction_fee_too_high;

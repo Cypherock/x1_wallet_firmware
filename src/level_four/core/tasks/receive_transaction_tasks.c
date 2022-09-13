@@ -148,16 +148,6 @@ void receive_transaction_tasks()
         address_scr_init(ui_text_receive_on, display, true);
     } break;
 
-    case RECV_TXN_WAITING_SCREEN: {
-        instruction_scr_init(ui_text_sending_confirmation_to_desktop, NULL);
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_FINAL_SCREEN:
-        delay_scr_init(ui_text_success_received_from_desktop, DELAY_TIME);
-        CY_Reset_Not_Allow(true);
-        break;
-
     default:
         break;
     }

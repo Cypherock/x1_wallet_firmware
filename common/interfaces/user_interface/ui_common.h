@@ -21,6 +21,7 @@
 #include "board.h"
 #define OPTIONS_BTN_SIZE 100
 #define SCROLLING_THRESHOLD 28
+#define SCROLLING_LEN_THRESHOLD 70
 
 
 extern void (*ui_mark_event_over)();

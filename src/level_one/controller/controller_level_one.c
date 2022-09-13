@@ -96,12 +96,7 @@ void level_one_controller()
     }
 
     if (device_auth_flag) {
-        mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, SIGN_SERIAL_NUMBER);
-        lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);  // tasks are stopped when invoked from main menu; restart the tasks
         device_auth();
-        device_auth_flag = 0;
-        instruction_scr_destructor();
-        reset_flow_level();
         return;
     }
 
@@ -150,7 +145,7 @@ void level_one_controller()
                     get_wallet_locked_status(walletIndex),
                     get_wallet_name(walletIndex));
             }
-            _abort_();
+            cy_exit_flow();
         }
         memcpy(
             wallet.wallet_name,

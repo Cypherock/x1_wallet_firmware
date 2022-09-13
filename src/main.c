@@ -95,6 +95,7 @@
 #include "sys_state.h"
 #include "ui_logo.h"
 #include "ui_delay.h"
+#include "lv_port_indev.h"
 
 #if USE_SIMULATOR == 0
 #include "main.h"
@@ -111,8 +112,6 @@ extern lv_indev_t *indev_keypad;
 #endif
 extern Counter counter;
 extern bool main_app_ready;
-extern uint8_t device_auth_flag;
-extern lv_task_t *listener_task;
 
 #if USE_SIMULATOR == 1
 
@@ -135,7 +134,6 @@ static void memory_monitor(lv_task_t *param);
 int main(void)
 {
     application_init();
-    listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_HIGH, NULL);
 
 #if USE_SIMULATOR == 0
     if(fault_in_prev_boot())
@@ -149,9 +147,8 @@ int main(void)
         device_provision_check();
         reset_flow_level();
 #if X1WALLET_MAIN
-        device_auth();
-        instruction_scr_destructor();
-        check_invalid_wallets();
+        if(device_auth_check() == DEVICE_AUTHENTICATED)
+            check_invalid_wallets();
 #endif
     }
 
@@ -163,8 +160,14 @@ int main(void)
             reset_inactivity_timer();
         // Flow
         main_app_ready = true;
-        if (CY_Read_Reset_Flow() && (sys_flow_cntrl_u.bits.reset_not_allowed == false))
-            _abort_();
+        if (CY_Read_Reset_Flow()){
+            if(!CY_reset_not_allowed()){
+                cy_exit_flow();
+            }
+            else{
+                sys_flow_cntrl_u.bits.reset_flow = false;
+            }
+        }
 
         if(sys_flow_cntrl_u.bits.nfc_off == false){
             nfc_deselect_card();

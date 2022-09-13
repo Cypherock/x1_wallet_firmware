@@ -291,7 +291,7 @@ void random_generate(uint8_t* arr,int len){
     if(usb_irq_enable_on_entry == true)
         NVIC_EnableIRQ(OTG_FS_IRQn);
 
-    ASSERT(atecc_data.status == ATCA_SUCCESS);
+    ASSERT((atecc_data.status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
 
     for(int i=0; i<len; ++i){
         arr[i]^=temp[i];
@@ -415,4 +415,67 @@ uint8_t dec_to_hex(const uint64_t dec, uint8_t *bytes, uint8_t len)
         memcpy(bytes, hex + 8 - len, len);
 
     return size;
+}
+
+uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len)
+{
+    uint8_t i = 0;
+    uint8_t j = len - 1;
+    uint8_t temp = 0;
+    while (i < j) {
+        temp = byte_data[i];
+        byte_data[i] = byte_data[j];
+        byte_data[j] = temp;
+        i++;
+        j--;
+    }
+    return 0;
+}
+
+
+bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decimal,char* amount_string,char* amount_decimal_string, const size_t amount_decimal_string_size){
+    uint8_t decimal_val_s[32 * 3] = { 0 };
+    if (sizeof(decimal_val_s) / sizeof(decimal_val_s[0]) > UINT8_MAX) {
+        LOG_ERROR("0xxx#");
+        return false;
+    }
+    const uint8_t dec_val_len = sizeof(decimal_val_s) / sizeof(decimal_val_s[0]); //logbase10(2pow256) roughly equals 78
+    convertbase16tobase10(len, amount_string, decimal_val_s, dec_val_len);
+
+    int  i = 0, j = dec_val_len - 1;
+    bool pre_dec_digit = false, post_dec_digit = false;
+    uint8_t point_index = dec_val_len - decimal;
+
+    uint8_t offset = 0;
+    while (i <= j) {
+        if (i == point_index && post_dec_digit) {
+            if (!pre_dec_digit) {
+                offset += snprintf(amount_decimal_string + offset, (amount_decimal_string_size) - offset, "0");
+            }
+            offset += snprintf(amount_decimal_string + offset, (amount_decimal_string_size) - offset, ".");
+        }
+        if (j >= point_index) {
+            if (!decimal_val_s[j] && !post_dec_digit) {
+                j--;
+            }
+            else if (decimal_val_s[j]) {
+                post_dec_digit = true;
+            }
+        }
+        if (decimal_val_s[i] || i == point_index) {
+            pre_dec_digit = true;
+        }
+        if (pre_dec_digit || decimal_val_s[i]) {
+            //attach non zero leading value detected or decimal digits till j(should be the
+            //last non zero decimal digit index).
+            offset += snprintf(amount_decimal_string + offset, (amount_decimal_string_size) - offset, "%d", decimal_val_s[i]);
+        }
+        i++;
+    }
+    if (!post_dec_digit && !pre_dec_digit) {
+        snprintf(amount_decimal_string, (amount_decimal_string_size) - 1, "0.0");
+    }
+
+    LOG_INFO("amt %s %d:%d", amount_string, decimal, i);
+    return true;
 }

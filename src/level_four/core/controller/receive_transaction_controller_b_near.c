@@ -1,8 +1,8 @@
 /**
- * @file    receive_transaction_tasks_eth.c
+ * @file    receive_transaction_controller_b.c
  * @author  Cypherock X1 Team
- * @brief   Receive transaction task for ETH.
- *          This file contains the implementation of the receive transaction task for ETH.
+ * @brief   Receive transaction back controller for BTC.
+ *          Handles post event (only back/cancel events) operations for receive transaction flow initiated by desktop app.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -56,108 +56,61 @@
  ******************************************************************************
  */
 #include "communication.h"
-#include "constant_texts.h"
 #include "controller_level_four.h"
-#include "flash_api.h"
-#include "tasks_level_four.h"
-#include "ui_address.h"
 #include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
 #include "ui_instruction.h"
-#include "ui_menu.h"
-#include "utils.h"
-#include "tasks_tap_cards.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-extern char* PASSPHRASE;
-
-extern Receive_Transaction_Data receive_transaction_data;
-
-void receive_transaction_tasks_eth()
+void receive_transaction_controller_b_near()
 {
-
     switch (flow_level.level_three) {
 
-    case RECV_TXN_FIND_XPUB_ETH: {
-        mark_event_over();
+    case RECV_TXN_FIND_XPUB_NEAR: {
+        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS,0);
+        reset_flow_level();
     } break;
 
-    case RECV_TXN_ENTER_PASSPHRASE_ETH: {
-        if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-            flow_level.level_three = ADD_COINS_VERIFY;
-            break;
-        }
-        input_text_init(
-            PASSPHRASE,
-            ui_text_enter_passphrase,
-            0,
-            DATA_TYPE_PASSPHRASE,
-            64);
+
+    case RECV_TXN_ENTER_PIN_NEAR: {
+        comm_reject_request(USER_REJECT_PIN_INPUT,0);
+        reset_flow_level();
+        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+
     } break;
 
-    case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
-        char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
-        memzero(display, sizeof(display));
+    case RECV_TXN_ENTER_PASSPHRASE_NEAR: {
+       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT,0);
+       reset_flow_level();
+       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+   } break;
+
+   case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
+       memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+       flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
+   } break;
+
+    case RECV_TXN_DISPLAY_ACC_NEAR:{
+        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
+        reset_flow_level();
     } break;
 
-    case RECV_TXN_CHECK_PIN_ETH: {
-        mark_event_over();
+    case RECV_TXN_DISPLAY_ADDR_NEAR:{
+        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
+        reset_flow_level();
     } break;
 
-    case RECV_TXN_ENTER_PIN_ETH: {
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = RECV_TXN_XPUB_NOT_FOUND_ETH;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+
+    case RECV_TXN_SELECT_REPLACE_ACC_NEAR:{
+        comm_reject_request(RECV_TXN_REPLACE_ACCOUNT,0);
+        reset_flow_level();
+        
     } break;
 
-    case RECV_TXN_TAP_CARD_ETH: {
-        retrieve_key_from_card();
-    } break;
-
-    case RECV_TXN_TAP_CARD_SEND_CMD_ETH: {
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_READ_DEVICE_SHARE_ETH: {
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_DERIVE_ADD_SCREEN_ETH: {
-        instruction_scr_init(ui_text_deriving_address, NULL);
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_DERIVE_ADD_ETH: {
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_DISPLAY_ADDR_ETH: {
-        instruction_scr_destructor();
-        char display[70];
-        char address_s[2 * sizeof(receive_transaction_data.eth_pubkeyhash) + 1] = {'\0'};
-        byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
-                       address_s, sizeof(address_s));
-        snprintf(display, sizeof(display), "%s0x%s", ui_text_20_spaces, address_s);
-        address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
+    case RECV_TXN_VERIFY_SAVE_ACC_NEAR:{
+       flow_level.level_three = RECV_TXN_SELECT_REPLACE_ACC_NEAR;
     } break;
 
     default:
+        reset_flow_level();
         break;
     }
-
-    return;
-
-
 }

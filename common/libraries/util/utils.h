@@ -328,4 +328,21 @@ void convertbase16tobase10(const uint8_t size_inp, const char *u_Inp, uint8_t *O
  */
 uint8_t dec_to_hex(const uint64_t dec, uint8_t *hex, uint8_t len);
 
+/**
+ * @brief Reverse byte array
+ */
+uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len);
+
+
+/**
+ * @brief Convert byte array to decimal string with given decimal place
+ * 
+ * @param len 
+ * @param amount_string 
+ * @param amount_decimal_string 
+ * @param amount_decimal_string_size 
+ * @return true if success
+ * @return false if fails
+ */
+bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decimal, char* amount_string,char* amount_decimal_string, const size_t amount_decimal_string_size);
 #endif
