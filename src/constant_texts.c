@@ -79,7 +79,7 @@ const char* ui_text_options_new_wallet[] = {
 
 const char* ui_text_options_advanced_settings[] = {
     "Settings",
-    "Restore wallets from X1 Cards",
+    "Restore wallets from cards",
     "Check Card Health",
     "Rotate Display",
     "Toggle log export",
@@ -166,9 +166,9 @@ const char* ui_text_incorrect_mnemonics = "Incorrect mnemonics";
 const char* ui_text_incorrect_choice_view_seed_again = "Incorrect choice!\nView the seed phrase again?";
 const char* ui_text_xpub_not_found_add_coin_first = "Click OK on CySync to resync coins";
 const char* ui_wallet_pin_instruction_1 = "In next step you can setup PIN for %s";
-const char* ui_wallet_pin_instruction_2 = "If you forget it, you will lose access to this wallet";
+const char* ui_wallet_pin_instruction_2 = "If you forget it\nyou will lose access \nto this wallet";
 const char* ui_wallet_passphrase_instruction_1 = "In next step you can setup Passphrase for %s";
-const char* ui_wallet_passphrase_instruction_2 = "If you forget it, you will lose access to this wallet";
+const char* ui_wallet_passphrase_instruction_2 = "If you forget it\nyou will lose access \nto this wallet";
 const char* ui_wallet_passphrase_instruction_3 = "Passphrase is recommended only for advanced users";
 const char* ui_wallet_passphrase_instruction_4 = "You will be entering it each time you transact with this wallet";
 const char* ui_text_invalid_transaction = "Invalid transaction";
@@ -237,7 +237,7 @@ const char* ui_text_in_process_to_unlock = "%s is in process to unlock...";
 const char* ui_text_multiple_incorrect_attempts_may_block = "Multiple incorrect attempts may block %s";
 const char* ui_text_do_not_detach_device = "Keep the device connected throughout the process";
 
-const char* ui_text_tap_card_ap_d = "Tap Card #%d";
+const char* ui_text_tap_card_ap_d = "Tap card #%d";
 const char* ui_text_correct_pin_is_now_unlocked = "Correct PIN! %s is now unlocked";
 
 const char* ui_text_card_sending_apdu = "Sending APDU\n%d";
@@ -297,9 +297,7 @@ const char* ui_text_tap_x1card_auth_instruction_1 = "Tap a card and do not lift 
 const char* ui_text_tap_x1card_auth_instruction_2 = "Now tap the same card again";
 const char* ui_text_fetching_recipient_amount = "Fetching recipient amount...";
 const char* ui_text_tap_card_to_start = "Tap a card to start";
-const char* ui_text_verification_cancelled_delete_wallet = "Verification cancelled, delete this wallet?";
 const char* ui_text_wallet_deleted_successfully = "Wallet deleted successfully!";
-const char* ui_text_wallet_redirecting_to_new_wallet = "Let's try again";
 const char* ui_text_recovery_successfull = "Recovery Successful!";
 const char* ui_text_generating_seed = "Processing...";
 const char* ui_text_seed_generated_successfully = "Seed generated successfully";
@@ -332,7 +330,7 @@ const char* ui_text_wallet_out_of_sync_prompt = "'%s' is out of Sync with cards"
 const char* ui_text_wallet_partial_state_prompt = "'%s' is in partial delete state";
 const char* ui_text_wallet_locked_prompt = "'%s' is in locked state";
 const char* ui_text_wallet_visit_to_verify = "Visit the wallet to fix it";
-const char* ui_text_wallet_partial_fix = "Wallets in partial state, fix before proceeding";
+const char* ui_text_wallet_partial_fix = "Wallets in partial state Fix before proceeding";
 #ifdef ALLOW_LOG_EXPORT
 const char* ui_text_sending_logs = "Sending logs...";
 const char* ui_text_logs_sent = "Logs sent";
@@ -345,7 +343,7 @@ const char* ui_text_view_seed_messages[] = {
     "You will lose your coins if the seed phrase gets stolen",
     "Press the center button to proceed"
 };
-const char* ui_text_card_authentication_success = "Card authentication success";
+const char* ui_text_card_authentication_success = "Card authentication successful";
 const char* ui_text_card_authentication_failed = "Card authentication failed";
 const char* ui_text_enable_passphrase_step = "Do you want to enable passphrase step on wallet creation?";
 const char* ui_text_disable_passphrase_step = "Do you want to disable passphrase step on wallet creation?";
@@ -366,10 +364,10 @@ const char* ui_text_do_you_want_to_set_pin = "Do you want to set a PIN?";
 const char* ui_text_output_send_value = "Receiver #%d\nSend %f\n%s";
 const char* ui_text_output_send_to_address = "Receiver #%d Address";
 
-const char* ui_text_send_transaction_fee = "Transaction fee\n%s\n%s?";
+const char* ui_text_send_transaction_fee = "Transaction fee\n%s\n%s";
 
-const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.*f\n%s?";
-const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.*f\n%s?";
+const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.*f\n%s";
+const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.*f\n%s";
 
 const char* ui_text_start_firmware_update = "Update firmware to version %d.%d.%d";
 
