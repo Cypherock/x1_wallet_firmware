@@ -95,8 +95,16 @@ void delete_wallet_task()
         tap_cards_for_delete_flow();
         break;
 
-    default:
+    case DELETE_WALLET_FROM_DEVICE:
+        mark_event_over();
+        break;
+
+    case DELETE_WALLET_SUCCESS:
         message_scr_init(ui_text_wallet_deleted_successfully);
+        break;
+
+    default:
+        reset_flow_level();
         break;
     }
 }

@@ -258,20 +258,23 @@ void get_firmaware_version(uint16_t pid, const char* product_hash , char message
 void random_generate(uint8_t* arr,int len);
 
 /**
- * @brief
- * @details
+ * @brief Calculates the number of precision places after decimal point.
+ * @details The function takes the numerator and denominator for calculating the
+ * decimal precision depth required to decide the exact decimal precision needed to
+ * show the precise value to the user.
  *
- * @param
+ * @param num    Numerator value for the decimal precision calculation
+ * @param den    Denominator for the decimal place calculation
  *
- * @return
- * @retval
+ * @return uint8_t
+ * @retval precision The number of decimal precision depth required
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-int check_digit(uint64_t value);
+uint8_t get_floating_precision(uint64_t num, uint64_t den);
 
 /**
  * @brief

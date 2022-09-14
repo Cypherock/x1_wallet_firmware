@@ -151,6 +151,7 @@ static void clock_init(void)
 static void repeated_timer_handler(void)
 {
     lv_tick_inc(POLLING_TIME);
+#if X1WALLET_MAIN == 1
     if (counter.level > LEVEL_ONE) inactivity_counter += POLLING_TIME;
     if (inactivity_counter > INACTIVITY_TIME) {
         inactivity_counter = 0;
@@ -162,6 +163,7 @@ static void repeated_timer_handler(void)
                 comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
         }
     }
+#endif
 }
 
 void reset_inactivity_timer() {

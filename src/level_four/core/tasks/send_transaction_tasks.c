@@ -128,13 +128,10 @@ void send_transaction_tasks()
         uint64_t value;
         memcpy(&value, var_send_transaction_data.unsigned_transaction.output[var_send_transaction_data.transaction_confirmation_list_index].value, 8);
         log_hex_array("value", (uint8_t*) &value, sizeof(value));
-        double valueToDisplay = value;
-        valueToDisplay /= (100000000);
-        char display[225];
-        if(check_digit(value)){
-            snprintf(display, sizeof(display), ui_text_output_send_value_double, var_send_transaction_data.transaction_confirmation_list_index + 1, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
-        }else
-            snprintf(display, sizeof(display), ui_text_output_send_value, var_send_transaction_data.transaction_confirmation_list_index + 1, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
+        double valueToDisplay = 1.0 * value / (SATOSHI_PER_BTC);
+        char display[225] = {0};
+        uint8_t precision = get_floating_precision(value, SATOSHI_PER_BTC);
+        snprintf(display, sizeof(display), ui_text_output_send_value_double, var_send_transaction_data.transaction_confirmation_list_index + 1, precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
@@ -150,13 +147,11 @@ void send_transaction_tasks()
     case SEND_TXN_VERIFY_RECEIPT_FEES: {
         instruction_scr_destructor();
         uint64_t txn_fees = btc_get_txn_fee(&var_send_transaction_data.unsigned_transaction);
-        LOG_INFO("btcfee %lld", txn_fees);
-        double txn_fees_in_btc = 1.0*txn_fees/(100000000);
-        char display[225];
-        if(check_digit(txn_fees))
-            snprintf(display, sizeof(display), ui_text_send_transaction_fee_double, txn_fees_in_btc, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
-        else
-            snprintf(display, sizeof(display), ui_text_send_transaction_fee, txn_fees_in_btc, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
+        double txn_fees_in_btc = 1.0 * txn_fees / (SATOSHI_PER_BTC);
+        char display[225] = {0};
+        uint8_t precision = get_floating_precision(txn_fees, SATOSHI_PER_BTC);
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee_double,
+            precision, txn_fees_in_btc, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 

@@ -298,26 +298,41 @@ void random_generate(uint8_t* arr,int len){
     }
 }
 
-int check_digit(uint64_t value)
-{
-    if(value<100)return 1;
-    if(value%10!=0)return 1;
-    value/=10;
-    if(value%10!=0)return 1;
-
-    return 0;
-
+uint8_t get_floating_precision(uint64_t num, uint64_t den) {
+    uint8_t precision = 0;
+    while (den > 1) {
+        if (num % den == 0) break;
+        den /= 10;
+        precision++;
+    }
+    return precision;
 }
 
 void der_to_sig(const uint8_t *der, uint8_t *sig)
 {
-    if (!der || !sig)
-        return;
-    uint8_t off = 4 + (der[3] & 1);
-    memcpy(sig, der + off, 32);
-    off += 34 + (der[off + 33] & 1);
-    memcpy(sig + 32, der + off, 32);
+  if (!der || !sig)
+    return;
+  memzero(sig, 64);
+  uint8_t len, offset = 0;
+  if (der[offset++] != 0x30) return;      // Verify the starting byte is 0x30
+  offset++;                               // Skip the length byte
+  if (der[offset++] != 0x02) return;      // Verify the marker byte is 0x02
+  len = der[offset++];                    // Get the length of the r value
+  if (len == 0x21) {
+    offset++;
+    len--;
+  }
+  memcpy(sig, der + offset, len);         // Copy the r component of signature
+  offset += len;
+  if (der[offset++] != 0x02) return;      // Verify the marker byte is 0x02
+  len = der[offset++];                    // Get the length of the s value
+  if (len == 0x21) {
+    offset++;
+    len--;
+  }
+  memcpy(sig + 32, der + offset, len);
 }
+
 /**
  * @brief hex char to integer.
  *

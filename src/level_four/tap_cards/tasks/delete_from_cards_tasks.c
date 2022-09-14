@@ -85,7 +85,13 @@ void tap_cards_for_delete_flow()
         instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
       } else {
-        flow_level.level_four += 2;
+        if(flow_level.level_four == TAP_CARD_FOUR_FRONTEND){
+            flow_level.level_four = 1;
+            flow_level.level_three++;
+        }
+        else{
+          flow_level.level_four += 2;
+        }
         counter.next_event_flag = true;
       }
       break;
@@ -98,6 +104,7 @@ void tap_cards_for_delete_flow()
         break;
 
     default:
+        reset_flow_level();
         break;
     }
 }

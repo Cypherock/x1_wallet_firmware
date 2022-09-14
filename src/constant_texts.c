@@ -356,8 +356,8 @@ const char* ui_text_output_send_to_address = "Receiver #%d Address";
 
 const char* ui_text_send_transaction_fee = "Transaction fee\n%s\n%s?";
 
-const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.8f\n%s?";
-const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.8f\n%s?";
+const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.*f\n%s?";
+const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.*f\n%s?";
 
 const char* ui_text_start_firmware_update = "Update firmware to version %d.%d.%d ?";
 
