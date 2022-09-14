@@ -109,7 +109,7 @@ void tap_a_card_and_sync_task()
 }
 
 static void get_card_version(char * arr, char message[22]){
-    int offset = snprintf(message, 22, "X1 Card version\n ");
+    int offset = snprintf(message, 22, "Card version\n ");
     message[offset++] = arr[0],message[offset++] = '.',message[offset++] = arr[1] , message[offset++] = '.' ;
     if(arr[2] != '0')
         message[offset++] = arr[2] , message[offset++] = arr[3];
