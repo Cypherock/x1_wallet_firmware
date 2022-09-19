@@ -70,6 +70,7 @@
 #include "tasks_tap_cards.h"
 #include "utils.h"
 #include "contracts.h"
+#include "int-util.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -218,23 +219,21 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
         instruction_scr_destructor();
-        uint8_t point_index;
-        char gas_eth_dec_str[30] = {'\0'};
-        uint64_t txn_fee = bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]) / 1000000000;
-        txn_fee *= bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]);
+        uint8_t fee[16] = {0};
+        uint64_t txn_fee, gas_limit, carry, gas_price;
+        char fee_hex_string[33] = {'\0'}, fee_decimal_string[30] = {'\0'};
 
-        point_index = snprintf(gas_eth_dec_str + 1, sizeof(gas_eth_dec_str) - 1, "%09llu", txn_fee);
-        ASSERT(point_index >= 0 && point_index < sizeof(gas_eth_dec_str));
-        gas_eth_dec_str[0] = point_index > ETH_GWEI_INDEX ? ' ' : '0';
-        gas_eth_dec_str[point_index + 1] = '\0';
-        point_index++;
-        for (int i = 0; i < ETH_GWEI_INDEX; i++, point_index--) {
-            gas_eth_dec_str[point_index] = gas_eth_dec_str[point_index - 1];
-        }
-        gas_eth_dec_str[point_index] = '.';
+        // Capacity to multiply 2 numbers upto 8-byte value and store the result in 2 separate 8-byte variables
+        txn_fee = mul128(bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]),
+                         bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]), &carry);
+        // prepare the whole 128-bit little-endian representation of fee
+        memcpy(fee, &txn_fee, sizeof(txn_fee)); memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
+        cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
+        byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
+        convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, 18, fee_hex_string, fee_decimal_string, sizeof(fee_decimal_string));
 
-        char display[125];
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, gas_eth_dec_str, "ETH");
+        char display[125] = {0};
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee_decimal_string, "ETH");
         confirm_scr_init(display);
     } break;
 
