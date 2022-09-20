@@ -28,10 +28,11 @@
                 "cwd": "${workspaceRoot}/build"
             },
             "dependsOrder": "sequence",
-            "dependsOn": ["config-main-simulator"],
+            "dependsOn": [
+                "config-main-simulator"
+            ],
             "group": "build"
         },
-
         {
             "label": "config-initial-simulator",
             "type": "shell",
@@ -60,10 +61,11 @@
                 "cwd": "${workspaceRoot}/build"
             },
             "dependsOrder": "sequence",
-            "dependsOn": ["config-initial-simulator"],
+            "dependsOn": [
+                "config-initial-simulator"
+            ],
             "group": "build"
         },
-
         {
             "label": "config-main-device",
             "type": "shell",
@@ -92,13 +94,14 @@
                 "cwd": "${workspaceRoot}/build"
             },
             "dependsOrder": "sequence",
-            "dependsOn": ["config-main-device"],
+            "dependsOn": [
+                "config-main-device"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
         },
-
         {
             "label": "config-initial-device",
             "type": "shell",
@@ -118,6 +121,18 @@
             "group": "none"
         },
         {
+            "label": "flash-firmware-via-stm32cube",
+            "type": "shell",
+            "command": "STM32_Programmer_CLI -c port=usb1 -d build/Main/Cypherock-Main.bin 0x8023000",
+            "problemMatcher": []
+        },
+        {
+            "label": "remove-wallets-via-stm32cube",
+            "type": "shell",
+            "command": "STM32_Programmer_CLI -c port=usb1 -w64 0x08019000 0x0000000000000000",
+            "problemMatcher": []
+        },
+        {
             "label": "build-initial-device",
             "command": "ninja",
             "args": [
@@ -127,7 +142,9 @@
                 "cwd": "${workspaceRoot}/build"
             },
             "dependsOrder": "sequence",
-            "dependsOn": ["config-initial-device"]
+            "dependsOn": [
+                "config-initial-device"
+            ]
         }
     ],
     "version": "2.0.0"
