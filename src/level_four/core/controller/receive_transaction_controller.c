@@ -75,6 +75,7 @@ void receive_transaction_controller()
     switch (flow_level.level_three) {
 
     case RECV_TXN_FIND_XPUB: {
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose) == NATIVE_SEGWIT)
             segwit = 1;
         else

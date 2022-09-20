@@ -100,6 +100,7 @@ void receive_transaction_controller_near()
             }
         }
 
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
         }
