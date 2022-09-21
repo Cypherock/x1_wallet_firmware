@@ -23,7 +23,7 @@
  * @note
  */
 struct List_Data {
-	char option_list[24][15];
+	char option_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH];
 	int number_of_options;
 	int current_index;
 	bool dynamic_heading;
@@ -65,7 +65,7 @@ struct List_Object {
  *
  * @note Do not use this if number of options to be displayed in list is 1.
  */
-void list_init(const char option_list[24][15], int number_of_options, const char *heading, bool dynamic_heading);
+void list_init(const char option_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH], int number_of_options, const char *heading, bool dynamic_heading);
 
 /**
  * @brief Create UI for list
