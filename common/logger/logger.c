@@ -252,7 +252,7 @@ void logger_task() {
             sg_log_data.total_page_read = 0;
             sg_log_data.initialized = false;
             char extended_start_of_log[MAXIMUM_DATA_SIZE] = {'\0'};
-            snprintf(extended_start_of_log, MAXIMUM_DATA_SIZE - 1, "%s%s\r\n", start_of_log, GIT_REV);
+            snprintf(extended_start_of_log, MAXIMUM_DATA_SIZE - 1, "\r\n%s%s Bl:%lX\r\n", start_of_log, GIT_REV, FW_get_bootloader_version());
             transmit_data_to_app(APP_LOG_DATA_SEND, (uint8_t *)extended_start_of_log, MAXIMUM_DATA_SIZE);
             break;
 
