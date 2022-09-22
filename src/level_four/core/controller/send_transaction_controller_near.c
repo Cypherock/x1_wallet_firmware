@@ -90,7 +90,6 @@ void send_transaction_controller_near() {
                 near_byte_array_to_unsigned_txn(near_unsigned_txn_byte_array, near_unsigned_txn_len, &near_utxn);
 
                 clear_message_received_data();
-                instruction_scr_destructor();
                 if(near_utxn.actions_type== NEAR_ACTION_FUNCTION_CALL){
                     flow_level.level_three = SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR;
                 }else{

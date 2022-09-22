@@ -107,6 +107,7 @@ void send_transaction_tasks_eth()
         char top_heading[55];
         char display[70];
 
+        instruction_scr_destructor();
         byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address,
                                  ETHEREUM_ADDRESS_LENGTH, address + 2, sizeof(address) - 2);
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
@@ -130,6 +131,7 @@ void send_transaction_tasks_eth()
             nonce_dec_str[index - offset] = nonce_dec_str[index] + '0';
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
+        instruction_scr_destructor();
         address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
     } break;
 
@@ -142,6 +144,7 @@ void send_transaction_tasks_eth()
         uint8_t address_bytes[20];
         char display[70];
 
+        instruction_scr_destructor();
         eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
         byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
