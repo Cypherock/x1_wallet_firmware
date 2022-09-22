@@ -515,8 +515,8 @@ void desktop_listener_task(lv_task_t* data)
                     coinIndex = 0;
 
                     for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-                        add_coin_data.network_chain_ids[coinIndex] = data_array[offset];
-                        offset += 1;
+                        add_coin_data.network_chain_ids[coinIndex] = U64_READ_BE_ARRAY(&data_array[offset]);
+                        offset += sizeof(uint64_t);
                     }
 
                     snprintf(flow_level.confirmation_screen_text,

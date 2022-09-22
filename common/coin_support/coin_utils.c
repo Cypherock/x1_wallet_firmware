@@ -137,9 +137,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
              size, token_name_len, &offset);
-    
-    s_memcpy(&(txn_metadata_ptr->network_chain_id), metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->network_chain_id), &offset);
+    if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
+    txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
+    offset += sizeof(txn_metadata_ptr->network_chain_id);
     return offset;
 }
 
@@ -163,7 +163,9 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 
     s_memcpy((uint8_t *) txn_data_ptr->token_name, data_byte_array, size, token_name_len, &offset);
 
-    s_memcpy(&(txn_data_ptr->network_chain_id), data_byte_array, size, sizeof(txn_data_ptr->network_chain_id), &offset);
+    if (offset + sizeof(txn_data_ptr->network_chain_id) > size) return -1;
+    txn_data_ptr->network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->network_chain_id);
 
     return offset;
 }
@@ -211,7 +213,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     memzero(bip39seed, sizeof(bip39seed));
 }
 
-const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000U:
             return "BTC";
@@ -248,7 +250,7 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
     }
 }
 
-const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";
