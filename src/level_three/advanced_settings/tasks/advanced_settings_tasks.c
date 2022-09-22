@@ -85,7 +85,7 @@ void level_three_advanced_settings_tasks()
     switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
         transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
-        instruction_scr_init(ui_text_generating_seed, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     } break;
 

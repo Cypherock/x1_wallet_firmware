@@ -82,7 +82,7 @@ void send_transaction_tasks()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN: {
-        instruction_scr_init(ui_text_generating_seed, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     } break;
 
