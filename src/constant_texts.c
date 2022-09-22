@@ -175,7 +175,7 @@ const char* ui_text_invalid_transaction = "Invalid transaction";
 
 // errors X1 Card flows
 const char* ui_text_authentication_required = "Device authentication required";
-const char* ui_text_start_auth_from_CySync = "Authenticate device from the CySync App";
+const char* ui_text_start_auth_from_CySync = "Authenticate device from the CySync app";
 const char* ui_text_invalid_card_contact_cypherock = "Authentication failed Contact Cypherock";
 const char* ui_text_this_card_is_not_valid = "This card is invalid";
 const char* ui_text_wrong_remaining_attempts = "Incorrect PIN!\n%d attempt(s) remaining";
@@ -410,7 +410,7 @@ const char* ui_text_device_and_card_not_paired = "This device & card are not pai
 const char* ui_text_security_conditions_not_met = "Security conditions not met!";
 const char* ui_text_process_reset_due_to_inactivity = "Operation aborted due to inactivity";
 const char* ui_text_device_already_provisioned = "Device already provisioned";
-const char* ui_text_check_cysync_app = "Check the CySync App";
+const char* ui_text_check_cysync_app = "Check the CySync app";
 const char* ui_text_provision_success = "Device provision successful";
 const char* ui_text_provision_fail = "Device provision unsuccessful";
 const char* ui_text_cannot_verify_card_contact_support = "Couldn't verify card! Contact support";
