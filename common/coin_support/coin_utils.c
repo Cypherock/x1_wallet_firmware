@@ -209,9 +209,9 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     memzero(bip39seed, sizeof(bip39seed));
 }
 
-const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
+const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
     switch (coin_index) {
-        case 0x80000000:
+        case 0x80000000U:
             return "BTC";
         case 0x80000001:
             return "BTCT";
@@ -224,9 +224,11 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
         case 0x8000003C: {
             switch (chain_id) {
                 case 1:
-                    return "ETH";
                 case 3:
                     return "ETH";
+                case 80001:
+                case 137:
+                    return "MATIC";
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -242,7 +244,7 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
     }
 }
 
-const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
+const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";
@@ -260,6 +262,10 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
                     return "ETH Mainnet";
                 case 3:
                     return "ETH Ropsten";
+                case 80001:
+                    return "Polygon Testnet";
+                case 137:
+                    return "Polygon";
                 default: {
                     ASSERT(false);
                     return "invalid";
