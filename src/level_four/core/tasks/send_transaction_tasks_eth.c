@@ -85,11 +85,7 @@ void send_transaction_tasks_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        instruction_scr_init(ui_text_fetching_unsigned_transaction, NULL);
-
-        timeout_task = lv_task_create(_timeout_listener, 100000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
-
+        instruction_scr_init(ui_text_generating_seed, NULL);
         mark_event_over();
     } break;
 

@@ -91,7 +91,6 @@ void send_transaction_controller_near() {
 
                 clear_message_received_data();
                 instruction_scr_destructor();
-                lv_task_del(timeout_task);
                 if(near_utxn.actions_type== NEAR_ACTION_FUNCTION_CALL){
                     flow_level.level_three = SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR;
                 }else{

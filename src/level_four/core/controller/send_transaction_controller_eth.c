@@ -107,7 +107,6 @@ void send_transaction_controller_eth()
 
             clear_message_received_data();
             instruction_scr_destructor();
-            lv_task_del(timeout_task);
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
             if (!eth_validate_unsigned_txn(&eth_unsigned_txn_ptr, &var_send_transaction_data.transaction_metadata)) {
                 mark_error_screen(ui_text_worng_eth_transaction);
