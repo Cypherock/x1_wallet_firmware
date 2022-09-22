@@ -129,7 +129,7 @@ typedef struct Add_Coin_Data {
   uint8_t number_of_coins;
   bool resync;
   uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
-  uint8_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
+  uint64_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
 } Add_Coin_Data;
 #pragma pack(pop)
 
