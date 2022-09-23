@@ -381,6 +381,10 @@ void application_init() {
     listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
     nfc_set_device_key_id(get_perm_self_key_id());
     pow_init_hash_rate();
+    if (get_first_boot_on_update() == true) {
+        logger("%X-%s", get_fwVer(), GIT_REV);
+        set_auth_state(get_auth_state());
+    }
 #ifdef DEV_BUILD
     buzzer_disabled = true;
 #endif
@@ -435,7 +439,6 @@ void check_boot_count()
 
     if(get_boot_count() % 20 == 0)
     {
-        logger("%X-%s\r\n", get_fwVer(), GIT_REV);
         delay_scr_init(ui_text_its_a_while_check_your_cards,DELAY_TIME);
     }
 }
