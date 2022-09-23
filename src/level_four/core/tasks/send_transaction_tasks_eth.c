@@ -218,22 +218,11 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
+        char display[125] = {0}, fee[30] = {0};
+
         instruction_scr_destructor();
-        uint8_t fee[16] = {0};
-        uint64_t txn_fee, gas_limit, carry, gas_price;
-        char fee_hex_string[33] = {'\0'}, fee_decimal_string[30] = {'\0'};
-
-        // Capacity to multiply 2 numbers upto 8-byte value and store the result in 2 separate 8-byte variables
-        txn_fee = mul128(bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]),
-                         bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]), &carry);
-        // prepare the whole 128-bit little-endian representation of fee
-        memcpy(fee, &txn_fee, sizeof(txn_fee)); memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
-        cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
-        byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
-        convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, 18, fee_hex_string, fee_decimal_string, sizeof(fee_decimal_string));
-
-        char display[125] = {0};
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee_decimal_string, "ETH");
+        eth_get_fee_string(&eth_unsigned_txn_ptr, fee);
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee, "ETH");
         confirm_scr_init(display);
     } break;
 
