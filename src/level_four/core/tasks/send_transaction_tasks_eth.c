@@ -70,6 +70,7 @@
 #include "tasks_tap_cards.h"
 #include "utils.h"
 #include "contracts.h"
+#include "int-util.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -216,24 +217,11 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
+        char display[125] = {0}, fee[30] = {0};
+
         instruction_scr_destructor();
-        uint8_t point_index;
-        char gas_eth_dec_str[30] = {'\0'};
-        uint64_t txn_fee = bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]) / 1000000000;
-        txn_fee *= bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]);
-
-        point_index = snprintf(gas_eth_dec_str + 1, sizeof(gas_eth_dec_str) - 1, "%09llu", txn_fee);
-        ASSERT(point_index >= 0 && point_index < sizeof(gas_eth_dec_str));
-        gas_eth_dec_str[0] = point_index > ETH_GWEI_INDEX ? ' ' : '0';
-        gas_eth_dec_str[point_index + 1] = '\0';
-        point_index++;
-        for (int i = 0; i < ETH_GWEI_INDEX; i++, point_index--) {
-            gas_eth_dec_str[point_index] = gas_eth_dec_str[point_index - 1];
-        }
-        gas_eth_dec_str[point_index] = '.';
-
-        char display[125];
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, gas_eth_dec_str, "ETH");
+        eth_get_fee_string(&eth_unsigned_txn_ptr, fee);
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee, "ETH");
         confirm_scr_init(display);
     } break;
 

@@ -56,10 +56,11 @@
  ******************************************************************************
  */
 #include "eth.h"
-#include "logger.h"
 #include "assert_conf.h"
-#include "utils.h"
 #include "contracts.h"
+#include "int-util.h"
+#include "logger.h"
+#include "utils.h"
 
 static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadata);
 
@@ -400,4 +401,22 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
   get_address_node(transaction_metadata, 0, mnemonics, passphrase, &hdnode);
   ecdsa_sign_digest(&secp256k1, hdnode.private_key, digest, sig, &recid, NULL);
   memcpy(sig + 64, &recid, 1);
+}
+
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string)
+{
+  uint8_t fee[16] = {0};
+  uint64_t txn_fee, carry;
+  char fee_hex_string[33] = {'\0'};
+
+  // make sure we do not process over the current capacity (i.e., 8-byte limit for gas limit and price each)
+  ASSERT(eth_unsigned_txn_ptr->gas_price_size[0] <= 8 && eth_unsigned_txn_ptr->gas_limit_size[0] <= 8);
+  // Capacity to multiply 2 numbers upto 8-byte value and store the result in 2 separate 8-byte variables
+  txn_fee = mul128(bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_price, eth_unsigned_txn_ptr->gas_price_size[0]),
+                   bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_limit, eth_unsigned_txn_ptr->gas_limit_size[0]), &carry);
+  // prepare the whole 128-bit little-endian representation of fee
+  memcpy(fee, &txn_fee, sizeof(txn_fee)); memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
+  cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
+  byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
+  convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, 18, fee_hex_string, fee_decimal_string, sizeof(fee_decimal_string));
 }
