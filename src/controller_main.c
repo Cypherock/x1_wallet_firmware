@@ -229,6 +229,8 @@ void reset_flow_level()
 
     //clear memory
     memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
+    memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+
     cy_free();
 }
 
