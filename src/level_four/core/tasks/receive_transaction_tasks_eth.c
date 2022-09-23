@@ -110,10 +110,6 @@ void receive_transaction_tasks_eth()
     } break;
 
     case RECV_TXN_ENTER_PIN_ETH: {
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = RECV_TXN_XPUB_NOT_FOUND_ETH;
-            break;
-        }
         input_text_init(
             ALPHA_NUMERIC,
             ui_text_enter_pin,
