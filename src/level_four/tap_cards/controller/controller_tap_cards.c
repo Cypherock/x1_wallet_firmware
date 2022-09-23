@@ -118,7 +118,7 @@ bool tap_card_applet_connection() {
                 init_session_keys(pairing_key, pairing_key + 32, NULL);
             return true;
         } else if (tap_card_data.status == SW_CONDITIONS_NOT_SATISFIED) {
-            mark_error_screen(ui_text_this_card_is_not_valid);
+            mark_error_screen(ui_text_wrong_card_sequence);
         } else if (tap_card_data.status == SW_FILE_INVALID) {
             mark_error_screen(ui_text_family_id_mismatch);
         } else if (tap_card_data.status == SW_FILE_NOT_FOUND) {
