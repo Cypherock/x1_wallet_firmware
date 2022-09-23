@@ -174,7 +174,7 @@ extern const char* ui_text_fetching_recipient_amount;
 extern const char* ui_text_tap_card_to_start;
 extern const char* ui_text_wallet_deleted_successfully;
 extern const char* ui_text_recovery_successfull;
-extern const char*ui_text_processing;
+extern const char* ui_text_processing;
 extern const char* ui_text_seed_generated_successfully;
 extern const char* ui_text_wallet_synced_with_x1cards;
 extern const char* ui_text_wallet_created_successfully;
