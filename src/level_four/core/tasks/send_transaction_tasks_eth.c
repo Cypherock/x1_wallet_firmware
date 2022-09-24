@@ -220,7 +220,7 @@ void send_transaction_tasks_eth()
         char display[125] = {0}, fee[30] = {0};
 
         instruction_scr_destructor();
-        eth_get_fee_string(&eth_unsigned_txn_ptr, fee);
+        eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
         snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee, "ETH");
         confirm_scr_init(display);
     } break;
