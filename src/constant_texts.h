@@ -183,6 +183,7 @@ extern const char* ui_text_now_enter_your_seed_phrase;
 extern const char* ui_text_now_enter_your_data;
 extern const char*ui_text_verify_entered_words;
 extern const char* ui_text_generating_xpubs;
+extern const char* ui_text_add_account_with_wallet;
 extern const char* ui_text_exporting_to_desktop;
 extern const char* ui_text_successfully_exported_xpub_to_desktop;
 extern const char* ui_text_wait_while_balance_fetching;
