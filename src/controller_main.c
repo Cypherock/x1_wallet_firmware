@@ -554,7 +554,7 @@ void desktop_listener_task(lv_task_t* data)
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
                         if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
-                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),"Add %s Account with %s ?" , get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_add_account_with_wallet , get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                         }
                         else {
                             snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
