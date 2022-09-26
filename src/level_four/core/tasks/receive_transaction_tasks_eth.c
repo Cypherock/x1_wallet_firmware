@@ -131,7 +131,7 @@ void receive_transaction_tasks_eth()
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN_ETH: {
-        instruction_scr_init(ui_text_deriving_address, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     } break;
 

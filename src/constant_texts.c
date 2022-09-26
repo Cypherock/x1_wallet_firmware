@@ -310,7 +310,6 @@ const char* ui_text_generating_xpubs = "Adding coins...";
 const char* ui_text_exporting_to_desktop = "Exporting to the CySync app...";
 const char* ui_text_successfully_exported_xpub_to_desktop = "Coins added successfully to the CySync app|";
 const char* ui_text_wait_while_balance_fetching = "Wait while balance is fetched on the CySync app";
-const char* ui_text_deriving_address = "Deriving address...";
 const char* ui_text_receive_on_address = "%s";
 const char* ui_text_exported_signed_transaction_to_desktop = "Exported signed transaction to the CySync app|";
 const char* ui_text_start_card_update = "Start card update?\nThis will format the card";
