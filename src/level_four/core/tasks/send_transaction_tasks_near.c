@@ -134,7 +134,7 @@ void send_transaction_tasks_near() {
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_NEAR: {
-        instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     }break;
 

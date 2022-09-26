@@ -170,7 +170,6 @@ extern const char* ui_text_wallet_name_size_limit;
 extern const char* ui_text_check_cysync;
 extern const char* ui_text_tap_x1card_auth_instruction_1;
 extern const char* ui_text_tap_x1card_auth_instruction_2;
-extern const char* ui_text_fetching_recipient_amount;
 extern const char* ui_text_tap_card_to_start;
 extern const char* ui_text_wallet_deleted_successfully;
 extern const char* ui_text_recovery_successfull;

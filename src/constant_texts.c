@@ -295,7 +295,6 @@ const char* ui_text_wallet_name_size_limit = "Wallet name cannot exceed 15 lette
 const char* ui_text_check_cysync = "Check the CySync app";
 const char* ui_text_tap_x1card_auth_instruction_1 = "Tap a card and do not lift until you hear 2 beep sound";
 const char* ui_text_tap_x1card_auth_instruction_2 = "Now tap the same card again";
-const char* ui_text_fetching_recipient_amount = "Fetching recipient amount...";
 const char* ui_text_tap_card_to_start = "Tap a card to start";
 const char* ui_text_wallet_deleted_successfully = "Wallet deleted successfully!";
 const char* ui_text_recovery_successfull = "Recovery Successful!";
