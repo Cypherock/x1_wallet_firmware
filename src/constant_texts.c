@@ -300,6 +300,7 @@ const char* ui_text_tap_card_to_start = "Tap a card to start";
 const char* ui_text_wallet_deleted_successfully = "Wallet deleted successfully!";
 const char* ui_text_recovery_successfull = "Recovery Successful!";
 const char* ui_text_processing = "Processing...";
+const char* ui_text_syncing_complete = "Syncing wallets complete";
 const char* ui_text_seed_generated_successfully = "Seed generated successfully";
 const char* ui_text_wallet_synced_with_x1cards = "Wallet synced with cards!";
 const char* ui_text_wallet_created_successfully = "Wallet created successfully!";
