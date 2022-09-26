@@ -134,6 +134,7 @@ void receive_transaction_tasks()
 
     case RECV_TXN_DERIVE_ADD_SCREEN: {
         instruction_scr_init(ui_text_processing, NULL);
+        BSP_DelayMs(DELAY_TIME);
         mark_event_over();
     } break;
 
