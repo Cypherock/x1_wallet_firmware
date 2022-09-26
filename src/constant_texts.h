@@ -291,6 +291,7 @@ extern const char* ui_text_pow_challenge_failed;
 extern const char* ui_text_card_removed_fast;
 extern const char* ui_text_card_freq_discon_fault;
 extern const char* ui_text_card_align_with_device_screen;
+extern const char* ui_text_syncing_complete;
 extern const char* ui_text_remove_card_prompt;
 extern const char* ui_text_card_detected;
 extern const char* ui_text_nfc_hardware_fault_detected;
