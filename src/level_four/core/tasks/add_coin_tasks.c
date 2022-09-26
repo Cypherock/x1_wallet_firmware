@@ -150,7 +150,7 @@ void add_coin_tasks()
 
     case ADD_COINS_FINAL_SCREEN:
         instruction_scr_destructor();
-        delay_scr_init(ui_text_wait_while_balance_fetching, DELAY_TIME);
+        delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
         CY_Reset_Not_Allow(true);
         break;
     
