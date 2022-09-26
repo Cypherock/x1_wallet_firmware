@@ -275,7 +275,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        instruction_scr_init(ui_text_signing_transaction, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         BSP_DelayMs(DELAY_TIME);
         mark_event_over();
     } break;

@@ -188,7 +188,6 @@ extern const char* ui_text_successfully_exported_xpub_to_desktop;
 extern const char* ui_text_wait_while_balance_fetching;
 extern const char* ui_text_deriving_address;
 extern const char* ui_text_receive_on_address;
-extern const char* ui_text_signing_transaction;
 extern const char* ui_text_exported_signed_transaction_to_desktop;
 extern const char* ui_text_start_card_update;
 extern const char* ui_text_start_verification_of_card;
