@@ -597,7 +597,10 @@ void desktop_listener_task(lv_task_t* data)
                     } else if(coin_index==NEAR_COIN_INDEX){
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
-                    }else {
+                    } else if(coin_index==SOLANA_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                    } else {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
                     }

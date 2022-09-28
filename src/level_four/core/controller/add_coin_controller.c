@@ -153,7 +153,13 @@ void add_coin_controller()
 
         uint8_t i = 0x0, j = 0x0;
         for (; i < add_coin_data.number_of_coins; i++, j++) {
-            if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
+            if(add_coin_data.coin_indexes[i] == SOLANA_COIN_INDEX){ 
+                uint32_t path[] = {
+                    SOLANA_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
+                    SOLANA_ACCOUNT_INDEX, SOLANA_CHAIN_INDEX, SOLANA_ADDRESS_INDEX};
+                generate_xpub(path, 5, ED25519_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
+                memzero(path, sizeof(path));
+            }else if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
                 uint32_t path[] = {
                     NEAR_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
                     NEAR_ACCOUNT_INDEX, NEAR_CHAIN_INDEX, NEAR_ADDRESS_INDEX};
