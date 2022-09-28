@@ -67,10 +67,10 @@ bool tap_card_applet_connection() {
     uint8_t acceptable_cards;
     tap_card_data.recovery_mode = 0;
     if (tap_card_data.desktop_control) {
-        set_abort_now(&_abort_);
+        nfc_set_early_exit_handler(&cy_exit_flow);
         CY_Reset_Not_Allow(false);
     } else {
-        set_abort_now(NULL);
+        nfc_set_early_exit_handler(NULL);
     }
     if (!tap_card_data.card_absent_retries) {
         tap_card_data.card_absent_retries = 100;
@@ -118,7 +118,7 @@ bool tap_card_applet_connection() {
                 init_session_keys(pairing_key, pairing_key + 32, NULL);
             return true;
         } else if (tap_card_data.status == SW_CONDITIONS_NOT_SATISFIED) {
-            mark_error_screen(ui_text_this_card_is_not_valid);
+            mark_error_screen(ui_text_wrong_card_sequence);
         } else if (tap_card_data.status == SW_FILE_INVALID) {
             mark_error_screen(ui_text_family_id_mismatch);
         } else if (tap_card_data.status == SW_FILE_NOT_FOUND) {

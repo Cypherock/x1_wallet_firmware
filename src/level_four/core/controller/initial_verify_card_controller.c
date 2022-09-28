@@ -162,19 +162,24 @@ void initial_verify_card_controller()
         break;
 
     case VERIFY_CARD_FETCH_RANDOM_NUMBER: {
-        En_command_type_t msg_type;
+        En_command_type_t cmd_type;
         uint8_t *data_array;
-        uint16_t msg_size;
-        get_usb_msg(&msg_type, &data_array, &msg_size);
+        uint16_t msg_size = 0;
 
-        if(msg_type == APP_SEND_RAND_NUM){
-            // Save the family id for this session; good point to save after server verification
-            memcpy(cyi_verify_fid, tap_card_data.family_id, FAMILY_ID_SIZE);
-            memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
-            flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
-        } else {
+        if (!get_usb_msg(&cmd_type, &data_array, &msg_size)) return;
+        if (cmd_type == STATUS_PACKET && data_array && data_array[0] == 0) {
             flow_level.level_three = VERIFY_CARD_FAILED;
+            clear_message_received_data();
+            return;
+        } else if (cmd_type != APP_SEND_RAND_NUM) {
+            comm_reject_invalid_cmd();
+            clear_message_received_data();
+            return;
         }
+        // Save the family id for this session; good point to save after server verification
+        memcpy(cyi_verify_fid, tap_card_data.family_id, FAMILY_ID_SIZE);
+        memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
+        flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
         clear_message_received_data();
     } break;
 
@@ -216,16 +221,18 @@ void initial_verify_card_controller()
     } break;
 
     case VERIFY_CARD_AUTH_STATUS: {
-        En_command_type_t msg_type;
+        En_command_type_t cmd_type;
         uint8_t *data_array;
-        uint16_t msg_size;
-        get_usb_msg(&msg_type, &data_array, &msg_size);
+        uint16_t msg_size = 0;
 
-        if (msg_type == STATUS_PACKET && data_array[0] == STATUS_CMD_SUCCESS) {
-            flow_level.level_three = VERIFY_CARD_PAIR_FRONTEND;
-        } else {
-            flow_level.level_three = VERIFY_CARD_FAILED;
+        if (!get_usb_msg(&cmd_type, &data_array, &msg_size)) return;
+        if (cmd_type != STATUS_PACKET) {
+            comm_reject_invalid_cmd();
+            clear_message_received_data();
+            return;
         }
+
+        flow_level.level_three = data_array[0] == STATUS_CMD_SUCCESS ? VERIFY_CARD_PAIR_FRONTEND : VERIFY_CARD_FAILED;
         clear_message_received_data();
     } break;
 

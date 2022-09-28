@@ -1,0 +1,33 @@
+name: Containerised Firmware Build
+
+on:
+  workflow_call:
+    inputs:
+      firmware:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - shell: bash
+      env:
+        GET_KEY: ${{ secrets.GET_KEY }}
+      run: $GET_KEY && cp privatekeypairs/*.h utilities/script/
+    - name: Build Docker Image
+      run: docker build . --file Dockerfile --tag x1-wallet-app-env && mkdir -p build
+    - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }})
+      run: docker run -v $(pwd)/build:/out x1-wallet-app-env /bin/ash -c 'mkdir -p /dist/${{ inputs.target }} && cd /home && utilities/build.sh ${{ inputs.firmware }} ${{ inputs.target }} && cp build/*/Cypherock-*.* /dist/${{ inputs.target }} && cp -a /dist/. /out'
+    - name: Archive Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.firmware }}-${{ inputs.target }}-outputs
+        path: build

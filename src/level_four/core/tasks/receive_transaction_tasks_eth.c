@@ -110,10 +110,6 @@ void receive_transaction_tasks_eth()
     } break;
 
     case RECV_TXN_ENTER_PIN_ETH: {
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = RECV_TXN_XPUB_NOT_FOUND_ETH;
-            break;
-        }
         input_text_init(
             ALPHA_NUMERIC,
             ui_text_enter_pin,
@@ -152,16 +148,6 @@ void receive_transaction_tasks_eth()
         snprintf(display, sizeof(display), "%s0x%s", ui_text_20_spaces, address_s);
         address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
     } break;
-
-    case RECV_TXN_WAITING_SCREEN_ETH: {
-        instruction_scr_init(ui_text_sending_confirmation_to_desktop, NULL);
-        mark_event_over();
-    } break;
-
-    case RECV_TXN_FINAL_SCREEN_ETH:
-        delay_scr_init(ui_text_success_received_from_desktop, DELAY_TIME);
-        CY_Reset_Not_Allow(true);
-        break;
 
     default:
         break;

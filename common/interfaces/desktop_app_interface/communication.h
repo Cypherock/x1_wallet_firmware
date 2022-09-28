@@ -116,6 +116,14 @@ typedef enum commandType {
 
     DEVICE_INFO = 87,                       ///< Command for device information
     COMM_SDK_VERSION_REQ = 88,              ///< Command for Communication SDK version
+
+    RECV_TXN_USER_VERIFIED_ACCOUNT= 96,         ///< Prompt for user for verification of account
+    RECV_TXN_REPLACE_ACCOUNT= 97,               ///< Request by desktop to start replace account
+    
+    COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
+
+    DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
+
 } En_command_type_t;
 
 /**

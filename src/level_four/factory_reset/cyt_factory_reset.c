@@ -90,6 +90,10 @@ void cyt_factory_reset() {
 
         case FACTORY_RESET_ERASING:
             instruction_scr_destructor();
+            delay_scr_init(ui_text_processing, 1000);
+            break;
+
+        case FACTORY_RESET_DONE:
             delay_scr_init(ui_text_erasing, DELAY_TIME);
             break;
 

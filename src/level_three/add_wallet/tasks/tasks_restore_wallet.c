@@ -202,7 +202,7 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_CREATING_WAIT_SCREEN: {
-        instruction_scr_init(ui_text_generating_seed, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     } break;
 
@@ -212,7 +212,7 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION: {
-        delay_scr_init(ui_text_please_verify_entered_words, DELAY_TIME);
+        delay_scr_init(ui_text_verify_entered_words, DELAY_TIME);
 
     } break;
 

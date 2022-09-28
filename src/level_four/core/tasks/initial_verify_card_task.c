@@ -66,13 +66,6 @@
 
 
 extern uint8_t auth_card_number;
-#if X1WALLET_INITIAL
-static lv_task_t *random_number_task;
-static lv_task_t *timeout_task;
-
-static void __timeout_listener();
-static void __desktop_listener();
-#endif
 
 void initial_verify_card_task() {
 #if X1WALLET_INITIAL
@@ -99,14 +92,8 @@ void initial_verify_card_task() {
           } break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
-        mark_event_over();
-        break;
-
     case VERIFY_CARD_FETCH_RANDOM_NUMBER:
-        random_number_task = lv_task_create(__desktop_listener, 10, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(random_number_task);
-        timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
+        mark_event_over();
         break;
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND: {
@@ -122,14 +109,8 @@ void initial_verify_card_task() {
     } break;
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND:
-        mark_event_over();
-        break;
-
     case VERIFY_CARD_AUTH_STATUS:
-        random_number_task = lv_task_create(__desktop_listener, 10, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(random_number_task);
-        timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
+        mark_event_over();
         break;
 
     case VERIFY_CARD_PAIR_FRONTEND: {
@@ -146,9 +127,6 @@ void initial_verify_card_task() {
     } break;
 
     case VERIFY_CARD_PAIR_BACKEND:
-        mark_event_over();
-        break;
-
     case VERIFY_CARD_FINAL_MESSAGE:
         mark_event_over();
         break;
@@ -161,34 +139,5 @@ void initial_verify_card_task() {
     default:
         break;
 	}
-}
-
-static void __desktop_listener() {
-    En_command_type_t msg_type;
-    uint8_t *data_array;
-    uint16_t msg_size;
-    if(get_usb_msg(&msg_type, &data_array, &msg_size)) {
-        if(msg_type == APP_SEND_RAND_NUM) {
-            lv_task_del(timeout_task);
-            lv_task_del(random_number_task);            
-            mark_event_over();
-        }
-
-        if(msg_type == STATUS_PACKET) {
-          lv_task_del(timeout_task);
-          lv_task_del(random_number_task);
-          mark_event_over();
-        }
-
-    }
-}
-
-static void __timeout_listener() {
-    mark_error_screen(ui_text_no_response_from_desktop);
-    instruction_scr_destructor();
-    reset_flow_level();
-    flow_level.level_one = 6;   // on command not received take to get-started screen
-    lv_task_del(random_number_task);
-    lv_task_del(timeout_task);
 #endif
 }

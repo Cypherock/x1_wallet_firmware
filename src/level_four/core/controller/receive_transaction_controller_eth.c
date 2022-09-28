@@ -75,6 +75,7 @@ void receive_transaction_controller_eth()
     switch (flow_level.level_three) {
 
     case RECV_TXN_FIND_XPUB_ETH: {
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_ETH;
         } else {
@@ -149,6 +150,7 @@ void receive_transaction_controller_eth()
         memzero(seed, sizeof(seed));
         mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
         mnemonic_clear();
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         hdnode_from_seed(seed, sizeof(seed), SECP256K1_NAME, &node);
 
         hdnode_private_ckd(&node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose));
@@ -172,21 +174,11 @@ void receive_transaction_controller_eth()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        flow_level.level_three = RECV_TXN_WAITING_SCREEN_ETH;
         uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
         data[0] = 1;  // confirmation byte
         memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
-    } break;
-
-    case RECV_TXN_WAITING_SCREEN_ETH: {
-        instruction_scr_destructor();
-        flow_level.level_three = RECV_TXN_FINAL_SCREEN_ETH;
-    } break;
-
-    case RECV_TXN_FINAL_SCREEN_ETH: {
         reset_flow_level();
-
     } break;
 
     default:

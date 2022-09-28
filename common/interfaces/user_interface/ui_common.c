@@ -93,7 +93,19 @@ void ui_heading(lv_obj_t* heading, const char text[], const uint8_t width, const
     } else {
         lv_label_set_long_mode(heading, LV_LABEL_LONG_SROLL_CIRC);
     }
-    lv_label_set_anim_speed(heading, 15);
+    /**
+     * When the text is too long, scrolling speed is increased.
+     * lvgl time variable is only 16 bits
+     * https://forum.lvgl.io/t/animation-lv-label-long-sroll-lv-label-long-sroll-circ-stop-for-large-strings/1802/2
+     */
+    if(strlen(text) > SCROLLING_LEN_THRESHOLD){  
+        lv_label_set_anim_speed(heading, 20);
+    }else{
+        lv_label_set_anim_speed(heading, 15);
+    }
+
+
+
     lv_obj_set_width(heading, width);
     lv_label_set_align(heading, align);
     lv_label_set_text(heading, text);
