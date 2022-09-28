@@ -287,7 +287,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
 #if X1WALLET_MAIN
             set_auth_state(DEVICE_AUTHENTICATED);
             device_auth_flag = 0;   // resets the flag set via desktop request during boot up
-            delay_scr_init(ui_text_device_verification_success, DELAY_TIME);
+            delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
 #elif X1WALLET_INITIAL
             flow_level.level_one = 8;
 #else

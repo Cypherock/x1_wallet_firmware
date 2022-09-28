@@ -192,7 +192,7 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_PROCESSING: {
-        instruction_scr_init(ui_text_generating_seed, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
         mark_event_over();
     } break;
 

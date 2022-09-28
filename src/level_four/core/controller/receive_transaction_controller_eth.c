@@ -75,6 +75,7 @@ void receive_transaction_controller_eth()
     switch (flow_level.level_three) {
 
     case RECV_TXN_FIND_XPUB_ETH: {
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_ETH;
         } else {
@@ -149,6 +150,7 @@ void receive_transaction_controller_eth()
         memzero(seed, sizeof(seed));
         mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
         mnemonic_clear();
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         hdnode_from_seed(seed, sizeof(seed), SECP256K1_NAME, &node);
 
         hdnode_private_ckd(&node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose));

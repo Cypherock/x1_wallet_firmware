@@ -205,4 +205,12 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
                              const txn_metadata *transaction_metadata, const char *mnemonics,
                              const char *passphrase, uint8_t *sig);
 
+/**
+ * @brief Return the string representation of decimal value of transaction fee in ETH.
+ *
+ * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit and gas_price
+ * @param fee_decimal_string    Output decimal string of at least 30 character long
+ */
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size);
+
 #endif
