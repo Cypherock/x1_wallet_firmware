@@ -56,7 +56,6 @@
  ******************************************************************************
  */
 #include "coin_utils.h"
-#include "near.h"
 
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
@@ -233,8 +232,10 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
                 }
             }
         }
-        case NEAR_COIN_INDEX:
+        case NEAR:
             return "NEAR";
+        case SOLANA:
+            return "SOL";
         default: {
             ASSERT(false);
             return "invalid";
@@ -266,8 +267,10 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
                 }
             }
         }
-        case NEAR_COIN_INDEX:
-            return "NEAR";
+        case NEAR:
+            return "Near";
+        case SOLANA:
+            return "Solana";
         default: {
             ASSERT(false);
             return "invalid";

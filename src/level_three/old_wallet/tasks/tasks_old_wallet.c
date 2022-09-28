@@ -108,6 +108,10 @@ void level_three_old_wallet_tasks()
         send_transaction_tasks_near();
     } break;
 
+    case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
+        send_transaction_tasks_solana();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
         receive_transaction_tasks();
     } break;
@@ -118,6 +122,10 @@ void level_three_old_wallet_tasks()
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
         receive_transaction_tasks_near();
+    } break;
+
+    case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
+        receive_transaction_tasks_solana();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED:
