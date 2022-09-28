@@ -92,6 +92,10 @@ void level_three_old_wallet_controller_b()
         send_transaction_controller_near_b();
     } break;
 
+    case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
+        send_transaction_controller_b_solana();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
         receive_transaction_controller_b();
     } break;
@@ -102,6 +106,10 @@ void level_three_old_wallet_controller_b()
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
         receive_transaction_controller_b_near();
+    } break;
+
+    case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
+        receive_transaction_controller_b_solana();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED: {

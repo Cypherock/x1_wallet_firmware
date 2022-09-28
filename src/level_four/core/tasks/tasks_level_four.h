@@ -62,6 +62,11 @@ void send_transaction_tasks_near();
 void send_transaction_tasks_eth();
 
 /**
+ * @brief This task is executed for processing and signing unsigned transaction.
+ */
+void send_transaction_tasks_solana();
+
+/**
  * @brief This task is executed for generating address using xpub.
  * @details
  *
@@ -80,13 +85,22 @@ void receive_transaction_tasks();
 void receive_transaction_tasks_eth();
 
 /**
- * @brief This task is executed for handling near registered accounts and genrating near implicit account.
+ * @brief This task is executed for handling near registered accounts and generating near implicit account.
  * @details
  *
  * @see
  * @since v1.0.0
  */
 void receive_transaction_tasks_near();
+
+/**
+ * @brief This task is executed for generating solana address using the public key
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ */
+void receive_transaction_tasks_solana();
 
 /**
  * @brief This task is executed for verifying wallet added or restored

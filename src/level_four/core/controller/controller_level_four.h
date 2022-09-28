@@ -19,6 +19,7 @@
 #include "tasks.h"
 #include "flash_config.h"
 #include "near.h"
+#include "solana.h"
 #include "cryptoauthlib.h"
 
 #define DEFAULT_ATECC_RETRIES   5
@@ -325,6 +326,18 @@ void send_transaction_controller_eth();
 void send_transaction_controller_b_eth();
 
 /**
+ * @brief Next button controller is executed for processing and signing unsigned
+ * transaction.
+ */
+void send_transaction_controller_solana();
+
+/**
+ * @brief Back button controller is executed for handling cancellation of the
+ * ongoing process.
+ */
+void send_transaction_controller_b_solana();
+
+/**
  * @brief Next button controller is executed for generating address using xpub.
  * @details This controller handles is used to generate receiving address for the BTC coins requested by desktop from a
  * list of supported coins.
@@ -346,18 +359,6 @@ void receive_transaction_controller();
  * @since v1.0.0
  */
 void receive_transaction_controller_near();
-
-/**
- * @brief Next button controller is executed for generating address using xpub.
- * @details This controller handles is used to generate receiving address for
- * the BTC coins requested by desktop from a list of supported coins.
- *
- * @see receive_transaction_controller_b(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START,
- * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
- * @since v1.0.0
- */
-void receive_transaction_controller_near_b();
 
 /**
  * @brief Back button controller for receive transaction flow.
@@ -401,6 +402,27 @@ void receive_transaction_controller_b_eth();
  * @since v1.0.0
  */
 void receive_transaction_controller_b_near();
+
+/**
+ * @brief Next button controller is executed for generating address using xpub of Ethereum.
+ * @details This controller handles is used to generate receiving address for the ETH coins requested by desktop from a
+ * list of supported coins.
+ *
+ * @see receive_transaction_controller_b_eth(), receive_transaction_tasks_eth(), desktop_listener_task(), RECV_TXN_START,
+ * receive_transaction_controller(), receive_transaction_tasks()
+ * @since v1.0.0
+ */
+void receive_transaction_controller_solana();
+
+/**
+ * @brief Back button controller for receive transaction Ethereum flow.
+ * @details This controller is used to handle back button events during generating receiving address for ETH.
+ *
+ * @see receive_transaction_controller_eth(), receive_transaction_tasks_eth(), desktop_listener_task(), RECV_TXN_START,
+ * receive_transaction_controller(), receive_transaction_tasks()
+ * @since v1.0.0
+ */
+void receive_transaction_controller_b_solana();
 
 /**
  * @brief This controller is executed for verifying wallet added or restored on the device and cards.
