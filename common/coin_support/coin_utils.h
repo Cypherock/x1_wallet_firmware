@@ -152,6 +152,7 @@ typedef struct Receive_Transaction_Data {
   bool near_acc_found;
   size_t near_acc_count;
   uint8_t near_acc_index;
+  char solana_address[45];
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
