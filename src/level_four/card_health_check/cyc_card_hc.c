@@ -105,7 +105,7 @@ void cyc_card_hc() {
 }
 
 static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
-  // All card errors are abstracted from application and added to health report.
+  // All card errors are abstracted from the NFC handler and added to the health report.
   while (1) {
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     tap_card_data.acceptable_cards = 15;
