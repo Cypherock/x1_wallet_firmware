@@ -135,7 +135,8 @@ void add_coin_tasks()
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        instruction_scr_init(ui_text_generating_xpubs, NULL);
+        instruction_scr_init(ui_text_processing, NULL);
+        BSP_DelayMs(DELAY_TIME);
         mark_event_over();
     } break;
 
@@ -147,16 +148,9 @@ void add_coin_tasks()
         mark_event_over();
     } break;
 
-    case ADD_COINS_WAITING_SCREEN: {
-        instruction_scr_init(ui_text_exporting_to_desktop, NULL);
-        mark_event_over();
-    } break;
-
     case ADD_COINS_FINAL_SCREEN:
-        ui_set_event_over_cb(NULL);
-        delay_scr_init(ui_text_successfully_exported_xpub_to_desktop, DELAY_TIME);
-        ui_set_event_over_cb(&mark_event_over);
-        delay_scr_init(ui_text_wait_while_balance_fetching, DELAY_TIME);
+        instruction_scr_destructor();
+        delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
         CY_Reset_Not_Allow(true);
         break;
     

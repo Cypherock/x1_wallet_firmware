@@ -176,14 +176,8 @@ void add_coin_controller()
         uint8_t out_arr[sizeof(Cmd_Add_Coin_t)];
         memcpy(out_arr, cmd_add_coin.xpubs, XPUB_SIZE * j);
         transmit_data_to_app(ADD_COIN_SENDING_XPUBS, out_arr, XPUB_SIZE * j);
-        instruction_scr_destructor();
-        flow_level.level_three = ADD_COINS_WAITING_SCREEN;
-    } break;
-
-    case ADD_COINS_WAITING_SCREEN:
-        instruction_scr_destructor();
         flow_level.level_three = ADD_COINS_FINAL_SCREEN;
-        break;
+    } break;
 
     case ADD_COINS_FINAL_SCREEN:
         reset_flow_level();
