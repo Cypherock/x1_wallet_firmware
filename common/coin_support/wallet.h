@@ -42,13 +42,13 @@
 #define MAX_NUMBER_OF_MNEMONIC_WORDS 24
 
 /// Max length of mnemonic word
-#define MAX_MNEMONIC_WORD_LENGTH 16
+#define MAX_MNEMONIC_WORD_LENGTH 9
 
 /// Max length of passphrase entered
 #define MAX_PASSPHRASE_INPUT_LENGTH 65
 
-/// Max length of coin name (set as some MAX_MNEMONIC_WORD_LENGTH because they both use ui_list)
-#define MAX_COIN_NAME_LENGTH MAX_MNEMONIC_WORD_LENGTH
+/// Max length of coin name
+#define MAX_COIN_NAME_LENGTH MAX_UI_LIST_CHAR_LEN
 
 
 /// Returns 0 if PIN is not set else 1

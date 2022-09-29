@@ -63,7 +63,7 @@
 static struct List_Data* data = NULL;
 static struct List_Object* obj = NULL;
 
-void list_init(const char option_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH], const int number_of_options, const char* heading, bool dynamic_heading)
+void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN], const int number_of_options, const char* heading, bool dynamic_heading)
 {
     ASSERT(option_list != NULL);
     ASSERT(heading != NULL);

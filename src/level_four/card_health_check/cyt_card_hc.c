@@ -105,7 +105,7 @@ void cyt_card_hc() {
                 message_scr_init(ui_text_no_wallets_present);
             }
             else if(wallet_count <= MAX_WALLETS_ALLOWED){
-                char choices[MAX_WALLETS_ALLOWED][16]={"","","",""}, heading[50];
+                char choices[MAX_WALLETS_ALLOWED][MAX_UI_LIST_CHAR_LEN]={"","","",""}, heading[50];
                 for(int i=0; i < wallet_count; i++){
                     strcpy(choices[i], (char*)wallet_list[i][0]);
                 }
