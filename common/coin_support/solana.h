@@ -13,12 +13,55 @@
 #include <stdint.h>
 #include "coin_utils.h"
 
-#define SOLANA_PURPOSE_INDEX   0x8000002C
-#define SOLANA_COIN_INDEX      0x800001F5
-#define SOLANA_ACCOUNT_INDEX   0x80000000
-#define SOLANA_CHAIN_INDEX     0x80000000
-#define SOLANA_ADDRESS_INDEX   0x80000001
+#define SOLANA_PURPOSE_INDEX 0x8000002C
+#define SOLANA_COIN_INDEX    0x800001F5
+#define SOLANA_ACCOUNT_INDEX 0x80000000
+#define SOLANA_CHAIN_INDEX   0x80000000
+#define SOLANA_ADDRESS_INDEX 0x80000001
 
+#define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
+#define SOLANA_BLOCKHASH_LENGTH       32
+
+typedef struct solana_transfer_data {
+  uint8_t *funding_account;
+  uint8_t *recipient_account;
+  uint64_t lamports;
+} solana_transfer_data;
+
+typedef struct solana_instruction {
+  uint8_t program_id_index;
+  uint16_t account_addresses_index_count;
+  uint8_t *account_addresses_index;
+  uint16_t opaque_data_length;
+  uint8_t *opaque_data;
+  union {
+    solana_transfer_data transfer;
+  } program;
+} solana_instruction;
+
+typedef struct solana_unsigned_txn {
+  uint8_t required_signatures_count;
+  uint8_t read_only_accounts_require_signature_count;
+  uint8_t read_only_accounts_not_require_signature_count;
+
+  uint16_t account_addresses_count;
+  uint8_t *account_addresses;
+
+  uint8_t *blockhash;
+
+  uint16_t instructions_count;  // deserialization only supports single instruction
+  solana_instruction instruction;
+
+} solana_unsigned_txn;
+
+/**
+ * @brief Get the compact array size and number of bytes used to store the size 
+ * 
+ * @param data the compact array
+ * @param size the size of the compact array 
+ * @return uint16_t number of bytes used to store the size
+ */
+uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size);
 
 /**
  * @brief Convert byte array representation of unsigned transaction to solana_unsigned_txn.
@@ -37,7 +80,7 @@
  *
  * @note
  */
-void solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size);
+int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
 
 /**
  * @brief Signed unsigned byte array.
@@ -58,7 +101,10 @@ void solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_
  *
  * @note
  */
-void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array, uint64_t unsigned_txn_len,
-                                 const txn_metadata *transaction_metadata, const char *mnemonics,
-                                 const char *passphrase, uint8_t *sig);
-#endif //SOLANA_HEADER
+void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
+                                    uint64_t unsigned_txn_len,
+                                    const txn_metadata *transaction_metadata,
+                                    const char *mnemonics,
+                                    const char *passphrase,
+                                    uint8_t *sig);
+#endif  // SOLANA_HEADER

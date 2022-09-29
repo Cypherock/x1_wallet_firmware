@@ -14,58 +14,58 @@
 #pragma once
 
 #include "btc.h"
-#include "eth.h"
 #include "controller_main.h"
-#include "tasks.h"
+#include "cryptoauthlib.h"
+#include "eth.h"
 #include "flash_config.h"
 #include "near.h"
 #include "solana.h"
-#include "cryptoauthlib.h"
+#include "tasks.h"
 
-#define DEFAULT_ATECC_RETRIES   5
+#define DEFAULT_ATECC_RETRIES 5
 
-#define DEVICE_SERIAL_SIZE      32
-#define MAXIMUM_COIN_SUPPORTED  (7 + 5)  // 5 for segwit support
-#define INDEX_SIZE 4
+#define DEVICE_SERIAL_SIZE     32
+#define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
+#define INDEX_SIZE             4
 
-typedef enum{
-    slot_0_unused=0U,
-    slot_1_unused=1U,
-    slot_2_auth_key=2U,
-    slot_3_nfc_pair_key=3U,
-    slot_4_unused=4U,
-    slot_5_challenge=5U,
-    slot_6_io_key=6U,
-    slot_7_unused=7U,
-    slot_8_serial=8U,
-    slot_9_unused=9U,
-    slot_10_unused=10U,
-    slot_11_unused=11U,
-    slot_12_unused=12U,
-    slot_13_unused=13U,
-    slot_14_unused=14U,
-    slot_15_unused=15U
-}atecc_slot_define_t;
+typedef enum {
+  slot_0_unused       = 0U,
+  slot_1_unused       = 1U,
+  slot_2_auth_key     = 2U,
+  slot_3_nfc_pair_key = 3U,
+  slot_4_unused       = 4U,
+  slot_5_challenge    = 5U,
+  slot_6_io_key       = 6U,
+  slot_7_unused       = 7U,
+  slot_8_serial       = 8U,
+  slot_9_unused       = 9U,
+  slot_10_unused      = 10U,
+  slot_11_unused      = 11U,
+  slot_12_unused      = 12U,
+  slot_13_unused      = 13U,
+  slot_14_unused      = 14U,
+  slot_15_unused      = 15U
+} atecc_slot_define_t;
 
-typedef struct{
-    uint8_t         device_serial[DEVICE_SERIAL_SIZE],
-                    retries;
-    ATCA_STATUS     status;
-    ATCAIfaceCfg    *cfg_atecc608a_iface;
+typedef struct {
+  uint8_t device_serial[DEVICE_SERIAL_SIZE], retries;
+  ATCA_STATUS status;
+  ATCAIfaceCfg *cfg_atecc608a_iface;
 } atecc_data_t;
 
 extern atecc_data_t atecc_data;
 
-typedef enum{
-    provision_empty=0,
-    provision_incomplete=1,
-    provision_complete=2,
-    provision_v1_complete=3
-}provision_status_t;
+typedef enum {
+  provision_empty       = 0,
+  provision_incomplete  = 1,
+  provision_complete    = 2,
+  provision_v1_complete = 3
+} provision_status_t;
 
 extern uint8_t provision_date[4];
 extern uint8_t auth_card_number;
 extern near_unsigned_txn near_utxn;
+extern solana_unsigned_txn solana_unsigned_txn_ptr;
 
 /**
  * @brief Stores the device specific information during provisioning process.
@@ -77,12 +77,12 @@ extern near_unsigned_txn near_utxn;
  * @since v1.0.0
  */
 #pragma pack(push, 1)
-typedef struct Provision_Data_Struct{
-    uint8_t device_private_key[32];
-    uint8_t device_public_key[ECDSA_PUB_KEY_SIZE];
-    uint8_t self_key_path[FS_KEYSTORE_KEYPATH_LEN];
-    uint8_t priv_key[FS_KEYSTORE_PRIVKEY_LEN];
-    uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN];
+typedef struct Provision_Data_Struct {
+  uint8_t device_private_key[32];
+  uint8_t device_public_key[ECDSA_PUB_KEY_SIZE];
+  uint8_t self_key_path[FS_KEYSTORE_KEYPATH_LEN];
+  uint8_t priv_key[FS_KEYSTORE_PRIVKEY_LEN];
+  uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN];
 } Provision_Data_struct;
 #pragma pack(pop)
 
@@ -97,7 +97,7 @@ extern Provision_Data_struct provision_keys_data;
  */
 #pragma pack(push, 1)
 typedef struct Export_Wallet_Data {
-    uint8_t chosen_wallet_index;
+  uint8_t chosen_wallet_index;
 } Export_Wallet_Data;
 #pragma pack(pop)
 
@@ -110,9 +110,9 @@ typedef struct Export_Wallet_Data {
  */
 #pragma pack(push, 1)
 typedef struct Cmd_Export_Wallet_t {
-    uint8_t wallet_name[NAME_SIZE];
-    uint8_t wallet_info;
-    uint8_t wallet_id[WALLET_ID_SIZE];
+  uint8_t wallet_name[NAME_SIZE];
+  uint8_t wallet_info;
+  uint8_t wallet_id[WALLET_ID_SIZE];
 } Cmd_Export_Wallet_t;
 #pragma pack(pop)
 
@@ -126,10 +126,10 @@ typedef struct Cmd_Export_Wallet_t {
  */
 #pragma pack(push, 1)
 typedef struct Add_Coin_Data {
-    uint8_t number_of_coins;
-    bool resync;
-    uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
-    uint8_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
+  uint8_t number_of_coins;
+  bool resync;
+  uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
+  uint8_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
 } Add_Coin_Data;
 #pragma pack(pop)
 
@@ -145,7 +145,7 @@ typedef struct Add_Coin_Data {
  */
 #pragma pack(push, 1)
 typedef struct Cmd_Add_Coin_t {
-    uint8_t xpubs[MAXIMUM_COIN_SUPPORTED][XPUB_SIZE];
+  uint8_t xpubs[MAXIMUM_COIN_SUPPORTED][XPUB_SIZE];
 } Cmd_Add_Coin_t;
 #pragma pack(pop)
 
@@ -158,11 +158,11 @@ typedef struct Cmd_Add_Coin_t {
  */
 #pragma pack(push, 1)
 typedef struct Send_Transaction_Data {
-    uint8_t transaction_confirmation_list_index;
-    unsigned_txn unsigned_transaction;
-    txn_metadata transaction_metadata;
-    signed_txn signed_transaction;
-    
+  uint8_t transaction_confirmation_list_index;
+  unsigned_txn unsigned_transaction;
+  txn_metadata transaction_metadata;
+  signed_txn signed_transaction;
+
 } Send_Transaction_Data;
 #pragma pack(pop)
 
@@ -174,11 +174,10 @@ typedef struct Send_Transaction_Data {
  */
 #pragma pack(push, 1)
 typedef struct Send_Transaction_Cmd {
-    uint8_t* signed_txn_byte_array;
-    int signed_txn_length;
+  uint8_t *signed_txn_byte_array;
+  int signed_txn_length;
 } Send_Transaction_Cmd;
 #pragma pack(pop)
-
 
 extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;

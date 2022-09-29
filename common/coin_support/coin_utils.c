@@ -364,7 +364,7 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         mdata_ptr->account_index[0] < 0x80)
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
-        BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR){
+        (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
         if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;

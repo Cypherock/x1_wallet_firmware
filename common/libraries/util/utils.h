@@ -27,6 +27,12 @@
 
 /// Convert bit array of size 4 to uint32
 #define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
+/// Read 64-bit value from big-endian serialized byte-array
+#define U64_READ_BE_ARRAY(x) \
+  ((x)[0] << 56 | (x)[1] << 48 | (x)[2] << 40 | (x)[3] << 32 | (x)[4] << 24 | (x)[5] << 16 | (x)[6] << 8 | (x)[7])
+/// Read 64-bit value from little-endian serialized byte-array
+#define U64_READ_LE_ARRAY(x) \
+  ((x)[7] << 56 | (x)[6] << 48 | (x)[5] << 40 | (x)[4] << 32 | (x)[3] << 24 | (x)[2] << 16 | (x)[1] << 8 | (x)[0])
 /// Read 32-bit value from big-endian serialised byte-array
 #define U32_READ_BE_ARRAY(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 32-bit value from little-endian serialised byte-array
@@ -38,11 +44,11 @@
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U16_SWAP_ENDIANNESS(x) ((x) >> 8 | (x) << 8)
 /// Change little-endian value to big-endian ordering and vice-versa
-#define U32_SWAP_ENDIANNESS(x) ((x) << 24 | ((x) & 0xff00) << 8 | ((x) & 0xff0000) >> 8 | (x) >> 24)
+#define U32_SWAP_ENDIANNESS(x) ((x) << 24 | ((x)&0xff00) << 8 | ((x)&0xff0000) >> 8 | (x) >> 24)
 /// Find maximum of two values
-#define CY_MAX(a,b) ((a) > (b) ? (a) : (b))
+#define CY_MAX(a, b) ((a) > (b) ? (a) : (b))
 /// Find minimum of two values
-#define CY_MIN(a,b) ((a) < (b) ? (a) : (b))
+#define CY_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /**
  * @brief Allocates memory via malloc and makes an entry for each allocation into its global list
@@ -60,7 +66,7 @@
  *
  * @note
  */
-void * cy_malloc(size_t mem_size);
+void *cy_malloc(size_t mem_size);
 
 /**
  * @brief Free entire list of dynamic allocations.
@@ -131,7 +137,7 @@ uint32_t byte_array_to_hex_string(const uint8_t *bytes, uint32_t len, char *hex_
  *
  * @note
  */
-void __single_to_multi_line(const char* input, uint16_t input_len, char output[24][15]);
+void __single_to_multi_line(const char *input, uint16_t input_len, char output[24][15]);
 
 /**
  * @brief  convert multi-d mnemonics to single-d array for trezor crypto functions
@@ -237,8 +243,7 @@ uint8_t encode_card_number(uint8_t decoded_card_number);
  *
  * @note
  */
-void get_firmaware_version(uint16_t pid, const char* product_hash , char message[]);
-
+void get_firmaware_version(uint16_t pid, const char *product_hash, char message[]);
 
 /**
  * @brief Genrate random 32 byte using BSP and atecc random generator function's
@@ -255,7 +260,7 @@ void get_firmaware_version(uint16_t pid, const char* product_hash , char message
  *
  * @note
  */
-void random_generate(uint8_t* arr,int len);
+void random_generate(uint8_t *arr, int len);
 
 /**
  * @brief Calculates the number of precision places after decimal point.
@@ -333,7 +338,6 @@ uint8_t dec_to_hex(const uint64_t dec, uint8_t *hex, uint8_t len);
  */
 uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len);
 
-
 /**
  * @brief Convert byte array to decimal string with given decimal place
  * 
@@ -344,5 +348,9 @@ uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len);
  * @return true if success
  * @return false if fails
  */
-bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decimal, char* amount_string,char* amount_decimal_string, const size_t amount_decimal_string_size);
+bool convert_byte_array_to_decimal_string(const uint8_t len,
+                                          const uint8_t decimal,
+                                          char *amount_string,
+                                          char *amount_decimal_string,
+                                          const size_t amount_decimal_string_size);
 #endif
