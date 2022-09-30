@@ -28,14 +28,8 @@ ENDIF(DEV_SWITCH)
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
-    target_include_directories(${EXECUTABLE} PRIVATE
-            main/config/
-            )
 elseif("${FIRMWARE_TYPE}" STREQUAL "Initial")
     add_compile_definitions(X1WALLET_INITIAL=1 X1WALLET_MAIN=0)
-    target_include_directories(${EXECUTABLE} PRIVATE
-            initial/config/
-            )
 else()
     message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
 endif()
@@ -100,7 +94,6 @@ target_include_directories(${EXECUTABLE} PRIVATE
 
         common
         common/lvgl
-        common/lvgl/porting
         common/lvgl/src
         common/lvgl/src/lv_core
         common/lvgl/src/lv_draw
@@ -121,21 +114,13 @@ target_include_directories(${EXECUTABLE} PRIVATE
         stm32-hal/Drivers/STM32L4xx_HAL_Driver/Inc/Legacy
         stm32-hal/Drivers/STM32L4xx_HAL_Driver/Src
 
-        stm32-hal/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
-        stm32-hal/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src
-        stm32-hal/Middlewares/ST/STM32_USB_Device_Library/Core/Inc
-        stm32-hal/Middlewares/ST/STM32_USB_Device_Library/Core/Src
-
         stm32-hal/Peripherals
         stm32-hal/Peripherals/Buzzer
         stm32-hal/Peripherals/display
         stm32-hal/Peripherals/display/SSD1306
-        stm32-hal/Peripherals/flash/
-        stm32-hal/Peripherals/logger/
         stm32-hal/Peripherals/nfc/
 
         stm32-hal/Src
-        stm32-hal/Startup
         stm32-hal/porting
         stm32-hal/Inc
 
