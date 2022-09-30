@@ -341,6 +341,10 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
+            case SOLANA:
+                assigned_pub_version = 0x0488b21e;
+                assigned_add_version = 0x00;
+                break;
             default:
                 break;
             }
