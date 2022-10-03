@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include "coin_utils.h"
 
+// Derivation path reference : https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX    0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
@@ -22,12 +23,14 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH       32
 
+// Reference : https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.Transfer
 typedef struct solana_transfer_data {
   uint8_t *funding_account;
   uint8_t *recipient_account;
   uint64_t lamports;
 } solana_transfer_data;
 
+// Reference : https://docs.solana.com/developing/programming-model/transactions#instruction-format
 typedef struct solana_instruction {
   uint8_t program_id_index;
   uint16_t account_addresses_index_count;
@@ -39,6 +42,7 @@ typedef struct solana_instruction {
   } program;
 } solana_instruction;
 
+// Reference : https://docs.solana.com/developing/programming-model/transactions#anatomy-of-a-transaction
 typedef struct solana_unsigned_txn {
   uint8_t required_signatures_count;
   uint8_t read_only_accounts_require_signature_count;

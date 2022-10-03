@@ -95,7 +95,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
 
   utxn->instruction.program_id_index = *(byte_array + offset++);
 
-  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};
+  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};  // System instruction address
   if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index * SOLANA_ACCOUNT_ADDRESS_LENGTH,
              system_program_id, SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
     return -1;
@@ -107,9 +107,21 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
   utxn->instruction.opaque_data = byte_array + offset;
   offset += utxn->instruction.opaque_data_length;
 
-  utxn->instruction.program.transfer.funding_account   = utxn->account_addresses + (0 * SOLANA_ACCOUNT_ADDRESS_LENGTH);
-  utxn->instruction.program.transfer.recipient_account = utxn->account_addresses + (1 * SOLANA_ACCOUNT_ADDRESS_LENGTH);
-  utxn->instruction.program.transfer.lamports          = U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 4);
+  uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
+
+  switch (instruction_enum) {
+    case 2:  // transfer instruction
+      utxn->instruction.program.transfer.funding_account =
+          utxn->account_addresses + (*(utxn->instruction.account_addresses_index + 0) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
+      utxn->instruction.program.transfer.recipient_account =
+          utxn->account_addresses + (*(utxn->instruction.account_addresses_index + 1) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
+      utxn->instruction.program.transfer.lamports = U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 4);
+      break;
+
+    default:
+      return -1;
+      break;
+  }
 
   return (offset > 0 ? 0 : -1);
 }
