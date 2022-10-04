@@ -120,7 +120,8 @@ void receive_transaction_tasks_solana() {
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN_SOLANA: {
-      instruction_scr_init(ui_text_deriving_address, NULL);
+      instruction_scr_init(ui_text_processing, NULL);
+      BSP_DelayMs(DELAY_TIME);
       mark_event_over();
     } break;
 
@@ -130,7 +131,7 @@ void receive_transaction_tasks_solana() {
 
     case RECV_TXN_DISPLAY_ADDR_SOLANA: {
       instruction_scr_destructor();
-      char display[70];
+      char display[70]={0};
       snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, receive_transaction_data.solana_address);
       address_scr_init(ui_text_receive_on, display, true);
     } break;

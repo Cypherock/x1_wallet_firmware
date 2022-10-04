@@ -83,6 +83,7 @@ void send_transaction_tasks_solana() {
   switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN_SOLANA: {
       instruction_scr_init(ui_text_processing, NULL);
+      BSP_DelayMs(DELAY_TIME);
       mark_event_over();
     } break;
 
@@ -114,7 +115,8 @@ void send_transaction_tasks_solana() {
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_SOLANA: {
-      instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
+      instruction_scr_init(ui_text_processing, NULL);
+      BSP_DelayMs(DELAY_TIME);
       mark_event_over();
     } break;
 
