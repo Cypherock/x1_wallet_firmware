@@ -27,22 +27,18 @@
 
 /// Convert bit array of size 4 to uint32
 #define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
-/// Read 64-bit value from big-endian serialized byte-array
-#define U64_READ_BE_ARRAY(x)                                                                                   \
-  (((uint64_t)(x)[0] << 56) | ((uint64_t)(x)[1] << 48) | ((uint64_t)(x)[2] << 40) | ((uint64_t)(x)[3] << 32) | \
-   ((x)[4] << 24) | ((x)[5] << 16) | (x)[6] << 8 | (x)[7])
-/// Read 64-bit value from little-endian serialized byte-array
-#define U64_READ_LE_ARRAY(x)                                                                                   \
-  (((uint64_t)(x)[7] << 56) | ((uint64_t)(x)[6] << 48) | ((uint64_t)(x)[5] << 40) | ((uint64_t)(x)[4] << 32) | \
-   ((x)[3] << 24) | ((x)[2] << 16) | (x)[1] << 8 | (x)[0])
-/// Read 32-bit value from big-endian serialised byte-array
-#define U32_READ_BE_ARRAY(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
-/// Read 32-bit value from little-endian serialised byte-array
-#define U32_READ_LE_ARRAY(x) ((x)[3] << 24 | (x)[2] << 16 | (x)[1] << 8 | (x)[0])
-/// Read 16-bit value from big-endian serialised byte-array
+/// Read 16-bit value from big-endian serialized byte-array
 #define U16_READ_BE_ARRAY(x) ((x)[0] << 8 | (x)[1])
-/// Read 16-bit value from little-endian serialised byte-array
+/// Read 16-bit value from little-endian serialized byte-array
 #define U16_READ_LE_ARRAY(x) ((x)[1] << 8 | (x)[0])
+/// Read 32-bit value from big-endian serialized byte-array
+#define U32_READ_BE_ARRAY(x) (U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
+/// Read 32-bit value from little-endian serialized byte-array
+#define U32_READ_LE_ARRAY(x) (U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
+/// Read 64-bit value from big-endian serialized byte-array
+#define U64_READ_BE_ARRAY(x) (((uint64_t)U32_READ_BE_ARRAY(x) << 32) | U32_READ_BE_ARRAY(x + 4))
+/// Read 64-bit value from little-endian serialized byte-array
+#define U64_READ_LE_ARRAY(x) (((uint64_t)U32_READ_LE_ARRAY(x + 4) << 32) | U32_READ_LE_ARRAY(x))
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U16_SWAP_ENDIANNESS(x) ((x) >> 8 | (x) << 8)
 /// Change little-endian value to big-endian ordering and vice-versa
