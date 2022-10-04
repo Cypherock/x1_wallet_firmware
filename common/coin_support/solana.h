@@ -14,11 +14,10 @@
 #include "coin_utils.h"
 
 // Derivation path reference : https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
+// Taking 3 levels of depth similar to ledger
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX    0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
-#define SOLANA_CHAIN_INDEX   0x80000000
-#define SOLANA_ADDRESS_INDEX 0x80000001
 
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH       32

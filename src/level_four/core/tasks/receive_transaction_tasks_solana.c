@@ -93,7 +93,7 @@ void receive_transaction_tasks_solana() {
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_SOLANA: {
-      char display[65];
+      char display[65] = {0};
       snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
@@ -104,10 +104,6 @@ void receive_transaction_tasks_solana() {
     } break;
 
     case RECV_TXN_ENTER_PIN_SOLANA: {
-      if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-        flow_level.level_three = RECV_TXN_XPUB_NOT_FOUND_SOLANA;
-        break;
-      }
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 

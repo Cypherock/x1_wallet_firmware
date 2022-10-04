@@ -98,10 +98,6 @@ void send_transaction_tasks_solana() {
       mark_event_over();
     } break;
 
-    case SEND_TXN_VERIFY_TXN_NONCE_SOLANA: {
-      mark_event_over();
-    } break;
-
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SOLANA: {
       instruction_scr_destructor();
       char address[45]      = {0};

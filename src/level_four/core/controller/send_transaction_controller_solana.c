@@ -111,10 +111,6 @@ void send_transaction_controller_solana() {
       flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SOLANA;
     } break;
 
-    case SEND_TXN_VERIFY_TXN_NONCE_SOLANA: {
-      flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SOLANA;
-    } break;
-
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SOLANA: {
       flow_level.level_three = SEND_TXN_CALCULATE_AMOUNT_SOLANA;
     } break;

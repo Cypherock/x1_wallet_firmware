@@ -67,12 +67,6 @@ void send_transaction_controller_b_solana() {
       counter.next_event_flag = true;
     } break;
 
-    case SEND_TXN_VERIFY_TXN_NONCE_SOLANA: {
-      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 4);
-      reset_flow_level();
-      counter.next_event_flag = true;
-    }
-
     case SEND_TXN_CALCULATE_AMOUNT_SOLANA: {
       comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
       reset_flow_level();

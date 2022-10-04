@@ -156,8 +156,8 @@ void add_coin_controller()
             if(add_coin_data.coin_indexes[i] == SOLANA_COIN_INDEX){ 
                 uint32_t path[] = {
                     SOLANA_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
-                    SOLANA_ACCOUNT_INDEX, SOLANA_CHAIN_INDEX, SOLANA_ADDRESS_INDEX};
-                generate_xpub(path, 5, ED25519_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
+                    SOLANA_ACCOUNT_INDEX};
+                generate_xpub(path,3, ED25519_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
                 memzero(path, sizeof(path));
             }else if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
                 uint32_t path[] = {
