@@ -125,8 +125,6 @@ void verify_card_controller()
                 transmit_data_to_app(SEND_SIGNATURE_TO_APP, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                 flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
                 buzzer_start(BUZZER_DURATION);
-                instruction_scr_change_text(ui_text_remove_card_prompt, true);
-                nfc_detect_card_removal();
 
                 coded_card_number = tap_card_data.tapped_card;
                 break;
@@ -174,6 +172,8 @@ void verify_card_controller()
                 get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
                 transmit_data_to_app(SIGNED_CHALLENGE, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                 buzzer_start(BUZZER_DURATION);
+                instruction_scr_change_text(ui_text_remove_card_prompt, true);
+                nfc_detect_card_removal();
 
                 flow_level.level_three = VERIFY_CARD_FINAL_MESSAGE;
                 break;
