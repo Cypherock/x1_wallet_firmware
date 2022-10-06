@@ -88,7 +88,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
 
-  // Instructions
+  // Instructions: Currently expecting count to be only 1. TODO: Handle batch instructions
   offset += get_compact_array_size(byte_array + offset, &(utxn->instructions_count));
 
   utxn->instruction.program_id_index = *(byte_array + offset++);
