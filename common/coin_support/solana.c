@@ -71,7 +71,7 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size) {
   return offset + 1;
 }
 
-bool solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
+int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
   uint16_t offset = 0;
 
   // Message header
@@ -121,15 +121,15 @@ bool solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_
     }
   }
 
-  return (offset <= byte_array_size) && (offset > 0);
+  return ((offset <= byte_array_size) && (offset > 0)) ? 0 : -1;
 }
 
-bool solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
+int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   if (utxn->instructions_count != 1)
-    return false;
+    return -1;
 
   if (!(0 < utxn->instruction.program_id_index && utxn->instruction.program_id_index < utxn->account_addresses_count))
-    return false;
+    return -1;
 
   uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
 
@@ -140,13 +140,13 @@ bool solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
       case SSI_TRANSFER:  // transfer instruction
         break;
       default:
-        return false;
+        return -1;
         break;
     }
   } else {
-    return false;
+    return -1;
   }
-  return true;
+  return 0;
 }
 
 void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,

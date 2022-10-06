@@ -92,24 +92,24 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size);
  * @param [out] utxn                        Pointer to the solana_unsigned_txn instance to store the transaction details.
  *
  * @return Status of conversion
- * @retval true if successful
- * @retval false if unsuccessful
+ * @retval 0 if successful
+ * @retval -1 if unsuccessful
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-bool solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
+int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
 
 /**
  * @brief Validate the deserialized unsigned transaction 
  * 
  * @param utxn Pointer to the solana_unsigned_txn instance to validate the transaction
- * @return true if validation succeeded
- * @return false if validation failed
+ * @return 0 if validation succeeded
+ * @return -1 if validation failed
  */
-bool solana_validate_unsigned_txn(const solana_unsigned_txn *utxn);
+int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn);
 
 /**
  * @brief Signed unsigned byte array.

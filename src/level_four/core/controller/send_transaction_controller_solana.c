@@ -90,12 +90,12 @@ void send_transaction_controller_solana() {
         solana_unsigned_txn_len        = msg_size;
         memcpy(solana_unsigned_txn_byte_array, data_array, msg_size);
 
-        bool success = solana_byte_array_to_unsigned_txn(solana_unsigned_txn_byte_array, solana_unsigned_txn_len,
-                                                         &solana_unsigned_txn_ptr);
+        int status = solana_byte_array_to_unsigned_txn(solana_unsigned_txn_byte_array, solana_unsigned_txn_len,
+                                                       &solana_unsigned_txn_ptr);
 
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA;
-        if (solana_validate_unsigned_txn(&solana_unsigned_txn_ptr) || !success) {
+        if (solana_validate_unsigned_txn(&solana_unsigned_txn_ptr) != 0 || status != 0) {
           mark_error_screen(ui_text_worng_eth_transaction);
           comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
           reset_flow_level();
