@@ -161,7 +161,7 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
   uint8_t seed[64] = {0};
   HDNode hdnode;
   mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
-  derive_hdnode_from_path(path, 5, ED25519_NAME, seed, &hdnode);
+  derive_hdnode_from_path(path, 3, ED25519_NAME, seed, &hdnode);
 
   ed25519_sign(unsigned_txn_byte_array, unsigned_txn_len, hdnode.private_key, hdnode.public_key + 1, sig);
   memzero(path, sizeof(path));
