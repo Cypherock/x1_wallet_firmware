@@ -22,6 +22,23 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH       32
 
+// Reference: https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html
+enum SOLANA_SYSTEM_INSTRUCTION {
+  SSI_CREATE_ACCOUNT = 0,
+  SSI_ASSIGN,
+  SSI_TRANSFER,
+  SSI_CREATE_ACCOUNT_WITH_SEED,
+  SSI_ADVANCE_NONCE_ACCOUNT,
+  SSI_WITHDRAW_NONCE_ACCOUNT,
+  SSI_INITIALIZE_NONCE_ACCOUNT,
+  SSI_AUTHORIZE_NONCE_ACCOUNT,
+  SSI_ALLOCATE,
+  SSI_ALLOCATE_WITH_SEED,
+  SSI_ASSIGN_WITH_SEED,
+  SSI_TRANSFER_WITH_SEED,
+  SSI_UPGRADE_NONCE_ACCOUNT
+};
+
 // Reference : https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.Transfer
 typedef struct solana_transfer_data {
   uint8_t *funding_account;
@@ -75,15 +92,24 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size);
  * @param [out] utxn                        Pointer to the solana_unsigned_txn instance to store the transaction details.
  *
  * @return Status of conversion
- * @retval 0 Success
- * @retval -1 Failure
+ * @retval true if successful
+ * @retval false if unsuccessful
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
+bool solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
+
+/**
+ * @brief Validate the deserialized unsigned transaction 
+ * 
+ * @param utxn Pointer to the solana_unsigned_txn instance to validate the transaction
+ * @return true if validation succeeded
+ * @return false if validation failed
+ */
+bool solana_validate_unsigned_txn(const solana_unsigned_txn *utxn);
 
 /**
  * @brief Signed unsigned byte array.

@@ -71,7 +71,7 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size) {
   return offset + 1;
 }
 
-int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
+bool solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
   uint16_t offset = 0;
 
   // Message header
@@ -90,15 +90,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
 
   // Instructions
   offset += get_compact_array_size(byte_array + offset, &(utxn->instructions_count));
-  if (utxn->instructions_count != 1)
-    return -1;
 
   utxn->instruction.program_id_index = *(byte_array + offset++);
-
-  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};  // System instruction address
-  if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index * SOLANA_ACCOUNT_ADDRESS_LENGTH,
-             system_program_id, SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
-    return -1;
 
   offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.account_addresses_index_count));
   utxn->instruction.account_addresses_index = byte_array + offset;
@@ -109,21 +102,51 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
 
   uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
 
-  switch (instruction_enum) {
-    case 2:  // transfer instruction
-      utxn->instruction.program.transfer.funding_account =
-          utxn->account_addresses + (*(utxn->instruction.account_addresses_index + 0) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
-      utxn->instruction.program.transfer.recipient_account =
-          utxn->account_addresses + (*(utxn->instruction.account_addresses_index + 1) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
-      utxn->instruction.program.transfer.lamports = U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 4);
-      break;
+  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};  // System instruction address
+  if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index * SOLANA_ACCOUNT_ADDRESS_LENGTH,
+             system_program_id, SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    switch (instruction_enum) {
+      case SSI_TRANSFER:  // transfer instruction
+        utxn->instruction.program.transfer.funding_account =
+            utxn->account_addresses +
+            (*(utxn->instruction.account_addresses_index + 0) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction.program.transfer.recipient_account =
+            utxn->account_addresses +
+            (*(utxn->instruction.account_addresses_index + 1) * SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction.program.transfer.lamports = U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 4);
+        break;
 
-    default:
-      return -1;
-      break;
+      default:
+        break;
+    }
   }
 
-  return (offset > 0 ? 0 : -1);
+  return (offset <= byte_array_size) && (offset > 0);
+}
+
+bool solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
+  if (utxn->instructions_count != 1)
+    return false;
+
+  if (!(0 < utxn->instruction.program_id_index && utxn->instruction.program_id_index < utxn->account_addresses_count))
+    return false;
+
+  uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
+
+  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};  // System instruction address
+  if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index * SOLANA_ACCOUNT_ADDRESS_LENGTH,
+             system_program_id, SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    switch (instruction_enum) {
+      case SSI_TRANSFER:  // transfer instruction
+        break;
+      default:
+        return false;
+        break;
+    }
+  } else {
+    return false;
+  }
+  return true;
 }
 
 void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
@@ -134,9 +157,7 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
                                     uint8_t *sig) {
   uint32_t path[]  = {BYTE_ARRAY_TO_UINT32(transaction_metadata->purpose_index),
                       BYTE_ARRAY_TO_UINT32(transaction_metadata->coin_index),
-                      BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index),
-                      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].chain_index),
-                      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].address_index)};
+                      BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index)};
   uint8_t seed[64] = {0};
   HDNode hdnode;
   mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
