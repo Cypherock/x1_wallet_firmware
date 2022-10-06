@@ -206,7 +206,6 @@ void send_transaction_controller_solana() {
 
     case SEND_TXN_WAITING_SCREEN_SOLANA:
       instruction_scr_destructor();
-      lv_obj_clean(lv_scr_act());
       flow_level.level_three = SEND_TXN_FINAL_SCREEN_SOLANA;
       break;
 
