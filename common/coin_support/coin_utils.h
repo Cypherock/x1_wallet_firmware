@@ -44,7 +44,7 @@
 #define DASH (BITCOIN + 0x05)
 
 /// ETHEREUM coin index
-#define ETHEREUM (BITCOIN + 0x3c)
+#define ETHEREUM ETHEREUM_COIN_INDEX
 
 /// NEAR coin index
 #define NEAR (BITCOIN + 0x18d)
@@ -63,6 +63,7 @@ typedef enum Coin_Type {
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
+    COIN_TYPE_POLYGON = 0x08,
 }Coin_Type;
 
 #pragma pack(push, 1)

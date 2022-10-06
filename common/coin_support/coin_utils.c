@@ -57,6 +57,8 @@
  */
 #include "coin_utils.h"
 #include "near.h"
+#include "polygon.h"
+#include "eth.h"
 
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
@@ -221,14 +223,14 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
             return "DOGE";
         case 0x80000005:
             return "DASH";
-        case 0x8000003C: {
+        case ETHEREUM: {
             switch (chain_id) {
-                case 1:
-                case 3:
-                    return "ETH";
-                case 80001:
-                case 137:
-                    return "MATIC";
+                case ETHEREUM_MAINNET_CHAIN:
+                case ETHEREUM_ROPSTEN_CHAIN:
+                    return ETHEREUM_TOKEN_SYMBOL;
+                case POLYGON_MUMBAI_CHAIN:
+                case POLYGON_MAINNET_CHAIN:
+                    return POLYGON_TOKEN_SYMBOL;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -236,7 +238,7 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
             }
         }
         case NEAR_COIN_INDEX:
-            return "NEAR";
+            return NEAR_TOKEN_SYMBOL;
         default: {
             ASSERT(false);
             return "invalid";
@@ -256,16 +258,16 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
             return "Dogecoin";
         case 0x80000005:
             return "Dash";
-        case 0x8000003C: {
+        case ETHEREUM: {
             switch (chain_id) {
-                case 1:
-                    return "ETH Mainnet";
-                case 3:
-                    return "ETH Ropsten";
-                case 80001:
-                    return "Polygon Testnet";
-                case 137:
-                    return "Polygon";
+                case ETHEREUM_MAINNET_CHAIN:
+                    return ETHEREUM_MAINNET_NAME;
+                case ETHEREUM_ROPSTEN_CHAIN:
+                    return ETHEREUM_ROPSTEN_NAME;
+                case POLYGON_MUMBAI_CHAIN:
+                    return POLYGON_MAINNET_NAME;
+                case POLYGON_MAINNET_CHAIN:
+                    return POLYGON_MUMBAI_NAME;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -273,7 +275,7 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
             }
         }
         case NEAR_COIN_INDEX:
-            return "NEAR";
+            return NEAR_TOKEN_NAME;
         default: {
             ASSERT(false);
             return "invalid";
@@ -337,9 +339,6 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_add_version = 0x4c;
                 break;
             case ETHEREUM:
-                assigned_pub_version = 0x0488b21e;
-                assigned_add_version = 0x00;
-                break;
             case NEAR:
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
