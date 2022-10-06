@@ -77,8 +77,7 @@ void send_transaction_tasks_near() {
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_NEAR: {
-        instruction_scr_init(ui_text_processing, NULL);
-        BSP_DelayMs(DELAY_TIME);
+        delay_scr_init(ui_text_processing, DELAY_TIME);
         mark_event_over();
     } break;
 
@@ -135,8 +134,7 @@ void send_transaction_tasks_near() {
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_NEAR: {
-        instruction_scr_init(ui_text_processing, NULL);
-        BSP_DelayMs(DELAY_TIME);
+        delay_scr_init(ui_text_processing, DELAY_TIME);
         mark_event_over();
     }break;
 
@@ -226,8 +224,7 @@ void send_transaction_tasks_near() {
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_NEAR: {
-        instruction_scr_init(ui_text_processing, NULL);
-        BSP_DelayMs(DELAY_TIME);
+        delay_scr_init(ui_text_processing, DELAY_TIME);
         mark_event_over();
     } break;
 
