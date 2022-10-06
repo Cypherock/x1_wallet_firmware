@@ -91,7 +91,6 @@ void receive_transaction_controller_solana() {
                flow_level.screen_input.input_text);
       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
       flow_level.level_three = RECV_TXN_CHECK_PIN_SOLANA;
-      flow_level.level_one = 1;
     } break;
 
     case RECV_TXN_CHECK_PIN_SOLANA: {
