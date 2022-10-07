@@ -83,7 +83,8 @@ void send_transaction_tasks_solana() {
   switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN_SOLANA: {
       instruction_scr_init(ui_text_processing, NULL);
-      BSP_DelayMs(DELAY_TIME);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
       mark_event_over();
     } break;
 
@@ -116,7 +117,8 @@ void send_transaction_tasks_solana() {
 
     case SEND_TXN_CALCULATE_AMOUNT_SOLANA: {
       instruction_scr_init(ui_text_processing, NULL);
-      BSP_DelayMs(DELAY_TIME);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
       mark_event_over();
     } break;
 
@@ -197,7 +199,8 @@ void send_transaction_tasks_solana() {
 
     case SEND_TXN_TAP_CARD_SEND_CMD_SOLANA: {
       instruction_scr_init(ui_text_processing, NULL);
-      BSP_DelayMs(DELAY_TIME);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
       mark_event_over();
     } break;
 
