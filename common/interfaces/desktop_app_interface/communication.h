@@ -121,6 +121,7 @@ typedef enum commandType {
     RECV_TXN_REPLACE_ACCOUNT= 97,               ///< Request by desktop to start replace account
     
     COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
+    LIST_SUPPORTED_COINS = 99,              ///< Exchange the list of supported coins on device
 
     DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
 
