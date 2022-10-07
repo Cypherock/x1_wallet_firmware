@@ -61,17 +61,20 @@
 
 uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error) {
   uint16_t offset = 0;
-  *size           = 0;
+  uint32_t value  = 0;
   *error          = 0;
+
   while (offset < 3) {
-    *size |= (*(data + offset) & 0x7F) << offset * 7;
+    value |= (*(data + offset) & 0x7F) << offset * 7;
     if ((*(data + offset) & 0x80) == 0)
       break;
     offset++;
   }
-  if (offset == 2 && (uint8_t)(*(data + offset)) > 3)
+
+  if (value > UINT16_MAX)
     *error = SEC_D_COMPACT_U16_OVERFLOW;  // overflow
 
+  *size = value;
   return offset + 1;
 }
 
