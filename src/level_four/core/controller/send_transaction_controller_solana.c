@@ -95,7 +95,12 @@ void send_transaction_controller_solana() {
 
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA;
-        if (solana_validate_unsigned_txn(&solana_unsigned_txn_ptr) != 0 || status != 0) {
+
+        if (status == SEC_OK)
+          status = solana_validate_unsigned_txn(&solana_unsigned_txn_ptr);
+
+        if (status != SEC_OK) {
+          LOG_ERROR("Solana error code: %d", status);
           mark_error_screen(ui_text_worng_eth_transaction);
           comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
           reset_flow_level();

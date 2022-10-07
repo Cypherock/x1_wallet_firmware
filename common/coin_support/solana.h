@@ -39,6 +39,18 @@ enum SOLANA_SYSTEM_INSTRUCTION {
   SSI_UPGRADE_NONCE_ACCOUNT
 };
 
+enum SOLANA_ERROR_CODES {
+  SEC_OK = 0,
+  SEC_ERROR,
+  SEC_D_MIN_LENGTH,
+  SEC_D_COMPACT_U16_OVERFLOW,
+  SEC_D_READ_SIZE_MISMATCH,
+  SEC_V_UNSUPPORTED_PROGRAM,
+  SEC_V_UNSUPPORTED_INSTRUCTION,
+  SEC_V_UNSUPPORTED_INSTRUCTION_COUNT,
+  SEC_V_INDEX_OUT_OF_RANGE
+};
+
 // Reference : https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.Transfer
 typedef struct solana_transfer_data {
   uint8_t *funding_account;
@@ -81,7 +93,7 @@ typedef struct solana_unsigned_txn {
  * @param size the size of the compact array 
  * @return uint16_t number of bytes used to store the size
  */
-uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size);
+uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error);
 
 /**
  * @brief Convert byte array representation of unsigned transaction to solana_unsigned_txn.

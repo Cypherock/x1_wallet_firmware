@@ -59,20 +59,25 @@
 
 #include "solana.h"
 
-uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size) {
+uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error) {
   uint16_t offset = 0;
   *size           = 0;
+  *error          = 0;
   while (offset < 3) {
     *size |= (*(data + offset) & 0x7F) << offset * 7;
     if ((*(data + offset) & 0x80) == 0)
       break;
     offset++;
   }
+  if (offset == 2 && (uint8_t)(*(data + offset)) > 3)
+    *error = SEC_D_COMPACT_U16_OVERFLOW;  // overflow
+
   return offset + 1;
 }
 
 int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
   uint16_t offset = 0;
+  int error       = 0;
 
   // Message header
   utxn->required_signatures_count                      = *(byte_array + offset++);
@@ -80,7 +85,12 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
   utxn->read_only_accounts_not_require_signature_count = *(byte_array + offset++);
 
   // Account addresses
-  offset += get_compact_array_size(byte_array + offset, &(utxn->account_addresses_count));
+  offset += get_compact_array_size(byte_array + offset, &(utxn->account_addresses_count), &error);
+  if (error != SEC_OK)
+    return error;
+  if (utxn->account_addresses_count == 0)
+    return SEC_D_MIN_LENGTH;
+
   utxn->account_addresses = byte_array + offset;
   offset += utxn->account_addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
 
@@ -89,14 +99,28 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
   offset += SOLANA_BLOCKHASH_LENGTH;
 
   // Instructions: Currently expecting count to be only 1. TODO: Handle batch instructions
-  offset += get_compact_array_size(byte_array + offset, &(utxn->instructions_count));
+  offset += get_compact_array_size(byte_array + offset, &(utxn->instructions_count), &error);
+  if (error != SEC_OK)
+    return error;
+  if (utxn->instructions_count == 0)
+    return SEC_D_MIN_LENGTH;
 
   utxn->instruction.program_id_index = *(byte_array + offset++);
 
-  offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.account_addresses_index_count));
+  offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.account_addresses_index_count), &error);
+  if (error != SEC_OK)
+    return error;
+  if (utxn->instruction.account_addresses_index_count == 0)
+    return SEC_D_MIN_LENGTH;
+
   utxn->instruction.account_addresses_index = byte_array + offset;
   offset += utxn->instruction.account_addresses_index_count;
-  offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.opaque_data_length));
+  offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.opaque_data_length), &error);
+  if (error != SEC_OK)
+    return error;
+  if (utxn->instruction.opaque_data_length == 0)
+    return SEC_D_MIN_LENGTH;
+
   utxn->instruction.opaque_data = byte_array + offset;
   offset += utxn->instruction.opaque_data_length;
 
@@ -121,15 +145,15 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
     }
   }
 
-  return ((offset <= byte_array_size) && (offset > 0)) ? 0 : -1;
+  return ((offset <= byte_array_size) && (offset > 0)) ? SEC_OK : SEC_D_READ_SIZE_MISMATCH;
 }
 
 int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   if (utxn->instructions_count != 1)
-    return -1;
+    return SEC_V_UNSUPPORTED_INSTRUCTION_COUNT;
 
   if (!(0 < utxn->instruction.program_id_index && utxn->instruction.program_id_index < utxn->account_addresses_count))
-    return -1;
+    return SEC_V_INDEX_OUT_OF_RANGE;
 
   uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
 
@@ -140,13 +164,13 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
       case SSI_TRANSFER:  // transfer instruction
         break;
       default:
-        return -1;
+        return SEC_V_UNSUPPORTED_INSTRUCTION;
         break;
     }
   } else {
-    return -1;
+    return SEC_V_UNSUPPORTED_PROGRAM;
   }
-  return 0;
+  return SEC_OK;
 }
 
 void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
