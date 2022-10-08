@@ -225,7 +225,7 @@ bool tap_card_handle_applet_errors() {
                 decrease_level_counter();
             } else if ((tap_card_data.status & 0xFF00) == SW_CORRECT_LENGTH_00) {
                 char error_text[40];
-                snprintf(error_text, sizeof(error_text), ui_text_wrong_remaining_attempts, tap_card_data.status & 0xFF);
+                snprintf(error_text, sizeof(error_text), "Incorrect PIN!\n%d attempt(s) remaining", tap_card_data.status & 0xFF);
                 mark_error_screen(error_text);
                 tap_card_data.lvl3_retry_point = flow_level.level_three - 1;
                 tap_card_data.lvl4_retry_point = 1;

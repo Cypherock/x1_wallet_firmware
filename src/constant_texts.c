@@ -165,9 +165,7 @@ const char* ui_text_wallet_with_same_mnemo_exists = "Wallet already present on d
 const char* ui_text_incorrect_mnemonics = "Incorrect mnemonics";
 const char* ui_text_incorrect_choice_view_seed_again = "Incorrect choice!\nView the seed phrase again?";
 const char* ui_text_xpub_not_found_add_coin_first = "Click OK on the CySync app to resync coins";
-const char* ui_wallet_pin_instruction_1 = "In next step you can setup PIN for %s";
 const char* ui_wallet_pin_instruction_2 = "If you forget it\nyou will lose access\nto this wallet";
-const char* ui_wallet_passphrase_instruction_1 = "In next step you can setup Passphrase for %s";
 const char* ui_wallet_passphrase_instruction_2 = "If you forget it\nyou will lose access\nto this wallet";
 const char* ui_wallet_passphrase_instruction_3 = "Passphrase is recommended only for advanced users";
 const char* ui_wallet_passphrase_instruction_4 = "You will be entering it each time you transact with this wallet";
@@ -178,7 +176,6 @@ const char* ui_text_authentication_required = "Device authentication required";
 const char* ui_text_start_auth_from_CySync = "Authenticate device from the CySync app";
 const char* ui_text_invalid_card_contact_cypherock = "Authentication failed Contact Cypherock";
 const char* ui_text_wrong_card_sequence = "Wrong card sequence";
-const char* ui_text_wrong_remaining_attempts = "Incorrect PIN!\n%d attempt(s) remaining";
 const char* ui_text_wallet_doesnt_exists_on_this_card = "Wallet does not exist on this card";
 const char* ui_text_wallet_verification_failed = "Wallet not created Proceeding for deletion";
 const char* ui_text_no_response_from_desktop = "No response from the CySync app!\nTry again";
@@ -191,10 +188,6 @@ const char* ui_text_invalid_card_tap_card[] = {
     "Invalid card\nTap Card #3",
     "Invalid card\nTap Card #4",
 };
-
-const char* ui_text_place_card_x_heading = "Place Card #%d";
-
-const char* ui_text_place_card_wait_for_beep = "Do not lift until you hear %d beep sound";
 
 const char* ui_text_device_authenticating[] = {
         "Device authenticating.",
@@ -214,13 +207,11 @@ const char* ui_text_device_provisioning[] = {
 
 const char* ui_text_tap_a_card_instruction1 = "This device interacts with cards using NFC";
 const char* ui_text_tap_a_card_instruction2 = "Place and hold any card below the device to test NFC";
-const char* ui_text_tap_x_4_cards = "Tap card #%d";
 
 const char* ui_text_tap_1_2_cards = "Tap any card";
 const char* ui_text_tap_2_2_cards = "Tap another card";
 const char* ui_text_place_card_below = "Place card\nbelow the device";
 
-const char* ui_text_wallet_with_same_name_already_exist_on_this_card = "Wallet name already exists";
 const char* ui_text_wallet_id_collision = "Wallet already exists";
 const char* ui_text_card_is_full = "Error!\nCard is full";
 
@@ -231,16 +222,8 @@ const char* ui_text_family_id_mismatch = "Error! Use correct cards of the wallet
 const char* ui_text_wrong_wallet_is_now_locked = "Wrong!\nWallet is now locked";
 const char* ui_text_hash_not_accepted_by_card = "Hash not accepted by card!";
 
-const char* ui_text_is_currently_locked_wait_for = "%s is currently locked\nWait for %d %s";
-const char* ui_text_is_currently_locked_wait_for_more_than_a_year = "%s is currently locked\nWait for more than a year";
-const char* ui_text_in_process_to_unlock = "%s is in process to unlock...";
-const char* ui_text_multiple_incorrect_attempts_may_block = "Multiple incorrect attempts may block %s";
 const char* ui_text_do_not_detach_device = "Keep the device connected throughout the process";
 
-const char* ui_text_tap_card_ap_d = "Tap card #%d";
-const char* ui_text_correct_pin_is_now_unlocked = "Correct PIN! %s is now unlocked";
-
-const char* ui_text_card_sending_apdu = "Sending APDU\n%d";
 const char* ui_text_card_command_send_error = "Error occurred while sending to APDU to card";
 const char* ui_text_card_update_done = "Card update done!";
 const char* ui_text_card_transaction_exception = "Operation failed on card (Tx Exp)";
@@ -256,9 +239,7 @@ const char* ui_text_unauthenticated_device = "Device is unauthenticated";
 const char* ui_text_enter_pin = "Enter PIN";
 const char* ui_text_confirm_pin = "Confirm PIN";
 const char* ui_text_word_hash = "Word # ";
-const char* ui_text_enter_word_hash = "Enter Word # %d";
 const char* ui_text_verify_word_hash = "Verify Word # ";
-const char* ui_text_is_word = "Is Word #%d\n%s";
 const char* ui_text_enter_wallet_name = "Enter wallet name";
 const char* ui_text_number_of_words = "Number of words";
 const char* ui_text_add_coins = "Add Coin #";
@@ -270,7 +251,6 @@ const char* ui_text_receive_on = "Receive on";
 const char* ui_text_verify_address = "Verify address";
 const char* ui_text_verify_contract = "Verify contract";
 const char* ui_text_unverified_contract = "Warning!\nUnverified contract";
-const char* ui_text_verify_amount = "Verify amount\n%s\n%s";
 const char* ui_text_confirm_wallet_name = "Confirm wallet name";
 const char* ui_text_enter_data = "Enter data";
 const char* ui_text_confirm_data = "Confirm data";
@@ -308,10 +288,7 @@ const char* ui_text_press_enter_to_start_verification = "Proceed to verify walle
 const char* ui_text_now_enter_your_seed_phrase = "Now enter your\nseed phrase";
 const char* ui_text_now_enter_your_data = "Now enter your\ndata";
 const char* ui_text_verify_entered_words = "Verify the entered words";
-const char* ui_text_generating_xpubs = "Adding coins...";
-const char* ui_text_exporting_to_desktop = "Exporting to the CySync app...";
 const char* ui_text_deriving_address = "Deriving address...";
-const char* ui_text_receive_on_address = "%s";
 const char* ui_text_signing_transaction = "Signing transaction...";
 const char* ui_text_exported_signed_transaction_to_desktop = "Exported signed transaction to the CySync app!";
 const char* ui_text_start_card_update = "Start card update?\nThis will format the card";
@@ -320,10 +297,6 @@ const char* ui_text_wallet_lock_continue_to_unlock = "Wallet is locked Proceed t
 const char* ui_text_wallet_partial_continue_to_delete = "Wallet in partial\nstate, proceed to\ndelete";
 const char* ui_text_wallet_not_verified_continue_to_verify = "Wallet not verified Proceed to verify";
 const char* ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards = "Proceed to Sync\nwith cards";
-const char* ui_text_wallet_not_verified_prompt = "'%s' is in unverified state";
-const char* ui_text_wallet_out_of_sync_prompt = "'%s' is out of Sync with cards";
-const char* ui_text_wallet_partial_state_prompt = "'%s' is in partial delete state";
-const char* ui_text_wallet_locked_prompt = "'%s' is in locked state";
 const char* ui_text_wallet_visit_to_verify = "Visit the wallet to fix it";
 const char* ui_text_wallet_partial_fix = "Wallets in partial state Fix before proceeding";
 #ifdef ALLOW_LOG_EXPORT
@@ -348,25 +321,8 @@ const char* ui_text_disable_log_export = "Do you want to disable logging?";
 
 //?
 const char* ui_text_do_you_want_import_wallet_to_desktop = "Do you want to import wallet to the CySync app?";
-const char* ui_text_do_you_want_to_add_coins_to = "Do you want to add coins to %s?";
-const char* ui_text_do_you_want_to_resync_coins_to = "Do you want to resync coins to %s?";
-const char* ui_text_send_transaction_with = "Send %s with %s";
-const char* ui_text_eth_send_transaction_with = "Send %s with %s on %s";
-const char* ui_text_add_account_with_wallet = "Add %s account with %s";
-const char* ui_text_recv_transaction_with = "Receive %s with %s";
-const char* ui_text_eth_recv_transaction_with = "Receive %s with %s on %s";
 const char* ui_text_do_you_want_to_set_pin = "Do you want to set a PIN?";
-const char* ui_text_output_send_value = "Receiver #%d\nSend %f\n%s";
-const char* ui_text_output_send_to_address = "Receiver #%d Address";
 
-const char* ui_text_send_transaction_fee = "Transaction fee\n%s\n%s";
-
-const char* ui_text_output_send_value_double = "Receiver #%d\nSend %0.*f\n%s";
-const char* ui_text_send_transaction_fee_double = "Transaction fee\n%0.*f\n%s";
-
-const char* ui_text_start_firmware_update = "Update firmware to version %d.%d.%d";
-
-const char* ui_text_firmware_update_process = "Updating device...";
 const char* ui_text_auth_process = "Waiting for device authentication...";
 
 const char* ui_text_sync_x1card_confirm = "Device will be synced with wallets in card Confirm?";
@@ -381,7 +337,6 @@ const char* ui_text_card_seems_healthy = "Card seems healthy";
 const char* ui_text_click_to_view_wallets = "Click Ok to view wallets";
 const char* ui_text_no_wallets_fetched = "No Wallets fetched\nClick Ok to return";
 const char* ui_text_no_wallets_present = "No Wallets Present in card";
-const char* ui_text_wallets_in_card = "Wallets in Card #%d";
 const char* ui_text_card_health_check_start = "Tap a card to check it's health";
 const char* ui_text_card_health_check_error[] = {
     "Card error: ",
@@ -415,8 +370,6 @@ const char* ui_text_worng_eth_transaction = "Invalid transaction detected";
 const char* ui_text_error_no_card_paired = "No card paired with device";
 const char* ui_text_error_pair_all_cards = "Pair all four cards first";
 const char* ui_text_error_pair_atleast_2_cards = "Pair at least two cards to restore";
-const char* ui_text_pair_card_x = "Tap Card #%d to pair";
-const char* ui_text_card_pairing_skipped_count = "%d card pairing skipped, pair all cards for proper use";
 const char* ui_text_card_pairing_success = "Card pairing successful";
 const char* ui_text_continue_with_pairing = "Proceed with pairing?";
 const char* ui_text_device_compromised = "Device is compromised! Contact support";
@@ -433,7 +386,7 @@ const char* ui_text_nfc_hardware_fault_detected = "NFC antenna fault detected! C
 const char* ui_text_unreliable_cards = "Warning, your cards are unreliable! Contact support";
 const char* ui_critical_card_health_migrate_data = "Card health is critical! Migrate to new set of cards";
 const char* ui_text_reset_exit[] = {
-    "Wallet '%s' not found on card(s)",
+    "",
     "Exiting without factory reset",
     "Press the center button to proceed",
 };

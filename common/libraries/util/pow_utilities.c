@@ -106,20 +106,20 @@ void convert_secs_to_time(const uint32_t time_in_secs, const char wallet_name[NA
 {
     /*print 2x expected time. TBD: to be replaced with data points based relation*/
     if (time_in_secs <= 60) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_in_process_to_unlock, wallet_name);
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is in process to unlock...", wallet_name);
     } else if (time_in_secs <= 300) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 10, "Minutes");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 10, "Minutes");
     } else if (time_in_secs <= 3600) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 2, "Hours");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 2, "Hours");
     } else if (time_in_secs <= 18000) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 10, "Hours");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 10, "Hours");
     } else if (time_in_secs <= 86400) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 2, "Days");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 2, "Days");
     } else if (time_in_secs <= 432000) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 10, "Days");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 10, "Days");
     } else if (time_in_secs <= 2628000) {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for, wallet_name, 2, "Months");
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for %d %s", wallet_name, 2, "Months");
     } else {
-        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, ui_text_is_currently_locked_wait_for_more_than_a_year, wallet_name);
+        snprintf(out_string, MAX_NUM_OF_CHARS_IN_A_SLIDE, "%s is currently locked\nWait for more than a year", wallet_name);
     }
 }

@@ -113,7 +113,7 @@ void send_transaction_tasks()
         char top_heading[225];
         char display[70];
 
-        snprintf(top_heading, sizeof(top_heading), ui_text_output_send_to_address, var_send_transaction_data.transaction_confirmation_list_index + 1);
+        snprintf(top_heading, sizeof(top_heading), "Receiver #%d Address", var_send_transaction_data.transaction_confirmation_list_index + 1);
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
         address_scr_focus_next();
@@ -127,7 +127,7 @@ void send_transaction_tasks()
         double valueToDisplay = 1.0 * value / (SATOSHI_PER_BTC);
         char display[225] = {0};
         uint8_t precision = get_floating_precision(value, SATOSHI_PER_BTC);
-        snprintf(display, sizeof(display), ui_text_output_send_value_double, var_send_transaction_data.transaction_confirmation_list_index + 1, precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
+        snprintf(display, sizeof(display), "Receiver #%d\nSend %0.*f\n%s", var_send_transaction_data.transaction_confirmation_list_index + 1, precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
@@ -146,7 +146,7 @@ void send_transaction_tasks()
         double txn_fees_in_btc = 1.0 * txn_fees / (SATOSHI_PER_BTC);
         char display[225] = {0};
         uint8_t precision = get_floating_precision(txn_fees, SATOSHI_PER_BTC);
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee_double,
+        snprintf(display, sizeof(display), "Transaction fee\n%0.*f\n%s",
             precision, txn_fees_in_btc, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
@@ -171,7 +171,7 @@ void send_transaction_tasks()
     
     case SEND_TXN_CONFIRM_PASSPHRASE: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
