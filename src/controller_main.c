@@ -785,7 +785,8 @@ void desktop_listener_task(lv_task_t* data)
             case LIST_SUPPORTED_COINS: {
                 uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN), U32_SWAP_ENDIANNESS(COIN_TYPE_BTC_TEST),
                                     U32_SWAP_ENDIANNESS(COIN_TYPE_LITCOIN), U32_SWAP_ENDIANNESS(COIN_TYPE_DOGE),
-                                    U32_SWAP_ENDIANNESS(COIN_TYPE_DASH), U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM)};
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_DASH), U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR)};
                 clear_message_received_data();
                 transmit_data_to_app(LIST_SUPPORTED_COINS, (uint8_t *) coins, sizeof(coins));
             } break;
