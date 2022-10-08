@@ -219,10 +219,13 @@ bool tap_card_handle_applet_errors() {
                 if (tap_card_data.status == SW_NO_ERROR)
                     add_challenge_flash((const char *) wallet.wallet_name, target, random_number,
                                         tap_card_data.tapped_card);
-                tap_card_data.active_cmd_type = USER_ENTERED_PIN;
                 tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
                 flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
                 decrease_level_counter();
+                if (tap_card_data.desktop_control) {
+                    comm_reject_request(USER_ENTERED_PIN, 0);
+                    CY_Set_External_Triggered(false);
+                }
             } else if ((tap_card_data.status & 0xFF00) == SW_CORRECT_LENGTH_00) {
                 char error_text[40];
                 snprintf(error_text, sizeof(error_text), ui_text_wrong_remaining_attempts, tap_card_data.status & 0xFF);

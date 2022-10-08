@@ -209,6 +209,7 @@ void reset_flow_level()
 {
     //reset device state
     CY_Reset_Not_Allow(true);
+    CY_Set_External_Triggered(false);
     if (main_app_ready) {
         mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
     }
