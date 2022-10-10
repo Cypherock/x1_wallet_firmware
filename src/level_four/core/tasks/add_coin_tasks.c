@@ -135,8 +135,9 @@ void add_coin_tasks()
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        instruction_scr_init(ui_text_processing, NULL);
-        BSP_DelayMs(DELAY_TIME);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 
