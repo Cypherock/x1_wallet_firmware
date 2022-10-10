@@ -64,7 +64,6 @@
 #include "application_startup.h"
 #include "app_error.h"
 
-#define DEFAULT_NFC_TG_INIT_TIME    25
 #define SEND_PACKET_MAX_LEN         236
 #define RECV_PACKET_MAX_ENC_LEN     242
 #define RECV_PACKET_MAX_LEN         225
