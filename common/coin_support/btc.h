@@ -26,6 +26,8 @@
 #include "sha2.h"
 #include "coin_utils.h"
 
+#define BTC_COIN_VERSION     0x00000000
+
 #define OP_RETURN   0x6A
 
 #define SATOSHI_PER_BTC 100000000

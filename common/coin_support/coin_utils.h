@@ -36,12 +36,15 @@
 
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
+#define LTC_COIN_VERSION     0x00000000
 
 /// DOGE coin index
 #define DOGE (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION     0x00000000
 
 /// DASH coin index
 #define DASH (BITCOIN + 0x05)
+#define DASH_COIN_VERSION     0x00000000
 
 /// ETHEREUM coin index
 #define ETHEREUM (BITCOIN + 0x3c)
