@@ -62,10 +62,7 @@ static const uint8_t EXPONENT_TABLE[] = {
     0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F
 };
 
-void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* time_in_secs_out)
-{
-    // If target = 2^n then get n
-
+uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]) {
     uint16_t number_bits_set = 0U;
     uint8_t index = SHA256_SIZE - 1U;
 
@@ -87,6 +84,14 @@ void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* ti
             }
         }
     }
+    return number_bits_set;
+}
+
+void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* time_in_secs_out)
+{
+    // If target = 2^n then get n
+
+    uint16_t number_bits_set = pow_count_set_bits(target);
 
     if ((256U - number_bits_set) > 31U) {
         // This is too long of a time to calculate, just return

@@ -57,13 +57,14 @@
  */
 #include "constant_texts.h"
 #include "controller_level_four.h"
-#include "sha2.h"
+#include "controller_tap_cards.h"
 #include "nfc.h"
 #include "pow.h"
+#include "pow_utilities.h"
+#include "sha2.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
 #include "ui_text_slideshow.h"
-#include "controller_tap_cards.h"
 
 extern Flow_level flow_level;
 extern Counter counter;
@@ -129,8 +130,19 @@ static void _wallet_locked_tap_card()
             break;
         } else if (tap_card_data.status == POW_SW_CHALLENGE_FAILED) {
             uint8_t target[SHA256_SIZE], random_number[POW_RAND_NUMBER_SIZE];
+            char log[122] = {0}, offset = 0;
+            for (int i = 0; i < POW_NONCE_SIZE; i++) {
+                offset += snprintf(log + offset, sizeof(log) - offset, "%02X", get_proof_of_work_nonce()[i]);
+            }
+            LOG_CRITICAL("nonce: %s", log);
             tap_card_data.status = nfc_get_challenge(wallet.wallet_name, target, random_number);
             if (tap_card_data.status == SW_NO_ERROR) {
+                if (memcmp(get_wallet_by_index(wallet_index)->challenge.random_number, random_number, POW_RAND_NUMBER_SIZE) != 0) LOG_CRITICAL("E: pow-rand");
+                if (memcmp(get_wallet_by_index(wallet_index)->challenge.target, target, SHA256_SIZE) != 0) {
+                    int old_lvl = pow_count_set_bits(get_wallet_by_index(wallet_index)->challenge.target);
+                    int new_lvl = pow_count_set_bits(target);
+                    LOG_CRITICAL("E: pow-tg (o: %d, n: %d)", old_lvl, new_lvl);
+                }
                 mark_error_screen(ui_text_pow_challenge_failed);
                 add_challenge_flash((const char *) wallet.wallet_name, target, random_number,
                                     tap_card_data.tapped_card);
