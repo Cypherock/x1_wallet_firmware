@@ -143,6 +143,7 @@ static void _wallet_locked_tap_card()
                     int new_lvl = pow_count_set_bits(target);
                     LOG_CRITICAL("E: pow-tg (o: %d, n: %d)", old_lvl, new_lvl);
                 }
+                instruction_scr_destructor();
                 mark_error_screen(ui_text_pow_challenge_failed);
                 add_challenge_flash((const char *) wallet.wallet_name, target, random_number,
                                     tap_card_data.tapped_card);
