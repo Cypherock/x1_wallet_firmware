@@ -265,7 +265,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of name of the coin.
  * @retval
@@ -282,7 +282,7 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of symbol of the coin
  * @retval
