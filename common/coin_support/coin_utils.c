@@ -265,9 +265,9 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
                 case ETHEREUM_ROPSTEN_CHAIN:
                     return ETHEREUM_ROPSTEN_NAME;
                 case POLYGON_MUMBAI_CHAIN:
-                    return POLYGON_MAINNET_NAME;
-                case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MUMBAI_NAME;
+                case POLYGON_MAINNET_CHAIN:
+                    return POLYGON_MAINNET_NAME;
                 default: {
                     ASSERT(false);
                     return "invalid";
