@@ -49,6 +49,9 @@
 /// NEAR coin index
 #define NEAR (BITCOIN + 0x18d)
 
+/// SOLANA coin index
+#define SOLANA (BITCOIN + 0x1F5)
+
 /// NATIVE SEGWIT purpose id
 #define NATIVE_SEGWIT 0x80000054
 
@@ -63,6 +66,7 @@ typedef enum Coin_Type {
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
+    COIN_TYPE_SOLANA = 0x09,
 }Coin_Type;
 
 #pragma pack(push, 1)
@@ -148,6 +152,7 @@ typedef struct Receive_Transaction_Data {
   bool near_acc_found;
   size_t near_acc_count;
   uint8_t near_acc_index;
+  char solana_address[45];
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
