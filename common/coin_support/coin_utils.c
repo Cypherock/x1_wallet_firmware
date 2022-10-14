@@ -239,6 +239,8 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
         }
         case NEAR_COIN_INDEX:
             return NEAR_TOKEN_SYMBOL;
+        case SOLANA:
+            return "SOL";
         default: {
             ASSERT(false);
             return "invalid";
@@ -276,6 +278,8 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
         }
         case NEAR_COIN_INDEX:
             return NEAR_TOKEN_NAME;
+        case SOLANA:
+            return "Solana";
         default: {
             ASSERT(false);
             return "invalid";
@@ -343,6 +347,10 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
+            case SOLANA:
+                assigned_pub_version = 0x0488b21e;
+                assigned_add_version = 0x00;
+                break;
             default:
                 break;
             }
@@ -366,7 +374,7 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         mdata_ptr->account_index[0] < 0x80)
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
-        BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR){
+        (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
         if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;

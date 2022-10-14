@@ -15,7 +15,8 @@
 #define DELAY_TIME 500
 #define DELAY_LONG_STRING   500
 #else
-#define DELAY_TIME 3000
+#define DELAY_SHORT         1000
+#define DELAY_TIME          3000
 #define DELAY_LONG_STRING   5000
 #endif
 
