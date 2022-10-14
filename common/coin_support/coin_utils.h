@@ -44,7 +44,7 @@
 #define DASH (BITCOIN + 0x05)
 
 /// ETHEREUM coin index
-#define ETHEREUM (BITCOIN + 0x3c)
+#define ETHEREUM ETHEREUM_COIN_INDEX
 
 /// NEAR coin index
 #define NEAR (BITCOIN + 0x18d)
@@ -66,6 +66,7 @@ typedef enum Coin_Type {
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
+    COIN_TYPE_POLYGON = 0x08,
     COIN_TYPE_SOLANA = 0x09,
 }Coin_Type;
 
@@ -269,7 +270,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of name of the coin.
  * @retval
@@ -279,14 +280,14 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(uint32_t coin_index, uint8_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of symbol of the coin
  * @retval
@@ -296,7 +297,7 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id);
  *
  * @note
  */
-const char *get_coin_symbol(int coin_index, uint8_t chain_id);
+const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id);
 
 /**
  * @brief Get the version address and public key for segwit and non segwit coins.

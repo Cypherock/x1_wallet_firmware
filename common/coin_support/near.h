@@ -30,6 +30,9 @@
 #define NEAR_ALLOWANCE_SIZE_BYTES        8
 #define NEAR_DEPOSIT_SIZE_BYTES          16
 
+#define NEAR_TOKEN_NAME                  "Near"
+#define NEAR_TOKEN_SYMBOL                "NEAR"
+
 // Datatypes and structures for the transaction
 // ref: https://github.com/near/near-api-js/blob/d4d4cf1ac3182fa998b1e004e6782219325a641b/src/transaction.ts#L139
 // ref: https://nomicon.io/DataStructures/DataTypes
