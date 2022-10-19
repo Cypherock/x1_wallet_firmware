@@ -221,6 +221,7 @@ bool tap_card_handle_applet_errors() {
                                         tap_card_data.tapped_card);
                 tap_card_data.active_cmd_type = USER_ENTERED_PIN;
                 tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
+                flow_level.level_one = LEVEL_TWO_OLD_WALLET;
                 flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
                 decrease_level_counter();
             } else if ((tap_card_data.status & 0xFF00) == SW_CORRECT_LENGTH_00) {
