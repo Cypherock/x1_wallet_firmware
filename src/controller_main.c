@@ -945,6 +945,23 @@ void desktop_listener_task(lv_task_t *data) {
         }
       } break;
 #endif
+      case PGP_REQUEST:
+        if (get_wallet_count() == 0) {
+          // No wallets present on device
+          transmit_one_byte(WALLET_DOES_NOT_EXISTS, 0);
+        } else if (get_valid_wallet_count() == 0) {
+          // No valid wallets found
+          transmit_one_byte(WALLET_DOES_NOT_EXISTS, 3);
+        } else {
+          flow_level.show_desktop_start_screen = true;
+          flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+          flow_level.level_two = LEVEL_THREE_PGP_REQUEST;
+          snprintf(flow_level.confirmation_screen_text,
+                   sizeof(flow_level.confirmation_screen_text),
+                   "Do want to perform PGP operations?");
+        }
+        clear_message_received_data();
+        break;
 
       case LIST_SUPPORTED_COINS: {
         uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN),

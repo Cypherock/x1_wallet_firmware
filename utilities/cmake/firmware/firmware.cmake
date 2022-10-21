@@ -56,6 +56,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         src/level_four/core/tasks
         src/level_four/card_health_check/
         src/level_four/factory_reset/
+        src/level_four/pgp/
         src/level_four/tap_cards/controller
         src/level_four/tap_cards/tasks
 

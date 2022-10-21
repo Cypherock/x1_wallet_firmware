@@ -152,6 +152,11 @@ typedef enum commandType {
   SIGN_MSG_SEND_SIG = 95,    ///< Response by device for send transaction with
                              ///< signed transaction
 
+  PGP_REQUEST = 100,         ///< request to initiate any PGP related task
+  PGP_PUBKEY = 101,          ///< request for PGP public key
+  PGP_ECDH_SESSION = 102,    ///< request for PGP session key
+  PGP_SIGNATURE = 103,       ///< request for PGP key signature
+
   DEVICE_FLOW_RESET_REQ = 0xFF    ///< unused enum
 
 } En_command_type_t;

@@ -60,6 +60,7 @@
 
 #include "constant_texts.h"
 #include "controller_main.h"
+#include "cy_pgp.h"
 #include "tasks.h"
 #include "tasks_level_four.h"
 
@@ -146,6 +147,11 @@ void level_three_old_wallet_tasks() {
     case LEVEL_THREE_SYNC_WALLET: {
       sync_cards_task();
     } break;
+
+    case LEVEL_THREE_PGP_REQUEST: {
+      cyt_pgp();
+    } break;
+
     default:
       break;
   }

@@ -1,9 +1,8 @@
 /**
- * @file    controller_old_wallet.c
+ * @file    cyt_sign_data.c
  * @author  Cypherock X1 Team
- * @brief   Old wallet next controller.
- *          Handles post event (only next events) operations for old wallet
- *flow.
+ * @brief   Sign Data tasks.
+ *          Handles pre-processing & display updates for the sign data.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -57,86 +56,96 @@
  *
  ******************************************************************************
  */
-#include "controller_old_wallet.h"
-
-#include "controller_level_four.h"
 #include "controller_main.h"
 #include "cy_pgp.h"
-#include "tasks.h"
+#include "tasks_tap_cards.h"
+#include "ui_address.h"
+#include "ui_delay.h"
+#include "ui_input_text.h"
+#include "ui_instruction.h"
 
-void level_three_old_wallet_controller() {
-#if X1WALLET_MAIN == 1
-  switch (flow_level.level_two) {
-    case LEVEL_THREE_VIEW_SEED: {
-      view_seed_controller();
-    } break;
+extern char *PASSPHRASE;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-    case LEVEL_THREE_DELETE_WALLET: {
-      delete_wallet_controller();
-    } break;
+void cyt_pgp() {
+  switch (flow_level.level_three) {
+    case LEVEL_THREE_PGP_INIT:
+      instruction_scr_init(ui_text_processing, NULL);
+      mark_event_over();
+      break;
 
-    case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-      export_wallet_controller();
-    } break;
+    case LEVEL_THREE_PGP_CHOOSE_WALLET: {
+      char *wallet_names[MAX_WALLETS_ALLOWED];
 
-    case LEVEL_THREE_ADD_COIN: {
-      add_coin_controller();
-    } break;
+      uint8_t walletAdded = 0;
+      uint8_t walletIndex = 0;
 
-    case LEVEL_THREE_SEND_TRANSACTION: {
-      send_transaction_controller();
-    } break;
+      for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+        if (get_wallet_state(walletIndex) == VALID_WALLET &&
+            get_wallet_card_state(walletIndex) == 0x0f &&
+            get_wallet_locked_status(walletIndex) == 0) {
+          wallet_names[walletAdded] = (char *)get_wallet_name(walletIndex);
+          walletAdded++;
+        }
+      }
 
-    case LEVEL_THREE_SEND_TRANSACTION_ETH: {
-      send_transaction_controller_eth();
-    } break;
-
-    case LEVEL_THREE_SIGN_MESSAGE_ETH: {
-      sign_message_controller_eth();
-    } break;
-
-    case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
-      send_transaction_controller_near();
-    } break;
-
-    case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
-      send_transaction_controller_solana();
+      menu_init((const char **)wallet_names,
+                walletAdded,
+                ui_text_choose_wallet,
+                true);
     } break;
 
-    case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
-      receive_transaction_controller_eth();
+    case LEVEL_THREE_PGP_ENTER_PASSPHRASE: {
+      input_text_init(
+          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+
     } break;
 
-    case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
-      receive_transaction_controller_near();
+    case LEVEL_THREE_PGP_CONFIRM_PASSPHRASE: {
+      char display[65];
+      snprintf(
+          display, sizeof(display), "%s", flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_passphrase, display, false);
+      memzero(display, sizeof(display));
     } break;
 
-    case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
-      receive_transaction_controller_solana();
+    case LEVEL_THREE_PGP_ENTER_PIN: {
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+
     } break;
 
-    case LEVEL_THREE_RECEIVE_TRANSACTION: {
-      receive_transaction_controller();
+    case LEVEL_THREE_PGP_TAP_CARD: {
+      tap_threshold_cards_for_reconstruction();
     } break;
 
-    case LEVEL_THREE_WALLET_LOCKED: {
-      wallet_locked_controller();
-    } break;
+    case LEVEL_THREE_PGP_DERIVE_HDNODE:
+      instruction_scr_destructor();
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      mark_event_over();
+      break;
 
-    case LEVEL_THREE_VERIFY_WALLET: {
-      verify_wallet_controller();
-    } break;
-    case LEVEL_THREE_SYNC_WALLET: {
-      sync_cards_controller();
-    } break;
+    case LEVEL_THREE_PGP_PUBKEY:
+      instruction_scr_change_text("Sending public key", true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
 
-    case LEVEL_THREE_PGP_REQUEST: {
-      cyc_pgp();
-    } break;
+    case LEVEL_THREE_PGP_ECDH:
+      instruction_scr_change_text("Generating session key", true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
+
+    case LEVEL_THREE_PGP_SIGN:
+      instruction_scr_change_text("Sending signature", true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
 
     default:
+      mark_event_over();
       break;
   }
-  return;
-#endif
 }
