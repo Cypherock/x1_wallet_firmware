@@ -107,7 +107,7 @@ void receive_transaction_controller()
     }break;
 
     case RECV_TXN_ENTER_PIN: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
       
@@ -190,7 +190,7 @@ void receive_transaction_controller()
         uint8_t data[1 + sizeof(receive_transaction_data.address)];
         data[0] = 1;  // confirmation byte
         memcpy(data + 1, receive_transaction_data.address, sizeof(receive_transaction_data.address));
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, strlen((const char *)data));
+        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, strnlen((const char *)data, sizeof(data)));
         reset_flow_level();
     } break;
 

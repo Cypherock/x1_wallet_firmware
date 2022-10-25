@@ -136,7 +136,7 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics)
 
 bool validate_wallet(Wallet *wallet) {
     if (wallet == NULL) return true;
-    if (strlen((char *) wallet->wallet_name) >= NAME_SIZE) { LOG_ERROR("xx13"); return false; }
+    if (strnlen((char *) wallet->wallet_name, NAME_SIZE) >= NAME_SIZE) { LOG_ERROR("xx13"); return false; }
     if (wallet->wallet_info & 0xF8) { LOG_ERROR("xx14"); return false; }
     if (WALLET_IS_PIN_SET(wallet->wallet_info) && 
         is_zero(wallet->password_double_hash, sizeof(wallet->password_double_hash))) {

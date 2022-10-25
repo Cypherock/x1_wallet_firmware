@@ -143,7 +143,7 @@ void view_seed_task()
             const char *mnemo = mnemonic_from_data(secret, BLOCK_SIZE);
 
             ASSERT(mnemo != NULL);
-            __single_to_multi_line(mnemo, strlen(mnemo), words);
+            __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), words);
             mnemonic_clear();
 
             set_theme(LIGHT);
