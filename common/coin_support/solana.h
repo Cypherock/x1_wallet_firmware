@@ -36,7 +36,7 @@ enum SOLANA_SYSTEM_INSTRUCTION {
   SSI_ALLOCATE_WITH_SEED,
   SSI_ASSIGN_WITH_SEED,
   SSI_TRANSFER_WITH_SEED,
-  SSI_UPGRADE_NONCE_ACCOUNT
+  SSI_UPGRADE_NONCE_ACCOUNT,
 };
 
 enum SOLANA_ERROR_CODES {
@@ -49,7 +49,7 @@ enum SOLANA_ERROR_CODES {
   SEC_V_UNSUPPORTED_INSTRUCTION,
   SEC_V_UNSUPPORTED_INSTRUCTION_COUNT,
   SEC_V_INDEX_OUT_OF_RANGE,
-  SEC_BU_INVALID_BLOCKHASH
+  SEC_BU_INVALID_BLOCKHASH,
 };
 
 // Reference : https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.Transfer
@@ -152,10 +152,9 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
 /**
  * @brief Update blockhash in serialized array to given blockhash
  * 
- * @param utxn          pointer to solana unsigned transaction object
  * @param byte_array    pointer to serialized array of unsigned transaction to be modified
  * @param blockhash     pointer to array of latest blockhash
  * @return int 
  */
-int solana_update_blockhash_in_byte_array(const solana_unsigned_txn *utxn, uint8_t *byte_array, uint8_t *blockhash);
+int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *blockhash);
 #endif  // SOLANA_HEADER

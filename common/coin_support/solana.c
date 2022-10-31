@@ -196,22 +196,26 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
   memzero(&hdnode, sizeof(hdnode));
 }
 
-int solana_update_blockhash_in_byte_array(const solana_unsigned_txn *utxn, uint8_t *byte_array, uint8_t *blockhash) {
+int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *blockhash) {
   uint8_t empty_array[SOLANA_BLOCKHASH_LENGTH] = {0};
   uint16_t offset                              = 0;
   int status                                   = SEC_OK;
+  uint16_t addresses_count                     = 0;
+
+  if (byte_array == NULL || blockhash == NULL)
+    return SEC_ERROR;
 
   if (memcmp(blockhash, empty_array, SOLANA_BLOCKHASH_LENGTH) == 0)
     return SEC_BU_INVALID_BLOCKHASH;
   // Message headers
   offset += 3;
   // Account addresses
-  offset += get_compact_array_size(byte_array + offset, &(utxn->account_addresses_count), &status);
+  offset += get_compact_array_size(byte_array + offset, &addresses_count, &status);
   if (status != SEC_OK)
     return status;
-  if (utxn->account_addresses_count == 0)
+  if (addresses_count == 0)
     return SEC_D_MIN_LENGTH;
-  offset += utxn->account_addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
+  offset += addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
   // Blockhash
   memcpy(byte_array + offset, blockhash, SOLANA_BLOCKHASH_LENGTH);
   return SEC_OK;

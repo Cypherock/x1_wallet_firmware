@@ -175,17 +175,10 @@ void send_transaction_controller_solana() {
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_SOLANA: {
-      flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_SOLANA;
-    } break;
-
-    case SEND_TXN_READ_DEVICE_SHARE_SOLANA:
-      wallet_shamir_data.share_x_coords[1] = 5;
-      get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[1]);
-      memcpy(wallet_shamir_data.share_encryption_data[1], wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
       flow_level.level_three = SEND_TXN_UPDATE_BLOCKHASH_SOLANA;
-      transmit_data_to_app(SEND_TXN_PRE_SIGNING_DATA, 1, 1);
-      break;
+      uint8_t arr[1]         = {1};
+      transmit_data_to_app(SEND_TXN_PRE_SIGNING_DATA, arr, sizeof(arr));
+    } break;
 
     case SEND_TXN_UPDATE_BLOCKHASH_SOLANA: {
       uint8_t *blockhash_received                              = NULL;
@@ -193,19 +186,29 @@ void send_transaction_controller_solana() {
       uint8_t solana_latest_blockhash[SOLANA_BLOCKHASH_LENGTH] = {0};
 
       if (get_usb_msg_by_cmd_type(SEND_TXN_PRE_SIGNING_DATA, &blockhash_received, &blockhash_msg_size)) {
-        ASSERT(blockhash_msg_size == SOLANA_BLOCKHASH_LENGTH);
+        if (blockhash_msg_size != SOLANA_BLOCKHASH_LENGTH) {
+          comm_reject_invalid_cmd();
+          reset_flow_level();
+        }
         memcpy(solana_latest_blockhash, blockhash_received, SOLANA_BLOCKHASH_LENGTH);
         clear_message_received_data();
 
-        int status = solana_update_blockhash_in_byte_array(&solana_unsigned_txn_ptr, solana_unsigned_txn_byte_array,
-                                                           solana_latest_blockhash);
+        int status = solana_update_blockhash_in_byte_array(solana_unsigned_txn_byte_array, solana_latest_blockhash);
         if (status != SEC_OK) {
           LOG_ERROR("Solana error code: %d\n BlockHash not updated", status);
         }
-        flow_level.level_three = SEND_TXN_SIGN_TXN_SOLANA;
+        flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_SOLANA;
       }
 
     } break;
+
+    case SEND_TXN_READ_DEVICE_SHARE_SOLANA:
+      wallet_shamir_data.share_x_coords[1] = 5;
+      get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[1]);
+      memcpy(wallet_shamir_data.share_encryption_data[1], wallet_shamir_data.share_encryption_data[0],
+             NONCE_SIZE + WALLET_MAC_SIZE);
+      flow_level.level_three = SEND_TXN_SIGN_TXN_SOLANA;
+      break;
 
     case SEND_TXN_SIGN_TXN_SOLANA: {
       uint8_t secret[BLOCK_SIZE];
