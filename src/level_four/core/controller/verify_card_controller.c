@@ -199,8 +199,14 @@ void verify_card_controller()
 
     case VERIFY_CARD_SUCCESS:
         if (is_paired(tap_card_data.card_key_id) == -1) {
-            tap_card_data.desktop_control = false;    // moving to pairing; we don't want to convey anything to desktop
-            tap_card_take_to_pairing();
+            uint32_t device_family_id = U32_READ_BE_ARRAY(get_family_id());
+            if(device_family_id != U32_READ_BE_ARRAY(tap_card_data.family_id) && device_family_id != 0xFFFFFFFF){
+                reset_flow_level();
+            }
+            else{
+                tap_card_data.desktop_control = false;    // moving to pairing; we don't want to convey anything to desktop
+                tap_card_take_to_pairing();
+            }
         } else {
             reset_flow_level();
         }
