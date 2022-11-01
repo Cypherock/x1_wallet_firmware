@@ -42,7 +42,7 @@
 #define MAX_NUMBER_OF_MNEMONIC_WORDS 24
 
 /// Max length of mnemonic word
-#define MAX_MNEMONIC_WORD_LENGTH 9
+#define MAX_MNEMONIC_WORD_LENGTH 16
 
 /// Max length of passphrase entered
 #define MAX_PASSPHRASE_INPUT_LENGTH 65
