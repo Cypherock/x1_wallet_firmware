@@ -150,7 +150,7 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
                                     const char *passphrase,
                                     uint8_t *sig);
 /**
- * @brief Update blockhash in serialized array to given blockhash
+ * @brief Update given blockhash in serialized array
  * 
  * @param byte_array    pointer to serialized array of unsigned transaction to be modified
  * @param blockhash     pointer to array of latest blockhash
