@@ -251,6 +251,7 @@ void initial_verify_card_controller()
     } break;
 
     case VERIFY_CARD_FAILED:
+        comm_process_complete();
         reset_flow_level();
         flow_level.level_one = 6;
         break;
