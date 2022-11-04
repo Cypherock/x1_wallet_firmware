@@ -95,6 +95,7 @@ void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* ti
     }
 
     uint64_t time_in_secs = 1U;
+    ASSERT(pow_hash_rate != 0);
     time_in_secs = (time_in_secs << (256U - number_bits_set)) / pow_hash_rate;
 
     *time_in_secs_out = CY_MIN(time_in_secs, UINT32_MAX);
