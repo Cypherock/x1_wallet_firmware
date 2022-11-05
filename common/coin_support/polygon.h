@@ -1,5 +1,5 @@
 /**
-* @file    eth.h
+* @file    polygon.h
 * @author  Cypherock X1 Team
 * @brief   Polygon network config
 *          Place to define all values specific to Polygon chain

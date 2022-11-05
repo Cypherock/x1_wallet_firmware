@@ -56,10 +56,16 @@
  ******************************************************************************
  */
 #include "coin_utils.h"
-#include "near.h"
-#include "polygon.h"
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
+#include "etc.h"
 #include "eth.h"
-
+#include "fantom.h"
+#include "harmony.h"
+#include "near.h"
+#include "optimism.h"
+#include "polygon.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -233,6 +239,26 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
                 case POLYGON_MUMBAI_CHAIN:
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_TOKEN_SYMBOL;
+                case BSC_TESTNET_CHAIN:
+                case BSC_MAINNET_CHAIN:
+                  return BSC_TOKEN_SYMBOL;
+                case FANTOM_TESTNET_CHAIN:
+                case FANTOM_MAINNET_CHAIN:
+                  return FANTOM_TOKEN_SYMBOL;
+                case AVALANCHE_TESTNET_CHAIN:
+                case AVALANCHE_MAINNET_CHAIN:
+                  return AVALANCHE_TOKEN_SYMBOL;
+                case OPTIMISM_TESTNET_CHAIN:
+                case OPTIMISM_MAINNET_CHAIN:
+                  return OPTIMISM_TOKEN_SYMBOL;
+                case ETC_TESTNET_CHAIN:
+                case ETC_MAINNET_CHAIN:
+                  return ETC_TOKEN_SYMBOL;
+                case HARMONY_TESTNET_CHAIN:
+                case HARMONY_MAINNET_CHAIN:
+                  return HARMONY_TOKEN_SYMBOL;
+                case ARBITRUM_MAINNET_CHAIN:
+                  return ARBITRUM_TOKEN_SYMBOL;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -272,6 +298,32 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
                     return POLYGON_MUMBAI_NAME;
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MAINNET_NAME;
+                case BSC_MAINNET_CHAIN:
+                  return BSC_MAINNET_NAME;
+                case BSC_TESTNET_CHAIN:
+                  return BSC_TESTNET_NAME;
+                case FANTOM_MAINNET_CHAIN:
+                  return FANTOM_MAINNET_NAME;
+                case FANTOM_TESTNET_CHAIN:
+                  return FANTOM_TESTNET_NAME;
+                case AVALANCHE_MAINNET_CHAIN:
+                  return AVALANCHE_MAINNET_NAME;
+                case AVALANCHE_TESTNET_CHAIN:
+                  return AVALANCHE_TESTNET_NAME;
+                case OPTIMISM_MAINNET_CHAIN:
+                  return OPTIMISM_MAINNET_NAME;
+                case OPTIMISM_TESTNET_CHAIN:
+                  return OPTIMISM_TESTNET_NAME;
+                case ETC_MAINNET_CHAIN:
+                  return ETC_MAINNET_NAME;
+                case ETC_TESTNET_CHAIN:
+                  return ETC_TESTNET_NAME;
+                case HARMONY_MAINNET_CHAIN:
+                  return HARMONY_MAINNET_NAME;
+                case HARMONY_TESTNET_CHAIN:
+                  return HARMONY_TESTNET_NAME;
+                case ARBITRUM_MAINNET_CHAIN:
+                  return ARBITRUM_MAINNET_NAME;
                 default: {
                     ASSERT(false);
                     return "invalid";
