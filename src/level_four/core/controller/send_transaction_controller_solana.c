@@ -177,7 +177,7 @@ void send_transaction_controller_solana() {
     case SEND_TXN_TAP_CARD_SEND_CMD_SOLANA: {
       flow_level.level_three = SEND_TXN_UPDATE_BLOCKHASH_SOLANA;
       uint8_t arr[1]         = {1};
-      transmit_data_to_app(SEND_TXN_PRE_SIGNING_DATA, arr, sizeof(arr));
+      transmit_data_to_app(SEND_TXN_UNSIGNED_TXN, arr, sizeof(arr));
     } break;
 
     case SEND_TXN_UPDATE_BLOCKHASH_SOLANA: {
@@ -196,6 +196,8 @@ void send_transaction_controller_solana() {
         int status = solana_update_blockhash_in_byte_array(solana_unsigned_txn_byte_array, solana_latest_blockhash);
         if (status != SOL_OK) {
           LOG_ERROR("Solana error code: %d\n BlockHash not updated", status);
+          comm_reject_request(SEND_TXN_PRE_SIGNING_DATA, 0);
+          reset_flow_level();
         }
         flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_SOLANA;
       }
