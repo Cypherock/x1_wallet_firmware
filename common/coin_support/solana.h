@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include "coin_utils.h"
 
+#define SOL_COIN_VERSION    0x00000000
+
 // Derivation path reference : https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
 // Taking 3 levels of depth similar to ledger
 #define SOLANA_PURPOSE_INDEX 0x8000002C
