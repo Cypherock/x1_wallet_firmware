@@ -86,7 +86,9 @@ void send_transaction_tasks_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        instruction_scr_init(ui_text_processing, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 
@@ -154,7 +156,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     }break;
 
@@ -221,7 +225,9 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee, "ETH");
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee,
+                 get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
+                                 var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
@@ -273,7 +279,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        instruction_scr_init(ui_text_signing_transaction, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 

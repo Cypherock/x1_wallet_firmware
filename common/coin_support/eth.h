@@ -30,6 +30,17 @@
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
 
+#define ETHEREUM_PURPOSE_INDEX    0x8000002C
+#define ETHEREUM_COIN_INDEX       0x8000003C
+
+#define ETHEREUM_MAINNET_CHAIN    1
+#define ETHEREUM_ROPSTEN_CHAIN    3
+
+#define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
+#define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
+#define ETHEREUM_TOKEN_NAME     "Ether"
+#define ETHEREUM_TOKEN_SYMBOL   "ETH"
+
 /// Convert byte array to unit32_t
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
