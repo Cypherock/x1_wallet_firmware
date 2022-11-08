@@ -195,7 +195,7 @@ void send_transaction_controller_solana() {
 
         int status = solana_update_blockhash_in_byte_array(solana_unsigned_txn_byte_array, solana_latest_blockhash);
         if (status != SOL_OK) {
-          LOG_ERROR("Solana error code: %d\n BlockHash not updated", status);
+          LOG_ERROR("SOL: %d", status);
           comm_reject_request(SEND_TXN_PRE_SIGNING_DATA, 0);
           reset_flow_level();
         }
