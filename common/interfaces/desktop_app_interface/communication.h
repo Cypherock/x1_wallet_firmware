@@ -122,6 +122,8 @@ typedef enum commandType {
     
     COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
 
+    SEND_TXN_PRE_SIGNING_DATA = 92,                    ///< Command for data required just before signing in send transaction
+
     DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
 
 } En_command_type_t;
