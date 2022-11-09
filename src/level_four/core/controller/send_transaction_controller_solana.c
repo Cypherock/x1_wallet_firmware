@@ -101,6 +101,7 @@ void send_transaction_controller_solana() {
 
         if (status != SOL_OK) {
           LOG_ERROR("Solana error code: %d", status);
+          instruction_scr_destructor();
           mark_error_screen(ui_text_worng_eth_transaction);
           comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
           reset_flow_level();

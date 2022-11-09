@@ -97,10 +97,12 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (!eth_unsigned_txn_ptr.contract_verified)
+        if (!eth_unsigned_txn_ptr.contract_verified){
+            instruction_scr_destructor();
             delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
-        else
+        } else {
             mark_event_over();
+        }
     } break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS: {

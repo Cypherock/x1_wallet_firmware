@@ -108,6 +108,7 @@ void send_transaction_controller_eth()
             clear_message_received_data();
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
             if (!eth_validate_unsigned_txn(&eth_unsigned_txn_ptr, &var_send_transaction_data.transaction_metadata)) {
+                instruction_scr_destructor();
                 mark_error_screen(ui_text_worng_eth_transaction);
                 comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
                 reset_flow_level();
