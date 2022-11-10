@@ -84,7 +84,7 @@ static void restore_wallet_enter_mnemonics_flow()
 {
     if (flow_level.level_four <= wallet.number_of_mnemonics) {
         char heading[20];
-        snprintf(heading, sizeof(heading), "Enter Word # %d", flow_level.level_four);
+        snprintf(heading, sizeof(heading), UI_TEXT_ENTER_WORD, flow_level.level_four);
         ui_mnem_init(heading);
     } else {
         // todo check if mnemonics is correct

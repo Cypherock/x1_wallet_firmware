@@ -90,11 +90,11 @@ static void generate_wallet_random_word()
     if (choose) {
         word_to_choose %= 24;
         mark_expected_list_choice(1);
-        snprintf(msg, sizeof(msg), "Is Word #%d\n%s", word_to_choose + 1, wallet_credential_data.mnemonics[word_to_choose]);
+        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, word_to_choose + 1, wallet_credential_data.mnemonics[word_to_choose]);
     } else {
         word_to_choose = word_to_choose & 0x7FF;
         temp = word_to_choose % 24;
-        snprintf(msg, sizeof(msg), "Is Word #%d\n%s", temp + 1, wordlist[word_to_choose]);
+        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, temp + 1, wordlist[word_to_choose]);
         if (strcmp(wordlist[word_to_choose], wallet_credential_data.mnemonics[temp]) == 0) {
             mark_expected_list_choice(1);
         } else {
