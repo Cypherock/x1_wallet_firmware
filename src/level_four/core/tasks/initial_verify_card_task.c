@@ -73,16 +73,16 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_START_MESSAGE: {
             char str[50], heading[50];
-            snprintf(str, sizeof(str), "Do not lift until you hear %d beep sound", 3);
-            snprintf(heading, sizeof(heading), "Place Card #%d", auth_card_number);
+            snprintf(str, sizeof(str), UI_TEXT_PLACE_CARD_TILL_BEEP, 3);
+            snprintf(heading, sizeof(heading), UI_TEXT_PLACE_CARD, auth_card_number);
             instruction_scr_init(str,heading);
             mark_event_over();
           } break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND: {
             char str[50], heading[50];
-            snprintf(str, sizeof(str), "Do not lift until you hear %d beep sound", 3);
-            snprintf(heading, sizeof(heading), "Place Card #%d",
+            snprintf(str, sizeof(str), UI_TEXT_PLACE_CARD_TILL_BEEP, 3);
+            snprintf(heading, sizeof(heading), UI_TEXT_PLACE_CARD,
                      auth_card_number);
             instruction_scr_destructor();
             instruction_scr_init("Dummy", heading);
@@ -98,8 +98,8 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND: {
       char str[50], heading[50];
-      snprintf(str, sizeof(str), "Do not lift until you hear %d beep sound", 2);
-      snprintf(heading, sizeof(heading), "Place Card #%d",
+      snprintf(str, sizeof(str), UI_TEXT_PLACE_CARD_TILL_BEEP, 2);
+      snprintf(heading, sizeof(heading), UI_TEXT_PLACE_CARD,
                auth_card_number);
       instruction_scr_destructor();
       instruction_scr_init("Dummy", heading);
@@ -115,8 +115,8 @@ void initial_verify_card_task() {
 
     case VERIFY_CARD_PAIR_FRONTEND: {
       char str[50], heading[50];
-      snprintf(str, sizeof(str), "Do not lift until you hear %d beep sound", 1);
-      snprintf(heading, sizeof(heading), "Place Card #%d",
+      snprintf(str, sizeof(str), UI_TEXT_PLACE_CARD_TILL_BEEP, 1);
+      snprintf(heading, sizeof(heading), UI_TEXT_PLACE_CARD,
                auth_card_number);
 
       instruction_scr_destructor();

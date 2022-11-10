@@ -216,7 +216,7 @@ void send_transaction_tasks_eth()
         }
 
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), "Verify amount\n%s\n%s", amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
         confirm_scr_init(display);
     } break;
 
@@ -225,7 +225,7 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
-        snprintf(display, sizeof(display), "Transaction fee\n%s\n%s", fee,
+        snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);

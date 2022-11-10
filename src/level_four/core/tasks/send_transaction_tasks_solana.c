@@ -134,7 +134,7 @@ void send_transaction_tasks_solana() {
                                                 amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();
-      snprintf(display, sizeof(display), "Verify amount\n%s\n%s", amount_decimal_string,
+      snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
       confirm_scr_init(display);
     } break;
@@ -155,7 +155,7 @@ void send_transaction_tasks_solana() {
                                                 amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();
-      snprintf(display, sizeof(display), "Verify amount\n%s\n%s", amount_decimal_string,
+      snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
       confirm_scr_init(display);
     } break;

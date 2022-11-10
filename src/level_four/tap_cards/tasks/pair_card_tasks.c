@@ -78,7 +78,7 @@ void tap_card_pair_card_tasks()
             mark_event_cancel();
         }
         else{
-            snprintf(display, sizeof(display), "Tap Card #%d to pair", ((flow_level.level_four-1)>>1)+1);
+            snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
             card_detect_scr_init(display);
         }
         break;
@@ -88,7 +88,7 @@ void tap_card_pair_card_tasks()
     case PAIR_CARD_GREEN_BACKEND:
     case PAIR_CARD_YELLOW_BACKEND:
         card_detect_scr_destructor();
-        snprintf(display, sizeof(display), "Tap Card #%d to pair", flow_level.level_four>>1);
+        snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, flow_level.level_four>>1);
         instruction_scr_init("Dummy", display);
         mark_event_over();
         break;
