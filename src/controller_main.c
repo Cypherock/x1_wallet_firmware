@@ -561,7 +561,7 @@ void desktop_listener_task(lv_task_t* data)
                         }
                     } else if(coin_index == SOLANA_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "Send %s with %s", get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "Send %s with %s", get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
