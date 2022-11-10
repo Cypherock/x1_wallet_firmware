@@ -62,10 +62,7 @@ static const uint8_t EXPONENT_TABLE[] = {
     0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F
 };
 
-void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* time_in_secs_out)
-{
-    // If target = 2^n then get n
-
+uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]) {
     uint16_t number_bits_set = 0U;
     uint8_t index = SHA256_SIZE - 1U;
 
@@ -87,19 +84,26 @@ void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* ti
             }
         }
     }
+    return number_bits_set;
+}
 
-    if ((256U - number_bits_set) > 31U) {
+void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* time_in_secs_out)
+{
+    // If target = 2^n then get n
+
+    uint16_t number_bits_set = pow_count_set_bits(target);
+
+    if ((256U - number_bits_set) > 63U) {
         // This is too long of a time to calculate, just return
-        *time_in_secs_out = 99U;
+        *time_in_secs_out = UINT32_MAX;
         return;
     }
 
-    uint32_t time_in_secs = 1U;
-    time_in_secs = (uint32_t)(time_in_secs << (256U - number_bits_set)) / pow_hash_rate;
+    uint64_t time_in_secs = 1U;
+    ASSERT(pow_hash_rate != 0);
+    time_in_secs = (time_in_secs << (256U - number_bits_set)) / pow_hash_rate;
 
-    *time_in_secs_out = time_in_secs;
-
-    return;
+    *time_in_secs_out = CY_MIN(time_in_secs, UINT32_MAX);
 }
 
 void convert_secs_to_time(const uint32_t time_in_secs, const char wallet_name[NAME_SIZE], char out_string[MAX_NUM_OF_CHARS_IN_A_SLIDE])

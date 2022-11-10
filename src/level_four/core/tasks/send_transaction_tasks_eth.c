@@ -225,7 +225,9 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
-        snprintf(display, sizeof(display), "Transaction fee\n%s\n%s", fee, "ETH");
+        snprintf(display, sizeof(display), "Transaction fee\n%s\n%s", fee,
+                 get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
+                                 var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
