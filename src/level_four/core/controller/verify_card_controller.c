@@ -201,6 +201,7 @@ void verify_card_controller()
         if (is_paired(tap_card_data.card_key_id) == -1) {
             uint32_t device_family_id = U32_READ_BE_ARRAY(get_family_id());
             if(device_family_id != U32_READ_BE_ARRAY(tap_card_data.family_id) && device_family_id != 0xFFFFFFFF){
+                // exit if device already paired with another set
                 reset_flow_level();
             }
             else{
