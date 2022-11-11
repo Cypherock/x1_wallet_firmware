@@ -119,8 +119,6 @@ void send_transaction_controller()
         if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
             byte_array_to_unsigned_txn(data_array, msg_size, &var_send_transaction_data.unsigned_transaction);
             clear_message_received_data();
-            instruction_scr_destructor();
-            lv_task_del(timeout_task);
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
             if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
                 comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);

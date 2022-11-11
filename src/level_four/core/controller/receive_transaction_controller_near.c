@@ -100,6 +100,7 @@ void receive_transaction_controller_near()
             }
         }
 
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
         }
@@ -177,6 +178,7 @@ void receive_transaction_controller_near()
 
         mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
         mnemonic_clear();
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
 
         uint32_t path[] = {
             BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
@@ -241,6 +243,7 @@ void receive_transaction_controller_near()
                 if(status!= 0) {
                     comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
                     reset_flow_level();
+                    return;
                 }
             }
             else {
@@ -294,6 +297,7 @@ void receive_transaction_controller_near()
         if(status!= 0) {
             comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
             reset_flow_level();
+            return;
         }
 
         transmit_one_byte_confirm(RECV_TXN_REPLACE_ACCOUNT);

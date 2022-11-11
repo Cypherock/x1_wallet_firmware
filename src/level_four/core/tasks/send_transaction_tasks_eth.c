@@ -70,6 +70,7 @@
 #include "tasks_tap_cards.h"
 #include "utils.h"
 #include "contracts.h"
+#include "int-util.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -85,11 +86,9 @@ void send_transaction_tasks_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        instruction_scr_init(ui_text_fetching_unsigned_transaction, NULL);
-
-        timeout_task = lv_task_create(_timeout_listener, 100000, LV_TASK_PRIO_HIGH, NULL);
-        lv_task_once(timeout_task);
-
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 
@@ -111,6 +110,7 @@ void send_transaction_tasks_eth()
         char top_heading[55];
         char display[70];
 
+        instruction_scr_destructor();
         byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address,
                                  ETHEREUM_ADDRESS_LENGTH, address + 2, sizeof(address) - 2);
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
@@ -134,6 +134,7 @@ void send_transaction_tasks_eth()
             nonce_dec_str[index - offset] = nonce_dec_str[index] + '0';
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
+        instruction_scr_destructor();
         address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
     } break;
 
@@ -146,6 +147,7 @@ void send_transaction_tasks_eth()
         uint8_t address_bytes[20];
         char display[70];
 
+        instruction_scr_destructor();
         eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
         byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
@@ -154,7 +156,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     }break;
 
@@ -217,24 +221,13 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
+        char display[125] = {0}, fee[30] = {0};
+
         instruction_scr_destructor();
-        uint8_t point_index;
-        char gas_eth_dec_str[30] = {'\0'};
-        uint64_t txn_fee = bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_price, eth_unsigned_txn_ptr.gas_price_size[0]) / 1000000000;
-        txn_fee *= bendian_byte_to_dec(eth_unsigned_txn_ptr.gas_limit, eth_unsigned_txn_ptr.gas_limit_size[0]);
-
-        point_index = snprintf(gas_eth_dec_str + 1, sizeof(gas_eth_dec_str) - 1, "%09llu", txn_fee);
-        ASSERT(point_index >= 0 && point_index < sizeof(gas_eth_dec_str));
-        gas_eth_dec_str[0] = point_index > ETH_GWEI_INDEX ? ' ' : '0';
-        gas_eth_dec_str[point_index + 1] = '\0';
-        point_index++;
-        for (int i = 0; i < ETH_GWEI_INDEX; i++, point_index--) {
-            gas_eth_dec_str[point_index] = gas_eth_dec_str[point_index - 1];
-        }
-        gas_eth_dec_str[point_index] = '.';
-
-        char display[125];
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, gas_eth_dec_str, "ETH");
+        eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
+        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee,
+                 get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
+                                 var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
@@ -286,7 +279,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        instruction_scr_init(ui_text_signing_transaction, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 

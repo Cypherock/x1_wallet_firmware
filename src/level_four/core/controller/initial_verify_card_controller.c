@@ -166,14 +166,11 @@ void initial_verify_card_controller()
         uint8_t *data_array;
         uint16_t msg_size = 0;
 
-        get_usb_msg(&cmd_type, &data_array, &msg_size);
+        if (!get_usb_msg(&cmd_type, &data_array, &msg_size)) return;
         if (cmd_type == STATUS_PACKET && data_array && data_array[0] == 0) {
             flow_level.level_three = VERIFY_CARD_FAILED;
-        if (!get_usb_msg_by_cmd_type(APP_SEND_RAND_NUM, &data_array, &msg_size)) {
-            comm_reject_invalid_cmd();
             clear_message_received_data();
             return;
-        }
         } else if (cmd_type != APP_SEND_RAND_NUM) {
             comm_reject_invalid_cmd();
             clear_message_received_data();
@@ -224,10 +221,16 @@ void initial_verify_card_controller()
     } break;
 
     case VERIFY_CARD_AUTH_STATUS: {
+        En_command_type_t cmd_type;
         uint8_t *data_array;
         uint16_t msg_size = 0;
-        if (!get_usb_msg_by_cmd_type(STATUS_PACKET, &data_array, &msg_size))
+
+        if (!get_usb_msg(&cmd_type, &data_array, &msg_size)) return;
+        if (cmd_type != STATUS_PACKET) {
+            comm_reject_invalid_cmd();
+            clear_message_received_data();
             return;
+        }
 
         flow_level.level_three = data_array[0] == STATUS_CMD_SUCCESS ? VERIFY_CARD_PAIR_FRONTEND : VERIFY_CARD_FAILED;
         clear_message_received_data();

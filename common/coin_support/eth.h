@@ -30,6 +30,17 @@
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
 
+#define ETHEREUM_PURPOSE_INDEX    0x8000002C
+#define ETHEREUM_COIN_INDEX       0x8000003C
+
+#define ETHEREUM_MAINNET_CHAIN    1
+#define ETHEREUM_ROPSTEN_CHAIN    3
+
+#define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
+#define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
+#define ETHEREUM_TOKEN_NAME     "Ether"
+#define ETHEREUM_TOKEN_SYMBOL   "ETH"
+
 /// Convert byte array to unit32_t
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
@@ -204,5 +215,13 @@ int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
 void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_t eth_unsigned_txn_len,
                              const txn_metadata *transaction_metadata, const char *mnemonics,
                              const char *passphrase, uint8_t *sig);
+
+/**
+ * @brief Return the string representation of decimal value of transaction fee in ETH.
+ *
+ * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit and gas_price
+ * @param fee_decimal_string    Output decimal string of at least 30 character long
+ */
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size);
 
 #endif

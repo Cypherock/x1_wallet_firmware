@@ -53,6 +53,8 @@
 #define POW_RAND_NUMBER_SIZE 32
 #define POW_NONCE_SIZE 32
 
+#define DEFAULT_NFC_TG_INIT_TIME    25
+
 /**
  * @brief Initialize PN532 module
  * @details

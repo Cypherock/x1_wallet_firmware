@@ -157,5 +157,6 @@ if (SIGN_BINARY)
         add_custom_command(TARGET ${EXECUTABLE}
                 POST_BUILD
                 COMMAND python3 ${CMAKE_SOURCE_DIR}/utilities/script/index.py add-header --input="${PROJECT_NAME}.bin" --output=${PROJECT_NAME}_Header.bin --version=${CMAKE_SOURCE_DIR}/version.txt --private-key=${CMAKE_SOURCE_DIR}/utilities/script/private_key1.h
-                COMMAND python3 ${CMAKE_SOURCE_DIR}/utilities/script/index.py sign-header --input=${PROJECT_NAME}_Header.bin --output=app_dfu_package.bin --private-key=${CMAKE_SOURCE_DIR}/utilities/script/private_key2.h)
+                COMMAND python3 ${CMAKE_SOURCE_DIR}/utilities/script/index.py sign-header --input=${PROJECT_NAME}_Header.bin --output=${PROJECT_NAME}-signed.bin --private-key=${CMAKE_SOURCE_DIR}/utilities/script/private_key2.h
+                COMMAND rm ${PROJECT_NAME}_Header.bin)
 endif()
