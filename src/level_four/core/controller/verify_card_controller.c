@@ -203,8 +203,8 @@ void verify_card_controller()
             if(device_family_id != U32_READ_BE_ARRAY(tap_card_data.family_id) && device_family_id != 0xFFFFFFFF){
                 // exit if device already paired with another set
                 reset_flow_level();
-            }
-            else{
+            } else {
+                // initiate pairing if not paired with any card
                 tap_card_data.desktop_control = false;    // moving to pairing; we don't want to convey anything to desktop
                 tap_card_take_to_pairing();
             }
