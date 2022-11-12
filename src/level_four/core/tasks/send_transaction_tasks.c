@@ -100,18 +100,22 @@ void send_transaction_tasks()
         instruction_scr_destructor();
         char address[64];
         char *hrp;
-        uint8_t addr_version;
 
         if (BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index) == BITCOIN)
             hrp = "bc";
         else
             hrp = "tb";
-        get_version(0x8000002CU, BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), &addr_version, NULL);
-        if (var_send_transaction_data.unsigned_transaction.output[var_send_transaction_data.transaction_confirmation_list_index].script_public_key[0] == 0)
-            segwit_addr_encode(address, hrp, 0x00, &var_send_transaction_data.unsigned_transaction.output[var_send_transaction_data.transaction_confirmation_list_index].script_public_key[2],
-                               var_send_transaction_data.unsigned_transaction.output[var_send_transaction_data.transaction_confirmation_list_index].script_public_key[1]);
-        else
-            get_address(addr_version, var_send_transaction_data.unsigned_transaction.output[var_send_transaction_data.transaction_confirmation_list_index].script_public_key, address);
+        int status = get_address(hrp,
+                    var_send_transaction_data.unsigned_transaction
+                        .output[var_send_transaction_data.transaction_confirmation_list_index]
+                        .script_public_key,
+                    address);
+        if (status <= 0) {
+            comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+            reset_flow_level();
+            mark_error_screen(ui_text_invalid_transaction);
+            return;
+        }
         char top_heading[225];
         char display[70];
 

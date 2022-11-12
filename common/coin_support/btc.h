@@ -269,7 +269,7 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, uint32_t coin
  * @brief Get the address from the passed public key.
  * @details
  *
- * @param [in] version          Version byte.
+ * @param [in] hrp              hrp value for segwit addresses
  * @param [in] script_pub_key   Byte array of public key.
  * @param [out] address_output  char array of address
  *
@@ -281,7 +281,7 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, uint32_t coin
  *
  * @note
  */
-void get_address(uint8_t version, const uint8_t* script_pub_key, char* address_output);
+int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_output);
 
 /**
  * @brief Get the transaction fee of an unsigned transaction.
