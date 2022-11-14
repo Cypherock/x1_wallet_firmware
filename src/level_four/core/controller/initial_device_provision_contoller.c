@@ -78,6 +78,8 @@
 uint8_t atecc_slot_to_lock[]={
     slot_2_auth_key,
     slot_3_nfc_pair_key,
+    slot_6_io_key,
+    slot_8_serial,
     slot_0_unused,
     slot_1_unused,
     slot_4_unused,
@@ -201,7 +203,7 @@ void device_provision_controller(){
             0xFF, 0xFF, //slot unlocked
             0x0E, 0x61, //ChipOptions
             0x00, 0x00, 0x00, 0x00, //certificate formatting disabled
-            0x53, 0x00, 0x53, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x38, 0x00, 0x7C, 0x00, 0x1C, 0x00, 0x3C, 0x00, 0x1A, 0x00, 0x1C, 0x00, 0x10, 0x00, 0x1C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00
+            0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x18, 0x00, 0x7C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3A, 0x00, 0x3C, 0x00, 0x30, 0x00, 0x3C, 0x00, 0x30, 0x00, 0x32, 0x00, 0x30, 0x00
             };
 
             atecc_data.retries = DEFAULT_ATECC_RETRIES;
@@ -444,26 +446,29 @@ void lock_all_slots(){
 
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
     bool lock = false;
+    uint32_t err_count=0;
     do
     {
-        if(atecc_data.status != ATCA_SUCCESS){
+        if(atecc_data.status != ATCA_SUCCESS || err_count != 0){
             LOG_CRITICAL("PERR4-0x%02x, retry-%d", atecc_data.status, atecc_data.retries);
         }
         for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
         {
             atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
             if(atecc_data.status != ATCA_SUCCESS){
-                break;
+                LOG_CRITICAL("PERR5=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
+                err_count++;
             }
             else if(lock == true){
                 continue;
             }
             atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
             if(atecc_data.status != ATCA_SUCCESS){
-                break;
+                LOG_CRITICAL("PERR6=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
+                err_count++;;
             }
         }
-    } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    } while ((atecc_data.status != ATCA_SUCCESS || err_count != 0) && --atecc_data.retries);
 
     if(usb_irq_enable_on_entry == true)
         NVIC_EnableIRQ(OTG_FS_IRQn);
