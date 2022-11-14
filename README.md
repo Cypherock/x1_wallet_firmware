@@ -118,7 +118,7 @@ This method uses the build script for generating a signed binary of the firmware
 2. Add CMake to your path by adding the following to your `~/.zshrc` or `~/.bashrc` file:
 
 ```bash
-export PATH="/Applications/CMake.app/Contents/bin":"$PATH"
+export PATH="/Applications/CMake.app/Contents/bin:$PATH"
 ```
 
 3. Restart your terminal and run `cmake --version` to verify that it is installed.
@@ -129,14 +129,14 @@ export PATH="/Applications/CMake.app/Contents/bin":"$PATH"
 2. Unzip the tarball and move the `gcc-arm-none-eabi-10-2020-q4-major` folder to your home directory.
 
 ```bash
-tar xjf gcc-arm-none-eabi-10.3-2021.10-mac.tar.bz2
+tar -xjf gcc-arm-none-eabi-10.3-2021.10-mac.tar.bz2
 mv gcc-arm-none-eabi-10.3-2021.10 ~/
 ```
 
 3. Add the toolchain to your path by adding the following to your `~/.zshrc` or `~/.bashrc` file:
 
 ```bash
-export PATH="~/gcc-arm-none-eabi-10.3-2021.10/bin":"$PATH"
+export PATH="$HOME/gcc-arm-none-eabi-10.3-2021.10/bin:$PATH"
 ```
 
 4. Then run the following commands:
