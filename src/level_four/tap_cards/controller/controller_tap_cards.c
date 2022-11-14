@@ -92,9 +92,6 @@ bool tap_card_applet_connection() {
          */
         if (tap_card_data.recovery_mode == 1)
             mark_error_screen(ui_critical_card_health_migrate_data);
-        if (tap_card_data.tapped_card != 0 &&
-            tap_card_data.tapped_card == (acceptable_cards ^ tap_card_data.acceptable_cards))
-            continue;
 
         /* The tapped_card information should be persistent, as it is used at later stage in the flow
         * For example, in the second half of card-verification, the card tapped in first half becomes the
