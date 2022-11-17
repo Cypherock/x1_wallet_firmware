@@ -489,16 +489,17 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, const uint32_
 
 int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_output)
 {
-  if (script_pub_key == NULL || address_output == NULL) return 2;
+  if (script_pub_key == NULL || address_output == NULL) return 0;
 
   if (script_pub_key[0] == 0) {
     // Segwit address
     return segwit_addr_encode(address_output, hrp, 0x00, script_pub_key + 2, script_pub_key[1]);
   }
 
-  uint8_t address[SHA3_256_DIGEST_LENGTH];
+  uint8_t address[SHA3_256_DIGEST_LENGTH] = {0};
   uint8_t offset = 1, script_offset = 0, version = 0;
 
+  refer https://learnmeabitcoin.com/technical/script for script type explaination
   if (script_pub_key[0] == 0x41) {
     // hash160 P2PK
     hasher_Raw(HASHER_SHA2_RIPEMD, script_pub_key + 1, 65, address + offset); // overwrite with RIPEMD160
