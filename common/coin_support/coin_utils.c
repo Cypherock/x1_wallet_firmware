@@ -214,9 +214,8 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
 const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
     switch (coin_index) {
         case 0x80000000U:
-            return "BTC";
         case 0x80000001:
-            return "BTCT";
+            return "BTC";
         case 0x80000002:
             return "LTC";
         case 0x80000003:
