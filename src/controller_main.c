@@ -447,12 +447,15 @@ static bool wallet_selector(uint8_t *data_array)
 
 extern Add_Coin_Data add_coin_data;
 extern Receive_Transaction_Data receive_transaction_data;
+extern Receive_Transaction_Auth_Data receive_transaction_auth_data;
+extern Signed_Receive_Address signed_receive_address;
 
 void desktop_listener_task(lv_task_t* data)
 {
     En_command_type_t command;
     uint8_t *data_array = NULL;
     uint16_t msg_size = 0;
+    uint8_t device_info[37];
     if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
         switch (command) {
 #if X1WALLET_MAIN
@@ -611,6 +614,55 @@ void desktop_listener_task(lv_task_t* data)
                 }
                 clear_message_received_data();
             } break;
+
+            case RECV_TXN_AUTH_START: {
+              if (wallet_selector(data_array)) {
+                CY_Reset_Not_Allow(false);
+                memcpy(signed_receive_address.device_id, device_info+1, 32);
+                 
+                receive_transaction_auth_data.recv_txn_data = &receive_transaction_data;
+
+                int64_t offset = byte_array_to_recv_txn_auth_data(
+                    &receive_transaction_auth_data, data_array, msg_size);
+
+                memcpy(signed_receive_address.session_id, receive_transaction_auth_data.session_id, SESSION_ID_SIZE);
+                signed_receive_address.address = malloc(128);
+                signed_receive_address.addr_size = 0;
+                signed_receive_address.addr_max_size = 128;
+
+                if (offset == -1) {
+                  comm_reject_invalid_cmd();
+                  clear_message_received_data();
+                  return;
+                } 
+
+                flow_level.show_desktop_start_screen = true;
+                    
+                uint32_t coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
+
+                if (coin_index == NEAR_COIN_INDEX && receive_transaction_data.near_account_type == 1) {
+                    memcpy(&receive_transaction_data.near_registered_account, data_array + offset, 65);
+                }
+
+                if(coin_index == ETHEREUM) {
+                    flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                ui_text_eth_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name,
+                                get_coin_name(coin_index, receive_transaction_data.network_chain_id));
+                } else if(coin_index==NEAR_COIN_INDEX){
+                    flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                } else if(coin_index==SOLANA_COIN_INDEX) {
+                    flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                } else {
+                    flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                }
+              }
+              clear_message_received_data();
+            } break;
+
 #ifdef DEV_BUILD
             case EXPORT_ALL: {
                 const Flash_Wallet* flash_wallet;
@@ -753,14 +805,14 @@ void desktop_listener_task(lv_task_t* data)
 
             case DEVICE_INFO: {
                 clear_message_received_data();
-                uint8_t device_info[37] = {0};
+                memset(device_info, 0, sizeof(device_info));
                 if (get_device_serial() == SUCCESS) {
                     memcpy(device_info+1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
                 }
                 else{
                     LOG_CRITICAL("err xx4: %d", atecc_data.status);
                 }
-                device_info[0] = is_device_authenticated() ? 1 : 0;
+                device_info[0] = (is_device_authenticated() ? 1 : 0);
                 uint32_t fwVer = get_fwVer();
                 fwVer = U32_SWAP_ENDIANNESS(fwVer);
                 memcpy(device_info+33, &fwVer, sizeof(fwVer));

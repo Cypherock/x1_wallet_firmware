@@ -58,6 +58,12 @@
 /// NON SEGWIT purpose id
 #define NON_SEGWIT 0x8000002C
 
+// Session Id size
+#define SESSION_ID_SIZE 20
+
+// Device Id size
+#define DEVICE_ID_SIZE 32
+
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
     COIN_TYPE_BTC_TEST = 0x02,
@@ -157,6 +163,40 @@ typedef struct Receive_Transaction_Data {
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+/**
+ * @brief Stores the deserialized information from desktop for the authenticated recevie transaction process.
+ * @details
+ * 
+ * @see receive_transaction_controller(), RECV_TXN_AUTH_START, RECV_TXN_DISPLAY_ADDR
+ */
+typedef struct Receive_Transaction_Auth_Data {
+  Receive_Transaction_Data *recv_txn_data;
+  uint8_t is_auth;
+  uint8_t session_id[SESSION_ID_SIZE];
+} Receive_Transaction_Auth_Data;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+/**
+ * @brief Stores the deserialized information of the signed receive address.
+ * @details
+ * 
+ * @see receive_transaction_controller(), RECV_TXN_AUTH_START, RECV_TXN_DISPLAY_ADDR
+ */
+typedef struct Signed_Receive_Address {
+  uint8_t session_id[SESSION_ID_SIZE];
+  uint8_t device_id[DEVICE_ID_SIZE];
+  uint8_t signature[64];
+  uint8_t addr_max_size;
+  uint8_t addr_size;
+  char *address;
+  //TODO:
+  //! size field store the maximum size of the dynamic arr
+  //! actual data size
+  //! dynamic array ptr (malloc will happen once, default 128; if more than 128, realloc will happen)
+} Signed_Receive_Address;
+#pragma pack(pop)
 
 /**
  * @brief Copies the byte values from source after offset to destination under the given size limit.
@@ -205,6 +245,22 @@ int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  * @return int32_t Offset used in conversion
  */
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
+
+/**
+ * @brief Deserialize byte array to receive transaction auth data
+ * 
+ * @param [out] txn_data_auth_ptr       Pointer to the receive transaction auth data instance
+ * @param [in] data_byte_array          Byte array to be deserialized
+ * @param [in] size                     Size of the byte array data_byte_array  
+ * @return int64_t Offset used in conversion
+ */
+int64_t byte_array_to_recv_txn_auth_data(Receive_Transaction_Auth_Data *txn_data_auth_ptr,const uint8_t *data_byte_array, const uint32_t size);
+
+/**
+ * @brief 
+ * 
+ */
+int64_t signed_recv_addr_to_byte_array(const Signed_Receive_Address *signed_recv_addr_ptr, uint8_t *signed_recv_addr_byte_array);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.

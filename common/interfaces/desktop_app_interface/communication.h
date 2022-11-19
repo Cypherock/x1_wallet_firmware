@@ -78,6 +78,8 @@ typedef enum commandType {
     SEND_TXN_SENDING_SIGNED_TXN = 54,       ///< Response by device for send transaction with signed transaction
 
     RECV_TXN_START = 59,                    ///< Request by desktop to start a receive transaction
+    RECV_TXN_AUTH_START = 60,               ///< Request by desktop to start session for authenticated receive transaction
+    RECV_TXN_SEND_SIGNED = 61,              ///< Response by device for authenticated receive transaction
     RECV_TXN_USER_VERIFIED_COINS = 63,      ///< Prompt for user confirmation or rejection of receive coin
     RECV_TXN_USER_VERIFIED_ADDRESS = 64,    ///< Prompt for user confirmation or rejection of receive address
     RECV_TXN_XPUBS_EXISTS_ON_DEVICE = 65,   ///< Prompt for finding/deriving XPUB on device
