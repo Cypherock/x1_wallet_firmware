@@ -145,7 +145,7 @@ provision_status_t check_provision_status(){
         return -1;
     }
 
-    if(cfg[86]==0x00 || cfg[87]==0x00){ //config zone and data zones are locked
+    if(cfg[86]==0x00 && cfg[87]==0x00){ //config zone and data zones are locked
 
         if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
             return provision_incomplete;
