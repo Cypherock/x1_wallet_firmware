@@ -454,6 +454,7 @@ void lock_all_slots(){
         }
         for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
         {
+            lock=false;
             atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
             if(atecc_data.status != ATCA_SUCCESS){
                 LOG_CRITICAL("PERR5=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
@@ -465,7 +466,7 @@ void lock_all_slots(){
             atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
             if(atecc_data.status != ATCA_SUCCESS){
                 LOG_CRITICAL("PERR6=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
-                err_count++;;
+                err_count++;
             }
         }
     } while ((atecc_data.status != ATCA_SUCCESS || err_count != 0) && --atecc_data.retries);
