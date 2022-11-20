@@ -352,3 +352,22 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,
                                           char *amount_decimal_string,
                                           const size_t amount_decimal_string_size);
 #endif
+
+#include "atca_host.h"
+#include "controller_level_four.h" // for attecc_slot_define_t
+
+#define SIGNATURE_SIZE          64
+#define POSTFIX1_SIZE           7
+#define POSTFIX2_SIZE           23
+#define DEVICE_SERIAL_SIZE           32
+
+typedef struct auth_data_struct{
+    uint8_t postfix1[POSTFIX1_SIZE],
+            postfix2[POSTFIX2_SIZE],
+            signature[SIGNATURE_SIZE],
+            serial[DEVICE_SERIAL_SIZE];
+} auth_data_t;
+
+ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type, struct atca_sign_internal_in_out *param, const uint8_t* config);
+ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param, uint8_t mode, uint8_t priv_key_id, uint8_t data_key_id);
+void helper_get_gendig_hash(atecc_slot_define_t slot, uint8_t *data, uint8_t *digest, uint8_t *postfix);

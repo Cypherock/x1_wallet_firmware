@@ -70,7 +70,7 @@
 #include "ui_instruction.h"
 #include "board.h"
 #include "stdint.h"
-#include "stm32l4xx_it.h"
+#include "utils.h"
 
 #define SIGNATURE_SIZE          64
 #define POSTFIX1_SIZE           7
@@ -78,21 +78,6 @@
 #define AUTH_DATA_SERIAL_SIGN_MSG_SIZE      (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE + DEVICE_SERIAL_SIZE)
 #define AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE   (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE)
 
-/**
- * @brief
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct auth_data_struct{
-    uint8_t postfix1[POSTFIX1_SIZE],
-            postfix2[POSTFIX2_SIZE],
-            signature[SIGNATURE_SIZE],
-            serial[DEVICE_SERIAL_SIZE];
-} auth_data_t;
 
 atecc_data_t atecc_data={0};
 uint8_t challenge_no[32]={0};
@@ -114,12 +99,6 @@ static void fw_hash_calculate(uint8_t * m_digest){
     sha256_Raw((uint8_t*)APPLICATION_ADDRESS_BASE, get_fwSize(), m_digest);
 }
 #endif
-
-static ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type, struct atca_sign_internal_in_out *param, const uint8_t* config);
-static ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param, uint8_t mode, uint8_t priv_key_id, uint8_t data_key_id);
-static void helper_get_gendig_hash(atecc_slot_define_t slot, uint8_t *data, uint8_t *digest, uint8_t *postfix);
-
-
 
 
 void __attribute__((optimize("O0"))) device_authentication_controller(){
@@ -325,6 +304,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
 
 }
 
+/*
 void helper_get_gendig_hash(atecc_slot_define_t slot, uint8_t *data, uint8_t *digest, uint8_t *postfix)
 {
     if(digest == NULL || data == NULL || postfix == NULL){
@@ -449,9 +429,9 @@ ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type, struct at
     {
         value = &config[52 + param->temp_key->key_id * 2];
         param->use_flag = value[0];
-        param->update_count = value[0];
     }
     else
+        param->update_count = value[0];
     {
         param->use_flag = 0x00;
         param->update_count = 0x00;
@@ -463,3 +443,5 @@ ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type, struct at
 
     return ATCA_SUCCESS;
 }
+
+*/
