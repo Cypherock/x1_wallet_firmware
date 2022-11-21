@@ -64,10 +64,69 @@
 #include "controller_tap_cards.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
+#include "atecc_utils.h"
 
 extern Receive_Transaction_Data receive_transaction_data;
+extern Receive_Transaction_Auth_Data receive_transaction_auth_data;
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
+extern Signed_Receive_Address signed_receive_address;
+
+auth_data_t atecc_sign_eth(uint8_t *hash){
+    uint8_t io_protection_key[32] = {0};
+    uint8_t nonce[32] = {0};
+    auth_data_t auth_challenge_packet = {0};
+    uint8_t tempkey_hash[DEVICE_SERIAL_SIZE+POSTFIX2_SIZE] = {0};
+    uint8_t final_hash[32] = {0};
+    get_io_protection_key(io_protection_key);
+    atca_sign_internal_in_out_t sign_internal_param = {0};
+
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
+    do{
+        OTG_FS_IRQHandler();
+
+        if (atecc_data.status != ATCA_SUCCESS)
+            LOG_CRITICAL("AERR CH: %04x, count:%d", atecc_data.status, DEFAULT_ATECC_RETRIES - atecc_data.retries);
+
+        if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) != ATCA_SUCCESS) {
+            continue;
+        }
+
+        atecc_data.status = atcab_write_enc(slot_5_challenge, 0, hash, io_protection_key, slot_6_io_key);
+        if(atecc_data.status!=ATCA_SUCCESS){
+            continue;
+        }
+
+        atecc_data.status = atcab_nonce(nonce);
+        if(atecc_data.status != ATCA_SUCCESS){
+            continue;
+        }
+
+        atecc_data.status = atcab_gendig(ATCA_ZONE_DATA, slot_5_challenge, NULL, 0);
+        if(atecc_data.status != ATCA_SUCCESS){
+            continue;
+        }
+
+        atecc_data.status = atcab_sign_internal(slot_2_auth_key, false, false, auth_challenge_packet.signature);
+        if(atecc_data.status != ATCA_SUCCESS){
+            continue;
+        }
+
+        helper_get_gendig_hash(slot_5_challenge, hash, tempkey_hash, auth_challenge_packet.postfix1, atecc_data);
+
+        sign_internal_param.message=tempkey_hash;
+        sign_internal_param.digest=final_hash;
+
+        helper_sign_internal_msg(&sign_internal_param, SIGN_MODE_INTERNAL, slot_2_auth_key, slot_5_challenge, atecc_data);
+
+    }while(--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
+    if(usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
+
+    return auth_challenge_packet;
+}
 
 void receive_transaction_controller_eth()
 {
@@ -174,13 +233,33 @@ void receive_transaction_controller_eth()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
-        data[0] = 1;  // confirmation byte
-        memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+        if(receive_transaction_auth_data.is_auth) {
+            uint8_t payload[20 + SESSION_ID_SIZE];
+            uint8_t payload_size = 0;
+            memcpy(payload, receive_transaction_data.address, sizeof(receive_transaction_data.address));
+            memcpy(payload + payload_size, receive_transaction_auth_data.session_id, sizeof(receive_transaction_auth_data.session_id));
+            payload_size += sizeof(receive_transaction_auth_data.session_id);
+
+            uint8_t hash[32];
+            sha256_Raw(payload, payload_size, hash);
+
+            auth_data_t auth_challenge_packet = atecc_sign_eth(hash);
+                
+            memcpy(signed_receive_address.signature, auth_challenge_packet.signature, sizeof(auth_challenge_packet.signature));
+            memcpy(signed_receive_address.address, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
+            signed_receive_address.addr_size = sizeof(receive_transaction_data.eth_pubkeyhash);
+
+            uint8_t data[SESSION_ID_SIZE + DEVICE_ID_SIZE + sizeof(signed_receive_address.signature) + sizeof(signed_receive_address.addr_max_size) + sizeof(signed_receive_address.addr_max_size) + signed_receive_address.addr_max_size];
+            uint64_t size = signed_recv_addr_to_byte_array(&signed_receive_address, data);
+            transmit_data_to_app(RECV_TXN_SEND_SIGNED, data, size);
+        } else {
+            uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
+            data[0] = 1;  // confirmation byte
+            memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
+            transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+        } 
         reset_flow_level();
     } break;
-
     default:
         break;
     }
