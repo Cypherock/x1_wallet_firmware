@@ -191,10 +191,6 @@ typedef struct Signed_Receive_Address {
   uint8_t addr_max_size;
   uint8_t addr_size;
   char *address;
-  //TODO:
-  //! size field store the maximum size of the dynamic arr
-  //! actual data size
-  //! dynamic array ptr (malloc will happen once, default 128; if more than 128, realloc will happen)
 } Signed_Receive_Address;
 #pragma pack(pop)
 
