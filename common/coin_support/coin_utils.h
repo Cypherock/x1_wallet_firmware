@@ -257,8 +257,11 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 int64_t byte_array_to_recv_txn_auth_data(Receive_Transaction_Auth_Data *txn_data_auth_ptr,const uint8_t *data_byte_array, const uint32_t size);
 
 /**
- * @brief 
+ * @brief Serialize receive transaction data to byte array
  * 
+ * @param [in] signed_recv_addr_ptr         Pointer to the signed receive address instance
+ * @param [out] signed_recv_addr_byte_array Pointer to the serialised byte array
+ * @return int64_t 
  */
 int64_t signed_recv_addr_to_byte_array(const Signed_Receive_Address *signed_recv_addr_ptr, uint8_t *signed_recv_addr_byte_array);
 

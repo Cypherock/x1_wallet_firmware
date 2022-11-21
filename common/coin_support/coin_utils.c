@@ -169,6 +169,7 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 }
 
 int64_t byte_array_to_recv_txn_auth_data(Receive_Transaction_Auth_Data *txn_data_auth_ptr,const uint8_t *data_byte_array, const uint32_t size) {
+    if (txn_data_auth_ptr == NULL || data_byte_array == NULL || size == 0) return 0;
 
     int64_t offset = byte_array_to_recv_txn_data(txn_data_auth_ptr->recv_txn_data, data_byte_array, size);
     
@@ -179,21 +180,27 @@ int64_t byte_array_to_recv_txn_auth_data(Receive_Transaction_Auth_Data *txn_data
 }
 
 int64_t signed_recv_addr_to_byte_array(const Signed_Receive_Address *signed_recv_addr_ptr, uint8_t *signed_recv_addr_byte_array) {
-        int64_t offset = 0;
-        memcpy(signed_recv_addr_byte_array, signed_recv_addr_ptr->session_id, sizeof(signed_recv_addr_ptr->session_id));
-        offset += sizeof(signed_recv_addr_ptr->session_id);
-        memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->device_id, sizeof(signed_recv_addr_ptr->device_id));
-        offset += sizeof(signed_recv_addr_ptr->device_id);
-        memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->signature, sizeof(signed_recv_addr_ptr->signature));
-        offset += sizeof(signed_recv_addr_ptr->signature);
-        memcpy(signed_recv_addr_byte_array+offset, &(signed_recv_addr_ptr->addr_max_size), sizeof(signed_recv_addr_ptr->addr_max_size));
-        offset += sizeof(signed_recv_addr_ptr->addr_max_size);
-        memcpy(signed_recv_addr_byte_array+offset, &(signed_recv_addr_ptr->addr_size), sizeof(signed_recv_addr_ptr->addr_size));
-        offset += sizeof(signed_recv_addr_ptr->addr_size);
-        memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->address, signed_recv_addr_ptr->addr_max_size);
-        offset += signed_recv_addr_ptr->addr_max_size;
 
-        return offset;
+    if (signed_recv_addr_ptr == NULL || signed_recv_addr_byte_array == NULL) return 0;
+
+    //TODO: check if the size of the byte array is enough to hold the data
+
+    int64_t offset = 0;
+
+    memcpy(signed_recv_addr_byte_array, signed_recv_addr_ptr->session_id, sizeof(signed_recv_addr_ptr->session_id));
+    offset += sizeof(signed_recv_addr_ptr->session_id);
+    memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->device_id, sizeof(signed_recv_addr_ptr->device_id));
+    offset += sizeof(signed_recv_addr_ptr->device_id);
+    memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->signature, sizeof(signed_recv_addr_ptr->signature));
+    offset += sizeof(signed_recv_addr_ptr->signature);
+    memcpy(signed_recv_addr_byte_array+offset, &(signed_recv_addr_ptr->addr_max_size), sizeof(signed_recv_addr_ptr->addr_max_size));
+    offset += sizeof(signed_recv_addr_ptr->addr_max_size);
+    memcpy(signed_recv_addr_byte_array+offset, &(signed_recv_addr_ptr->addr_size), sizeof(signed_recv_addr_ptr->addr_size));
+    offset += sizeof(signed_recv_addr_ptr->addr_size);
+    memcpy(signed_recv_addr_byte_array+offset, signed_recv_addr_ptr->address, signed_recv_addr_ptr->addr_max_size);
+    offset += signed_recv_addr_ptr->addr_max_size;
+
+    return offset;
 }
 
 void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)
