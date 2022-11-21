@@ -447,17 +447,16 @@ void lock_all_slots(){
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
     bool lock = false;
     uint32_t err_count=0;
+    atecc_data.status = ATCA_FUNC_FAIL;
     do
     {
-        if(atecc_data.status != ATCA_SUCCESS || err_count != 0){
-            LOG_CRITICAL("PERR4-0x%02x, retry-%d", atecc_data.status, atecc_data.retries);
-        }
+        err_count = 0;
         for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
         {
             lock=false;
             atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
             if(atecc_data.status != ATCA_SUCCESS){
-                LOG_CRITICAL("PERR5=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
+                LOG_CRITICAL("PERR4=0x%02x, retry-%d, slot=%d", atecc_data.retries, atecc_data.status, atecc_slot_to_lock[i]);
                 err_count++;
             }
             else if(lock == true){
@@ -465,11 +464,11 @@ void lock_all_slots(){
             }
             atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
             if(atecc_data.status != ATCA_SUCCESS){
-                LOG_CRITICAL("PERR6=0x%02x, err=%d", atecc_slot_to_lock[i], atecc_data.status);
+                LOG_CRITICAL("PERR5=0x%02x, retry-%d, slot=%d", atecc_data.retries, atecc_data.status, atecc_slot_to_lock[i]);
                 err_count++;
             }
         }
-    } while ((atecc_data.status != ATCA_SUCCESS || err_count != 0) && --atecc_data.retries);
+    } while (err_count != 0 && --atecc_data.retries);
 
     if(usb_irq_enable_on_entry == true)
         NVIC_EnableIRQ(OTG_FS_IRQn);
