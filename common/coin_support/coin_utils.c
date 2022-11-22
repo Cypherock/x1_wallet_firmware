@@ -57,6 +57,8 @@
  */
 #include "coin_utils.h"
 #include "near.h"
+#include "polygon.h"
+#include "eth.h"
 
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
@@ -209,24 +211,25 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     memzero(bip39seed, sizeof(bip39seed));
 }
 
-const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
+const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
     switch (coin_index) {
-        case 0x80000000:
-            return "BTC";
+        case 0x80000000U:
         case 0x80000001:
-            return "BTCT";
+            return "BTC";
         case 0x80000002:
             return "LTC";
         case 0x80000003:
             return "DOGE";
         case 0x80000005:
             return "DASH";
-        case 0x8000003C: {
+        case ETHEREUM: {
             switch (chain_id) {
-                case 1:
-                    return "ETH";
-                case 3:
-                    return "ETH";
+                case ETHEREUM_MAINNET_CHAIN:
+                case ETHEREUM_ROPSTEN_CHAIN:
+                    return ETHEREUM_TOKEN_SYMBOL;
+                case POLYGON_MUMBAI_CHAIN:
+                case POLYGON_MAINNET_CHAIN:
+                    return POLYGON_TOKEN_SYMBOL;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -234,7 +237,9 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
             }
         }
         case NEAR_COIN_INDEX:
-            return "NEAR";
+            return NEAR_TOKEN_SYMBOL;
+        case SOLANA:
+            return "SOL";
         default: {
             ASSERT(false);
             return "invalid";
@@ -242,7 +247,7 @@ const char *get_coin_symbol(int coin_index, uint8_t chain_id) {
     }
 }
 
-const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
+const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";
@@ -254,12 +259,16 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
             return "Dogecoin";
         case 0x80000005:
             return "Dash";
-        case 0x8000003C: {
+        case ETHEREUM: {
             switch (chain_id) {
-                case 1:
-                    return "ETH Mainnet";
-                case 3:
-                    return "ETH Ropsten";
+                case ETHEREUM_MAINNET_CHAIN:
+                    return ETHEREUM_MAINNET_NAME;
+                case ETHEREUM_ROPSTEN_CHAIN:
+                    return ETHEREUM_ROPSTEN_NAME;
+                case POLYGON_MUMBAI_CHAIN:
+                    return POLYGON_MUMBAI_NAME;
+                case POLYGON_MAINNET_CHAIN:
+                    return POLYGON_MAINNET_NAME;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -267,7 +276,9 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id) {
             }
         }
         case NEAR_COIN_INDEX:
-            return "NEAR";
+            return NEAR_TOKEN_NAME;
+        case SOLANA:
+            return "Solana";
         default: {
             ASSERT(false);
             return "invalid";
@@ -331,10 +342,11 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
                 assigned_add_version = 0x4c;
                 break;
             case ETHEREUM:
+            case NEAR:
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
-            case NEAR:
+            case SOLANA:
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
                 break;
@@ -361,7 +373,7 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         mdata_ptr->account_index[0] < 0x80)
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
-        BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR){
+        (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
         if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;

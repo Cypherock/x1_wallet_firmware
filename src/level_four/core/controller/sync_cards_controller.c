@@ -103,7 +103,8 @@ void sync_cards_controller()
     case SYNC_CARDS_TAP_TWO_CARDS_FLOW:{
         tap_card_data.desktop_control = false;
         tap_threshold_cards_for_reconstruction_flow_controller(2);
-        if (counter.level == LEVEL_ONE || flow_level.level_two == LEVEL_THREE_WALLET_LOCKED) {
+        if (counter.level == LEVEL_ONE ||
+            (flow_level.level_one == LEVEL_TWO_OLD_WALLET && flow_level.level_two == LEVEL_THREE_WALLET_LOCKED)) {
             // if wallet is locked, then we need to go to next wallet
             counter.level = LEVEL_THREE;
             flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;

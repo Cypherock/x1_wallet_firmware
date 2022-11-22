@@ -79,7 +79,6 @@ void cyc_card_hc() {
             wallet_data_len = 0;
             memzero(wallet_data, sizeof(wallet_data));
             tap_card_data.retries = 5;
-            tap_card_data.acceptable_cards = 15;
             flow_level.level_three = CARD_HC_TAP_CARD;
             break;
 
@@ -106,8 +105,10 @@ void cyc_card_hc() {
 }
 
 static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
+  // All card errors are abstracted from the NFC handler and added to the health report.
   while (1) {
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    tap_card_data.acceptable_cards = 15;
     tap_card_data.tapped_card = 0;
     tap_card_data.card_absent_retries = 10;
     if (!tap_card_applet_connection()){
@@ -153,6 +154,7 @@ static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
 
       default:
         if(tap_card_handle_applet_errors()){
+          // Do not throw error; instead silently use them for deciding card health.
           switch((uint32_t)tap_card_data.status){
             case NFC_CARD_ABSENT:
               flow_level.show_error_screen = false;
