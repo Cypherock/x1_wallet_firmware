@@ -102,7 +102,7 @@ void receive_transaction_controller_solana() {
     } break;
 
     case RECV_TXN_ENTER_PIN_SOLANA: {
-      sha256_Raw((uint8_t *)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text),
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)),
                  wallet_credential_data.password_single_hash);
       sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
