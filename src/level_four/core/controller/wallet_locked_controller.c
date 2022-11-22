@@ -82,7 +82,7 @@ void wallet_locked_controller()
         break;
 
     case WALLET_LOCKED_ENTER_PIN:
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet.password_double_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet.password_double_hash);
         sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = WALLET_LOCKED_TAP_CARD_FRONTEND;

@@ -14,6 +14,7 @@
 #include "crypto_random.h"
 
 #define MAX_INPUT_SIZE 10 //This is the max number of characters that can be shown in a screen
+#define MAX_CHARACTER_INPUT_LIST 80
 #define MAX_PIN_SIZE 8
 #define MAX_PASSPHRASE_SIZE 63
 #define MAX_ARRAY_SIZE 512

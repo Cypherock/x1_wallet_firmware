@@ -129,7 +129,7 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
       char display[65];
-      if(strlen(flow_level.screen_input.input_text) <= 15)
+      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
       else
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
@@ -167,7 +167,7 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
       char display[65];
-      if(strlen(flow_level.screen_input.input_text) <= 15)
+      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
         snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, wallet.wallet_name);
       else
         snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, "this wallet");
