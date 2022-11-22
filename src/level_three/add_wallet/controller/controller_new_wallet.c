@@ -125,7 +125,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = GENERATE_WALLET_PIN_CONFIRM;
@@ -134,7 +134,7 @@ void generate_wallet_controller()
     case GENERATE_WALLET_PIN_CONFIRM: {
         uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
         ASSERT(temp != NULL);
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
         if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
             if(is_passphrase_enabled())
@@ -183,7 +183,7 @@ void generate_wallet_controller()
         
         ASSERT(mnemo != NULL);
 
-        __single_to_multi_line(mnemo, strlen(mnemo), wallet_credential_data.mnemonics);
+        __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), wallet_credential_data.mnemonics);
         calculate_wallet_id(wallet_for_flash.wallet_id, mnemo);
         memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
         convert_to_shares(

@@ -187,7 +187,13 @@ void verify_card_controller()
         En_command_type_t msg_type;
         uint8_t *data_array = NULL;
         uint16_t msg_size = 1;
-        get_usb_msg(&msg_type, &data_array, &msg_size);
+
+        if (!get_usb_msg(&msg_type, &data_array, &msg_size)) return;
+        if (msg_type != STATUS_PACKET) {
+            comm_reject_invalid_cmd();
+            clear_message_received_data();
+            return;
+        }
 
         if (msg_type == STATUS_PACKET && data_array[0] == STATUS_CMD_SUCCESS)
             flow_level.level_three = VERIFY_CARD_SUCCESS;
@@ -199,8 +205,15 @@ void verify_card_controller()
 
     case VERIFY_CARD_SUCCESS:
         if (is_paired(tap_card_data.card_key_id) == -1) {
-            tap_card_data.desktop_control = false;    // moving to pairing; we don't want to convey anything to desktop
-            tap_card_take_to_pairing();
+            uint32_t stored_family_id = U32_READ_BE_ARRAY(get_family_id());
+            if(stored_family_id != U32_READ_BE_ARRAY(tap_card_data.family_id) && stored_family_id != 0xFFFFFFFF){
+                // exit if device already paired with another set
+                reset_flow_level();
+            } else {
+                // initiate pairing if not paired with any card
+                tap_card_data.desktop_control = false;    // moving to pairing; we don't want to convey anything to desktop
+                tap_card_take_to_pairing();
+            }
         } else {
             reset_flow_level();
         }

@@ -77,7 +77,7 @@ void instruction_scr_init(const char *message, const char *heading_text){
     ASSERT(message != NULL);
     if(heading_text != NULL){
       heading = lv_label_create(lv_scr_act(), NULL);
-      ui_heading(heading, heading_text, LV_HOR_RES-(strlen(heading_text)>>1), LV_LABEL_ALIGN_CENTER);
+      ui_heading(heading, heading_text, LV_HOR_RES-(strnlen(heading_text, MAX_HEADING_LEN)>>1), LV_LABEL_ALIGN_CENTER);
     }
     instruction = lv_label_create(lv_scr_act(), NULL);
     ui_paragraph(instruction,message, LV_LABEL_ALIGN_CENTER); //Creates task to print text on screen

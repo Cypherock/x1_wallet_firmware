@@ -522,7 +522,7 @@ void desktop_listener_task(lv_task_t* data)
 
                     snprintf(flow_level.confirmation_screen_text,
                         sizeof(flow_level.confirmation_screen_text),
-                        (add_coin_data.resync ? ui_text_do_you_want_to_resync_coins_to : ui_text_do_you_want_to_add_coins_to),
+                        (add_coin_data.resync ? "Do you want to resync coins to %s?" : "Do you want to add coins to %s?"),
                         wallet.wallet_name);
                 }
                 clear_message_received_data();
@@ -549,20 +549,23 @@ void desktop_listener_task(lv_task_t* data)
                     if(coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            ui_text_eth_send_transaction_with,
+                                 "Send %s with %s on %s",
                             var_send_transaction_data.transaction_metadata.token_name,wallet.wallet_name,
                             get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id));
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
                         if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
-                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_add_account_with_wallet , get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "Add %s account with %s" , get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                         }
                         else {
-                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_SEND_PROMPT, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                         }
+                    } else if(coin_index == SOLANA_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_SEND_PROMPT, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_SEND_PROMPT, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
                     }
                     if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
                         comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
@@ -594,14 +597,17 @@ void desktop_listener_task(lv_task_t* data)
                     if(coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                 ui_text_eth_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name,
+                                 "Receive %s with %s on %s", receive_transaction_data.token_name, wallet.wallet_name,
                                  get_coin_name(coin_index, receive_transaction_data.network_chain_id));
                     } else if(coin_index==NEAR_COIN_INDEX){
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
-                    }else {
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_RECEIVE_PROMPT, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                    } else if(coin_index==SOLANA_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_RECEIVE_PROMPT, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                    } else {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), UI_TEXT_RECEIVE_PROMPT, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
                     }
                 }
                 clear_message_received_data();
@@ -739,7 +745,7 @@ void desktop_listener_task(lv_task_t* data)
 #endif
             case START_FIRMWARE_UPGRADE: {
                 CY_Reset_Not_Allow(false);
-                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_start_firmware_update, data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
+                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "Update firmware to version %d.%d.%d", data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
                 flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
                 flow_level.show_desktop_start_screen = true;
                 flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;

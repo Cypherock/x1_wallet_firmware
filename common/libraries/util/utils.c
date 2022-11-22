@@ -181,7 +181,7 @@ void __multi_to_single_line(const char input[24][15], const uint8_t number_of_mn
     uint16_t offset = 0U;
     uint16_t i = 0U;
     for (; i < number_of_mnemonics; i++) {
-        word_len = strlen(input[i]);
+        word_len = strnlen(input[i], 15);    // TODO: Define handling of overflow cases
         memcpy(output + offset, input[i], word_len);
         offset += word_len;
         memcpy(output + offset, " ", 1);

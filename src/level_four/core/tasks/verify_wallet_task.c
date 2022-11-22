@@ -139,7 +139,7 @@ void verify_wallet_tasks()
             char verify_words[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH];
             mnemonic_clear();
             const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-            __single_to_multi_line(mnemo, strlen(mnemo), verify_words);
+            __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), verify_words);
 
             set_theme(LIGHT);
             list_init(

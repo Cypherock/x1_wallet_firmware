@@ -108,7 +108,7 @@ void add_coin_tasks()
 
     case ADD_COINS_CONFIRM_PASSPHRASE: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
@@ -135,8 +135,9 @@ void add_coin_tasks()
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        instruction_scr_init(ui_text_processing, NULL);
-        BSP_DelayMs(DELAY_TIME);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 

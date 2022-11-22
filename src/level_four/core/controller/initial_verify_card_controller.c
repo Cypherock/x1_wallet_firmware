@@ -246,7 +246,6 @@ void initial_verify_card_controller()
 
     case VERIFY_CARD_FINAL_MESSAGE: {
         instruction_scr_destructor();
-        comm_process_complete();
         reset_flow_level();
         flow_level.level_one = 7;
     } break;

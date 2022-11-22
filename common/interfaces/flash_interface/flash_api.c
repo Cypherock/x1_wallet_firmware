@@ -109,7 +109,7 @@ int add_wallet_to_flash(const Flash_Wallet* fwallet, uint32_t* index_OUT)
     get_flash_ram_instance(); // to load
     if (flash_ram_instance.wallet_count == MAX_WALLETS_ALLOWED)
         return MEMORY_OVERFLOW;
-    size_t name_len = strlen((const char *) fwallet->wallet_name);
+    size_t name_len = strnlen((const char *)fwallet->wallet_name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
     if (fwallet->state != VALID_WALLET
@@ -139,7 +139,7 @@ int add_wallet_share_to_sec_flash(const Flash_Wallet* fwallet, uint32_t* index_O
     get_sec_flash_ram_instance();
     if (flash_ram_instance.wallet_count == MAX_WALLETS_ALLOWED)
         return MEMORY_OVERFLOW;
-    size_t name_len = strlen((const char *)fwallet->wallet_name);
+    size_t name_len = strnlen((const char *)fwallet->wallet_name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
     if (fwallet->state == VALID_WALLET
@@ -175,7 +175,7 @@ int put_wallet_flash(const uint8_t index, const Flash_Wallet* wallet)
     ASSERT(wallet != NULL);
 
     get_flash_ram_instance(); // to load
-    size_t name_len = strlen((const char *)wallet->wallet_name);
+    size_t name_len = strnlen((const char *)wallet->wallet_name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
 
@@ -285,7 +285,7 @@ int get_index_by_name(const char* name, uint8_t* index_OUT)
     ASSERT(index_OUT != NULL);
 
     get_flash_ram_instance(); // to load
-    size_t name_len = strlen(name);
+    size_t name_len = strnlen(name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
     uint8_t walletIndex = 0;
@@ -434,7 +434,7 @@ int get_flash_wallet_by_name(const char *name, Flash_Wallet **flash_wallet_OUT)
     ASSERT(flash_wallet_OUT != NULL);
     
     get_flash_ram_instance(); // to load
-    size_t name_len = strlen(name);
+    size_t name_len = strnlen(name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
     uint8_t walletIndex = 0;
@@ -458,7 +458,7 @@ int get_flash_wallet_share_by_name(const char* name, uint8_t *wallet_share){
 
     get_flash_ram_instance(); // to load
     get_sec_flash_ram_instance();
-    size_t name_len = strlen(name);
+    size_t name_len = strnlen(name, NAME_SIZE);
     if (name_len == 0 || name_len >= NAME_SIZE)
         return INVALID_ARGUMENT;
     uint8_t walletIndex = 0;

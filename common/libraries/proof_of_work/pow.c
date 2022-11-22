@@ -126,7 +126,7 @@ static void pow_timer_handler()
     save_nonce_flash((char *) flash_wallet->wallet_name, nonce);
     update_time_to_unlock_flash((char *) flash_wallet->wallet_name, new_time_to_unlock_in_secs);
     convert_secs_to_time(new_time_to_unlock_in_secs, (char *) wallet.wallet_name, new_text);
-    ui_text_slideshow_change_text(new_text, strlen(new_text), 0);
+    ui_text_slideshow_change_text(new_text, strnlen(new_text, MAX_NUM_OF_CHARS_IN_A_SLIDE), 0);
 }
 
 /**
