@@ -198,7 +198,7 @@ void generate_wallet_controller()
         derive_beneficiary_key(wallet.beneficiary_key, wallet.iv_for_beneficiary_key, single_line_mnemonics);
         derive_wallet_key(wallet.key, single_line_mnemonics);
         mnemonic_clear();
-        memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
+        // memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(single_line_mnemonics, sizeof(single_line_mnemonics));
         flow_level.level_three = GENERATE_WALLET_SEED_GENERATED;
     } break;

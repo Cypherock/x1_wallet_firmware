@@ -113,6 +113,7 @@ extern lv_indev_t *indev_keypad;
 extern Counter counter;
 extern bool main_app_ready;
 
+extern void repeated_test_task();
 #if USE_SIMULATOR == 1
 
 /*On OSX SDL needs different handling*/
@@ -156,6 +157,7 @@ int main(void)
 
     while (true)
     {
+        repeated_test_task();
         if (keypad_get_key() != 0)
             reset_inactivity_timer();
         // Flow
