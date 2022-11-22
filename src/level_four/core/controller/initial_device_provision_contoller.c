@@ -319,7 +319,7 @@ void device_provision_controller(){
                     get_device_serial();
                 }
                 else{
-                    lv_obj_clean(lv_scr_act());
+                    ui_text_slideshow_destructor();
                     mark_error_screen(ui_text_device_already_provisioned);
                     reset_flow_level();
                     flow_level.level_one = 6;
@@ -418,12 +418,12 @@ void device_provision_controller(){
             }
             reset_flow_level();
             flow_level.level_one = 10;
-            lv_obj_clean(lv_scr_act());
+            ui_text_slideshow_destructor();
         
         } break;
 
         case PROVISION_UNSUCCESSFUL: {
-            lv_obj_clean(lv_scr_act());
+            ui_text_slideshow_destructor();
             mark_error_screen(ui_text_provision_fail);
             reset_flow_level();
             flow_level.level_one = 6;

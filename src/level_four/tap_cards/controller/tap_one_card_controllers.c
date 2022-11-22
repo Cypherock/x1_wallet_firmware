@@ -111,7 +111,7 @@ void tap_a_card_and_sync_controller()
                     no_wallet_on_cards = true;
                 flow_level.level_three = TAP_ONE_CARD_SUCCESS_MESSAGE;
                 buzzer_start(BUZZER_DURATION);
-                lv_obj_clean(lv_scr_act());
+                instruction_scr_destructor();
                 break;
             } else if (tap_card_handle_applet_errors()) {
                 break;
@@ -158,7 +158,7 @@ void controller_read_card_id()
                 }
             }
             buzzer_start(BUZZER_DURATION);
-            lv_obj_clean(lv_scr_act());
+            instruction_scr_destructor();
             break;
         case TAP_ONE_CARD_SUCCESS_MESSAGE:
         default:

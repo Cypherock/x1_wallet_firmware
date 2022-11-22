@@ -79,7 +79,7 @@ void task_device_provision(){
          } break;
 
          case PROVISION_UNSUCCESSFUL: {
-            lv_obj_clean(lv_scr_act());
+            ui_text_slideshow_destructor();
             delay_scr_init(ui_text_provision_fail, DELAY_TIME);
          } break;
 

@@ -177,7 +177,7 @@ static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
             buzzer_start(BUZZER_DURATION);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
             nfc_detect_card_removal();
-            lv_obj_clean(lv_scr_act());
+            instruction_scr_destructor();
             break;
         } else if (tap_card_handle_applet_errors()) {
             break;

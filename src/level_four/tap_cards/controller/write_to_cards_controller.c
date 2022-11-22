@@ -152,7 +152,7 @@ static void _tap_card_backend(uint8_t card_number)
                 instruction_scr_change_text(ui_text_remove_card_prompt, true);
                 nfc_detect_card_removal();
             } else if (card_number == 4) {
-                lv_obj_clean(lv_scr_act());
+                instruction_scr_destructor();
                 flow_level.level_four = 1;
                 flow_level.level_three++;
                 put_wallet_flash(wallet_index, wallet_for_flash);

@@ -251,7 +251,6 @@ void send_transaction_controller()
             flow_level.level_three = SEND_TXN_SIGN_TXN;
         } else {
             instruction_scr_destructor();
-            lv_obj_clean(lv_scr_act());
             flow_level.level_three = SEND_TXN_FINAL_SCREEN;
             memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
             memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));

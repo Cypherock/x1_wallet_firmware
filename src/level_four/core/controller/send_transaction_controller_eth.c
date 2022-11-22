@@ -227,7 +227,6 @@ void send_transaction_controller_eth()
 
     case SEND_TXN_WAITING_SCREEN_ETH:
         instruction_scr_destructor();
-        lv_obj_clean(lv_scr_act());
         flow_level.level_three = SEND_TXN_FINAL_SCREEN_ETH;
         break;
 

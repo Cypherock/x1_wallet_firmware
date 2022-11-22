@@ -283,7 +283,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
         case AUTHENTICATION_SUCCESS: {
             comm_process_complete();
             reset_flow_level();
-            lv_obj_clean(lv_scr_act());
+            ui_text_slideshow_destructor();
 #if X1WALLET_MAIN
             set_auth_state(DEVICE_AUTHENTICATED);
             device_auth_flag = 0;   // resets the flag set via desktop request during boot up
@@ -298,7 +298,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
          case AUTHENTICATION_UNSUCCESSFUL: {
             comm_process_complete();
             reset_flow_level();
-            lv_obj_clean(lv_scr_act());
+            ui_text_slideshow_destructor();
 #if X1WALLET_MAIN
             /// if verification fails when initiated from settings, next device startup will hold the device for another auth
             set_auth_state(DEVICE_NOT_AUTHENTICATED);

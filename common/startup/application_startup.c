@@ -531,7 +531,6 @@ void device_provision_check() {
     ui_set_event_over_cb(NULL);
     delay_scr_init(msg, DELAY_TIME);
     ui_set_event_over_cb(&mark_event_over);
-    instruction_scr_destructor();
 #endif
 }
 
