@@ -15,8 +15,7 @@ typedef enum{
 
 typedef enum{
     TEST_GENERATE_SEED = 1,
-    TEST_SHARE_CREATE = 2,
-    TEST_SHARE_REGENERATE=3
+    TEST_RESTORE_SEED = 2
 }test_cases_t;
 
 test_cases_t test_case = TEST_GENERATE_SEED;
@@ -63,6 +62,18 @@ void set_test_case(){
             LOG_INFO("TEST: generate seed triggered");
             test_state = TEST_DATA_READY;
         break;
+        case TEST_RESTORE_SEED:
+            test_data.level = LEVEL_THREE;
+            test_data.start_flow.level_one = LEVEL_TWO_NEW_WALLET;
+            test_data.start_flow.level_two = LEVEL_THREE_RESTORE_WALLET;
+            test_data.start_flow.level_three = RESTORE_WALLET_CREATING_WAIT_SCREEN;
+
+            test_data.end_flow.level_one = LEVEL_TWO_NEW_WALLET;
+            test_data.end_flow.level_two = LEVEL_THREE_GENERATE_WALLET;
+            test_data.end_flow.level_three = RESTORE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE;
+            LOG_INFO("TEST: restore seed triggered");
+            test_state = TEST_DATA_READY;
+        break;
         default:
         break;
     }
@@ -97,6 +108,18 @@ void jump_to_test(){
             WALLET_UNSET_PIN(wallet.wallet_info);
             break;
         }
+        case TEST_RESTORE_SEED:{
+            Flash_Wallet wallet_for_flash;
+            WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+            WALLET_UNSET_PIN(wallet.wallet_info);
+            wallet.number_of_mnemonics = 24;
+            const char *mnemonics = "easy culture food welcome virtual acoustic west tongue pool year rib range almost trust wagon enroll all level basket hair exact clown banner dad";
+            __single_to_multi_line(mnemonics, strlen(mnemonics), wallet_credential_data.mnemonics);            
+            LOG_INFO("TEST: Input seed");
+            for(int i = 0; i < 24; i++)
+                LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
+                break;
+            }
         default:
             break;
     }
@@ -141,9 +164,19 @@ void log_test_result(){
     switch (test_case)
     {
     case TEST_GENERATE_SEED:{
+        LOG_INFO("TEST: Generated seed from random secret");
+        for(int i = 0; i < 24; i++)
+            LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
+        LOG_INFO("TEST: Generated shares");
         for(int i = 0; i < 5; i++)
             log_hex_array("shares: ", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
-        log_hex_array("secret: ", wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
+        LOG_INFO("TEST: Log done.");
+        }break;
+    case TEST_RESTORE_SEED:{
+        LOG_INFO("TEST: Generated shares");
+        for(int i = 0; i < 5; i++)
+            log_hex_array("shares: ", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+        LOG_INFO("TEST: Log done.");
         }break;
     default:
         break;
@@ -170,7 +203,10 @@ void repeated_test_task(){
         reset_flow_level();
         test_state++;
     default:
-        break;
+        if(test_case == TEST_GENERATE_SEED){
+            test_state = NO_TEST;
+            test_case = TEST_RESTORE_SEED;
+        }break;
     }
 
 }
