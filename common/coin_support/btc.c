@@ -499,7 +499,7 @@ int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_ou
   uint8_t address[SHA3_256_DIGEST_LENGTH] = {0};
   uint8_t offset = 1, script_offset = 0, version = 0;
 
-  refer https://learnmeabitcoin.com/technical/script for script type explaination
+  //refer https://learnmeabitcoin.com/technical/script for script type explaination
   if (script_pub_key[0] == 0x41) {
     // hash160 P2PK
     hasher_Raw(HASHER_SHA2_RIPEMD, script_pub_key + 1, 65, address + offset); // overwrite with RIPEMD160
