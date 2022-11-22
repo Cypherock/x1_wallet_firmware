@@ -97,8 +97,7 @@ void receive_transaction_tasks_near() {
 
     case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
       char display[65];
-      snprintf(display, sizeof(display), ui_text_receive_on_address,
-               flow_level.screen_input.input_text);
+      snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
@@ -128,7 +127,9 @@ void receive_transaction_tasks_near() {
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN_NEAR: {
-      instruction_scr_init(ui_text_deriving_address, NULL);
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
       mark_event_over();
     } break;
 

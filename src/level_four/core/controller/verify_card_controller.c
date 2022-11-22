@@ -187,7 +187,13 @@ void verify_card_controller()
         En_command_type_t msg_type;
         uint8_t *data_array = NULL;
         uint16_t msg_size = 1;
-        get_usb_msg(&msg_type, &data_array, &msg_size);
+
+        if (!get_usb_msg(&msg_type, &data_array, &msg_size)) return;
+        if (msg_type != STATUS_PACKET) {
+            comm_reject_invalid_cmd();
+            clear_message_received_data();
+            return;
+        }
 
         if (msg_type == STATUS_PACKET && data_array[0] == STATUS_CMD_SUCCESS)
             flow_level.level_three = VERIFY_CARD_SUCCESS;

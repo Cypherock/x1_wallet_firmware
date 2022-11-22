@@ -86,7 +86,7 @@ static void restore_wallet_enter_mnemonics_flow()
 {
     if (flow_level.level_four <= wallet.number_of_mnemonics) {
         char heading[20];
-        snprintf(heading, sizeof(heading), ui_text_enter_word_hash, flow_level.level_four);
+        snprintf(heading, sizeof(heading), UI_TEXT_ENTER_WORD, flow_level.level_four);
         ui_mnem_init(heading);
     } else {
         // todo check if mnemonics is correct
@@ -114,12 +114,17 @@ void tasks_arbitrary_data()
 
     case ARBITRARY_DATA_NAME_CONFIRM: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
-      delay_scr_init(ui_wallet_pin_instruction_1, DELAY_TIME);
+      char display[65];
+      if(strlen(flow_level.screen_input.input_text) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
+      else
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
+      delay_scr_init(display, DELAY_TIME);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_2: {

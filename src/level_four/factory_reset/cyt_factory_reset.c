@@ -90,7 +90,7 @@ void cyt_factory_reset() {
 
         case FACTORY_RESET_ERASING:
             instruction_scr_destructor();
-            delay_scr_init(ui_text_processing, 1000);
+            delay_scr_init(ui_text_processing, DELAY_SHORT);
             break;
 
         case FACTORY_RESET_DONE:
@@ -101,7 +101,7 @@ void cyt_factory_reset() {
             char msg[64] = "\0";
             const char *msg_list[3] = {msg, ui_text_reset_exit[1], ui_text_reset_exit[2]};
             instruction_scr_destructor();
-            snprintf(msg, sizeof(msg), ui_text_reset_exit[0], get_wallet_name(factory_reset_mismatch_wallet_index));
+            snprintf(msg, sizeof(msg), "Wallet '%s' not found on card(s)", get_wallet_name(factory_reset_mismatch_wallet_index));
             multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
         } break;
 

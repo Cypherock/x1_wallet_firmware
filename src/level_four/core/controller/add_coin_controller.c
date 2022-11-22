@@ -153,7 +153,13 @@ void add_coin_controller()
 
         uint8_t i = 0x0, j = 0x0;
         for (; i < add_coin_data.number_of_coins; i++, j++) {
-            if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
+            if(add_coin_data.coin_indexes[i] == SOLANA_COIN_INDEX){ 
+                uint32_t path[] = {
+                    SOLANA_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
+                    SOLANA_ACCOUNT_INDEX};
+                generate_xpub(path,3, ED25519_NAME, seed, (char *) cmd_add_coin.xpubs[j]);
+                memzero(path, sizeof(path));
+            }else if(add_coin_data.coin_indexes[i] == NEAR_COIN_INDEX){ 
                 uint32_t path[] = {
                     NEAR_PURPOSE_INDEX, add_coin_data.coin_indexes[i],
                     NEAR_ACCOUNT_INDEX, NEAR_CHAIN_INDEX, NEAR_ADDRESS_INDEX};
@@ -176,14 +182,8 @@ void add_coin_controller()
         uint8_t out_arr[sizeof(Cmd_Add_Coin_t)];
         memcpy(out_arr, cmd_add_coin.xpubs, XPUB_SIZE * j);
         transmit_data_to_app(ADD_COIN_SENDING_XPUBS, out_arr, XPUB_SIZE * j);
-        instruction_scr_destructor();
-        flow_level.level_three = ADD_COINS_WAITING_SCREEN;
-    } break;
-
-    case ADD_COINS_WAITING_SCREEN:
-        instruction_scr_destructor();
         flow_level.level_three = ADD_COINS_FINAL_SCREEN;
-        break;
+    } break;
 
     case ADD_COINS_FINAL_SCREEN:
         reset_flow_level();

@@ -243,6 +243,7 @@ void receive_transaction_controller_near()
                 if(status!= 0) {
                     comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
                     reset_flow_level();
+                    return;
                 }
             }
             else {
@@ -296,6 +297,7 @@ void receive_transaction_controller_near()
         if(status!= 0) {
             comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
             reset_flow_level();
+            return;
         }
 
         transmit_one_byte_confirm(RECV_TXN_REPLACE_ACCOUNT);
