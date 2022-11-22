@@ -94,7 +94,7 @@ void wallet_locked_task()
         get_flash_wallet_by_name((const char *) wallet.wallet_name, &flash_wallet);
 
         char msg[32];
-        snprintf(msg, sizeof(msg), UI_TEX_TAP_CARD, decode_card_number(flash_wallet->challenge.card_locked));
+        snprintf(msg, sizeof(msg), UI_TEXT_TAP_CARD, decode_card_number(flash_wallet->challenge.card_locked));
 
         instruction_scr_init(msg, NULL);
         mark_event_over();

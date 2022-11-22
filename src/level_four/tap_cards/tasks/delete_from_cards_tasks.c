@@ -81,7 +81,7 @@ void tap_cards_for_delete_flow()
     case TAP_CARD_THREE_FRONTEND:
     case TAP_CARD_FOUR_FRONTEND:
       if (!card_already_deleted_flash(index, ((flow_level.level_four-1)>>1)+1)) {
-        snprintf(display, sizeof(display), UI_TEX_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
+        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
         instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
       } else {

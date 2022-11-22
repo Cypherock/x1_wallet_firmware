@@ -15,7 +15,7 @@
 
 #define UI_TEXT_ENTER_WORD "Enter Word # %d"
 #define UI_TEXT_IS_WORD "Is Word #%d\n%s"
-#define UI_TEX_TAP_CARD "Tap card #%d"
+#define UI_TEXT_TAP_CARD "Tap card #%d"
 #define UI_TEXT_PLACE_CARD "Place Card #%d"
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s with %s"
 #define UI_TEXT_SEND_PROMPT "Send %s with %s"
