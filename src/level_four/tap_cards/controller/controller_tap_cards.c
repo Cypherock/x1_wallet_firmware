@@ -92,9 +92,6 @@ bool tap_card_applet_connection() {
          */
         if (tap_card_data.recovery_mode == 1)
             mark_error_screen(ui_critical_card_health_migrate_data);
-        if (tap_card_data.tapped_card != 0 &&
-            tap_card_data.tapped_card == (acceptable_cards ^ tap_card_data.acceptable_cards))
-            continue;
 
         /* The tapped_card information should be persistent, as it is used at later stage in the flow
         * For example, in the second half of card-verification, the card tapped in first half becomes the
@@ -221,6 +218,7 @@ bool tap_card_handle_applet_errors() {
                                         tap_card_data.tapped_card);
                 tap_card_data.active_cmd_type = USER_ENTERED_PIN;
                 tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
+                flow_level.level_one = LEVEL_TWO_OLD_WALLET;
                 flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
                 decrease_level_counter();
             } else if ((tap_card_data.status & 0xFF00) == SW_CORRECT_LENGTH_00) {

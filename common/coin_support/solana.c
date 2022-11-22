@@ -72,7 +72,7 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error)
   }
 
   if (value > UINT16_MAX)
-    *error = SEC_D_COMPACT_U16_OVERFLOW;  // overflow
+    *error = SOL_D_COMPACT_U16_OVERFLOW;  // overflow
 
   *size = value;
   return offset + 1;
@@ -89,10 +89,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
 
   // Account addresses
   offset += get_compact_array_size(byte_array + offset, &(utxn->account_addresses_count), &error);
-  if (error != SEC_OK)
+  if (error != SOL_OK)
     return error;
   if (utxn->account_addresses_count == 0)
-    return SEC_D_MIN_LENGTH;
+    return SOL_D_MIN_LENGTH;
 
   utxn->account_addresses = byte_array + offset;
   offset += utxn->account_addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
@@ -103,26 +103,26 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
 
   // Instructions: Currently expecting count to be only 1. TODO: Handle batch instructions
   offset += get_compact_array_size(byte_array + offset, &(utxn->instructions_count), &error);
-  if (error != SEC_OK)
+  if (error != SOL_OK)
     return error;
   if (utxn->instructions_count == 0)
-    return SEC_D_MIN_LENGTH;
+    return SOL_D_MIN_LENGTH;
 
   utxn->instruction.program_id_index = *(byte_array + offset++);
 
   offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.account_addresses_index_count), &error);
-  if (error != SEC_OK)
+  if (error != SOL_OK)
     return error;
   if (utxn->instruction.account_addresses_index_count == 0)
-    return SEC_D_MIN_LENGTH;
+    return SOL_D_MIN_LENGTH;
 
   utxn->instruction.account_addresses_index = byte_array + offset;
   offset += utxn->instruction.account_addresses_index_count;
   offset += get_compact_array_size(byte_array + offset, &(utxn->instruction.opaque_data_length), &error);
-  if (error != SEC_OK)
+  if (error != SOL_OK)
     return error;
   if (utxn->instruction.opaque_data_length == 0)
-    return SEC_D_MIN_LENGTH;
+    return SOL_D_MIN_LENGTH;
 
   utxn->instruction.opaque_data = byte_array + offset;
   offset += utxn->instruction.opaque_data_length;
@@ -148,15 +148,15 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_s
     }
   }
 
-  return ((offset <= byte_array_size) && (offset > 0)) ? SEC_OK : SEC_D_READ_SIZE_MISMATCH;
+  return ((offset <= byte_array_size) && (offset > 0)) ? SOL_OK : SOL_D_READ_SIZE_MISMATCH;
 }
 
 int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   if (utxn->instructions_count != 1)
-    return SEC_V_UNSUPPORTED_INSTRUCTION_COUNT;
+    return SOL_V_UNSUPPORTED_INSTRUCTION_COUNT;
 
   if (!(0 < utxn->instruction.program_id_index && utxn->instruction.program_id_index < utxn->account_addresses_count))
-    return SEC_V_INDEX_OUT_OF_RANGE;
+    return SOL_V_INDEX_OUT_OF_RANGE;
 
   uint32_t instruction_enum = U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
 
@@ -167,13 +167,13 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
       case SSI_TRANSFER:  // transfer instruction
         break;
       default:
-        return SEC_V_UNSUPPORTED_INSTRUCTION;
+        return SOL_V_UNSUPPORTED_INSTRUCTION;
         break;
     }
   } else {
-    return SEC_V_UNSUPPORTED_PROGRAM;
+    return SOL_V_UNSUPPORTED_PROGRAM;
   }
-  return SEC_OK;
+  return SOL_OK;
 }
 
 void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
@@ -194,4 +194,29 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
   memzero(path, sizeof(path));
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
+}
+
+int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *blockhash) {
+  uint8_t empty_array[SOLANA_BLOCKHASH_LENGTH] = {0};
+  uint16_t offset                              = 0;
+  int status                                   = SOL_OK;
+  uint16_t addresses_count                     = 0;
+
+  if (byte_array == NULL || blockhash == NULL)
+    return SOL_ERROR;
+
+  if (memcmp(blockhash, empty_array, SOLANA_BLOCKHASH_LENGTH) == 0)
+    return SOL_BU_INVALID_BLOCKHASH;
+  // Message headers
+  offset += 3;
+  // Account addresses
+  offset += get_compact_array_size(byte_array + offset, &addresses_count, &status);
+  if (status != SOL_OK)
+    return status;
+  if (addresses_count == 0)
+    return SOL_D_MIN_LENGTH;
+  offset += addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
+  // Blockhash
+  memcpy(byte_array + offset, blockhash, SOLANA_BLOCKHASH_LENGTH);
+  return SOL_OK;
 }

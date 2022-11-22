@@ -204,6 +204,10 @@ void send_transaction_tasks_solana() {
       mark_event_over();
     } break;
 
+    case SEND_TXN_UPDATE_BLOCKHASH_SOLANA: {
+      mark_event_over();
+    } break;
+
     case SEND_TXN_READ_DEVICE_SHARE_SOLANA: {
       mark_event_over();
     } break;

@@ -12,7 +12,8 @@
 
 #include "ui_common.h"
 #ifdef DEV_BUILD
-#define DELAY_TIME 500
+#define DELAY_SHORT         500
+#define DELAY_TIME          500
 #define DELAY_LONG_STRING   500
 #else
 #define DELAY_SHORT         1000

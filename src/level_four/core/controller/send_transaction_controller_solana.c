@@ -96,11 +96,12 @@ void send_transaction_controller_solana() {
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA;
 
-        if (status == SEC_OK)
+        if (status == SOL_OK)
           status = solana_validate_unsigned_txn(&solana_unsigned_txn_ptr);
 
-        if (status != SEC_OK) {
+        if (status != SOL_OK) {
           LOG_ERROR("Solana error code: %d", status);
+          instruction_scr_destructor();
           mark_error_screen(ui_text_worng_eth_transaction);
           comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
           reset_flow_level();
@@ -175,7 +176,33 @@ void send_transaction_controller_solana() {
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_SOLANA: {
-      flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_SOLANA;
+      flow_level.level_three = SEND_TXN_UPDATE_BLOCKHASH_SOLANA;
+      uint8_t arr[1]         = {1};
+      transmit_data_to_app(SEND_TXN_UNSIGNED_TXN, arr, sizeof(arr));
+    } break;
+
+    case SEND_TXN_UPDATE_BLOCKHASH_SOLANA: {
+      uint8_t *blockhash_received                              = NULL;
+      uint16_t blockhash_msg_size                              = 0;
+      uint8_t solana_latest_blockhash[SOLANA_BLOCKHASH_LENGTH] = {0};
+
+      if (get_usb_msg_by_cmd_type(SEND_TXN_PRE_SIGNING_DATA, &blockhash_received, &blockhash_msg_size)) {
+        if (blockhash_msg_size != SOLANA_BLOCKHASH_LENGTH) {
+          comm_reject_invalid_cmd();
+          reset_flow_level();
+        }
+        memcpy(solana_latest_blockhash, blockhash_received, SOLANA_BLOCKHASH_LENGTH);
+        clear_message_received_data();
+
+        int status = solana_update_blockhash_in_byte_array(solana_unsigned_txn_byte_array, solana_latest_blockhash);
+        if (status != SOL_OK) {
+          LOG_ERROR("SOL: %d", status);
+          comm_reject_request(SEND_TXN_PRE_SIGNING_DATA, 0);
+          reset_flow_level();
+        }
+        flow_level.level_three = SEND_TXN_READ_DEVICE_SHARE_SOLANA;
+      }
+
     } break;
 
     case SEND_TXN_READ_DEVICE_SHARE_SOLANA:

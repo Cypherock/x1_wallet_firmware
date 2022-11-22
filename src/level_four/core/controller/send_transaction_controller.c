@@ -121,6 +121,7 @@ void send_transaction_controller()
             clear_message_received_data();
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
             if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
+                instruction_scr_destructor();
                 comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
                 reset_flow_level();
                 mark_error_screen(ui_text_wrong_btc_transaction);
