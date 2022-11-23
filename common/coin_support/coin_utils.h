@@ -122,7 +122,7 @@ typedef struct
 
     char *token_name;
 
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
 
 } txn_metadata;
 #pragma pack(pop)
@@ -145,7 +145,7 @@ typedef struct Receive_Transaction_Data {
   uint8_t address_index[4];
   char *token_name;
   union {
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
     uint8_t near_account_type;
   };
   char near_registered_account[65];
@@ -283,7 +283,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
@@ -300,7 +300,7 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
  *
  * @note
  */
-const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the version address and public key for segwit and non segwit coins.
