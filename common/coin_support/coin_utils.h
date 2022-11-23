@@ -36,12 +36,15 @@
 
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
+#define LTC_COIN_VERSION     0x00000000
 
 /// DOGE coin index
 #define DOGE (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION     0x00000000
 
 /// DASH coin index
 #define DASH (BITCOIN + 0x05)
+#define DASH_COIN_VERSION     0x00000000
 
 /// ETHEREUM coin index
 #define ETHEREUM ETHEREUM_COIN_INDEX
@@ -61,7 +64,7 @@
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
     COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITCOIN = 0x03,
+    COIN_TYPE_LITECOIN = 0x03,
     COIN_TYPE_DOGE = 0x04,
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,

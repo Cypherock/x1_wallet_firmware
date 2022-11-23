@@ -46,6 +46,8 @@
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
 
+#define ETH_COIN_VERSION     0x00000000
+
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;
 
