@@ -151,6 +151,7 @@ void level_one_tasks()
     lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
     CY_set_app_restricted(false);
     CY_Reset_Not_Allow(true);
+    CY_Set_External_Triggered(false);
     mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #endif
 }
