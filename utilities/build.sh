@@ -22,6 +22,13 @@ if [ $# -gt 0 ]; then
         ACTIVE_TYPE=Initial
         ;;
 
+        main-test)
+        ACTIVE_TYPE=Main-test
+        ;;
+
+        initial-test)
+        ACTIVE_TYPE=Initial-test
+        ;;
         *)
         echo "Wrong type selection"
         echo "USAGE: $0 [type]"

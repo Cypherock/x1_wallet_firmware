@@ -113,7 +113,10 @@ extern lv_indev_t *indev_keypad;
 extern Counter counter;
 extern bool main_app_ready;
 
+#if X1WALLET_TEST_SUITE==1
 extern void repeated_test_task();
+#endif
+
 #if USE_SIMULATOR == 1
 
 /*On OSX SDL needs different handling*/
@@ -157,7 +160,10 @@ int main(void)
 
     while (true)
     {
+#if X1WALLET_TEST_SUITE==1
         repeated_test_task();
+#endif
+
         if (keypad_get_key() != 0)
             reset_inactivity_timer();
         // Flow

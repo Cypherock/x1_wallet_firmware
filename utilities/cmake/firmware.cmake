@@ -25,6 +25,16 @@ elseif("${FIRMWARE_TYPE}" STREQUAL "Initial")
     target_include_directories(${EXECUTABLE} PRIVATE
             initial/config/
             )
+elseif("${FIRMWARE_TYPE}" STREQUAL "Main-test")
+    add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1 X1WALLET_TEST_SUITE=1)
+    target_include_directories(${EXECUTABLE} PRIVATE
+            main/config/
+            )
+elseif("${FIRMWARE_TYPE}" STREQUAL "Initial-test")
+    add_compile_definitions(X1WALLET_INITIAL=1 X1WALLET_MAIN=0 X1WALLET_TEST_SUITE=1)
+    target_include_directories(${EXECUTABLE} PRIVATE
+            initial/config/
+            )
 else()
     message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
 endif()

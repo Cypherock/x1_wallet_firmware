@@ -1,3 +1,5 @@
+#ifdef X1WALLET_TEST_SUITE
+
 #include "controller_main.h"
 #include "communication.h"
 #include "board.h"
@@ -210,3 +212,5 @@ void repeated_test_task(){
     }
 
 }
+
+#endif
