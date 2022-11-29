@@ -75,6 +75,7 @@
 #define ATECC_CFG_88_MASK_OLD_PROV  44
 
 #if X1WALLET_INITIAL
+// slot-5 shouldn't be locked
 uint8_t atecc_slot_to_lock[]={
     slot_2_auth_key,
     slot_3_nfc_pair_key,
