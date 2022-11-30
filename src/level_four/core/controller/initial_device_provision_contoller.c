@@ -75,9 +75,12 @@
 #define ATECC_CFG_88_MASK_OLD_PROV  44
 
 #if X1WALLET_INITIAL
+// slot-5 shouldn't be locked
 uint8_t atecc_slot_to_lock[]={
     slot_2_auth_key,
     slot_3_nfc_pair_key,
+    slot_6_io_key,
+    slot_8_serial,
     slot_0_unused,
     slot_1_unused,
     slot_4_unused,
@@ -143,7 +146,7 @@ provision_status_t check_provision_status(){
         return -1;
     }
 
-    if(cfg[86]==0x00 || cfg[87]==0x00){ //config zone and data zones are locked
+    if(cfg[86]==0x00 && cfg[87]==0x00){ //config zone and data zones are locked
 
         if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
             return provision_incomplete;
@@ -201,7 +204,7 @@ void device_provision_controller(){
             0xFF, 0xFF, //slot unlocked
             0x0E, 0x61, //ChipOptions
             0x00, 0x00, 0x00, 0x00, //certificate formatting disabled
-            0x53, 0x00, 0x53, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x38, 0x00, 0x7C, 0x00, 0x1C, 0x00, 0x3C, 0x00, 0x1A, 0x00, 0x1C, 0x00, 0x10, 0x00, 0x1C, 0x00, 0x30, 0x00, 0x12, 0x00, 0x30, 0x00
+            0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x73, 0x00, 0x18, 0x00, 0x7C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3A, 0x00, 0x3C, 0x00, 0x30, 0x00, 0x3C, 0x00, 0x30, 0x00, 0x32, 0x00, 0x30, 0x00
             };
 
             atecc_data.retries = DEFAULT_ATECC_RETRIES;
@@ -444,26 +447,29 @@ void lock_all_slots(){
 
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
     bool lock = false;
+    uint32_t err_count=0;
+    atecc_data.status = ATCA_FUNC_FAIL;
     do
     {
-        if(atecc_data.status != ATCA_SUCCESS){
-            LOG_CRITICAL("PERR4-0x%02x, retry-%d", atecc_data.status, atecc_data.retries);
-        }
+        err_count = 0;
         for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
         {
+            lock=false;
             atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
             if(atecc_data.status != ATCA_SUCCESS){
-                break;
+                LOG_CRITICAL("PERR4=0x%02x, retry-%d, slot=%d", atecc_data.retries, atecc_data.status, atecc_slot_to_lock[i]);
+                err_count++;
             }
             else if(lock == true){
                 continue;
             }
             atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
             if(atecc_data.status != ATCA_SUCCESS){
-                break;
+                LOG_CRITICAL("PERR5=0x%02x, retry-%d, slot=%d", atecc_data.retries, atecc_data.status, atecc_slot_to_lock[i]);
+                err_count++;
             }
         }
-    } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    } while (err_count != 0 && --atecc_data.retries);
 
     if(usb_irq_enable_on_entry == true)
         NVIC_EnableIRQ(OTG_FS_IRQn);
