@@ -90,11 +90,11 @@ static void generate_wallet_random_word()
     if (choose) {
         word_to_choose %= 24;
         mark_expected_list_choice(1);
-        snprintf(msg, sizeof(msg), ui_text_is_word, word_to_choose + 1, wallet_credential_data.mnemonics[word_to_choose]);
+        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, word_to_choose + 1, wallet_credential_data.mnemonics[word_to_choose]);
     } else {
         word_to_choose = word_to_choose & 0x7FF;
         temp = word_to_choose % 24;
-        snprintf(msg, sizeof(msg), ui_text_is_word, temp + 1, wordlist[word_to_choose]);
+        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, temp + 1, wordlist[word_to_choose]);
         if (strcmp(wordlist[word_to_choose], wallet_credential_data.mnemonics[temp]) == 0) {
             mark_expected_list_choice(1);
         } else {
@@ -123,16 +123,16 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
       char display[65];
-      if(strlen(flow_level.screen_input.input_text) <= 15)
-        snprintf(display, sizeof(display), ui_wallet_pin_instruction_1, wallet.wallet_name);
+      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
       else
-        snprintf(display, sizeof(display), ui_wallet_pin_instruction_1, "this wallet");
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 
@@ -167,10 +167,10 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
       char display[65];
-      if(strlen(flow_level.screen_input.input_text) <= 15)
-        snprintf(display, sizeof(display), ui_wallet_passphrase_instruction_1, wallet.wallet_name);
+      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, wallet.wallet_name);
       else
-        snprintf(display, sizeof(display), ui_wallet_passphrase_instruction_1, "this wallet");
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 

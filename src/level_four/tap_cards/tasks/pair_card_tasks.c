@@ -78,7 +78,7 @@ void tap_card_pair_card_tasks()
             mark_event_cancel();
         }
         else{
-            snprintf(display, sizeof(display), ui_text_pair_card_x, ((flow_level.level_four-1)>>1)+1);
+            snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
             card_detect_scr_init(display);
         }
         break;
@@ -88,7 +88,7 @@ void tap_card_pair_card_tasks()
     case PAIR_CARD_GREEN_BACKEND:
     case PAIR_CARD_YELLOW_BACKEND:
         card_detect_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_pair_card_x, flow_level.level_four>>1);
+        snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, flow_level.level_four>>1);
         instruction_scr_init("Dummy", display);
         mark_event_over();
         break;
@@ -97,7 +97,7 @@ void tap_card_pair_card_tasks()
         uint8_t pair_count=0;
         if((pair_count = get_keystore_used_count()) < 4){
             char str[100]="";
-            snprintf(str, sizeof(str), ui_text_card_pairing_skipped_count, 4-pair_count);
+            snprintf(str, sizeof(str), "%d card pairing skipped, pair all cards for proper use", 4-pair_count);
             delay_scr_init(str, DELAY_LONG_STRING);
         }
         else{

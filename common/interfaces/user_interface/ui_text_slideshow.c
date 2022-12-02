@@ -83,7 +83,7 @@ void ui_text_slideshow_change_text(const char* str, const uint8_t str_length, co
 {
     ASSERT(data != NULL);
     ASSERT(str != NULL);
-    ASSERT(strlen(str) == str_length);
+    ASSERT(strnlen(str, MAX_NUM_OF_CHARS_IN_A_SLIDE) == str_length);
 
     // If checks, to prevent runtime errors
     if (data != NULL) {

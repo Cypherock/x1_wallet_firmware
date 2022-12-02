@@ -146,7 +146,7 @@ void near_serialize_account_ids(const char ** account_ids,const size_t count,uin
     data[(*data_len)++]=TAG_NEAR_DEFAULT_NETWORK;
     *data_len += 2;    // Leave 2 bytes for storing data length
     for(size_t i=0;i<count; i++){
-        fill_flash_tlv(data,data_len,TAG_NEAR_REGISTERED_ACC,strlen(account_ids[i])+1,(const uint8_t *)account_ids[i]);
+        fill_flash_tlv(data,data_len,TAG_NEAR_REGISTERED_ACC,strnlen(account_ids[i], NEAR_ACC_ID_MAX_LEN)+1,(const uint8_t *)account_ids[i]);
     }
     data[1]=(*data_len-3);
     data[2]=(*data_len-3) >> 8;

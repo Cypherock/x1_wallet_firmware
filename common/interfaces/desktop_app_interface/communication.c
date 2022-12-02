@@ -267,8 +267,8 @@ static uint8_t SDK_RESP_PACKET[] = {
     0x12, 0x30,                             // Checksum
     COMM_V0_START_OF_HEADER, COMM_SDK_VERSION_REQ,       // SDK response packet
     0x0C, 0x00, 0x01, 0x00, 0x01,           // data length (1 byte), current packet (2 bytes), packet count (2 bytes)
-    0x00, 0x02, 0x00, 0x02, 0x00, 0x00,     // SDK version 2.2 for current working protocol
-    0x79, 0xA1                              // Checksum
+    0x00, 0x02, 0x00, 0x04, 0x00, 0x00,     // SDK version 2.4.0 for current working protocol
+    0xCB, 0x01                              // Checksum
 };
 
 static inline void comm_reset() {
@@ -678,7 +678,8 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
  */
 static comm_error_code_t comm_process_out_req_packet(const packet_t *rx_packet) {
     if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no) return INVALID_SEQUENCE_NO;
-    if (rx_packet->header.chunk_number != 1) return INVALID_CHUNK_NO;
+  if (rx_packet->header.chunk_number != 1)
+    return INVALID_CHUNK_NO;
     if (rx_packet->header.total_chunks != 1) return INVALID_CHUNK_COUNT;
     if (rx_packet->header.payload_length != 6) return INVALID_PAYLOAD_LENGTH;
     if (comm_status.curr_cmd_state != CMD_STATE_DONE && comm_status.curr_cmd_state != CMD_STATE_FAILED) {

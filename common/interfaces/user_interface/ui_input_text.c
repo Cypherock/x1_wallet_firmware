@@ -86,7 +86,7 @@ void input_text_init(const char* input_list, const char* initial_heading, const 
 
     if (data != NULL) {
         data->input_list = input_list;
-        data->input_list_size = strlen(input_list);
+        data->input_list_size = strnlen(input_list, MAX_CHARACTER_INPUT_LIST);
         data->initial_heading =(char*) initial_heading;
         data->min_input_size = min_input_size;
         data->current_index = 26 % data->input_list_size;
@@ -144,7 +144,7 @@ static void hide_unhide_ok()
     ASSERT(data != NULL);
     ASSERT(obj != NULL);
 
-    if (strlen(data->entered_text) >= data->min_input_size) {
+    if (strnlen(data->entered_text, MAX_ARRAY_SIZE) >= data->min_input_size) {
         lv_obj_set_hidden(obj->next_btn, false);
     } else {
         lv_obj_set_hidden(obj->next_btn, true);
@@ -253,7 +253,7 @@ static void character_event_handler(lv_obj_t* character, const lv_event_t event)
             lv_group_focus_obj(obj->backspace);
             break;
         case LV_KEY_DOWN:
-            if (strlen(data->entered_text) >= data->min_input_size)
+            if (strnlen(data->entered_text, MAX_ARRAY_SIZE) >= data->min_input_size)
                 lv_group_focus_obj(obj->next_btn);
             else
                 lv_group_focus_obj(obj->cancel_btn);
@@ -268,13 +268,13 @@ static void character_event_handler(lv_obj_t* character, const lv_event_t event)
               data->current_text[1] = 0;
         }
 
-        if(strlen(data->entered_text) == 0)
+        if(strnlen(data->entered_text, MAX_ARRAY_SIZE) == 0)
             lv_label_set_text(lv_obj_get_child(obj->text_entered, NULL),"");
         
         // 10 is added to the current pixel width to change the alignment to RIGHT incase the last added character overlaps
         // 10 is considered an average width of a pixel
-        if (get_entered_text_px_width() + 10 <= 98 && strlen(data->entered_text) <= data->max_input_size) {
-            if (data->data_type == DATA_TYPE_PIN && strlen(data->entered_text) < MAX_PIN_SIZE) {
+        if (get_entered_text_px_width() + 10 <= 98 && strnlen(data->entered_text, MAX_ARRAY_SIZE) <= data->max_input_size) {
+            if (data->data_type == DATA_TYPE_PIN && strnlen(data->entered_text, MAX_ARRAY_SIZE) < MAX_PIN_SIZE) {
                 strncat(data->entered_text, data->current_text, 2);
                 strncat(data->password_text, "*", 2);
                 lv_label_set_text(lv_obj_get_child(obj->text_entered, NULL), data->password_text);
@@ -293,7 +293,7 @@ static void character_event_handler(lv_obj_t* character, const lv_event_t event)
                 lv_label_set_text(lv_obj_get_child(obj->text_entered, NULL), data->entered_text);
             }
             hide_unhide_ok();
-        }else if(strlen(data->entered_text) <= data->max_input_size){
+        }else if(strnlen(data->entered_text, MAX_ARRAY_SIZE) <= data->max_input_size){
             if(data->data_type != DATA_TYPE_PIN){
                 strncat(data->entered_text, data->current_text, 2);
                 add_blank_space();
@@ -344,7 +344,7 @@ static void backspace_event_handler(lv_obj_t* backspace, const lv_event_t event)
         }
         break;
     case LV_EVENT_CLICKED: {
-        int len = strlen(data->entered_text);
+        int len = strnlen(data->entered_text, MAX_ARRAY_SIZE);
         if (len == 0)
             break;
         else if (data->data_type == DATA_TYPE_PIN) {

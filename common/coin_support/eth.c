@@ -259,7 +259,7 @@ uint64_t hex2dec(const char *source) {
   uint64_t t = 1;
   int len = 0;
 
-  len = strlen(source);
+  len = strnlen(source, 16);
   for (int i = len - 1; i >= 0; i--) {
     uint64_t j = get_index_of_signs(*(source + i));
     sum += (t * j);

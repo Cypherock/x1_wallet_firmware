@@ -85,7 +85,7 @@ void card_upgrade_controller()
             ;
         flow_level.level_three = CARD_UPGRADE_FORWARD_MESSAGE;
         number_of_apdus_sent = 0;
-        snprintf(text, sizeof(text), ui_text_card_sending_apdu, number_of_apdus_sent);
+        snprintf(text, sizeof(text), "Sending APDU\n%d", number_of_apdus_sent);
         textDisplay = text;
         instruction_scr_change_text(textDisplay, false);
         uint8_t arr[4];
@@ -112,7 +112,7 @@ void card_upgrade_controller()
             if (err_code == STM_SUCCESS) {
                 transmit_data_to_app(APDU_PACKET, recv_apdu, recv_len);
                 number_of_apdus_sent++;
-                snprintf(text, sizeof(text), ui_text_card_sending_apdu, number_of_apdus_sent);
+                snprintf(text, sizeof(text), "Sending APDU\n%d", number_of_apdus_sent);
                 textDisplay = text;
                 instruction_scr_change_text(textDisplay, false);
             } else {

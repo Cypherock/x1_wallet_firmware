@@ -109,7 +109,7 @@ void cyt_card_hc() {
                 for(int i=0; i < wallet_count; i++){
                     strcpy(choices[i], (char*)wallet_list[i][0]);
                 }
-                snprintf(heading, sizeof(heading), ui_text_wallets_in_card, decode_card_number(tap_card_data.tapped_card));
+                snprintf(heading, sizeof(heading), "Wallets in Card #%d", decode_card_number(tap_card_data.tapped_card));
                 list_init(choices, wallet_count, heading, false);
             }
             else{
