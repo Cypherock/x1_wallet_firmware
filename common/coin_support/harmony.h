@@ -15,7 +15,6 @@
 
 #define HARMONY_MAINNET_NAME   "Harmony"
 #define HARMONY_TESTNET_NAME   "Ethereum Classic Mordor"
-#define HARMONY_TOKEN_NAME     "ONE"
-#define HARMONY_TOKEN_SYMBOL   HARMONY_TOKEN_NAME
+#define HARMONY_TOKEN_SYMBOL   "ONE"
 
 #endif

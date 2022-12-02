@@ -15,7 +15,6 @@
 
 #define ETC_MAINNET_NAME   "Ethereum Classic"
 #define ETC_TESTNET_NAME   "Ethereum Classic Mordor"
-#define ETC_TOKEN_NAME     "ETC"
-#define ETC_TOKEN_SYMBOL   ETC_TOKEN_NAME
+#define ETC_TOKEN_SYMBOL   "ETC"
 
 #endif

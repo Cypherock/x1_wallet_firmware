@@ -15,7 +15,6 @@
 
 #define FANTOM_MAINNET_NAME   "Fantom Opera"
 #define FANTOM_TESTNET_NAME   "Fantom Testnet"
-#define FANTOM_TOKEN_NAME     "FTM"
-#define FANTOM_TOKEN_SYMBOL   FANTOM_TOKEN_NAME
+#define FANTOM_TOKEN_SYMBOL   "FTM"
 
 #endif

@@ -15,7 +15,6 @@
 
 #define OPTIMISM_MAINNET_NAME   "Optimism"
 #define OPTIMISM_TESTNET_NAME   "Optimism Goerli Testnet"
-#define OPTIMISM_TOKEN_NAME     "Ether"
 #define OPTIMISM_TOKEN_SYMBOL   "ETH"
 
 #endif

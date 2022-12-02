@@ -15,7 +15,6 @@
 
 #define POLYGON_MAINNET_NAME  "Polygon"
 #define POLYGON_MUMBAI_NAME   "Polygon Mumbai"
-#define POLYGON_TOKEN_NAME    "MATIC"
-#define POLYGON_TOKEN_SYMBOL  POLYGON_TOKEN_NAME
+#define POLYGON_TOKEN_SYMBOL  "MATIC"
 
 #endif

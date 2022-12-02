@@ -15,7 +15,6 @@
 
 #define BSC_MAINNET_NAME  "BSC"
 #define BSC_TESTNET_NAME  "BSC Testnet"
-#define BSC_TOKEN_NAME    "BNB"
-#define BSC_TOKEN_SYMBOL  BSC_TOKEN_NAME
+#define BSC_TOKEN_SYMBOL  "BNB"
 
 #endif
