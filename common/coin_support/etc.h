@@ -10,6 +10,8 @@
 #ifndef ETC_H
 #define ETC_H
 
+#define ETC_COIN_VERSION    0x00000000
+
 #define ETC_MAINNET_CHAIN    61
 #define ETC_TESTNET_CHAIN    63
 
