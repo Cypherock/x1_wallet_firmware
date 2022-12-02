@@ -38,7 +38,6 @@
 
 #define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
 #define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
-#define ETHEREUM_TOKEN_NAME     "Ether"
 #define ETHEREUM_TOKEN_SYMBOL   "ETH"
 
 /// Convert byte array to unit32_t
@@ -224,6 +223,6 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
  * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit and gas_price
  * @param fee_decimal_string    Output decimal string of at least 30 character long
  */
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size);
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
 
 #endif
