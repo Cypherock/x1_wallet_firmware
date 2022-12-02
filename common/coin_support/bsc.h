@@ -10,6 +10,8 @@
 #ifndef BSC_H
 #define BSC_H
 
+#define BSC_COIN_VERSION    0x00000000
+
 #define BSC_MAINNET_CHAIN     56
 #define BSC_TESTNET_CHAIN     97
 
