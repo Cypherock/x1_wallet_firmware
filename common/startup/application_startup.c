@@ -105,10 +105,9 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
-#if X1WALLET_MAIN == 1
-extern void __authentication_listener(lv_task_t* task);
+/* #if X1WALLET_MAIN */
 extern lv_task_t* authentication_task;
-#endif
+/* #endif */
 
 extern lv_task_t *listener_task;
 extern lv_task_t* success_task;
@@ -225,15 +224,17 @@ static void display_init()
     ui_init(indev_keypad);
 }
 
-#if X1WALLET_MAIN
-device_auth_state device_auth_check(){
+/* #if X1WALLET_MAIN */
+device_auth_state device_auth_check(void)
+{
     if((is_device_authenticated() == true) && (get_first_boot_on_update() == false)){
         return DEVICE_AUTHENTICATED;
     }
     return DEVICE_NOT_AUTHENTICATED;
 }
 
-void restrict_app(){
+void restrict_app()
+{
     reset_flow_level();
     const char *pptr[2] = {ui_text_authentication_required, ui_text_start_auth_from_CySync};
     multi_instruction_init(pptr, 2, DELAY_TIME, false);
@@ -245,7 +246,8 @@ void restrict_app(){
     CY_set_app_restricted(true);
 }
 
-void device_auth(){
+void device_auth()
+{
     if(!device_auth_flag){
         return;
     }
@@ -279,7 +281,7 @@ void device_auth(){
     instruction_scr_destructor();
     reset_flow_level();
 }
-#endif
+/* #endif */
 
 /**
  * @brief
@@ -339,9 +341,13 @@ void application_init() {
     BSP_I2C1_Init();
     BSP_RNG_Init();
     atecc_mode_detect();
-#if X1WALLET_MAIN
+
+    /** Initialize USB driver here, as part of common code flow.
+     * Listener tasks can be enabled as and when required
+     * /
+/* #if X1WALLET_MAIN */
     libusb_init();
-#endif
+/* #endif */
     //Timer3 interrupt
     BSP_TIM3_Base_Start_IT();
     BSP_App_Timer_Init();
@@ -374,10 +380,16 @@ void application_init() {
 #endif
     set_wallet_init();
     reset_flow_level();
-#if X1WALLET_MAIN
+
+    /**
+     * Create authentication_task, with priority LV_TASK_PRIO_OFF.
+     * Based on flow_level and counter_level, authentication_task will be given appropriate priority. 
+     */
+/* #if X1WALLET_MAIN */
     CY_Reset_Not_Allow(true);
     authentication_task = lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
-#endif
+/* #endif */
+
     listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
     nfc_set_device_key_id(get_perm_self_key_id());
     pow_init_hash_rate();
@@ -390,8 +402,8 @@ void application_init() {
 #endif
 }
 
-#if X1WALLET_MAIN
-void check_invalid_wallets()
+/* #if X1WALLET_MAIN */
+void check_invalid_wallets(void)
 {
     bool fix = false;
     char display[64];
@@ -442,7 +454,8 @@ void check_boot_count()
         delay_scr_init(ui_text_its_a_while_check_your_cards,DELAY_TIME);
     }
 }
-#endif
+/* #endif */
+
 void log_error_handler_faults(){
 
 #if USE_SIMULATOR == 0
@@ -501,19 +514,28 @@ void device_hardware_check(){
 #endif
 }
 
-void device_provision_check() {
+provision_status_t device_provision_check(void)
+{
 #if USE_SIMULATOR == 0
     const char *msg = NULL;
-
-    switch (check_provision_status()) {
-        default:
+    provision_status_t currProvisioningStat = provision_empty; 
+    
+    currProvisioningStat = check_provision_status();
+    switch (currProvisioningStat)
+    {
+        default: /* Default state to be considered as provision_empty, therefore no break statement */
         case provision_empty:
+        {
             msg = ui_text_device_compromised_not_provisioned;
             break;
+        }
         case provision_incomplete:
+        {
             msg = ui_text_device_compromised_partially_provisioned;
             break;
-        case provision_complete:{
+        }
+        case provision_complete:
+        {
             if(get_device_serial() != SUCCESS){
                 msg = ui_text_device_compromised;
                 break;
@@ -521,8 +543,10 @@ void device_provision_check() {
             return;
         }
         case provision_v1_complete:
+        {
             msg = ui_text_device_compromised_v1_config;
             break;
+        }
     }
 
 #if NDEBUG
@@ -533,6 +557,7 @@ void device_provision_check() {
     ui_set_event_over_cb(&mark_event_over);
     instruction_scr_destructor();
 #endif
+    return currProvisioningStat;
 }
 
 #if USE_SIMULATOR == 1

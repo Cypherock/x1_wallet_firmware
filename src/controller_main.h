@@ -450,4 +450,15 @@ void _timeout_listener(lv_task_t* task);
  */
 void cy_exit_flow();
 
+/**
+ * @brief
+ * @details
+ *
+ * @param [in] task lv_task passed while registering the callback.
+ *
+ * @see 
+ * @since
+ */
+void __authentication_listener(lv_task_t* task);
+
 #endif

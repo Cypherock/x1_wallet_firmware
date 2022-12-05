@@ -44,6 +44,7 @@
 #include "lvgl.h"
 #include "ui_common.h"
 #include "controller_main.h"
+#include "controller_level_four.h"
 #include "sec_flash.h"
 
 /**
@@ -94,7 +95,7 @@ void application_init();
  *
  * @note
  */
-void check_invalid_wallets();
+void check_invalid_wallets(void);
 
 /**
  * @brief This function is called to initiate device authentication
@@ -223,10 +224,10 @@ void device_hardware_check();
 
 /**
  * @brief Handle cases if device is not provisioned
- * 
+ * @return Value of enum type provision_status_t based on provision status of the device
  * @since v1.0.0
  */
-void device_provision_check();
+provision_status_t device_provision_check(void);
 
 /**
  * @brief returns auth state

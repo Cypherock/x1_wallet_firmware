@@ -72,61 +72,85 @@
 extern char card_id_fetched[];
 extern char card_version[];
 
-void level_one_controller_initial() {
-#if X1WALLET_INITIAL
-  if (flow_level.show_error_screen) {
-    flow_level.show_error_screen = false;
-    return;
-  }
+void level_one_controller_initial(void)
+{
+/* #if X1WALLET_INITIAL */
+	if (flow_level.show_error_screen)
+	{
+		flow_level.show_error_screen = false;
+		return;
+	}
 
-  if (flow_level.show_desktop_start_screen) {
-    flow_level.show_desktop_start_screen = false;
-    return;
-  }
+	if (flow_level.show_desktop_start_screen)
+	{
+		flow_level.show_desktop_start_screen = false;
+		return;
+	}
 
-  if (counter.level > LEVEL_ONE) {
-    level_two_controller();
-    return;
-  }
+	if (counter.level > LEVEL_ONE)
+	{
+		level_two_controller();
+		return;
+	}
+	
+	switch (flow_level.level_one)
+	{
+		case 1:
+		case 2:
+		{
+			flow_level.level_one++;
+			break;
+		} 
 
-  switch (flow_level.level_one) {
-    case 1:
-    case 2: {
-      flow_level.level_one++;
-    } break;
+		case 3:
+		{
+			flow_level.level_one = 4;
+			break;
+		}
 
-    case 3: {
-      flow_level.level_one = 4;
-    } break;
+		case 4:
+		{
+			controller_read_card_id();
+			reset_flow_level();
+			flow_level.level_one = 5;
+			break;
+		}
 
-    case 4: {
-      controller_read_card_id();
-      reset_flow_level();
-      flow_level.level_one = 5;
-    } break;
+		case 5:
+		{
+			controller_read_card_id();
+			char msg[32] = {'\0'};
+			snprintf(msg, sizeof(msg), "Card #%d Tapped", decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
+			delay_scr_init(msg, DELAY_TIME);
+			reset_flow_level();
+			flow_level.level_one = 6;
 
-    case 5: {
-      controller_read_card_id();
-      char msg[32] = {'\0'};
-      snprintf(msg, sizeof(msg), "Card #%d Tapped", decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
-      delay_scr_init(msg, DELAY_TIME);
-      reset_flow_level();
-      flow_level.level_one = 6;
-#if USE_SIMULATOR == 0
-      libusb_init();
-#endif
-    } break;
+			/**
+			 * USB driver is already initialized during application_init(), therefore, we can omit this call
+			 * It will be useful from maintainability and code readability point of view.
+		#if USE_SIMULATOR == 0
+			libusb_init();
+		#endif
+			*/
+			break;
+		}
 
-    case 6: {
-      flow_level.level_one = 6;
-    } break;
+		case 6:
+		{
+			flow_level.level_one = 6;
+			break;
+		}
 
-    case 7: {
-      flow_level.level_one = 7;
-    } break;
+		case 7:
+		{
+			flow_level.level_one = 7;
+			break;
+		}
 
-    default:
-      break;
-  }
-#endif
+		default:
+		{
+			break;
+		}
+	}
+/* #endif */
 }

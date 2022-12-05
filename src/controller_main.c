@@ -128,10 +128,10 @@ bool main_app_ready = false;
 /// lvgl task to listen for desktop start command
 lv_task_t* listener_task;
 
-#if X1WALLET_MAIN == 1
+/* #if X1WALLET_MAIN */
 /// lvgl task to listen for desktop start command in restricted mode
 lv_task_t* authentication_task;
-#endif
+/* #endif */
 
 /// Stores arbitrary data during flows
 char arbitrary_data[4096 / 8 + 1];
@@ -184,13 +184,9 @@ Flash_Wallet* get_flash_wallet()
 void mark_event_over()
 {
     counter.next_event_flag = true;
-#if X1WALLET_MAIN
-    level_one_controller();
-#elif X1WALLET_INITIAL
-    level_one_controller_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
+    
+    /* level_one_controller_wrapper() will decide if training is complete or not */
+    level_one_controller_wrapper();
 }
 
 
@@ -340,7 +336,7 @@ void _timeout_listener(lv_task_t* task)
     	lv_task_del(success_task);
 }
 
-#if X1WALLET_MAIN
+/* #if X1WALLET_MAIN */
 /**
  * @brief wrapper listener for desktop commands while authentication is not complete
  * @details During authentication only a few select commands are allowed to be started i.e.
@@ -348,8 +344,8 @@ void _timeout_listener(lv_task_t* task)
  * 
  * @param task lv task calling __authentication listener
  */
-void __authentication_listener(lv_task_t* task){
-
+void __authentication_listener(lv_task_t* task)
+{
     En_command_type_t command;
     uint8_t *data_array = NULL;
     uint16_t msg_size = 0;
@@ -443,7 +439,7 @@ static bool wallet_selector(uint8_t *data_array)
     comm_reject_request(WALLET_DOES_NOT_EXISTS, 2);
     return false;
 }
-#endif
+/* #endif */
 
 extern Add_Coin_Data add_coin_data;
 extern Receive_Transaction_Data receive_transaction_data;
