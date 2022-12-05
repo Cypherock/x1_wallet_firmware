@@ -55,5 +55,15 @@ void level_one_controller_b();
  *
  * @note The USB is only initialised after training is over (card is tapped).
  */
-void level_one_controller_initial();
+void level_one_controller_initial(void);
+
+/**
+ * @brief
+ * @details
+ * @see
+ * @since
+ * @note
+ */
+void level_one_controller_wrapper(void);
+
 #endif

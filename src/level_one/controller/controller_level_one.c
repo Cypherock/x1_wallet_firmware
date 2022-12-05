@@ -74,7 +74,7 @@ extern bool main_app_ready;
 
 void level_one_controller()
 {
-#if X1WALLET_MAIN
+/* #if X1WALLET_MAIN */
     if (flow_level.show_error_screen) {
         flow_level.show_error_screen = false;
         return;
@@ -157,5 +157,5 @@ void level_one_controller()
     mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
     increase_level_counter();
     clear_list_choice();
-#endif
+/* #endif */
 }

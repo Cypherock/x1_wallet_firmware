@@ -35,5 +35,16 @@ void level_one_tasks();
  * @see flow_level, counter, tasks_read_card_id(), instruction_scr_init()
  * @since v1.0.0
  */
-void level_one_tasks_initial();
-#endif
+void level_one_tasks_initial(void);
+
+
+/**
+ * @brief
+ * @details 
+ * 
+ * @see
+ * @since v1.0.0
+ */
+void level_one_tasks_wrapper(void);
+
+#endif /* TASKS_LEVEL_ONE_H */

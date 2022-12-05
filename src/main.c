@@ -82,6 +82,7 @@
 #include "lvgl/lvgl.h"
 #include "ui_instruction.h"
 #include "controller_main.h"
+#include "controller_level_four.h"
 #include "sys_state.h"
 #include "tasks_level_one.h"
 #include "stdio.h"
@@ -141,15 +142,19 @@ int main(void)
         handle_fault_in_prev_boot();
     }
     else
-#endif //USE_SIMULATOR
+#endif /* USE_SIMULATOR == 0 */
     {
         logo_scr_init(2000);
-        device_provision_check();
         reset_flow_level();
-#if X1WALLET_MAIN
-        if(device_auth_check() == DEVICE_AUTHENTICATED)
-            check_invalid_wallets();
-#endif
+
+        /* Check for wallet states only if device has been provisioned & authenticated */ 
+        if (device_provision_check() == provision_complete)
+        {
+            if(device_auth_check() == DEVICE_AUTHENTICATED)
+            {
+                check_invalid_wallets();
+            }
+        }
     }
 
 
@@ -178,13 +183,9 @@ int main(void)
             PRINT_FLOW_LVL();
             mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
             reset_next_event_flag();
-#if X1WALLET_MAIN
-            level_one_tasks();
-#elif X1WALLET_INITIAL
-            level_one_tasks_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
+            
+            /* level_one_tasks_wrapper() will decide if training is complete or not */
+            level_one_tasks_wrapper();
         }
 
 #if USE_SIMULATOR == 1
