@@ -6,6 +6,8 @@ on:
       - v*
     branches:
       - release**
+    paths:
+      - 'version.txt'
 
 jobs:
   build-firmwares:
