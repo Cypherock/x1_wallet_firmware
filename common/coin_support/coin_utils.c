@@ -66,6 +66,7 @@
 #include "near.h"
 #include "optimism.h"
 #include "polygon.h"
+#include "segwit_addr.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -447,4 +448,11 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == ETHEREUM && mdata_ptr->token_name[0] == '\0')
         return false;
     return true;
+}
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
+  uint8_t data[65] = {0};
+  size_t datalen = 0;
+  convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
+  bech32_encode(output, hrp, data, datalen);
 }

@@ -59,11 +59,12 @@
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
-#include "ui_confirmation.h"
-#include "ui_instruction.h"
 #include "controller_tap_cards.h"
+#include "harmony.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
+#include "ui_confirmation.h"
+#include "ui_instruction.h"
 
 extern Receive_Transaction_Data receive_transaction_data;
 extern Wallet_shamir_data wallet_shamir_data;
@@ -174,10 +175,20 @@ void receive_transaction_controller_eth()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
+        uint64_t chain_id = receive_transaction_data.network_chain_id;
+        uint8_t data[1 + sizeof(receive_transaction_data.address)];
+        size_t datalen;
         data[0] = 1;  // confirmation byte
-        memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN) {
+          memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
+          datalen = 1 + sizeof(receive_transaction_data.eth_pubkeyhash);
+        } else {
+          strncpy((char *)data, receive_transaction_data.address, sizeof(data));
+          datalen = 1 + strnlen((char *) data, sizeof(data));
+        }
+        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, datalen);
+//          transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, (uint8_t *) receive_transaction_data.address,
+//                               strnlen(receive_transaction_data.address, sizeof(receive_transaction_data.address)));
         reset_flow_level();
     } break;
 
