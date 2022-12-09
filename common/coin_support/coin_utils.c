@@ -147,6 +147,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
+    if (offset + 1 <= size) txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
     return offset;
 }
 

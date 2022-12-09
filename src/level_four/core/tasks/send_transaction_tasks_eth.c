@@ -150,10 +150,11 @@ void send_transaction_tasks_eth()
         uint8_t address_bytes[20];
         char display[70];
         uint64_t chain_id = var_send_transaction_data.transaction_metadata.network_chain_id;
+        uint8_t is_harmony_hrp = var_send_transaction_data.transaction_metadata.is_harmony_address;
 
         instruction_scr_destructor();
         eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
-        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN)
+        if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN))
           byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         else
           bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));

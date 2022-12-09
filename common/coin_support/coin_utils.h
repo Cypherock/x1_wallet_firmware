@@ -131,6 +131,7 @@ typedef struct
 
     uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
 } txn_metadata;
 #pragma pack(pop)
 

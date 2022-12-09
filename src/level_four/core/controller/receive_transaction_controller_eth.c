@@ -183,7 +183,7 @@ void receive_transaction_controller_eth()
           memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
           datalen = 1 + sizeof(receive_transaction_data.eth_pubkeyhash);
         } else {
-          strncpy((char *)data + 1, receive_transaction_data.address, sizeof(data));
+          strncpy((char *)data + 1, receive_transaction_data.address, sizeof(data) - 1);
           datalen = strnlen((char *) data, sizeof(data));   // send excluding the null byte
         }
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, datalen);
