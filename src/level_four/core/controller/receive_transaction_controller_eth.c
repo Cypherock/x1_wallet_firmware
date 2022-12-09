@@ -176,19 +176,17 @@ void receive_transaction_controller_eth()
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
         uint64_t chain_id = receive_transaction_data.network_chain_id;
-        uint8_t data[1 + sizeof(receive_transaction_data.address)];
+        uint8_t data[1 + sizeof(receive_transaction_data.address) + 1];     // confirm byte + address length + null byte
         size_t datalen;
         data[0] = 1;  // confirmation byte
         if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN) {
           memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
           datalen = 1 + sizeof(receive_transaction_data.eth_pubkeyhash);
         } else {
-          strncpy((char *)data, receive_transaction_data.address, sizeof(data));
-          datalen = 1 + strnlen((char *) data, sizeof(data));
+          strncpy((char *)data + 1, receive_transaction_data.address, sizeof(data));
+          datalen = strnlen((char *) data, sizeof(data));   // send excluding the null byte
         }
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, datalen);
-//          transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, (uint8_t *) receive_transaction_data.address,
-//                               strnlen(receive_transaction_data.address, sizeof(receive_transaction_data.address)));
         reset_flow_level();
     } break;
 
