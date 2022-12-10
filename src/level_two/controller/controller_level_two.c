@@ -63,68 +63,114 @@
 #include "flash_api.h"
 #include "tasks.h"
 #include "controller_advanced_settings.h"
+#include "controller_level_one.h" /* fixme */
 
+/*	Global variables
+*******************************************************************************/
 extern lv_task_t* listener_task;
 
-void level_two_controller()
+/*	Global functions
+*******************************************************************************/
+void level_two_controller(void)
 {
-    if (flow_level.show_error_screen) {
+    if (flow_level.show_error_screen)
+    {
         flow_level.show_error_screen = false;
         return;
     }
 
-    switch (flow_level.level_one) {
-#if X1WALLET_MAIN
-    case LEVEL_TWO_OLD_WALLET: {
-        if (counter.level > LEVEL_TWO) {
-            level_three_old_wallet_controller();
-            return;
-        }
-
-        flow_level.level_two = flow_level.screen_input.list_choice;
-        counter.level = LEVEL_THREE; // increase level counter from two to three
-        lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
-        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_BUSY, 0xFF);
-    } break;
-
-    case LEVEL_TWO_NEW_WALLET: {
-        if (counter.level > LEVEL_TWO) {
-            if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
-                generate_wallet_controller();
-            } else {
-                restore_wallet_controller();
+    switch (flow_level.level_one)
+    {
+        case LEVEL_TWO_OLD_WALLET: /* If training is not complete, this case cannot be triggered  */
+        {
+            if (counter.level > LEVEL_TWO)
+            {
+                level_three_old_wallet_controller();
+                return;
             }
-            return;
-        }
 
-        if (get_wallet_count() == MAX_WALLETS_ALLOWED) {
-            mark_error_screen(ui_text_already_have_maxi_wallets);
-            decrease_level_counter();
+            /**
+             * Assignment from screen input is isolated for LEVEL_TWO_OLD_WALLET
+             * as LEVEL_THREE_OLD_WALLET_TASKS enum is isolated for all conditions.
+             */
+            flow_level.level_two = flow_level.screen_input.list_choice;
+            
+            /* Set counter.level to LEVEL_THREE, as an "OLD_WALLET" menu option has been selected */
+            counter.level = LEVEL_THREE; // increase level counter from two to three
+            
+            lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
+            mark_device_state(CY_TRIGGER_SOURCE | CY_APP_BUSY, 0xFF);
             break;
         }
 
-        flow_level.level_two = flow_level.screen_input.list_choice;
-        // level_four variable to be used as progress tracker for wallet generation
+        case LEVEL_TWO_NEW_WALLET: /* If training is not complete, this case cannot be triggered  */
+        {
+            if (counter.level > LEVEL_TWO)
+            {
+                if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET)
+                {
+                    generate_wallet_controller();
+                }
+                else
+                {
+                    restore_wallet_controller();
+                }
+                return;
+            }
 
-        if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
-            flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
-        } else {
-            flow_level.level_three = RESTORE_WALLET_NAME_INPUT;
+            if (get_wallet_count() == MAX_WALLETS_ALLOWED) {
+                mark_error_screen(ui_text_already_have_maxi_wallets);
+                decrease_level_counter();
+                break;
+            }
+
+            /**
+             * Assignment from screen input is isolated for LEVEL_TWO_NEW_WALLET 
+             * as GENERATE_WALLET_TASKS enum is isolated for all conditions.
+             */
+            flow_level.level_two = flow_level.screen_input.list_choice;
+            // level_four variable to be used as progress tracker for wallet generation
+
+            if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET)
+            {
+                flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
+            }
+            else
+            {
+                flow_level.level_three = RESTORE_WALLET_NAME_INPUT;
+            }
+
+            /* Set counter.level to LEVEL_THREE, as a "NEW_WALLET" menu option has been selected */
+            counter.level = LEVEL_THREE; // increase level counter from two to three
+            /* increase_level_counter(); */
+
+            break;
         }
-        increase_level_counter();
-    } break;
-#endif
 
-    case LEVEL_TWO_ADVANCED_SETTINGS: {
-        if (counter.level > LEVEL_TWO) {
-            level_three_advanced_settings_controller();
-            return;
+        case LEVEL_TWO_ADVANCED_SETTINGS:
+        {
+            if (counter.level > LEVEL_TWO)
+            {
+                level_three_advanced_settings_controller();
+                return;
+            }
+
+            /**
+             * Assignment from screen input is isolated for LEVEL_TWO_ADVANCED_SETTINGS.
+             * However, LEVEL_THREE_ADVANCED_SETTINGS_TASKS enum is NOT isolated for all conditions.
+             */
+            flow_level.level_two = flow_level.screen_input.list_choice;
+
+            /* Set counter.level to LEVEL_THREE, as a "ADVANCED_SETTING" menu option has been entered */
+            counter.level = LEVEL_THREE; // increase level counter from two to three
+            /* increase_level_counter(); */
+            
+            break;
         }
-        flow_level.level_two = flow_level.screen_input.list_choice;
-        increase_level_counter();
-    } break;
 
-    default:
-        break;
+        default:
+        {
+            break;
+        }
     }
 }

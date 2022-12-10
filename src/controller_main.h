@@ -406,6 +406,9 @@ void reset_flow_level_greater_than(enum LEVEL level);
  */
 void desktop_listener_task(lv_task_t* data);
 
+
+void __authentication_listener(lv_task_t* task);
+
 /**
  * @brief Callback function called periodically to check for success message from desktop.
  * @details This is a generic success listener for the application to work with while waiting for status from the
@@ -448,6 +451,6 @@ void _timeout_listener(lv_task_t* task);
  * @note In case of nfc flow, the set_instant_abort(), nfc_set_early_exit_handler() should be set to NULL for device local flows. This
  * is necessary for restricting accidental flow exits when not expected.
  */
-void cy_exit_flow();
+void cy_exit_flow(void);
 
 #endif

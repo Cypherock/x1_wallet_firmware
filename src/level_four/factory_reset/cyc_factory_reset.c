@@ -160,8 +160,10 @@ void cyc_factory_reset() {
     }
 }
 
-static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
-    while (1) {
+static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len)
+{
+    while (1)
+    {
         tap_card_data.acceptable_cards = acceptable_cards;
         memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
         tap_card_data.tapped_card = 0;
@@ -170,16 +172,24 @@ static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
 
         tap_card_data.status = nfc_list_all_wallet(recv_apdu, recv_len);
         *recv_len -= 2;
-        if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND) {
+        if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND)
+        {
             tap_card_data.retries = 5;
             acceptable_cards = tap_card_data.acceptable_cards;
+
+            /**
+             * Usage of flow_level.level_three++ is isolated for LEVEL_THREE_FACTORY_RESET
+             * as FACTORY_RESET_TASKS enum is isolated for all conditions.
+             */
             flow_level.level_three++;
             buzzer_start(BUZZER_DURATION);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
             nfc_detect_card_removal();
             lv_obj_clean(lv_scr_act());
             break;
-        } else if (tap_card_handle_applet_errors()) {
+        }
+        else if (tap_card_handle_applet_errors())
+        {
             break;
         }
     }

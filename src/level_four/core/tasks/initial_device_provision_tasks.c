@@ -65,26 +65,36 @@
 #include "ui_message.h"
 
 void task_device_provision(){
-#if X1WALLET_INITIAL
-    switch (flow_level.level_three) {
-  
-         case GENERATE_PROVSION_DATA: {
-            ui_text_slideshow_init(ui_text_device_provisioning, 5, 500, false);
-            mark_event_over();
-         } break;
+	switch (flow_level.level_three)
+	{
+		case GENERATE_PROVSION_DATA:
+		{
+			ui_text_slideshow_init(ui_text_device_provisioning, 5, 500, false);
+			mark_event_over();
+			break;
+		}
 
-         case PROVISION_STATUS_WAIT:
-         case PROVISION_SAVE_EXT_KEYS: {
-            mark_event_over();
-         } break;
+		case PROVISION_STATUS_WAIT:
+		{
+			mark_event_over();
+			break;
+		}
+		case PROVISION_SAVE_EXT_KEYS:
+		{
+			mark_event_over();
+			break;
+		}
 
-         case PROVISION_UNSUCCESSFUL: {
-            lv_obj_clean(lv_scr_act());
-            delay_scr_init(ui_text_provision_fail, DELAY_TIME);
-         } break;
+		case PROVISION_UNSUCCESSFUL:
+		{
+			lv_obj_clean(lv_scr_act());
+			delay_scr_init(ui_text_provision_fail, DELAY_TIME);
+			break;
+		}
 
-         default: break;
-         
-     }
-#endif
+		default: 
+		{
+			break;
+		}	
+	}
 }

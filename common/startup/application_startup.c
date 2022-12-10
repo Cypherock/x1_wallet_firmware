@@ -84,6 +84,7 @@
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
 #include "ui_multi_instruction.h"
+#include "controller_main.h"
 
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
@@ -105,11 +106,7 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
-#if X1WALLET_MAIN == 1
-extern void __authentication_listener(lv_task_t* task);
 extern lv_task_t* authentication_task;
-#endif
-
 extern lv_task_t *listener_task;
 extern lv_task_t* success_task;
 extern lv_task_t* timeout_task;
@@ -225,9 +222,10 @@ static void display_init()
     ui_init(indev_keypad);
 }
 
-#if X1WALLET_MAIN
-device_auth_state device_auth_check(){
-    if((is_device_authenticated() == true) && (get_first_boot_on_update() == false)){
+device_auth_state device_auth_check(void)
+{
+    if((is_device_authenticated() == true) && (get_first_boot_on_update() == false))
+    {
         return DEVICE_AUTHENTICATED;
     }
     return DEVICE_NOT_AUTHENTICATED;
@@ -245,8 +243,10 @@ void restrict_app(){
     CY_set_app_restricted(true);
 }
 
-void device_auth(){
-    if(!device_auth_flag){
+void device_auth(void)
+{
+    if(!device_auth_flag)
+    {
         return;
     }
 
@@ -254,19 +254,27 @@ void device_auth(){
     mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, flow_level.level_three);
     instruction_scr_init(" ", NULL);
     instruction_scr_change_text(ui_text_auth_process, true);
+    
     if(main_app_ready)
+    {
         lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
+    }
 
-    while(device_auth_flag){
-        if (CY_Read_Reset_Flow()) {
-          cy_exit_flow();
-          break;
+    while(device_auth_flag)
+    {
+        if (CY_Read_Reset_Flow())
+        {
+            cy_exit_flow();
+            break;
         }
+
         main_app_ready = false;
 
         device_authentication_controller();
         mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
-        flow_level.level_three = 5;
+
+        /* Setting state to DEVICE_AUTH_INFINITE_WAIT as we are waiting for CySync commands */
+        flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
 
         proof_of_work_task();
 
@@ -279,7 +287,6 @@ void device_auth(){
     instruction_scr_destructor();
     reset_flow_level();
 }
-#endif
 
 /**
  * @brief
@@ -339,9 +346,12 @@ void application_init() {
     BSP_I2C1_Init();
     BSP_RNG_Init();
     atecc_mode_detect();
-#if X1WALLET_MAIN
+
+    /** Initialize USB driver here, as part of common code flow.
+     * Listener tasks can be enabled as and when required
+     */
     libusb_init();
-#endif
+
     //Timer3 interrupt
     BSP_TIM3_Base_Start_IT();
     BSP_App_Timer_Init();
@@ -374,10 +384,14 @@ void application_init() {
 #endif
     set_wallet_init();
     reset_flow_level();
-#if X1WALLET_MAIN
+
+    /**
+     * Create authentication_task, with priority LV_TASK_PRIO_OFF.
+     * Based on flow_level and counter_level, authentication_task will be given appropriate priority. 
+     */
     CY_Reset_Not_Allow(true);
     authentication_task = lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
-#endif
+
     listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
     nfc_set_device_key_id(get_perm_self_key_id());
     pow_init_hash_rate();
@@ -390,47 +404,61 @@ void application_init() {
 #endif
 }
 
-#if X1WALLET_MAIN
-void check_invalid_wallets()
+void check_invalid_wallets(void)
 {
     bool fix = false;
     char display[64];
 
-    if(get_keystore_used_count() == 0){
+    if(get_keystore_used_count() == 0)
+    {
         tap_card_take_to_pairing();
         mark_error_screen(ui_text_error_no_card_paired);
         return;
     }
 
-    for (uint8_t i = 0; i < MAX_WALLETS_ALLOWED; i++) {
+    for (uint8_t i = 0; i < MAX_WALLETS_ALLOWED; i++)
+    {
         if (get_wallet_state(i) != VALID_WALLET
             && get_wallet_state(i) != UNVERIFIED_VALID_WALLET
             && get_wallet_state(i) != VALID_WALLET_WITHOUT_DEVICE_SHARE)
+        {
             continue;
+        }
 
-        if (get_wallet_card_state(i) != 0xff && is_wallet_partial(i)) {
+        if (get_wallet_card_state(i) != 0xff && is_wallet_partial(i))
+        {
             snprintf(display, sizeof(display), ui_text_wallet_partial_state_prompt, get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
-        if (is_wallet_unverified(i)) {
+        
+        if (is_wallet_unverified(i))
+        {
             snprintf(display, sizeof(display), ui_text_wallet_not_verified_prompt, get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
-        if (is_wallet_share_not_present(i)){
+        
+        if (is_wallet_share_not_present(i))
+        {
             snprintf(display, sizeof(display), ui_text_wallet_out_of_sync_prompt, get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
-        if (is_wallet_locked(i)) {
+        
+        if (is_wallet_locked(i))
+        {
             snprintf(display, sizeof(display), ui_text_wallet_locked_prompt, get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
     }
+    
     if (fix)
+    {
         mark_error_screen(ui_text_wallet_visit_to_verify);
+    }
+
     reset_flow_level();
 }
 
@@ -442,7 +470,7 @@ void check_boot_count()
         delay_scr_init(ui_text_its_a_while_check_your_cards,DELAY_TIME);
     }
 }
-#endif
+
 void log_error_handler_faults(){
 
 #if USE_SIMULATOR == 0

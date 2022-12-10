@@ -101,7 +101,7 @@ bool tap_card_applet_connection() {
         tap_card_data.tapped_card = (acceptable_cards ^ tap_card_data.acceptable_cards);
 
         if (tap_card_data.status == SW_NO_ERROR) {
-#if X1WALLET_MAIN
+            /***********/
             tap_card_data.keystore_index = is_paired(tap_card_data.card_key_id);
             if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
                 flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
@@ -109,7 +109,8 @@ bool tap_card_applet_connection() {
                 tap_card_take_to_pairing();
                 return false;
             }
-#endif
+            /***********/
+
             const uint8_t *pairing_key = get_keystore_pairing_key(tap_card_data.keystore_index);
             if (tap_card_data.keystore_index >= 0)
                 init_session_keys(pairing_key, pairing_key + 32, NULL);
@@ -267,16 +268,20 @@ bool tap_card_handle_applet_errors() {
     return false;
 }
 
-void tap_card_take_to_pairing() {
-#if X1WALLET_MAIN
+void tap_card_take_to_pairing()
+{
     buzzer_start(BUZZER_DURATION);
     mark_error_screen(ui_text_device_and_card_not_paired);
     reset_flow_level();
+    
     counter.level = LEVEL_THREE;
     flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
     flow_level.level_two = LEVEL_THREE_PAIR_CARD;
+    
     if (tap_card_data.desktop_control)
+    {
         comm_reject_request(tap_card_data.active_cmd_type, 0);
+    }
+
     instruction_scr_destructor();
-#endif
 }

@@ -60,6 +60,7 @@
 #include "ui_delay.h"
 #include "ui_confirmation.h"
 #include "communication.h"
+#include "controller_level_one.h" /* fixme*/
 
 extern Flow_level flow_level;
 extern Counter counter;
@@ -68,73 +69,191 @@ extern Wallet wallet;
 static lv_task_t *random_number_task;
 static lv_task_t *timeout_task;
 
-static void __timeout_listener();
-static void __desktop_listener();
+static void __timeout_listener(void);
+static void __desktop_listener(void);
 
-void verify_card_task() {
-  char display[40];
-  switch(flow_level.level_three) {
+extern uint8_t auth_card_number;
 
-    case VERIFY_CARD_START_MESSAGE:
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
-        instruction_scr_init(display, ui_text_tap_1_2_cards);
-        mark_event_over();
-        break;
+void verify_card_task(void)
+{
+	char display[40];
+	switch(flow_level.level_three)
+	{
+		case VERIFY_CARD_START_MESSAGE:
+		{
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+				instruction_scr_init(display, ui_text_tap_1_2_cards);
+			}
+			else
+			{
+				char str[50], heading[50];
+				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
+				snprintf(heading, sizeof(heading), ui_text_place_card_x_heading, auth_card_number);
+				instruction_scr_init(str,heading);
+			}
 
-    case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
-        instruction_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
-        instruction_scr_init(display, ui_text_tap_1_2_cards);
-        mark_event_over();
-        break;
+			mark_event_over();
+			break;
+		}
 
-    case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
-        mark_event_over();
-        break;
+		case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
+		{
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				instruction_scr_destructor();
+				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+				instruction_scr_init(display, ui_text_tap_1_2_cards);
+				mark_event_over();
+			}
+			else
+			{
+				char str[50], heading[50];
+				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
+				snprintf(heading, sizeof(heading), ui_text_place_card_x_heading,
+						auth_card_number);
+				instruction_scr_destructor();
+				instruction_scr_init("Dummy", heading);
+				instruction_scr_change_text(str,true);
+				BSP_DelayMs(500);
+			}
 
-    case VERIFY_CARD_FETCH_RANDOM_NUMBER:
-        random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(random_number_task);
-        timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_MID, NULL);
-        lv_task_once(timeout_task);
-        break;
+			mark_event_over();
+			break;
+		}
 
-    case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
-        instruction_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
-        instruction_scr_init(display, ui_text_tap_1_2_cards);
-        mark_event_over();
-        break;
+		case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
+		{
+			mark_event_over();
+			break;
+		}
 
-    case VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND:
-        mark_event_over();
-        break;
+		case VERIFY_CARD_FETCH_RANDOM_NUMBER:
+		{
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
+				lv_task_ready(random_number_task);
+				timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_MID, NULL);
+				lv_task_once(timeout_task);
+			}
+			else
+			{
+				mark_event_over();
+			}
 
-    case VERIFY_CARD_FINAL_MESSAGE:
-        random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
-        lv_task_ready(random_number_task);
-        timeout_task = lv_task_create(__timeout_listener, 1000, LV_TASK_PRIO_MID, NULL);
-        lv_task_once(timeout_task);
-        break;
+			break;
+		}
 
-    case VERIFY_CARD_SUCCESS:
-        instruction_scr_destructor();
-        delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
-        CY_Reset_Not_Allow(true);
-        break;
+		case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
+		{
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				instruction_scr_destructor();
+				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
+				instruction_scr_init(display, ui_text_tap_1_2_cards);
+			}
+			else
+			{
+				char str[50], heading[50];
+				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 2);
+				snprintf(heading, sizeof(heading), ui_text_place_card_x_heading, auth_card_number);
+				instruction_scr_destructor();
+				instruction_scr_init("Dummy", heading);
+				instruction_scr_change_text(str, true);
+				BSP_DelayMs(500);
+			}
 
-    case VERIFY_CARD_FAILED:
-        instruction_scr_destructor();
-        delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        CY_Reset_Not_Allow(true);
-        break;
+			mark_event_over();
+			break;
+		}
 
-    default:
-        break;
+		case VERIFY_CARD_SIGN_RANDOM_NUMBER_BACKEND:
+		{
+			mark_event_over();
+			break;
+		}
+
+        /** These states are only called if training is NOT complete:
+         * @VERIFY_CARD_AUTH_STATUS
+         * @VERIFY_CARD_PAIR_FRONTEND
+         * @VERIFY_CARD_PAIR_BACKEND
+         */
+		case VERIFY_CARD_AUTH_STATUS:
+		{
+			mark_event_over();
+			break;
+		}
+
+		case VERIFY_CARD_PAIR_FRONTEND:
+		{
+			char str[50], heading[50];
+			snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 1);
+			snprintf(heading, sizeof(heading), ui_text_place_card_x_heading, auth_card_number);
+			instruction_scr_destructor();
+			instruction_scr_init("Dummy", heading);
+			instruction_scr_change_text(str, true);
+			BSP_DelayMs(500);
+			mark_event_over();
+			break;
+		}
+
+		case VERIFY_CARD_PAIR_BACKEND:
+		{
+			mark_event_over();
+			break;
+		}
+		case VERIFY_CARD_FINAL_MESSAGE:
+		{
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
+				lv_task_ready(random_number_task);
+				timeout_task = lv_task_create(__timeout_listener, 1000, LV_TASK_PRIO_MID, NULL);
+				lv_task_once(timeout_task);
+			}
+			else
+			{
+				mark_event_over();
+			}
+
+			break;
+		}
+
+        /** These states are only called if training is complete:
+         * @VERIFY_CARD_SUCCESS
+         */
+		case VERIFY_CARD_SUCCESS:
+		{
+			instruction_scr_destructor();
+			delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
+			CY_Reset_Not_Allow(true);
+			break;
+		}
+
+		case VERIFY_CARD_FAILED:
+		{
+			instruction_scr_destructor();
+			delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
+
+			if (IS_TRAINING_DONE == TRAINING_DONE)
+			{
+				CY_Reset_Not_Allow(true);
+			}
+
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
 	}
 }
 
-static void __desktop_listener() {
+static void __desktop_listener(void)
+{
     if (get_usb_msg_by_cmd_type(APP_SEND_RAND_NUM, NULL, NULL)) {
         lv_task_del(timeout_task);
         lv_task_del(random_number_task);            
@@ -148,7 +267,8 @@ static void __desktop_listener() {
     }
 }
 
-static void __timeout_listener() {
+static void __timeout_listener(void)
+{
     mark_error_screen(ui_text_no_response_from_desktop);
     instruction_scr_destructor();
     reset_flow_level();

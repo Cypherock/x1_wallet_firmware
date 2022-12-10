@@ -148,19 +148,43 @@ static void _tap_card_backend(uint8_t xcor)
 static void _handle_retrieve_wallet_success(uint8_t xcor)
 {
     if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-        memcpy(((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + xcor * wallet.arbitrary_data_size, wallet.arbitrary_data_share, wallet.arbitrary_data_size);
+    {
+        memcpy(
+                ((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + xcor * wallet.arbitrary_data_size, 
+                wallet.arbitrary_data_share, 
+                wallet.arbitrary_data_size
+              );
+    }
     else
-        memcpy(wallet_shamir_data.mnemonic_shares[xcor], wallet.wallet_share_with_mac_and_nonce, BLOCK_SIZE);
+    {
+        memcpy(
+                wallet_shamir_data.mnemonic_shares[xcor],
+                wallet.wallet_share_with_mac_and_nonce,
+                BLOCK_SIZE
+              );
+    }
+    
     memcpy(wallet_shamir_data.share_encryption_data[xcor], wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE, NONCE_SIZE + WALLET_MAC_SIZE);
     memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
     memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
-
     wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
 
-    if (xcor < 3) {
+    if (xcor < 3)
+    {
+        /**
+         * Operation flow_level.level_four++ is safe as it is isolated for
+         * VERIFY_WALLET_TASKS for enum TAP_CARDS_FLOW
+         */
         flow_level.level_four++;
-    } else {
-        flow_level.level_three++;
-        flow_level.level_four = 1;
+    }
+    else
+    {
+        /**
+         * If is obtained from all of the cards, advance flow_level.level_three
+         * to VERIFY_WALLET_READ_DEVICE_SHARE to delete wallet share from the device
+         */
+        flow_level.level_three = VERIFY_WALLET_READ_DEVICE_SHARE;
+
+        /* flow_level.level_four = 1; */
     }
 }

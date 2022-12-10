@@ -82,6 +82,7 @@ static void restore_wallet_enter_mnemonics_flow_controller()
 {
     if (flow_level.level_four <= wallet.number_of_mnemonics) {
         snprintf(wallet_credential_data.mnemonics[flow_level.level_four - 1], sizeof(wallet_credential_data.mnemonics[flow_level.level_four - 1]), "%s", wordlist[flow_level.screen_input.list_choice]);
+        /* TODO: fixme! */
         flow_level.level_four++;
     } else {
         flow_level.level_three = RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION;
@@ -237,6 +238,8 @@ void restore_wallet_controller()
         if(!result) {
             mark_error_screen(ui_text_incorrect_mnemonics);
             flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
+
+            /* We are resetting flow_level variables to the first task of next level */
             flow_level.level_four = 1;
             flow_level.level_five = 1;
         }
@@ -262,6 +265,8 @@ void restore_wallet_controller()
         } else {
             mark_error_screen(ui_text_wallet_with_same_mnemo_exists);
             flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
+
+            /* We are resetting flow_level variables to the first task of next level */
             flow_level.level_four = 1;
             flow_level.level_five = 1;
         }
@@ -282,6 +287,8 @@ void restore_wallet_controller()
         wallet_for_flash.state = DEFAULT_VALUE_IN_FLASH;
         add_wallet_share_to_sec_flash(&wallet_for_flash, &index, wallet_shamir_data.mnemonic_shares[4]);
         flow_level.level_three = RESTORE_WALLET_TAP_CARDS;
+
+        /* TODO: fixme! */
         flow_level.level_four = 1;
         flow_level.level_five = 1;
     } break;
@@ -298,9 +305,13 @@ void restore_wallet_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
+
+        /**
+         * Update flow_level.level_x variables to jump to verification of new wallet
+         */
         flow_level.level_one = LEVEL_TWO_OLD_WALLET;
         flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
+        flow_level.level_three = VERIFY_WALLET_START;
         break;
 
     default:

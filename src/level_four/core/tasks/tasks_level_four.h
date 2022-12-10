@@ -119,7 +119,7 @@ void verify_wallet_tasks();
  * @see
  * @since v1.0.0
  */
-void task_device_authentication();
+void task_device_authentication(void);
 
 /**
  * @brief Device provision task handler
@@ -156,7 +156,7 @@ void wallet_locked_task();
  * @see
  * @since v1.0.0
  */
-void verify_card_task();
+void verify_card_task(void);
 
 /**
  * @brief This task is executed for upgrading cards.

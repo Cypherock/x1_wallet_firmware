@@ -74,13 +74,10 @@ extern char card_id_fetched[];
 extern char card_version[];
 bool no_wallet_on_cards = false;
 
-#if X1WALLET_MAIN
 static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len);
-#endif
 
 void tap_a_card_and_sync_controller()
 {
-#if X1WALLET_MAIN
     switch (flow_level.level_three) {
     case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
         tap_card_data.lvl3_retry_point = TAP_ONE_CARD_TAP_A_CARD_FRONTEND;
@@ -127,7 +124,6 @@ void tap_a_card_and_sync_controller()
     default:
         reset_flow_level();
     }
-#endif
 }
 
 void controller_read_card_id()
@@ -163,30 +159,41 @@ void controller_read_card_id()
         case TAP_ONE_CARD_SUCCESS_MESSAGE:
         default:
             counter.level = LEVEL_TWO;
-            flow_level.level_two = 1;
-            flow_level.level_three = 1;
+            
+            /* Set flow_level.level_two back to LEVEL_THREE_SYNC_CARD_CONFIRM menu option */
+            flow_level.level_two = LEVEL_THREE_SYNC_CARD_CONFIRM;
+
+            /* Set flow_level.level_three back to TAP_ONE_CARD_TAP_A_CARD_FRONTEND task */
+            flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_FRONTEND;
             break;
     }
 }
 
 void controller_update_card_id()
 {
-    switch (flow_level.level_three) {
+    switch (flow_level.level_three)
+    {
         case 1:
+        {
             flow_level.level_three++;
             break;
+        }
 
         case 2:
+        {
             flow_level.level_three++;
             break;
+        }
 
-        case 3: {
+        case 3:
+        {
             uint8_t send_apdu[10] = {0x00, 0xC7, 0x00, 0x00, 0x05};
             hex_string_to_byte_array(flow_level.screen_input.input_text, 2 * CARD_ID_SIZE, send_apdu + 5);
-
             uint8_t recv_apdu[255];
             uint16_t recv_len = 236;
-            while (1) {
+            
+            while (1)
+            {
                 // todo log
                 nfc_select_card(); //Stuck here until card is detected
                 // todo log
@@ -194,23 +201,31 @@ void controller_update_card_id()
                 uint8_t all_cards = 15;
                 nfc_select_applet(no_restrictions, &all_cards, NULL, NULL, NULL);
 
-                if (nfc_exchange_apdu(send_apdu, sizeof(send_apdu), recv_apdu, &recv_len) == STM_SUCCESS) {
+                if (nfc_exchange_apdu(send_apdu, sizeof(send_apdu), recv_apdu, &recv_len) == STM_SUCCESS)
+                {
+                    /* This flow is isolated and restricted, therefore flow_level.level_three++ is OK */
                     flow_level.level_three++;
                     break;
                 }
             }
+            
             lv_obj_clean(lv_scr_act());
+            break;
         }
-        break;
+        
         case 4:
+        {
             reset_flow_level();
             break;
+        }
+        
         default:
+        {
             break;
+        }
     }
 }
 
-#if X1WALLET_MAIN
 static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len)
 {
     int i = 0;
@@ -247,4 +262,3 @@ static void _handle_wallet_fetch_success(uint8_t *recv_apdu, uint8_t recv_len)
         add_wallet_to_flash(&wallet, &dummy);
     }
 }
-#endif

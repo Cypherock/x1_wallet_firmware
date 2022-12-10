@@ -63,6 +63,7 @@
 #include "bip32.h"
 #include "curves.h"
 #include "base58.h"
+#include "controller_level_one.h"
 
 static void _tap_card_backend(uint8_t card_number);
 
@@ -217,9 +218,12 @@ void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8
     set_keystore_key_id(keystore_index, card_pairing_data, 4, FLASH_SAVE_LATER);
     set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);    
 
-#if X1WALLET_MAIN == 1
-    flow_level.level_four++;
-#elif X1WALLET_INITIAL == 1
-    flow_level.level_three++;
-#endif
+	if (IS_TRAINING_DONE == TRAINING_DONE)
+    {
+        flow_level.level_four++;
+    }
+    else
+    {
+        flow_level.level_three++;
+    }
 }

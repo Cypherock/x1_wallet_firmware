@@ -122,33 +122,64 @@ static void _tap_card_backend(uint8_t card_number)
     memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     tap_card_data.retries = 5;
 
-    if (card_already_deleted_flash(flash_wallet_index, card_number)) {
+    if (card_already_deleted_flash(flash_wallet_index, card_number))
+    {
         if (card_number < 4)
+        {
+            /**
+             * Operation flow_level.level_four++ is safe as it is isolated for
+             * DELETE_WALLET_TAP_CARDS for enum TAP_CARDS_FLOW
+             */
             flow_level.level_four++;
-        else {
-            flow_level.level_four = 1;
-            flow_level.level_three++;
         }
+        else
+        {
+            /* flow_level.level_four = 1; */
+
+            /**
+             * If data is already deleted from all of the cards, advance 
+             * flow_level.level_three to DELETE_WALLET_FROM_DEVICE to delete 
+             * wallet share from the device
+             */
+            flow_level.level_three = DELETE_WALLET_FROM_DEVICE;
+        }
+        
         return;
     }
 
-    while (1) {
+    while (1)
+    {
         tap_card_data.lvl3_retry_point = flow_level.level_three;
         tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
         tap_card_data.acceptable_cards = encode_card_number(card_number);
-        if (card_number == 1) tap_card_data.tapped_card = 0;
+        
+        if (card_number == 1)
+        {
+            tap_card_data.tapped_card = 0;
+        }
+
         if (!tap_card_applet_connection())
+        {
             return;
+        }
+
         tap_card_data.status = nfc_delete_wallet(&wallet);
 
-        if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND) {
+        if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND)
+        {
             buzzer_start(BUZZER_DURATION);
             instruction_scr_change_text(ui_text_remove_card_prompt, true);
+            
             if(card_number != 4)
+            {
                 nfc_detect_card_removal();
+            }
+
             _handle_delete_wallet_success(card_number, flash_wallet_index);
             break;
-        } else if (tap_card_handle_applet_errors()) {
+        }
+        else if (tap_card_handle_applet_errors())
+        {
             break;
         }
     }
@@ -157,11 +188,26 @@ static void _tap_card_backend(uint8_t card_number)
 static void _handle_delete_wallet_success(uint8_t card_number, uint8_t flash_wallet_index)
 {
     delete_from_kth_card_flash(flash_wallet_index, card_number);
+    
     if (card_number < 4)
+    {
+        /**
+         * Operation flow_level.level_four++ is safe as it is isolated for
+         * DELETE_WALLET_TAP_CARDS for enum TAP_CARDS_FLOW
+         */
         flow_level.level_four++;
-    else {
-        flow_level.level_four = 1;
-        flow_level.level_three++;
     }
+    else
+    {
+        /* flow_level.level_four = 1; */
+        
+        /**
+         * If data is deleted from all of the cards, advance 
+         * flow_level.level_three to DELETE_WALLET_FROM_DEVICE to delete 
+         * wallet share from the device
+         */
+        flow_level.level_three = DELETE_WALLET_FROM_DEVICE;
+    }
+    
     instruction_scr_destructor();
 }

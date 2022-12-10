@@ -66,96 +66,216 @@
 #include "apdu.h"
 #include <inttypes.h>
 #include <string.h>
+#include "ui_delay.h"
 
+/*	Global variables
+*******************************************************************************/
 extern lv_task_t* listener_task;
-
 extern uint8_t device_auth_flag;
 extern bool main_app_ready;
+extern char card_id_fetched[];
+extern char card_version[];
 
-void level_one_controller()
+static void controller_level_one_training_FSM(void);
+static void controller_level_one_get_wallet_action(void);
+
+void level_one_controller(void)
 {
-#if X1WALLET_MAIN
-    if (flow_level.show_error_screen) {
-        flow_level.show_error_screen = false;
-        return;
-    }
+	if (flow_level.show_error_screen)
+	{
+		flow_level.show_error_screen = false;
+		return;
+	}
 
-    if (flow_level.show_desktop_start_screen) {
+    if (flow_level.show_desktop_start_screen)
+    {
         flow_level.show_desktop_start_screen = false;
         return;
     }
 
-    if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
-        reset_card_data_health();
-        return;
-    }
+	/** 
+	 * If training is complete, X1 Wallet comes in usable state
+	 * Perform device authentication and card health check before usage
+	 */
+	if (IS_TRAINING_DONE == TRAINING_DONE)
+	{
+		if (get_card_data_health() == DATA_HEALTH_CORRUPT)
+		{
+			reset_card_data_health();
+			return;
+		}
 
-    if (!main_app_ready) {
-        device_auth_flag = 0;
-        return;
-    }
+		if (!main_app_ready)
+		{
+			device_auth_flag = 0;
+			return;
+		}
 
-    if (device_auth_flag) {
-        device_auth();
-        return;
-    }
+		if (device_auth_flag)
+		{
+			device_auth();
+			return;
+		}
+	}
 
-    if (counter.level > LEVEL_ONE) {
+    if (counter.level > LEVEL_ONE)
+    {
         level_two_controller();
         return;
     }
 
-    uint16_t screen_choice = flow_level.screen_input.list_choice;
+	/* Check if training is complete */
+	if (IS_TRAINING_DONE == TRAINING_DONE)
+ 	{
+		/* Wait for action on wallet menus if training is completed */
+		controller_level_one_get_wallet_action();
+	}
+	else
+	{
+		/* Resume training from the last point */
+		controller_level_one_training_FSM();
+	}
+}
 
-    uint16_t wallet_count = get_wallet_count();
-    {
-    	uint8_t valid_wallets=0;
+static void controller_level_one_training_FSM(void)
+{
+	switch (flow_level.level_one)
+	{
+		case 1:
+		case 2:
+		{
+			flow_level.level_one++;
+			break;
+		} 
+
+		case 3:
+		{
+			flow_level.level_one = 4;
+			break;
+		}
+
+		case 4:
+		{
+			controller_read_card_id();
+			reset_flow_level();
+			flow_level.level_one = 5;
+			break;
+		}
+
+		case 5:
+		{
+			controller_read_card_id();
+			char msg[32] = {'\0'};
+			snprintf(msg, sizeof(msg), "Card #%d Tapped", decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
+			delay_scr_init(msg, DELAY_TIME);
+			reset_flow_level();
+			flow_level.level_one = 6;
+
+			/**
+			 * USB driver is already initialized during application_init(), therefore, we can omit this call
+			 * It will be useful from maintainability and code readability point of view.
+		#if USE_SIMULATOR == 0
+			libusb_init();
+		#endif
+			*/
+			break;
+		}
+
+		case 6:
+		{
+			flow_level.level_one = 6;
+			break;
+		}
+
+		case 7:
+		{
+			flow_level.level_one = 7;
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+	}
+}
+
+static void controller_level_one_get_wallet_action(void)
+{
+	uint16_t screen_choice = flow_level.screen_input.list_choice;
+
+	uint16_t wallet_count = get_wallet_count();
+	{
+		uint8_t valid_wallets=0;
 		for (int walletIndex=0; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
 			wallet_state _wallet_state = get_wallet_state(walletIndex);
 			if (_wallet_state == VALID_WALLET ||
 				_wallet_state == UNVERIFIED_VALID_WALLET ||
-	            _wallet_state == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
+				_wallet_state == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
 				valid_wallets++;
 			}
 		}
-	    if(valid_wallets != wallet_count){
-	    	wallet_count = valid_wallets;
-	    }
-    }
+		if(valid_wallets != wallet_count){
+			wallet_count = valid_wallets;
+		}
+	}
 
-    if (screen_choice > wallet_count) { //New wallet is selected
-        flow_level.level_one = screen_choice - wallet_count + 1;    // sets to LEVEL_TWO_NEW_WALLET or LEVEL_TWO_ADVANCED_SETTINGS
-        if(wallet_count == MAX_WALLETS_ALLOWED){
-            flow_level.level_one += 1;
-        }
-        if((flow_level.level_one == LEVEL_TWO_NEW_WALLET) && (get_keystore_used_count() != MAX_KEYSTORE_ENTRY)){
-            tap_card_take_to_pairing();
-            mark_error_screen(ui_text_error_pair_all_cards);
-            return;
-        }
-
-    } else { //Old wallet is selected
-        uint8_t index;
-        if (get_ith_valid_wallet_index(screen_choice - 1, &index) != SUCCESS_){
-            LOG_ERROR("0xx# - %d", (screen_choice - 1));
-            for (int walletIndex = 0; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
-                LOG_ERROR("wallet %d %d %d %s",
-                    get_wallet_info(walletIndex),
-                    get_wallet_card_state(walletIndex),
-                    get_wallet_locked_status(walletIndex),
-                    get_wallet_name(walletIndex));
-            }
-            cy_exit_flow();
-        }
-        memcpy(
-            wallet.wallet_name,
-            get_wallet_name(index), NAME_SIZE);
-        wallet.wallet_info = get_wallet_info(index);
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-    }
-    lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Task will now not run
-    mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
-    increase_level_counter();
-    clear_list_choice();
-#endif
+	if (screen_choice > wallet_count) /* New wallet is selected */
+	{
+		flow_level.level_one = screen_choice - wallet_count + 1;    /* sets to LEVEL_TWO_NEW_WALLET or LEVEL_TWO_ADVANCED_SETTINGS */
+		
+		/**
+		 * If maximum number of wallets are already created, user will not see "create new wallet" on the menu
+		 * Therefore, we hard fix screen_choice LEVEL_TWO_NEW_WALLET to LEVEL_TWO_ADVANCED_SETTINGS
+		*/
+		if(wallet_count == MAX_WALLETS_ALLOWED)
+		{
+			flow_level.level_one += 1; /* flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS */
+		}
+		
+		if((flow_level.level_one == LEVEL_TWO_NEW_WALLET) && (get_keystore_used_count() != MAX_KEYSTORE_ENTRY))
+		{
+			tap_card_take_to_pairing();
+			mark_error_screen(ui_text_error_pair_all_cards);
+			return;
+		}
+	}
+	else /* Old wallet is selected */
+	{
+		uint8_t index;
+		if (get_ith_valid_wallet_index(screen_choice - 1, &index) != SUCCESS_)
+		{
+			LOG_ERROR("0xx# - %d", (screen_choice - 1));
+			
+			for (int walletIndex = 0; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++)
+			{
+				LOG_ERROR(
+							"wallet %d %d %d %s",
+							get_wallet_info(walletIndex),
+							get_wallet_card_state(walletIndex),
+							get_wallet_locked_status(walletIndex),
+							get_wallet_name(walletIndex)
+						 );
+			}
+			
+			cy_exit_flow();
+		}
+		
+		memcpy(
+				wallet.wallet_name,
+				get_wallet_name(index),
+				NAME_SIZE
+			  );
+		
+		wallet.wallet_info = get_wallet_info(index);
+		flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+	}
+	
+	lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Task will now not run
+	mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF); 
+	
+	/* Set counter.level to LEVEL_TWO, as a menu option has been selected */
+	counter.level = LEVEL_TWO; /* increase_level_counter(); */
+	clear_list_choice();
 }
+

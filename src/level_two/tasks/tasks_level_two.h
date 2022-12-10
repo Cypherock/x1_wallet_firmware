@@ -26,6 +26,6 @@
  *
  * @note
  */
-void level_two_tasks();
+void level_two_tasks(void);
 
-#endif
+#endif /* TASKS_LEVEL_TWO_HTASKS_LEVEL_TWO_H */

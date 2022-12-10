@@ -26,7 +26,7 @@
  * derive_wallet_key(), wallet.h, wallet_for_flash, wallet_shamir_data, wallet_credential_data
  * @since v1.0.0
  */
-void generate_wallet_controller();
+void generate_wallet_controller(void);
 
 /**
  * @brief Back button controller for level three add wallet flow
@@ -66,7 +66,7 @@ void restore_wallet_controller_b();
  * @see
  * @since v1.0.0
  */
-void arbitrary_data_controller();
+void arbitrary_data_controller(void);
 
 /**
  * @brief Back button controller for arbitrary data wallet flow

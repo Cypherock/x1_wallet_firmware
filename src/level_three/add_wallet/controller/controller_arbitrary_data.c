@@ -87,129 +87,142 @@ static void restore_wallet_enter_mnemonics_flow_controller()
 }
 #endif
 
-void arbitrary_data_controller()
+void arbitrary_data_controller(void)
 {
-    switch (flow_level.level_three) {
-    case ARBITRARY_DATA_NAME_INPUT: {
-        flow_level.level_three = ARBITRARY_DATA_NAME_CONFIRM;
-    } break;
-    case ARBITRARY_DATA_NAME_CONFIRM: {
-        uint8_t dummy;
-        if (get_index_by_name(flow_level.screen_input.input_text, &dummy) == SUCCESS_) {
-            // wallet already exists
-            mark_error_screen(ui_text_wallet_name_exists);
-        } else {
-            flow_level.level_three = RESTORE_WALLET_PIN_INSTRUCTIONS_1;
-            snprintf((char *)wallet_for_flash.wallet_name, sizeof(wallet_for_flash.wallet_name), "%s", flow_level.screen_input.input_text);
-            snprintf((char *)wallet.wallet_name, sizeof(wallet.wallet_name), "%s", flow_level.screen_input.input_text);
-        }
-    } break;
-    case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
-        flow_level.level_three = RESTORE_WALLET_PIN_INSTRUCTIONS_2;
-    } break;
+    switch (flow_level.level_three)
+    {
+        case ARBITRARY_DATA_NAME_INPUT: {
+            flow_level.level_three = ARBITRARY_DATA_NAME_CONFIRM;
+        } break;
+        case ARBITRARY_DATA_NAME_CONFIRM: {
+            uint8_t dummy;
+            if (get_index_by_name(flow_level.screen_input.input_text, &dummy) == SUCCESS_) {
+                // wallet already exists
+                mark_error_screen(ui_text_wallet_name_exists);
+            } else {
+                flow_level.level_three = RESTORE_WALLET_PIN_INSTRUCTIONS_1;
+                snprintf((char *)wallet_for_flash.wallet_name, sizeof(wallet_for_flash.wallet_name), "%s", flow_level.screen_input.input_text);
+                snprintf((char *)wallet.wallet_name, sizeof(wallet.wallet_name), "%s", flow_level.screen_input.input_text);
+            }
+        } break;
+        case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
+            flow_level.level_three = RESTORE_WALLET_PIN_INSTRUCTIONS_2;
+        } break;
 
-    case RESTORE_WALLET_PIN_INSTRUCTIONS_2: {
-        flow_level.level_three = ARBITRARY_DATA_SKIP_PIN;
-    } break;
+        case RESTORE_WALLET_PIN_INSTRUCTIONS_2: {
+            flow_level.level_three = ARBITRARY_DATA_SKIP_PIN;
+        } break;
 
-    case ARBITRARY_DATA_SKIP_PIN: {
-        flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
-        WALLET_SET_PIN(wallet_for_flash.wallet_info);
-        WALLET_SET_PIN(wallet.wallet_info);
-    } break;
-
-    case ARBITRARY_DATA_PIN_INPUT: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet.password_double_hash);
-        sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        flow_level.level_three = ARBITRARY_DATA_PIN_CONFIRM;
-    } break;
-
-    case ARBITRARY_DATA_PIN_CONFIRM: {
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
-
-        ASSERT(temp != NULL);
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
-        sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
-        if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
-            flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
-        } else {
-            mark_error_screen(ui_text_pin_incorrect_re_enter);
+        case ARBITRARY_DATA_SKIP_PIN: {
             flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
+            WALLET_SET_PIN(wallet_for_flash.wallet_info);
+            WALLET_SET_PIN(wallet.wallet_info);
+        } break;
+
+        case ARBITRARY_DATA_PIN_INPUT: {
+            sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet.password_double_hash);
+            sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
+            memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+            flow_level.level_three = ARBITRARY_DATA_PIN_CONFIRM;
+        } break;
+
+        case ARBITRARY_DATA_PIN_CONFIRM: {
+            uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+
+            ASSERT(temp != NULL);
+            sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
+            sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
+            if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
+                flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
+            } else {
+                mark_error_screen(ui_text_pin_incorrect_re_enter);
+                flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
+            }
+            memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+            memzero(temp, sizeof(temp));
+            free(temp);
+        } break;
+
+        case ARBITRARY_DATA_ENTER_DATA_INSTRUCTION: {
+            flow_level.level_three = ARBITRARY_DATA_ENTER_DATA;
+
+        } break;
+
+        case ARBITRARY_DATA_ENTER_DATA: {
+            flow_level.level_three = ARBITRARY_DATA_CONFIRM_DATA;
+        } break;
+
+        case ARBITRARY_DATA_CONFIRM_DATA: {
+            flow_level.level_three = ARBITRARY_DATA_CREATING_WAIT_SCREEN;
+        } break;
+
+        case ARBITRARY_DATA_CREATING_WAIT_SCREEN: {
+            flow_level.level_three = ARBITRARY_DATA_CREATE;
+        } break;
+
+        case ARBITRARY_DATA_CREATE: {
+            uint8_t wallet_index, temp_wallet_id[WALLET_ID_SIZE];
+
+            sha256_Raw((const uint8_t *)arbitrary_data, strlen(arbitrary_data), temp_wallet_id);
+            sha256_Raw(temp_wallet_id, SHA256_DIGEST_LENGTH, temp_wallet_id);
+
+            if ((get_first_matching_index_by_id(temp_wallet_id, &wallet_index) == DOESNT_EXIST)) {
+                memcpy(wallet_for_flash.wallet_id, temp_wallet_id, WALLET_ID_SIZE);
+                memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
+                wallet.arbitrary_data_size = strlen(arbitrary_data);
+                WALLET_SET_ARBITRARY_DATA(wallet.wallet_info);
+                WALLET_SET_ARBITRARY_DATA(wallet_for_flash.wallet_info);
+
+                convert_to_shares(
+                    wallet.arbitrary_data_size, (uint8_t *)arbitrary_data,
+                    wallet.total_number_of_shares,
+                    wallet.minimum_number_of_shares,
+                    wallet_shamir_data.arbitrary_data_shares);
+                memzero(arbitrary_data, sizeof(arbitrary_data));
+                flow_level.level_three = ARBITRARY_DATA_TAP_CARDS;
+
+                /* TODO: fixme! */
+                flow_level.level_four = 1;
+                flow_level.level_five = 1;
+            } else {
+                mark_error_screen(ui_text_wallet_with_same_mnemo_exists);
+                flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
+
+                /* TODO: fixme! */
+                flow_level.level_four = 1;
+                flow_level.level_five = 1;
+            }
+        } break;
+
+        case ARBITRARY_DATA_TAP_CARDS:
+            tap_cards_for_write_flow_controller();
+            break;
+
+        case ARBITRARY_DATA_SUCCESS_MESSAGE:
+        {
+            memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
+            memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
+            memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
+            memzero(wallet.checksum, sizeof(wallet.checksum));
+            memzero(wallet.key, sizeof(wallet.key));
+            memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
+            memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
+
+            /**
+             * Update flow_level.level_x variables to jump to verification of new wallet
+             */
+            flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+            flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
+            flow_level.level_three = VERIFY_WALLET_START;
+            break;
         }
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        memzero(temp, sizeof(temp));
-        free(temp);
-    } break;
 
-    case ARBITRARY_DATA_ENTER_DATA_INSTRUCTION: {
-        flow_level.level_three = ARBITRARY_DATA_ENTER_DATA;
-
-    } break;
-
-    case ARBITRARY_DATA_ENTER_DATA: {
-        flow_level.level_three = ARBITRARY_DATA_CONFIRM_DATA;
-    } break;
-
-    case ARBITRARY_DATA_CONFIRM_DATA: {
-        flow_level.level_three = ARBITRARY_DATA_CREATING_WAIT_SCREEN;
-    } break;
-
-    case ARBITRARY_DATA_CREATING_WAIT_SCREEN: {
-        flow_level.level_three = ARBITRARY_DATA_CREATE;
-    } break;
-
-    case ARBITRARY_DATA_CREATE: {
-        uint8_t wallet_index, temp_wallet_id[WALLET_ID_SIZE];
-
-        sha256_Raw((const uint8_t *)arbitrary_data, strlen(arbitrary_data), temp_wallet_id);
-        sha256_Raw(temp_wallet_id, SHA256_DIGEST_LENGTH, temp_wallet_id);
-
-        if ((get_first_matching_index_by_id(temp_wallet_id, &wallet_index) == DOESNT_EXIST)) {
-            memcpy(wallet_for_flash.wallet_id, temp_wallet_id, WALLET_ID_SIZE);
-            memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
-            wallet.arbitrary_data_size = strlen(arbitrary_data);
-            WALLET_SET_ARBITRARY_DATA(wallet.wallet_info);
-            WALLET_SET_ARBITRARY_DATA(wallet_for_flash.wallet_info);
-
-            convert_to_shares(
-                wallet.arbitrary_data_size, (uint8_t *)arbitrary_data,
-                wallet.total_number_of_shares,
-                wallet.minimum_number_of_shares,
-                wallet_shamir_data.arbitrary_data_shares);
-            memzero(arbitrary_data, sizeof(arbitrary_data));
-            flow_level.level_three = ARBITRARY_DATA_TAP_CARDS;
-            flow_level.level_four = 1;
-            flow_level.level_five = 1;
-        } else {
-            mark_error_screen(ui_text_wallet_with_same_mnemo_exists);
-            flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
-            flow_level.level_four = 1;
-            flow_level.level_five = 1;
+        default:
+        {
+            message_scr_init(ui_text_something_went_wrong);
+            reset_flow_level();
+            break;
         }
-    } break;
-
-    case ARBITRARY_DATA_TAP_CARDS:
-        tap_cards_for_write_flow_controller();
-        break;
-
-    case ARBITRARY_DATA_SUCCESS_MESSAGE:
-        memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
-        memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
-        memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
-        memzero(wallet.checksum, sizeof(wallet.checksum));
-        memzero(wallet.key, sizeof(wallet.key));
-        memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
-        memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
-        break;
-
-    default:
-        message_scr_init(ui_text_something_went_wrong);
-        reset_flow_level();
-        break;
     }
     return;
 }

@@ -128,10 +128,8 @@ bool main_app_ready = false;
 /// lvgl task to listen for desktop start command
 lv_task_t* listener_task;
 
-#if X1WALLET_MAIN == 1
 /// lvgl task to listen for desktop start command in restricted mode
 lv_task_t* authentication_task;
-#endif
 
 /// Stores arbitrary data during flows
 char arbitrary_data[4096 / 8 + 1];
@@ -184,13 +182,9 @@ Flash_Wallet* get_flash_wallet()
 void mark_event_over()
 {
     counter.next_event_flag = true;
-#if X1WALLET_MAIN
+
+    /* level_one_controller() will decide if training is complete or not */
     level_one_controller();
-#elif X1WALLET_INITIAL
-    level_one_controller_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
 }
 
 
@@ -219,8 +213,15 @@ void reset_flow_level()
     device_auth_flag = false;
     flow_level.show_desktop_start_screen = false;
 
-    //restore flow to main menu
+
+    /* Restore flow to main menu */
     counter.level = LEVEL_ONE;
+
+    /**
+     * If training is complete, value of flow_level.level_one does not matter.
+     * If training is NOT complete, onboarding flow will restart from last saved state.
+     * TODO: Add state restoration for onboarding, to be taken up in seperate task.
+     */
     flow_level.level_one = 1;
     flow_level.level_two = 1;
     flow_level.level_three = 1;
@@ -453,9 +454,11 @@ void desktop_listener_task(lv_task_t* data)
     En_command_type_t command;
     uint8_t *data_array = NULL;
     uint16_t msg_size = 0;
-    if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
-        switch (command) {
-#if X1WALLET_MAIN
+    if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size))
+    {
+        /* Note: We are going to trust CySync for now to send appropriate commands based on current state */
+        switch (command)
+        {
             case START_EXPORT_WALLET: {
                 CY_Reset_Not_Allow(false);
                 // Using these two variable for temporarily saving new flow and controller variables
@@ -483,15 +486,6 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
             } break;
 #endif
-            case START_CARD_AUTH: {
-                CY_Reset_Not_Allow(false);
-                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_verification_of_card);
-                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-                flow_level.show_desktop_start_screen = true;
-                flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
-                clear_message_received_data();
-            } break;
-
             case ADD_COIN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
@@ -638,51 +632,35 @@ void desktop_listener_task(lv_task_t* data)
                 return;
             } break;
 #endif
-            case START_DEVICE_AUTHENTICATION: {
-                CY_Reset_Not_Allow(false);
-                 if(data_array[0] == 1){
-                    flow_level.level_three = SIGN_SERIAL_NUMBER;
-                    clear_message_received_data();
-
-                }
-
-                if(data_array[0] == 2){
-                    memcpy(&challenge_no, &data_array[1], 32);
-                    flow_level.level_three = SIGN_CHALLENGE;
-                    clear_message_received_data();
-                }
-
-                if(data_array[0] == 3){
-                    flow_level.level_three = AUTHENTICATION_SUCCESS;
-                    clear_message_received_data();
-                }
-
-                if(data_array[0] == 4){
-                    flow_level.level_three = AUTHENTICATION_UNSUCCESSFUL;
-                    clear_message_received_data();
-                }
-                if (main_app_ready) {
-                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_device_verification);
+            case START_CARD_AUTH:
+            {
+                if (IS_TRAINING_DONE == TRAINING_DONE)
+                {
+                    CY_Reset_Not_Allow(false);
+                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_verification_of_card);
+                    flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
                     flow_level.show_desktop_start_screen = true;
+                    flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
+                    clear_message_received_data();
                 }
-                device_auth_flag = 1;
-            
-            } break;
+                else
+                {
+                    CY_Set_External_Triggered(true);
+                    reset_flow_level();
+                    counter.level = LEVEL_THREE;
+                    lv_obj_clean(lv_scr_act());
+                    auth_card_number = data_array[0];
+                    flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                    flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
+                    flow_level.level_three = VERIFY_CARD_START_MESSAGE;
+                    clear_message_received_data();
+                }
 
-#elif X1WALLET_INITIAL
-            case START_CARD_AUTH: {
-                CY_Set_External_Triggered(true);
-                reset_flow_level();
-                counter.level = LEVEL_THREE;
-                lv_obj_clean(lv_scr_act());
-                auth_card_number = data_array[0];
-                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-                flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
-                flow_level.level_three = VERIFY_CARD_START_MESSAGE;
-                clear_message_received_data();
-            } break;
+                break;
+            }
 
-            case START_DEVICE_PROVISION: {	//81,02 success and external keys sent to device, 81,03 failure
+            case START_DEVICE_PROVISION:    //81,02 success and external keys sent to device, 81,03 failure
+            {
                 CY_Set_External_Triggered(true);
                 switch (data_array[0]) {
                     case 1:{
@@ -716,109 +694,190 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
             } break;
 
-            case START_DEVICE_AUTHENTICATION: {
+            case START_DEVICE_AUTHENTICATION:
+            {
                 CY_Reset_Not_Allow(false);
-                CY_Set_External_Triggered(true);
-                switch (data_array[0]) {
-                    case 1: lv_obj_clean(lv_scr_act());
-                    case 2:
-                    case 3:
-                    case 4:
-                        counter.level = 3;
-                        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-                        flow_level.level_two = LEVEL_THREE_START_DEVICE_AUTHENTICATION;
-                        flow_level.level_three = SIGN_SERIAL_NUMBER + data_array[0] - 1;
-                        counter.next_event_flag = true;
-                        lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
-                        break;
-
-                    default:
-                        cy_exit_flow();
+                
+                if (IS_TRAINING_DONE != TRAINING_DONE)
+                {
+                    CY_Set_External_Triggered(true);
                 }
-                if(data_array[0] == 2)
-                    memcpy(&challenge_no, &data_array[1], 32);
+
+                if (IS_TRAINING_DONE == TRAINING_DONE)
+                {
+                    if(data_array[0] == 1)
+                    {
+                        flow_level.level_three = SIGN_SERIAL_NUMBER;
+                    }
+
+                    if(data_array[0] == 2)
+                    {
+                        memcpy(&challenge_no, &data_array[1], 32);
+                        flow_level.level_three = SIGN_CHALLENGE;
+                    }
+
+                    if(data_array[0] == 3)
+                    {
+                        flow_level.level_three = AUTHENTICATION_SUCCESS;
+                    }
+
+                    if(data_array[0] == 4)
+                    {
+                        flow_level.level_three = AUTHENTICATION_UNSUCCESSFUL;
+                    }
+                    if (main_app_ready)
+                    {
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_device_verification);
+                        flow_level.show_desktop_start_screen = true;
+                    }
+                    
+                    device_auth_flag = 1;
+                }
+                else
+                {
+                    switch (data_array[0])
+                    {
+                        case 1: lv_obj_clean(lv_scr_act());
+                        case 2:
+                        case 3:
+                        case 4:
+                            counter.level = LEVEL_THREE;
+                            flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                            flow_level.level_two = LEVEL_THREE_START_DEVICE_AUTHENTICATION;
+
+                            flow_level.level_three = SIGN_SERIAL_NUMBER + data_array[0] - 1;
+                            counter.next_event_flag = true;
+                            lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                            break;
+
+                        default:
+                            cy_exit_flow();
+                    }
+                    
+                    if(data_array[0] == 2)
+                    {
+                        memcpy(&challenge_no, &data_array[1], 32);
+                    }    
+                }
+
                 clear_message_received_data();
-            } break;
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-            case START_FIRMWARE_UPGRADE: {
+                break;
+            }
+
+            case START_FIRMWARE_UPGRADE:
+            {
                 CY_Reset_Not_Allow(false);
                 snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_start_firmware_update, data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
                 flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
                 flow_level.show_desktop_start_screen = true;
                 flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;
                 clear_message_received_data();
-            } break;
+                break;
+            }
 
-            case DEVICE_INFO: {
+            case DEVICE_INFO:
+            {
                 clear_message_received_data();
                 uint8_t device_info[37] = {0};
-                if (get_device_serial() == SUCCESS) {
+                
+                if (get_device_serial() == SUCCESS)
+                {
                     memcpy(device_info+1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
                 }
-                else{
+                else
+                {
                     LOG_CRITICAL("err xx4: %d", atecc_data.status);
                 }
+                
                 device_info[0] = is_device_authenticated() ? 1 : 0;
                 uint32_t fwVer = get_fwVer();
+                
                 fwVer = U32_SWAP_ENDIANNESS(fwVer);
                 memcpy(device_info+33, &fwVer, sizeof(fwVer));
-
                 transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
-            } break;
+                
+                break;
+            }
 #ifdef ALLOW_LOG_EXPORT
-            case APP_LOG_DATA_SEND: {
-#if X1WALLET_MAIN
-                if (!is_logging_enabled() && !CY_is_app_restricted()) {
-                    clear_message_received_data();
-                    comm_reject_request(APP_LOG_DATA_REJECT, 2);
-                } else
-#endif
+            case APP_LOG_DATA_SEND:
+            {
+                if (IS_TRAINING_DONE == TRAINING_DONE)
                 {
-                    CY_Reset_Not_Allow(false);
-                    flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-                    flow_level.level_two = LEVEL_THREE_FETCH_LOGS_INIT;
-                    clear_message_received_data();
-                    counter.level = LEVEL_THREE;
-                    flow_level.show_desktop_start_screen = true;
-                    snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s",
-                             ui_text_send_logs_prompt);
+                    if (!is_logging_enabled() && !CY_is_app_restricted())
+                    {
+                        clear_message_received_data();
+                        comm_reject_request(APP_LOG_DATA_REJECT, 2);
+                        break;
+                    }
                 }
-            } break;
-#endif  // end X1WALLET_
-            default:  clear_message_received_data();
+
+                CY_Reset_Not_Allow(false);
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.level_two = LEVEL_THREE_FETCH_LOGS_INIT;
+                clear_message_received_data();
+                counter.level = LEVEL_THREE;
+                flow_level.show_desktop_start_screen = true;
+                snprintf(
+                            flow_level.confirmation_screen_text, 
+                            sizeof(flow_level.confirmation_screen_text), 
+                            "%s",
+                            ui_text_send_logs_prompt
+                        );
+
+                break;
+            }
+#endif
+            default:
+            {
+                clear_message_received_data();
                 comm_reject_invalid_cmd();
                 break;
+            }
         }
 
-        if (flow_level.show_desktop_start_screen) {
+        if (flow_level.show_desktop_start_screen)
+        {
             CY_Set_External_Triggered(true);
             counter.level = LEVEL_THREE;
             clear_message_received_data();
             counter.next_event_flag = true;
             lv_obj_clean(lv_scr_act());
-#if X1WALLET_MAIN == 1
-            if(CY_is_app_restricted() == true)
-                lv_task_set_prio(authentication_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+
+            if (IS_TRAINING_DONE == TRAINING_DONE)
+            {
+                if(CY_is_app_restricted() == true)
+                {
+                    lv_task_set_prio(authentication_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                }
+                else
+                {
+                    lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+                }
+            }
             else
-#endif
+            {
                 lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF); // Tasks will now not run
+            }
         }
     }
 }
 
-void cy_exit_flow()
+void cy_exit_flow(void)
 {
     if(address_timeout_task != NULL)
+    {
         address_timeout_task->task_cb(NULL);
+    }
 
     lv_obj_clean(lv_scr_act());
     sys_flow_cntrl_u.bits.reset_flow = false;
     reset_flow_level();
-#if X1WALLET_INITIAL
-    flow_level.level_one = 6;
-#endif
+
+    if (IS_TRAINING_DONE != TRAINING_DONE)
+    {
+        flow_level.level_one = 6; /* TODO : Fixme */
+    }
+
     counter.next_event_flag = true;
 }
 

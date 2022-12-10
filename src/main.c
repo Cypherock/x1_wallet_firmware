@@ -127,6 +127,7 @@ static void memory_monitor(lv_task_t *param);
 
 #endif
 
+volatile bool gBoolConditionMain = 0;
 /**
   * @brief  The entry point to the application.
   * @retval int
@@ -178,13 +179,9 @@ int main(void)
             PRINT_FLOW_LVL();
             mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
             reset_next_event_flag();
-#if X1WALLET_MAIN
+
+            /* level_one_tasks() will decide if training is complete or not */
             level_one_tasks();
-#elif X1WALLET_INITIAL
-            level_one_tasks_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
         }
 
 #if USE_SIMULATOR == 1

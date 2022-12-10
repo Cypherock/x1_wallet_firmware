@@ -200,7 +200,7 @@ void card_upgrade_controller();
  * @see task_device_authentication(), desktop_listener_task(), START_DEVICE_PROVISION
  * @since v1.0.0
  */
-void device_provision_controller();
+void device_provision_controller(void);
 
 /**
  * @brief This controller is executed for verifying card in main application.
@@ -209,16 +209,7 @@ void device_provision_controller();
  * @see task_card_verification(), desktop_listener_task(), START_CARD_AUTH
  * @since v1.0.0
  */
-void verify_card_controller();
-
-/**
- * @brief This controller is executed for verifying card in initial application.
- * @details This controller is used to verify the card using the desktop app in initial application.
- *
- * @see initial_verify_card_task(), desktop_listener_task(), START_CARD_AUTH
- * @since v1.0.0
- */
-void initial_verify_card_controller();
+void verify_card_controller(void);
 
 /**
  * @brief This controller is executed when the name of a wallet is clicked and it is locked.
@@ -483,7 +474,7 @@ void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8
  * @retval 2    Fully provisioned
  * @retval 3    External auth configuration
  */
-provision_status_t check_provision_status();
+provision_status_t check_provision_status(void);
 
 /**
  * @brief   fetch device serial and check if UID in the serial matches MCU UID or not
@@ -493,7 +484,7 @@ provision_status_t check_provision_status();
  * @retval 0    fetched successfully
  * @retval 1    device UID doesn't match with serial UID
  */
-uint32_t get_device_serial();
+uint32_t get_device_serial(void);
 
 /**
  * @brief Request ATECC to generate signature on the hash with private available on SLOT-3

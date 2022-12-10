@@ -116,7 +116,7 @@ void level_two_controller_b()
 
                 comm_reject_request(APP_LOG_DATA_REJECT, 0);
                 reset_flow_level();
-                flow_level.level_one = 6;
+                flow_level.level_one = 6; /* TODO: Fixme */
                 counter.next_event_flag = true;
                 return;
             }
@@ -133,8 +133,8 @@ void level_two_controller_b()
                     case PAIR_CARD_BLUE_FRONTEND:
                     case PAIR_CARD_GREEN_FRONTEND:
                     case PAIR_CARD_YELLOW_FRONTEND:
+                        /* Operation is sensitive as multiple switch cases have the same body */
                         flow_level.level_four+=2;
-                        /* code */
                         break;
                     
                     default:

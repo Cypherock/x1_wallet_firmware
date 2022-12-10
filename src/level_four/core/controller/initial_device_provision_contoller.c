@@ -74,8 +74,8 @@
 
 #define ATECC_CFG_88_MASK_OLD_PROV  44
 
-#if X1WALLET_INITIAL
-uint8_t atecc_slot_to_lock[]={
+uint8_t atecc_slot_to_lock[] = 
+{
     slot_2_auth_key,
     slot_3_nfc_pair_key,
     slot_0_unused,
@@ -97,78 +97,100 @@ Provision_Data_struct provision_keys_data;
 extern lv_task_t* listener_task;
 static lv_task_t *timeout_task;
 
-static void __timeout_listener();
-static void lock_all_slots();
-#endif
+static void __timeout_listener(void);
+static void lock_all_slots(void);
 
-uint32_t get_device_serial(){
+/* TODO: Helper functions should not be here */
+uint32_t get_device_serial(void)
+{
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
     bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
 
     NVIC_DisableIRQ(OTG_FS_IRQn);
-    do{
+    
+    do
+    {
         atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_read_zone(ATCA_ZONE_DATA, slot_8_serial, 0, 0, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    } while((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
+    
     if(usb_irq_enable_on_entry == true)
+    {
         NVIC_EnableIRQ(OTG_FS_IRQn);
+    }
 
-    if(atecc_data.status == ATCA_SUCCESS){
-        if(0 != memcmp(atecc_data.device_serial+8, (void*)UID_BASE, 12)){
+    if(atecc_data.status == ATCA_SUCCESS)
+    {
+        if(0 != memcmp(atecc_data.device_serial+8, (void*)UID_BASE, 12))
+        {
             return 1;
         }
-        else{
+        else
+        {
             return SUCCESS;
         }
     }
+
     return atecc_data.status;
 }
 
-provision_status_t check_provision_status(){
+provision_status_t check_provision_status(void)
+{
     uint8_t cfg[128];
     memset(cfg, 0, 128);
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
 
     bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
     NVIC_DisableIRQ(OTG_FS_IRQn);
-    do{
+    
+    do
+    {
         atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
         atecc_data.status = atcab_read_config_zone(cfg);
-    }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    } while((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
+    
     if(usb_irq_enable_on_entry == true)
+    {
         NVIC_EnableIRQ(OTG_FS_IRQn);
+    }
 
-    if(atecc_data.status != ATCA_SUCCESS){
+    if(atecc_data.status != ATCA_SUCCESS)
+    {
         LOG_CRITICAL("xxx30: %d", atecc_data.status);
         return -1;
     }
 
-    if(cfg[86]==0x00 || cfg[87]==0x00){ //config zone and data zones are locked
-
-        if(cfg[88]==0xBF && cfg[89]==0xFE ){    //device serial and IO key are programmed and locked
+    if(cfg[86]==0x00 || cfg[87]==0x00) //config zone and data zones are locked
+    {
+        if(cfg[88]==0xBF && cfg[89]==0xFE ) //device serial and IO key are programmed and locked
+        {
             return provision_incomplete;
-
         }
-        else if((cfg[88] & ATECC_CFG_88_MASK)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00){   //private key slots are locked
+        else if((cfg[88] & ATECC_CFG_88_MASK)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00)    //private key slots are locked
+        {
             return provision_complete;
         }
-        else if((cfg[88] & ATECC_CFG_88_MASK_OLD_PROV)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00 ){     //NFC private key slot not locked
+        else if((cfg[88] & ATECC_CFG_88_MASK_OLD_PROV)==0x00 && (cfg[89] & ATECC_CFG_89_MASK) ==0x00 )  //NFC private key slot not locked
+        {
             return provision_v1_complete;
         }
-        else{
+        else
+        {
             return provision_empty;
         }
     }
-    else {
+    else
+    {
         return provision_empty;
     }
 }
 
-void device_provision_controller(){
-#if X1WALLET_INITIAL
-    switch (flow_level.level_three) {
-
-        case GENERATE_PROVSION_DATA: {
+void device_provision_controller(void)
+{
+    switch (flow_level.level_three)
+    {
+        case GENERATE_PROVSION_DATA:
+        {
             uint8_t io_protection_key[IO_KEY_SIZE] = {0};
             uint8_t serial_no[38] = {0};
             uint8_t test_ecc608_configdata[128] = {
@@ -337,13 +359,17 @@ void device_provision_controller(){
 
             timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_HIGH, NULL);
             lv_task_once(timeout_task);
-        }break;
+            break;
+        }
 
-        case PROVISION_STATUS_WAIT: {
+        case PROVISION_STATUS_WAIT:
+        {
             // do nothing, just wait
-        } break;
+            break;
+        }
 
-        case PROVISION_SAVE_EXT_KEYS: {
+        case PROVISION_SAVE_EXT_KEYS:
+        {
             uint8_t private_write_key[36] = {0};
             Perm_Key_Data_Struct perm_key_data;
             uint8_t digest[SHA256_DIGEST_LENGTH];
@@ -352,7 +378,8 @@ void device_provision_controller(){
             get_io_protection_key(perm_key_data.io_protection_key);
 
             ecdsa_get_public_key33(&nist256p1, provision_keys_data.device_private_key, perm_key_data.ext_keys.device_auth_public_key);
-            if(0 != memcmp(provision_keys_data.device_public_key, perm_key_data.ext_keys.device_auth_public_key, 33)){
+            if(0 != memcmp(provision_keys_data.device_public_key, perm_key_data.ext_keys.device_auth_public_key, 33))
+            {
                 comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 break;
@@ -361,7 +388,8 @@ void device_provision_controller(){
             atecc_data.retries = DEFAULT_ATECC_RETRIES;
             bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
             NVIC_DisableIRQ(OTG_FS_IRQn);
-            do{
+            do
+            {
                 OTG_FS_IRQHandler();
                 atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
                 if(atecc_data.status!=ATCA_SUCCESS){
@@ -383,11 +411,15 @@ void device_provision_controller(){
                     LOG_ERROR("PERR3-0x%02x", atecc_data.status);
                     continue;
                 }
-            }while(atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+            } while((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
+            
             if(usb_irq_enable_on_entry == true)
+            {
                 NVIC_EnableIRQ(OTG_FS_IRQn);
+            }
 
-            if(atecc_data.status != ATCA_SUCCESS){
+            if(atecc_data.status != ATCA_SUCCESS)
+            {
                 comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 break;
@@ -398,47 +430,56 @@ void device_provision_controller(){
             memcpy(perm_key_data.ext_keys.self_key_path, provision_keys_data.self_key_path, FS_KEYSTORE_KEYPATH_LEN);
             memcpy(perm_key_data.ext_keys.card_root_xpub, provision_keys_data.card_root_xpub, FS_KEYSTORE_XPUB_LEN);
 
-            if(set_ext_key(&perm_key_data.ext_keys) == SUCCESS_){
+            if(set_ext_key(&perm_key_data.ext_keys) == SUCCESS_)
+            {
                 lock_all_slots();
 
                 if(check_provision_status() == provision_complete)
+                {
                     transmit_one_byte_confirm(CONFIRM_PROVISION);
-                else{
+                }
+                else
+                {
                     comm_reject_request(CONFIRM_PROVISION, 0);
                     flow_level.level_three = PROVISION_UNSUCCESSFUL;
                     LOG_ERROR("PERR5-LOCK");
                     break;
                 }
             }
-            else{
+            else
+            {
                 comm_reject_request(CONFIRM_PROVISION, 0);
                 flow_level.level_three = PROVISION_UNSUCCESSFUL;
                 LOG_ERROR("PERR2-KEY");
                 break;
             }
+
             reset_flow_level();
             flow_level.level_one = 10;
             lv_obj_clean(lv_scr_act());
         
-        } break;
+            break;
+        }
 
-        case PROVISION_UNSUCCESSFUL: {
+        case PROVISION_UNSUCCESSFUL:
+        {
             lv_obj_clean(lv_scr_act());
             mark_error_screen(ui_text_provision_fail);
             reset_flow_level();
             flow_level.level_one = 6;
             flow_level.show_error_screen = true;
-        } break;
+            break;
+        }
 
         default:
+        {
             break;
-    
+        }
     }
-
-
 }
 
-void lock_all_slots(){
+static void lock_all_slots(void)
+{
     uint8_t usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
     NVIC_DisableIRQ(OTG_FS_IRQn);
 
@@ -446,34 +487,43 @@ void lock_all_slots(){
     bool lock = false;
     do
     {
-        if(atecc_data.status != ATCA_SUCCESS){
+        if(atecc_data.status != ATCA_SUCCESS)
+        {
             LOG_CRITICAL("PERR4-0x%02x, retry-%d", atecc_data.status, atecc_data.retries);
         }
+
         for (uint32_t i = 0; i < sizeof(atecc_slot_to_lock); i++)
         {
             atecc_data.status = atcab_is_slot_locked(atecc_slot_to_lock[i], &lock);
-            if(atecc_data.status != ATCA_SUCCESS){
+            
+            if(atecc_data.status != ATCA_SUCCESS)
+            {
                 break;
             }
-            else if(lock == true){
+            else if(lock == true)
+            {
                 continue;
             }
+            
             atecc_data.status = atcab_lock_data_slot(atecc_slot_to_lock[i]);
-            if(atecc_data.status != ATCA_SUCCESS){
+            if(atecc_data.status != ATCA_SUCCESS)
+            {
                 break;
             }
         }
-    } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    } while ((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
 
     if(usb_irq_enable_on_entry == true)
+    {
         NVIC_EnableIRQ(OTG_FS_IRQn);
+    }
 }
 
-static void __timeout_listener() {
+static void __timeout_listener(void)
+{
     mark_error_screen(ui_text_provision_fail);
     instruction_scr_destructor();
     reset_flow_level();
-    flow_level.level_one = 6;   // on command not received take to get-started screen
+    flow_level.level_one = 6;   // on command not received take to get-started screen /* TODO: Fixme */
     lv_task_del(timeout_task);
-#endif
 }

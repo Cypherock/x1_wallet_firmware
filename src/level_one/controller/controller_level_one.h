@@ -15,6 +15,11 @@
 #include "flash_api.h"
 #include "tasks.h"
 
+/* fixme */
+extern volatile bool gBoolConditionMain;
+#define TRAINING_DONE   0xA5
+#define IS_TRAINING_DONE ( (gBoolConditionMain == 0) ? TRAINING_DONE: 0 )
+
 /**
  * @brief Handles post event (only next events) processing for level one tasks in the main application.
  * @details The level one controller for main is responsible for clearing out error and desktop request flags (ref
@@ -55,5 +60,4 @@ void level_one_controller_b();
  *
  * @note The USB is only initialised after training is over (card is tapped).
  */
-void level_one_controller_initial();
-#endif
+#endif /* CONTROLLER_LEVEL_ONE_H */

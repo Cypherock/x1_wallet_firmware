@@ -126,7 +126,7 @@ void device_auth();
  *
  * @note
  */
-void device_authentication_controller();
+void device_authentication_controller(void);
 
 /** 
  * @brief This function should be called to check the boot count to display message to users to check their cards.

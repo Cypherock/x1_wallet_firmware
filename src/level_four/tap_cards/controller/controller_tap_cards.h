@@ -235,22 +235,6 @@ void controller_update_card_id();
  *
  * @note
  */
-void retrieve_key_from_card_flow_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void tap_card_take_to_pairing();
 
 #endif

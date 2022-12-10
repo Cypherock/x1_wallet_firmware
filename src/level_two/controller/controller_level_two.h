@@ -27,7 +27,7 @@
  *
  * @note
  */
-void level_two_controller();
+void level_two_controller(void);
 
 
 /**
@@ -45,4 +45,4 @@ void level_two_controller();
  * @note
  */
 void level_two_controller_b();
-#endif
+#endif /* CONTROLLER_LEVEL_TWO_H */

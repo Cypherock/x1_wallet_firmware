@@ -95,7 +95,7 @@ void receive_transaction_controller()
         snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = RECV_TXN_CHECK_PIN;
-        flow_level.level_one = 1;
+        /* flow_level.level_one = 1; */
     } break;
 
     case RECV_TXN_CHECK_PIN:{

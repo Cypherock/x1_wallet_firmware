@@ -71,40 +71,61 @@ extern char* NUMBERS;
 
 void tap_cards_for_delete_flow()
 {
-    uint8_t index;
-    char display[40];
-    get_index_by_name((const char *)wallet.wallet_name, &index);
+	uint8_t index;
+	char display[40];
+	
+	get_index_by_name((const char *)wallet.wallet_name, &index);
+	
+	switch (flow_level.level_four)
+	{
+		case TAP_CARD_ONE_FRONTEND:
+		case TAP_CARD_TWO_FRONTEND:
+		case TAP_CARD_THREE_FRONTEND:
+		case TAP_CARD_FOUR_FRONTEND:
+		{
+			if (!card_already_deleted_flash(index, ((flow_level.level_four-1)>>1)+1))
+			{
+				snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
+				instruction_scr_init(ui_text_place_card_below, display);
+				mark_event_over();
+			}
+			else
+			{
+				if(flow_level.level_four == TAP_CARD_FOUR_FRONTEND)
+				{
+					/* flow_level.level_four = 1; */
 
-    switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-    case TAP_CARD_TWO_FRONTEND:
-    case TAP_CARD_THREE_FRONTEND:
-    case TAP_CARD_FOUR_FRONTEND:
-      if (!card_already_deleted_flash(index, ((flow_level.level_four-1)>>1)+1)) {
-        snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
-        instruction_scr_init(ui_text_place_card_below, display);
-        mark_event_over();
-      } else {
-        if(flow_level.level_four == TAP_CARD_FOUR_FRONTEND){
-            flow_level.level_four = 1;
-            flow_level.level_three++;
-        }
-        else{
-          flow_level.level_four += 2;
-        }
-        counter.next_event_flag = true;
-      }
-      break;
+					/**
+					 * If data is deleted from all cards, 
+					 * advance flow_level.level_three state to DELETE_WALLET_FROM_DEVICE to delete wallet share
+					 */
+					flow_level.level_three = DELETE_WALLET_FROM_DEVICE;
+				}
+				else
+				{
+					/* Below operation is sensitive as there are multiple jumps in switch case */
+					flow_level.level_four += 2;
+				}
+			
+				counter.next_event_flag = true;
+			}
+			
+			break;
+		}
 
-    case TAP_CARD_ONE_BACKEND:
-    case TAP_CARD_TWO_BACKEND:
-    case TAP_CARD_THREE_BACKEND:
-    case TAP_CARD_FOUR_BACKEND:
-        mark_event_over();
-        break;
+		case TAP_CARD_ONE_BACKEND:
+		case TAP_CARD_TWO_BACKEND:
+		case TAP_CARD_THREE_BACKEND:
+		case TAP_CARD_FOUR_BACKEND:
+		{
+			mark_event_over();
+			break;
+		}
 
-    default:
-        reset_flow_level();
-        break;
-    }
+		default:
+		{
+			reset_flow_level();
+			break;			
+		}
+	}
 }

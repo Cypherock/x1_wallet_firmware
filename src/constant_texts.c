@@ -65,10 +65,14 @@ const char* ui_text_options_main_menu[] = {
     "Settings"
 };
 
-// level two
-const char* ui_text_options_old_wallet[] = {
-    "View Seed",
-    "Delete Wallet"
+/** 
+ * Menu options provided by "ui_text_options_old_wallet"
+ * are supported by LEVEL_THREE_OLD_WALLET_TASKS enum
+ */
+const char* ui_text_options_old_wallet[] =
+{
+    "View Seed",                    /* @ flow_level.level_two = LEVEL_THREE_VIEW_SEED */
+    "Delete Wallet"                 /* @ flow_level.level_two = LEVEL_THREE_DELETE_WALLET */
 };
 
 const char* ui_text_options_new_wallet[] = {
@@ -77,18 +81,23 @@ const char* ui_text_options_new_wallet[] = {
     "Restore from Seed"
 };
 
-const char* ui_text_options_advanced_settings[] = {
-    "Settings",
-    "Restore wallets from cards",
-    "Check Card health",
-    "Rotate Display",
-    "Toggle log export",
-    "Toggle Passphrase Step",
-    "Factory Reset",
-    "Device Info",
-    "View Card Version",
+/** 
+ * Menu options provided by "ui_text_options_advanced_settings"
+ * are supported by LEVEL_THREE_ADVANCED_SETTINGS_TASKS enum
+ */
+const char* ui_text_options_advanced_settings[] =
+{
+    "Settings",                     /* Heading of the menu */
+    "Restore wallets from cards",   /* @ flow_level.level_two = LEVEL_THREE_SYNC_CARD_CONFIRM */
+    "Check Card health",            /* @ flow_level.level_two = LEVEL_THREE_CARD_HEALTH_CHECK */
+    "Rotate Display",               /* @ flow_level.level_two = LEVEL_THREE_ROTATE_SCREEN_CONFIRM */
+    "Toggle log export",            /* @ flow_level.level_two = LEVEL_THREE_TOGGLE_LOGGING */
+    "Toggle Passphrase Step",       /* @ flow_level.level_two = LEVEL_THREE_TOGGLE_PASSPHRASE */
+    "Factory Reset",                /* @ flow_level.level_two = LEVEL_THREE_FACTORY_RESET */
+    "Device Info",                  /* @ flow_level.level_two = LEVEL_THREE_VIEW_DEVICE_VERSION */
+    "View Card Version",            /* @ flow_level.level_two = LEVEL_THREE_READ_CARD_VERSION */
 #ifdef DEV_BUILD
-    "Buzzer toggle",
+    "Buzzer toggle",                /* @ flow_level.level_two = LEVEL_THREE_ADJUST_BUZZER */
 #endif
 };
 

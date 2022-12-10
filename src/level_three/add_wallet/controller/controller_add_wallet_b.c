@@ -105,7 +105,7 @@ void generate_wallet_controller_b()
     case GENERATE_WALLET_CONFIRM_RANDOM_WORD_1:
     case GENERATE_WALLET_CONFIRM_RANDOM_WORD_2:
     case GENERATE_WALLET_CONFIRM_RANDOM_WORD_3: {
-        generate_wallet_controller(flow_level, counter, wallet);
+        generate_wallet_controller();
     } break;
 
     case GENERATE_WALLET_VERIFY_SEEDS: {

@@ -77,34 +77,51 @@ static void _handle_retrieve_wallet_success(uint8_t xcor);
 
 void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold)
 {
-    switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-        tap_card_data.tapped_card = 0;
-        tap_card_data.active_cmd_type = CARD_ERROR_FACED;
-        flow_level.level_four = TAP_CARD_ONE_BACKEND;
-        break;
-
-    case TAP_CARD_ONE_BACKEND:
-        remaining_cards = 15;
-        _tap_card_backend(0);
-        instruction_scr_destructor();
-        if(threshold == 1 && flow_level.level_four == TAP_CARD_TWO_FRONTEND){
-            flow_level.level_three++;
-            flow_level.level_four = 1;
+    switch (flow_level.level_four)
+    {
+        case TAP_CARD_ONE_FRONTEND:
+        {
+            tap_card_data.tapped_card = 0;
+            tap_card_data.active_cmd_type = CARD_ERROR_FACED;
+            flow_level.level_four = TAP_CARD_ONE_BACKEND;
+            break;
         }
-        break;
 
-    case TAP_CARD_TWO_FRONTEND:
-        flow_level.level_four = TAP_CARD_TWO_BACKEND;
-        break;
+        case TAP_CARD_ONE_BACKEND:
+        {
+            remaining_cards = 15;
+            _tap_card_backend(0);
+            instruction_scr_destructor();
+            
+            if(threshold == 1 && flow_level.level_four == TAP_CARD_TWO_FRONTEND)
+            {
+                /**
+                 * Operation flow_level.level_three++ & flow_level.level_four is very
+                 * sensitive as this function is called from many different flows.
+                 */
+                flow_level.level_three++;
+                flow_level.level_four = 1;
+            }
+            break;
+        }
 
-    case TAP_CARD_TWO_BACKEND:
-        _tap_card_backend(1);
-        break;
+        case TAP_CARD_TWO_FRONTEND:
+        {
+            flow_level.level_four = TAP_CARD_TWO_BACKEND;
+            break;
+        }
 
-    default:
-        message_scr_init(ui_text_something_went_wrong);
-        break;
+        case TAP_CARD_TWO_BACKEND:
+        {
+            _tap_card_backend(1);
+            break;
+        }
+
+        default:
+        {
+            message_scr_init(ui_text_something_went_wrong);
+            break;
+        }
     }
 }
 
@@ -140,19 +157,38 @@ static void _tap_card_backend(uint8_t xcor)
 static void _handle_retrieve_wallet_success(uint8_t xcor)
 {
     if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-        memcpy(((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + xcor * wallet.arbitrary_data_size, wallet.arbitrary_data_share, wallet.arbitrary_data_size);
+    {
+        memcpy(
+                ((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + xcor * wallet.arbitrary_data_size,
+                wallet.arbitrary_data_share,
+                wallet.arbitrary_data_size
+              );
+    }
     else
-        memcpy(wallet_shamir_data.mnemonic_shares[xcor], wallet.wallet_share_with_mac_and_nonce, BLOCK_SIZE);
+    {
+        memcpy(
+                wallet_shamir_data.mnemonic_shares[xcor],
+                wallet.wallet_share_with_mac_and_nonce,
+                BLOCK_SIZE
+              );
+    }
+
     memcpy(wallet_shamir_data.share_encryption_data[xcor], wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE, NONCE_SIZE + WALLET_MAC_SIZE);
     memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
     memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
-
     wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
 
-    if(xcor < 1){
+    if(xcor < 1)
+    {
+        /* flow_level.level_four++ is safe as it is isolated for enum TAP_CARDS_FLOW  */
         flow_level.level_four++;
     }
-    else{
+    else
+    {
+        /**
+         * Operation flow_level.level_three++ & flow_level.level_four is very
+         * sensitive as this function is called from many different flows.
+         */
         flow_level.level_three++;
         flow_level.level_four = 1;
     }
