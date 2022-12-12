@@ -176,6 +176,66 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     return offset;
 }
 
+int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
+                                    const uint8_t *data_byte_array,
+                                    const uint32_t size) {
+  if (txn_data_ptr == NULL || data_byte_array == NULL || size == 0) return -1;
+  int64_t offset = 0;
+
+  s_memcpy(txn_data_ptr->wallet_id,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->wallet_id),
+           &offset);
+  s_memcpy(txn_data_ptr->purpose,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->purpose),
+           &offset);
+  s_memcpy(txn_data_ptr->source_coin_index,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->source_coin_index),
+           &offset);
+  s_memcpy(txn_data_ptr->dest_coin_index,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->dest_coin_index),
+           &offset);
+  s_memcpy(txn_data_ptr->account_index,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->account_index),
+           &offset);
+  s_memcpy(txn_data_ptr->chain_index,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->chain_index),
+           &offset);
+  s_memcpy(txn_data_ptr->address_index,
+           data_byte_array,
+           size,
+           sizeof(txn_data_ptr->address_index),
+           &offset);
+
+  txn_data_ptr->send_amount = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+  offset += sizeof(txn_data_ptr->send_amount);
+  txn_data_ptr->recv_amount = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+  offset += sizeof(txn_data_ptr->recv_amount);
+  txn_data_ptr->network_fee = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+  offset += sizeof(txn_data_ptr->network_fee);
+
+  if (offset + sizeof(txn_data_ptr->source_network_chain_id) > size) return -1;
+  txn_data_ptr->source_network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
+  offset += sizeof(txn_data_ptr->source_network_chain_id);
+
+  if (offset + sizeof(txn_data_ptr->dest_network_chain_id) > size) return -1;
+  txn_data_ptr->dest_network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
+  offset += sizeof(txn_data_ptr->dest_network_chain_id);
+
+  return offset;
+}
+
 void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)
 {
     uint32_t fingerprint = 0x0, version;

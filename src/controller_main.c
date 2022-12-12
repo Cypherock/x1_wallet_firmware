@@ -456,6 +456,7 @@ static bool wallet_selector(uint8_t *data_array)
 
 extern Add_Coin_Data add_coin_data;
 extern Receive_Transaction_Data receive_transaction_data;
+extern Swap_Transaction_Data swap_transaction_data;
 
 void desktop_listener_task(lv_task_t* data)
 {
@@ -553,7 +554,7 @@ void desktop_listener_task(lv_task_t* data)
                     flow_level.level_one = LEVEL_TWO_OLD_WALLET;
 
                     coin_index = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index);
-                    
+
                     if(coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
@@ -595,7 +596,7 @@ void desktop_listener_task(lv_task_t* data)
                         return;
                     }
                     flow_level.show_desktop_start_screen = true;
-                    
+
                     uint32_t coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
                     if (coin_index == NEAR_COIN_INDEX && receive_transaction_data.near_account_type == 1) {
@@ -620,6 +621,42 @@ void desktop_listener_task(lv_task_t* data)
                 }
                 clear_message_received_data();
             } break;
+
+          case SWAP_TXN_START: {
+            if (wallet_selector(data_array)) {
+              CY_Reset_Not_Allow(false);
+
+              int64_t offset =
+                  byte_array_to_swap_txn_data(&swap_transaction_data,
+                                              data_array,
+                                              msg_size);
+
+              if (offset == -1) {
+                comm_reject_invalid_cmd();
+                clear_message_received_data();
+                return;
+              }
+
+              uint32_t source_coin_index =
+                  BYTE_ARRAY_TO_UINT32(swap_transaction_data.source_coin_index);
+
+              uint32_t dest_coin_index =
+                  BYTE_ARRAY_TO_UINT32(swap_transaction_data.dest_coin_index);
+
+              flow_level.show_desktop_start_screen = true;
+
+              {
+                flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text),
+                         UI_TEXT_SWAP_PROMPT,
+                         get_coin_name(source_coin_index, 0),
+                         get_coin_name(dest_coin_index, 0));
+
+              }
+            }
+          }
+            break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {
                 const Flash_Wallet* flash_wallet;
@@ -675,7 +712,7 @@ void desktop_listener_task(lv_task_t* data)
                     flow_level.show_desktop_start_screen = true;
                 }
                 device_auth_flag = 1;
-            
+
             } break;
 
 #elif X1WALLET_INITIAL

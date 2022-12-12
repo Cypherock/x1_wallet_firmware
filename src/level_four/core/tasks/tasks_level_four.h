@@ -76,6 +76,11 @@ void send_transaction_tasks_solana();
 void receive_transaction_tasks();
 
 /**
+ * @brief
+ */
+void swap_transaction_tasks();
+
+/**
  * @brief This task is executed for generating address using xpub for Ethereum.
  * @details
  *

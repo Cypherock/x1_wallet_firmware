@@ -111,6 +111,10 @@ void level_three_old_wallet_controller()
         receive_transaction_controller();
     } break;
 
+    case LEVEL_THREE_SWAP_TRANSACTION: {
+        swap_transaction_controller();
+    } break;
+
     case LEVEL_THREE_WALLET_LOCKED: {
         wallet_locked_controller();
     } break;

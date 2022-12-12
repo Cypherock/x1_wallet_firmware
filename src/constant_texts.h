@@ -19,6 +19,7 @@
 #define UI_TEXT_PLACE_CARD "Place Card #%d"
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s with %s"
 #define UI_TEXT_SEND_PROMPT "Send %s with %s"
+#define UI_TEXT_SWAP_PROMPT "Swap %s with %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
