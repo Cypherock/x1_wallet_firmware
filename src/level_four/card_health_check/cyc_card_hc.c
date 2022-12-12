@@ -63,15 +63,13 @@
 uint8_t *wallet_list[MAX_WALLETS_ALLOWED][2];
 uint8_t wallet_count;
 uint32_t card_fault_status=0;
-#if X1WALLET_MAIN
+
 static uint16_t wallet_data_len;
 static uint8_t wallet_data[300];
 static uint16_t decode_wallet_info_list(uint8_t *wallet_info[MAX_WALLETS_ALLOWED][2], uint8_t *data, uint16_t len);
 static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len);
-#endif
 
 void cyc_card_hc() {
-#if X1WALLET_MAIN
     switch (flow_level.level_three) {
         case CARD_HC_START:
             wallet_count = 0xFF;
@@ -182,5 +180,4 @@ static uint16_t decode_wallet_info_list(uint8_t *wallet_info[MAX_WALLETS_ALLOWED
         index += data[index - 1] + 4;
     }
     return count;
-#endif
 }

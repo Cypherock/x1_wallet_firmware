@@ -63,15 +63,13 @@
 #include "ui_menu.h"
 #include "ui_message.h"
 #include "apdu.h"
-#include "controller_level_one.h" /* fixme*/
+#include "application_startup.h"
 #include "flash_struct.h"
 #include "tasks_tap_cards.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
 #include "ui_multi_instruction.h"
 
-/*	Global variables
-*******************************************************************************/
 extern lv_task_t* listener_task;
 extern uint8_t device_auth_flag;
 
@@ -80,7 +78,7 @@ static void tasks_level_one_display_wallet_menu(void);
 
 void level_one_tasks(void)
 {
-	if (IS_TRAINING_DONE != TRAINING_DONE)
+	if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
 	{
 		// It is safe to allow reset as all the flows are desktop triggered.
 		CY_Reset_Not_Allow(false);
@@ -94,7 +92,7 @@ void level_one_tasks(void)
 
     if (flow_level.show_error_screen)
     {
-		if (IS_TRAINING_DONE == TRAINING_DONE)
+		if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 		{
         	mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
 		}
@@ -103,7 +101,7 @@ void level_one_tasks(void)
         return;
     }
 
-	if (IS_TRAINING_DONE == TRAINING_DONE)
+	if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 	{
 		if (get_card_data_health() == DATA_HEALTH_CORRUPT)
 		{
@@ -115,7 +113,7 @@ void level_one_tasks(void)
 
     if (flow_level.show_desktop_start_screen)
     {
-		if (IS_TRAINING_DONE == TRAINING_DONE)
+		if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 		{
 			mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
 			confirm_scr_init(flow_level.confirmation_screen_text);
@@ -134,7 +132,7 @@ void level_one_tasks(void)
         return;
     }
 
-	if (IS_TRAINING_DONE == TRAINING_DONE)
+	if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 	{
 		if (device_auth_flag)
 		{
@@ -152,7 +150,7 @@ void level_one_tasks(void)
 	 * If training is complete, X1 Wallet comes in usable state
 	 * Eenforce device authentication and display wallet menu
 	 */
-    if (IS_TRAINING_DONE == TRAINING_DONE)
+    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
     {
 		if(device_auth_check() != DEVICE_AUTHENTICATED)
 		{

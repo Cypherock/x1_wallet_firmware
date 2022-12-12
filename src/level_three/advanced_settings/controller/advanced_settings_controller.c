@@ -240,9 +240,12 @@ void level_three_advanced_settings_controller()
         case LEVEL_THREE_FETCH_LOGS_FINISH:
         {
             reset_flow_level();
-    #if X1WALLET_INITIAL
-            flow_level.level_one = 6; /* TODO: Fixme */
-    #endif
+
+            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+            {
+                flow_level.level_one = 6; /* TODO: Fixme */
+            }
+
             break;
         }
     #endif

@@ -67,12 +67,13 @@
 #include "sha2.h"
 #include "flash_api.h"
 #include "shamir_wrapper.h"
-#if X1WALLET_MAIN == 1
+
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 extern Flash_Wallet wallet_for_flash;
 static uint32_t valid_wallet_index = 0;
-void sync_cards_controller()
+
+void sync_cards_controller(void)
 {
 
     switch(flow_level.level_three) {
@@ -173,4 +174,3 @@ void sync_cards_controller()
     } break;
     }
 }
-#endif

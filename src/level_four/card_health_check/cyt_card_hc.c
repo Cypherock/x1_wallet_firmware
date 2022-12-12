@@ -69,7 +69,6 @@ extern uint8_t *wallet_list[MAX_WALLETS_ALLOWED][2];
 extern uint8_t wallet_count;
 extern uint32_t card_fault_status;
 void cyt_card_hc() {
-#if X1WALLET_MAIN
     switch (flow_level.level_three) {
         case CARD_HC_START:
             mark_event_over();
@@ -120,5 +119,4 @@ void cyt_card_hc() {
         default:
             reset_flow_level();
     }
-#endif
 }

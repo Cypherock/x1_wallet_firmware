@@ -341,7 +341,6 @@ void _timeout_listener(lv_task_t* task)
     	lv_task_del(success_task);
 }
 
-#if X1WALLET_MAIN
 /**
  * @brief wrapper listener for desktop commands while authentication is not complete
  * @details During authentication only a few select commands are allowed to be started i.e.
@@ -444,7 +443,6 @@ static bool wallet_selector(uint8_t *data_array)
     comm_reject_request(WALLET_DOES_NOT_EXISTS, 2);
     return false;
 }
-#endif
 
 extern Add_Coin_Data add_coin_data;
 extern Receive_Transaction_Data receive_transaction_data;
@@ -634,7 +632,7 @@ void desktop_listener_task(lv_task_t* data)
 #endif
             case START_CARD_AUTH:
             {
-                if (IS_TRAINING_DONE == TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                 {
                     CY_Reset_Not_Allow(false);
                     snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_start_verification_of_card);
@@ -698,12 +696,12 @@ void desktop_listener_task(lv_task_t* data)
             {
                 CY_Reset_Not_Allow(false);
                 
-                if (IS_TRAINING_DONE != TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
                 {
                     CY_Set_External_Triggered(true);
                 }
 
-                if (IS_TRAINING_DONE == TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                 {
                     if(data_array[0] == 1)
                     {
@@ -801,7 +799,7 @@ void desktop_listener_task(lv_task_t* data)
 #ifdef ALLOW_LOG_EXPORT
             case APP_LOG_DATA_SEND:
             {
-                if (IS_TRAINING_DONE == TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                 {
                     if (!is_logging_enabled() && !CY_is_app_restricted())
                     {
@@ -843,7 +841,7 @@ void desktop_listener_task(lv_task_t* data)
             counter.next_event_flag = true;
             lv_obj_clean(lv_scr_act());
 
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 if(CY_is_app_restricted() == true)
                 {
@@ -873,7 +871,7 @@ void cy_exit_flow(void)
     sys_flow_cntrl_u.bits.reset_flow = false;
     reset_flow_level();
 
-    if (IS_TRAINING_DONE != TRAINING_DONE)
+    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
     {
         flow_level.level_one = 6; /* TODO : Fixme */
     }

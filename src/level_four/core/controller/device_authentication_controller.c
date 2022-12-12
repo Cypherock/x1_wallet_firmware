@@ -71,7 +71,7 @@
 #include "board.h"
 #include "stdint.h"
 #include "stm32l4xx_it.h"
-#include "controller_level_one.h" /* fixme */
+#include "application_startup.h"
 
 #define SIGNATURE_SIZE          64
 #define POSTFIX1_SIZE           7
@@ -207,7 +207,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             memcpy(auth_serial_packet.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);     //postfix 2 (12bytes)
             transmit_data_to_app(DEVICE_SERAIL_NO_SIGNED, (uint8_t*)&auth_serial_packet, AUTH_DATA_SERIAL_SIGN_MSG_SIZE);
 
-            if (IS_TRAINING_DONE != TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
             {
                 flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
                 lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);  // explicitly enable task listener
@@ -317,7 +317,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             memcpy(auth_challenge_packet.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);   //postfix 2 (23 bytes)
             transmit_data_to_app(DEVICE_CHALLENGE_SIGNED, (uint8_t*)&auth_challenge_packet, AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE);
 
-            if (IS_TRAINING_DONE != TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
             {
                 flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
                 lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);  // explicitly enable task listener
@@ -332,7 +332,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             reset_flow_level();
             lv_obj_clean(lv_scr_act());
 
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 set_auth_state(DEVICE_AUTHENTICATED);
                 device_auth_flag = 0;   // resets the flag set via desktop request during boot up
@@ -352,7 +352,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             reset_flow_level();
             lv_obj_clean(lv_scr_act());
 
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 /// if verification fails when initiated from settings, next device startup will hold the device for another auth
                 set_auth_state(DEVICE_NOT_AUTHENTICATED);

@@ -63,14 +63,10 @@
 #include "flash_api.h"
 #include "tasks.h"
 #include "controller_advanced_settings.h"
-#include "controller_level_one.h" /* fixme */
+#include "application_startup.h"
 
-/*	Global variables
-*******************************************************************************/
 extern lv_task_t* listener_task;
 
-/*	Global functions
-*******************************************************************************/
 void level_two_controller(void)
 {
     if (flow_level.show_error_screen)

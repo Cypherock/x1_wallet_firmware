@@ -60,6 +60,21 @@
 extern uint8_t device_auth_flag;
 extern bool main_app_ready;
 
+/**
+ * Global variable gBoolConditionTrainingDone determines if the device training
+ * is complete or not
+ * TODO: As on today, this is a hardcoded variable, logic to update the status will 
+ * be added in subsequent tasks 
+ */
+extern volatile uint8_t gBoolConditionTrainingDone;
+
+#define TRAINING_COMPLETE   0xA5
+#define TRAINING_INCOMPLETE 0xF9
+
+#define IS_TRAINING_COMPLETE (                                                          \
+                                (gBoolConditionTrainingDone == TRAINING_COMPLETE) ?     \
+                                TRAINING_COMPLETE: TRAINING_INCOMPLETE                  \
+                             ) 
 
 /**
  * @brief This function should be called from main to setup application level

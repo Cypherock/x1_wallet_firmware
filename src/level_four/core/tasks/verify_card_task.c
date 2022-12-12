@@ -60,7 +60,7 @@
 #include "ui_delay.h"
 #include "ui_confirmation.h"
 #include "communication.h"
-#include "controller_level_one.h" /* fixme*/
+#include "application_startup.h"
 
 extern Flow_level flow_level;
 extern Counter counter;
@@ -81,7 +81,7 @@ void verify_card_task(void)
 	{
 		case VERIFY_CARD_START_MESSAGE:
 		{
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
 				instruction_scr_init(display, ui_text_tap_1_2_cards);
@@ -100,7 +100,7 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
 		{
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				instruction_scr_destructor();
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
@@ -131,7 +131,7 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_FETCH_RANDOM_NUMBER:
 		{
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
 				lv_task_ready(random_number_task);
@@ -148,7 +148,7 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
 		{
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				instruction_scr_destructor();
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
@@ -206,7 +206,7 @@ void verify_card_task(void)
 		}
 		case VERIFY_CARD_FINAL_MESSAGE:
 		{
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
 				lv_task_ready(random_number_task);
@@ -237,7 +237,7 @@ void verify_card_task(void)
 			instruction_scr_destructor();
 			delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
 
-			if (IS_TRAINING_DONE == TRAINING_DONE)
+			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 			{
 				CY_Reset_Not_Allow(true);
 			}

@@ -61,33 +61,48 @@
 #include "controller_old_wallet.h"
 #include "tasks.h"
 #include "controller_level_four.h"
-
+#include "application_startup.h"
 
 
 void level_two_controller_b()
 {
-    switch (flow_level.level_one) {
-    case LEVEL_TWO_OLD_WALLET: {
-        if (counter.level > LEVEL_TWO) {
-            level_three_old_wallet_controller_b();
-            return;
+    switch (flow_level.level_one)
+    {
+        case LEVEL_TWO_OLD_WALLET:
+        {
+            if (counter.level > LEVEL_TWO)
+            {
+                level_three_old_wallet_controller_b();
+                return;
+            }
+            
+            break;
         }
-    } break;
 
-    case LEVEL_TWO_NEW_WALLET: {
-        if (counter.level > LEVEL_TWO) {
-            if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
+    case LEVEL_TWO_NEW_WALLET:
+    {
+        if (counter.level > LEVEL_TWO)
+        {
+            if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET)
+            {
                 generate_wallet_controller_b();
-            } else {
+            }
+            else
+            {
                 restore_wallet_controller_b();
             }
+            
             return;
         }
-    } break;
+
+        break;
+    }
 
 
-    case LEVEL_TWO_ADVANCED_SETTINGS: {
-        if (counter.level > LEVEL_TWO) {
+    case LEVEL_TWO_ADVANCED_SETTINGS:
+    {
+        if (counter.level > LEVEL_TWO)
+        {
             if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM){
             
                 comm_reject_request(USER_FIRMWARE_UPGRADE_CHOICE, 0);
@@ -104,13 +119,16 @@ void level_two_controller_b()
                 counter.next_event_flag = true;
                 return;
             }
-#if X1WALLET_MAIN
-            if(flow_level.level_two == LEVEL_THREE_SYNC_WALLET_FLOW){
-                sync_cards_controller_b();
-                counter.next_event_flag = true;
-                return;
+
+            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+            {
+                if(flow_level.level_two == LEVEL_THREE_SYNC_WALLET_FLOW)
+                {
+                    sync_cards_controller_b();
+                    counter.next_event_flag = true;
+                    return;
+                }
             }
-#endif
 #ifdef ALLOW_LOG_EXPORT
             if (flow_level.level_two == LEVEL_THREE_FETCH_LOGS_INIT){
 
@@ -121,45 +139,58 @@ void level_two_controller_b()
                 return;
             }
 #endif
-#if X1WALLET_MAIN
-            if (flow_level.level_two == LEVEL_THREE_PAIR_CARD){
-                if(flow_level.show_error_screen){
-                    reset_flow_level();
-                }
-                else{
-                    switch (flow_level.level_four)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+            {
+                if (flow_level.level_two == LEVEL_THREE_PAIR_CARD)
+                {
+                    if(flow_level.show_error_screen)
                     {
-                    case PAIR_CARD_RED_FRONTEND:
-                    case PAIR_CARD_BLUE_FRONTEND:
-                    case PAIR_CARD_GREEN_FRONTEND:
-                    case PAIR_CARD_YELLOW_FRONTEND:
-                        /* Operation is sensitive as multiple switch cases have the same body */
-                        flow_level.level_four+=2;
-                        break;
-                    
-                    default:
                         reset_flow_level();
-                        break;
                     }
+                    else
+                    {
+                        switch (flow_level.level_four)
+                        {
+                        case PAIR_CARD_RED_FRONTEND:
+                        case PAIR_CARD_BLUE_FRONTEND:
+                        case PAIR_CARD_GREEN_FRONTEND:
+                        case PAIR_CARD_YELLOW_FRONTEND:
+                            /* Operation is sensitive as multiple switch cases have the same body */
+                            flow_level.level_four += 2;
+                            break;
+                        
+                        default:
+                            reset_flow_level();
+                            break;
+                        }
+                    }
+                    return;
                 }
-                return;
+                
+                if (flow_level.level_two == LEVEL_THREE_FACTORY_RESET)
+                {
+                    reset_flow_level();
+                    return;
+                }
             }
-            if (flow_level.level_two == LEVEL_THREE_FACTORY_RESET){
-                reset_flow_level();
-                return;
-            }
-#endif
-            else{
-                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-                reset_flow_level_greater_than(LEVEL_ONE);
-                counter.level = LEVEL_TWO;
-            }
+
+            /**
+             * As per code review, below statements handle any missed condition
+             * and therefore, nesting it in else statement is not required
+             * It will not break any existing flow as all happy flows end with return statement
+             */
+            flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+            reset_flow_level_greater_than(LEVEL_ONE);
+            counter.level = LEVEL_TWO;
             return;
         }
-    } break;
+        break;
+    }
 
     default:
+    {
         break;
+    }
     }
     reset_flow_level();
 }

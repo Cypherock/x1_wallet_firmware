@@ -61,7 +61,7 @@
 #include "ui_instruction.h"
 #include "buzzer.h"
 #include "controller_tap_cards.h"
-#include "controller_level_one.h" /* fixme*/
+#include "application_startup.h"
 
 #define CARD_AUTH_RAND_NUMBER_SIZE 32
 
@@ -105,7 +105,7 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
         {
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
             }
@@ -117,7 +117,7 @@ void verify_card_controller(void)
             
             while (1)
             {
-                if (IS_TRAINING_DONE == TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                 {
                     tap_card_data.acceptable_cards = 15; // Any card is acceptable
                 }
@@ -130,7 +130,7 @@ void verify_card_controller(void)
 
                 if (!tap_card_applet_connection())
                 {
-                    if (IS_TRAINING_DONE != TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
@@ -151,7 +151,7 @@ void verify_card_controller(void)
                     uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
                     memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
                     
-                    if (IS_TRAINING_DONE == TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                     {
                         get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
                     }
@@ -164,7 +164,7 @@ void verify_card_controller(void)
                     flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
                     buzzer_start(BUZZER_DURATION);
 
-                    if (IS_TRAINING_DONE == TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                     {
                         instruction_scr_change_text(ui_text_remove_card_prompt, true);
                         nfc_detect_card_removal();
@@ -175,7 +175,7 @@ void verify_card_controller(void)
                 }
                 else if (tap_card_handle_applet_errors())
                 {
-                    if (IS_TRAINING_DONE != TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
@@ -194,7 +194,7 @@ void verify_card_controller(void)
             uint8_t *data_array = NULL;
             uint16_t msg_size;
 
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 msg_size = 1;
             }
@@ -203,7 +203,7 @@ void verify_card_controller(void)
                 msg_size = 0;
             }
 
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 get_usb_msg(&msg_type, &data_array, &msg_size);
                 if(msg_type == APP_SEND_RAND_NUM)
@@ -262,7 +262,7 @@ void verify_card_controller(void)
             
             while (1)
             {
-                if (IS_TRAINING_DONE == TRAINING_DONE)
+                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                 {
                     tap_card_data.acceptable_cards = coded_card_number;
                 }
@@ -275,7 +275,7 @@ void verify_card_controller(void)
 
                 if (!tap_card_applet_connection())
                 {
-                    if (IS_TRAINING_DONE != TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
@@ -295,7 +295,7 @@ void verify_card_controller(void)
                     uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
                     memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
 
-                    if (IS_TRAINING_DONE == TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                     {
                         get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
                     }
@@ -307,7 +307,7 @@ void verify_card_controller(void)
                     transmit_data_to_app(SIGNED_CHALLENGE, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                     buzzer_start(BUZZER_DURATION);
 
-                    if (IS_TRAINING_DONE == TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
                     {
                         flow_level.level_three = VERIFY_CARD_FINAL_MESSAGE;
                     }
@@ -321,7 +321,7 @@ void verify_card_controller(void)
                 }
                 else if (tap_card_handle_applet_errors())
                 {
-                    if (IS_TRAINING_DONE != TRAINING_DONE)
+                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
@@ -378,7 +378,7 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_FINAL_MESSAGE:
         {
-            if (IS_TRAINING_DONE == TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
             {
                 En_command_type_t msg_type;
                 uint8_t *data_array = NULL;
@@ -428,7 +428,7 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_FAILED:
         {
-            if (IS_TRAINING_DONE != TRAINING_DONE)
+            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
             {
                 comm_process_complete();
                 flow_level.level_one = 6; /* TODO: Fixme */
@@ -606,7 +606,7 @@ static uint8_t get_card_serial_number(uint8_t family_id[], uint8_t cards_state, 
 
     memcpy(serial_number_out + FAMILY_ID_SIZE, &card_number, 1);
 
-    if (IS_TRAINING_DONE == TRAINING_DONE)
+    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
     {
         return CARD_ID_SIZE;
     }

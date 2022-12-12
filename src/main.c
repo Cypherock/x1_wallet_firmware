@@ -127,7 +127,12 @@ static void memory_monitor(lv_task_t *param);
 
 #endif
 
-volatile bool gBoolConditionMain = 0;
+/**
+ * Hard assign training status to training complete
+ * TODO: Add logic to update the condition based on flash based status storage.
+ */
+volatile uint8_t gBoolConditionTrainingDone = TRAINING_COMPLETE;
+
 /**
   * @brief  The entry point to the application.
   * @retval int
@@ -147,10 +152,14 @@ int main(void)
         logo_scr_init(2000);
         device_provision_check();
         reset_flow_level();
-#if X1WALLET_MAIN
-        if(device_auth_check() == DEVICE_AUTHENTICATED)
-            check_invalid_wallets();
-#endif
+
+        if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+        {
+            if(device_auth_check() == DEVICE_AUTHENTICATED)
+            {
+                check_invalid_wallets();
+            }
+        }
     }
 
 

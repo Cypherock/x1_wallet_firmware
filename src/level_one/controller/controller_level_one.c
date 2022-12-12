@@ -68,8 +68,6 @@
 #include <string.h>
 #include "ui_delay.h"
 
-/*	Global variables
-*******************************************************************************/
 extern lv_task_t* listener_task;
 extern uint8_t device_auth_flag;
 extern bool main_app_ready;
@@ -97,7 +95,7 @@ void level_one_controller(void)
 	 * If training is complete, X1 Wallet comes in usable state
 	 * Perform device authentication and card health check before usage
 	 */
-	if (IS_TRAINING_DONE == TRAINING_DONE)
+	if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
 	{
 		if (get_card_data_health() == DATA_HEALTH_CORRUPT)
 		{
@@ -125,7 +123,7 @@ void level_one_controller(void)
     }
 
 	/* Check if training is complete */
-	if (IS_TRAINING_DONE == TRAINING_DONE)
+	if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
  	{
 		/* Wait for action on wallet menus if training is completed */
 		controller_level_one_get_wallet_action();

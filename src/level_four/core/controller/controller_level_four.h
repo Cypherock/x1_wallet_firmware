@@ -442,7 +442,7 @@ void verify_wallet_controller_b();
  * @see sync_wallet_controller_b(), sync_cards_task()
  * @since v1.0.0
  */
-void sync_cards_controller();
+void sync_cards_controller(void);
 
 /**
  * @brief Back button controller for sync wallet flow.

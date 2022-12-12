@@ -66,15 +66,10 @@
 #include "ui_confirmation.h"
 #include "ui_menu.h"
 #include "ui_message.h"
-#include "controller_level_one.h" /* fixme */
+#include "application_startup.h"
 
-/*	Global variables
-*******************************************************************************/
 extern lv_task_t* listener_task;
 
-
-/*	Global functions
-*******************************************************************************/
 void level_two_tasks(void)
 {
     if (flow_level.show_error_screen)

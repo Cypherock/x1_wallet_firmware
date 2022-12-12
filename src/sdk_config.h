@@ -32,10 +32,18 @@ typedef uint8_t atecc_interface_type;
 extern atecc_interface_type atecc_mode; 
 
 #define BSP_USB_VID		0x3503
+
+/**
+ * TODO: Get this change reviewed by all stakeholders, as this change will affect CySync.
+ * We must also consider backward compatibility (if any)
+ */
+#define BSP_USB_PID		0x0104  ///PID Wallet X1[8:15]:0x01, HARDWARE version Major[4:7]:0x0, Main[0:3]:0x4
+#if 0
 #if (X1WALLET_INITIAL == 1)
 #define BSP_USB_PID		0x0102  ///PID Wallet X1[8:15]:0x01, HARDWARE version Major[4:7]:0x0, Initial[0:3]:0x2
 #elif (X1WALLET_MAIN == 1)
 #define BSP_USB_PID		0x0103  ///PID Wallet X1[8:15]:0x01, HARDWARE version Major[4:7]:0x0, Main[0:3]:0x3
+#endif
 #endif
 
 #define BSP_I2C_SPEED_FAST				0x00702991
