@@ -316,6 +316,8 @@ void send_transaction_controller_b_solana();
  */
 void receive_transaction_controller();
 
+void swap_transaction_controller();
+
 /**
  * @brief Next button controller is executed for generating address using xpub.
  * @details This controller handles is used to generate receiving address for
@@ -338,6 +340,7 @@ void receive_transaction_controller_near();
  */
 void receive_transaction_controller_b();
 
+void swap_transaction_controller_b();
 /**
  * @brief Next button controller is executed for generating address using xpub of Ethereum.
  * @details This controller handles is used to generate receiving address for the ETH coins requested by desktop from a

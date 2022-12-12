@@ -187,6 +187,37 @@ typedef struct Receive_Transaction_Data {
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+/**
+ * @brief Stores the deserialize information from desktop for the swap
+ * transaction process.
+ * @details
+ *
+ * @see swap_transaction_controller(), swap_transaction_controller_b(),
+ * swap_transaction_tasks(), SWAP_TXN_START
+ */
+typedef struct Swap_Transaction_Data {
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  uint8_t source_coin_index[4];
+  uint8_t dest_coin_index[4];
+  uint8_t purpose[4];
+  uint8_t account_index[4];
+  uint8_t chain_index[4];
+  uint8_t address_index[4];
+  uint32_t send_amount;
+  uint32_t recv_amount;
+  uint32_t network_fee;
+  union {
+    uint64_t source_network_chain_id;
+    uint8_t source_near_account_type;
+  };
+  union {
+    uint64_t dest_network_chain_id;
+    uint8_t dest_near_account_type;
+  };
+
+} Swap_Transaction_Data;
+#pragma pack(pop)
 
 /**
  * @brief Copies the byte values from source after offset to destination under the given size limit.
@@ -251,6 +282,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  */
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
 
+int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
  * 

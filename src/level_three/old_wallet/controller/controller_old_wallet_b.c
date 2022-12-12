@@ -100,6 +100,10 @@ void level_three_old_wallet_controller_b()
         receive_transaction_controller_b();
     } break;
 
+    case LEVEL_THREE_SWAP_TRANSACTION: {
+        swap_transaction_controller_b();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
         receive_transaction_controller_b_eth();
     } break;

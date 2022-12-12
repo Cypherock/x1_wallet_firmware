@@ -82,6 +82,8 @@ typedef enum commandType {
     RECV_TXN_USER_VERIFIED_ADDRESS = 64,    ///< Prompt for user confirmation or rejection of receive address
     RECV_TXN_XPUBS_EXISTS_ON_DEVICE = 65,   ///< Prompt for finding/deriving XPUB on device
 
+    SWAP_TXN_START = 66,                    ///< Request by desktop to start a swap transaction
+
     #ifdef DEV_BUILD
     START_CARD_UPGRADE = 60,
     APDU_PACKET = 61,

@@ -116,6 +116,10 @@ void level_three_old_wallet_tasks()
         receive_transaction_tasks();
     } break;
 
+    case LEVEL_THREE_SWAP_TRANSACTION : {
+        swap_transaction_tasks();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
         receive_transaction_tasks_eth();
     } break;
