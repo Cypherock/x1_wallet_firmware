@@ -19,6 +19,18 @@
 #define MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION 85
 
 /**
+ * @brief 
+ * 
+ */
+typedef struct{
+    char text[MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION];
+    char heading[20];
+    const void *img;
+    uint8_t img_x_offset, img_y_offset;
+    lv_label_align_t text_align;
+} instruction_content_t;
+
+/**
  * @brief Struct to hold state of the instruction screen
  * @details
  *
@@ -29,9 +41,11 @@
  */
 struct Multi_Instruction_Data
 {
-    char strings[MAX_NUM_OF_INSTRUCTIONS][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION];
+    instruction_content_t instruction_content[MAX_NUM_OF_INSTRUCTIONS];
     bool one_cycle_completed; //if all the text has been shown once then this variable will be true else false
     bool destruct_on_click;   // if destruct_on_click == true the screen will destroy on a button click
+    bool img_object;
+    bool heading_object;
     uint8_t total_strings;
     uint8_t index_of_current_string;
 };
@@ -50,6 +64,8 @@ struct Multi_Instruction_Object
     lv_obj_t *text;
     lv_obj_t *left_arrow;
     lv_obj_t *right_arrow;
+    lv_obj_t *img;
+    lv_obj_t *heading;
 };
 
 /**
@@ -71,4 +87,5 @@ struct Multi_Instruction_Object
  */
 void multi_instruction_init(const char **arr, uint8_t count, uint16_t delay_in_ms, bool destruct_on_click);
 
+void multi_instruction_with_image_init(instruction_content_t *content, const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click);
 #endif // UI_MULTI_INSTRUCTION_H
