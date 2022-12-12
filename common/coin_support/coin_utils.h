@@ -131,6 +131,7 @@ typedef struct
 
     uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
 } txn_metadata;
 #pragma pack(pop)
 
@@ -359,5 +360,7 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
 
 #endif
