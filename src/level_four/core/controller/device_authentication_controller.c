@@ -340,7 +340,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             }
             else
             {
-                flow_level.level_one = 8; /* TODO: fixme */
+                flow_level.level_one = 8; /* TODO: take to get-started screen */
             }
 
             break;
@@ -362,7 +362,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(void)
             }
             else
             {
-                flow_level.level_one = 9; /* TODO: fixme */
+                flow_level.level_one = 9; /* TODO: take to get-started screen */
             }
 
             break;

@@ -407,22 +407,17 @@ void reset_flow_level_greater_than(enum LEVEL level);
 void desktop_listener_task(lv_task_t* data);
 
 /**
- * @brief Checks the messages from desktop and initiates/processes the request sent by desktop.
- * @details The function is an lv_task handler registered with lvgl with a priority of LV_TASK_PRIO_HIGH and period of
- * 20 ms with NULL user data. This is responsible for processing desktop requests and performing/triggering flow jumps
- * based on the request from desktop. The function triggers a confirmation message which is shown to the user for
- * confirmation before actually starting the requested flow. It has the capacity to respond to certain requests directly
- * without user consent (such as DEVICE_INFO, START_CARD_AUTH, START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION).
- *
+ * @brief Checks the messages from desktop and initiates/processes restricted requests sent by desktop.
+ * @details The function is an lv_task handler registered with lvgl with a priority of LV_TASK_PRIO_MID.
+ * It decodes the request from desktop and allows restricted requests. Allowed requests are handled further by
+ * invoking the desktop_listener_task(lv_task_t* data) function directly.
  * @param task lv_task passed while registering the callback.
- *
- * @see listener_task, flow_level, counter, En_command_type_t, get_usb_msg(), clear_message_received_data(), transmit_one_byte(),
- * transmit_data_to_app(), CY_Set_External_Triggered()
- * @since v1.0.0
+ * @see 
+ * @since
  *
  * @note
  */
-void __authentication_listener(lv_task_t* task); /* TODO: fixme  */
+void __authentication_listener(lv_task_t* task);
 
 /**
  * @brief Callback function called periodically to check for success message from desktop.

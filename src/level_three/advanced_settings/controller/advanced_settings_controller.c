@@ -243,7 +243,7 @@ void level_three_advanced_settings_controller()
 
             if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
             {
-                flow_level.level_one = 6; /* TODO: Fixme */
+                flow_level.level_one = 6; /* TODO: take to get-started screen */
             }
 
             break;

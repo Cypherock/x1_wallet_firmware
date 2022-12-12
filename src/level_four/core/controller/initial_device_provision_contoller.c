@@ -524,6 +524,6 @@ static void __timeout_listener(void)
     mark_error_screen(ui_text_provision_fail);
     instruction_scr_destructor();
     reset_flow_level();
-    flow_level.level_one = 6;   // on command not received take to get-started screen /* TODO: Fixme */
+    flow_level.level_one = 6;   // on command not received take to get-started screen /* TODO: take to get-started screen */
     lv_task_del(timeout_task);
 }

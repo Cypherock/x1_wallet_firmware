@@ -134,7 +134,7 @@ void level_two_controller_b()
 
                 comm_reject_request(APP_LOG_DATA_REJECT, 0);
                 reset_flow_level();
-                flow_level.level_one = 6; /* TODO: Fixme */
+                flow_level.level_one = 6; /* TODO: take to get-started screen */
                 counter.next_event_flag = true;
                 return;
             }

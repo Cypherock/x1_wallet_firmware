@@ -66,7 +66,6 @@ extern Flash_Wallet wallet_for_flash;
 static void restore_wallet_enter_mnemonics_controller_b()
 {
     if (flow_level.level_four > 1) {
-        /* TODO: fixme! */
         flow_level.level_four--;
     } else {
         flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;

@@ -188,7 +188,7 @@ void verify_card_controller(void)
             }
             break;
         }
-        case VERIFY_CARD_FETCH_RANDOM_NUMBER: /* TODO: Fixme */
+        case VERIFY_CARD_FETCH_RANDOM_NUMBER:
         {
             En_command_type_t msg_type;
             uint8_t *data_array = NULL;
@@ -402,7 +402,7 @@ void verify_card_controller(void)
                 instruction_scr_destructor();
                 comm_process_complete();
                 reset_flow_level();
-                flow_level.level_one = 7; /* TODO: Fixme */
+                flow_level.level_one = 7; /* TODO: take to get-started screen */
             }
 
             break;
@@ -431,7 +431,7 @@ void verify_card_controller(void)
             if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
             {
                 comm_process_complete();
-                flow_level.level_one = 6; /* TODO: Fixme */
+                flow_level.level_one = 6; /* TODO: take to get-started screen */
             }
             
             reset_flow_level();

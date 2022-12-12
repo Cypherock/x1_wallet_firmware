@@ -82,7 +82,6 @@ static void restore_wallet_enter_mnemonics_flow_controller()
 {
     if (flow_level.level_four <= wallet.number_of_mnemonics) {
         snprintf(wallet_credential_data.mnemonics[flow_level.level_four - 1], sizeof(wallet_credential_data.mnemonics[flow_level.level_four - 1]), "%s", wordlist[flow_level.screen_input.list_choice]);
-        /* TODO: fixme! */
         flow_level.level_four++;
     } else {
         flow_level.level_three = RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION;
@@ -288,8 +287,8 @@ void restore_wallet_controller()
         add_wallet_share_to_sec_flash(&wallet_for_flash, &index, wallet_shamir_data.mnemonic_shares[4]);
         flow_level.level_three = RESTORE_WALLET_TAP_CARDS;
 
-        /* TODO: fixme! */
-        flow_level.level_four = 1;
+        /* Here, we will enter tap_cards_for_write_flow_controller(); */
+        flow_level.level_four = TAP_CARD_ONE_FRONTEND;
         flow_level.level_five = 1;
     } break;
 

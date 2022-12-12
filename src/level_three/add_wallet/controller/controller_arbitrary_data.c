@@ -181,14 +181,14 @@ void arbitrary_data_controller(void)
                 memzero(arbitrary_data, sizeof(arbitrary_data));
                 flow_level.level_three = ARBITRARY_DATA_TAP_CARDS;
 
-                /* TODO: fixme! */
+                /* This is an unused function, therefore these hard assignments cannot be fixed */
                 flow_level.level_four = 1;
                 flow_level.level_five = 1;
             } else {
                 mark_error_screen(ui_text_wallet_with_same_mnemo_exists);
                 flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
 
-                /* TODO: fixme! */
+                /* This is an unused function, therefore these hard assignments cannot be fixed */
                 flow_level.level_four = 1;
                 flow_level.level_five = 1;
             }
