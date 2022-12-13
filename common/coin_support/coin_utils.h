@@ -154,7 +154,7 @@ typedef struct Receive_Transaction_Data {
   char *token_name;
   union {
     uint64_t network_chain_id;
-    uint8_t near_account_type;
+    uint64_t near_account_type;
   };
   char near_registered_account[65];
   uint8_t xpub[112];
