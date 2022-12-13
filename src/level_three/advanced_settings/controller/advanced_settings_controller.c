@@ -121,6 +121,9 @@ void level_three_advanced_settings_controller()
         controller_update_card_id();
     } break;
 
+    case LEVEL_THREE_REGULATORY_INFO: {
+        reset_flow_level();
+    }break;
     case LEVEL_THREE_CARD_UPGRADE:
         card_upgrade_controller();
         break;

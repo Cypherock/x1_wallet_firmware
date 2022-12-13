@@ -375,6 +375,10 @@ void multi_instruction_create()
     {
         lv_obj_set_hidden(obj->right_arrow, true);
     }
+
+    lv_obj_realign(obj->text);
+    lv_obj_realign(obj->left_arrow);
+    lv_obj_realign(obj->right_arrow);
 }
 
 void multi_instruction_init(const char **arr, const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
