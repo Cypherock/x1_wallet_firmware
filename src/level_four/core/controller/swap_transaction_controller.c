@@ -19,5 +19,19 @@ void swap_transaction_controller() {
       flow_level.level_three = SWAP_VERIFY_SESSION;
     }
       break;
+
+    case SWAP_VERIFY_SESSION: {
+      flow_level.level_three = SWAP_RECV_ADDR_DERIVATION;
+    }
+      break;
+
+    case SWAP_RECV_ADDR_DERIVATION: {
+      counter.level = LEVEL_THREE;
+      flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
+      flow_level.level_three = 1;
+    }
+      break;
+
+    default:break;
   }
 }

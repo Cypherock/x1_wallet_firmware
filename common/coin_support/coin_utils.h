@@ -347,7 +347,7 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
  *
  * @param [in] purpose_id           Purpose Id of the coin.
  * @param [in] coin_index           Coin index of the coin.
- * @param [out] address_version     Pointer to uint8_t instance to store the addres version.
+ * @param [out] address_version     Pointer to uint8_t instance to store the address version.
  * @param [out] pub_version         Pointer to uint32_t to instance store the public key version.
  *
  * @return
