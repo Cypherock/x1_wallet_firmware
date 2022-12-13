@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         firmware: [main, initial]
-        target: [dev, debug, release]
+        target: [release]
     uses: ./.github/workflows/containerized-build.yml
     with:
       firmware: ${{ matrix.firmware }}
