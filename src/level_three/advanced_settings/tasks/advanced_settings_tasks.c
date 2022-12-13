@@ -157,20 +157,25 @@ void level_three_advanced_settings_tasks()
     } break;
 
     case LEVEL_THREE_REGULATORY_INFO: {
-        instruction_content_t content[5] = {0};
+        instruction_content_t content[7] = {0};
         LV_IMG_DECLARE(fcc_logo_black_2020);
+        LV_IMG_DECLARE(ce_mark);
         content[0].img = &fcc_logo_black_2020;
-        content[0].img_x_offset = 40;
-        content[0].img_y_offset = 4;
+        content[0].img_x_offset = 48;
+        content[0].img_y_offset = 2;
         content[0].text_align = LV_ALIGN_OUT_BOTTOM_MID;
+        content[6].img = &ce_mark;
+        content[6].img_x_offset = 22;
+        content[6].img_y_offset = 2;
 
         snprintf(content[0].text, sizeof(content[0].text), "FCC ID: 2A9MU-X1-VAULT");
-        snprintf(content[1].text, sizeof(content[1].text), "This device complies with Part 15 of the FCC Rules. Operation is subject");
-        snprintf(content[2].text, sizeof(content[2].text), "to the following two conditions: (1) this device may not cause harmful");
-        snprintf(content[3].text, sizeof(content[3].text), "interference, and (2) this device must accept any interference received,");
-        snprintf(content[4].text, sizeof(content[4].text), "including interference that may cause undesired operation.");
-        
-        multi_instruction_with_image_init(content, 5, DELAY_TIME, true);
+        snprintf(content[1].text, sizeof(content[1].text), "This device complies with Part 15 of the FCC Rules. Operation is");
+        snprintf(content[2].text, sizeof(content[2].text), "subject to the following two conditions: (1) this device may not");
+        snprintf(content[3].text, sizeof(content[3].text), "cause harmful interference, and (2) this device must accept any");
+        snprintf(content[4].text, sizeof(content[4].text), "interference received, including interference that");
+        snprintf(content[5].text, sizeof(content[5].text), "may cause undesired operation.");
+
+        multi_instruction_with_image_init(content, 7, DELAY_TIME, true);
     }break;
 
 #if X1WALLET_MAIN

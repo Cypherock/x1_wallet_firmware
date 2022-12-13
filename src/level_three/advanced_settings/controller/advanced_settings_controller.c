@@ -116,14 +116,14 @@ void level_three_advanced_settings_controller()
         controller_read_card_id();
     } break;
 #if X1WALLET_MAIN
+    case LEVEL_THREE_REGULATORY_INFO: {
+        reset_flow_level();
+    }break;
 #ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
         controller_update_card_id();
     } break;
 
-    case LEVEL_THREE_REGULATORY_INFO: {
-        reset_flow_level();
-    }break;
     case LEVEL_THREE_CARD_UPGRADE:
         card_upgrade_controller();
         break;

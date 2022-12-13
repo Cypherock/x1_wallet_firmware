@@ -13,7 +13,7 @@
 #include "ui_common.h"
 
 /// Maximum number of instruction screens
-#define MAX_NUM_OF_INSTRUCTIONS 7
+#define MAX_NUM_OF_INSTRUCTIONS 10
 
 /// Maximum number of character in a single instruction screen
 #define MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION 85
