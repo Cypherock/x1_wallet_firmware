@@ -200,6 +200,7 @@ extern Counter counter;
 extern Wallet wallet;
 extern lv_task_t* address_timeout_task;
 extern uint32_t inactivity_counter;
+extern bool is_swap_txn;
 
 /**
  * @brief Get the Global Flow_level instance.

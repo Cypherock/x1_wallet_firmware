@@ -17,5 +17,17 @@ void swap_transaction_controller_b() {
       reset_flow_level();
       counter.next_event_flag = true;
     } break;
+
+    case SWAP_VERIFY_SESSION: {
+      reset_flow_level();
+      counter.next_event_flag = true;
+    }
+      break;
+
+    case SWAP_RECV_ADDR_DERIVATION: {
+      reset_flow_level();
+      counter.next_event_flag = true;
+    }
+      break;
   }
 }

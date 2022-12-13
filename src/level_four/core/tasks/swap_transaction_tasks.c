@@ -6,6 +6,7 @@
 #include "btc.h"
 
 extern Swap_Transaction_Data swap_transaction_data;
+extern Receive_Transaction_Data receive_transaction_data;
 
 void swap_transaction_tasks() {
   switch (flow_level.level_three) {
@@ -59,8 +60,37 @@ void swap_transaction_tasks() {
       break;
 
     case SWAP_VERIFY_SESSION: {
-      transmit_data_to_app(103, (uint8_t *) &swap_transaction_data, sizeof
-          (swap_transaction_data));
+      //TODO: verify and validate session data
+      mark_event_over();
     }
+      break;
+
+    case SWAP_RECV_ADDR_DERIVATION: {
+      // copy the metadata from swap transaction to receive transaction
+      memcpy(receive_transaction_data.wallet_id,
+             swap_transaction_data.wallet_id,
+             sizeof(receive_transaction_data.wallet_id));
+      memcpy(receive_transaction_data.purpose, swap_transaction_data
+          .purpose, sizeof(receive_transaction_data.purpose));
+      memcpy(receive_transaction_data.coin_index, swap_transaction_data
+          .source_coin_index, sizeof(receive_transaction_data.coin_index));
+      memcpy(receive_transaction_data.account_index, swap_transaction_data
+          .account_index, sizeof(receive_transaction_data.account_index));
+      memcpy(receive_transaction_data.chain_index, swap_transaction_data
+          .chain_index, sizeof(receive_transaction_data.chain_index));
+      memcpy(receive_transaction_data.address_index, swap_transaction_data
+          .address_index, sizeof(receive_transaction_data.address_index));
+      //TODO: copy token name
+      //TODO: copy chain id
+      mark_event_over();
+    }
+      break;
+
+    case SWAP_AFTER_RECV_FLOW: {
+      transmit_data_to_app(100,
+                           (uint8_t *) &receive_transaction_data.address,
+                           sizeof(receive_transaction_data.address));
+    }
+      break;
   }
 }

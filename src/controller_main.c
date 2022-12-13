@@ -162,6 +162,11 @@ Counter counter;
  */
 Flash_Wallet wallet_for_flash;
 
+/**
+ * @brief Flag to mark if the txn is a swap txn
+ */
+bool is_swap_txn;
+
 Flow_level* get_flow_level()
 {
     ASSERT((&flow_level) != NULL);
@@ -691,6 +696,7 @@ void desktop_listener_task(lv_task_t* data)
               flow_level.show_desktop_start_screen = true;
 
               {
+                is_swap_txn = true;
                 flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
                 snprintf(flow_level.confirmation_screen_text,
                          sizeof(flow_level.confirmation_screen_text),
