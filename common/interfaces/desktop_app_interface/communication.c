@@ -678,8 +678,8 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
  */
 static comm_error_code_t comm_process_out_req_packet(const packet_t *rx_packet) {
     if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no) return INVALID_SEQUENCE_NO;
-  if (rx_packet->header.chunk_number != 1)
-    return INVALID_CHUNK_NO;
+    if (rx_packet->header.chunk_number != 1)
+        return INVALID_CHUNK_NO;
     if (rx_packet->header.total_chunks != 1) return INVALID_CHUNK_COUNT;
     if (rx_packet->header.payload_length != 6) return INVALID_PAYLOAD_LENGTH;
     if (comm_status.curr_cmd_state != CMD_STATE_DONE && comm_status.curr_cmd_state != CMD_STATE_FAILED) {
