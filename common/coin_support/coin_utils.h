@@ -207,6 +207,7 @@ typedef struct Swap_Transaction_Data {
   uint32_t send_amount;
   uint32_t recv_amount;
   uint32_t network_fee;
+  char *token_name;
   union {
     uint64_t source_network_chain_id;
     uint8_t source_near_account_type;
