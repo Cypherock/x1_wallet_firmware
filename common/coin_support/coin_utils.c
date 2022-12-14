@@ -225,6 +225,16 @@ int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
   txn_data_ptr->network_fee = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
   offset += sizeof(txn_data_ptr->network_fee);
 
+  size_t token_name_len =
+      strnlen((const char *) (data_byte_array + offset), size - offset) + 1;
+  if (data_byte_array[offset + token_name_len - 1] != 0) return -1;
+  txn_data_ptr->token_name = (char *) cy_malloc(token_name_len);
+  s_memcpy((uint8_t *) txn_data_ptr->token_name,
+           data_byte_array,
+           size,
+           token_name_len,
+           &offset);
+
   if (offset + sizeof(txn_data_ptr->source_network_chain_id) > size) return -1;
   txn_data_ptr->source_network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
   offset += sizeof(txn_data_ptr->source_network_chain_id);
