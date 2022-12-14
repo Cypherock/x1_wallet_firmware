@@ -701,8 +701,10 @@ void desktop_listener_task(lv_task_t* data)
                 snprintf(flow_level.confirmation_screen_text,
                          sizeof(flow_level.confirmation_screen_text),
                          UI_TEXT_SWAP_PROMPT,
-                         get_coin_name(source_coin_index, 0),
-                         get_coin_name(dest_coin_index, 0));
+                         get_coin_name(source_coin_index,
+                                       swap_transaction_data.source_network_chain_id),
+                         get_coin_name(dest_coin_index,
+                                       swap_transaction_data.dest_network_chain_id));
 
               }
             }
