@@ -87,9 +87,28 @@ void swap_transaction_tasks() {
       break;
 
     case SWAP_AFTER_RECV_FLOW: {
-      transmit_data_to_app(100,
-                           (uint8_t *) &receive_transaction_data.address,
-                           sizeof(receive_transaction_data.address));
+      uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                     .source_coin_index);
+
+      switch (coin_index) {
+        case BITCOIN: {
+          transmit_data_to_app(100,
+                               (uint8_t *) &receive_transaction_data.address,
+                               sizeof(receive_transaction_data.address));
+        }
+          break;
+
+        case ETHEREUM: {
+          transmit_data_to_app(100,
+                               (uint8_t *) &receive_transaction_data.eth_pubkeyhash,
+                               sizeof(receive_transaction_data.eth_pubkeyhash));
+        }
+          break;
+
+        default:break;
+      }
+
+      mark_event_over();
     }
       break;
   }

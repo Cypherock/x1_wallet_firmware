@@ -26,9 +26,34 @@ void swap_transaction_controller() {
       break;
 
     case SWAP_RECV_ADDR_DERIVATION: {
+      uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                     .source_coin_index);
       counter.level = LEVEL_THREE;
-      flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
       flow_level.level_three = 1;
+      switch (coin_index) {
+        case BITCOIN: {
+          flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
+        }
+          break;
+
+        case ETHEREUM: {
+          flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
+        }
+          break;
+
+        case NEAR: {
+          flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
+        }
+          break;
+
+        case SOLANA: {
+          flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
+        }
+          break;
+
+        default: break;
+      }
+
     }
       break;
 
