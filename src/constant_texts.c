@@ -388,7 +388,6 @@ const char* ui_text_reset_exit[] = {
     "Press the center button to proceed",
 };
 const char* ui_text_erasing = "Factory reset done Device will restart";
-const char* ui_text_performing_checks = "Performing checks...";
 
 #ifdef ALLOW_LOG_EXPORT
 const char* ui_text_send_logs_prompt = "Send logs to the CySync app?";
