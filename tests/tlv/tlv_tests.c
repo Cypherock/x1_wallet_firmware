@@ -1,5 +1,5 @@
 /**
- * @file    tlv.c
+ * @file    tlv_tests.c
  * @author  Cypherock X1 Team
  * @brief   Coin specific data.
  *          Contains functions for managing coin specific data.
@@ -73,7 +73,7 @@
 #define TLV_TEST_LEN_2          (0x000A)
 
 #define TLV_TEST_TAG_3          (0x05A4)
-#define TLV_TEST_LEN_3          (0x0004)
+#define TLV_TEST_LEN_3          (0x0500)
 
 #define TLV_TEST_MAX_READ_BYTES (FLASH_PAGE_SIZE)
 
@@ -144,6 +144,86 @@ void TLV_Tests(void)
     returnCode = TLV_ReadLatestData(memBlkInfoTlv, headerDataTlv.TLV_Tag, pReadArray);
     ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
     ASSERT(memcmp(&(pReadArray[0]), &(pDataTlv1[4]), headerDataTlv.TLV_Length) == 0);
+
+    /* Enter data 3 */
+    uint8_t pDataTlv3[TLV_TEST_LEN_3 + 4];
+    headerDataTlv.TLV_Tag = TLV_TEST_TAG_3;
+    headerDataTlv.TLV_Length = TLV_TEST_LEN_3;
+    memcpy(&(pDataTlv3[0]), &headerDataTlv, sizeof(TLV_Header_t));
+    for (uint32_t i = 4; i < TLV_TEST_LEN_3 + 4; i++)
+    {
+        pDataTlv3[i] = i;
+    }
+    returnCode = TLV_InsertData(memBlkInfoTlv, pDataTlv3);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    memzero(pReadArray, TLV_TEST_MAX_READ_BYTES);
+    returnCode = TLV_ReadLatestData(memBlkInfoTlv, headerDataTlv.TLV_Tag, pReadArray);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    ASSERT(memcmp(&(pReadArray[0]), &(pDataTlv3[4]), headerDataTlv.TLV_Length) == 0);
+
+    /* Update data 1 */
+    headerDataTlv.TLV_Tag = TLV_TEST_TAG_1;
+    headerDataTlv.TLV_Length = TLV_TEST_LEN_1;
+    memcpy(&(pDataTlv1[0]), &headerDataTlv, sizeof(TLV_Header_t));
+    pDataTlv1[4] = 0x69;
+    pDataTlv1[5] = 0xA5;
+    pDataTlv1[6] = 0x55;
+    pDataTlv1[7] = 0x96;
+    returnCode = TLV_InsertData(memBlkInfoTlv, pDataTlv1);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    memzero(pReadArray, TLV_TEST_MAX_READ_BYTES);
+    returnCode = TLV_ReadLatestData(memBlkInfoTlv, headerDataTlv.TLV_Tag, pReadArray);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    ASSERT(memcmp(&(pReadArray[0]), &(pDataTlv1[4]), headerDataTlv.TLV_Length) == 0);
+
+    /* Update data 2 */
+    uint8_t pDataTlv2[14];
+    headerDataTlv.TLV_Tag = TLV_TEST_TAG_2;
+    headerDataTlv.TLV_Length = TLV_TEST_LEN_2;
+    memcpy(&(pDataTlv2[0]), &headerDataTlv, sizeof(TLV_Header_t));
+    pDataTlv2[4] = 0x69;
+    pDataTlv2[5] = 0x69;
+    pDataTlv2[6] = 0x69;
+    pDataTlv2[7] = 0x69;
+    pDataTlv2[8] = 0x69;
+    pDataTlv2[9] = 0x69;
+    pDataTlv2[10] = 0x69;
+    pDataTlv2[11] = 0x69;
+    pDataTlv2[12] = 0x69;
+    pDataTlv2[13] = 0x69;
+    returnCode = TLV_InsertData(memBlkInfoTlv, pDataTlv2);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    memzero(pReadArray, TLV_TEST_MAX_READ_BYTES);
+    returnCode = TLV_ReadLatestData(memBlkInfoTlv, headerDataTlv.TLV_Tag, pReadArray);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    ASSERT(memcmp(&(pReadArray[0]), &(pDataTlv2[4]), headerDataTlv.TLV_Length) == 0);
+
+    /* Update data 1 */
+    headerDataTlv.TLV_Tag = TLV_TEST_TAG_1;
+    headerDataTlv.TLV_Length = TLV_TEST_LEN_1;
+    memcpy(&(pDataTlv1[0]), &headerDataTlv, sizeof(TLV_Header_t));
+    pDataTlv1[4] = 0x11;
+    pDataTlv1[5] = 0x22;
+    pDataTlv1[6] = 0x33;
+    pDataTlv1[7] = 0x44;
+    returnCode = TLV_InsertData(memBlkInfoTlv, pDataTlv1);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    memzero(pReadArray, TLV_TEST_MAX_READ_BYTES);
+    returnCode = TLV_ReadLatestData(memBlkInfoTlv, headerDataTlv.TLV_Tag, pReadArray);
+    ASSERT(TLV_RETURN_CODE_PROCESS_COMPLETE == returnCode);
+    ASSERT(memcmp(&(pReadArray[0]), &(pDataTlv1[4]), headerDataTlv.TLV_Length) == 0);
+
+    /* Update data 3 */
+    headerDataTlv.TLV_Tag = TLV_TEST_TAG_3;
+    headerDataTlv.TLV_Length = TLV_TEST_LEN_3;
+    memcpy(&(pDataTlv3[0]), &headerDataTlv, sizeof(TLV_Header_t));
+    for (uint32_t i = 4; i < TLV_TEST_LEN_3 + 4; i++)
+    {
+        pDataTlv3[i] = 255 - i;
+    }
+    returnCode = TLV_InsertData(memBlkInfoTlv, pDataTlv3);
+    ASSERT(TLV_RETURN_CODE_MEMORY_FULL == returnCode);
+    memzero(pReadArray, TLV_TEST_MAX_READ_BYTES);
 }
 
 #endif /* TLV_UNIT_TESTS */
