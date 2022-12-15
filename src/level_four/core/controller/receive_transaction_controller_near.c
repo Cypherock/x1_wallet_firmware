@@ -253,7 +253,14 @@ void receive_transaction_controller_near()
         }
 
         memcpy(data + 1, receive_transaction_data.near_pubkey, sizeof(receive_transaction_data.near_pubkey));
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+
+        if (is_swap_txn) {
+            jump_to_swap();
+        } else {
+            transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS,
+                                 data,
+                                 sizeof(data));
+        }
     } break;
 
     case RECV_TXN_WAIT_FOR_REPLACE_NEAR_SCREEN: {

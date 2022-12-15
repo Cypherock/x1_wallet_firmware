@@ -110,7 +110,7 @@ void receive_transaction_controller()
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-      
+
         flow_level.level_three = RECV_TXN_TAP_CARD;
     } break;
 
@@ -192,10 +192,7 @@ void receive_transaction_controller()
         memcpy(data + 1, receive_transaction_data.address, sizeof(receive_transaction_data.address));
 
       if (is_swap_txn) {
-        counter.level = LEVEL_THREE;
-        flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-        flow_level.level_three = 6; // SWAP_AFTER_RECV_FLOW
-        is_swap_txn = false;
+        jump_to_swap();
       } else {
         transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS,
                              data,

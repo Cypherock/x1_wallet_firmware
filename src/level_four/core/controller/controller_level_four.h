@@ -526,4 +526,9 @@ uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign);
  */
 uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret);
 
+/**
+ * @brief Updates the state variables to jump to the swap txn flow
+ */
+void jump_to_swap();
+
 #endif

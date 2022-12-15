@@ -178,17 +178,14 @@ void receive_transaction_controller_eth()
         data[0] = 1;  // confirmation byte
         memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
 
-      if (is_swap_txn) {
-        counter.level = LEVEL_THREE;
-        flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-        flow_level.level_three = 6; // SWAP_AFTER_RECV_FLOW
-        is_swap_txn = false;
-      } else {
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS,
-                             data,
-                             sizeof(data));
-        reset_flow_level();
-      }
+        if (is_swap_txn) {
+            jump_to_swap();
+        } else {
+            transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS,
+                                 data,
+                                 sizeof(data));
+            reset_flow_level();
+        }
     } break;
 
     default:
