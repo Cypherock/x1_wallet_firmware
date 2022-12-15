@@ -169,8 +169,13 @@ void receive_transaction_controller_solana() {
       uint8_t data[1 + sizeof(receive_transaction_data.solana_address)];
       data[0] = 1;  // confirmation byte
       memcpy(data + 1, receive_transaction_data.solana_address, sizeof(receive_transaction_data.solana_address));
-      transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
-      reset_flow_level();
+
+      if (is_swap_txn) {
+          jump_to_swap();
+      } else {
+          transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+          reset_flow_level();
+      }
     } break;
 
     default:
