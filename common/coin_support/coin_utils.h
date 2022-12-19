@@ -125,7 +125,7 @@ typedef struct
 
     uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+    uint8_t eth_val_decimal[1];
 
     char *token_name;
 
