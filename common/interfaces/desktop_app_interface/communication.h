@@ -83,6 +83,7 @@ typedef enum commandType {
     RECV_TXN_XPUBS_EXISTS_ON_DEVICE = 65,   ///< Prompt for finding/deriving XPUB on device
 
     SWAP_TXN_START = 66,                    ///< Request by desktop to start a swap transaction
+    SWAP_TXN_SIGNED_RECV_ADDR = 67,         ///< Send desktop the receive address for swap along with signature
 
     #ifdef DEV_BUILD
     START_CARD_UPGRADE = 60,
@@ -109,7 +110,7 @@ typedef enum commandType {
     
     START_DEVICE_PROVISION = 84,            ///< Request by desktop(provisioning tool) for provisioning device
     ADD_DEVICE_PROVISION = 82,              ///< Response by device(initial firmware) if provisioning started
-    CONFIRM_PROVISION = 80,                 ///< Response by device(initial firmwaer) after provisioning complete/failed
+    CONFIRM_PROVISION = 80,                 ///< Response by device(initial firmware) after provisioning complete/failed
 
     START_DEVICE_AUTHENTICATION = 83,       ///< Request by device to start device authentication
  

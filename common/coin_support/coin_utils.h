@@ -196,7 +196,8 @@ typedef struct Swap_Transaction_Data {
     uint64_t dest_network_chain_id;
     uint8_t dest_near_account_type;
   };
-
+  uint8_t recv_address_length;
+  uint8_t recv_address[45];
 } Swap_Transaction_Data;
 #pragma pack(pop)
 

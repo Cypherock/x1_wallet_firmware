@@ -73,7 +73,7 @@ void swap_transaction_tasks() {
                 .purpose, sizeof(receive_transaction_data.purpose));
             memcpy(receive_transaction_data.coin_index,
                    swap_transaction_data
-                       .source_coin_index,
+                       .dest_coin_index,
                    sizeof(receive_transaction_data.coin_index));
             memcpy(receive_transaction_data.account_index,
                    swap_transaction_data
@@ -90,7 +90,7 @@ void swap_transaction_tasks() {
                 .token_name, strlen(swap_transaction_data.token_name));
 
             receive_transaction_data.network_chain_id =
-                swap_transaction_data.source_network_chain_id;
+                swap_transaction_data.dest_network_chain_id;
 
             mark_event_over();
         }
@@ -98,41 +98,49 @@ void swap_transaction_tasks() {
 
         case SWAP_AFTER_RECV_FLOW: {
             uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                                           .source_coin_index);
+                                                           .dest_coin_index);
 
             switch (coin_index) {
                 case BITCOIN: {
-                    transmit_data_to_app(100,
-                                         (uint8_t *) &receive_transaction_data.address,
-                                         sizeof(receive_transaction_data.address));
+                    memcpy(swap_transaction_data.recv_address,
+                           receive_transaction_data
+                               .address,
+                           sizeof(receive_transaction_data.address));
+                    swap_transaction_data.recv_address_length = sizeof
+                        (receive_transaction_data
+                            .address);
                 }
                     break;
 
                 case ETHEREUM: {
-                    transmit_data_to_app(100,
-                                         (uint8_t *) &receive_transaction_data.eth_pubkeyhash,
-                                         sizeof(receive_transaction_data.eth_pubkeyhash));
+                    memcpy(swap_transaction_data.recv_address,
+                           receive_transaction_data.eth_pubkeyhash,
+                           sizeof(receive_transaction_data.eth_pubkeyhash));
+                    swap_transaction_data.recv_address_length =
+                        sizeof(receive_transaction_data.eth_pubkeyhash);
                 }
                     break;
 
                 case NEAR: {
-                    transmit_data_to_app(100,
-                                         (uint8_t *) &receive_transaction_data.near_pubkey,
-                                         sizeof(receive_transaction_data.near_pubkey));
-
+                    memcpy(swap_transaction_data.recv_address,
+                           receive_transaction_data.near_pubkey,
+                           sizeof(receive_transaction_data.near_pubkey));
+                    swap_transaction_data.recv_address_length =
+                        sizeof(receive_transaction_data.near_pubkey);
                 }
                     break;
 
                 case SOLANA: {
-                    transmit_data_to_app(100,
-                                         (uint8_t *) &receive_transaction_data.solana_address,
-                                         sizeof(receive_transaction_data.solana_address));
+                    memcpy(swap_transaction_data.recv_address,
+                           receive_transaction_data.solana_address,
+                           sizeof(receive_transaction_data.solana_address));
+                    swap_transaction_data.recv_address_length =
+                        sizeof(receive_transaction_data.solana_address);
                 }
                     break;
 
                 default:break;
             }
-
             mark_event_over();
         }
             break;
