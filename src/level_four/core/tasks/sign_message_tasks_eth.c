@@ -101,10 +101,6 @@ void sign_message_tasks_eth() {
       }
     } break;
 
-    case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
-      mark_event_over();
-    } break;
-
     case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
       char address[43];
       address[0] = '0';
@@ -118,6 +114,18 @@ void sign_message_tasks_eth() {
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
       snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
       address_scr_init(top_heading, display, true);
+    } break;
+
+    case SIGN_MSG_DISPLAY_INFO_ETH: {
+      instruction_scr_destructor();
+      if (current_display_node == NULL)
+        mark_event_over();
+      else
+        address_scr_init(current_display_node->title, current_display_node->value, false);
+    } break;
+
+    case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
+      mark_event_over();
     } break;
 
     case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {

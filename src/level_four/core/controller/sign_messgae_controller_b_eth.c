@@ -73,6 +73,12 @@ void sign_message_controller_b_eth() {
       counter.next_event_flag = true;
     } break;
 
+    case SIGN_MSG_DISPLAY_INFO_ETH: {
+      comm_reject_request(SIGN_MSG_START, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
+    } break;
+
     case SIGN_MSG_ENTER_PIN_ETH: {
       comm_reject_request(USER_REJECT_PIN_INPUT, 0);
       reset_flow_level();

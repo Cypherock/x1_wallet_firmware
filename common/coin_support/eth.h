@@ -91,6 +91,12 @@ typedef struct {
 } eth_unsigned_txn;
 #pragma pack(pop)
 
+typedef struct ui_display_node {
+  char *title;
+  char *value;
+  struct ui_display_node *next;
+} ui_display_node;
+
 /**
  * @brief Converts bendian byte array to decimal uint64_t.
  * @details
@@ -263,4 +269,28 @@ bool is_token_whitelisted(txn_metadata *metadata_ptr);
  * @param msg_data 
  */
 void eth_init_msg_data(MessageData *msg_data);
+
+/**
+ * @brief Get the data as string object
+ * 
+ * @param msg_data 
+ * @param output 
+ * @param out_length 
+ * @return true 
+ * @return false 
+ */
+bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_length);
+
+/**
+ * @brief Initialize Display Nodes from message data
+ * 
+ * @param node 
+ * @param msg_data 
+ */
+void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
+
+ui_display_node *eth_create_display_node(const char *title,
+                                         const size_t title_size,
+                                         const char *value,
+                                         const size_t value_size);
 #endif

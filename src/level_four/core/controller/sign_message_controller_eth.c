@@ -71,6 +71,7 @@ extern Wallet_credential_data wallet_credential_data;
 extern lv_task_t *timeout_task;
 
 MessageData msg_data;
+ui_display_node *current_display_node = NULL;
 
 void sign_message_controller_eth() {
   switch (flow_level.level_three) {
@@ -78,6 +79,7 @@ void sign_message_controller_eth() {
       uint8_t arr[3] = {0x01, 0x1f, 0x40};
       transmit_data_to_app(SIGN_MSG_RAW_MSG, arr, sizeof(arr));
       flow_level.level_three = SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH;
+      //initialize variables and decoding functions
       eth_init_msg_data(&msg_data);
     } break;
 
@@ -97,14 +99,28 @@ void sign_message_controller_eth() {
           comm_reject_request(SIGN_MSG_START, 0);
           reset_flow_level();
         }
+
+        eth_init_display_nodes(&current_display_node, &msg_data);
+        ASSERT(current_display_node != NULL);
       }
     } break;
 
     case SIGN_MSG_RAW_MSG_RECEIVED_ETH: {
       if (is_token_whitelisted(&var_send_transaction_data.transaction_metadata))
-        flow_level.level_three = SIGN_MSG_CHECK_PASSPHRASE_ETH;
+        flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
       else
         flow_level.level_three = SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH;
+    } break;
+
+    case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
+      flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
+    } break;
+
+    case SIGN_MSG_DISPLAY_INFO_ETH: {
+      if (current_display_node == NULL)
+        flow_level.level_three = SIGN_MSG_CHECK_PASSPHRASE_ETH;
+      else
+        current_display_node = current_display_node->next;
     } break;
 
     case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
@@ -115,10 +131,6 @@ void sign_message_controller_eth() {
       } else {
         flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
       }
-    } break;
-
-    case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
-      flow_level.level_three = SIGN_MSG_ENTER_PASSPHRASE_ETH;
     } break;
 
     case SIGN_MSG_ENTER_PASSPHRASE_ETH: {

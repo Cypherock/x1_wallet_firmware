@@ -56,13 +56,22 @@
  *
  ******************************************************************************
  */
-#include "simple.pb.h"
 #include "../../protocol_buffers/pb_decode.h"
 #include "../../util/utils.h"
+#include "simple.pb.h"
+typedef struct sized_data {
+  uint16_t size;
+  void *data;
+} sized_data;
 
-bool read_data_bytes(pb_istream_t *stream, const pb_field_iter_t *field, void **arg){
-    *arg = cy_malloc(stream->bytes_left);
-    if (!pb_read(stream, *arg, stream->bytes_left))
-        return false;
-    return true;
+bool read_data_bytes(pb_istream_t *stream, const pb_field_iter_t *field, void **arg) {
+  *arg            = (sized_data *)malloc(sizeof(sized_data));
+  sized_data *szd = ((sized_data *)*arg);
+  memzero(*arg, sizeof(sized_data));
+  szd->size = stream->bytes_left + 1;
+  szd->data = cy_malloc(szd->size);
+  memzero(szd->data, szd->size);
+  if (!pb_read(stream, (pb_byte_t *)szd->data, stream->bytes_left))
+    return false;
+  return true;
 }

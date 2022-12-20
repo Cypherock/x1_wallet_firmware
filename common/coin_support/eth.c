@@ -293,15 +293,24 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
     return false;
 
   // Check if payload exists, it's a token transfer operation on EVM
-  if (eth_utxn_ptr->payload_size > 0 && U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) {
-    eth_utxn_ptr->contract_verified = 0;
-    for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
-      // Verify the contract addresses of whitelisted token symbol
-      if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-        eth_utxn_ptr->contract_verified = 1;
-        return (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0);
-      }
+  if (eth_utxn_ptr->payload_size > 0) {
+    switch (U32_READ_BE_ARRAY(eth_utxn_ptr->payload)) {
+      case TRANSFER_FUNC_SIGNATURE:
+        eth_utxn_ptr->contract_verified = 0;
+        for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
+          // Verify the contract addresses of whitelisted token symbol
+          if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
+            eth_utxn_ptr->contract_verified = 1;
+            return (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0);
+          }
+        }
+        break;
+      case 0x7c025200:
+        break;
     }
+    return false;
+  } else {
+    return false;
   }
 
   return true;
@@ -320,6 +329,79 @@ bool is_token_whitelisted(txn_metadata *metadata_ptr) {
     return false;
   }
   return true;
+}
+
+bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_length) {
+  sized_data *szd = (sized_data *)msg_data->data_bytes.arg;
+  switch (msg_data->messageType) {
+    case MessageData_MessageType_PERSONAL_SIGN:
+      strncpy(output, szd->data, out_length);
+      break;
+    case MessageData_MessageType_ETH_SIGN:
+      byte_array_to_hex_string(szd->data, szd->size - 1, output, out_length);
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+void eth_sign_msg_data(const MessageData *msg_data,
+                       const txn_metadata *transaction_metadata,
+                       const char *mnemonics,
+                       const char *passphrase,
+                       uint8_t *sig) {
+  uint8_t *data;
+  uint16_t data_size = 0;
+  get_unsigned_data_buffer_from_msg(msg_data, data);
+  sig_unsigned_byte_array(data, sizeof(data), transaction_metadata, mnemonics, passphrase, sig);
+}
+
+void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
+  switch (msg_data->messageType) {
+    case MessageData_MessageType_ETH_SIGN: {
+      char buffer[512]  = "0x";
+      sized_data *szd   = (sized_data *)msg_data->data_bytes.arg;
+      size_t value_size = byte_array_to_hex_string(szd->data, szd->size - 1, buffer + 2, sizeof(buffer) - 2);
+      *node             = eth_create_display_node("Verify Message", 20, buffer, value_size);
+    } break;
+    case MessageData_MessageType_PERSONAL_SIGN: {
+      sized_data *szd = (sized_data *)msg_data->data_bytes.arg;
+      *node           = eth_create_display_node("Verify Message", 20, szd->data, szd->size);
+    } break;
+    case MessageData_MessageType_SIGN_TYPED_DATA: {
+      //dummy data for eip712
+      char arr[][20] = {"test", "test2", "test3"};
+      char val[][20] = {"test-address", "test2-address", "test3-address"};
+
+      *node                 = eth_create_display_node("node title", 20, "node value", 20);
+      ui_display_node *temp = NULL;
+      temp                  = *node;
+      for (int i = 0; i < 3; i++) {
+        temp->next = eth_create_display_node(arr[i], 20, val[i], 20);
+        temp       = temp->next;
+      }
+    } break;
+  }
+}
+
+ui_display_node *eth_create_display_node(const char *title,
+                                         const size_t title_size,
+                                         const char *value,
+                                         const size_t value_size) {
+  ui_display_node *result = cy_malloc(sizeof(ui_display_node));
+  memzero(result, sizeof(ui_display_node));
+
+  result->title = cy_malloc(title_size);
+  memzero(result->title, title_size);
+  strncpy(result->title, title, title_size);
+
+  result->value = cy_malloc(value_size);
+  memzero(result->value, value_size);
+  strncpy(result->value, value, value_size);
+
+  result->next = NULL;
+  return result;
 }
 
 int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data) {
