@@ -11,13 +11,10 @@
 #define ABI_DECODE
 
 #include <assert.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
+/* Enums
+ *****************************************************************************/
 typedef enum
 {
     /* Static types */
@@ -31,11 +28,24 @@ typedef enum
     ABI_uint256_array_dynamic_e,
 } ABI_Type_e;
 
-void ABI_VerifyArguments(
-                            const void *pInputPayload,
-                            const uint64_t payloadLength,
-                            const ABI_Type_e *pABIDataTypes,
-                            const uint8_t numArgs
-                        );
+/* Global function prototypes
+ *****************************************************************************/
+void ABI_DecodeDynamicValByType(
+                                ABI_Type_e inputAbiType,
+                                uint8_t optInput,
+                                uint8_t *pAbiTypeData,
+                                uint8_t *pConvertedBuffer
+                               );
+
+void ABI_DecodeStaticValByType(
+                                ABI_Type_e inputAbiType,
+                                uint8_t optInput,
+                                uint8_t *pAbiTypeData,
+                                uint8_t *pConvertedBuffer
+                              );
+
+#ifdef ABI_DECODE_UNIT_TESTS
+void ABIDecode_Test_Cases(void);
+#endif /* ABI_DECODE_UNIT_TESTS */
 
 #endif /* ABI_DECODE */

@@ -58,33 +58,32 @@
 
 #include <stdint.h>
 #include "abi_decode.h"
+#include "assert_conf.h"
 #include "utils.h"
 
-static void ABI_DecodeIntX(
-                            const void *pAbiTypeData,
-                            void *pConvertedBuffer,
-                            uint16_t numBits
-                           )
-{
-    if (0 != (numBits % 8))
-    {
-        return;
-    }
+/* Static function prototypes
+ *****************************************************************************/
+static void ABI_MemcpyBeDataInLeFmt(
+                                    uint8_t *pConvertedBuffer,
+                                    uint8_t *pAbiTypeData,
+                                    uint8_t numBytes
+                                   );
 
-    memcpy(
-            pConvertedBuffer,
-            pAbiTypeData,
-            (numBits / 8)
-          );
+static void ABI_GetDynamicMetaData(
+                                    ABI_Type_e inputAbiType,
+                                    uint8_t optInput,
+                                    uint8_t *pAbiTypeData,
+                                    uint8_t *pConvertedBuffer
+                                  );
 
-    return;
-}
 
+/* Global functions
+ *****************************************************************************/
 void ABI_DecodeStaticValByType(
                                 ABI_Type_e inputAbiType,
-                                const void *pAbiTypeData,
-                                void *pConvertedBuffer,
-                                uint8_t additionalData
+                                uint8_t optInput,
+                                uint8_t *pAbiTypeData,
+                                uint8_t *pConvertedBuffer
                               )
 {
     if (
@@ -97,130 +96,227 @@ void ABI_DecodeStaticValByType(
 
     switch (inputAbiType)
     {
-        case ABI_address_e:
-        case ABI_uint256_e:
-        {
-            ABI_DecodeIntX(pAbiTypeData, pConvertedBuffer, 256);
-            break;
-        }
         case ABI_bytes_e:
         {
-            uint16_t numBitsInAbiData = 0;
-            
-            if (32 >= additionalData)
-            {
-                numBitsInAbiData = (additionalData * 8);
-                ABI_DecodeIntX(pAbiTypeData, pConvertedBuffer, numBitsInAbiData);
-            }
-            
+            memcpy(
+                    pConvertedBuffer,
+                    pAbiTypeData,
+                    optInput
+                  );
+            break;
+        }
+        case ABI_uint256_e:
+        {
+            ABI_MemcpyBeDataInLeFmt(
+                                    pConvertedBuffer,
+                                    pAbiTypeData,
+                                    32
+                                   );
+            break;
+        }
+        case ABI_address_e:
+        {
+            ABI_DecodeStaticValByType(
+                                        ABI_bytes_e,
+                                        20,
+                                        (uint8_t *)(pAbiTypeData + 12),
+                                        pConvertedBuffer
+                                     );
+            break;
+        }
+        case ABI_bytes_dynamic_e:
+        case ABI_uint256_array_dynamic_e:
+        default:
+        {
             break;
         }
     }
 }
 
-void ABI_VerifyArguments(
-                            const void *pInputPayload,
-                            const uint64_t payloadLength,
-                            const ABI_Type_e *pABIDataTypes,
-                            const uint8_t numArgs
-                        )
+
+
+void ABI_DecodeDynamicValByType(
+                                ABI_Type_e inputAbiType,
+                                uint8_t optInput,
+                                uint8_t *pAbiTypeData,
+                                uint8_t *pConvertedBuffer
+                               )
 {
     if (
-        (NULL == pInputPayload)         ||
-        (NULL == pABIDataTypes)         ||
-        (0 == numArgs)
+        (NULL == pAbiTypeData)              ||
+        (NULL == pConvertedBuffer)
        )
     {
         return;
     }
 
-    uint8_t *pCurrentInputPayload = (uint8_t *)pInputPayload;
-    uint32_t currentPayloadOffset = 0;
-    uint8_t convertedBuffer[32];
-    
-    uint8_t currArgNum;
-    
-    for (currArgNum = 0; currArgNum < numArgs; currArgNum++)
+    switch (inputAbiType)
     {
-        memzero(&(convertedBuffer[0]), sizeof(convertedBuffer));
-
-        if (currentPayloadOffset > payloadLength)
+        case ABI_uintx_e:
+        case ABI_uint256_e:
+        case ABI_address_e:
+        case ABI_bytes_e:
         {
             break;
         }
-        
-
-        /* Check if static data type, then call the Static API directly */
-        if (ABI_bytes_dynamic_e > pABIDataTypes[currArgNum])
+        case ABI_bytes_dynamic_e:
         {
+            /**
+             * pAbiTypeData points to the 32-byte data denoting num of bytes
+             * in the dynamic input
+             */
+            uint32_t numBytesInData;
+            ABI_GetDynamicMetaData(
+                                    ABI_bytes_e,
+                                    4,
+                                    (uint8_t *)(pAbiTypeData),
+                                    &numBytesInData
+                                  );
+
+            /* Increment pAbiTypeData pointer to point to the first 32 byte data */
+            pAbiTypeData += 32;
             
+            /* Copy bytes data in chunks of 32-byte into the buffer */
+            uint32_t byteIndex;
+            uint32_t bytesOverMultipleOf32;
+            
+            for (byteIndex = 0; byteIndex < (numBytesInData / 32); byteIndex++)
+            {
+                /**
+                 * Calls into ABI_DecodeStaticValByType with base 
+                 * ABI_Type_e ABI_bytes_e
+                 */
+                ABI_DecodeStaticValByType(
+                                            ABI_bytes_e,
+                                            32,
+                                            pAbiTypeData,
+                                            pConvertedBuffer
+                                         );
+                
+                /**
+                 * Increment pAbiTypeData pointer and pConvertedBuffer pointer 
+                 * so that next they point to valid addresses 
+                 */
+                pAbiTypeData += 32;
+                pConvertedBuffer += 32;
+            }
+
+            /* Copy remaining data bytes */
+            bytesOverMultipleOf32 = (numBytesInData % 32);
             ABI_DecodeStaticValByType(
-                                        pABIDataTypes[currArgNum],
-                                        (const void *)pCurrentInputPayload,
-                                        (void *)(&(convertedBuffer[0])),
-                                        0
-                                     );
-        }
+                                        ABI_bytes_e,
+                                        bytesOverMultipleOf32,
+                                        pAbiTypeData,
+                                        pConvertedBuffer
+                                     );  
 
-        /* Else decode the dynamic data type and then call the Static API */
-        else
+            break;              
+        }
+        case ABI_uint256_array_dynamic_e:
         {
-            uint32_t dynamicBytesOffset = U32_READ_BE_ARRAY(pCurrentInputPayload + 28);
-            uint32_t dynamicBytesOffsetData = 
-                    U32_READ_BE_ARRAY((uint8_t *)(pInputPayload + dynamicBytesOffset + 28));
-
-            /* Only bytes and uint256[] to be supported as of now */
-            if (ABI_bytes_dynamic_e == pABIDataTypes[currArgNum])
+            /**
+             * pAbiTypeData points to the 32-byte data denoting num of elements
+             * in the uint256[] array
+             */
+            uint32_t numElementsInDataArr;
+            ABI_GetDynamicMetaData(
+                                    ABI_bytes_e,
+                                    4,
+                                    (uint8_t *)(pAbiTypeData),
+                                    &numElementsInDataArr
+                                  );
+            
+            /* Increment pAbiTypeData pointer to point to the first 32 byte data */
+            pAbiTypeData += 32;
+            
+            /* Copy bytes data in chunks of 32-byte into the buffer */
+            uint32_t u256EleIndex;
+            
+            for (u256EleIndex = 0; u256EleIndex < numElementsInDataArr; u256EleIndex++)
             {
-                uint32_t loopCounter = 1;
+                /** 
+                 * Calls into ABI_DecodeStaticValByType with base ABI_Type_e 
+                 * ABI_uint256_e
+                 */
+                ABI_DecodeStaticValByType(
+                                            ABI_uint256_e,
+                                            0,
+                                            pAbiTypeData,
+                                            pConvertedBuffer
+                                         );
                 
-                for (loopCounter = 1; loopCounter <= (dynamicBytesOffsetData / 32); loopCounter++)
-                {
-                    memzero(&(convertedBuffer[0]), sizeof(convertedBuffer));
-                    uint8_t *srcPtr = (uint8_t *)(pInputPayload + dynamicBytesOffset + 32 * (loopCounter));
-                    ABI_DecodeStaticValByType(
-                                                ABI_bytes_e,
-                                                (const void *)(srcPtr),
-                                                (void *)(&(convertedBuffer[0])),
-                                                32
-                                             );
-                }
-
-                uint8_t loopCounterRemaining = (dynamicBytesOffsetData % 32);
-                
-                if (0 != loopCounterRemaining)
-                {
-                    memzero(&(convertedBuffer[0]), sizeof(convertedBuffer));
-                    uint8_t *srcPtr = (uint8_t *)(pInputPayload + dynamicBytesOffset + 32 * (loopCounter));
-                    ABI_DecodeStaticValByType(
-                                                ABI_bytes_e,
-                                                (const void *)(srcPtr),
-                                                (void *)(&(convertedBuffer[0])),
-                                                loopCounterRemaining
-                                             );
-                }
+                /**
+                 * Increment pAbiTypeData pointer and pConvertedBuffer pointer so that next
+                 * they point to valid addresses 
+                 */
+                pAbiTypeData += 32;
+                pConvertedBuffer += 32;
             }
-            else if (ABI_uint256_array_dynamic_e == pABIDataTypes[currArgNum])
-            {
-                uint32_t currentArrayIndex;
-                
-                for (currentArrayIndex = 1; currentArrayIndex <= dynamicBytesOffsetData; currentArrayIndex++)
-                {
-                    memzero(&(convertedBuffer[0]), sizeof(convertedBuffer));
-                    uint8_t *srcPtr = (uint8_t *)(pInputPayload + dynamicBytesOffset + 32 * (currentArrayIndex));
-                    ABI_DecodeStaticValByType(
-                                                ABI_uint256_e,
-                                                (const void *)(srcPtr),
-                                                (void *)(&(convertedBuffer[0])),
-                                                0
-                                             );
-                }
-            }
+            break;
         }
-
-        currentPayloadOffset += 32;
-        
-        /* Increment pInputPayload by 32 bytes as each static type is stored in 32 bytes */
-        pCurrentInputPayload = (uint8_t *)((uint32_t)pInputPayload + currentPayloadOffset);
+        default:
+        {
+            break;
+        }
     }
+}
+
+/* Static functions
+ *****************************************************************************/
+static void ABI_MemcpyBeDataInLeFmt(
+                                    uint8_t *pConvertedBuffer,
+                                    uint8_t *pAbiTypeData,
+                                    uint8_t numBytes
+                                   )
+{
+    if (
+        (NULL == pAbiTypeData)              ||
+        (NULL == pConvertedBuffer)
+       )
+    {
+        return;
+    }
+
+    uint8_t *pSrcPtr = (uint8_t *)(pAbiTypeData + 31);
+    
+    while (
+            (NULL != pSrcPtr)                   &&
+            (NULL != pConvertedBuffer)          &&
+            (0 < numBytes)
+          )
+    {
+        *pConvertedBuffer = *pSrcPtr;
+        
+        pConvertedBuffer += 1;
+        pSrcPtr -= 1;
+        numBytes -= 1;
+    }  
+
+    return;
+}
+
+static void ABI_GetDynamicMetaData(
+                                    ABI_Type_e inputAbiType,
+                                    uint8_t optInput,
+                                    uint8_t *pAbiTypeData,
+                                    uint8_t *pConvertedBuffer
+                                  )
+{
+    if (
+        (NULL == pAbiTypeData)              ||
+        (NULL == pConvertedBuffer)
+       )
+    {
+        return;
+    }
+
+    ABI_DecodeStaticValByType(
+                                ABI_bytes_e,
+                                4,
+                                (uint8_t *)(pAbiTypeData + 28),
+                                pConvertedBuffer
+                             );
+    *((uint32_t *)pConvertedBuffer) = U32_READ_BE_ARRAY(pConvertedBuffer);
+    
+    return;
 }
