@@ -128,6 +128,72 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": ["config-initial-device"]
+        },
+
+        {
+            "label": "config-main-device-test",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Device",
+                "-DFIRMWARE_TYPE=Main-test",
+                "-GNinja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-main-device-test",
+            "command": "ninja",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-main-device-test"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+
+        {
+            "label": "config-initial-device-test",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DDEV_SWITCH=OFF",
+                "-DDEBUG_SWITCH=OFF",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_BUILD_PLATFORM=Device",
+                "-DFIRMWARE_TYPE=Initial-test",
+                "-GNinja"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": "none"
+        },
+        {
+            "label": "build-initial-device-test",
+            "command": "ninja",
+            "args": [
+                "-j8"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": ["config-initial-device-test"]
         }
     ],
     "version": "2.0.0"

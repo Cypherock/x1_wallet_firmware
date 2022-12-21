@@ -1,27 +1,11 @@
-#ifdef X1WALLET_TEST_SUITE
+#if X1WALLET_TEST_SUITE==1
 
 #include "controller_main.h"
 #include "communication.h"
 #include "board.h"
 #include "logger.h"
 #include "sys_state.h"
-
-typedef enum{
-    NO_TEST = 0,
-    TEST_DATA_READY = 1,
-    TEST_INITIATED = 2,
-    TEST_END_REACHED = 3,
-    TEST_COMPLETED = 4,
-    TEST_IDLE = 5
-}test_state_t;
-
-typedef enum{
-    TEST_GENERATE_SEED = 1,
-    TEST_RESTORE_SEED = 2
-}test_cases_t;
-
-test_cases_t test_case = TEST_GENERATE_SEED;
-test_state_t test_state = NO_TEST;
+#include "test_cases.h"
 
 typedef struct{
     uint8_t     level;
@@ -29,6 +13,10 @@ typedef struct{
                 end_flow;
 }test_block_data_t;
 
+test_cases_t test_case = 0xFF;
+test_state_t test_state = 0xff;
+uint8_t test_input_data[1000] = {0};
+uint16_t test_input_data_len=0;
 test_block_data_t test_data = {0};
 extern lv_task_t* listener_task;
 
@@ -108,6 +96,7 @@ void jump_to_test(){
             Flash_Wallet wallet_for_flash;
             WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
             WALLET_UNSET_PIN(wallet.wallet_info);
+            memcpy(wallet.wallet_share_with_mac_and_nonce, test_input_data, 32);
             break;
         }
         case TEST_RESTORE_SEED:{

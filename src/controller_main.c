@@ -92,6 +92,9 @@
 #include "application_startup.h"
 #include <string.h>
 #include "near.h"
+#if X1WALLET_TEST_SUITE==1
+#include "test_cases.h"
+#endif
 
 /**
  * @brief A task declared to periodically execute a callback which checks for a success from the desktop.
@@ -761,6 +764,15 @@ void desktop_listener_task(lv_task_t* data)
 
                 transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
             } break;
+
+#if X1WALLET_TEST_SUITE==1
+            case DEVICE_SHAMIR_GENERATE_TEST:{
+                get_usb_msg_by_cmd_type(DEVICE_SHAMIR_GENERATE_TEST, test_input_data, test_input_data_len);
+                test_case = TEST_GENERATE_SEED;
+                test_state = NO_TEST;
+            }
+
+#endif
 #ifdef ALLOW_LOG_EXPORT
             case APP_LOG_DATA_SEND: {
 #if X1WALLET_MAIN

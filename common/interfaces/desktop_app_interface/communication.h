@@ -122,8 +122,8 @@ typedef enum commandType {
     
     COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
 
-    DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
-
+    DEVICE_FLOW_RESET_REQ = 0xFF,            ///< unused enum
+    DEVICE_SHAMIR_GENERATE_TEST = 0x1001,
 } En_command_type_t;
 
 /**
