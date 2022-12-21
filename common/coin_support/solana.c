@@ -59,6 +59,19 @@
 
 #include "solana.h"
 
+size_t sol_get_derivation_depth(const uint16_t tag) {
+  switch (tag) {
+    case 1:   // solana depth 3
+      return 3;
+    case 2:   // solana depth 4
+      return 4;
+    case 3:   // solana depth 5
+      return 5;
+    default:
+      return 3;
+  }
+}
+
 uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error) {
   uint16_t offset = 0;
   uint32_t value  = 0;
@@ -184,11 +197,14 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
                                     uint8_t *sig) {
   uint32_t path[]  = {BYTE_ARRAY_TO_UINT32(transaction_metadata->purpose_index),
                       BYTE_ARRAY_TO_UINT32(transaction_metadata->coin_index),
-                      BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index)};
+                      BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index),
+                      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].chain_index),
+                      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].address_index)};
+  size_t depth = sol_get_derivation_depth(transaction_metadata->address_tag);
   uint8_t seed[64] = {0};
   HDNode hdnode;
   mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
-  derive_hdnode_from_path(path, 3, ED25519_NAME, seed, &hdnode);
+  derive_hdnode_from_path(path, depth, ED25519_NAME, seed, &hdnode);
 
   ed25519_sign(unsigned_txn_byte_array, unsigned_txn_len, hdnode.private_key, hdnode.public_key + 1, sig);
   memzero(path, sizeof(path));

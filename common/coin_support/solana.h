@@ -89,6 +89,8 @@ typedef struct solana_unsigned_txn {
 
 } solana_unsigned_txn;
 
+size_t sol_get_derivation_depth(uint16_t tag);
+
 /**
  * @brief Get the compact array size and number of bytes used to store the size 
  * 

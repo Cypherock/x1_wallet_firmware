@@ -126,10 +126,9 @@ typedef struct Cmd_Export_Wallet_t {
  */
 #pragma pack(push, 1)
 typedef struct Add_Coin_Data {
-  uint8_t number_of_coins;
-  bool resync;
-  uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
-  uint64_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
+  uint8_t derivation_depth;
+  uint32_t derivation_path[5];
+  uint64_t network_chain_id;
 } Add_Coin_Data;
 #pragma pack(pop)
 
@@ -145,7 +144,7 @@ typedef struct Add_Coin_Data {
  */
 #pragma pack(push, 1)
 typedef struct Cmd_Add_Coin_t {
-  uint8_t xpubs[MAXIMUM_COIN_SUPPORTED][XPUB_SIZE];
+  uint8_t xpub[XPUB_SIZE];
 } Cmd_Add_Coin_t;
 #pragma pack(pop)
 

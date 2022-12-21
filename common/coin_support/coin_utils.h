@@ -132,6 +132,7 @@ typedef struct
     uint64_t network_chain_id;
 
     uint8_t is_harmony_address;
+    uint16_t address_tag;
 } txn_metadata;
 #pragma pack(pop)
 
@@ -156,6 +157,7 @@ typedef struct Receive_Transaction_Data {
     uint64_t network_chain_id;
     uint64_t near_account_type;
   };
+  uint16_t address_tag;
   char near_registered_account[65];
   uint8_t xpub[112];
   char address[43];

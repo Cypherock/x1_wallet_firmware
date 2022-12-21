@@ -505,8 +505,12 @@ void desktop_listener_task(lv_task_t* data)
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
                     uint16_t offset = WALLET_ID_SIZE;
-                    add_coin_data.resync = data_array[offset++] == 1;
-                    if ((add_coin_data.number_of_coins = data_array[offset++]) < 1) {
+                    uint8_t levelIndex = 0;
+
+                    add_coin_data.derivation_depth = data_array[offset++];
+                    if (add_coin_data.derivation_depth < 1 ||
+                        add_coin_data.derivation_depth > (sizeof(add_coin_data.derivation_path) / sizeof(uint32_t)))
+                    {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
                         return;
@@ -514,24 +518,13 @@ void desktop_listener_task(lv_task_t* data)
                     flow_level.show_desktop_start_screen = true;
                     flow_level.level_two = LEVEL_THREE_ADD_COIN;
 
-                    uint8_t coinIndex = 0;
-
-                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-                        add_coin_data.coin_indexes[coinIndex] = U32_READ_BE_ARRAY(data_array + offset);
+                    for (; levelIndex < add_coin_data.derivation_depth; levelIndex++) {
+                        add_coin_data.derivation_path[levelIndex] = U32_READ_BE_ARRAY(data_array + offset);
                         offset += INDEX_SIZE;
                     }
 
-                    coinIndex = 0;
-
-                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-                        add_coin_data.network_chain_ids[coinIndex] = U64_READ_BE_ARRAY(&data_array[offset]);
-                        offset += sizeof(uint64_t);
-                    }
-
-                    snprintf(flow_level.confirmation_screen_text,
-                        sizeof(flow_level.confirmation_screen_text),
-                        (add_coin_data.resync ? "Do you want to resync coins to %s?" : "Do you want to add coins to %s?"),
-                        wallet.wallet_name);
+                    add_coin_data.network_chain_id = U64_READ_BE_ARRAY(&data_array[offset]);
+                    offset += sizeof(uint64_t);
                 }
                 clear_message_received_data();
             } break;

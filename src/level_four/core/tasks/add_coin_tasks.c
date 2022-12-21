@@ -85,12 +85,9 @@ void add_coin_tasks()
     switch (flow_level.level_three) {
 
     case ADD_COINS_VERIFY: {
-        char max_coin_supported[MAXIMUM_COIN_SUPPORTED][MAX_COIN_NAME_LENGTH];
-        uint8_t coinIndex = 0;
-        for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-            snprintf(max_coin_supported[coinIndex], sizeof(max_coin_supported[coinIndex]), "%s", get_coin_name(add_coin_data.coin_indexes[coinIndex], add_coin_data.network_chain_ids[coinIndex]));
-        }
-        list_init(max_coin_supported, add_coin_data.number_of_coins, (add_coin_data.resync ? ui_text_resync_coins : ui_text_add_coins), true);
+        char max_coin_supported[MAX_COIN_NAME_LENGTH];
+        snprintf(max_coin_supported, sizeof(max_coin_supported), "%s", get_coin_name(add_coin_data.derivation_path[1], add_coin_data.network_chain_id));
+        list_init(&max_coin_supported, 1, ui_text_add_coins, true);
     } break;
 
     case ADD_COINS_ENTER_PASSPHRASE: {

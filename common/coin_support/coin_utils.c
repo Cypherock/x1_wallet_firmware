@@ -148,6 +148,11 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
     if (offset + 1 <= size) txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
+
+    if (offset + sizeof(txn_metadata_ptr->address_tag) > size) return -1;
+    txn_metadata_ptr->address_tag = U16_READ_BE_ARRAY(metadata_byte_array + offset);
+    offset += sizeof(txn_metadata_ptr->address_tag);
+
     return offset;
 }
 
@@ -174,6 +179,10 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     if (offset + sizeof(txn_data_ptr->network_chain_id) > size) return -1;
     txn_data_ptr->network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
     offset += sizeof(txn_data_ptr->network_chain_id);
+
+    if (offset + sizeof(txn_data_ptr->address_tag) > size) return -1;
+    txn_data_ptr->address_tag = U16_READ_BE_ARRAY(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->address_tag);
 
     return offset;
 }
