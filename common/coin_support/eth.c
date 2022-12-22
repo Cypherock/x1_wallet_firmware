@@ -65,7 +65,7 @@
 
 static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadata);
 
-#define EVM_swap_TAG            (0x12aa3caf)
+#define EVM_swap_TAG            (0x7c025200)
 #define EVM_swap_NUM_ARGS       10
 const ABI_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] =
 {
@@ -84,7 +84,7 @@ const ABI_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] =
 const char *EVM_swap_Title = "Function: swap";
 const char *EVM_swap_Signature = "swap(address,(address,address,address,address,uint256,uint256,uint256),bytes,bytes)";
 
-#define EVM_uniswapV3Swap_TAG   (0xe449022e)
+#define EVM_uniswapV3Swap_TAG           (0xe449022e)
 #define EVM_uniswapV3Swap_NUM_ARGS      3
 const ABI_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] =
 {
@@ -96,7 +96,7 @@ const ABI_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] =
 const char *EVM_uniswapV3Swap_Title = "Function: uniswapV3Swap";
 const char *EVM_uniswapV3Swap_Signature = "uniswapV3Swap(uint256,uint256,uint256[])";
 
-#define EVM_safeTransferFrom_TAG    (0x42842e0e)
+#define EVM_safeTransferFrom_TAG        (0x42842e0e)
 #define EVM_safeTransferFrom_NUM_ARGS   3
 const ABI_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] =
 {
@@ -117,16 +117,6 @@ const ABI_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] =
 
 const char *EVM_deposit_Title = "Function: deposit";
 const char *EVM_deposit_Signature = "deposit()";
-
-#define EVM_unoswap_TAG         (0x0502b1c5)
-#define EVM_unoswap_NUM_ARGS    4
-const ABI_Type_e EVM_unoswapDataType[EVM_unoswap_NUM_ARGS] =
-{
-    ABI_address_e,
-    ABI_uint256_e,
-    ABI_uint256_e,
-    ABI_uint256_array_dynamic_e
-};
 
 #define EVM_function_TAG_SIZE_IN_BYTES              (4)
 
