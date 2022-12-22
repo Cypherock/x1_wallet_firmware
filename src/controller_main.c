@@ -368,6 +368,7 @@ void __authentication_listener(lv_task_t* task){
             case APP_LOG_DATA_SEND:
             case START_DEVICE_AUTHENTICATION:
             case DEVICE_INFO:
+            case LIST_SUPPORTED_COINS:
                 desktop_listener_task(listener_task);
                 if(device_auth_flag == true){
                     //skip confirmation screen for device auth in case of restricted mode
