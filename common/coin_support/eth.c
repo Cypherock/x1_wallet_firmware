@@ -61,8 +61,74 @@
 #include "int-util.h"
 #include "logger.h"
 #include "utils.h"
+#include "abi_decode.h"
 
 static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadata);
+
+#define EVM_swap_TAG            (0x12aa3caf)
+#define EVM_swap_NUM_ARGS       10
+const ABI_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] =
+{
+    ABI_address_e,
+    ABI_address_e,
+    ABI_address_e,
+    ABI_address_e,
+    ABI_address_e,
+    ABI_uint256_e,
+    ABI_uint256_e,
+    ABI_uint256_e,
+    ABI_bytes_dynamic_e,
+    ABI_bytes_dynamic_e
+};
+
+const char *EVM_swap_Title = "Function: swap";
+const char *EVM_swap_Signature = "swap(address,(address,address,address,address,uint256,uint256,uint256),bytes,bytes)";
+
+#define EVM_uniswapV3Swap_TAG   (0xe449022e)
+#define EVM_uniswapV3Swap_NUM_ARGS      3
+const ABI_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] =
+{
+    ABI_uint256_e,
+    ABI_uint256_e,
+    ABI_uint256_array_dynamic_e
+};
+
+const char *EVM_uniswapV3Swap_Title = "Function: uniswapV3Swap";
+const char *EVM_uniswapV3Swap_Signature = "uniswapV3Swap(uint256,uint256,uint256[])";
+
+#define EVM_safeTransferFrom_TAG    (0x42842e0e)
+#define EVM_safeTransferFrom_NUM_ARGS   3
+const ABI_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] =
+{
+    ABI_address_e,
+    ABI_address_e,
+    ABI_uint256_e
+};
+
+const char *EVM_safeTransferFrom_Title = "Function: safeTransferFrom";
+const char *EVM_safeTransferFrom_Signature = "safeTransferFrom(address,address,uint256)";
+
+#define EVM_deposit_TAG         (0xd0e30db0)
+#define EVM_deposit_NUM_ARGS    0
+const ABI_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] =
+{
+
+};
+
+const char *EVM_deposit_Title = "Function: deposit";
+const char *EVM_deposit_Signature = "deposit()";
+
+#define EVM_unoswap_TAG         (0x0502b1c5)
+#define EVM_unoswap_NUM_ARGS    4
+const ABI_Type_e EVM_unoswapDataType[EVM_unoswap_NUM_ARGS] =
+{
+    ABI_address_e,
+    ABI_uint256_e,
+    ABI_uint256_e,
+    ABI_uint256_array_dynamic_e
+};
+
+#define EVM_function_TAG_SIZE_IN_BYTES              (4)
 
 /**
  * @brief
@@ -419,4 +485,217 @@ void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decima
   cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
   byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
   convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, 18, fee_hex_string, fee_decimal_string, size);
+}
+
+ui_display_node *eth_create_display_node(
+                                         const char *title,
+                                         const size_t title_size,
+                                         const char *value,
+                                         const size_t value_size
+                                        )
+{
+    ui_display_node *result = cy_malloc(sizeof(ui_display_node));
+    memzero(result, sizeof(ui_display_node));
+
+    result->title = cy_malloc(title_size);
+    memzero(result->title, title_size);
+    strncpy(result->title, title, title_size);
+
+    result->value = cy_malloc(value_size);
+    memzero(result->value, value_size);
+    strncpy(result->value, value, value_size);
+
+    result->next = NULL;
+    return result;
+}
+
+uint8_t ETH_DetectFunction(
+                            const uint32_t functionTag,
+                            ABI_Type_e const **dpAbiTypeArray
+                          )
+{
+    if (dpAbiTypeArray == NULL)
+    {
+        return 0;
+    }
+
+    uint8_t numArgsInFunction = 0;
+    char *EvmFunctionTitle = NULL;
+    char *EvmFunctionSignature = NULL;
+
+    switch (functionTag)
+    {
+        case EVM_swap_TAG:
+        {
+            numArgsInFunction = EVM_swap_NUM_ARGS;
+            *(dpAbiTypeArray) = &(EVM_swapDataType[0]);
+            EvmFunctionTitle = EVM_swap_Title;
+            EvmFunctionSignature = EVM_swap_Signature;
+            break;
+        }
+        case EVM_uniswapV3Swap_TAG:
+        {
+            numArgsInFunction = EVM_uniswapV3Swap_NUM_ARGS;
+            *(dpAbiTypeArray) = &(EVM_uniswapV3SwapDataType[0]);
+            EvmFunctionTitle = EVM_uniswapV3Swap_Title;
+            EvmFunctionSignature = EVM_uniswapV3Swap_Signature;
+            break;
+        }
+        case EVM_safeTransferFrom_TAG:
+        {
+            numArgsInFunction = EVM_safeTransferFrom_NUM_ARGS;
+            *(dpAbiTypeArray) = &(EVM_safeTransferFromDataType[0]);
+            EvmFunctionTitle = EVM_safeTransferFrom_Title;
+            EvmFunctionSignature = EVM_safeTransferFrom_Signature;
+            break;
+        }
+        case EVM_deposit_TAG:
+        {
+            numArgsInFunction = EVM_deposit_NUM_ARGS;
+            *(dpAbiTypeArray) = &(EVM_depositDataType[0]);
+            EvmFunctionTitle = EVM_deposit_Title;
+            EvmFunctionSignature = EVM_deposit_Signature;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    if (
+        (NULL != EvmFunctionTitle) &&
+        (NULL != EvmFunctionSignature)
+       )
+    {
+        ui_display_node *result;
+        result = eth_create_display_node(
+                                            EvmFunctionTitle,
+                                            strnlen(EvmFunctionTitle, 50),
+                                            EvmFunctionSignature,
+                                            strnlen(EvmFunctionSignature, 50)
+                                        );
+        
+        /* TODO: Add result to global linked list */
+    }
+
+    return numArgsInFunction;
+}
+
+uint8_t ETH_ExtractArguments(uint8_t *pEthUTxnPayload, uint64_t sizeOfUTxn)
+{
+    uint8_t returnCode = ETH_BAD_ARGUMENTS;
+
+    if (
+        (NULL == pEthUTxnPayload)           ||
+        (0 == sizeOfUTxn)
+       )
+    {
+        return returnCode;
+    }
+
+    uint8_t *pCurrEthTxnPayload = &(pEthUTxnPayload[0]);
+    uint32_t functionTag = 0;
+
+    memcpy(
+            ((uint8_t *)&(functionTag)),
+            pCurrEthTxnPayload,
+            EVM_function_TAG_SIZE_IN_BYTES
+          ); 
+    functionTag = U32_READ_BE_ARRAY((uint8_t *)&functionTag);
+    
+    uint8_t numArgsInFunction = 0;
+    ABI_Type_e const *pArgumentAbiType;
+    
+    numArgsInFunction = ETH_DetectFunction(functionTag, &pArgumentAbiType);
+
+    if (
+        (NULL == pArgumentAbiType)          ||
+        (0 == numArgsInFunction)
+       )
+    {
+        return;
+    }
+
+    pCurrEthTxnPayload += 4;
+
+    uint8_t *pEthTxnPayloadBase = pCurrEthTxnPayload;
+    uint8_t currArgument;
+    
+    for (currArgument = 0; currArgument < numArgsInFunction; currArgument++)
+    {
+        if (((uint32_t)(pCurrEthTxnPayload - pEthUTxnPayload)) >= sizeOfUTxn)
+        {
+            returnCode = ETH_UTXN_BAD_PAYLOAD;
+            break;
+        }
+        
+        if (ABI_bytes_dynamic_e <= pArgumentAbiType[currArgument])
+        {
+            uint8_t *pDynamicDataPtr = NULL;
+            uint8_t abiReturnCode = ABI_DECODE_BAD_ARGUMENT;
+            uint32_t numBytesReturned = 0;
+
+            abiReturnCode = ABI_DecodeDynamicValByType(
+                                                        pArgumentAbiType[currArgument],
+                                                        pCurrEthTxnPayload,
+                                                        pEthTxnPayloadBase,
+                                                        &numBytesReturned,
+                                                        &pDynamicDataPtr
+                                                      );
+            
+            if (
+                (ABI_DECODE_PROCESS_COMPLETE != abiReturnCode)      ||
+                (((uint32_t)(pDynamicDataPtr - pEthUTxnPayload)) >= sizeOfUTxn)
+               )
+            {
+                break;
+            }
+            
+            if (ABI_bytes_dynamic_e == pArgumentAbiType[currArgument])
+            {
+                ABI_Stringify(
+                                ABI_bytes_e,
+                                pDynamicDataPtr,
+                                numBytesReturned
+                             );
+            }
+            else if (ABI_uint256_array_dynamic_e == pArgumentAbiType[currArgument])
+            {
+                uint32_t elementsInArray;
+                for (elementsInArray = 0; elementsInArray < numBytesReturned; elementsInArray++)
+                {
+                    ABI_Stringify(
+                                    ABI_uint256_e,
+                                    (uint8_t *)(pDynamicDataPtr + (32 * elementsInArray)),
+                                    0
+                                 );
+                }
+            }
+        }
+        else
+        {                        
+            if (ABI_address_e == pArgumentAbiType[currArgument])
+            {
+                ABI_Stringify(
+                                ABI_address_e,
+                                pCurrEthTxnPayload,
+                                0
+                             );
+            }
+            else if (ABI_uint256_e == pArgumentAbiType[currArgument])
+            {
+                ABI_Stringify(
+                                ABI_uint256_e,
+                                pCurrEthTxnPayload,
+                                0
+                             );
+            }
+        }
+
+        pCurrEthTxnPayload += 32;
+        returnCode = ETH_UTXN_ABI_DECODE_OK;
+    }
+
+    return returnCode;
 }

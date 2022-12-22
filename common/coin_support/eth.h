@@ -48,6 +48,11 @@
 
 #define ETH_COIN_VERSION     0x00000000
 
+#define ETH_UTXN_ABI_DECODE_OK    (0xAA)
+#define ETH_UTXN_BAD_PAYLOAD      (0x11)
+#define ETH_BAD_ARGUMENTS         (0x22)
+
+
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;
 
@@ -89,6 +94,12 @@ typedef struct
   uint8_t contract_verified;
 } eth_unsigned_txn;
 #pragma pack(pop)
+
+typedef struct ui_display_node {
+  char *title;
+  char *value;
+  struct ui_display_node *next;
+} ui_display_node;
 
 /**
  * @brief Converts bendian byte array to decimal uint64_t.
@@ -226,4 +237,10 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
  */
 void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size);
 
+ui_display_node *eth_create_display_node(const char *title,
+                                         const size_t title_size,
+                                         const char *value,
+                                         const size_t value_size);
+
+uint8_t ETH_ExtractArguments(uint8_t *pEthUTxnPayload, uint64_t sizeOfUTxn);
 #endif
