@@ -97,6 +97,22 @@ typedef struct
 } address_type;
 #pragma pack(pop)
 
+/**
+ * @brief Stores the chosen wallet's public information for the export wallet process.
+ * @details The instance of this struct is stored temporarily in the RAM during the add coin process. The coin's
+ * information is provided by the desktop app and updated in desktop listener task.
+ *
+ * @see add_coin_controller(), add_coin_task(), desktop_listener_task(), ADD_COIN_START
+ * @since v1.0.0
+ */
+#pragma pack(push, 1)
+typedef struct Add_Coin_Data {
+  size_t derivation_depth;
+  uint32_t derivation_path[5];
+  uint64_t network_chain_id;
+} Add_Coin_Data;
+#pragma pack(pop)
+
 #pragma pack(push, 1)
 /**
  * @brief Struct to store the meta data details of a transaction.
@@ -190,6 +206,21 @@ typedef struct Receive_Transaction_Data {
  * @note
  */
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int64_t *offset);
+
+/**
+ * @brief Deserialize the request payload to add coin.
+ * @details If any of the input references are NULL, this function returns `-1`.
+ * The minimum and maximum depth for derivation is 2 and 5 respectively. If the input byte array
+ * is shorter than the expected data to be parsed, this function will return -1.
+ *
+ * @param [out]   Pointer to the add coin data instace
+ * @param [in]    Serialized payload to be deserialized
+ * @param [in]    Size of the input payload
+ *
+ * @return Offset used in the conversion
+ * @retval -1 if the input does not meet expected format/requirements
+ */
+int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size);
 
 /**
  * @brief Converts byte array represented transaction metadata to struct txn_metadata.

@@ -26,7 +26,6 @@
 
 #define DEVICE_SERIAL_SIZE     32
 #define MAXIMUM_COIN_SUPPORTED (14 + 5)  // 5 for segwit support
-#define INDEX_SIZE             4
 
 typedef enum {
   slot_0_unused       = 0U,
@@ -114,22 +113,6 @@ typedef struct Cmd_Export_Wallet_t {
   uint8_t wallet_info;
   uint8_t wallet_id[WALLET_ID_SIZE];
 } Cmd_Export_Wallet_t;
-#pragma pack(pop)
-
-/**
- * @brief Stores the chosen wallet's public information for the export wallet process.
- * @details The instance of this struct is stored temporarily in the RAM during the add coin process. The coin's
- * information is provided by the desktop app and updated in desktop listener task.
- *
- * @see add_coin_controller(), add_coin_task(), desktop_listener_task(), ADD_COIN_START
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Add_Coin_Data {
-  uint8_t derivation_depth;
-  uint32_t derivation_path[5];
-  uint64_t network_chain_id;
-} Add_Coin_Data;
 #pragma pack(pop)
 
 /**

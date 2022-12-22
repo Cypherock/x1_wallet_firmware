@@ -159,9 +159,7 @@ void add_coin_controller()
         memzero(secret, sizeof(secret));
         memzero(seed, sizeof(seed));
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-        uint8_t out_arr[sizeof(Cmd_Add_Coin_t)];
-        memcpy(out_arr, cmd_add_coin.xpub, XPUB_SIZE);
-        transmit_data_to_app(ADD_COIN_SENDING_XPUBS, out_arr, XPUB_SIZE);
+        transmit_data_to_app(ADD_COIN_SENDING_XPUBS, cmd_add_coin.xpub, sizeof(cmd_add_coin.xpub));
         flow_level.level_three = ADD_COINS_FINAL_SCREEN;
     } break;
 

@@ -504,12 +504,10 @@ void desktop_listener_task(lv_task_t* data)
             case ADD_COIN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
-                    uint16_t offset = WALLET_ID_SIZE;
-                    uint8_t levelIndex = 0;
 
-                    add_coin_data.derivation_depth = data_array[offset++];
-                    if (add_coin_data.derivation_depth < 1 ||
-                        add_coin_data.derivation_depth > (sizeof(add_coin_data.derivation_path) / sizeof(uint32_t)))
+                    if (byte_array_to_add_coin_data(
+                        &add_coin_data, data_array + WALLET_ID_SIZE,
+                        msg_size - WALLET_ID_SIZE) == -1)
                     {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
@@ -517,14 +515,11 @@ void desktop_listener_task(lv_task_t* data)
                     }
                     flow_level.show_desktop_start_screen = true;
                     flow_level.level_two = LEVEL_THREE_ADD_COIN;
-
-                    for (; levelIndex < add_coin_data.derivation_depth; levelIndex++) {
-                        add_coin_data.derivation_path[levelIndex] = U32_READ_BE_ARRAY(data_array + offset);
-                        offset += INDEX_SIZE;
-                    }
-
-                    add_coin_data.network_chain_id = U64_READ_BE_ARRAY(&data_array[offset]);
-                    offset += sizeof(uint64_t);
+                    snprintf(flow_level.confirmation_screen_text,
+                        sizeof(flow_level.confirmation_screen_text),
+                        "Do you want to add %s to %s?",
+                        get_coin_name(add_coin_data.derivation_path[1], add_coin_data.network_chain_id),
+                        wallet.wallet_name);
                 }
                 clear_message_received_data();
             } break;

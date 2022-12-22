@@ -187,6 +187,29 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     return offset;
 }
 
+int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size) {
+    if (data_ptr == NULL || byte_array == NULL) return -1;
+    int64_t offset = 0;
+
+    data_ptr->derivation_depth = byte_array[offset++];
+    if (data_ptr->derivation_depth < 2 ||
+        data_ptr->derivation_depth > (sizeof(data_ptr->derivation_path) / sizeof(uint32_t)))
+    {
+        return -1;
+    }
+
+    for (int levelIndex = 0; levelIndex < data_ptr->derivation_depth; levelIndex++) {
+        if (offset + sizeof(uint32_t) > size) return -1;
+        data_ptr->derivation_path[levelIndex] = U32_READ_BE_ARRAY(byte_array + offset);
+        offset += sizeof(uint32_t);
+    }
+
+    if (offset + sizeof(uint64_t) > size) return -1;
+    data_ptr->network_chain_id = U64_READ_BE_ARRAY(&byte_array[offset]);
+    offset += sizeof(uint64_t);
+    return offset;
+}
+
 void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)
 {
     uint32_t fingerprint = 0x0, version;

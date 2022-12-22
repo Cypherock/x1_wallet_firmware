@@ -85,9 +85,8 @@ void add_coin_tasks()
     switch (flow_level.level_three) {
 
     case ADD_COINS_VERIFY: {
-        char max_coin_supported[MAX_COIN_NAME_LENGTH];
-        snprintf(max_coin_supported, sizeof(max_coin_supported), "%s", get_coin_name(add_coin_data.derivation_path[1], add_coin_data.network_chain_id));
-        list_init(&max_coin_supported, 1, ui_text_add_coins, true);
+        // obsolete case; simply proceed
+        mark_event_over();
     } break;
 
     case ADD_COINS_ENTER_PASSPHRASE: {

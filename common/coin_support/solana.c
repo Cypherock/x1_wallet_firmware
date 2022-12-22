@@ -62,11 +62,11 @@
 size_t sol_get_derivation_depth(const uint16_t tag) {
   switch (tag) {
     case 1:   // solana depth 3
-      return 3;
+      return 2;
     case 2:   // solana depth 4
-      return 4;
+      return 3;
     case 3:   // solana depth 5
-      return 5;
+      return 4;
     default:
       return 3;
   }
