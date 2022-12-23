@@ -85,6 +85,8 @@ void verify_card_task() {
         instruction_scr_destructor();
         snprintf(display, sizeof(display), UI_TEXT_PLACE_CARD_TILL_BEEP, 2);
         instruction_scr_init(display, ui_text_tap_1_2_cards);
+        instruction_scr_change_text(display, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
         break;
 
@@ -104,7 +106,7 @@ void verify_card_task() {
         snprintf(display, sizeof(display), UI_TEXT_PLACE_CARD_TILL_BEEP, 1);
         instruction_scr_init(display, ui_text_tap_1_2_cards);
         instruction_scr_change_text(display, true);
-        BSP_DelayMs(500);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
         break;
 
