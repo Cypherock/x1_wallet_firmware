@@ -68,6 +68,7 @@
 
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
+extern Swap_Transaction_Data swap_transaction_data;
 
 extern lv_task_t* timeout_task;
 
@@ -98,21 +99,30 @@ void send_transaction_controller_eth()
     case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_ETH: {
         uint8_t *data_array = NULL;
         uint16_t msg_size = 0;
-        if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
-            eth_unsigned_txn_byte_array = (uint8_t*) cy_malloc(msg_size);
-            eth_unsigned_txn_len = msg_size;
-            memcpy(eth_unsigned_txn_byte_array, data_array, msg_size);
 
-            eth_byte_array_to_unsigned_txn(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, &eth_unsigned_txn_ptr);
+        if (is_swap_txn) {
+            data_array = swap_transaction_data.unsigned_txn_data_array;
+            msg_size = swap_transaction_data.unsigned_txn_data_array_size;
+        } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
+                                            &data_array,
+                                            &msg_size)) {
+            return;
+        }
+        eth_unsigned_txn_byte_array = (uint8_t *) cy_malloc(msg_size);
+        eth_unsigned_txn_len = msg_size;
+        memcpy(eth_unsigned_txn_byte_array, data_array, msg_size);
 
-            clear_message_received_data();
-            flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
-            if (!eth_validate_unsigned_txn(&eth_unsigned_txn_ptr, &var_send_transaction_data.transaction_metadata)) {
-                instruction_scr_destructor();
-                mark_error_screen(ui_text_worng_eth_transaction);
-                comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-                reset_flow_level();
-            }
+        eth_byte_array_to_unsigned_txn(eth_unsigned_txn_byte_array,
+                                       eth_unsigned_txn_len,
+                                       &eth_unsigned_txn_ptr);
+        clear_message_received_data();
+        flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
+        if (!eth_validate_unsigned_txn(&eth_unsigned_txn_ptr,
+                                       &var_send_transaction_data.transaction_metadata)) {
+            instruction_scr_destructor();
+            mark_error_screen(ui_text_worng_eth_transaction);
+            comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+            reset_flow_level();
         }
     } break;
 
