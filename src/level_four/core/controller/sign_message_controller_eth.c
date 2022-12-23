@@ -79,8 +79,7 @@ void sign_message_controller_eth() {
       uint8_t arr[3] = {0x01, 0x1f, 0x40};
       transmit_data_to_app(SIGN_MSG_RAW_MSG, arr, sizeof(arr));
       flow_level.level_three = SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH;
-      //initialize variables and decoding functions
-      eth_init_msg_data(&msg_data);
+      eth_init_msg_data(&msg_data);  //initialize variables and decoding functions
     } break;
 
     case SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH: {

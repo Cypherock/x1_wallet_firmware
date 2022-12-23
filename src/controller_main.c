@@ -82,6 +82,9 @@
 #include "controller_main.h"
 #include <string.h>
 #include "application_startup.h"
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
 #include "btc.h"
 #include "chacha20poly1305.h"
 #include "communication.h"
@@ -89,7 +92,11 @@
 #include "controller_level_four.h"
 #include "controller_level_one.h"
 #include "cryptoauthlib.h"
+#include "etc.h"
+#include "fantom.h"
+#include "harmony.h"
 #include "near.h"
+#include "optimism.h"
 #include "polygon.h"
 #include "rfc7539.h"
 #include "ui_instruction.h"
@@ -815,15 +822,38 @@ void desktop_listener_task(lv_task_t *data) {
 #endif
 
       case LIST_SUPPORTED_COINS: {
-        uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN),  U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_BTC_TEST), U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_LITECOIN), U32_SWAP_ENDIANNESS(LTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_DOGE),     U32_SWAP_ENDIANNESS(DOGE_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_DASH),     U32_SWAP_ENDIANNESS(DASH_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM), U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR),     U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_SOLANA),   U32_SWAP_ENDIANNESS(SOL_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_POLYGON),  U32_SWAP_ENDIANNESS(POLYGON_COIN_VERSION)};
+        uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN),
+                            U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_BTC_TEST),
+                            U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_LITECOIN),
+                            U32_SWAP_ENDIANNESS(LTC_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_DOGE),
+                            U32_SWAP_ENDIANNESS(DOGE_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_DASH),
+                            U32_SWAP_ENDIANNESS(DASH_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
+                            U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR),
+                            U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_SOLANA),
+                            U32_SWAP_ENDIANNESS(SOL_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_POLYGON),
+                            U32_SWAP_ENDIANNESS(POLYGON_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_BSC),
+                            U32_SWAP_ENDIANNESS(BSC_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_FANTOM),
+                            U32_SWAP_ENDIANNESS(FANTOM_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_AVALANCHE),
+                            U32_SWAP_ENDIANNESS(AVALANCHE_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_OPTIMISM),
+                            U32_SWAP_ENDIANNESS(OPTIMISM_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_HARMONY),
+                            U32_SWAP_ENDIANNESS(HARMONY_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM_CLASSIC),
+                            U32_SWAP_ENDIANNESS(ETC_COIN_VERSION),
+                            U32_SWAP_ENDIANNESS(COIN_TYPE_ARBITRUM),
+                            U32_SWAP_ENDIANNESS(ARBITRUM_COIN_VERSION)};
         clear_message_received_data();
         transmit_data_to_app(LIST_SUPPORTED_COINS, (uint8_t *)coins, sizeof(coins));
       } break;
