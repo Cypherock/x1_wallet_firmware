@@ -197,27 +197,14 @@ typedef struct Receive_Transaction_Data {
  * swap_transaction_tasks(), SWAP_TXN_START
  */
 typedef struct Swap_Transaction_Data {
-  uint8_t wallet_id[WALLET_ID_SIZE];
-  uint8_t source_coin_index[4];
-  uint8_t dest_coin_index[4];
-  uint8_t purpose[4];
-  uint8_t account_index[4];
-  uint8_t chain_index[4];
-  uint8_t address_index[4];
   uint32_t send_amount;
-  uint32_t recv_amount;
-  uint32_t network_fee;
-  char *token_name;
-  union {
-    uint64_t source_network_chain_id;
-    uint8_t source_near_account_type;
-  };
-  union {
-    uint64_t dest_network_chain_id;
-    uint8_t dest_near_account_type;
-  };
-  uint8_t recv_address_length;
-  uint8_t recv_address[45];
+  uint32_t receive_amount;
+  uint32_t fee;
+  uint8_t send_txn_wallet_id[WALLET_ID_SIZE];
+  txn_metadata send_txn_metadata;
+  Receive_Transaction_Data receive_txn_data;
+  uint8_t *unsigned_txn_data_array;
+  uint16_t unsigned_txn_data_array_size;
 } Swap_Transaction_Data;
 #pragma pack(pop)
 

@@ -1,4 +1,5 @@
 #include "controller_level_four.h"
+#include "ui_instruction.h"
 
 Swap_Transaction_Data
     swap_transaction_data;
@@ -6,11 +7,11 @@ Swap_Transaction_Data
 void jump_to_swap() {
     counter.level = LEVEL_THREE;
     flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-    flow_level.level_three = 6; // SWAP_AFTER_RECV_FLOW
+    flow_level.level_three = 7; // SWAP_SIGN_RECEIVE_ADDRESS
     is_swap_txn = false;
 }
 
-auth_data_t atecc_sign(uint8_t *hash) {
+static auth_data_t atecc_sign(uint8_t *hash) {
     uint8_t io_protection_key[32] = {0};
     uint8_t nonce[32] = {0};
     auth_data_t auth_challenge_packet = {0};
@@ -85,8 +86,43 @@ auth_data_t atecc_sign(uint8_t *hash) {
     return auth_challenge_packet;
 }
 
+static size_t append_signature(uint8_t *payload, uint8_t *address, size_t
+address_length) {
+    size_t payload_size = 0;
+
+    memcpy(payload,
+           address,
+           address_length);
+    payload_size += address_length;
+
+    if (get_device_serial() == SUCCESS) {
+        memcpy(payload + payload_size,
+               atecc_data.device_serial,
+               DEVICE_SERIAL_SIZE);
+    } else {
+        LOG_CRITICAL("err xx4: %d", atecc_data.status);
+    }
+
+    payload_size += DEVICE_SERIAL_SIZE;
+
+    uint8_t hash[32] = {0};
+    sha256_Raw(payload, payload_size, hash);
+
+    auth_data_t auth_challenge_packet = atecc_sign(hash);
+
+    memcpy(payload + payload_size,
+           auth_challenge_packet.signature,
+           sizeof(auth_challenge_packet.signature));
+    payload_size += sizeof(auth_challenge_packet.signature);
+
+    return payload_size;
+}
 void swap_transaction_controller() {
     switch (flow_level.level_three) {
+        case SWAP_SELECT_RECV_WALLET_ID: {
+            flow_level.level_three = SWAP_CONFIRM_SEND_AMOUNT;
+        }
+            break;
         case SWAP_CONFIRM_SEND_AMOUNT: {
             flow_level.level_three = SWAP_CONFIRM_RECV_AMOUNT;
         }
@@ -109,7 +145,7 @@ void swap_transaction_controller() {
 
         case SWAP_RECV_ADDR_DERIVATION: {
             uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                                           .source_coin_index);
+                                                           .receive_txn_data.coin_index);
             counter.level = LEVEL_THREE;
             flow_level.level_three = 1;
             switch (coin_index) {
@@ -142,43 +178,124 @@ void swap_transaction_controller() {
         }
             break;
 
-        case SWAP_AFTER_RECV_FLOW: {
-            // Payload contains:
-            // - Recv address (variable size, at most 45 bytes)
-            // - Device ID (32 bytes)
-            // - Signature (64 bytes)
-            uint8_t payload[sizeof(swap_transaction_data.recv_address)
-                + DEVICE_SERIAL_SIZE + 64];
-            int payload_size = 0;
+        case SWAP_SIGN_RECEIVE_ADDRESS: {
+            uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                           .receive_txn_data.coin_index);
 
-            memcpy(payload,
-                   swap_transaction_data.recv_address,
-                   sizeof(swap_transaction_data.recv_address));
-            payload_size += sizeof(swap_transaction_data.recv_address);
+            uint8_t recv_address[45] = {0};
 
-            if (get_device_serial() == SUCCESS) {
-                memcpy(payload + payload_size,
-                       atecc_data.device_serial,
-                       DEVICE_SERIAL_SIZE);
-            } else {
-                LOG_CRITICAL("err xx4: %d", atecc_data.status);
+            switch (coin_index) {
+                case BITCOIN: {
+                    memcpy(recv_address,
+                           swap_transaction_data.receive_txn_data.address,
+                           sizeof(swap_transaction_data.receive_txn_data.address));
+                }
+                    break;
+
+                case ETHEREUM: {
+                    memcpy(recv_address,
+                           swap_transaction_data.receive_txn_data.eth_pubkeyhash,
+                           sizeof(swap_transaction_data.receive_txn_data.eth_pubkeyhash));
+                }
+                    break;
+
+                case NEAR: {
+                    memcpy(recv_address,
+                           swap_transaction_data.receive_txn_data.near_pubkey,
+                           sizeof(swap_transaction_data.receive_txn_data.near_pubkey));
+                }
+                    break;
+
+                case SOLANA: {
+                    memcpy(recv_address,
+                           swap_transaction_data.receive_txn_data.solana_address,
+                           sizeof(swap_transaction_data.receive_txn_data.solana_address));
+                }
+                    break;
+
+                default:break;
             }
 
-            payload_size += DEVICE_SERIAL_SIZE;
+            uint8_t payload[sizeof(recv_address) + DEVICE_SERIAL_SIZE + 64];
 
-            uint8_t hash[32] = {0};
-            sha256_Raw(payload, payload_size, hash);
-
-            auth_data_t auth_challenge_packet = atecc_sign(hash);
-
-            memcpy(payload + payload_size,
-                   auth_challenge_packet.signature,
-                   sizeof(auth_challenge_packet.signature));
-            payload_size += sizeof(auth_challenge_packet.signature);
+            size_t payload_size =
+                append_signature(payload, recv_address, sizeof(recv_address));
 
             transmit_data_to_app(SWAP_TXN_SIGNED_RECV_ADDR,
                                  (uint8_t *) &payload,
                                  payload_size);
+
+            flow_level.level_three = SWAP_TXN_UNSIGNED_TXN_WAIT_SCREEN;
+        }
+            break;
+
+        case SWAP_SELECT_SEND_WALLET_ID: {
+            flow_level.level_three = SWAP_TXN_UNSIGNED_TXN_WAIT_SCREEN;
+        }
+            break;
+
+        case SWAP_TXN_UNSIGNED_TXN_WAIT_SCREEN: {
+            memcpy(&var_send_transaction_data.transaction_metadata,
+                   &swap_transaction_data.send_txn_metadata, sizeof
+                       (swap_transaction_data.send_txn_metadata));
+            if (get_usb_msg_by_cmd_type(SWAP_TXN_UNSIGNED_TXN,
+                                        &swap_transaction_data.unsigned_txn_data_array,
+                                        &swap_transaction_data
+                                        .unsigned_txn_data_array_size)) {
+
+                uint32_t coin_index = BYTE_ARRAY_TO_UINT32
+                (var_send_transaction_data.transaction_metadata.coin_index);
+
+                counter.level = LEVEL_THREE;
+                flow_level.level_three = 2;
+
+                if (coin_index == ETHEREUM) {
+                    flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text),
+                             "Send %s with %s on %s",
+                             var_send_transaction_data.transaction_metadata.token_name,
+                             wallet.wallet_name,
+                             get_coin_name(coin_index,
+                                           var_send_transaction_data.transaction_metadata.network_chain_id));
+                } else if (coin_index == NEAR_COIN_INDEX) {
+                    flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
+                    if (var_send_transaction_data.transaction_metadata.network_chain_id
+                        == 1) {
+                        snprintf(flow_level.confirmation_screen_text,
+                                 sizeof(flow_level.confirmation_screen_text),
+                                 "Add %s account with %s",
+                                 get_coin_name(coin_index,
+                                               var_send_transaction_data.transaction_metadata.network_chain_id),
+                                 wallet.wallet_name);
+                    } else {
+                        snprintf(flow_level.confirmation_screen_text,
+                                 sizeof(flow_level.confirmation_screen_text),
+                                 UI_TEXT_SEND_PROMPT,
+                                 get_coin_name(coin_index,
+                                               var_send_transaction_data.transaction_metadata.network_chain_id),
+                                 wallet.wallet_name);
+                    }
+                } else if (coin_index == SOLANA_COIN_INDEX) {
+                    flow_level.level_two =
+                        LEVEL_THREE_SEND_TRANSACTION_SOLANA;
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text),
+                             UI_TEXT_SEND_PROMPT,
+                             get_coin_name(coin_index,
+                                           var_send_transaction_data.transaction_metadata.network_chain_id),
+                             wallet.wallet_name);
+                } else {
+                    flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text),
+                             UI_TEXT_SEND_PROMPT,
+                             get_coin_name(coin_index,
+                                           var_send_transaction_data.transaction_metadata.network_chain_id),
+                             wallet.wallet_name);
+                }
+            }
+
         }
             break;
 

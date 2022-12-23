@@ -10,6 +10,16 @@ extern Receive_Transaction_Data receive_transaction_data;
 
 void swap_transaction_tasks() {
     switch (flow_level.level_three) {
+        case SWAP_SELECT_RECV_WALLET_ID: {
+            if (wallet_selector(swap_transaction_data.receive_txn_data
+                                    .wallet_id)) {
+                mark_event_over();
+            } else {
+                reset_flow_level();
+                counter.next_event_flag = true;
+            }
+        }
+            break;
         case SWAP_CONFIRM_SEND_AMOUNT: {
             instruction_scr_destructor();
             double amount_in_btc = 1.0 * swap_transaction_data.send_amount /
@@ -20,41 +30,41 @@ void swap_transaction_tasks() {
                                        SATOSHI_PER_BTC);
             snprintf(display, sizeof(display), "Send\n%0.*f\n%s",
                      precision, amount_in_btc, get_coin_symbol
-                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data.source_coin_index),
-                          swap_transaction_data.source_network_chain_id));
+                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                   .send_txn_metadata.coin_index),
+                          swap_transaction_data.send_txn_metadata.network_chain_id));
             confirm_scr_init(display);
         }
             break;
 
         case SWAP_CONFIRM_RECV_AMOUNT: {
             instruction_scr_destructor();
-            double amount_in_btc = 1.0 * swap_transaction_data.recv_amount /
+            double amount_in_btc = 1.0 * swap_transaction_data
+                .receive_amount /
                 (SATOSHI_PER_BTC);
             char display[125] = {0};
             uint8_t precision =
-                get_floating_precision(swap_transaction_data.recv_amount,
+                get_floating_precision(swap_transaction_data.receive_amount,
                                        SATOSHI_PER_BTC);
             snprintf(display, sizeof(display), "Receive \n%0.*f\n%s",
                      precision, amount_in_btc, get_coin_symbol
-                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data.dest_coin_index),
-                          swap_transaction_data.dest_network_chain_id));
+                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                   .receive_txn_data.coin_index),
+                          swap_transaction_data.receive_txn_data.network_chain_id));
             confirm_scr_init(display);
         }
             break;
 
         case SWAP_CONFIRM_NETWORK_FEES: {
             instruction_scr_destructor();
-            double amount_in_btc = 1.0 * swap_transaction_data.network_fee /
+            double amount_in_btc = 1.0 * swap_transaction_data.fee /
                 (SATOSHI_PER_BTC);
             char display[125] = {0};
             uint8_t precision =
-                get_floating_precision(swap_transaction_data.network_fee,
+                get_floating_precision(swap_transaction_data.fee,
                                        SATOSHI_PER_BTC);
-            snprintf(display, sizeof(display), "Network Fees \n%0.*f\n%s",
-                     precision, amount_in_btc, get_coin_symbol
-                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                                   .source_coin_index),
-                          swap_transaction_data.dest_network_chain_id));
+            snprintf(display, sizeof(display), "Network Fees \n%0.*f\n",
+                     precision, amount_in_btc);
             confirm_scr_init(display);
         }
             break;
@@ -66,81 +76,37 @@ void swap_transaction_tasks() {
             break;
 
         case SWAP_RECV_ADDR_DERIVATION: {
-            memcpy(receive_transaction_data.wallet_id,
-                   swap_transaction_data.wallet_id,
-                   sizeof(receive_transaction_data.wallet_id));
-            memcpy(receive_transaction_data.purpose, swap_transaction_data
-                .purpose, sizeof(receive_transaction_data.purpose));
-            memcpy(receive_transaction_data.coin_index,
-                   swap_transaction_data
-                       .dest_coin_index,
-                   sizeof(receive_transaction_data.coin_index));
-            memcpy(receive_transaction_data.account_index,
-                   swap_transaction_data
-                       .account_index,
-                   sizeof(receive_transaction_data.account_index));
-            memcpy(receive_transaction_data.chain_index, swap_transaction_data
-                .chain_index, sizeof(receive_transaction_data.chain_index));
-            memcpy(receive_transaction_data.address_index,
-                   swap_transaction_data
-                       .address_index,
-                   sizeof(receive_transaction_data.address_index));
-
-            memcpy(receive_transaction_data.token_name, swap_transaction_data
-                .token_name, strlen(swap_transaction_data.token_name));
-
-            receive_transaction_data.network_chain_id =
-                swap_transaction_data.dest_network_chain_id;
+            memcpy((uint8_t *) &receive_transaction_data,
+                   (uint8_t *) &swap_transaction_data.receive_txn_data,
+                   sizeof(Receive_Transaction_Data));
 
             mark_event_over();
         }
             break;
 
-        case SWAP_AFTER_RECV_FLOW: {
-            uint32_t coin_index = BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                                           .dest_coin_index);
+        case SWAP_SIGN_RECEIVE_ADDRESS: {
+            is_swap_txn = true;
+            // TODO: show message processing
 
-            switch (coin_index) {
-                case BITCOIN: {
-                    memcpy(swap_transaction_data.recv_address,
-                           receive_transaction_data
-                               .address,
-                           sizeof(receive_transaction_data.address));
-                    swap_transaction_data.recv_address_length = sizeof
-                        (receive_transaction_data
-                            .address);
-                }
-                    break;
+            memcpy((uint8_t *) &swap_transaction_data.receive_txn_data,
+                   (uint8_t *) &receive_transaction_data,
+                   sizeof(Receive_Transaction_Data));
+            mark_event_over();
+        }
+            break;
 
-                case ETHEREUM: {
-                    memcpy(swap_transaction_data.recv_address,
-                           receive_transaction_data.eth_pubkeyhash,
-                           sizeof(receive_transaction_data.eth_pubkeyhash));
-                    swap_transaction_data.recv_address_length =
-                        sizeof(receive_transaction_data.eth_pubkeyhash);
-                }
-                    break;
-
-                case NEAR: {
-                    memcpy(swap_transaction_data.recv_address,
-                           receive_transaction_data.near_pubkey,
-                           sizeof(receive_transaction_data.near_pubkey));
-                    swap_transaction_data.recv_address_length =
-                        sizeof(receive_transaction_data.near_pubkey);
-                }
-                    break;
-
-                case SOLANA: {
-                    memcpy(swap_transaction_data.recv_address,
-                           receive_transaction_data.solana_address,
-                           sizeof(receive_transaction_data.solana_address));
-                    swap_transaction_data.recv_address_length =
-                        sizeof(receive_transaction_data.solana_address);
-                }
-                    break;
-
-                default:break;
+        case SWAP_SELECT_SEND_WALLET_ID: {
+            if (wallet_selector(swap_transaction_data.send_txn_wallet_id)) {
+                mark_event_over();
+            } else {
+                reset_flow_level();
+                counter.next_event_flag = true;
             }
+        }
+            break;
+
+        case SWAP_TXN_UNSIGNED_TXN_WAIT_SCREEN: {
+            // TODO: show message processing
             mark_event_over();
         }
             break;

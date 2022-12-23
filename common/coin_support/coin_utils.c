@@ -117,7 +117,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
         s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
-    } 
+    }
 
     s_memcpy(txn_metadata_ptr->change_count, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->change_count), &offset);
@@ -214,71 +214,36 @@ int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte
 int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
                                     const uint8_t *data_byte_array,
                                     const uint32_t size) {
-  if (txn_data_ptr == NULL || data_byte_array == NULL || size == 0) return -1;
-  int64_t offset = 0;
+    if (txn_data_ptr == NULL || data_byte_array == NULL || size == 0)
+        return -1;
+    int64_t offset = 0;
 
-  s_memcpy(txn_data_ptr->wallet_id,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->wallet_id),
-           &offset);
-  s_memcpy(txn_data_ptr->purpose,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->purpose),
-           &offset);
-  s_memcpy(txn_data_ptr->source_coin_index,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->source_coin_index),
-           &offset);
-  s_memcpy(txn_data_ptr->dest_coin_index,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->dest_coin_index),
-           &offset);
-  s_memcpy(txn_data_ptr->account_index,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->account_index),
-           &offset);
-  s_memcpy(txn_data_ptr->chain_index,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->chain_index),
-           &offset);
-  s_memcpy(txn_data_ptr->address_index,
-           data_byte_array,
-           size,
-           sizeof(txn_data_ptr->address_index),
-           &offset);
+    txn_data_ptr->send_amount =
+        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->send_amount);
+    txn_data_ptr->receive_amount =
+        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->receive_amount);
+    txn_data_ptr->fee =
+        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->fee);
 
-  txn_data_ptr->send_amount = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-  offset += sizeof(txn_data_ptr->send_amount);
-  txn_data_ptr->recv_amount = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-  offset += sizeof(txn_data_ptr->recv_amount);
-  txn_data_ptr->network_fee = BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-  offset += sizeof(txn_data_ptr->network_fee);
+    s_memcpy(txn_data_ptr->send_txn_wallet_id,
+             data_byte_array,
+             size,
+             sizeof(txn_data_ptr->send_txn_wallet_id),
+             &offset);
 
-  size_t token_name_len =
-      strnlen((const char *) (data_byte_array + offset), size - offset) + 1;
-  if (data_byte_array[offset + token_name_len - 1] != 0) return -1;
-  txn_data_ptr->token_name = (char *) cy_malloc(token_name_len);
-  s_memcpy((uint8_t *) txn_data_ptr->token_name,
-           data_byte_array,
-           size,
-           token_name_len,
-           &offset);
+    offset += byte_array_to_txn_metadata(data_byte_array + offset,
+                                         size,
+                                         &txn_data_ptr->send_txn_metadata);
+    if (offset < 0) return -1;
 
-  if (offset + sizeof(txn_data_ptr->source_network_chain_id) > size) return -1;
-  txn_data_ptr->source_network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
-  offset += sizeof(txn_data_ptr->source_network_chain_id);
+    offset += byte_array_to_recv_txn_data(&txn_data_ptr->receive_txn_data,
+                                          data_byte_array + offset,
+                                          size);
 
-  if (offset + sizeof(txn_data_ptr->dest_network_chain_id) > size) return -1;
-  txn_data_ptr->dest_network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
-  offset += sizeof(txn_data_ptr->dest_network_chain_id);
-
-  return offset;
+    return offset;
 }
 
 void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str)

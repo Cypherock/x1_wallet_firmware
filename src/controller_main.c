@@ -412,7 +412,7 @@ void __authentication_listener(lv_task_t* task){
  *
  * @note
  */
-static bool wallet_selector(uint8_t *data_array)
+bool wallet_selector(uint8_t *data_array)
 {
     uint8_t wallet_id[WALLET_ID_SIZE];
     uint16_t offset = 0;
@@ -673,7 +673,7 @@ void desktop_listener_task(lv_task_t* data)
             } break;
 
           case SWAP_TXN_START: {
-            if (wallet_selector(data_array)) {
+//            if (wallet_selector(data_array)) {
               CY_Reset_Not_Allow(false);
 
               int64_t offset =
@@ -682,33 +682,35 @@ void desktop_listener_task(lv_task_t* data)
                                               msg_size);
 
               if (offset == -1) {
-                comm_reject_invalid_cmd();
-                clear_message_received_data();
-                return;
+                  comm_reject_invalid_cmd();
+                  clear_message_received_data();
+                  return;
               }
 
               uint32_t source_coin_index =
-                  BYTE_ARRAY_TO_UINT32(swap_transaction_data.source_coin_index);
+                  BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                           .send_txn_metadata.coin_index);
 
               uint32_t dest_coin_index =
-                  BYTE_ARRAY_TO_UINT32(swap_transaction_data.dest_coin_index);
+                  BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                           .receive_txn_data.coin_index);
 
               flow_level.show_desktop_start_screen = true;
 
-              {
-                is_swap_txn = true;
-                flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-                snprintf(flow_level.confirmation_screen_text,
-                         sizeof(flow_level.confirmation_screen_text),
-                         UI_TEXT_SWAP_PROMPT,
-                         get_coin_name(source_coin_index,
-                                       swap_transaction_data.source_network_chain_id),
-                         get_coin_name(dest_coin_index,
-                                       swap_transaction_data.dest_network_chain_id));
+              is_swap_txn = true;
+              flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
+              snprintf(flow_level.confirmation_screen_text,
+                       sizeof(flow_level.confirmation_screen_text),
+                       UI_TEXT_SWAP_PROMPT,
+                       get_coin_name(source_coin_index,
+                                     swap_transaction_data
+                                         .send_txn_metadata.network_chain_id),
+                       get_coin_name(dest_coin_index,
+                                     swap_transaction_data
+                                         .receive_txn_data.network_chain_id));
 
-              }
-            }
           }
+//          }
             break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {

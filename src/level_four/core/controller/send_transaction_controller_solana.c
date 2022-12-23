@@ -67,6 +67,7 @@
 
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
+extern Swap_Transaction_Data swap_transaction_data;
 
 extern lv_task_t *timeout_task;
 
@@ -85,7 +86,15 @@ void send_transaction_controller_solana() {
     case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_SOLANA: {
       uint8_t *data_array = NULL;
       uint16_t msg_size   = 0;
-      if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
+
+        if (is_swap_txn) {
+            data_array = swap_transaction_data.unsigned_txn_data_array;
+            msg_size = swap_transaction_data.unsigned_txn_data_array_size;
+        } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
+                                            &data_array, &msg_size)) {
+            return;
+        }
+
         solana_unsigned_txn_byte_array = (uint8_t *)cy_malloc(msg_size);
         solana_unsigned_txn_len        = msg_size;
         memcpy(solana_unsigned_txn_byte_array, data_array, msg_size);
@@ -106,7 +115,6 @@ void send_transaction_controller_solana() {
           comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
           reset_flow_level();
         }
-      }
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA: {

@@ -242,6 +242,8 @@ Wallet* get_wallet();
  */
 Flash_Wallet* get_flash_wallet();
 
+bool wallet_selector(uint8_t *data_array);
+
 /**
  * @brief This function is called to end particular event.
  * @details This function sets counter.next_event_flag to true and makes calls to the controllers

@@ -67,6 +67,7 @@
 
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
+extern Swap_Transaction_Data swap_transaction_data;
 
 int input_index;
 
@@ -116,18 +117,31 @@ void send_transaction_controller()
     case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN: {
         uint8_t *data_array = NULL;
         uint16_t msg_size = 0;
-        if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
-            byte_array_to_unsigned_txn(data_array, msg_size, &var_send_transaction_data.unsigned_transaction);
-            clear_message_received_data();
-            flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
-            if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
-                instruction_scr_destructor();
-                comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
-                reset_flow_level();
-                mark_error_screen(ui_text_wrong_btc_transaction);
-                return;
-            }
+
+        if (is_swap_txn) {
+            data_array = swap_transaction_data.unsigned_txn_data_array;
+            msg_size = swap_transaction_data.unsigned_txn_data_array_size;
+        } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
+                                           &data_array,
+                                           &msg_size)) {
+            return;
         }
+
+        byte_array_to_unsigned_txn(data_array,
+                                   msg_size,
+                                   &var_send_transaction_data.unsigned_transaction);
+
+        clear_message_received_data();
+        flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
+
+        if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
+            instruction_scr_destructor();
+            comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+            reset_flow_level();
+            mark_error_screen(ui_text_wrong_btc_transaction);
+            return;
+        }
+
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED: {
