@@ -67,18 +67,18 @@ static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadat
 
 #define EVM_swap_TAG            (0x7c025200)
 #define EVM_swap_NUM_ARGS       10
-const ABI_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] =
+const Abi_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] =
 {
-    ABI_address_e,
-    ABI_address_e,
-    ABI_address_e,
-    ABI_address_e,
-    ABI_address_e,
-    ABI_uint256_e,
-    ABI_uint256_e,
-    ABI_uint256_e,
-    ABI_bytes_dynamic_e,
-    ABI_bytes_dynamic_e
+    Abi_address_e,
+    Abi_address_e,
+    Abi_address_e,
+    Abi_address_e,
+    Abi_address_e,
+    Abi_uint256_e,
+    Abi_uint256_e,
+    Abi_uint256_e,
+    Abi_bytes_dynamic_e,
+    Abi_bytes_dynamic_e
 };
 
 const char *EVM_swap_Title = "Function: swap";
@@ -86,11 +86,11 @@ const char *EVM_swap_Signature = "swap(address,(address,address,address,address,
 
 #define EVM_uniswapV3Swap_TAG           (0xe449022e)
 #define EVM_uniswapV3Swap_NUM_ARGS      3
-const ABI_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] =
+const Abi_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] =
 {
-    ABI_uint256_e,
-    ABI_uint256_e,
-    ABI_uint256_array_dynamic_e
+    Abi_uint256_e,
+    Abi_uint256_e,
+    Abi_uint256_array_dynamic_e
 };
 
 const char *EVM_uniswapV3Swap_Title = "Function: uniswapV3Swap";
@@ -98,11 +98,11 @@ const char *EVM_uniswapV3Swap_Signature = "uniswapV3Swap(uint256,uint256,uint256
 
 #define EVM_safeTransferFrom_TAG        (0x42842e0e)
 #define EVM_safeTransferFrom_NUM_ARGS   3
-const ABI_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] =
+const Abi_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] =
 {
-    ABI_address_e,
-    ABI_address_e,
-    ABI_uint256_e
+    Abi_address_e,
+    Abi_address_e,
+    Abi_uint256_e
 };
 
 const char *EVM_safeTransferFrom_Title = "Function: safeTransferFrom";
@@ -110,15 +110,13 @@ const char *EVM_safeTransferFrom_Signature = "safeTransferFrom(address,address,u
 
 #define EVM_deposit_TAG         (0xd0e30db0)
 #define EVM_deposit_NUM_ARGS    0
-const ABI_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] =
+const Abi_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] =
 {
 
 };
 
 const char *EVM_deposit_Title = "Function: deposit";
 const char *EVM_deposit_Signature = "deposit()";
-
-#define EVM_function_TAG_SIZE_IN_BYTES              (4)
 
 /**
  * @brief
@@ -499,12 +497,12 @@ ui_display_node *eth_create_display_node(
     return result;
 }
 
-uint8_t ETH_DetectFunction(
-                            const uint32_t functionTag,
-                            ABI_Type_e const **dpAbiTypeArray
-                          )
+static uint8_t ETH_DetectFunction(
+                                    const uint32_t functionTag,
+                                    Abi_Type_e const **dpAbiTypeArray
+                                 )
 {
-    if (dpAbiTypeArray == NULL)
+    if (NULL == dpAbiTypeArray)
     {
         return 0;
     }
@@ -553,138 +551,169 @@ uint8_t ETH_DetectFunction(
         }
     }
 
+    /* Add the detected function as part of verification in the UI */
     if (
         (NULL != EvmFunctionTitle) &&
         (NULL != EvmFunctionSignature)
        )
     {
-        ui_display_node *result;
-        result = eth_create_display_node(
-                                            EvmFunctionTitle,
-                                            strnlen(EvmFunctionTitle, 50),
-                                            EvmFunctionSignature,
-                                            strnlen(EvmFunctionSignature, 50)
-                                        );
+        ui_display_node *pAbiDispNode;
+        pAbiDispNode = eth_create_display_node(
+                                                EvmFunctionTitle,
+                                                strnlen(EvmFunctionTitle, 50),
+                                                EvmFunctionSignature,
+                                                strnlen(EvmFunctionSignature, 50)
+                                             );
         
-        /* TODO: Add result to global linked list */
+        /* TODO: Add pAbiDisplayNode to global linked list */
     }
 
     return numArgsInFunction;
 }
 
-uint8_t ETH_ExtractArguments(uint8_t *pEthUTxnPayload, uint64_t sizeOfUTxn)
+uint8_t ETH_ExtractArguments(
+                                const uint8_t *pAbiPayload,
+                                const uint64_t sizeOfPayload
+                            )
 {
     uint8_t returnCode = ETH_BAD_ARGUMENTS;
 
+    /* Size of transaction payload must be atleast EVM_FUNC_SIGNATURE_LENGTH */
     if (
-        (NULL == pEthUTxnPayload)           ||
-        (0 == sizeOfUTxn)
+        (NULL == pAbiPayload)                           ||
+        (EVM_FUNC_SIGNATURE_LENGTH > sizeOfPayload)
        )
     {
         return returnCode;
     }
 
-    uint8_t *pCurrEthTxnPayload = &(pEthUTxnPayload[0]);
-    uint32_t functionTag = 0;
-
-    memcpy(
-            ((uint8_t *)&(functionTag)),
-            pCurrEthTxnPayload,
-            EVM_function_TAG_SIZE_IN_BYTES
-          ); 
-    functionTag = U32_READ_BE_ARRAY((uint8_t *)&functionTag);
+    uint8_t *pCurrHeadPtr = pAbiPayload;
     
+    /**
+     * Detect if the ethereum unsigned txn payload includes a function that
+     * we can decode
+     * pArgumentAbiType will hold pointer to array with information regarding 
+     * the types of argument corresponding to a function signature
+     */
+    uint32_t functionTag = U32_READ_BE_ARRAY(pCurrHeadPtr);
     uint8_t numArgsInFunction = 0;
-    ABI_Type_e const *pArgumentAbiType;
+    Abi_Type_e const *pArgumentAbiType = NULL;
     
     numArgsInFunction = ETH_DetectFunction(functionTag, &pArgumentAbiType);
 
-    if (
-        (NULL == pArgumentAbiType)          ||
-        (0 == numArgsInFunction)
-       )
+    /**
+     * If pArgumentAbiType is NULL, that means ETH_DetectFunction did not 
+     * detect a supported function
+     * Therefore we should return from here
+     */
+    if (NULL == pArgumentAbiType)
     {
-        return;
+        returnCode = ETH_UTXN_FUNCTION_NOT_FOUND;
+        return returnCode;
     }
 
-    pCurrEthTxnPayload += 4;
+    /* Increment pCurrHeadPtr to point to first argument */
+    pCurrHeadPtr += EVM_FUNC_SIGNATURE_LENGTH;
 
-    uint8_t *pEthTxnPayloadBase = pCurrEthTxnPayload;
+    /**
+     * Save the base address of the first argument; it will be required in case 
+     * of any dynamic element encoded in ABI format as the offset is calculated
+     * from the base of the first argument.
+     */
+    const uint8_t *pPayloadBasePtr = pCurrHeadPtr;
     uint8_t currArgument;
-    
+
     for (currArgument = 0; currArgument < numArgsInFunction; currArgument++)
     {
-        if (((uint32_t)(pCurrEthTxnPayload - pEthUTxnPayload)) >= sizeOfUTxn)
+        /* Ensure that we are reading from within the bounds */
+        if (
+            UTIL_IN_BOUNDS != 
+            UTIL_CheckBound(
+                            pAbiPayload, sizeOfPayload,
+                            pCurrHeadPtr, ABI_ELEMENT_SZ_IN_BYTES
+                           )
+           )
         {
             returnCode = ETH_UTXN_BAD_PAYLOAD;
             break;
         }
+
+        ui_display_node *pAbiDispNode = NULL;
         
-        if (ABI_bytes_dynamic_e <= pArgumentAbiType[currArgument])
+        /* Check if we are reading a dynamic or static element */
+        if (Abi_bytes_dynamic_e <= pArgumentAbiType[currArgument])
         {
             uint8_t *pDynamicDataPtr = NULL;
-            uint8_t abiReturnCode = ABI_DECODE_BAD_ARGUMENT;
+            uint8_t abiReturnCode = ABI_DECODE_PROCESS_INCOMPLETE;
             uint32_t numBytesReturned = 0;
 
-            abiReturnCode = ABI_DecodeDynamicValByType(
-                                                        pArgumentAbiType[currArgument],
-                                                        pCurrEthTxnPayload,
-                                                        pEthTxnPayloadBase,
-                                                        &numBytesReturned,
-                                                        &pDynamicDataPtr
-                                                      );
+            /* Get the information regarding dynamic data types */
+            abiReturnCode = Abi_DynamicHelp(
+                                            pArgumentAbiType[currArgument],
+                                            pCurrHeadPtr,
+                                            pPayloadBasePtr,
+                                            (sizeOfPayload - EVM_FUNC_SIGNATURE_LENGTH),
+                                            &numBytesReturned,
+                                            &pDynamicDataPtr
+                                           );
             
+            /**
+             * If abiReturnCode is not ABI_DECODE_PROCESS_COMPLETE, that means
+             * the function spotted an invalid argument during the call, or
+             * the payload was not good as bounds check failed internally
+             */
             if (
                 (ABI_DECODE_PROCESS_COMPLETE != abiReturnCode)      ||
-                (((uint32_t)(pDynamicDataPtr - pEthUTxnPayload)) >= sizeOfUTxn)
+                (NULL == pDynamicDataPtr)
                )
             {
+                returnCode = ETH_UTXN_BAD_PAYLOAD;
                 break;
             }
             
-            if (ABI_bytes_dynamic_e == pArgumentAbiType[currArgument])
+            /**
+             * Handle stringify based on dynamic data type
+             * Abi_bytes_dynamic_e can be handled directly using number of bytes
+             * Abi_uint256_array_dynamic_e needs to be handled in a loop, for each 
+             * uint256 bit data
+             */
+            if (Abi_bytes_dynamic_e == pArgumentAbiType[currArgument])
             {
-                ABI_Stringify(
-                                ABI_bytes_e,
-                                pDynamicDataPtr,
-                                numBytesReturned
-                             );
+                pAbiDispNode = ABI_Stringify(
+                                             Abi_bytes_e,
+                                             pDynamicDataPtr,
+                                             numBytesReturned
+                                            );
             }
-            else if (ABI_uint256_array_dynamic_e == pArgumentAbiType[currArgument])
+            else if (Abi_uint256_array_dynamic_e == pArgumentAbiType[currArgument])
             {
-                uint32_t elementsInArray;
-                for (elementsInArray = 0; elementsInArray < numBytesReturned; elementsInArray++)
+                uint32_t item;
+                for (item = 0; item < numBytesReturned; item++)
                 {
-                    ABI_Stringify(
-                                    ABI_uint256_e,
-                                    (uint8_t *)(pDynamicDataPtr + (32 * elementsInArray)),
-                                    0
-                                 );
+                    uint8_t *pStaticData = (uint8_t *)(pDynamicDataPtr + 
+                                                      (ABI_ELEMENT_SZ_IN_BYTES * item));
+                           
+                    pAbiDispNode = ABI_Stringify(
+                                                 Abi_uint256_e,
+                                                 pStaticData,
+                                                 0
+                                                );
                 }
             }
         }
-        else
+        else /* Static elements can be stringified straight away */
         {                        
-            if (ABI_address_e == pArgumentAbiType[currArgument])
-            {
-                ABI_Stringify(
-                                ABI_address_e,
-                                pCurrEthTxnPayload,
-                                0
-                             );
-            }
-            else if (ABI_uint256_e == pArgumentAbiType[currArgument])
-            {
-                ABI_Stringify(
-                                ABI_uint256_e,
-                                pCurrEthTxnPayload,
-                                0
-                             );
-            }
+            pAbiDispNode = ABI_Stringify(
+                                         pArgumentAbiType[currArgument],
+                                         pCurrHeadPtr,
+                                         0
+                                        );
         }
 
-        pCurrEthTxnPayload += 32;
+        pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
         returnCode = ETH_UTXN_ABI_DECODE_OK;
+
+        /* TODO: Add pAbiDispNode to global linked list */
     }
 
     return returnCode;

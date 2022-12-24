@@ -48,9 +48,10 @@
 
 #define ETH_COIN_VERSION     0x00000000
 
-#define ETH_UTXN_ABI_DECODE_OK    (0xAA)
-#define ETH_UTXN_BAD_PAYLOAD      (0x11)
-#define ETH_BAD_ARGUMENTS         (0x22)
+#define ETH_UTXN_ABI_DECODE_OK      (0xAA)
+#define ETH_UTXN_BAD_PAYLOAD        (0x11)
+#define ETH_UTXN_FUNCTION_NOT_FOUND (0x11)
+#define ETH_BAD_ARGUMENTS           (0x22)
 
 
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
@@ -242,5 +243,17 @@ ui_display_node *eth_create_display_node(const char *title,
                                          const char *value,
                                          const size_t value_size);
 
-uint8_t ETH_ExtractArguments(uint8_t *pEthUTxnPayload, uint64_t sizeOfUTxn);
+/**
+ * @brief This function extracts Abi encoded arguments for EVM functions into UI 
+ * compatible nodes ui_display_node(s)
+ * 
+ * @param pAbiPayload Pointer to start of payload of the EVM transaction
+ * @param sizeOfUTxn Size of payload of the EVM transaction
+ * @return uint8_t Depicts the status of operation for this function
+ * ETH_BAD_ARGUMENTS: If any argument is invalid
+ * ETH_UTXN_FUNCTION_NOT_FOUND: If a function NOT supported by X1 wallet is in the EVM tx
+ * ETH_UTXN_BAD_PAYLOAD: If a payload contains invalid data
+ * ETH_UTXN_ABI_DECODE_OK: If the arguments are extracted successfully
+ */
+uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPayload);
 #endif
