@@ -497,6 +497,17 @@ ui_display_node *eth_create_display_node(
     return result;
 }
 
+/**
+ * @brief This function checks if an EVM function tag is supported by the 
+ * X1 wallet parser. If a known function is found, a UI element of type
+ * ui_display_node is created. Also, dpAbiTypeArray is updated to point
+ * the argument type list for that function.
+ * 
+ * @param functionTag The function tag found in the EVM transaction payload
+ * @param dpAbiTypeArray Pointer to start of the argument type array for the
+ * identified function.
+ * @return uint8_t The number of arguments in an identified function.
+ */
 static uint8_t ETH_DetectFunction(
                                     const uint32_t functionTag,
                                     Abi_Type_e const **dpAbiTypeArray
@@ -714,6 +725,12 @@ uint8_t ETH_ExtractArguments(
         returnCode = ETH_UTXN_ABI_DECODE_OK;
 
         /* TODO: Add pAbiDispNode to global linked list */
+        if (NULL != pAbiDispNode)
+        {
+            address_scr_init(pAbiDispNode->title, pAbiDispNode->value, false);
+            lv_task_handler();
+            instruction_scr_destructor();
+        }
     }
 
     return returnCode;

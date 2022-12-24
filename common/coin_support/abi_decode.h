@@ -32,6 +32,8 @@
 
 /* Enums
  *****************************************************************************/
+/* Refer 
+https://docs.soliditylang.org/en/latest/abi-spec.html#formal-specification-of-the-encoding */
 typedef enum
 {
     /**
