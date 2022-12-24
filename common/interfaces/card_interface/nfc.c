@@ -329,6 +329,7 @@ ISO7816 nfc_add_wallet(const struct Wallet* wallet)
     uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
     uint16_t send_len = 0, recv_len = 236;
 
+    calculate_checksum(wallet, wallet->checksum);
     if (WALLET_IS_ARBITRARY_DATA(wallet->wallet_info))
         send_len = create_apdu_add_arbitrary_data(wallet, send_apdu);
     else

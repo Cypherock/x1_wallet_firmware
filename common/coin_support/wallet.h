@@ -100,6 +100,7 @@ typedef struct Wallet {
     uint8_t arbitrary_data_size;
 
     uint8_t xcor;
+    ///< 30-bit checksum of data. The last 2-bits of checksum (`01`) define if the checksum holds a meaningful value.
     uint8_t checksum[CHECKSUM_SIZE];
 
     uint8_t key[KEY_SIZE]; // This key is currently used for encrypting/decrypting extended public key
@@ -184,5 +185,43 @@ bool encrypt_shares();
  * @note
  */
 bool decrypt_shares();
+
+/**
+ * @brief Calculate the checksum for wallet's data stored and retrieved from card
+ * The checksum is first 30-bits of SHA256 on the packed serialized of the data
+ * received from the card. The last 2-bits of the arrays are set to `01` for ensuring
+ * the distinction if the checksum value exists or not.
+ *
+ * The members are serialized in the following order:
+ * wallet_name | xcor | number_of_mnemonics | total_number_of_shares |
+ * wallet_share_with_mac_and_nonce | minimum_number_of_shares |
+ * wallet_info | key | wallet_id | arbitrary_data_share
+ *
+ * @param [in]      Pointer to a Wallet instance
+ * @param [out]     Calculated checksum of the wallet instance
+ *
+ * @see Wallet
+ * @since v1.0.0
+ *
+ * @note The last 2-bits of checksum (`01`) define if the checksum holds a meaningful value.
+ */
+void calculate_checksum(const Wallet *wallet, uint8_t *checksum);
+
+/**
+ * @brief Verifies if the checksum of the given Wallet instance matches with the
+ * actual checksum calculation based on the data in the instance.
+ * If the provided wallet instance is NULL, this function returns false.
+ * if the wallet version bit in Wallet.wallet_info is not set, returns true.
+ *
+ * @param [in]      Pointer to a Wallet instance
+ *
+ * @return Checksum verification status
+ * @retval true If the calculated checksum matches the checksum in the instance
+ * @retval false Otherwise
+ *
+ * @see calculcate_checksum(), Wallet
+ * @since v1.0.0
+ */
+bool verify_checksum(const Wallet *wallet);
 
 #endif
