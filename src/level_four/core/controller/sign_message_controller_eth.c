@@ -189,7 +189,9 @@ void sign_message_controller_eth() {
       ASSERT(mnemo != NULL);
 
       uint8_t sig[65] = {0};
-      //TODO: sign the message here
+
+      eth_sign_msg_data(&msg_data, (const txn_metadata *)&var_send_transaction_data.transaction_metadata, mnemo,
+                        wallet_credential_data.passphrase, sig);
       transmit_data_to_app(SIGN_MSG_SEND_SIG, sig, 65);
       mnemonic_clear();
       memzero(secret, sizeof(secret));

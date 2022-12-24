@@ -41,7 +41,8 @@
 #define ETHEREUM_TOKEN_NAME   "Ether"
 #define ETHEREUM_TOKEN_SYMBOL "ETH"
 
-#define ETH_PERSONAL_SIGN_IDENTIFIER "\x19Ethereum Signed Message:\n"
+// \x45(E) is needed otherwise \x19e is considered instead of \x19
+#define ETH_PERSONAL_SIGN_IDENTIFIER "\x19\x45thereum Signed Message:\n"
 
 /// Convert byte array to unit32_t
 #define ETH_VALUE_SIZE_BYTES (32U)
@@ -292,8 +293,25 @@ bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_le
  */
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
 
+/**
+ * @brief Create a new display node and return its pointer
+ * 
+ * @param title 
+ * @param title_size 
+ * @param value 
+ * @param value_size 
+ * @return ui_display_node* 
+ */
 ui_display_node *eth_create_display_node(const char *title,
                                          const size_t title_size,
                                          const char *value,
                                          const size_t value_size);
+
+uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t **out);
+
+void eth_sign_msg_data(const MessageData *msg_data,
+                       const txn_metadata *transaction_metadata,
+                       const char *mnemonics,
+                       const char *passphrase,
+                       uint8_t *sig);
 #endif

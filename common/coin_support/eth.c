@@ -351,10 +351,36 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig) {
-  uint8_t *data;
-  uint16_t data_size = 0;
-  get_unsigned_data_buffer_from_msg(msg_data, data);
-  sig_unsigned_byte_array(data, sizeof(data), transaction_metadata, mnemonics, passphrase, sig);
+  uint8_t *data      = NULL;
+  uint16_t data_size = get_unsigned_data_array_from_msg(msg_data, &data);
+  print_hex_array("Data", data, data_size);
+  BSP_DelayMs(50);
+  sig_unsigned_byte_array(data, data_size, transaction_metadata, mnemonics, passphrase, sig);
+  print_hex_array("Signature", sig, 65);
+}
+
+uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t **out) {
+  switch (msg_data->messageType) {
+    case MessageData_MessageType_ETH_SIGN:
+    case MessageData_MessageType_PERSONAL_SIGN: {
+      sized_data *szd                       = (sized_data *)msg_data->data_bytes.arg;
+      char size_string[256]                 = {0};
+      uint8_t number_of_digits_in_data_size = snprintf(size_string, sizeof(size_string), "%d", szd->size - 1);
+      uint16_t data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + number_of_digits_in_data_size + szd->size - 1;
+      uint16_t offset    = 0;
+      *out               = cy_malloc(data_size);
+      memzero(*out, data_size);
+      memcpy(*out, ETH_PERSONAL_SIGN_IDENTIFIER, sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
+      offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
+      memcpy(*out + offset, size_string, number_of_digits_in_data_size);
+      offset += number_of_digits_in_data_size;
+      memcpy(*out + offset, szd->data, szd->size - 1);
+      return data_size;
+    } break;
+    case MessageData_MessageType_SIGN_TYPED_DATA:
+      break;
+  }
+  return -1;
 }
 
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
