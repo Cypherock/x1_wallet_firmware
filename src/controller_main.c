@@ -628,7 +628,6 @@ void desktop_listener_task(lv_task_t* data)
             } break;
 
           case SWAP_TXN_START: {
-//            if (wallet_selector(data_array)) {
               CY_Reset_Not_Allow(false);
 
               int64_t offset =
@@ -642,30 +641,11 @@ void desktop_listener_task(lv_task_t* data)
                   return;
               }
 
-              uint32_t source_coin_index =
-                  BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                           .send_txn_metadata.coin_index);
-
-              uint32_t dest_coin_index =
-                  BYTE_ARRAY_TO_UINT32(swap_transaction_data
-                                           .receive_txn_data.coin_index);
-
               flow_level.show_desktop_start_screen = true;
 
               is_swap_txn = true;
               flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-              snprintf(flow_level.confirmation_screen_text,
-                       sizeof(flow_level.confirmation_screen_text),
-                       UI_TEXT_SWAP_PROMPT,
-                       get_coin_name(source_coin_index,
-                                     swap_transaction_data
-                                         .send_txn_metadata.network_chain_id),
-                       get_coin_name(dest_coin_index,
-                                     swap_transaction_data
-                                         .receive_txn_data.network_chain_id));
-
           }
-//          }
             break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {

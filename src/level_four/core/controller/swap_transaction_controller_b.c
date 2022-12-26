@@ -3,7 +3,17 @@
 extern Swap_Transaction_Data swap_transaction_data;
 void swap_transaction_controller_b() {
     switch (flow_level.level_three) {
-        case SWAP_SELECT_RECV_WALLET_ID: {
+        case SWAP_CONFIRM_SEND_COIN: {
+            reset_flow_level();
+            counter.next_event_flag = true;
+        } break;
+
+        case SWAP_CONFIRM_RECEIVE_COIN: {
+            reset_flow_level();
+            counter.next_event_flag = true;
+        } break;
+
+        case SWAP_SELECT_RECEIVE_WALLET_ID: {
             reset_flow_level();
             counter.next_event_flag = true;
         }
@@ -14,7 +24,7 @@ void swap_transaction_controller_b() {
         }
             break;
 
-        case SWAP_CONFIRM_RECV_AMOUNT: {
+        case SWAP_CONFIRM_RECEIVE_AMOUNT: {
             reset_flow_level();
             counter.next_event_flag = true;
         }

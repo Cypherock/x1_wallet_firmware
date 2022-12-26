@@ -1,6 +1,41 @@
 #include "atecc_utils.h"
 #include "sha2.h"
 
+static ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type,
+                                                  struct atca_sign_internal_in_out *param,
+                                                  const uint8_t *config) {
+    const uint8_t *value = NULL;
+    uint16_t slot_locked = 0;
+
+    if (param == NULL || config == NULL || param->temp_key == NULL) {
+        return ATCA_BAD_PARAM;
+    }
+
+    // SlotConfig[TempKeyFlags.keyId]
+    value = &config[20 + param->temp_key->key_id * 2];
+    param->slot_config = (uint16_t) value[0] | ((uint16_t) value[1] << 8);
+
+    // KeyConfig[TempKeyFlags.keyId]
+    value = &config[96 + param->temp_key->key_id * 2];
+    param->key_config = (uint16_t) value[0] | ((uint16_t) value[1] << 8);
+
+    if (device_type == ATECC108A && param->temp_key->key_id < 8) {
+        value = &config[52 + param->temp_key->key_id * 2];
+        param->use_flag = value[0];
+        param->update_count = value[0];
+    } else {
+        param->use_flag = 0x00;
+        param->update_count = 0x00;
+    }
+
+    //SlotLocked:TempKeyFlags.keyId
+    slot_locked = (uint16_t) config[88] | ((uint16_t) config[89] << 8);
+    param->is_slot_locked =
+        (slot_locked & (1 << param->temp_key->key_id)) ? false : true;
+
+    return ATCA_SUCCESS;
+}
+
 void helper_get_gendig_hash(atecc_slot_define_t slot,
                             uint8_t *data,
                             uint8_t *digest,
@@ -102,39 +137,4 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
     } else {
         return ATCA_SUCCESS;
     }
-}
-
-ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type,
-                                           struct atca_sign_internal_in_out *param,
-                                           const uint8_t *config) {
-    const uint8_t *value = NULL;
-    uint16_t slot_locked = 0;
-
-    if (param == NULL || config == NULL || param->temp_key == NULL) {
-        return ATCA_BAD_PARAM;
-    }
-
-    // SlotConfig[TempKeyFlags.keyId]
-    value = &config[20 + param->temp_key->key_id * 2];
-    param->slot_config = (uint16_t) value[0] | ((uint16_t) value[1] << 8);
-
-    // KeyConfig[TempKeyFlags.keyId]
-    value = &config[96 + param->temp_key->key_id * 2];
-    param->key_config = (uint16_t) value[0] | ((uint16_t) value[1] << 8);
-
-    if (device_type == ATECC108A && param->temp_key->key_id < 8) {
-        value = &config[52 + param->temp_key->key_id * 2];
-        param->use_flag = value[0];
-        param->update_count = value[0];
-    } else {
-        param->use_flag = 0x00;
-        param->update_count = 0x00;
-    }
-
-    //SlotLocked:TempKeyFlags.keyId
-    slot_locked = (uint16_t) config[88] | ((uint16_t) config[89] << 8);
-    param->is_slot_locked =
-        (slot_locked & (1 << param->temp_key->key_id)) ? false : true;
-
-    return ATCA_SUCCESS;
 }

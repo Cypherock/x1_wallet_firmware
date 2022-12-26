@@ -66,18 +66,41 @@ typedef struct {
   ATCAIfaceCfg *cfg_atecc608a_iface;
 } atecc_data_t;
 
-ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type,
-                                           struct atca_sign_internal_in_out *param,
-                                           const uint8_t *config);
-ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
-                                     uint8_t mode,
-                                     uint8_t priv_key_id,
-                                     uint8_t data_key_id,
-                                     atecc_data_t atecc_data);
+/**
+ * @brief
+ * @details
+ *
+ * @see swap_transaction_controller(), device_authentication_controller()
+ *
+ * @param slot
+ * @param data
+ * @param digest
+ * @param postfix
+ * @param atecc_data
+ */
 void helper_get_gendig_hash(atecc_slot_define_t slot,
                             uint8_t *data,
                             uint8_t *digest,
                             uint8_t *postfix,
                             atecc_data_t atecc_data);
+
+/**
+ * @brief
+ * @details
+ *
+ * @see swap_transaction_controller(), device_authentication_controller()
+ *
+ * @param param
+ * @param mode
+ * @param priv_key_id
+ * @param data_key_id
+ * @param atecc_data
+ * @return
+ */
+ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
+                                     uint8_t mode,
+                                     uint8_t priv_key_id,
+                                     uint8_t data_key_id,
+                                     atecc_data_t atecc_data);
 
 #endif //ATECC_UTILS_H
