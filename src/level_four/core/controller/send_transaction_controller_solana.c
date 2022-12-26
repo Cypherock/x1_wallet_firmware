@@ -90,6 +90,7 @@ void send_transaction_controller_solana() {
         if (is_swap_txn) {
             data_array = swap_transaction_data.unsigned_txn_data_array;
             msg_size = swap_transaction_data.unsigned_txn_data_array_size;
+            is_swap_txn = false;
         } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
                                             &data_array, &msg_size)) {
             return;

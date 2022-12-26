@@ -216,14 +216,23 @@ int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
                                     const uint32_t size) {
     if (txn_data_ptr == NULL || data_byte_array == NULL || size == 0)
         return -1;
+
     int64_t offset = 0;
+
+    if (offset + sizeof(txn_data_ptr->send_amount) > size) return -1;
 
     txn_data_ptr->send_amount =
         BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
     offset += sizeof(txn_data_ptr->send_amount);
+
+    if (offset + sizeof(txn_data_ptr->receive_amount) > size) return -1;
+
     txn_data_ptr->receive_amount =
         BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
     offset += sizeof(txn_data_ptr->receive_amount);
+
+    if (offset + sizeof(txn_data_ptr->fee) > size) return -1;
+
     txn_data_ptr->fee =
         BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
     offset += sizeof(txn_data_ptr->fee);
@@ -233,6 +242,8 @@ int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
              size,
              sizeof(txn_data_ptr->send_txn_wallet_id),
              &offset);
+
+    if (offset < 0) return -1;
 
     offset += byte_array_to_txn_metadata(data_byte_array + offset,
                                          size,

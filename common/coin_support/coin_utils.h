@@ -189,12 +189,15 @@ typedef struct Receive_Transaction_Data {
 
 #pragma pack(push, 1)
 /**
- * @brief Stores the deserialize information from desktop for the swap
+ * @brief Stores the deserialized information from desktop for the swap
  * transaction process.
  * @details
  *
  * @see swap_transaction_controller(), swap_transaction_controller_b(),
- * swap_transaction_tasks(), SWAP_TXN_START
+ * swap_transaction_tasks(), desktop_listener_task(),
+ * send_transaction_controller(), send_transaction_controller_eth(),
+ * send_transaction_controller_near(), send_transaction_controller_solana(),
+ * byte_array_to_swap_txn_data(), SWAP_TXN_START
  */
 typedef struct Swap_Transaction_Data {
   uint32_t send_amount;
@@ -271,7 +274,27 @@ int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  */
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
 
+/**
+ * @brief Deserialize byte array to swap transaction data
+ * @details
+ *
+ * @param [out] txn_data_ptr    Pointer to the swap transaction data instance
+ * @param [in] data_byte_array  Byte array to be deserialized
+ * @param [in] size             Size of the byte array data_byte_array
+ *
+ * @return int64_t Offset used in conversion
+ * @retval  -1 if there is an error in deserialization which can occur due
+ * to invalid data_byte_array or size is not sufficient to deserialize the data
+ * @retval  >0 if deserialization is successful and returns the offset used
+ * in conversion
+ *
+ * @note
+ * Swap_Transaction_Data contains a txn_metadata struct and a
+ * Receive_Transaction_Data struct. They are deserialized separately by invoking
+ * byte_array_to_txn_metadata() and byte_array_to_recv_txn_data() respectively.
+ */
 int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
+
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
  * 
