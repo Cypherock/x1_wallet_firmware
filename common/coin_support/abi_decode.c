@@ -57,7 +57,7 @@
  */
 
 #include <stdint.h>
-#include "abi_decode.h"
+#include "abi.h"
 #include "assert_conf.h"
 #include "utils.h"
 #include "eth.h"
@@ -73,7 +73,7 @@ uint8_t Abi_DynamicHelp(
                         uint8_t **dpAbiDataPtr
                        )
 {
-    uint8_t returnCode = ABI_DECODE_BAD_ARGUMENT;
+    uint8_t returnCode = ABI_BAD_ARGUMENT;
     
     if (
         (NULL == pAbiTypeData)              ||
@@ -108,7 +108,7 @@ uint8_t Abi_DynamicHelp(
                 UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)
                )
             {
-                returnCode = ABI_DECODE_PROCESS_INCOMPLETE;
+                returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
             
@@ -128,7 +128,7 @@ uint8_t Abi_DynamicHelp(
                 UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, numBytesInData)
                )
             {
-                returnCode = ABI_DECODE_PROCESS_INCOMPLETE;
+                returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
             
@@ -139,7 +139,7 @@ uint8_t Abi_DynamicHelp(
             *pNumBytesReturned = numBytesInData;
             *dpAbiDataPtr = pAbiTypeData;
 
-            returnCode = ABI_DECODE_PROCESS_COMPLETE;
+            returnCode = ABI_PROCESS_COMPLETE;
             break;              
         }
         case Abi_uint256_array_dynamic_e:
@@ -156,7 +156,7 @@ uint8_t Abi_DynamicHelp(
                 UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)
                )
             {
-                returnCode = ABI_DECODE_PROCESS_INCOMPLETE;
+                returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
 
@@ -180,7 +180,7 @@ uint8_t Abi_DynamicHelp(
                                )
                )
             {
-                returnCode = ABI_DECODE_PROCESS_INCOMPLETE;
+                returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
 
@@ -192,7 +192,7 @@ uint8_t Abi_DynamicHelp(
             *pNumBytesReturned = numElementsInDataArr;
             *dpAbiDataPtr = pAbiTypeData;
 
-            returnCode = ABI_DECODE_PROCESS_COMPLETE;
+            returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
         default:

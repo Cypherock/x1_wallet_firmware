@@ -655,7 +655,7 @@ uint8_t ETH_ExtractArguments(
         if (Abi_bytes_dynamic_e <= pArgumentAbiType[currArgument])
         {
             uint8_t *pDynamicDataPtr = NULL;
-            uint8_t abiReturnCode = ABI_DECODE_PROCESS_INCOMPLETE;
+            uint8_t abiReturnCode = ABI_PROCESS_INCOMPLETE;
             uint32_t numBytesReturned = 0;
 
             /* Get the information regarding dynamic data types */
@@ -669,12 +669,12 @@ uint8_t ETH_ExtractArguments(
                                            );
             
             /**
-             * If abiReturnCode is not ABI_DECODE_PROCESS_COMPLETE, that means
+             * If abiReturnCode is not ABI_PROCESS_COMPLETE, that means
              * the function spotted an invalid argument during the call, or
              * the payload was not good as bounds check failed internally
              */
             if (
-                (ABI_DECODE_PROCESS_COMPLETE != abiReturnCode)      ||
+                (ABI_PROCESS_COMPLETE != abiReturnCode)      ||
                 (NULL == pDynamicDataPtr)
                )
             {

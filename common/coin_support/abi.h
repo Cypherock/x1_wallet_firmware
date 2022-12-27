@@ -1,5 +1,5 @@
 /**
- * @file    abi_decode.h
+ * @file    abi.h
  * @author  Cypherock X1 Team
  * @brief   Title of the file.
  *          Short description of the file
@@ -22,12 +22,15 @@
 #define Abi_address_e_SZ_IN_BYTES					(20)
 #define Abi_address_e_OFFSET_BE	(Abi_uint256_e_SZ_IN_BYTES - Abi_address_e_SZ_IN_BYTES)
 
+#define Abi_bool_e_SZ_IN_BYTES                      (1)
+#define Abi_bool_e_OFFSET_BE    (Abi_uint256_e_SZ_IN_BYTES - Abi_bool_e_SZ_IN_BYTES)
+
 #define ABI_DYN_METADATA_SZ_IN_BYTES				(4)
 #define ABI_DYN_METADATA_OFFET_BE	(Abi_uint256_e_SZ_IN_BYTES - ABI_DYN_METADATA_SZ_IN_BYTES)
 
-#define ABI_DECODE_BAD_ARGUMENT                     (0x11)
-#define ABI_DECODE_PROCESS_INCOMPLETE				(0x22)
-#define ABI_DECODE_PROCESS_COMPLETE                 (0xAA)
+#define ABI_BAD_ARGUMENT                            (0x11)
+#define ABI_PROCESS_INCOMPLETE                      (0x22)
+#define ABI_PROCESS_COMPLETE                        (0xAA)
 
 
 /* Enums
@@ -47,6 +50,7 @@ typedef enum
     Abi_uint256_e = 1,
     Abi_address_e,
     Abi_bytes_e,
+    Abi_bool_e,
 
     /**
 	 * Currently only 2 types of dynamic ABI types are supported:
@@ -57,6 +61,7 @@ typedef enum
 	 */
     Abi_bytes_dynamic_e,
     Abi_uint256_array_dynamic_e,
+    Abi_string_dynamic_e,
 } Abi_Type_e;
 
 /* Global function prototypes
@@ -79,17 +84,17 @@ typedef enum
  * of uint256 elements in uint256 array.
  * @param dpAbiDataPtr Pointer to the base address of the static Abi data. This 
  * function modifies the value for the caller. The caller must 
- * only consider this value valid if the function returns ABI_DECODE_PROCESS_COMPLETE 
+ * only consider this value valid if the function returns ABI_PROCESS_COMPLETE 
  * return code.
  * ->if (inputAbiType == Abi_bytes_dynamic_e): This depicts base address of the 
  * Abi bytes of size pNumBytesReturned
  * ->else if (inputAbiType == Abi_uint256_array_dynamic_e): This depicts the base 
  * address of the uint256[] elements in uint256 array.
  * @return uint8_t Depicts the status of operation for this function
- * ABI_DECODE_BAD_ARGUMENT: If any argument is invalid
- * ABI_DECODE_PROCESS_INCOMPLETE: If any issue is found during Abi decoding. It could
+ * ABI_BAD_ARGUMENT: If any argument is invalid
+ * ABI_PROCESS_INCOMPLETE: If any issue is found during Abi decoding. It could
  * be due to out of bound access.
- * ABI_DECODE_PROCESS_COMPLETE: If no issue is found during the Abi decoding
+ * ABI_PROCESS_COMPLETE: If no issue is found during the Abi decoding
  */
 uint8_t Abi_DynamicHelp(
                         Abi_Type_e inputAbiType,
@@ -121,5 +126,23 @@ ui_display_node *ABI_Stringify(
                                 uint8_t *pAbiTypeData,
                                 uint32_t additionalData
                               );
+
+
+/**
+ * @brief 
+ * 
+ * @param inputAbiType 
+ * @param additionalInput 
+ * @param pAbiTypeData 
+ * @param pBuffer 
+ * @return uint8_t 
+ */
+uint8_t Abi_Encode(
+                    Abi_Type_e inputAbiType,
+                    uint8_t additionalInput,
+                    const uint8_t *pAbiTypeData,
+                    uint8_t *pBuffer
+                  );
+
 
 #endif /* ABI_DECODE */
