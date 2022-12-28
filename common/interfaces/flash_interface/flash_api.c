@@ -86,6 +86,7 @@ static bool _wallet_is_filled(uint8_t index)
 
     if (flash_ram_instance.wallets[index].state == UNVERIFIED_VALID_WALLET
         || flash_ram_instance.wallets[index].state == VALID_WALLET
+        || flash_ram_instance.wallets[index].state == INVALID_WALLET
         || flash_ram_instance.wallets[index].state == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
         return true;
     }
@@ -717,7 +718,7 @@ int set_wallet_state(const uint8_t wallet_index, const wallet_state new_state)
     if (!_wallet_is_filled(wallet_index))
         return INVALID_ARGUMENT;
 
-    if (new_state == VALID_WALLET || new_state == UNVERIFIED_VALID_WALLET) {
+    if (new_state == VALID_WALLET || new_state == UNVERIFIED_VALID_WALLET || INVALID_WALLET) {
         // new_state is valid and can be set
         flash_ram_instance.wallets[wallet_index].state = new_state;
     } else {

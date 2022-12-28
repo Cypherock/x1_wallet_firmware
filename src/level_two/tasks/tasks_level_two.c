@@ -94,11 +94,19 @@ void level_two_tasks()
             cy_exit_flow();
             return;
         }
-        LOG_INFO("wallet %d %d %d %s",
+        LOG_INFO("wallet %d %d %d %d %s",
             get_wallet_info(wallet_index),
             get_wallet_card_state(wallet_index),
             get_wallet_locked_status(wallet_index),
+            get_wallet_state(wallet_index),
             get_wallet_name(wallet_index));
+
+        if (get_wallet_state(wallet_index) == INVALID_WALLET) {
+            mark_list_choice(LEVEL_THREE_DELETE_WALLET);
+            mark_event_over();
+            mark_error_screen(ui_text_creation_failed_delete_wallet);
+            return;
+        }
 
         if (is_wallet_locked(wallet_index)) {
             mark_list_choice(LEVEL_THREE_WALLET_LOCKED);

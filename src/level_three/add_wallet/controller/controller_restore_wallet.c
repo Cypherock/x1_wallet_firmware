@@ -67,6 +67,7 @@
 #include "ui_message.h"
 #include "wallet_utilities.h"
 #include "flash_if.h"
+#include "card_action_controllers.h"
 
 
 extern char* ALPHABET;
@@ -287,10 +288,15 @@ void restore_wallet_controller()
     } break;
 
     case RESTORE_WALLET_TAP_CARDS:
-        tap_cards_for_write_flow_controller();
+        tap_cards_for_write_and_verify_flow_controller();
+        break;
+
+    case RESTORE_WALLET_VERIFY_SHARES:
+        flow_level.level_three = verify_card_share_data() == 1 ? RESTORE_WALLET_SUCCESS_MESSAGE : RESTORE_WALLET_FAILED_MESSAGE;
         break;
 
     case RESTORE_WALLET_SUCCESS_MESSAGE:
+    case RESTORE_WALLET_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -298,9 +304,7 @@ void restore_wallet_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
+        reset_flow_level();
         break;
 
     default:

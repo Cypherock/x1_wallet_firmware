@@ -47,8 +47,8 @@
 #define SKIP_ENTER_MNEMONICS_DEBUG
 #endif
 
-#define PRINT_FLOW_LVL() LOG_SWV("ar=%d, af=%d, fl1=%d, fl2=%d, fl3=%d, cr=%d, rst=%d\n", main_app_ready, device_auth_flag, flow_level.level_one, \
-                           flow_level.level_two, flow_level.level_three, counter.level, sys_flow_cntrl_u.bits.reset_not_allowed)
+#define PRINT_FLOW_LVL() LOG_SWV("ar=%d, af=%d, fl1=%d, fl2=%d, fl3=%d, fl4=%d, cr=%d, rst=%d\n", main_app_ready, device_auth_flag, flow_level.level_one, \
+                           flow_level.level_two, flow_level.level_three, flow_level.level_four, counter.level, sys_flow_cntrl_u.bits.reset_not_allowed)
 #define CY_TRIGGER_SOURCE (CY_External_Triggered() ? CY_APP_USB_TASK : CY_APP_DEVICE_TASK)
 
 /**

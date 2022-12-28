@@ -70,6 +70,7 @@
 #include <stdlib.h>
 #include "ui_message.h"
 #include "flash_if.h"
+#include "card_action_controllers.h"
 
 extern Flash_Wallet wallet_for_flash;
 extern Wallet_shamir_data wallet_shamir_data;
@@ -204,44 +205,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_SEED_GENERATED: {
-        flow_level.level_three = GENERATE_WALLET_SHOW_RANDOMLY_GENERATED_SEEDS_INSTRUCTION;
-    } break;
-
-    case GENERATE_WALLET_SHOW_RANDOMLY_GENERATED_SEEDS_INSTRUCTION: {
-        flow_level.level_three = GENERATE_WALLET_SHOW_ALL_WORDS;
-    } break;
-
-    case GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED: {
-        flow_level.level_three = GENERATE_WALLET_SHOW_ALL_WORDS;
-    } break;
-
-    case GENERATE_WALLET_SHOW_ALL_WORDS: {
-        flow_level.level_three = GENERATE_WALLET_CONFIRM_RANDOM_WORD_1;
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_1: {
-        if (flow_level.screen_input.list_choice == flow_level.screen_input.expected_list_choice) {
-            flow_level.level_three = GENERATE_WALLET_CONFIRM_RANDOM_WORD_2;
-        } else {
-            flow_level.level_three = GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED;
-        }
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_2: {
-        if (flow_level.screen_input.list_choice == flow_level.screen_input.expected_list_choice) {
-            flow_level.level_three = GENERATE_WALLET_CONFIRM_RANDOM_WORD_3;
-        } else {
-            flow_level.level_three = GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED;
-        }
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_3: {
-        if (flow_level.screen_input.list_choice == flow_level.screen_input.expected_list_choice) {
-            memzero(wallet_credential_data.mnemonics, sizeof(wallet_credential_data.mnemonics));
-            flow_level.level_three = GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE;
-        } else {
-            flow_level.level_three = GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED;
-        }
+        flow_level.level_three = GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE;
     } break;
 
     case GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE: {
@@ -252,10 +216,15 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_TAP_CARD_FLOW: {
-        tap_cards_for_write_flow_controller();
+        tap_cards_for_write_and_verify_flow_controller();
     } break;
 
+    case GENERATE_WALLET_VERIFY_SHARES:
+        flow_level.level_three = verify_card_share_data() == 1 ? GENERATE_WALLET_SUCCESS_MESSAGE : GENERATE_WALLET_FAILED_MESSAGE;
+        break;
+
     case GENERATE_WALLET_SUCCESS_MESSAGE:
+    case GENERATE_WALLET_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -263,18 +232,10 @@ void generate_wallet_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
+        reset_flow_level();
         break;
 
-    case GENERATE_WALLET_DELETE:
-        flow_level.level_three = 1;
-        flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        break;
-    
-    default:
+   default:
         break;
     }
 }

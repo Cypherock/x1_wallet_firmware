@@ -66,6 +66,7 @@
 #include "tasks.h"
 #include "ui_message.h"
 #include "wallet_utilities.h"
+#include "card_action_controllers.h"
 
 extern Wallet_credential_data wallet_credential_data;
 extern char* ALPHABET;
@@ -190,10 +191,15 @@ void arbitrary_data_controller()
     } break;
 
     case ARBITRARY_DATA_TAP_CARDS:
-        tap_cards_for_write_flow_controller();
+        tap_cards_for_write_and_verify_flow_controller();
+        break;
+
+    case ARBITRARY_DATA_VERIFY_SHARES:
+        flow_level.level_three = verify_card_share_data() == 1 ? ARBITRARY_DATA_SUCCESS_MESSAGE : ARBITRARY_DATA_FAILED_MESSAGE;
         break;
 
     case ARBITRARY_DATA_SUCCESS_MESSAGE:
+    case ARBITRARY_DATA_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -201,9 +207,7 @@ void arbitrary_data_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
+        reset_flow_level();
         break;
 
     default:

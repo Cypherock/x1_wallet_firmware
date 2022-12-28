@@ -123,7 +123,7 @@ void tap_card_pair_card_controller();
  *
  * @note
  */
-void tap_cards_for_write_flow_controller();
+void tap_cards_for_write_and_verify_flow_controller();
 
 /**
  * @brief

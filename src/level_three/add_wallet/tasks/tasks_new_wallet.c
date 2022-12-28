@@ -78,32 +78,6 @@ extern char* NUMBERS;
 
 extern Wallet_credential_data wallet_credential_data;
 
-static void generate_wallet_random_word()
-{
-    char msg[35];
-    uint8_t choose;
-    uint16_t word_to_choose;
-    uint16_t temp;
-    random_generate(&choose, 1);
-    random_generate((uint8_t*)&word_to_choose, 2);
-    choose %= 2;
-    if (choose) {
-        word_to_choose %= 24;
-        mark_expected_list_choice(1);
-        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, word_to_choose + 1, wallet_credential_data.mnemonics[word_to_choose]);
-    } else {
-        word_to_choose = word_to_choose & 0x7FF;
-        temp = word_to_choose % 24;
-        snprintf(msg, sizeof(msg), UI_TEXT_IS_WORD, temp + 1, wordlist[word_to_choose]);
-        if (strcmp(wordlist[word_to_choose], wallet_credential_data.mnemonics[temp]) == 0) {
-            mark_expected_list_choice(1);
-        } else {
-            mark_expected_list_choice(0);
-        }
-    }
-    confirm_scr_init(msg);
-}
-
 void tasks_add_new_wallet()
 {
     if (flow_level.show_error_screen) {
@@ -205,35 +179,6 @@ void tasks_add_new_wallet()
         message_scr_init(ui_text_seed_generated_successfully);
     } break;
 
-    case GENERATE_WALLET_SHOW_RANDOMLY_GENERATED_SEEDS_INSTRUCTION: {
-        multi_instruction_init(ui_text_seed_phrase_will_be_shown_copy_to_verify, 2, DELAY_LONG_STRING, true);
-    } break;
-
-    case GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED: {
-        confirm_scr_init(ui_text_incorrect_choice_view_seed_again);
-    } break;
-
-    case GENERATE_WALLET_SHOW_ALL_WORDS: {
-        set_theme(LIGHT);
-        list_init(
-            wallet_credential_data.mnemonics,
-            wallet.number_of_mnemonics, ui_text_word_hash,
-            true);
-        reset_theme();
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_1: {
-        generate_wallet_random_word();
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_2: {
-        generate_wallet_random_word();
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_3: {
-        generate_wallet_random_word();
-    } break;
-
     case GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE:
         mark_event_over();
         break;
@@ -242,11 +187,20 @@ void tasks_add_new_wallet()
         tap_cards_for_write_flow();
     } break;
 
+    case GENERATE_WALLET_VERIFY_SHARES:
+        instruction_scr_init(ui_text_processing, "");
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
+        mark_event_over();
+        break;
+
     case GENERATE_WALLET_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_x1cards);
+        instruction_scr_destructor();
+        multi_instruction_init(ui_text_verification_is_now_complete_messages, 4, DELAY_LONG_STRING, true);
     } break;
 
-    case GENERATE_WALLET_DELETE:
+    case GENERATE_WALLET_FAILED_MESSAGE:
+        instruction_scr_destructor();
         message_scr_init(ui_text_creation_failed_delete_wallet);
         break;
 

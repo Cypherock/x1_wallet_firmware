@@ -31,6 +31,7 @@ typedef enum log_config {
 
 /// enum to signify the wallet state
 typedef enum wallet_state {
+    INVALID_WALLET = 1,
     UNVERIFIED_VALID_WALLET = 14,
     VALID_WALLET = 7,
     VALID_WALLET_WITHOUT_DEVICE_SHARE = 15,
