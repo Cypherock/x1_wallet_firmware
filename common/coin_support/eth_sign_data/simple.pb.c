@@ -6,12 +6,24 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(SimpleMessage, SimpleMessage, AUTO)
+
+
 PB_BIND(LinkedList, LinkedList, AUTO)
+
+
+PB_BIND(KAryTree, KAryTree, AUTO)
+
 
 PB_BIND(TypedDataStruct, TypedDataStruct, AUTO)
 
-PB_BIND(TypedDataStruct_Eip712StructMember, TypedDataStruct_Eip712StructMember, AUTO)
 
-PB_BIND(TypedDataStruct_Eip712FieldType, TypedDataStruct_Eip712FieldType, AUTO)
+PB_BIND(TypedDataStruct_TypedDataNode, TypedDataStruct_TypedDataNode, AUTO)
+
 
 PB_BIND(MessageData, MessageData, AUTO)
+
+
+
+
+

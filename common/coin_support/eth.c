@@ -59,7 +59,6 @@
 #include "../protocol_buffers/pb_decode.h"
 #include "assert_conf.h"
 #include "contracts.h"
-#include "eth_sign_data/decoder.h"
 #include "int-util.h"
 #include "logger.h"
 #include "utils.h"
@@ -332,13 +331,12 @@ bool is_token_whitelisted(txn_metadata *metadata_ptr) {
 }
 
 bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_length) {
-  sized_data *szd = (sized_data *)msg_data->data_bytes.arg;
   switch (msg_data->messageType) {
     case MessageData_MessageType_PERSONAL_SIGN:
-      strncpy(output, szd->data, out_length);
+      strncpy(output, (const char *)msg_data->data_bytes->bytes, out_length);
       break;
     case MessageData_MessageType_ETH_SIGN:
-      byte_array_to_hex_string(szd->data, szd->size - 1, output, out_length);
+      byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size, output, out_length);
       break;
     default:
       return false;
@@ -363,18 +361,19 @@ uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t *
   switch (msg_data->messageType) {
     case MessageData_MessageType_ETH_SIGN:
     case MessageData_MessageType_PERSONAL_SIGN: {
-      sized_data *szd                       = (sized_data *)msg_data->data_bytes.arg;
-      char size_string[256]                 = {0};
-      uint8_t number_of_digits_in_data_size = snprintf(size_string, sizeof(size_string), "%d", szd->size - 1);
-      uint16_t data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + number_of_digits_in_data_size + szd->size - 1;
-      uint16_t offset    = 0;
-      *out               = cy_malloc(data_size);
+      char size_string[256] = {0};
+      uint8_t number_of_digits_in_data_size =
+          snprintf(size_string, sizeof(size_string), "%d", msg_data->data_bytes->size);
+      uint16_t data_size =
+          sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + number_of_digits_in_data_size + msg_data->data_bytes->size;
+      uint16_t offset = 0;
+      *out            = cy_malloc(data_size);
       memzero(*out, data_size);
       memcpy(*out, ETH_PERSONAL_SIGN_IDENTIFIER, sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
       offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
       memcpy(*out + offset, size_string, number_of_digits_in_data_size);
       offset += number_of_digits_in_data_size;
-      memcpy(*out + offset, szd->data, szd->size - 1);
+      memcpy(*out + offset, msg_data->data_bytes->bytes, msg_data->data_bytes->size);
       return data_size;
     } break;
     case MessageData_MessageType_SIGN_TYPED_DATA:
@@ -387,24 +386,24 @@ void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
   switch (msg_data->messageType) {
     case MessageData_MessageType_ETH_SIGN: {
       char buffer[512]  = "0x";
-      sized_data *szd   = (sized_data *)msg_data->data_bytes.arg;
-      size_t value_size = byte_array_to_hex_string(szd->data, szd->size - 1, buffer + 2, sizeof(buffer) - 2);
+      size_t value_size = byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size, buffer + 2,
+                                                   sizeof(buffer) - 2);
       *node             = eth_create_display_node("Verify Message", 20, buffer, value_size);
     } break;
     case MessageData_MessageType_PERSONAL_SIGN: {
-      sized_data *szd = (sized_data *)msg_data->data_bytes.arg;
-      *node           = eth_create_display_node("Verify Message", 20, szd->data, szd->size);
+      *node = eth_create_display_node("Verify Message", 20, (const char *)msg_data->data_bytes->bytes,
+                                      msg_data->data_bytes->size);
     } break;
     case MessageData_MessageType_SIGN_TYPED_DATA: {
       //dummy data for eip712
       char arr[][20] = {"test", "test2", "test3"};
       char val[][20] = {"test-address", "test2-address", "test3-address"};
 
-      *node                 = eth_create_display_node("node title", 20, "node value", 20);
+      *node                 = eth_create_display_node("node title", 64, "node value", 64);
       ui_display_node *temp = NULL;
       temp                  = *node;
       for (int i = 0; i < 3; i++) {
-        temp->next = eth_create_display_node(arr[i], 20, val[i], 20);
+        temp->next = eth_create_display_node(arr[i], 64, val[i], 64);
         temp       = temp->next;
       }
     } break;
@@ -445,8 +444,6 @@ int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, Message
 void eth_init_msg_data(MessageData *msg_data) {
   MessageData zero = MessageData_init_zero;
   memcpy(msg_data, &zero, sizeof(zero));
-
-  msg_data->data_bytes.funcs.decode = read_data_bytes;
 }
 
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
