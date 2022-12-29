@@ -15,8 +15,8 @@ typedef struct{
 
 test_cases_t test_case = 0xFF;
 test_state_t test_state = 0xff;
-uint8_t test_input_data[1000] = {0};
-uint16_t test_input_data_len=0;
+uint8_t test_input_data[1000] = {0}, test_output_data[1000] = {0};
+uint16_t test_data_len=0;
 test_block_data_t test_data = {0};
 extern lv_task_t* listener_task;
 
@@ -48,7 +48,7 @@ void set_test_case(){
 
             test_data.end_flow.level_one = LEVEL_TWO_NEW_WALLET;
             test_data.end_flow.level_two = LEVEL_THREE_GENERATE_WALLET;
-            test_data.end_flow.level_three = GENERATE_WALLET_SEED_GENERATED+1;
+            test_data.end_flow.level_three = GENERATE_WALLET_SEED_GENERATED;
             LOG_INFO("TEST: generate seed triggered");
             test_state = TEST_DATA_READY;
         break;
@@ -155,13 +155,22 @@ void log_test_result(){
     switch (test_case)
     {
     case TEST_GENERATE_SEED:{
+        test_data_len=0;
         LOG_INFO("TEST: Generated seed from random secret");
         for(int i = 0; i < 24; i++)
             LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
         LOG_INFO("TEST: Generated shares");
-        for(int i = 0; i < 5; i++)
+        for(int i = 0; i < 5; i++){
             log_hex_array("shares: ", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            test_data_len+=32;
+        }
         LOG_INFO("TEST: Log done.");
+        __multi_to_single_line(wallet_credential_data.mnemonics, 24, (char*)(test_output_data+test_data_len));
+        for(int i=0; i<24; i++){
+            test_data_len+=strlen(wallet_credential_data.mnemonics[i])+1;
+        }
+        transmit_data_to_app(DEVICE_SHAMIR_GENERATE_TEST, test_output_data, test_data_len);
         }break;
     case TEST_RESTORE_SEED:{
         LOG_INFO("TEST: Generated shares");
@@ -189,15 +198,20 @@ void repeated_test_task(){
         break;
     case TEST_END_REACHED:
         log_test_result();
-        break;
+        // break;
     case TEST_COMPLETED:
         reset_flow_level();
         test_state++;
+        break;
+    case TEST_IDLE:
+        memzero(test_input_data, sizeof(test_input_data));
+        memzero(test_output_data, sizeof(test_output_data));
+        memzero(&test_data, sizeof(test_data));
+        test_data_len=0;
+        break;
     default:
-        if(test_case == TEST_GENERATE_SEED){
-            test_state = NO_TEST;
-            test_case = TEST_RESTORE_SEED;
-        }break;
+        test_case = TEST_IDLE;
+        break;
     }
 
 }

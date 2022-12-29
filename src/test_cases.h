@@ -19,6 +19,6 @@ typedef enum{
 }test_cases_t;
 
 extern uint8_t test_input_data[1000]; 
-extern uint16_t test_input_data_len=0;
+extern uint16_t test_data_len;
 extern test_cases_t test_case;
 extern test_state_t test_state;

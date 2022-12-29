@@ -177,7 +177,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_SEED_GENERATE: {
-        random_generate(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);
+        // random_generate(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);
         mnemonic_clear();
         const char* mnemo = mnemonic_from_data(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);
         
