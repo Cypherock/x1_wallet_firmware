@@ -125,6 +125,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
+        // TODO: Move pin value and hashes to SRAM2 CHI-2141
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
@@ -132,6 +133,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_CONFIRM: {
+        // TODO: Remove malloc for temp
         uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
         ASSERT(temp != NULL);
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
@@ -146,6 +148,7 @@ void generate_wallet_controller()
             flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+        // TODO: Use SHA256_DIGEST_LENGTH instead of sizeof(temp) 
         memzero(temp, sizeof(temp));
         free(temp);
     } break;
@@ -177,6 +180,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_SEED_GENERATE: {
+        // TODO: Use different variable for secret values instead of wallet.wallet_share_with_mac_and_nonce
         random_generate(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);
         mnemonic_clear();
         const char* mnemo = mnemonic_from_data(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);

@@ -101,6 +101,7 @@ void verify_wallet_tasks()
         break;
 
     case VERIFY_WALLET_SHOW_MNEMONICS: {
+        // Todo: create local varible in SRAM2
         uint8_t *secret;
         uint8_t output;
 
@@ -126,6 +127,7 @@ void verify_wallet_tasks()
         }
 
         if (output == 0) {
+            // TODO: Should clear before freeing the variable
             free(secret);
             LOG_ERROR("xx01 5C2");
             mark_event_cancel();

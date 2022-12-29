@@ -140,6 +140,7 @@ char arbitrary_data[4096 / 8 + 1];
  * @brief Global Flow_level instance.
  *        Will be used in other files using getter function
  */
+// TODO: Move flow level to SRAM2 CHI-2141
 Flow_level flow_level;
 /**
  * @brief Global Counter instance.
