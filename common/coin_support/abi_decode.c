@@ -91,7 +91,7 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
             offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
             /* Goto offset of the dynamic input */
-            pAbiTypeData = pAbiTypeDataBase + offsetDynamicData;
+            pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
 
             /* Ensure if reading from pAbiTypeData is safe */
             if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
@@ -132,7 +132,7 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
             offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
             /* Goto offset of the dynamic input */
-            pAbiTypeData = pAbiTypeDataBase + offsetDynamicData;
+            pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
 
             /* Ensure if reading from pAbiTypeData is safe */
             if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,

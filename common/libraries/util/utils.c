@@ -68,6 +68,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 /**
  * @brief struct for

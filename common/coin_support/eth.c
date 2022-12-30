@@ -65,6 +65,7 @@
 
 static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadata);
 
+/* Refer https://www.4byte.directory/signatures/?bytes4_signature=0x7c025200 */
 #define EVM_swap_TAG      (0x7c025200)
 #define EVM_swap_NUM_ARGS 10
 const Abi_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] = {
@@ -75,6 +76,7 @@ const char *EVM_swap_Title = "Function: swap";
 const char *EVM_swap_Signature =
     "swap(address,(address,address,address,address,uint256,uint256,uint256),bytes,bytes)";
 
+/* Refer https://www.4byte.directory/signatures/?bytes4_signature=0xe449022e */
 #define EVM_uniswapV3Swap_TAG      (0xe449022e)
 #define EVM_uniswapV3Swap_NUM_ARGS 3
 const Abi_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] = {
@@ -83,6 +85,7 @@ const Abi_Type_e EVM_uniswapV3SwapDataType[EVM_uniswapV3Swap_NUM_ARGS] = {
 const char *EVM_uniswapV3Swap_Title     = "Function: uniswapV3Swap";
 const char *EVM_uniswapV3Swap_Signature = "uniswapV3Swap(uint256,uint256,uint256[])";
 
+/* Refer https://www.4byte.directory/signatures/?bytes4_signature=0x42842e0e */
 #define EVM_safeTransferFrom_TAG      (0x42842e0e)
 #define EVM_safeTransferFrom_NUM_ARGS 3
 const Abi_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] = {
@@ -91,6 +94,7 @@ const Abi_Type_e EVM_safeTransferFromDataType[EVM_safeTransferFrom_NUM_ARGS] = {
 const char *EVM_safeTransferFrom_Title     = "Function: safeTransferFrom";
 const char *EVM_safeTransferFrom_Signature = "safeTransferFrom(address,address,uint256)";
 
+/* Refer https://www.4byte.directory/signatures/?bytes4_signature=0xd0e30db0 */
 #define EVM_deposit_TAG      (0xd0e30db0)
 #define EVM_deposit_NUM_ARGS 0
 const Abi_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] = {
@@ -502,30 +506,30 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
     switch (functionTag) {
         case EVM_swap_TAG: {
             numArgsInFunction    = EVM_swap_NUM_ARGS;
-            *(dpAbiTypeArray)    = &(EVM_swapDataType[0]);
-            EvmFunctionTitle     = EVM_swap_Title;
-            EvmFunctionSignature = EVM_swap_Signature;
+            *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_swapDataType[0]));
+            EvmFunctionTitle     = (char *)EVM_swap_Title;
+            EvmFunctionSignature = (char *)EVM_swap_Signature;
             break;
         }
         case EVM_uniswapV3Swap_TAG: {
             numArgsInFunction    = EVM_uniswapV3Swap_NUM_ARGS;
-            *(dpAbiTypeArray)    = &(EVM_uniswapV3SwapDataType[0]);
-            EvmFunctionTitle     = EVM_uniswapV3Swap_Title;
-            EvmFunctionSignature = EVM_uniswapV3Swap_Signature;
+            *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_uniswapV3SwapDataType[0]));
+            EvmFunctionTitle     = (char *)EVM_uniswapV3Swap_Title;
+            EvmFunctionSignature = (char *)EVM_uniswapV3Swap_Signature;
             break;
         }
         case EVM_safeTransferFrom_TAG: {
             numArgsInFunction    = EVM_safeTransferFrom_NUM_ARGS;
-            *(dpAbiTypeArray)    = &(EVM_safeTransferFromDataType[0]);
-            EvmFunctionTitle     = EVM_safeTransferFrom_Title;
-            EvmFunctionSignature = EVM_safeTransferFrom_Signature;
+            *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_safeTransferFromDataType[0]));
+            EvmFunctionTitle     = (char *)EVM_safeTransferFrom_Title;
+            EvmFunctionSignature = (char *)EVM_safeTransferFrom_Signature;
             break;
         }
         case EVM_deposit_TAG: {
             numArgsInFunction    = EVM_deposit_NUM_ARGS;
-            *(dpAbiTypeArray)    = &(EVM_depositDataType[0]);
-            EvmFunctionTitle     = EVM_deposit_Title;
-            EvmFunctionSignature = EVM_deposit_Signature;
+            *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_depositDataType[0]));
+            EvmFunctionTitle     = (char *)EVM_deposit_Title;
+            EvmFunctionSignature = (char *)EVM_deposit_Signature;
             break;
         }
         default: {
@@ -554,7 +558,7 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
         return returnCode;
     }
 
-    uint8_t *pCurrHeadPtr = pAbiPayload;
+    uint8_t *pCurrHeadPtr = (uint8_t *)pAbiPayload;
 
     /**
 	 * Detect if the ethereum unsigned txn payload includes a function that
@@ -651,6 +655,10 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
         pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
         returnCode = ETH_UTXN_ABI_DECODE_OK;
 
+        Abi_Encode(Abi_uint256_e,
+                    4,
+                    NULL,
+                    NULL);
         /* TODO: Add pAbiDispNode to global linked list */
     }
 
