@@ -16,40 +16,43 @@
 
 /* MACROS
  *****************************************************************************/
-#define ABI_ELEMENT_SZ_IN_BYTES						(32)
-#define Abi_uint256_e_SZ_IN_BYTES					(32)
+#define ABI_ELEMENT_SZ_IN_BYTES   (32)
+#define Abi_uint256_e_SZ_IN_BYTES (32)
 
-#define Abi_address_e_SZ_IN_BYTES					(20)
-#define Abi_address_e_OFFSET_BE	(Abi_uint256_e_SZ_IN_BYTES - Abi_address_e_SZ_IN_BYTES)
+#define Abi_address_e_SZ_IN_BYTES (20)
+#define Abi_address_e_OFFSET_BE   (ABI_ELEMENT_SZ_IN_BYTES - Abi_address_e_SZ_IN_BYTES)
 
-#define Abi_bool_e_SZ_IN_BYTES                      (1)
-#define Abi_bool_e_OFFSET_BE    (Abi_uint256_e_SZ_IN_BYTES - Abi_bool_e_SZ_IN_BYTES)
+#define Abi_bool_e_SZ_IN_BYTES (1)
+#define Abi_bool_e_OFFSET_BE   (ABI_ELEMENT_SZ_IN_BYTES - Abi_bool_e_SZ_IN_BYTES)
 
-#define ABI_DYN_METADATA_SZ_IN_BYTES				(4)
-#define ABI_DYN_METADATA_OFFET_BE	(Abi_uint256_e_SZ_IN_BYTES - ABI_DYN_METADATA_SZ_IN_BYTES)
+#define ABI_DYN_METADATA_SZ_IN_BYTES (4)
+#define ABI_DYN_METADATA_OFFET_BE    (ABI_ELEMENT_SZ_IN_BYTES - ABI_DYN_METADATA_SZ_IN_BYTES)
 
-#define ABI_BAD_ARGUMENT                            (0x11)
-#define ABI_PROCESS_INCOMPLETE                      (0x22)
-#define ABI_PROCESS_COMPLETE                        (0xAA)
+#define ABI_BAD_ARGUMENT       (0x11)
+#define ABI_PROCESS_INCOMPLETE (0x22)
+#define ABI_PROCESS_COMPLETE   (0xAA)
 
+#define ABI_PADDING_ONES (0xFF)
 
 /* Enums
  *****************************************************************************/
 /* Refer 
 https://docs.soliditylang.org/en/latest/abi-spec.html#formal-specification-of-the-encoding */
-typedef enum
-{
+typedef enum {
     /**
 	 * Currently only 3 types of static ABI types are supported:
 	 * Abi_uint256_e
 	 * Abi_address_e
 	 * Abi_bytes_e
+     * Abi_int256_e,
+     * Abi_bool_e,
 	 * NOTE: New static ABI types must be inserted 
 	 * after Abi_bytes_e but before Abi_bytes_dynamic_e 
 	 */
     Abi_uint256_e = 1,
     Abi_address_e,
     Abi_bytes_e,
+    Abi_int256_e,
     Abi_bool_e,
 
     /**
@@ -61,7 +64,6 @@ typedef enum
 	 */
     Abi_bytes_dynamic_e,
     Abi_uint256_array_dynamic_e,
-    Abi_string_dynamic_e,
 } Abi_Type_e;
 
 /* Global function prototypes
@@ -96,14 +98,12 @@ typedef enum
  * be due to out of bound access.
  * ABI_PROCESS_COMPLETE: If no issue is found during the Abi decoding
  */
-uint8_t Abi_DynamicHelp(
-                        Abi_Type_e inputAbiType,
+uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
                         uint8_t *pAbiTypeData,
                         const uint8_t *pAbiTypeDataBase,
                         const uint32_t sizeOfAbiChunk,
                         uint32_t *pNumBytesReturned,
-                        uint8_t **dpAbiDataPtr
-                       );
+                        uint8_t **dpAbiDataPtr);
 
 /**
  * @brief This function converts ABI value based on Abi_Type_e to UTF8 format
@@ -121,12 +121,9 @@ uint8_t Abi_DynamicHelp(
  * @return ui_display_node: This function returns pointer to the UI node which can
  * be displayed by the caller.
  */
-ui_display_node *ABI_Stringify(
-                                Abi_Type_e inputAbiType,
-                                uint8_t *pAbiTypeData,
-                                uint32_t additionalData
-                              );
-
+ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
+                               uint8_t *pAbiTypeData,
+                               uint32_t additionalData);
 
 /**
  * @brief 
@@ -137,12 +134,9 @@ ui_display_node *ABI_Stringify(
  * @param pBuffer 
  * @return uint8_t 
  */
-uint8_t Abi_Encode(
-                    Abi_Type_e inputAbiType,
-                    uint8_t additionalInput,
-                    const uint8_t *pAbiTypeData,
-                    uint8_t *pBuffer
-                  );
-
+uint8_t Abi_Encode(Abi_Type_e inputAbiType,
+                   uint8_t additionalInput,
+                   const uint8_t *pAbiTypeData,
+                   uint8_t *pBuffer);
 
 #endif /* ABI_DECODE */

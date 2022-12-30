@@ -59,59 +59,47 @@
 #include <stdint.h>
 #include "abi.h"
 #include "assert_conf.h"
-#include "utils.h"
 #include "eth.h"
+#include "utils.h"
 
 /* Global functions
  *****************************************************************************/
-uint8_t Abi_DynamicHelp(
-                        Abi_Type_e inputAbiType,
+uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
                         uint8_t *pAbiTypeData,
                         const uint8_t *pAbiTypeDataBase,
                         const uint32_t sizeOfAbiChunk,
                         uint32_t *pNumBytesReturned,
-                        uint8_t **dpAbiDataPtr
-                       )
-{
+                        uint8_t **dpAbiDataPtr) {
     uint8_t returnCode = ABI_BAD_ARGUMENT;
-    
-    if (
-        (NULL == pAbiTypeData)              ||
-        (NULL == pAbiTypeDataBase)          ||
-        (NULL == pNumBytesReturned)         ||
-        (NULL == dpAbiDataPtr)
-       )
-    {
+
+    if ((NULL == pAbiTypeData) || (NULL == pAbiTypeDataBase) || (NULL == pNumBytesReturned) ||
+        (NULL == dpAbiDataPtr)) {
         return returnCode;
     }
 
-    switch (inputAbiType)
-    {
+    switch (inputAbiType) {
         /* Handle all Abi_Type_e to supress compilation warning */
         case Abi_uint256_e:
         case Abi_address_e:
         case Abi_bytes_e:
-        {
+        case Abi_int256_e:
+        case Abi_bool_e: {
             break;
         }
-        case Abi_bytes_dynamic_e:
-        {
+        case Abi_bytes_dynamic_e: {
             uint32_t offsetDynamicData;
             offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
-            
+
             /* Goto offset of the dynamic input */
             pAbiTypeData = pAbiTypeDataBase + offsetDynamicData;
 
             /* Ensure if reading from pAbiTypeData is safe */
-            if (
-                UTIL_IN_BOUNDS != 
-                UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)
-               )
-            {
+            if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
+                                                  ABI_ELEMENT_SZ_IN_BYTES)) {
                 returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
-            
+
             /**
              * pAbiTypeData points now to the 32-byte data denoting num of bytes
              * in the dynamic input
@@ -123,39 +111,32 @@ uint8_t Abi_DynamicHelp(
             pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
             /* Ensure if reading numBytesInData bytes from pAbiTypeData is safe */
-            if (
-                UTIL_IN_BOUNDS != 
-                UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, numBytesInData)
-               )
-            {
+            if (UTIL_IN_BOUNDS !=
+                UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, numBytesInData)) {
                 returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
-            
+
             /**
              * Finally inform the caller about number of bytes held by dynamic bytes (*pNumBytesReturned)
              * & pointer to start of bytes (*dpAbiDataPtr)
              */
             *pNumBytesReturned = numBytesInData;
-            *dpAbiDataPtr = pAbiTypeData;
+            *dpAbiDataPtr      = pAbiTypeData;
 
             returnCode = ABI_PROCESS_COMPLETE;
-            break;              
+            break;
         }
-        case Abi_uint256_array_dynamic_e:
-        {
+        case Abi_uint256_array_dynamic_e: {
             uint32_t offsetDynamicData;
             offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
-            
+
             /* Goto offset of the dynamic input */
             pAbiTypeData = pAbiTypeDataBase + offsetDynamicData;
 
             /* Ensure if reading from pAbiTypeData is safe */
-            if (
-                UTIL_IN_BOUNDS != 
-                UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)
-               )
-            {
+            if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
+                                                  ABI_ELEMENT_SZ_IN_BYTES)) {
                 returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
@@ -166,20 +147,14 @@ uint8_t Abi_DynamicHelp(
              */
             uint32_t numElementsInDataArr;
             numElementsInDataArr = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
-            
+
             /* Increment pAbiTypeData by ABI_ELEMENT_SZ_IN_BYTES so that it points to the array */
             pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
             /* Ensure if reading numElementsInDataArr uint256 from pAbiTypeData is safe */
-            if (
-                UTIL_IN_BOUNDS != 
-                UTIL_CheckBound(pAbiTypeDataBase,
-                                sizeOfAbiChunk, 
-                                pAbiTypeData, 
-                                (ABI_ELEMENT_SZ_IN_BYTES * numElementsInDataArr)
-                               )
-               )
-            {
+            if (UTIL_IN_BOUNDS !=
+                UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
+                                (ABI_ELEMENT_SZ_IN_BYTES * numElementsInDataArr))) {
                 returnCode = ABI_PROCESS_INCOMPLETE;
                 break;
             }
@@ -190,13 +165,12 @@ uint8_t Abi_DynamicHelp(
              * of uint256 (*dpAbiDataPtr)
              */
             *pNumBytesReturned = numElementsInDataArr;
-            *dpAbiDataPtr = pAbiTypeData;
+            *dpAbiDataPtr      = pAbiTypeData;
 
             returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
-        default:
-        {
+        default: {
             break;
         }
     }
@@ -204,94 +178,56 @@ uint8_t Abi_DynamicHelp(
     return returnCode;
 }
 
-ui_display_node *ABI_Stringify(
-                                Abi_Type_e inputAbiType,
-                                uint8_t *pAbiTypeData,
-                                uint32_t additionalData
-                              )
-{
+ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
+                               uint8_t *pAbiTypeData,
+                               uint32_t additionalData) {
     ui_display_node *ui_node;
 
-    switch (inputAbiType)
-    {
-        case Abi_uint256_e:
-        {
+    switch (inputAbiType) {
+        case Abi_uint256_e: {
             char staticBufferInUTF8[200];
             memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
 
-            byte_array_to_hex_string(
-                                        pAbiTypeData,
-                                        32,
-                                        &(staticBufferInUTF8[0]),
-                                        65
-                                    );
+            byte_array_to_hex_string(pAbiTypeData, 32, &(staticBufferInUTF8[0]), 65);
 
-            convert_byte_array_to_decimal_string(
-                                                    64,
-                                                    0,
-                                                    &(staticBufferInUTF8[0]),
-                                                    &(staticBufferInUTF8[100]),
-                                                    100
-                                                );
-            
-            ui_node = eth_create_display_node(
-                                                "Datatype:uint256\0",
-                                                25,
-                                                &(staticBufferInUTF8[100]),
-                                                100
-                                             );
+            convert_byte_array_to_decimal_string(64, 0, &(staticBufferInUTF8[0]),
+                                                 &(staticBufferInUTF8[100]), 100);
+
+            ui_node =
+                eth_create_display_node("Datatype:uint256\0", 25, &(staticBufferInUTF8[100]), 100);
             break;
         }
-        case Abi_address_e:
-        {
+        case Abi_address_e: {
             char staticBufferInUTF8[41];
             memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
-            
-            byte_array_to_hex_string(
-                                        pAbiTypeData + Abi_address_e_OFFSET_BE,
-                                        20,
-                                        &(staticBufferInUTF8[0]),
-                                        41
-                                    );
-            
-            ui_node = eth_create_display_node(
-                                                "Datatype:address\0",
-                                                25,
-                                                &(staticBufferInUTF8[0]),
-                                                41
-                                             );
+
+            byte_array_to_hex_string(pAbiTypeData + Abi_address_e_OFFSET_BE, 20,
+                                     &(staticBufferInUTF8[0]), 41);
+
+            ui_node =
+                eth_create_display_node("Datatype:address\0", 25, &(staticBufferInUTF8[0]), 41);
             break;
         }
-        case Abi_bytes_e:
-        {
+        case Abi_bytes_e: {
             uint32_t numBytesBuffer = (2 * additionalData) + 1;
-            
+
             char *dynamicBufferInUTF8 = (char *)malloc(numBytesBuffer);
-            
+
             /* Assert to ensure that malloc did not fail */
             ASSERT(NULL != dynamicBufferInUTF8);
             memzero(dynamicBufferInUTF8, numBytesBuffer);
 
-            byte_array_to_hex_string(
-                                        pAbiTypeData,
-                                        additionalData,
-                                        dynamicBufferInUTF8,
-                                        numBytesBuffer
-                                    );
-            
-            ui_node = eth_create_display_node(
-                                                "Datatype:bytes\0",
-                                                25,
-                                                dynamicBufferInUTF8,
-                                                numBytesBuffer
-                                            );
+            byte_array_to_hex_string(pAbiTypeData, additionalData, dynamicBufferInUTF8,
+                                     numBytesBuffer);
+
+            ui_node = eth_create_display_node("Datatype:bytes\0", 25, dynamicBufferInUTF8,
+                                              numBytesBuffer);
             free(dynamicBufferInUTF8);
         }
         /* Handle all Abi_Type_e to supress compilation warning */
         case Abi_bytes_dynamic_e:
         case Abi_uint256_array_dynamic_e:
-        default:
-        {
+        default: {
             break;
         }
     }

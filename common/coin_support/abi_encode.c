@@ -59,32 +59,23 @@
 #include <stdint.h>
 #include "abi.h"
 #include "assert_conf.h"
-#include "utils.h"
 #include "eth.h"
+#include "utils.h"
 
 /* Global functions
  *****************************************************************************/
-uint8_t Abi_Encode(
-                    Abi_Type_e inputAbiType,
-                    uint8_t additionalInput,
-                    const uint8_t *pAbiTypeData,
-                    uint8_t *pBuffer
-                  )
-{
+uint8_t Abi_Encode(Abi_Type_e inputAbiType,
+                   uint8_t additionalInput,
+                   const uint8_t *pAbiTypeData,
+                   uint8_t *pBuffer) {
     uint8_t returnCode = ABI_BAD_ARGUMENT;
-    
-    if (
-        (NULL == pAbiTypeData)              ||
-        (NULL == pBuffer)
-       )
-    {
+
+    if ((NULL == pAbiTypeData) || (NULL == pBuffer)) {
         return returnCode;
     }
 
-    switch (inputAbiType)
-    {
-        case Abi_uint256_e:
-        {
+    switch (inputAbiType) {
+        case Abi_uint256_e: {
             /**
              * Assuming Abi_uint256_e input is big-endian and additionalInput
              * holds number of bytes in the Abi_uint256_e
@@ -94,118 +85,135 @@ uint8_t Abi_Encode(
              * additionalInput refers to the number of bytes to be encoded
              * Ensure argument holds valid value
              */
-            if (32 < additionalInput)
-            {
-                returnCode = ABI_PROCESS_INCOMPLETE;
+            if (32 < additionalInput) {
+                returnCode = ABI_BAD_ARGUMENT;
                 break;
             }
-            
-            /* Copy additionalInput bytes to the output pBuffer */
-            memcpy(pBuffer, pAbiTypeData, additionalInput);
 
-            /* Calculate padding and fill with trailing 0's */
-            uint8_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
+            /* Calculate padding and fill with leading 0's */
+            uint32_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
 
-            if (0 < paddingLen)
-            {
-                memzero(
-                        (void *)(pBuffer + additionalInput), 
-                        paddingLen
-                       );
+            if (0 < paddingLen) {
+                memzero(pBuffer, paddingLen);
             }
+
+            /* Copy additionalInput bytes to the output pBuffer */
+            memcpy((void *)(pBuffer + paddingLen), pAbiTypeData, additionalInput);
 
             returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
-        case Abi_address_e:
-        {
+        case Abi_address_e: {
             /**
              * Abi_address_e is 20 bytes (uint160) long
              * So pad first 12 bytes with 0's followed by address data
              */
-            memzero(
-                    (void *)(pBuffer + additionalInput), 
-                    Abi_address_e_OFFSET_BE
-                   );
+            memzero(pBuffer, Abi_address_e_OFFSET_BE);
 
-            memcpy(
-                    pBuffer + Abi_address_e_OFFSET_BE,
-                    pAbiTypeData,
-                    Abi_address_e_SZ_IN_BYTES
-                  );
+            memcpy((void *)(pBuffer + Abi_address_e_OFFSET_BE), pAbiTypeData,
+                   Abi_address_e_SZ_IN_BYTES);
 
             returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
-        case Abi_bytes_e:
-        {
+        case Abi_bytes_e: {
             /**
              * additionalInput refers to the number of bytes to be encoded
              * Ensure argument holds valid value
              */
-            if (32 < additionalInput)
-            {
-                returnCode = ABI_PROCESS_INCOMPLETE;
+            if (32 < additionalInput) {
+                returnCode = ABI_BAD_ARGUMENT;
                 break;
             }
-            
+
             /* Copy additionalInput bytes to the output pBuffer */
             memcpy(pBuffer, pAbiTypeData, additionalInput);
 
             /* Calculate padding and fill with trailing 0's */
-            uint8_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
+            uint32_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
 
-            if (0 < paddingLen)
-            {
-                memzero(
-                        (void *)(pBuffer + additionalInput), 
-                        paddingLen
-                       );
+            if (0 < paddingLen) {
+                memzero((void *)(pBuffer + additionalInput), paddingLen);
             }
 
             returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
-        case Abi_bool_e:
-        {
+        case Abi_int256_e: {
+            /* additionalInput contains the number of bytes of data present */
+            if (32 < additionalInput) {
+                returnCode = ABI_BAD_ARGUMENT;
+                break;
+            }
+
+            /* If additionalInput is zero, then fill with 0's */
+            if (0 == additionalInput) {
+                memzero(pBuffer, Abi_uint256_e_SZ_IN_BYTES);
+
+                returnCode = ABI_PROCESS_COMPLETE;
+                break;
+            }
+
             /**
-             * Abi_bool_e is 1 byte (uint160) long
+             * Test the MSB of the pAbiTypeData to check if the integer value
+             * is positive or negative. If the value is positive, we will 
+             * pad the value with leading 0's like Abi_uint256_e, otherwise,
+             * we will pad the value with leading 1's
+             */
+            uint8_t msbValue = *((uint8_t *)pAbiTypeData);
+
+            if (0 == (msbValue & 0x80)) {
+                /* Calculate padding and fill with leading 0's */
+                uint32_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
+
+                if (0 < paddingLen) {
+                    memzero(pBuffer, paddingLen);
+                }
+
+                /* Copy additionalInput bytes to the output pBuffer */
+                memcpy((void *)(pBuffer + paddingLen), pAbiTypeData, additionalInput);
+
+                returnCode = ABI_PROCESS_COMPLETE;
+                break;
+            } else {
+                /* Calculate padding and fill with leading 1's */
+                uint32_t paddingLen = (ABI_ELEMENT_SZ_IN_BYTES - additionalInput);
+
+                if (0 < paddingLen) {
+                    memset(pBuffer, ABI_PADDING_ONES, paddingLen);
+                }
+
+                /* Copy additionalInput bytes to the output pBuffer */
+                memcpy((void *)(pBuffer + paddingLen), pAbiTypeData, additionalInput);
+
+                returnCode = ABI_PROCESS_COMPLETE;
+                break;
+            }
+
+            returnCode = ABI_PROCESS_COMPLETE;
+            break;
+        }
+        case Abi_bool_e: {
+            /**
+             * Abi_bool_e is 1 byte (uint8) long
              * So pad first 30 bytes with 0's followed by boolean data
              */
-            memzero(
-                    (void *)(pBuffer + additionalInput), 
-                    Abi_bool_e_OFFSET_BE
-                   );
+            memzero(pBuffer, Abi_bool_e_OFFSET_BE);
 
-            memcpy(
-                    pBuffer + Abi_bool_e_OFFSET_BE,
-                    pAbiTypeData,
-                    Abi_bool_e_SZ_IN_BYTES
-                  );
+            memcpy((void *)(pBuffer + Abi_bool_e_OFFSET_BE), pAbiTypeData, Abi_bool_e_SZ_IN_BYTES);
 
             returnCode = ABI_PROCESS_COMPLETE;
             break;
         }
         case Abi_bytes_dynamic_e:
-        case Abi_string_dynamic_e:
-        {
-            /**
-             * Dynamic types Abi_bytes_dynamic_e & Abi_string_dynamic_e
-             * are encoded as the keccak256 hash of the inputs
-             */
-            keccak_256(pAbiTypeData, additionalInput, pBuffer);
-            break;
-        }
-        case Abi_uint256_array_dynamic_e:
-        {
+        case Abi_uint256_array_dynamic_e: {
             /* Just added to suppress compilation warning */
             break;
         }
-        default:
-        {
+        default: {
             break;
         }
     }
 
     return returnCode;
-}   
+}
