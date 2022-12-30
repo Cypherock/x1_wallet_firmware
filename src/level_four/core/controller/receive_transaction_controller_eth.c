@@ -73,7 +73,7 @@ void receive_transaction_controller_eth()
 {
 
     switch (flow_level.level_three) {
-
+// TODO: Rename RECV_TXN_FIND_XPUB in all receive tasks to a relevant name (PROCESS_METADATA)
     case RECV_TXN_FIND_XPUB_ETH: {
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
