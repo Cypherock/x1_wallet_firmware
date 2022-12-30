@@ -25,7 +25,7 @@
 #define DEFAULT_ATECC_RETRIES 5
 
 #define DEVICE_SERIAL_SIZE     32
-#define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
+#define MAXIMUM_COIN_SUPPORTED (14 + 5)  // 5 for segwit support
 #define INDEX_SIZE             4
 
 typedef enum {
@@ -323,6 +323,20 @@ void send_transaction_controller_eth();
  * @since v1.0.0
  */
 void send_transaction_controller_b_eth();
+
+/**
+ * @brief Next button controller is executed for processing and signing messages of Ethereum.
+ * @details This controller is used to process and sign the messages for ETH that is requested from the desktop app.
+ *
+ */
+void sign_message_controller_eth();
+
+/**
+ * @brief Back button controller for sign message Ethereum flow.
+ * @details This controller is used to handle back button events during processing and signing messages for ETH.
+ *
+ */
+void sign_message_controller_b_eth();
 
 /**
  * @brief Next button controller is executed for processing and signing unsigned
