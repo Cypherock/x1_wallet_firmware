@@ -87,15 +87,15 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics);
  *
  * @param [in] wallet       Pointer to an instance of Wallet
  *
- * @return true, false
- * @retval true             If all the content of the instance conforms to constraints
- * @retval false            If any of the checks fail.
+ * @return Card_Data_errors_t
+ * @retval VALID_DATA             If all the content of the instance conforms to constraints
+ * @retval appropriate error code If any of the checks fail.
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-bool validate_wallet(Wallet *wallet);
+Card_Data_errors_t validate_wallet(Wallet *wallet);
 
 #endif

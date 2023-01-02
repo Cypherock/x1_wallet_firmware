@@ -380,7 +380,11 @@ ISO7816 nfc_retrieve_wallet(struct Wallet* wallet)
         if (status_word == SW_NO_ERROR) {
             //Extract data from APDU and add it to struct Wallet
             extract_from_apdu(wallet, recv_apdu, recv_len);
-            if (!validate_wallet(wallet)) status_word = 0;
+            Card_Data_errors_t status = validate_wallet(wallet);
+            if (status != VALID_DATA) {
+                LOG_CRITICAL("edat", status);
+                status_word = 0;
+            }
         }
     }
 

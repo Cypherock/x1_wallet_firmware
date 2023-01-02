@@ -77,6 +77,22 @@ typedef enum wallet_name_opt {
 } wallet_name_opt_t;
 
 /**
+ * @brief Error codes for wallet data receive from cards
+ *
+ * @since v1.0.0
+ */
+typedef enum Card_Data_Errors {
+    VALID_DATA = 0,
+    INVALID_NAME_LENGTH,
+    INVALID_WALLET_CONFIG,
+    INVALID_MNEMONIC_LENGTH,
+    INVALID_SHAMIR_CONFIG,
+    INVALID_SHARE_INDEX,
+    INVALID_WALLET_ID,
+    INVALID_CHECKSUM,
+} Card_Data_errors_t;
+
+/**
  * @brief Wallet struct for X1 Card
  * @details
  *
