@@ -181,7 +181,7 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
 ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
                                uint8_t *pAbiTypeData,
                                uint32_t additionalData) {
-    ui_display_node *ui_node;
+    ui_display_node *ui_node = NULL;
 
     switch (inputAbiType) {
         case Abi_uint256_e: {
