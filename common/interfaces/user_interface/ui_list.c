@@ -59,32 +59,39 @@
 */
 
 #include "ui_list.h"
-
+#include "wallet.h"
+#include "string.h"
 static struct List_Data* data = NULL;
 static struct List_Object* obj = NULL;
 
-void list_init(const char option_list[24][15], const int number_of_options, const char* heading, bool dynamic_heading)
-{
-    ASSERT(option_list != NULL);
-    ASSERT(heading != NULL);
-
-    data = malloc(sizeof(struct List_Data));
-    obj = malloc(sizeof(struct List_Object));
-    ASSERT(data != NULL && obj != NULL);
-
-    if (data != NULL) {
-        data->number_of_options = number_of_options;
-        data->current_index = 0;
-        data->heading = (char *)heading;
-
-        for (uint8_t i = 0; i < number_of_options; i++) {
-            snprintf(data->option_list[i], sizeof(data->option_list[i]), "%s", option_list[i]);
-        }
-    }
-    data->dynamic_heading = dynamic_heading;
-    list_create();
-    LOG_INFO("list %s, %d", heading, number_of_options);
+extern Wallet_credential_data wallet_credential_data;
+void list_init(const char option_list[24][15], const int number_of_options, const char* heading, bool dynamic_heading){
+    for(int i =0; i< number_of_options; i++)
+        strncpy(wallet_credential_data.mnemonics[i], option_list[i], 15);
 }
+
+// void list_init(const char option_list[24][15], const int number_of_options, const char* heading, bool dynamic_heading)
+// {
+//     ASSERT(option_list != NULL);
+//     ASSERT(heading != NULL);
+
+//     data = malloc(sizeof(struct List_Data));
+//     obj = malloc(sizeof(struct List_Object));
+//     ASSERT(data != NULL && obj != NULL);
+
+//     if (data != NULL) {
+//         data->number_of_options = number_of_options;
+//         data->current_index = 0;
+//         data->heading = (char *)heading;
+
+//         for (uint8_t i = 0; i < number_of_options; i++) {
+//             snprintf(data->option_list[i], sizeof(data->option_list[i]), "%s", option_list[i]);
+//         }
+//     }
+//     data->dynamic_heading = dynamic_heading;
+//     list_create();
+//     LOG_INFO("list %s, %d", heading, number_of_options);
+// }
 
 /**
  * @brief Clear screen

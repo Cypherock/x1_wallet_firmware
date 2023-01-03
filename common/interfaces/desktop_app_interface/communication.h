@@ -124,6 +124,8 @@ typedef enum commandType {
 
     DEVICE_FLOW_RESET_REQ = 0xFF,            ///< unused enum
     DEVICE_SHAMIR_GENERATE_TEST = 0x1001,
+    DEVICE_SHAMIR_RESTORE_SEED = 0x1002,
+    DEVICE_SHAMIR_VERIFY_SHARES = 0x1003,
 } En_command_type_t;
 
 /**

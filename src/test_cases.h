@@ -15,7 +15,8 @@ typedef enum{
 
 typedef enum{
     TEST_GENERATE_SEED = 1,
-    TEST_RESTORE_SEED = 2
+    TEST_RESTORE_SEED = 2,
+    TEST_VERIFY_SHARES = 3
 }test_cases_t;
 
 extern uint8_t test_input_data[1000]; 

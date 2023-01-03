@@ -64,6 +64,18 @@ void set_test_case(){
             LOG_INFO("TEST: restore seed triggered");
             test_state = TEST_DATA_READY;
         break;
+        case TEST_VERIFY_SHARES:
+            test_data.level = LEVEL_THREE;
+            test_data.start_flow.level_one = LEVEL_TWO_OLD_WALLET;
+            test_data.start_flow.level_two = LEVEL_THREE_VERIFY_WALLET;
+            test_data.start_flow.level_three = VERIFY_WALLET_SHOW_MNEMONICS;
+
+            test_data.end_flow.level_one = LEVEL_TWO_OLD_WALLET;
+            test_data.end_flow.level_two = LEVEL_THREE_VERIFY_WALLET;
+            test_data.end_flow.level_three = VERIFY_WALLET_SHOW_MNEMONICS;
+            LOG_INFO("TEST: restore seed triggered");
+            test_state = TEST_DATA_READY;
+        break;
         default:
         break;
     }
@@ -97,8 +109,7 @@ void jump_to_test(){
             WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
             WALLET_UNSET_PIN(wallet.wallet_info);
             memcpy(wallet.wallet_share_with_mac_and_nonce, test_input_data, 32);
-            break;
-        }
+        }break;
         case TEST_RESTORE_SEED:{
             Flash_Wallet wallet_for_flash;
             WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
@@ -109,8 +120,15 @@ void jump_to_test(){
             LOG_INFO("TEST: Input seed");
             for(int i = 0; i < 24; i++)
                 LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
-                break;
+        }break;
+        case TEST_VERIFY_SHARES:{
+            WALLET_UNSET_PIN(wallet.wallet_info);
+            WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
+            for(int i = 0; i < 5; i++){
+                memcpy(wallet_shamir_data.mnemonic_shares[i], test_input_data + (i * 32), 32);
+                wallet_shamir_data.share_x_coords[i] = i+1;
             }
+        }break;
         default:
             break;
     }
@@ -152,10 +170,11 @@ void log_test_result(){
     if(test_state != TEST_END_REACHED)
         return;
 
+    test_data_len=0;
+
     switch (test_case)
     {
     case TEST_GENERATE_SEED:{
-        test_data_len=0;
         LOG_INFO("TEST: Generated seed from random secret");
         for(int i = 0; i < 24; i++)
             LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
@@ -171,13 +190,24 @@ void log_test_result(){
             test_data_len+=strlen(wallet_credential_data.mnemonics[i])+1;
         }
         transmit_data_to_app(DEVICE_SHAMIR_GENERATE_TEST, test_output_data, test_data_len);
-        }break;
+    }break;
     case TEST_RESTORE_SEED:{
         LOG_INFO("TEST: Generated shares");
         for(int i = 0; i < 5; i++)
             log_hex_array("shares: ", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
         LOG_INFO("TEST: Log done.");
-        }break;
+    }break;
+    case TEST_VERIFY_SHARES:{
+        LOG_INFO("TEST: VERIFY SHARES 5C2");
+        for(int i = 0; i < 24; i++)
+            LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
+        LOG_INFO("TEST: Log done.");
+        __multi_to_single_line(wallet_credential_data.mnemonics, 24, (char*)(test_output_data+test_data_len));
+        for(int i=0; i<24; i++){
+            test_data_len+=strlen(wallet_credential_data.mnemonics[i])+1;
+        }
+        transmit_data_to_app(DEVICE_SHAMIR_VERIFY_SHARES, test_output_data, test_data_len);
+    }break;
     default:
         break;
     }

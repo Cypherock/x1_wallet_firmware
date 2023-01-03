@@ -767,15 +767,23 @@ void desktop_listener_task(lv_task_t* data)
 
 #if X1WALLET_TEST_SUITE==1
             case DEVICE_SHAMIR_GENERATE_TEST:{
-                // uint8_t *input_data_ptr=NULL;
-                // get_usb_msg_by_cmd_type(DEVICE_SHAMIR_GENERATE_TEST, &input_data_ptr, &test_data_len);
-                log_hex_array("random from usb", data_array, BLOCK_SIZE);
                 memcpy(test_input_data, data_array, msg_size);
                 test_case = TEST_GENERATE_SEED;
                 test_state = NO_TEST;
                 clear_message_received_data();
             }break;
-
+            case DEVICE_SHAMIR_RESTORE_SEED:{
+                memcpy(test_input_data, data_array, msg_size);
+                test_case = TEST_VERIFY_SHARES;
+                test_state = NO_TEST;
+                clear_message_received_data();
+            }break;
+            case DEVICE_SHAMIR_VERIFY_SHARES:{
+                memcpy(test_input_data, data_array, msg_size);
+                test_case = TEST_VERIFY_SHARES;
+                test_state = NO_TEST;
+                clear_message_received_data();
+            }break;
 #endif
 #ifdef ALLOW_LOG_EXPORT
             case APP_LOG_DATA_SEND: {
