@@ -238,6 +238,14 @@ void send_transaction_tasks_eth()
         mark_event_over();
     } break;
 
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+      instruction_scr_destructor();
+      if (current_display_node == NULL)
+        mark_event_over();
+      else
+        address_scr_init(current_display_node->title, current_display_node->value, false);
+    } break;
+
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {
         if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
             flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH;
