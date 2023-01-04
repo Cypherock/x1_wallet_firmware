@@ -122,16 +122,16 @@ const char *EVM_deposit_Signature = "deposit()";
  * @note
  */
 static uint64_t get_index_of_signs(char ch) {
-    if (ch >= '0' && ch <= '9') {
-        return ch - '0';
-    }
-    if (ch >= 'A' && ch <= 'F') {
-        return ch - 'A' + 10;
-    }
-    if (ch >= 'a' && ch <= 'f') {
-        return ch - 'a' + 10;
-    }
-    return -1;
+  if (ch >= '0' && ch <= '9') {
+    return ch - '0';
+  }
+  if (ch >= 'A' && ch <= 'F') {
+    return ch - 'A' + 10;
+  }
+  if (ch >= 'a' && ch <= 'f') {
+    return ch - 'a' + 10;
+  }
+  return -1;
 }
 
 /**
@@ -151,52 +151,53 @@ static uint64_t get_index_of_signs(char ch) {
  *
  * @note
  */
-static uint64_t get_decode_length(const uint8_t *seq,
-                                  const uint64_t seq_len,
-                                  uint64_t *decoded_len,
-                                  seq_type *type) {
-    uint8_t first_byte      = *seq;
-    uint64_t item_bytes_len = 0;
-    if (first_byte <= 0x7f) {
-        item_bytes_len = 1;
-        *type          = STRING;
-        *decoded_len   = 0;
-    } else if (first_byte <= 0xb7 && seq_len > (first_byte - 0x80)) {
-        item_bytes_len = first_byte - 0x80;
-        *type          = STRING;
-        *decoded_len   = 1;
-    } else if (first_byte <= 0xbf && seq_len > (first_byte - 0xb7)) {
-        uint8_t len = first_byte - 0xb7;
-        uint8_t buffer_len[len];
-        char hex_len[len * 2 + 1];
-        hex_len[len * 2] = '\0';
-        *decoded_len     = 1;
-        memcpy(buffer_len, seq + *decoded_len, len);
-        *decoded_len += len;
-        byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
-        item_bytes_len = hex2dec(hex_len);
-        *type          = STRING;
-    } else if (first_byte <= 0xf7 && seq_len > (first_byte - 0xc0)) {
-        item_bytes_len = first_byte - 0xc0;
-        *type          = LIST;
-        *decoded_len   = 1;
-    } else if (first_byte <= 0xff && seq_len > (first_byte - 0xf7)) {
-        uint8_t len = first_byte - 0xf7;
-        uint8_t buffer_len[len];
-        char hex_len[len * 2 + 1];
-        hex_len[len * 2] = '\0';
+static uint64_t get_decode_length(const uint8_t *seq, const uint64_t seq_len, uint64_t *decoded_len,
+                           seq_type *type) {
+  uint8_t first_byte = *seq;
+  uint64_t item_bytes_len = 0;
+  if (first_byte <= 0x7f) {
+    item_bytes_len = 1;
+    *type = STRING;
+    *decoded_len = 0;
+  } else if (first_byte <= 0xb7 &&
+             seq_len >
+                 (first_byte - 0x80)) 
+  {
+    item_bytes_len = first_byte - 0x80;
+    *type = STRING;
+    *decoded_len = 1;
+  } else if (first_byte <= 0xbf && seq_len > (first_byte - 0xb7)) {
+    uint8_t len = first_byte - 0xb7;
+    uint8_t buffer_len[len];
+    char hex_len[len * 2 + 1];
+    hex_len[len * 2] = '\0';
+    *decoded_len = 1;
+    memcpy(buffer_len, seq + *decoded_len, len);
+    *decoded_len += len;
+    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
+    item_bytes_len = hex2dec(hex_len);
+    *type = STRING;
+  } else if (first_byte <= 0xf7 && seq_len > (first_byte - 0xc0)) {
+    item_bytes_len = first_byte - 0xc0;
+    *type = LIST;
+    *decoded_len = 1;
+  } else if (first_byte <= 0xff && seq_len > (first_byte - 0xf7)) {
+    uint8_t len = first_byte - 0xf7;
+    uint8_t buffer_len[len];
+    char hex_len[len * 2 + 1];
+    hex_len[len * 2] = '\0';
 
-        *decoded_len = 1;
-        memcpy(buffer_len, seq + *decoded_len, len);
-        *decoded_len += len;
-        byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
-        item_bytes_len = hex2dec(hex_len);
-        *type          = LIST;
-    } else {
+    *decoded_len = 1;
+    memcpy(buffer_len, seq + *decoded_len, len);
+    *decoded_len += len;
+    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
+    item_bytes_len = hex2dec(hex_len);
+    *type = LIST;
+  } else {
         // Intentionally unimplemented...
-    }
+  }
 
-    return item_bytes_len;
+  return item_bytes_len;
 }
 
 /**
@@ -216,36 +217,35 @@ static uint64_t get_decode_length(const uint8_t *seq,
  *
  * @note
  */
-static uint64_t rlp_encode_byte(const uint8_t *byte,
-                                const uint64_t len,
-                                const seq_type type,
-                                uint8_t *encoded_byte) {
-    uint64_t meta_size = 0;
+static uint64_t rlp_encode_byte(const uint8_t *byte, const uint64_t len, const seq_type type, uint8_t *encoded_byte)
+{
+  uint64_t meta_size = 0;
 
-    if (type == STRING) {
-        if (len == 1 && byte[0] < 0x80) {
-            if (encoded_byte)
-                encoded_byte[0] = byte[0];
-        } else if ((len + 0x80) < 0xb8) {
-            if (encoded_byte)
-                encoded_byte[0] = 0x80 + len;
-            meta_size = 1;
-        } else {
-            meta_size = rlp_encode_decimal(len, 0xb7, encoded_byte);
-        }
-    } else if (type == LIST) {
-        if ((len + 0xc0) < 0xf8) {
-            if (encoded_byte)
-                encoded_byte[0] = 0xc0 + len;
-            meta_size = 1;
-        } else {
-            meta_size = rlp_encode_decimal(len, 0xf7, encoded_byte);
-        }
+  if (type == STRING) {
+    if (len == 1 && byte[0] < 0x80) {
+      if (encoded_byte)
+        encoded_byte[0] = byte[0];
+    } else if ((len + 0x80) < 0xb8) {
+      if (encoded_byte)
+        encoded_byte[0] = 0x80 + len;
+      meta_size = 1;
+    } else {
+      meta_size = rlp_encode_decimal(len, 0xb7, encoded_byte);
     }
+  }
+  else if (type == LIST) {
+    if ((len + 0xc0) < 0xf8) {
+      if (encoded_byte)
+        encoded_byte[0] = 0xc0 + len;
+      meta_size = 1;
+    } else {
+      meta_size = rlp_encode_decimal(len, 0xf7, encoded_byte);
+    }
+  }
 
-    if (byte && encoded_byte)
-        memcpy(&encoded_byte[meta_size], byte, len);
-    return meta_size;
+  if (byte && encoded_byte)
+    memcpy(&encoded_byte[meta_size], byte, len);
+  return meta_size;
 }
 
 /**
@@ -264,83 +264,87 @@ static uint64_t rlp_encode_byte(const uint8_t *byte,
  *
  * @note
  */
-static uint8_t rlp_encode_decimal(const uint64_t dec, const uint8_t offset, uint8_t *metadata) {
-    uint32_t meta_size = 0;
-    uint8_t len_hex[8];
-    uint64_t s = dec_to_hex(dec, len_hex, 8);
+static uint8_t rlp_encode_decimal(const uint64_t dec, const uint8_t offset, uint8_t *metadata)
+{
+  uint32_t meta_size = 0;
+  uint8_t len_hex[8];
+  uint64_t s = dec_to_hex(dec, len_hex, 8);
 
-    if (offset == 0) {
-        meta_size = rlp_encode_byte(len_hex, s, STRING, metadata);
-    } else {
-        if (metadata) {
-            metadata[0] = offset + s;
-            memcpy(&metadata[1], len_hex + 8 - s, s);
-        }
-        meta_size = 1 + s;
+  if (offset == 0)
+  {
+    meta_size = rlp_encode_byte(len_hex, s, STRING, metadata);
+  }
+  else
+  {
+    if (metadata) {
+      metadata[0] = offset + s;
+      memcpy(&metadata[1], len_hex + 8 - s, s);
     }
-    return meta_size;
+    meta_size = 1 + s;
+  }
+  return meta_size;
 }
 
-uint64_t bendian_byte_to_dec(const uint8_t *bytes, uint8_t len) {
+uint64_t bendian_byte_to_dec(const uint8_t *bytes, uint8_t len)
+{
     uint64_t result = 0;
-    uint8_t i       = 0;
-    while (i < len) {
-        int shift     = 8 * (len - i - 1);
+    uint8_t i = 0;
+    while(i < len) {
+        int shift =  8 * (len - i - 1);
         uint64_t byte = bytes[i++];
-        result        = result | (byte << shift);
+        result = result | (byte << shift);
     }
     return result;
 }
 
 uint64_t hex2dec(const char *source) {
-    uint64_t sum = 0;
-    uint64_t t   = 1;
-    int len      = 0;
+  uint64_t sum = 0;
+  uint64_t t = 1;
+  int len = 0;
 
-    len = strnlen(source, 16);
-    for (int i = len - 1; i >= 0; i--) {
-        uint64_t j = get_index_of_signs(*(source + i));
-        sum += (t * j);
-        t *= 16;
-    }
+  len = strnlen(source, 16);
+  for (int i = len - 1; i >= 0; i--) {
+    uint64_t j = get_index_of_signs(*(source + i));
+    sum += (t * j);
+    t *= 16;
+  }
 
-    return sum;
+  return sum;
 }
 
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address) {
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address)
+{
     if (eth_unsigned_txn_ptr->payload_size)
-        memcpy(address, eth_unsigned_txn_ptr->payload + 16,
-               sizeof(eth_unsigned_txn_ptr->to_address));
+        memcpy(address, eth_unsigned_txn_ptr->payload + 16, sizeof(eth_unsigned_txn_ptr->to_address));
     else
         memcpy(address, eth_unsigned_txn_ptr->to_address, sizeof(eth_unsigned_txn_ptr->to_address));
 }
 
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value) {
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value)
+{
     if (eth_unsigned_txn_ptr->payload_size) {
-        byte_array_to_hex_string(
-            eth_unsigned_txn_ptr->payload + EVM_FUNC_SIGNATURE_LENGTH + EVM_FUNC_PARAM_BLOCK_LENGTH,
-            EVM_FUNC_PARAM_BLOCK_LENGTH, value, 2 * EVM_FUNC_PARAM_BLOCK_LENGTH + 1);
+        byte_array_to_hex_string(eth_unsigned_txn_ptr->payload + EVM_FUNC_SIGNATURE_LENGTH + EVM_FUNC_PARAM_BLOCK_LENGTH,
+                                 EVM_FUNC_PARAM_BLOCK_LENGTH, value, 2 * EVM_FUNC_PARAM_BLOCK_LENGTH + 1);
         return 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
     } else {
         byte_array_to_hex_string(eth_unsigned_txn_ptr->value, eth_unsigned_txn_ptr->value_size[0],
-                                 value, 2 * eth_unsigned_txn_ptr->value_size[0] + 1);
+            value, 2 * eth_unsigned_txn_ptr->value_size[0] + 1);
         return 2 * eth_unsigned_txn_ptr->value_size[0];
     }
 }
 
-bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
+bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr)
+{
     eth_utxn_ptr->contract_verified = 1;
     if (eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0)
         return false;
-    if (is_zero(eth_utxn_ptr->value, eth_utxn_ptr->value_size[0]) &&
-        eth_utxn_ptr->payload_size == 0)
+    if (is_zero(eth_utxn_ptr->value, eth_utxn_ptr->value_size[0]) && eth_utxn_ptr->payload_size == 0)
         return false;
     if (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0]))
         return false;
     if (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0]))
         return false;
-    if (memcmp(eth_utxn_ptr->chain_id, &metadata_ptr->network_chain_id,
-               eth_utxn_ptr->chain_id_size[0]) != 0)
+    if (memcmp(eth_utxn_ptr->chain_id, &metadata_ptr->network_chain_id, eth_utxn_ptr->chain_id_size[0]) != 0)
         return false;
 
     // Check if payload exists, it's a token transfer operation on EVM
@@ -366,7 +370,7 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
         return false;
     }
 
-    return true;
+  return true;
 }
 
 bool is_token_whitelisted(txn_metadata *metadata_ptr) {
@@ -529,131 +533,105 @@ void eth_init_msg_data(MessageData *msg_data) {
 }
 
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
-                                   size_t byte_array_len,
-                                   eth_unsigned_txn *unsigned_txn_ptr) {
-    seq_type type        = NONE;
-    int64_t offset       = 0;
-    uint64_t decoded_len = 0;
-    uint64_t item_bytes_len;
+                                   size_t byte_array_len, eth_unsigned_txn *unsigned_txn_ptr)
+{
+  seq_type type = NONE;
+  int64_t offset = 0;
+  uint64_t decoded_len = 0;
+  uint64_t item_bytes_len;
 
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != LIST)
-        return -1;
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != LIST) return -1;
 
-    // nonce
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
-    s_memcpy(unsigned_txn_ptr->nonce, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len,
-             &offset);
+  // nonce
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(unsigned_txn_ptr->nonce, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // gas price
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
-    s_memcpy(unsigned_txn_ptr->gas_price, eth_unsigned_txn_byte_array, byte_array_len,
-             item_bytes_len, &offset);
+  // gas price
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(unsigned_txn_ptr->gas_price, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // gas limit
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
-    s_memcpy(unsigned_txn_ptr->gas_limit, eth_unsigned_txn_byte_array, byte_array_len,
-             item_bytes_len, &offset);
+  // gas limit
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(unsigned_txn_ptr->gas_limit, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // to address
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    s_memcpy(unsigned_txn_ptr->to_address, eth_unsigned_txn_byte_array, byte_array_len,
-             item_bytes_len, &offset);
+  // to address
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  s_memcpy(unsigned_txn_ptr->to_address, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // value
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
-    s_memcpy(unsigned_txn_ptr->value, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len,
-             &offset);
+  // value
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(unsigned_txn_ptr->value, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // payload
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->payload_size = item_bytes_len;
-    unsigned_txn_ptr->payload      = (uint8_t *)cy_malloc(item_bytes_len * sizeof(uint8_t));
-    s_memcpy(unsigned_txn_ptr->payload, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len,
-             &offset);
+  // payload
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->payload_size = item_bytes_len;
+  unsigned_txn_ptr->payload = (uint8_t *) cy_malloc(item_bytes_len * sizeof(uint8_t));
+  s_memcpy(unsigned_txn_ptr->payload, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
 
-    // chain id
-    item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
-                                       byte_array_len - offset, &decoded_len, &type);
-    offset += decoded_len;
-    if (type != STRING)
-        return -1;
-    unsigned_txn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
-    s_memcpy(unsigned_txn_ptr->chain_id, eth_unsigned_txn_byte_array, byte_array_len,
-             item_bytes_len, &offset);
-    return (offset > 0 ? 0 : -1);
+  // chain id
+  item_bytes_len = get_decode_length(eth_unsigned_txn_byte_array + offset,
+                                     byte_array_len - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING) return -1;
+  unsigned_txn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(unsigned_txn_ptr->chain_id, eth_unsigned_txn_byte_array, byte_array_len, item_bytes_len, &offset);
+  return (offset > 0 ? 0 : -1);
 }
 
-void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
-                             uint64_t eth_unsigned_txn_len,
-                             const txn_metadata *transaction_metadata,
-                             const char *mnemonics,
-                             const char *passphrase,
-                             uint8_t *sig) {
-    uint8_t digest[32];
-    keccak_256(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, digest);
-    uint8_t recid;
-    HDNode hdnode;
-    get_address_node(transaction_metadata, 0, mnemonics, passphrase, &hdnode);
-    ecdsa_sign_digest(&secp256k1, hdnode.private_key, digest, sig, &recid, NULL);
-    memcpy(sig + 64, &recid, 1);
+void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_t eth_unsigned_txn_len,
+                             const txn_metadata *transaction_metadata, const char *mnemonics,
+                             const char *passphrase, uint8_t *sig)
+{
+  uint8_t digest[32];
+  keccak_256(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, digest);
+  uint8_t recid;
+  HDNode hdnode;
+  get_address_node(transaction_metadata, 0, mnemonics, passphrase, &hdnode);
+  ecdsa_sign_digest(&secp256k1, hdnode.private_key, digest, sig, &recid, NULL);
+  memcpy(sig + 64, &recid, 1);
 }
 
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        char *fee_decimal_string,
-                        uint8_t size,
-                        uint8_t decimal) {
-    uint8_t fee[16] = {0};
-    uint64_t txn_fee, carry;
-    char fee_hex_string[33] = {'\0'};
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal)
+{
+  uint8_t fee[16] = {0};
+  uint64_t txn_fee, carry;
+  char fee_hex_string[33] = {'\0'};
 
-    // make sure we do not process over the current capacity (i.e., 8-byte limit for gas limit and price each)
-    ASSERT(eth_unsigned_txn_ptr->gas_price_size[0] <= 8 &&
-           eth_unsigned_txn_ptr->gas_limit_size[0] <= 8);
-    // Capacity to multiply 2 numbers upto 8-byte value and store the result in 2 separate 8-byte variables
-    txn_fee = mul128(bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_price,
-                                         eth_unsigned_txn_ptr->gas_price_size[0]),
-                     bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_limit,
-                                         eth_unsigned_txn_ptr->gas_limit_size[0]),
-                     &carry);
-    // prepare the whole 128-bit little-endian representation of fee
-    memcpy(fee, &txn_fee, sizeof(txn_fee));
-    memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
-    cy_reverse_byte_array(
-        fee, sizeof(fee));  // outputs 128-bit (16-byte) big-endian representation of fee
-    byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
-    convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, decimal, fee_hex_string,
-                                         fee_decimal_string, size);
+  // make sure we do not process over the current capacity (i.e., 8-byte limit for gas limit and price each)
+  ASSERT(eth_unsigned_txn_ptr->gas_price_size[0] <= 8 && eth_unsigned_txn_ptr->gas_limit_size[0] <= 8);
+  // Capacity to multiply 2 numbers upto 8-byte value and store the result in 2 separate 8-byte variables
+  txn_fee = mul128(bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_price, eth_unsigned_txn_ptr->gas_price_size[0]),
+                   bendian_byte_to_dec(eth_unsigned_txn_ptr->gas_limit, eth_unsigned_txn_ptr->gas_limit_size[0]), &carry);
+  // prepare the whole 128-bit little-endian representation of fee
+  memcpy(fee, &txn_fee, sizeof(txn_fee)); memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
+  cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
+  byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
+  convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, decimal, fee_hex_string, fee_decimal_string, size);
 }
 
 /**

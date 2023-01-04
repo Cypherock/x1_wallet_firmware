@@ -18,30 +18,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../crypto/base58.h"
-#include "../crypto/bip32.h"
+
 #include "../crypto/bip39.h"
+#include "../crypto/bip32.h"
 #include "../crypto/curves.h"
-#include "../crypto/ecdsa.h"
-#include "../crypto/ripemd160.h"
 #include "../crypto/secp256k1.h"
 #include "../crypto/sha2.h"
+#include "../crypto/ecdsa.h"
+#include "../crypto/ripemd160.h"
+#include "../crypto/base58.h"
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
 #include "eth_sign_data/abi.h"
 #include "eth_sign_data/simple.pb.h"
 
-#define ETHEREUM_PURPOSE_INDEX 0x8000002C
-#define ETHEREUM_COIN_INDEX    0x8000003C
+#define ETHEREUM_PURPOSE_INDEX    0x8000002C
+#define ETHEREUM_COIN_INDEX       0x8000003C
 
-#define ETHEREUM_MAINNET_CHAIN 1
-#define ETHEREUM_ROPSTEN_CHAIN 3
+#define ETHEREUM_MAINNET_CHAIN    1
+#define ETHEREUM_ROPSTEN_CHAIN    3
 
-#define ETHEREUM_MAINNET_NAME "ETH Mainnet"
-#define ETHEREUM_ROPSTEN_NAME "ETH Ropsten"
-#define ETHEREUM_TOKEN_NAME   "Ether"
-#define ETHEREUM_TOKEN_SYMBOL "ETH"
-
+#define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
+#define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
+#define ETHEREUM_TOKEN_SYMBOL   "ETH"
 // \x45(E) is needed otherwise \x19e is considered instead of \x19
 #define ETH_PERSONAL_SIGN_IDENTIFIER   "\x19\x45thereum Signed Message:\n"
 #define ETH_SIGN_TYPED_DATA_IDENTIFIER "\x19\x01"
@@ -51,7 +50,7 @@
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
 
-#define ETH_COIN_VERSION 0x00000000
+#define ETH_COIN_VERSION     0x00000000
 
 #define ETH_UTXN_ABI_DECODE_OK      (0xAA)
 #define ETH_UTXN_BAD_PAYLOAD        (0x11)
@@ -71,7 +70,8 @@ typedef enum { NONE, STRING, LIST } seq_type;
  * @note
  */
 #pragma pack(push, 1)
-typedef struct {
+typedef struct
+{
   uint8_t nonce_size[1];
   uint8_t nonce[32];
 
@@ -200,9 +200,9 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
  *
  * @note
  */
-int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
-                                   size_t byte_array_len,
-                                   eth_unsigned_txn *unsigned_txn_ptr);
+int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array, 
+                                    size_t byte_array_len,
+                                    eth_unsigned_txn *unsigned_txn_ptr);
 
 /**
  * @brief Convert byte array representation of message to an object using protobuf.
@@ -222,6 +222,7 @@ int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
  * @note
  */
 int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data);
+
 /**
  * @brief Signed unsigned byte array.
  * @details
@@ -241,12 +242,9 @@ int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, Message
  *
  * @note
  */
-void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
-                             uint64_t eth_unsigned_txn_len,
-                             const txn_metadata *transaction_metadata,
-                             const char *mnemonics,
-                             const char *passphrase,
-                             uint8_t *sig);
+void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_t eth_unsigned_txn_len,
+                             const txn_metadata *transaction_metadata, const char *mnemonics,
+                             const char *passphrase, uint8_t *sig);
 
 /**
  * @brief Return the string representation of decimal value of transaction fee in ETH.
@@ -254,10 +252,7 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
  * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit and gas_price
  * @param fee_decimal_string    Output decimal string of at least 30 character long
  */
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        char *fee_decimal_string,
-                        uint8_t size,
-                        uint8_t decimal);
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
 
 /**
  * @brief checks whether given token in metadata is whitelisted
