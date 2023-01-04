@@ -184,16 +184,3 @@ size_t near_get_account_ids_count(const uint8_t* data,const uint16_t data_len){
   }
   return count;
 }
-    size_t count    = 0;
-    while (offset < data_len) {
-        if (data[offset++] != TAG_NEAR_REGISTERED_ACC)
-            return count;
-
-        uint16_t acc_id_len = 0;
-        memcpy(&acc_id_len, data + offset, sizeof(acc_id_len));
-        offset += 2;
-        offset += acc_id_len;
-        count++;
-    }
-    return count;
-}
