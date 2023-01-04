@@ -68,6 +68,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 /**
  * @brief struct for
@@ -478,4 +479,22 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decima
 
     LOG_INFO("amt %s %d:%d", amount_string, decimal, i);
     return true;
+}
+
+uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
+                        const uint32_t totalSizeOfChunk,
+                        const uint8_t *pCurrentSrcAddr,
+                        const uint32_t readSize) {
+    uint8_t returnCode = UTIL_OUT_OF_BOUNDS;
+
+    if ((NULL == pBaseAddr) || (NULL == pCurrentSrcAddr) ||
+        ((uint32_t)pCurrentSrcAddr < (uint32_t)pBaseAddr) || (readSize > totalSizeOfChunk)) {
+        returnCode = UTIL_INVALID_ARGUMENTS;
+    } else {
+        if (((uint32_t)(pCurrentSrcAddr + readSize) - (uint32_t)pBaseAddr) <= (totalSizeOfChunk)) {
+            returnCode = UTIL_IN_BOUNDS;
+        }
+    }
+
+    return returnCode;
 }
