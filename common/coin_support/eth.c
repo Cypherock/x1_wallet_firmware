@@ -57,7 +57,6 @@
  */
 #include "eth.h"
 #include "../protocol_buffers/pb_decode.h"
-#include "abi.h"
 #include "assert_conf.h"
 #include "contracts.h"
 #include "eth_sign_data/eip712_utils.h"
@@ -363,7 +362,6 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
                 return (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) ==
                         ETH_UTXN_ABI_DECODE_OK);
         }
-        return false;
     } else {
         return false;
     }

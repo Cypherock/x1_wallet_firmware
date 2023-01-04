@@ -18,7 +18,6 @@
 #include "tasks.h"
 
 extern eth_unsigned_txn eth_unsigned_txn_ptr;
-extern ui_display_node *current_display_node;
 extern uint8_t challenge_no[32];
 
 /**

@@ -71,147 +71,152 @@ extern Wallet_credential_data wallet_credential_data;
 extern lv_task_t *timeout_task;
 
 extern MessageData msg_data;
-ui_display_node *current_display_node = NULL;
+extern ui_display_node *current_display_node;
 
 void sign_message_controller_eth() {
-  switch (flow_level.level_three) {
-    case SIGN_MSG_VERIFY_COIN_ETH: {
-      uint8_t arr[3] = {0x01, 0x1f, 0x40};
-      transmit_data_to_app(SIGN_MSG_RAW_MSG, arr, sizeof(arr));
-      flow_level.level_three = SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH;
-      eth_init_msg_data(&msg_data);  //initialize variables and decoding functions
-    } break;
+    switch (flow_level.level_three) {
+        case SIGN_MSG_VERIFY_COIN_ETH: {
+            uint8_t arr[3] = {0x01, 0x1f, 0x40};
+            transmit_data_to_app(SIGN_MSG_RAW_MSG, arr, sizeof(arr));
+            flow_level.level_three = SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH;
+            eth_init_msg_data(&msg_data);  //initialize variables and decoding functions
+        } break;
 
-    case SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH: {
-      uint8_t *data_array = NULL;
-      uint16_t msg_size   = 0;
-      if (get_usb_msg_by_cmd_type(SIGN_MSG_RAW_MSG, &data_array, &msg_size)) {
-        int status = 0;
-        status     = eth_byte_array_to_msg(data_array, msg_size, &msg_data);
+        case SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH: {
+            uint8_t *data_array = NULL;
+            uint16_t msg_size   = 0;
+            if (get_usb_msg_by_cmd_type(SIGN_MSG_RAW_MSG, &data_array, &msg_size)) {
+                int status = 0;
+                status     = eth_byte_array_to_msg(data_array, msg_size, &msg_data);
 
-        clear_message_received_data();
-        flow_level.level_three = SIGN_MSG_RAW_MSG_RECEIVED_ETH;
+                clear_message_received_data();
+                flow_level.level_three = SIGN_MSG_RAW_MSG_RECEIVED_ETH;
 
-        if (status != 0) {
-          instruction_scr_destructor();
-          mark_error_screen(ui_text_worng_eth_transaction);
-          comm_reject_request(SIGN_MSG_START, 0);
-          reset_flow_level();
-        }
+                if (status != 0) {
+                    instruction_scr_destructor();
+                    mark_error_screen(ui_text_worng_eth_transaction);
+                    comm_reject_request(SIGN_MSG_START, 0);
+                    reset_flow_level();
+                }
 
-        eth_init_display_nodes(&current_display_node, &msg_data);
-        ASSERT(current_display_node != NULL);
-      }
-    } break;
+                eth_init_display_nodes(&current_display_node, &msg_data);
+                ASSERT(current_display_node != NULL);
+            }
+        } break;
 
-    case SIGN_MSG_RAW_MSG_RECEIVED_ETH: {
-      if (is_token_whitelisted(&var_send_transaction_data.transaction_metadata))
-        flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
-      else
-        flow_level.level_three = SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH;
-    } break;
+        case SIGN_MSG_RAW_MSG_RECEIVED_ETH: {
+            if (is_token_whitelisted(&var_send_transaction_data.transaction_metadata))
+                flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
+            else
+                flow_level.level_three = SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH;
+        } break;
 
-    case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
-      flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
-    } break;
+        case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
+            flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
+        } break;
 
-    case SIGN_MSG_DISPLAY_INFO_ETH: {
-      if (current_display_node == NULL)
-        flow_level.level_three = SIGN_MSG_CHECK_PASSPHRASE_ETH;
-      else
-        current_display_node = current_display_node->next;
-    } break;
+        case SIGN_MSG_DISPLAY_INFO_ETH: {
+            if (current_display_node == NULL)
+                flow_level.level_three = SIGN_MSG_CHECK_PASSPHRASE_ETH;
+            else
+                current_display_node = current_display_node->next;
+        } break;
 
-    case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
-      instruction_scr_destructor();
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-      if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-        flow_level.level_three = SIGN_MSG_ENTER_PASSPHRASE_ETH;
-      } else {
-        flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
-      }
-    } break;
+        case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
+            instruction_scr_destructor();
+            memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+            if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+                flow_level.level_three = SIGN_MSG_ENTER_PASSPHRASE_ETH;
+            } else {
+                flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
+            }
+        } break;
 
-    case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
-      flow_level.level_three = SIGN_MSG_CONFIRM_PASSPHRASE_ETH;
-    } break;
+        case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
+            flow_level.level_three = SIGN_MSG_CONFIRM_PASSPHRASE_ETH;
+        } break;
 
-    case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
-      snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s",
-               flow_level.screen_input.input_text);
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-      flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
-    } break;
+        case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
+            snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase),
+                     "%s", flow_level.screen_input.input_text);
+            memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+            flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
+        } break;
 
-    case SIGN_MSG_CHECK_PIN_ETH: {
-      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-        flow_level.level_three = SIGN_MSG_ENTER_PIN_ETH;
-      } else {
-        flow_level.level_three = SIGN_MSG_TAP_CARD_ETH;
-      }
+        case SIGN_MSG_CHECK_PIN_ETH: {
+            if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+                flow_level.level_three = SIGN_MSG_ENTER_PIN_ETH;
+            } else {
+                flow_level.level_three = SIGN_MSG_TAP_CARD_ETH;
+            }
 
-    } break;
+        } break;
 
-    case SIGN_MSG_ENTER_PIN_ETH: {
-      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
-                 strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)),
-                 wallet_credential_data.password_single_hash);
-      sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-      flow_level.level_three = SIGN_MSG_TAP_CARD_ETH;
-    } break;
+        case SIGN_MSG_ENTER_PIN_ETH: {
+            sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                       strnlen(flow_level.screen_input.input_text,
+                               sizeof(flow_level.screen_input.input_text)),
+                       wallet_credential_data.password_single_hash);
+            sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH,
+                       wallet.password_double_hash);
+            memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+            flow_level.level_three = SIGN_MSG_TAP_CARD_ETH;
+        } break;
 
-    case SIGN_MSG_TAP_CARD_ETH: {
-      tap_card_data.desktop_control = true;
-      tap_threshold_cards_for_reconstruction_flow_controller(1);
-    } break;
+        case SIGN_MSG_TAP_CARD_ETH: {
+            tap_card_data.desktop_control = true;
+            tap_threshold_cards_for_reconstruction_flow_controller(1);
+        } break;
 
-    case SIGN_MSG_TAP_CARD_SEND_CMD_ETH: {
-      flow_level.level_three = SIGN_MSG_READ_DEVICE_SHARE_ETH;
-    } break;
+        case SIGN_MSG_TAP_CARD_SEND_CMD_ETH: {
+            flow_level.level_three = SIGN_MSG_READ_DEVICE_SHARE_ETH;
+        } break;
 
-    case SIGN_MSG_READ_DEVICE_SHARE_ETH:
-      wallet_shamir_data.share_x_coords[1] = 5;
-      get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[1]);
-      memcpy(wallet_shamir_data.share_encryption_data[1], wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
-      flow_level.level_three = SIGN_MSG_SIGN_TXN_ETH;
-      break;
+        case SIGN_MSG_READ_DEVICE_SHARE_ETH:
+            wallet_shamir_data.share_x_coords[1] = 5;
+            get_flash_wallet_share_by_name((const char *)wallet.wallet_name,
+                                           wallet_shamir_data.mnemonic_shares[1]);
+            memcpy(wallet_shamir_data.share_encryption_data[1],
+                   wallet_shamir_data.share_encryption_data[0], NONCE_SIZE + WALLET_MAC_SIZE);
+            flow_level.level_three = SIGN_MSG_SIGN_TXN_ETH;
+            break;
 
-    case SIGN_MSG_SIGN_TXN_ETH: {
-      uint8_t secret[BLOCK_SIZE];
-      if (WALLET_IS_PIN_SET(wallet.wallet_info))
-        decrypt_shares();
-      recover_secret_from_shares(BLOCK_SIZE, MINIMUM_NO_OF_SHARES, wallet_shamir_data.mnemonic_shares,
-                                 wallet_shamir_data.share_x_coords, secret);
-      mnemonic_clear();
-      const char *mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-      ASSERT(mnemo != NULL);
+        case SIGN_MSG_SIGN_TXN_ETH: {
+            uint8_t secret[BLOCK_SIZE];
+            if (WALLET_IS_PIN_SET(wallet.wallet_info))
+                decrypt_shares();
+            recover_secret_from_shares(BLOCK_SIZE, MINIMUM_NO_OF_SHARES,
+                                       wallet_shamir_data.mnemonic_shares,
+                                       wallet_shamir_data.share_x_coords, secret);
+            mnemonic_clear();
+            const char *mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+            ASSERT(mnemo != NULL);
 
-      uint8_t sig[65] = {0};
+            uint8_t sig[65] = {0};
 
-      eth_sign_msg_data(&msg_data, (const txn_metadata *)&var_send_transaction_data.transaction_metadata, mnemo,
-                        wallet_credential_data.passphrase, sig);
-      transmit_data_to_app(SIGN_MSG_SEND_SIG, sig, 65);
-      mnemonic_clear();
-      memzero(secret, sizeof(secret));
-      memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+            eth_sign_msg_data(&msg_data,
+                              (const txn_metadata *)&var_send_transaction_data.transaction_metadata,
+                              mnemo, wallet_credential_data.passphrase, sig);
+            transmit_data_to_app(SIGN_MSG_SEND_SIG, sig, 65);
+            mnemonic_clear();
+            memzero(secret, sizeof(secret));
+            memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
+            memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
 
-      flow_level.level_three = SIGN_MSG_WAITING_SCREEN_ETH;
-    } break;
+            flow_level.level_three = SIGN_MSG_WAITING_SCREEN_ETH;
+        } break;
 
-    case SIGN_MSG_WAITING_SCREEN_ETH:
-      instruction_scr_destructor();
-      lv_obj_clean(lv_scr_act());
-      flow_level.level_three = SIGN_MSG_FINAL_SCREEN_ETH;
-      break;
+        case SIGN_MSG_WAITING_SCREEN_ETH:
+            instruction_scr_destructor();
+            lv_obj_clean(lv_scr_act());
+            flow_level.level_three = SIGN_MSG_FINAL_SCREEN_ETH;
+            break;
 
-    case SIGN_MSG_FINAL_SCREEN_ETH:
-      reset_flow_level();
-      break;
+        case SIGN_MSG_FINAL_SCREEN_ETH:
+            reset_flow_level();
+            break;
 
-    default:
-      break;
-  }
+        default:
+            break;
+    }
 }
