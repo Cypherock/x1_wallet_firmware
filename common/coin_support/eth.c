@@ -64,10 +64,13 @@
 #include "utils.h"
 #include "abi.h"
 
+extern ui_display_node *current_display_node;
+
+
 static uint8_t rlp_encode_decimal(uint64_t dec, uint8_t offset, uint8_t *metadata);
 
 /* Refer https://www.4byte.directory/signatures/?bytes4_signature=0x7c025200 */
-#define EVM_swap_TAG      (0x7c025200)
+#define EVM_swap_TAG      (0x12aa3caf)
 #define EVM_swap_NUM_ARGS 10
 const Abi_Type_e EVM_swapDataType[EVM_swap_NUM_ARGS] = {
     Abi_address_e, Abi_address_e, Abi_address_e, Abi_address_e,       Abi_address_e,
@@ -685,6 +688,16 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
             eth_create_display_node(EvmFunctionTitle, strnlen(EvmFunctionTitle, 50),
                                     EvmFunctionSignature, strnlen(EvmFunctionSignature, 50));
 
+        if (current_display_node == NULL) {
+            current_display_node = pAbiDispNode;
+        } else {
+            ui_display_node *temp = current_display_node;
+            while (temp->next != NULL) {
+                temp = temp->next;
+            }
+            temp->next = pAbiDispNode;
+        }
+
         /* TODO: Add pAbiDisplayNode to global linked list */
     }
 
@@ -796,11 +809,21 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
         pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
         returnCode = ETH_UTXN_ABI_DECODE_OK;
 
-        Abi_Encode(Abi_uint256_e,
-                    4,
-                    NULL,
-                    NULL);
+        // Abi_Encode(Abi_uint256_e,
+        //             4,
+        //             NULL,
+        //             NULL);
         /* TODO: Add pAbiDispNode to global linked list */
+
+        if (current_display_node == NULL) {
+            current_display_node = pAbiDispNode;
+        } else {
+            ui_display_node *temp = current_display_node;
+            while (temp->next != NULL) {
+                temp = temp->next;
+            }
+            temp->next = pAbiDispNode;
+        }
     }
 
     return returnCode;

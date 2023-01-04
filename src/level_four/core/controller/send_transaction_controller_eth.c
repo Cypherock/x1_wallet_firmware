@@ -90,8 +90,13 @@ eth_unsigned_txn eth_unsigned_txn_ptr = {
 uint8_t *eth_unsigned_txn_byte_array = NULL;
 uint16_t eth_unsigned_txn_len;
 
-void send_transaction_controller_eth() {
-  switch (flow_level.level_three) {
+ui_display_node *current_display_node = NULL;
+
+void send_transaction_controller_eth()
+{
+
+    switch (flow_level.level_three) {
+
     case SEND_TXN_VERIFY_COIN_ETH: {
       uint8_t arr[3] = {0x01, 0x1f, 0x40};
       transmit_data_to_app(SEND_TXN_REQ_UNSIGNED_TXN, arr, sizeof(arr));
@@ -152,11 +157,26 @@ void send_transaction_controller_eth() {
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-      if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-        flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
-      } else {
-        flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
+        flow_level.level_three = SEND_TXN_DISPLAY_INFO_ETH;
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+        if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+            flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
+        } else {
+            flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
+        }
+    } break;
+
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+      if (current_display_node == NULL){
+        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+        if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+            flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
+        } else {
+            flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
+        }
+      }
+      else{
+        current_display_node = current_display_node->next;
       }
     } break;
 

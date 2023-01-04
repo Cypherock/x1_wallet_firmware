@@ -357,7 +357,7 @@ void application_init() {
     if (get_display_rotation() == LEFT_HAND_VIEW) {
         ui_rotate();
     }
-    logger_init();
+    /*logger_init();*/
 #else
     srand(time(0));
     /*Initialize LittlevGL*/
