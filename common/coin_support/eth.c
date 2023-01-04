@@ -59,6 +59,7 @@
 #include "../protocol_buffers/pb_decode.h"
 #include "assert_conf.h"
 #include "contracts.h"
+#include "eth_sign_data/eip712_utils.h"
 #include "int-util.h"
 #include "logger.h"
 #include "utils.h"
@@ -376,8 +377,19 @@ uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t *
       memcpy(*out + offset, msg_data->data_bytes->bytes, msg_data->data_bytes->size);
       return data_size;
     } break;
-    case MessageData_MessageType_SIGN_TYPED_DATA:
-      break;
+    case MessageData_MessageType_SIGN_TYPED_DATA: {
+      uint16_t data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
+      uint16_t offset    = 0;
+      *out               = cy_malloc(data_size);
+      memzero(*out, data_size);
+      memcpy(*out, ETH_SIGN_TYPED_DATA_IDENTIFIER, sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
+      offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
+      hash_struct(&msg_data->eip712data.domain, *out + offset);
+      offset += HASH_SIZE;
+      hash_struct(&msg_data->eip712data.message, *out + offset);
+      print_hex_array("PRESIGN", *out, data_size);
+      return data_size;
+    } break;
   }
   return -1;
 }
@@ -395,19 +407,49 @@ void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
                                       msg_data->data_bytes->size);
     } break;
     case MessageData_MessageType_SIGN_TYPED_DATA: {
-      //dummy data for eip712
-      char arr[][20] = {"test", "test2", "test3"};
-      char val[][20] = {"test-address", "test2-address", "test3-address"};
-
-      *node                 = eth_create_display_node("node title", 64, "node value", 64);
+      *node                 = eth_create_display_node("Verify Domain", 64, "EIP712Domain", 64);
       ui_display_node *temp = NULL;
       temp                  = *node;
-      for (int i = 0; i < 3; i++) {
-        temp->next = eth_create_display_node(arr[i], 64, val[i], 64);
-        temp       = temp->next;
-      }
+      temp                  = eth_create_typed_data_display_nodes(&msg_data->eip712data.domain, &temp);
+      temp->next            = eth_create_display_node("Verify Message", 64, "Test message", 64);
+      temp                  = eth_create_typed_data_display_nodes(&msg_data->eip712data.message, &(temp->next));
     } break;
   }
+}
+
+ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_TypedDataNode *root,
+                                                     ui_display_node **display_node) {
+  queue *q = create_queue();
+  enqueue(q, root, "");
+  ui_display_node *temp = *display_node;
+  while (!is_empty(q)) {
+    int node_count = 0;
+    node_count     = q->count;
+    while (node_count > 0) {
+      queue_node *node                         = dequeue(q);
+      TypedDataStruct_TypedDataNode *curr_node = node->tree_node;
+      char buffer[BUFFER_SIZE]                 = {0};
+      snprintf(buffer, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
+
+      char data[BUFFER_SIZE] = {0};
+      fill_string_with_data(curr_node, data, sizeof(data));
+
+      temp->next = eth_create_display_node(buffer, BUFFER_SIZE, data, sizeof(data));
+      temp       = temp->next;
+
+      for (int i = 0; i < curr_node->children_count; i++) {
+        char prefix[1024] = {0};
+        strcat(prefix, node->prefix);
+        strcat(prefix, node->tree_node->name);
+        strcat(prefix, ".");
+        enqueue(q, curr_node->children + i, prefix);
+      }
+      // free(node);
+      node_count--;
+    }
+  }
+
+  return temp;
 }
 
 ui_display_node *eth_create_display_node(const char *title,
@@ -417,13 +459,15 @@ ui_display_node *eth_create_display_node(const char *title,
   ui_display_node *result = cy_malloc(sizeof(ui_display_node));
   memzero(result, sizeof(ui_display_node));
 
-  result->title = cy_malloc(title_size);
-  memzero(result->title, title_size);
-  strncpy(result->title, title, title_size);
+  size_t title_length = strnlen(title, title_size) + 1;
+  result->title       = cy_malloc(title_length);
+  memzero(result->title, title_length);
+  strncpy(result->title, title, title_length);
 
-  result->value = cy_malloc(value_size);
-  memzero(result->value, value_size);
-  strncpy(result->value, value, value_size);
+  size_t value_length = strnlen(value, value_size) + 1;
+  result->value       = cy_malloc(value_length);
+  memzero(result->value, value_length);
+  strncpy(result->value, value, value_length);
 
   result->next = NULL;
   return result;

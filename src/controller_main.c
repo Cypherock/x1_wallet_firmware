@@ -81,6 +81,7 @@
 
 #include "controller_main.h"
 #include <string.h>
+#include "../common/protocol_buffers/pb_decode.h"
 #include "application_startup.h"
 #include "arbitrum.h"
 #include "avalanche.h"
@@ -93,6 +94,7 @@
 #include "controller_level_one.h"
 #include "cryptoauthlib.h"
 #include "etc.h"
+#include "eth.h"
 #include "fantom.h"
 #include "harmony.h"
 #include "near.h"
@@ -160,6 +162,12 @@ Counter counter;
  * 
  */
 Flash_Wallet wallet_for_flash;
+
+/**
+ * @brief Message data for wallet connect EIP-712 using protobuf 
+ * 
+ */
+MessageData msg_data;
 
 Flow_level *get_flow_level() {
   ASSERT((&flow_level) != NULL);
@@ -230,6 +238,7 @@ void reset_flow_level() {
   memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
   memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
   cy_free();
+  pb_release(MessageData_fields, &msg_data);
 }
 
 void reset_next_event_flag() {

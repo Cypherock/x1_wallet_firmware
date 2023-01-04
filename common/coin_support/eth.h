@@ -42,7 +42,8 @@
 #define ETHEREUM_TOKEN_SYMBOL "ETH"
 
 // \x45(E) is needed otherwise \x19e is considered instead of \x19
-#define ETH_PERSONAL_SIGN_IDENTIFIER "\x19\x45thereum Signed Message:\n"
+#define ETH_PERSONAL_SIGN_IDENTIFIER   "\x19\x45thereum Signed Message:\n"
+#define ETH_SIGN_TYPED_DATA_IDENTIFIER "\x19\x01"
 
 /// Convert byte array to unit32_t
 #define ETH_VALUE_SIZE_BYTES (32U)
@@ -314,4 +315,6 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig);
+ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_TypedDataNode *root,
+                                                     ui_display_node **display_node);
 #endif

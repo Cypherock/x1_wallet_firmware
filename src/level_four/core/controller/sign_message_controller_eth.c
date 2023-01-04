@@ -70,7 +70,7 @@ extern Wallet_credential_data wallet_credential_data;
 
 extern lv_task_t *timeout_task;
 
-MessageData msg_data;
+extern MessageData msg_data;
 ui_display_node *current_display_node = NULL;
 
 void sign_message_controller_eth() {
