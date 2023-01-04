@@ -28,6 +28,7 @@
 #include "../crypto/sha2.h"
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
+#include "eth_sign_data/abi.h"
 #include "eth_sign_data/simple.pb.h"
 
 #define ETHEREUM_PURPOSE_INDEX 0x8000002C
@@ -56,7 +57,6 @@
 #define ETH_UTXN_BAD_PAYLOAD        (0x11)
 #define ETH_UTXN_FUNCTION_NOT_FOUND (0x11)
 #define ETH_BAD_ARGUMENTS           (0x22)
-
 
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;
@@ -98,12 +98,6 @@ typedef struct {
   uint8_t contract_verified;
 } eth_unsigned_txn;
 #pragma pack(pop)
-
-typedef struct ui_display_node {
-  char *title;
-  char *value;
-  struct ui_display_node *next;
-} ui_display_node;
 
 /**
  * @brief Converts bendian byte array to decimal uint64_t.
@@ -299,20 +293,6 @@ bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_le
  * @param msg_data 
  */
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
-
-/**
- * @brief Create a new display node and return its pointer
- * 
- * @param title 
- * @param title_size 
- * @param value 
- * @param value_size 
- * @return ui_display_node* 
- */
-ui_display_node *eth_create_display_node(const char *title,
-                                         const size_t title_size,
-                                         const char *value,
-                                         const size_t value_size);
 
 /**
  * @brief This function extracts Abi encoded arguments for EVM functions into UI 

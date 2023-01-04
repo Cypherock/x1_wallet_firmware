@@ -84,13 +84,13 @@ void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char 
       snprintf(buffer, sizeof(buffer), "%d", *(data_node->data->bytes));
       break;
     case TypedDataStruct_TypedDataNode_Eip712DataType_STRING:
-      snprintf(buffer, data_node->data->size +1, "%s", data_node->data->bytes);
+      snprintf(buffer, data_node->data->size + 1, "%s", data_node->data->bytes);
       break;
     case TypedDataStruct_TypedDataNode_Eip712DataType_BYTES:
     case TypedDataStruct_TypedDataNode_Eip712DataType_ADDRESS:
     default:
       snprintf(buffer, sizeof(buffer), "0x");
-      byte_array_to_hex_string(data_node->data->bytes, data_node->data->size, buffer+2, sizeof(buffer)-1);
+      byte_array_to_hex_string(data_node->data->bytes, data_node->data->size, buffer + 2, sizeof(buffer) - 1);
       break;
   }
   snprintf(output, output_size, "%s: %s", data_node->struct_name, buffer);
@@ -157,30 +157,26 @@ int encode_data(const TypedDataStruct_TypedDataNode *data_node,
         *bytes_written += HASH_SIZE;
         break;
       case TypedDataStruct_TypedDataNode_Eip712DataType_ARRAY: {
-            size_t result_size = data_node->children_count * HASH_SIZE;
-      uint8_t *result = malloc(result_size);
-      if (result == NULL)
-        return EIP712_MEMORY_ALLOCATION_FAILED;
-      memzero(result, result_size);
-      int status = EIP712_OK;
-      size_t dummy = 0;
-      for (int i = 0; i < data_node->children_count; i++)
-      {
-        if (data_node->children[i].type == TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT)
-          status = hash_struct(&data_node->children[i], result + i * HASH_SIZE);
-        else
-          status = encode_data(&data_node->children[i], result + i * HASH_SIZE, HASH_SIZE, &dummy);
-        if (status != EIP712_OK)
-        {
-          free(result);
-          return status;
+        size_t result_size = data_node->children_count * HASH_SIZE;
+        uint8_t *result    = malloc(result_size);
+        if (result == NULL)
+          return EIP712_MEMORY_ALLOCATION_FAILED;
+        memzero(result, result_size);
+        int status   = EIP712_OK;
+        size_t dummy = 0;
+        for (int i = 0; i < data_node->children_count; i++) {
+          if (data_node->children[i].type == TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT)
+            status = hash_struct(&data_node->children[i], result + i * HASH_SIZE);
+          else
+            status = encode_data(&data_node->children[i], result + i * HASH_SIZE, HASH_SIZE, &dummy);
+          if (status != EIP712_OK) {
+            free(result);
+            return status;
+          }
         }
-      }
-      print_hex_array("EncodeData Array PreHash", result, result_size);
-      keccak_256(result, result_size, output);
-      *bytes_written += HASH_SIZE;
-      free(result);
-      print_hex_array("EncodeData Array", output, HASH_SIZE);
+        keccak_256(result, result_size, output);
+        *bytes_written += HASH_SIZE;
+        free(result);
       } break;
       case TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT: {
         size_t result_size = data_node->children_count * HASH_SIZE;
@@ -212,22 +208,20 @@ int encode_data(const TypedDataStruct_TypedDataNode *data_node,
         break;
     }
   }
-  print_hex_array("EncodeData Inside", output, *bytes_written);
+
   return EIP712_OK;
 }
 
 int hash_struct(const TypedDataStruct_TypedDataNode *data_node, uint8_t *output) {
   if (data_node->type != TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT)
     return EIP712_INVALID_DATA;
-  size_t data_size = HASH_SIZE + (data_node->children_count + 1) * HASH_SIZE;
+  size_t data_size = HASH_SIZE + (data_node->children_count) * HASH_SIZE;
   size_t used_size = 0;
   uint8_t *data    = malloc(data_size);
   memcpy(data, data_node->type_hash->bytes, data_node->type_hash->size);
   int status =
       encode_data(data_node, data + data_node->type_hash->size, (data_size - data_node->type_hash->size), &used_size);
-  printf("status = %d\n", status);
-  print_hex_array("Pre Hash", data, data_size);
-  keccak_256(data, used_size, output);
+  keccak_256(data, data_size, output);
   free(data);
   return status;
 }

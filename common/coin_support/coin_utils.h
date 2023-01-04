@@ -16,17 +16,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "assert_conf.h"
 #include "base58.h"
 #include "bip32.h"
 #include "bip39.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "logger.h"
 #include "ripemd160.h"
 #include "secp256k1.h"
 #include "sha2.h"
 #include "utils.h"
-#include "logger.h"
-#include "assert_conf.h"
 
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
@@ -35,16 +35,16 @@
 #define BTC_TEST (BITCOIN + 0x01)
 
 /// LITECOIN coin index
-#define LITCOIN (BITCOIN + 0x02)
-#define LTC_COIN_VERSION     0x00000000
+#define LITCOIN          (BITCOIN + 0x02)
+#define LTC_COIN_VERSION 0x00000000
 
 /// DOGE coin index
-#define DOGE (BITCOIN + 0x03)
-#define DOGE_COIN_VERSION     0x00000000
+#define DOGE              (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION 0x00000000
 
 /// DASH coin index
-#define DASH (BITCOIN + 0x05)
-#define DASH_COIN_VERSION     0x00000000
+#define DASH              (BITCOIN + 0x05)
+#define DASH_COIN_VERSION 0x00000000
 
 /// ETHEREUM coin index
 #define ETHEREUM ETHEREUM_COIN_INDEX
@@ -62,23 +62,23 @@
 #define NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
-    COIN_TYPE_BITCOIN = 0x01,
-    COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITECOIN = 0x03,
-    COIN_TYPE_DOGE = 0x04,
-    COIN_TYPE_DASH = 0x05,
-    COIN_TYPE_ETHEREUM = 0x06,
-    COIN_TYPE_NEAR = 0x07,
-    COIN_TYPE_POLYGON = 0x08,
-    COIN_TYPE_SOLANA = 0x09,
-  COIN_TYPE_BSC = 0x0A,
-  COIN_TYPE_FANTOM = 0x0B,
-  COIN_TYPE_AVALANCHE = 0x0C,
-  COIN_TYPE_OPTIMISM = 0x0D,
-  COIN_TYPE_HARMONY = 0x0E,
+  COIN_TYPE_BITCOIN          = 0x01,
+  COIN_TYPE_BTC_TEST         = 0x02,
+  COIN_TYPE_LITECOIN         = 0x03,
+  COIN_TYPE_DOGE             = 0x04,
+  COIN_TYPE_DASH             = 0x05,
+  COIN_TYPE_ETHEREUM         = 0x06,
+  COIN_TYPE_NEAR             = 0x07,
+  COIN_TYPE_POLYGON          = 0x08,
+  COIN_TYPE_SOLANA           = 0x09,
+  COIN_TYPE_BSC              = 0x0A,
+  COIN_TYPE_FANTOM           = 0x0B,
+  COIN_TYPE_AVALANCHE        = 0x0C,
+  COIN_TYPE_OPTIMISM         = 0x0D,
+  COIN_TYPE_HARMONY          = 0x0E,
   COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
-  COIN_TYPE_ARBITRUM = 0x10,
-}Coin_Type;
+  COIN_TYPE_ARBITRUM         = 0x10,
+} Coin_Type;
 
 #pragma pack(push, 1)
 /**
@@ -90,10 +90,9 @@ typedef enum Coin_Type {
  *
  * @note
  */
-typedef struct
-{
-    uint8_t chain_index[4];
-    uint8_t address_index[4];
+typedef struct {
+  uint8_t chain_index[4];
+  uint8_t address_index[4];
 } address_type;
 #pragma pack(pop)
 
@@ -107,29 +106,28 @@ typedef struct
  *
  * @note
  */
-typedef struct
-{
-    uint8_t wallet_index[1];
-    uint8_t purpose_index[4];
-    uint8_t coin_index[4];
-    uint8_t account_index[4];
+typedef struct {
+  uint8_t wallet_index[1];
+  uint8_t purpose_index[4];
+  uint8_t coin_index[4];
+  uint8_t account_index[4];
 
-    uint8_t input_count[1];
-    address_type *input;
+  uint8_t input_count[1];
+  address_type *input;
 
-    uint8_t output_count[1];
-    address_type *output;
+  uint8_t output_count[1];
+  address_type *output;
 
-    uint8_t change_count[1];
-    address_type *change;
+  uint8_t change_count[1];
+  address_type *change;
 
-    uint8_t transaction_fees[8];
+  uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+  uint8_t decimal[1];
 
-    char *token_name;
+  char *token_name;
 
-    uint64_t network_chain_id;
+  uint64_t network_chain_id;
 
 } txn_metadata;
 #pragma pack(pop)
@@ -167,6 +165,11 @@ typedef struct Receive_Transaction_Data {
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
+typedef struct ui_display_node {
+  char *title;
+  char *value;
+  struct ui_display_node *next;
+} ui_display_node;
 
 /**
  * @brief Copies the byte values from source after offset to destination under the given size limit.
@@ -204,7 +207,9 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int
  *
  * @note
  */
-int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint32_t size, txn_metadata *txn_metadata_ptr);
+int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array,
+                                   uint32_t size,
+                                   txn_metadata *txn_metadata_ptr);
 
 /**
  * @brief Deserialize byte array to receive transaction data
@@ -214,7 +219,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array, uint3
  * @param [in] size                     Size of the byte array data_byte_array
  * @return int32_t Offset used in conversion
  */
-int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
+int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
+                                    const uint8_t *data_byte_array,
+                                    const uint32_t size);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
@@ -233,7 +240,7 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
  *
  * @note
  */
-void generate_xpub(const uint32_t *path,const size_t path_length, const char *curve,const uint8_t *seed, char *str);
+void generate_xpub(const uint32_t *path, const size_t path_length, const char *curve, const uint8_t *seed, char *str);
 
 /**
  * @brief Get the hdnode at given path from seed.
@@ -253,7 +260,11 @@ void generate_xpub(const uint32_t *path,const size_t path_length, const char *cu
  *
  * @note
  */
-void derive_hdnode_from_path(const uint32_t *path, const size_t path_length, const char *curve, const uint8_t *seed, HDNode *hdnode);
+void derive_hdnode_from_path(const uint32_t *path,
+                             const size_t path_length,
+                             const char *curve,
+                             const uint8_t *seed,
+                             HDNode *hdnode);
 
 /**
  * @brief Get the address from HDNode.
@@ -273,8 +284,11 @@ void derive_hdnode_from_path(const uint32_t *path, const size_t path_length, con
  *
  * @note
  */
-void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
-                             const char *mnemonic, const char *passphrase, HDNode *hdnode);
+void get_address_node(const txn_metadata *txn_metadata_ptr,
+                      const int16_t index,
+                      const char *mnemonic,
+                      const char *passphrase,
+                      HDNode *hdnode);
 /**
  * @brief Get the coin name for the passed coin index and chain id.
  * @details
@@ -326,7 +340,7 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
  *
  * @note
  */
-void get_version(uint32_t purpose_id, uint32_t coin_index, uint8_t* address_version, uint32_t* pub_version);
+void get_version(uint32_t purpose_id, uint32_t coin_index, uint8_t *address_version, uint32_t *pub_version);
 
 /**
  * @brief
@@ -359,5 +373,19 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+/**
+ * @brief Create a new display node and return its pointer
+ * 
+ * @param title 
+ * @param title_size 
+ * @param value 
+ * @param value_size 
+ * @return ui_display_node* 
+ */
+ui_display_node *ui_create_display_node(const char *title,
+                                        const size_t title_size,
+                                        const char *value,
+                                        const size_t value_size);
 
 #endif

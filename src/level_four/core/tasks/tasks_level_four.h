@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "coin_utils.h"
 #include "controller_main.h"
 #include "eth.h"
 #include "tasks.h"
