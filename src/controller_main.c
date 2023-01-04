@@ -768,18 +768,21 @@ void desktop_listener_task(lv_task_t* data)
 #if X1WALLET_TEST_SUITE==1
             case DEVICE_SHAMIR_GENERATE_TEST:{
                 memcpy(test_input_data, data_array, msg_size);
+                test_data_len = msg_size;
                 test_case = TEST_GENERATE_SEED;
                 test_state = NO_TEST;
                 clear_message_received_data();
             }break;
             case DEVICE_SHAMIR_RESTORE_SEED:{
                 memcpy(test_input_data, data_array, msg_size);
-                test_case = TEST_VERIFY_SHARES;
+                test_data_len = msg_size;
+                test_case = TEST_RESTORE_SEED;
                 test_state = NO_TEST;
                 clear_message_received_data();
             }break;
             case DEVICE_SHAMIR_VERIFY_SHARES:{
                 memcpy(test_input_data, data_array, msg_size);
+                test_data_len = msg_size;
                 test_case = TEST_VERIFY_SHARES;
                 test_state = NO_TEST;
                 clear_message_received_data();

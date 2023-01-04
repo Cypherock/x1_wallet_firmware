@@ -59,8 +59,8 @@ void set_test_case(){
             test_data.start_flow.level_three = RESTORE_WALLET_CREATING_WAIT_SCREEN;
 
             test_data.end_flow.level_one = LEVEL_TWO_NEW_WALLET;
-            test_data.end_flow.level_two = LEVEL_THREE_GENERATE_WALLET;
-            test_data.end_flow.level_three = RESTORE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE;
+            test_data.end_flow.level_two = LEVEL_THREE_RESTORE_WALLET;
+            test_data.end_flow.level_three = RESTORE_WALLET_CREATE+1;
             LOG_INFO("TEST: restore seed triggered");
             test_state = TEST_DATA_READY;
         break;
@@ -115,9 +115,8 @@ void jump_to_test(){
             WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
             WALLET_UNSET_PIN(wallet.wallet_info);
             wallet.number_of_mnemonics = 24;
-            const char *mnemonics = "easy culture food welcome virtual acoustic west tongue pool year rib range almost trust wagon enroll all level basket hair exact clown banner dad";
-            __single_to_multi_line(mnemonics, strlen(mnemonics), wallet_credential_data.mnemonics);            
-            LOG_INFO("TEST: Input seed");
+            __single_to_multi_line((const char*)test_input_data, strlen(test_input_data), wallet_credential_data.mnemonics);            
+            LOG_INFO("TEST: Input mnemonics");
             for(int i = 0; i < 24; i++)
                 LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
         }break;
@@ -193,9 +192,13 @@ void log_test_result(){
     }break;
     case TEST_RESTORE_SEED:{
         LOG_INFO("TEST: Generated shares");
-        for(int i = 0; i < 5; i++)
+        for(int i = 0; i < 5; i++){
             log_hex_array("shares: ", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            test_data_len+=32;
+        }
         LOG_INFO("TEST: Log done.");
+        transmit_data_to_app(DEVICE_SHAMIR_RESTORE_SEED, test_output_data, test_data_len);
     }break;
     case TEST_VERIFY_SHARES:{
         LOG_INFO("TEST: VERIFY SHARES 5C2");
