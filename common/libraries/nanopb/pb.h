@@ -4,6 +4,7 @@
 
 #ifndef PB_H_INCLUDED
 #define PB_H_INCLUDED
+#define PB_ENABLE_MALLOC
 
 /*****************************************************************
  * Nanopb compilation time options. You can change these here by *
