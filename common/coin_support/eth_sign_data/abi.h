@@ -13,8 +13,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../crypto/sha3.h"
-#include"coin_utils.h"
+#include "coin_utils.h"
+#include "sha3.h"
 
 /* MACROS
  *****************************************************************************/

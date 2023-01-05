@@ -29,8 +29,8 @@
 #include "../crypto/base58.h"
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
-#include "eth_sign_data/abi.h"
-#include "eth_sign_data/simple.pb.h"
+#include "abi.h"
+#include "simple.pb.h"
 
 #define ETHEREUM_PURPOSE_INDEX    0x8000002C
 #define ETHEREUM_COIN_INDEX       0x8000003C

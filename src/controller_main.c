@@ -81,7 +81,7 @@
 
 #include "controller_main.h"
 #include <string.h>
-#include "../common/protocol_buffers/pb_decode.h"
+#include "pb_decode.h"
 #include "application_startup.h"
 #include "arbitrum.h"
 #include "avalanche.h"
