@@ -111,8 +111,8 @@ void level_two_tasks()
         if (is_wallet_locked(wallet_index)) {
             mark_list_choice(LEVEL_THREE_WALLET_LOCKED);
             mark_event_over();
-             snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_wallet_lock_continue_to_unlock);
-             flow_level.show_desktop_start_screen = true;
+            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "%s", ui_text_wallet_lock_continue_to_unlock);
+            flow_level.show_desktop_start_screen = true;
             return;
         }
 
