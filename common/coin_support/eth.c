@@ -56,7 +56,7 @@
  ******************************************************************************
  */
 #include "eth.h"
-#include "../protocol_buffers/pb_decode.h"
+#include "pb_decode.h"
 #include "assert_conf.h"
 #include "contracts.h"
 #include "eth_sign_data/eip712_utils.h"

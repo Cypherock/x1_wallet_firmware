@@ -76,7 +76,6 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/coin_support/eth_sign_data
         common/flash
         common/Firewall
-        common/protocol_buffers
 
         common
         common/lvgl

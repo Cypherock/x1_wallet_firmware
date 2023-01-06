@@ -3,7 +3,7 @@
 
 #ifndef PB_SIMPLE_PB_H_INCLUDED
 #define PB_SIMPLE_PB_H_INCLUDED
-#include "../../protocol_buffers/pb.h"
+#include "pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
