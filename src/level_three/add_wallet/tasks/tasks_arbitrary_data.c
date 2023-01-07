@@ -73,6 +73,7 @@
 #include "ui_address.h"
 #include "ui_instruction.h"
 #include "tasks_tap_cards.h"
+#include "ui_multi_instruction.h"
 
 extern char arbitrary_data[4096 / 8 + 1];
 
@@ -86,7 +87,7 @@ static void restore_wallet_enter_mnemonics_flow()
 {
     if (flow_level.level_four <= wallet.number_of_mnemonics) {
         char heading[20];
-        snprintf(heading, sizeof(heading), ui_text_enter_word_hash, flow_level.level_four);
+        snprintf(heading, sizeof(heading), UI_TEXT_ENTER_WORD, flow_level.level_four);
         ui_mnem_init(heading);
     } else {
         // todo check if mnemonics is correct
@@ -114,12 +115,17 @@ void tasks_arbitrary_data()
 
     case ARBITRARY_DATA_NAME_CONFIRM: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
-      delay_scr_init(ui_wallet_pin_instruction_1, DELAY_TIME);
+      char display[65];
+      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
+      else
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
+      delay_scr_init(display, DELAY_TIME);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_2: {
@@ -183,8 +189,21 @@ void tasks_arbitrary_data()
         tap_cards_for_write_flow();
     } break;
 
+    case ARBITRARY_DATA_VERIFY_SHARES:
+        instruction_scr_init(ui_text_processing, "");
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
+        mark_event_over();
+        break;
+
     case ARBITRARY_DATA_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_x1cards);
+        instruction_scr_destructor();
+        multi_instruction_init(ui_text_verification_is_now_complete_messages, 4, DELAY_LONG_STRING, true);
+    } break;
+
+    case ARBITRARY_DATA_FAILED_MESSAGE: {
+        instruction_scr_destructor();
+        message_scr_init(ui_text_creation_failed_delete_wallet);
     } break;
 
     default: {

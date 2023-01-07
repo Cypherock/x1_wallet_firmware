@@ -94,7 +94,7 @@ void sync_cards_controller()
     } break;
 
     case SYNC_CARDS_ENTER_PIN_FLOW:{
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = SYNC_CARDS_TAP_TWO_CARDS_FLOW;
@@ -103,7 +103,8 @@ void sync_cards_controller()
     case SYNC_CARDS_TAP_TWO_CARDS_FLOW:{
         tap_card_data.desktop_control = false;
         tap_threshold_cards_for_reconstruction_flow_controller(2);
-        if (counter.level == LEVEL_ONE || flow_level.level_two == LEVEL_THREE_WALLET_LOCKED) {
+        if (counter.level == LEVEL_ONE ||
+            (flow_level.level_one == LEVEL_TWO_OLD_WALLET && flow_level.level_two == LEVEL_THREE_WALLET_LOCKED)) {
             // if wallet is locked, then we need to go to next wallet
             counter.level = LEVEL_THREE;
             flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;

@@ -230,8 +230,8 @@ void logger_task() {
     uint16_t packet_len = 0;
     void *addr_loc = NULL;
     uint8_t next_loc_found = false;
-    char *start_of_log = "startofpacket\r\n";
-    char *end_of_log = "endofpacket\r\n";
+    const char *start_of_log = "startofpacket\r\n";
+    const char *end_of_log = "endofpacket\r\n";
 
     switch (sg_log_data.read_sm_e) {
         case LOG_READ_INIT:

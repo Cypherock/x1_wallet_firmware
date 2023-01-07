@@ -93,6 +93,7 @@
 
 // add way how to mark confidential data
 #ifndef CONFIDENTIAL
+// TODO: Add attribute keep confidential variables in SRAM2 CHI-2141
 #define CONFIDENTIAL
 #endif
 

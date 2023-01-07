@@ -113,6 +113,7 @@ void level_one_controller()
 		for (int walletIndex=0; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
 			wallet_state _wallet_state = get_wallet_state(walletIndex);
 			if (_wallet_state == VALID_WALLET ||
+				_wallet_state == INVALID_WALLET ||
 				_wallet_state == UNVERIFIED_VALID_WALLET ||
 	            _wallet_state == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
 				valid_wallets++;

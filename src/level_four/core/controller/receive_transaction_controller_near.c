@@ -130,7 +130,7 @@ void receive_transaction_controller_near()
     }break;
 
     case RECV_TXN_ENTER_PIN_NEAR: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
 
@@ -139,6 +139,7 @@ void receive_transaction_controller_near()
 
     case RECV_TXN_TAP_CARD_NEAR: {
         tap_card_data.desktop_control = true;
+        // TODO: Shorten func name
         tap_threshold_cards_for_reconstruction_flow_controller(1);
     } break;
 
@@ -159,6 +160,7 @@ void receive_transaction_controller_near()
     } break;
 
     case RECV_TXN_DERIVE_ADD_NEAR: {
+        // TODO: Extract common part i.e. secret recreation and public key derication
         uint8_t secret[BLOCK_SIZE]={0};
         if (WALLET_IS_PIN_SET(wallet.wallet_info))
             decrypt_shares();
@@ -243,6 +245,7 @@ void receive_transaction_controller_near()
                 if(status!= 0) {
                     comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
                     reset_flow_level();
+                    return;
                 }
             }
             else {
@@ -296,6 +299,7 @@ void receive_transaction_controller_near()
         if(status!= 0) {
             comm_reject_request(COIN_SPECIFIC_DATA_ERROR,status);
             reset_flow_level();
+            return;
         }
 
         transmit_one_byte_confirm(RECV_TXN_REPLACE_ACCOUNT);

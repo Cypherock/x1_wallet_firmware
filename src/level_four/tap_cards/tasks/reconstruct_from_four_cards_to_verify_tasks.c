@@ -80,7 +80,7 @@ void tap_cards_for_verification_flow()
     case TAP_CARD_TWO_FRONTEND:
     case TAP_CARD_THREE_FRONTEND:
     case TAP_CARD_FOUR_FRONTEND:
-        snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
+        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
         instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
         break;

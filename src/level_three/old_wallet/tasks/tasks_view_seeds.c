@@ -109,15 +109,11 @@ void view_seed_task()
         break;
 
     case VIEW_SEED_DISPLAY: {
-        uint8_t *secret;
+        uint8_t CONFIDENTIAL secret[MAX_ARBITRARY_DATA_SIZE];
 
         if (WALLET_IS_PIN_SET(wallet.wallet_info))
             decrypt_shares();
         if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
-            secret = malloc((wallet.arbitrary_data_size + 1) * sizeof(uint8_t));
-
-            ASSERT(secret != NULL);
-
             recover_secret_from_shares(
                 wallet.arbitrary_data_size, // visualise this as horizontal length
                 MINIMUM_NO_OF_SHARES, //threshold. shares is a 2D array. visualise this as vertical height
@@ -128,10 +124,6 @@ void view_seed_task()
 
             address_scr_init(ui_text_confirm_data, (char *) secret, false);
         } else {
-            secret = malloc(BLOCK_SIZE * sizeof(uint8_t));
-
-            ASSERT(secret != NULL);
-
             recover_secret_from_shares(
                 BLOCK_SIZE, // visualise this as horizontal length
                 MINIMUM_NO_OF_SHARES, //threshold. shares is a 2D array. visualise this as vertical height
@@ -143,7 +135,7 @@ void view_seed_task()
             const char *mnemo = mnemonic_from_data(secret, BLOCK_SIZE);
 
             ASSERT(mnemo != NULL);
-            __single_to_multi_line(mnemo, strlen(mnemo), words);
+            __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), words);
             mnemonic_clear();
 
             set_theme(LIGHT);
@@ -155,7 +147,6 @@ void view_seed_task()
             reset_theme();
         }
         memzero(secret, sizeof(secret));
-        free(secret);
     } break;
 
     default:

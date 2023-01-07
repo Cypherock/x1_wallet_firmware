@@ -73,29 +73,31 @@ extern char* NUMBERS;
 
 void tap_cards_for_write_flow()
 {
-    char display[40];
-
-    if (flow_level.level_four > wallet.total_number_of_shares * 2) {
-        return;
-    }
     switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-    case TAP_CARD_TWO_FRONTEND:
-    case TAP_CARD_THREE_FRONTEND:
-    case TAP_CARD_FOUR_FRONTEND:
-        snprintf(display, sizeof(display), ui_text_tap_x_4_cards, ((flow_level.level_four-1)>>1)+1);
+    case CARD_ONE_FRONTEND:
+    case CARD_TWO_FRONTEND:
+    case CARD_THREE_FRONTEND:
+    case CARD_FOUR_FRONTEND: {
+        char display[40];
+        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1) / 3)+1);
         instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
-        break;
+    } break;
 
-    case TAP_CARD_ONE_BACKEND:
-    case TAP_CARD_TWO_BACKEND:
-    case TAP_CARD_THREE_BACKEND:
-    case TAP_CARD_FOUR_BACKEND:
+    case CARD_ONE_WRITE:
+    case CARD_ONE_READBACK:
+    case CARD_TWO_WRITE:
+    case CARD_TWO_READBACK:
+    case CARD_THREE_WRITE:
+    case CARD_THREE_READBACK:
+    case CARD_FOUR_WRITE:
+    case CARD_FOUR_READBACK:
         mark_event_over();
         break;
 
     default:
+        LOG_CRITICAL("xx30");
+        reset_flow_level();
         message_scr_init(ui_text_something_went_wrong);
         break;
     }

@@ -95,22 +95,6 @@ void generate_wallet_controller_b()
         WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
         WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
     } break;
-    case GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED: {
-        flow_level.level_three = GENERATE_WALLET_CONFIRM_RANDOM_WORD_1;
-    } break;
-    case GENERATE_WALLET_SHOW_ALL_WORDS: {
-        flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_1:
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_2:
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_3: {
-        generate_wallet_controller(flow_level, counter, wallet);
-    } break;
-
-    case GENERATE_WALLET_VERIFY_SEEDS: {
-        flow_level.level_three = GENERATE_WALLET_VERIFICATION_FAILED_DISPLAY;
-    } break;
 
     default: {
         flow_level.level_one = LEVEL_TWO_NEW_WALLET;

@@ -86,7 +86,9 @@ void send_transaction_tasks_eth()
     switch (flow_level.level_three) {
 
     case SEND_TXN_VERIFY_COIN_ETH: {
-        instruction_scr_init(ui_text_processing, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 
@@ -95,10 +97,12 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (!eth_unsigned_txn_ptr.contract_verified)
+        if (!eth_unsigned_txn_ptr.contract_verified){
+            instruction_scr_destructor();
             delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
-        else
+        } else {
             mark_event_over();
+        }
     } break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS: {
@@ -154,7 +158,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        instruction_scr_init(ui_text_fetching_recipient_amount, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     }break;
 
@@ -212,7 +218,7 @@ void send_transaction_tasks_eth()
         }
 
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_verify_amount, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
         confirm_scr_init(display);
     } break;
 
@@ -220,8 +226,11 @@ void send_transaction_tasks_eth()
         char display[125] = {0}, fee[30] = {0};
 
         instruction_scr_destructor();
-        eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee));
-        snprintf(display, sizeof(display), ui_text_send_transaction_fee, fee, "ETH");
+        eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee),
+                           var_send_transaction_data.transaction_metadata.decimal[0]);
+        snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
+                 get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
+                                 var_send_transaction_data.transaction_metadata.network_chain_id));
         confirm_scr_init(display);
     } break;
 
@@ -245,7 +254,7 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_CONFIRM_PASSPHRASE_ETH: {
         char display[65];
-        snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
@@ -273,7 +282,9 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_TAP_CARD_SEND_CMD_ETH: {
-        instruction_scr_init(ui_text_signing_transaction, NULL);
+        instruction_scr_init("", NULL);
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
     } break;
 

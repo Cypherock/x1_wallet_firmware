@@ -66,61 +66,76 @@
 #include "ui_message.h"
 #include "wallet.h"
 #include "controller_tap_cards.h"
+#include "shamir_wrapper.h"
+#include "card_action_controllers.h"
 
 extern Wallet_shamir_data wallet_shamir_data;
 
 static uint32_t wallet_index; // What's the index of the wallet in flash to which we are talking to
 
-static void _tap_card_backend(uint8_t card_number);
+static void write_share_to_card(uint8_t card_number);
 
-void tap_cards_for_write_flow_controller()
+void tap_cards_for_write_and_verify_flow_controller()
 {
-    if (flow_level.level_four > wallet.total_number_of_shares * 2) {
-        return;
-    }
-
     switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
+    case CARD_ONE_FRONTEND:
         tap_card_data.tapped_card = 0;
         tap_card_data.desktop_control = false;
-        flow_level.level_four = TAP_CARD_ONE_BACKEND;
+        flow_level.level_four = CARD_ONE_WRITE;
         break;
 
-    case TAP_CARD_ONE_BACKEND:
-        _tap_card_backend(1);
+    case CARD_ONE_WRITE:
+        write_share_to_card(1);
         break;
 
-    case TAP_CARD_TWO_FRONTEND:
-        flow_level.level_four = TAP_CARD_TWO_BACKEND;
+    case CARD_ONE_READBACK:
+        readback_share_from_card(0);
         break;
 
-    case TAP_CARD_TWO_BACKEND:
-        _tap_card_backend(2);
+    case CARD_TWO_FRONTEND:
+        flow_level.level_four = CARD_TWO_WRITE;
         break;
 
-    case TAP_CARD_THREE_FRONTEND:
-        flow_level.level_four = TAP_CARD_THREE_BACKEND;
+    case CARD_TWO_WRITE:
+        write_share_to_card(2);
         break;
 
-    case TAP_CARD_THREE_BACKEND:
-        _tap_card_backend(3);
+    case CARD_TWO_READBACK:
+        readback_share_from_card(1);
         break;
 
-    case TAP_CARD_FOUR_FRONTEND:
-        flow_level.level_four = TAP_CARD_FOUR_BACKEND;
+    case CARD_THREE_FRONTEND:
+        flow_level.level_four = CARD_THREE_WRITE;
         break;
 
-    case TAP_CARD_FOUR_BACKEND:
-        _tap_card_backend(4);
+    case CARD_THREE_WRITE:
+        write_share_to_card(3);
+        break;
+
+    case CARD_THREE_READBACK:
+        readback_share_from_card(2);
+        break;
+
+    case CARD_FOUR_FRONTEND:
+        flow_level.level_four = CARD_FOUR_WRITE;
+        break;
+
+    case CARD_FOUR_WRITE:
+        write_share_to_card(4);
+        break;
+
+    case CARD_FOUR_READBACK:
+        readback_share_from_card(3);
         break;
 
     default:
+        reset_flow_level();
         message_scr_init(ui_text_something_went_wrong);
         break;
     }
 }
 
-static void _tap_card_backend(uint8_t card_number)
+static void write_share_to_card(uint8_t card_number)
 {
     Flash_Wallet *wallet_for_flash = get_flash_wallet();
     wallet.xcor = card_number;
@@ -145,22 +160,16 @@ static void _tap_card_backend(uint8_t card_number)
         if (tap_card_data.status == SW_NO_ERROR) { // wallet added
             wallet_for_flash->cards_states = (1 << card_number) - 1;
             flow_level.level_four++;
-            buzzer_start(BUZZER_DURATION);
             if (card_number == 1) {
                 wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
                 add_wallet_to_flash(wallet_for_flash, &wallet_index);
-                instruction_scr_change_text(ui_text_remove_card_prompt, true);
-                nfc_detect_card_removal();
-            } else if (card_number == 4) {
-                lv_obj_clean(lv_scr_act());
-                flow_level.level_four = 1;
-                flow_level.level_three++;
-                put_wallet_flash(wallet_index, wallet_for_flash);
             } else {
                 put_wallet_flash(wallet_index, wallet_for_flash);
-                instruction_scr_change_text(ui_text_remove_card_prompt, true);
-                nfc_detect_card_removal();
             }
+            if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
+                memset(((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + (card_number - 1) * wallet.arbitrary_data_size, 0, wallet.arbitrary_data_size);
+            else
+                memset(wallet_shamir_data.mnemonic_shares[card_number - 1], 0, BLOCK_SIZE);
             memset(wallet_shamir_data.share_encryption_data[card_number - 1], 0, sizeof(wallet_shamir_data.share_encryption_data[card_number - 1]));
             memset(((uint8_t *) wallet_shamir_data.arbitrary_data_shares) + (card_number - 1) * wallet.arbitrary_data_size, 0, wallet.arbitrary_data_size);
             break;
@@ -174,11 +183,10 @@ static void _tap_card_backend(uint8_t card_number)
         memzero(wallet_shamir_data.share_encryption_data, sizeof(wallet_shamir_data.share_encryption_data));
         memzero(wallet_shamir_data.arbitrary_data_shares, sizeof(wallet_shamir_data.arbitrary_data_shares));
         if (card_number > 1) {
-            flow_level.level_three = GENERATE_WALLET_DELETE;
+            flow_level.level_three = GENERATE_WALLET_FAILED_MESSAGE;
             flow_level.level_two = LEVEL_THREE_GENERATE_WALLET;
             flow_level.level_one = LEVEL_TWO_NEW_WALLET;
             counter.level = LEVEL_THREE;
         }
     }
-    instruction_scr_destructor();
 }

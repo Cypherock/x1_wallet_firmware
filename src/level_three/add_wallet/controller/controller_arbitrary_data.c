@@ -66,6 +66,7 @@
 #include "tasks.h"
 #include "ui_message.h"
 #include "wallet_utilities.h"
+#include "card_action_controllers.h"
 
 extern Wallet_credential_data wallet_credential_data;
 extern char* ALPHABET;
@@ -119,17 +120,17 @@ void arbitrary_data_controller()
     } break;
 
     case ARBITRARY_DATA_PIN_INPUT: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet.password_double_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet.password_double_hash);
         sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = ARBITRARY_DATA_PIN_CONFIRM;
     } break;
 
     case ARBITRARY_DATA_PIN_CONFIRM: {
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
 
         ASSERT(temp != NULL);
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
         if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
             flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
@@ -139,7 +140,6 @@ void arbitrary_data_controller()
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         memzero(temp, sizeof(temp));
-        free(temp);
     } break;
 
     case ARBITRARY_DATA_ENTER_DATA_INSTRUCTION: {
@@ -162,13 +162,13 @@ void arbitrary_data_controller()
     case ARBITRARY_DATA_CREATE: {
         uint8_t wallet_index, temp_wallet_id[WALLET_ID_SIZE];
 
-        sha256_Raw((const uint8_t *)arbitrary_data, strlen(arbitrary_data), temp_wallet_id);
+        sha256_Raw((const uint8_t *)arbitrary_data, strnlen(arbitrary_data, sizeof(arbitrary_data)), temp_wallet_id);
         sha256_Raw(temp_wallet_id, SHA256_DIGEST_LENGTH, temp_wallet_id);
 
         if ((get_first_matching_index_by_id(temp_wallet_id, &wallet_index) == DOESNT_EXIST)) {
             memcpy(wallet_for_flash.wallet_id, temp_wallet_id, WALLET_ID_SIZE);
             memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
-            wallet.arbitrary_data_size = strlen(arbitrary_data);
+            wallet.arbitrary_data_size = strnlen(arbitrary_data, sizeof(arbitrary_data));
             WALLET_SET_ARBITRARY_DATA(wallet.wallet_info);
             WALLET_SET_ARBITRARY_DATA(wallet_for_flash.wallet_info);
 
@@ -190,10 +190,15 @@ void arbitrary_data_controller()
     } break;
 
     case ARBITRARY_DATA_TAP_CARDS:
-        tap_cards_for_write_flow_controller();
+        tap_cards_for_write_and_verify_flow_controller();
+        break;
+
+    case ARBITRARY_DATA_VERIFY_SHARES:
+        flow_level.level_three = verify_card_share_data() == 1 ? ARBITRARY_DATA_SUCCESS_MESSAGE : ARBITRARY_DATA_FAILED_MESSAGE;
         break;
 
     case ARBITRARY_DATA_SUCCESS_MESSAGE:
+    case ARBITRARY_DATA_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -201,9 +206,7 @@ void arbitrary_data_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
-        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
-        flow_level.level_three = 1;
+        reset_flow_level();
         break;
 
     default:

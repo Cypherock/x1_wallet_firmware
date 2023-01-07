@@ -121,6 +121,9 @@ typedef enum commandType {
     RECV_TXN_REPLACE_ACCOUNT= 97,               ///< Request by desktop to start replace account
     
     COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
+    LIST_SUPPORTED_COINS = 99,              ///< Exchange the list of supported coins on device
+
+    SEND_TXN_PRE_SIGNING_DATA = 92,                    ///< Command for data required just before signing in send transaction
 
     DEVICE_FLOW_RESET_REQ = 0xFF,            ///< unused enum
     DEVICE_SHAMIR_GENERATE_TEST = 0x1001,

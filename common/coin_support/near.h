@@ -20,6 +20,8 @@
 #define NEAR_CHAIN_INDEX     0x80000000
 #define NEAR_ADDRESS_INDEX   0x80000001
 
+#define NEAR_COIN_VERSION    0x00000000
+
 #define NEAR_REGISTERED_ACCOUNT_COUNT    4
 #define NEAR_TOP_LEVEL_ACCOUNT_MIN_LEN   32
 #define NEAR_ACC_ID_MIN_LEN              2
@@ -29,6 +31,9 @@
 #define NEAR_NONCE_SIZE_BYTES            8
 #define NEAR_ALLOWANCE_SIZE_BYTES        8
 #define NEAR_DEPOSIT_SIZE_BYTES          16
+
+#define NEAR_TOKEN_NAME                  "Near"
+#define NEAR_TOKEN_SYMBOL                "NEAR"
 
 // Datatypes and structures for the transaction
 // ref: https://github.com/near/near-api-js/blob/d4d4cf1ac3182fa998b1e004e6782219325a641b/src/transaction.ts#L139

@@ -36,18 +36,24 @@
 
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
+#define LTC_COIN_VERSION     0x00000000
 
 /// DOGE coin index
 #define DOGE (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION     0x00000000
 
 /// DASH coin index
 #define DASH (BITCOIN + 0x05)
+#define DASH_COIN_VERSION     0x00000000
 
 /// ETHEREUM coin index
-#define ETHEREUM (BITCOIN + 0x3c)
+#define ETHEREUM ETHEREUM_COIN_INDEX
 
 /// NEAR coin index
 #define NEAR (BITCOIN + 0x18d)
+
+/// SOLANA coin index
+#define SOLANA (BITCOIN + 0x1F5)
 
 /// NATIVE SEGWIT purpose id
 #define NATIVE_SEGWIT 0x80000054
@@ -58,11 +64,20 @@
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
     COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITCOIN = 0x03,
+    COIN_TYPE_LITECOIN = 0x03,
     COIN_TYPE_DOGE = 0x04,
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
+    COIN_TYPE_POLYGON = 0x08,
+    COIN_TYPE_SOLANA = 0x09,
+  COIN_TYPE_BSC = 0x0A,
+  COIN_TYPE_FANTOM = 0x0B,
+  COIN_TYPE_AVALANCHE = 0x0C,
+  COIN_TYPE_OPTIMISM = 0x0D,
+  COIN_TYPE_HARMONY = 0x0E,
+  COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
+  COIN_TYPE_ARBITRUM = 0x10,
 }Coin_Type;
 
 #pragma pack(push, 1)
@@ -114,7 +129,7 @@ typedef struct
 
     char *token_name;
 
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
 
 } txn_metadata;
 #pragma pack(pop)
@@ -137,7 +152,7 @@ typedef struct Receive_Transaction_Data {
   uint8_t address_index[4];
   char *token_name;
   union {
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
     uint8_t near_account_type;
   };
   char near_registered_account[65];
@@ -148,6 +163,7 @@ typedef struct Receive_Transaction_Data {
   bool near_acc_found;
   size_t near_acc_count;
   uint8_t near_acc_index;
+  char solana_address[45];
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
@@ -264,7 +280,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of name of the coin.
  * @retval
@@ -274,14 +290,14 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(uint32_t coin_index, uint8_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
  * @details
  *
  * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between mainnet and testnet)
+ * @param [in] chain_id     Chain ID (Passed to distinguish between different EVM chains)
  *
  * @return [const] char array of symbol of the coin
  * @retval
@@ -291,7 +307,7 @@ const char *get_coin_name(uint32_t coin_index, uint8_t chain_id);
  *
  * @note
  */
-const char *get_coin_symbol(int coin_index, uint8_t chain_id);
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the version address and public key for segwit and non segwit coins.

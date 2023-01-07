@@ -91,12 +91,20 @@ void level_three_old_wallet_controller()
         send_transaction_controller_near();
     } break;
 
+    case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
+        send_transaction_controller_solana();
+    } break;
+
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
         receive_transaction_controller_eth();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
         receive_transaction_controller_near();
+    } break;
+
+    case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
+        receive_transaction_controller_solana();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION: {

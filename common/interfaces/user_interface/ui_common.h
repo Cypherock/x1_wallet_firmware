@@ -22,7 +22,7 @@
 #define OPTIONS_BTN_SIZE 100
 #define SCROLLING_THRESHOLD 28
 #define SCROLLING_LEN_THRESHOLD 70
-
+#define MAX_HEADING_LEN 100
 
 extern void (*ui_mark_event_over)();
 extern void (*ui_mark_event_cancel)();
