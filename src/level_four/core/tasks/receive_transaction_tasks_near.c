@@ -107,6 +107,7 @@ void receive_transaction_tasks_near() {
     } break;
 
     case RECV_TXN_ENTER_PIN_NEAR: {
+      // TODO: Redundant check
       if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
         flow_level.level_three = RECV_TXN_CHECK_PIN;
         break;
@@ -115,6 +116,7 @@ void receive_transaction_tasks_near() {
     } break;
 
     case RECV_TXN_TAP_CARD_NEAR: {
+      // TODO: Shorten func name
       tap_threshold_cards_for_reconstruction();
     } break;
 
