@@ -36,12 +36,15 @@
 
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
+#define LTC_COIN_VERSION     0x00000000
 
 /// DOGE coin index
 #define DOGE (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION     0x00000000
 
 /// DASH coin index
 #define DASH (BITCOIN + 0x05)
+#define DASH_COIN_VERSION     0x00000000
 
 /// ETHEREUM coin index
 #define ETHEREUM ETHEREUM_COIN_INDEX
@@ -61,13 +64,20 @@
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
     COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITCOIN = 0x03,
+    COIN_TYPE_LITECOIN = 0x03,
     COIN_TYPE_DOGE = 0x04,
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
     COIN_TYPE_POLYGON = 0x08,
     COIN_TYPE_SOLANA = 0x09,
+  COIN_TYPE_BSC = 0x0A,
+  COIN_TYPE_FANTOM = 0x0B,
+  COIN_TYPE_AVALANCHE = 0x0C,
+  COIN_TYPE_OPTIMISM = 0x0D,
+  COIN_TYPE_HARMONY = 0x0E,
+  COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
+  COIN_TYPE_ARBITRUM = 0x10,
 }Coin_Type;
 
 #pragma pack(push, 1)
@@ -115,12 +125,13 @@ typedef struct
 
     uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+    uint8_t eth_val_decimal[1];
 
     char *token_name;
 
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
 } txn_metadata;
 #pragma pack(pop)
 
@@ -142,8 +153,8 @@ typedef struct Receive_Transaction_Data {
   uint8_t address_index[4];
   char *token_name;
   union {
-    uint8_t network_chain_id;
-    uint8_t near_account_type;
+    uint64_t network_chain_id;
+    uint64_t near_account_type;
   };
   char near_registered_account[65];
   uint8_t xpub[112];
@@ -280,7 +291,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
@@ -297,7 +308,7 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
  *
  * @note
  */
-const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the version address and public key for segwit and non segwit coins.
@@ -349,5 +360,7 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
 
 #endif

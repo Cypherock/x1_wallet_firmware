@@ -163,10 +163,10 @@ static void repeated_timer_handler(void)
         inactivity_counter = 0;
         if (counter.level > LEVEL_ONE) {
             mark_error_screen(ui_text_process_reset_due_to_inactivity);
-            reset_flow_level();
-            lv_obj_clean(lv_scr_act());
             if (CY_External_Triggered())
                 comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
+            reset_flow_level();
+            lv_obj_clean(lv_scr_act());
         }
     }
 #endif
@@ -409,22 +409,22 @@ void check_invalid_wallets()
             continue;
 
         if (get_wallet_card_state(i) != 0xff && is_wallet_partial(i)) {
-            snprintf(display, sizeof(display), ui_text_wallet_partial_state_prompt, get_wallet_name(i));
+            snprintf(display, sizeof(display), "'%s' is in partial delete state", get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
         if (is_wallet_unverified(i)) {
-            snprintf(display, sizeof(display), ui_text_wallet_not_verified_prompt, get_wallet_name(i));
+            snprintf(display, sizeof(display), "'%s' is in unverified state", get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
         if (is_wallet_share_not_present(i)){
-            snprintf(display, sizeof(display), ui_text_wallet_out_of_sync_prompt, get_wallet_name(i));
+            snprintf(display, sizeof(display), "'%s' is out of Sync with cards", get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
         if (is_wallet_locked(i)) {
-            snprintf(display, sizeof(display), ui_text_wallet_locked_prompt, get_wallet_name(i));
+            snprintf(display, sizeof(display), "'%s' is in locked state", get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }

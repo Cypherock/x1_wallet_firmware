@@ -25,7 +25,7 @@
 #define DEFAULT_ATECC_RETRIES 5
 
 #define DEVICE_SERIAL_SIZE     32
-#define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
+#define MAXIMUM_COIN_SUPPORTED (14 + 5)  // 5 for segwit support
 #define INDEX_SIZE             4
 
 typedef enum {
@@ -129,7 +129,7 @@ typedef struct Add_Coin_Data {
   uint8_t number_of_coins;
   bool resync;
   uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
-  uint8_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
+  uint64_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
 } Add_Coin_Data;
 #pragma pack(pop)
 

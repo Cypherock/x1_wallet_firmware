@@ -150,6 +150,8 @@ static void _tap_card_backend(uint8_t card_number)
         tap_card_data.acceptable_cards = (1 << (card_number - 1));
         tap_card_data.lvl3_retry_point = flow_level.level_three - 1;
         memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+        if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
+            instruction_scr_change_text(ui_text_card_removed_fast, true);
         if (!tap_card_applet_connection())
             return;
         if (is_paired(tap_card_data.card_key_id) > -1) {

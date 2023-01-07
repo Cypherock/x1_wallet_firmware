@@ -119,7 +119,7 @@ void arbitrary_data_controller()
     } break;
 
     case ARBITRARY_DATA_PIN_INPUT: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet.password_double_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet.password_double_hash);
         sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = ARBITRARY_DATA_PIN_CONFIRM;
@@ -129,7 +129,7 @@ void arbitrary_data_controller()
         uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
 
         ASSERT(temp != NULL);
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), temp);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
         if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
             flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
@@ -162,13 +162,13 @@ void arbitrary_data_controller()
     case ARBITRARY_DATA_CREATE: {
         uint8_t wallet_index, temp_wallet_id[WALLET_ID_SIZE];
 
-        sha256_Raw((const uint8_t *)arbitrary_data, strlen(arbitrary_data), temp_wallet_id);
+        sha256_Raw((const uint8_t *)arbitrary_data, strnlen(arbitrary_data, sizeof(arbitrary_data)), temp_wallet_id);
         sha256_Raw(temp_wallet_id, SHA256_DIGEST_LENGTH, temp_wallet_id);
 
         if ((get_first_matching_index_by_id(temp_wallet_id, &wallet_index) == DOESNT_EXIST)) {
             memcpy(wallet_for_flash.wallet_id, temp_wallet_id, WALLET_ID_SIZE);
             memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
-            wallet.arbitrary_data_size = strlen(arbitrary_data);
+            wallet.arbitrary_data_size = strnlen(arbitrary_data, sizeof(arbitrary_data));
             WALLET_SET_ARBITRARY_DATA(wallet.wallet_info);
             WALLET_SET_ARBITRARY_DATA(wallet_for_flash.wallet_info);
 

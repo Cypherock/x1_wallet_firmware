@@ -94,7 +94,7 @@ void receive_transaction_tasks_solana() {
 
     case RECV_TXN_CONFIRM_PASSPHRASE_SOLANA: {
       char display[65] = {0};
-      snprintf(display, sizeof(display), ui_text_receive_on_address, flow_level.screen_input.input_text);
+      snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;

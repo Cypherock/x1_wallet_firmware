@@ -259,7 +259,7 @@ uint64_t hex2dec(const char *source) {
   uint64_t t = 1;
   int len = 0;
 
-  len = strlen(source);
+  len = strnlen(source, 16);
   for (int i = len - 1; i >= 0; i--) {
     uint64_t j = get_index_of_signs(*(source + i));
     sum += (t * j);
@@ -301,7 +301,7 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
         return false;
     if (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0]))
         return false;
-    if (memcmp(eth_utxn_ptr->chain_id, &metadata_ptr->network_chain_id, eth_utxn_ptr->chain_id_size[0]) != 0)
+    if (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id)
         return false;
 
     // Check if payload exists, it's a token transfer operation on EVM
@@ -403,7 +403,7 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
   memcpy(sig + 64, &recid, 1);
 }
 
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size)
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal)
 {
   uint8_t fee[16] = {0};
   uint64_t txn_fee, carry;
@@ -418,5 +418,5 @@ void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decima
   memcpy(fee, &txn_fee, sizeof(txn_fee)); memcpy(fee + sizeof(txn_fee), &carry, sizeof(carry));
   cy_reverse_byte_array(fee, sizeof(fee));        // outputs 128-bit (16-byte) big-endian representation of fee
   byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
-  convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, 18, fee_hex_string, fee_decimal_string, size);
+  convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, decimal, fee_hex_string, fee_decimal_string, size);
 }

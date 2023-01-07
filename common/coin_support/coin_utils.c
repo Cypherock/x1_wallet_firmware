@@ -56,10 +56,17 @@
  ******************************************************************************
  */
 #include "coin_utils.h"
-#include "near.h"
-#include "polygon.h"
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
+#include "etc.h"
 #include "eth.h"
-
+#include "fantom.h"
+#include "harmony.h"
+#include "near.h"
+#include "optimism.h"
+#include "polygon.h"
+#include "segwit_addr.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -126,8 +133,8 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy(txn_metadata_ptr->transaction_fees, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->transaction_fees), &offset);
-    s_memcpy(txn_metadata_ptr->decimal, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->decimal), &offset);
+    s_memcpy(txn_metadata_ptr->eth_val_decimal, metadata_byte_array,
+             size, sizeof(txn_metadata_ptr->eth_val_decimal), &offset);
 
     size_t token_name_len = strnlen((const char*)(metadata_byte_array+offset),size - offset ) + 1;
 
@@ -137,9 +144,10 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
              size, token_name_len, &offset);
-    
-    s_memcpy(&(txn_metadata_ptr->network_chain_id), metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->network_chain_id), &offset);
+    if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
+    txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
+    offset += sizeof(txn_metadata_ptr->network_chain_id);
+    if (offset + 1 <= size) txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
     return offset;
 }
 
@@ -163,7 +171,9 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 
     s_memcpy((uint8_t *) txn_data_ptr->token_name, data_byte_array, size, token_name_len, &offset);
 
-    s_memcpy(&(txn_data_ptr->network_chain_id), data_byte_array, size, sizeof(txn_data_ptr->network_chain_id), &offset);
+    if (offset + sizeof(txn_data_ptr->network_chain_id) > size) return -1;
+    txn_data_ptr->network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->network_chain_id);
 
     return offset;
 }
@@ -211,7 +221,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     memzero(bip39seed, sizeof(bip39seed));
 }
 
-const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000U:
         case 0x80000001:
@@ -230,6 +240,26 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
                 case POLYGON_MUMBAI_CHAIN:
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_TOKEN_SYMBOL;
+                case BSC_TESTNET_CHAIN:
+                case BSC_MAINNET_CHAIN:
+                  return BSC_TOKEN_SYMBOL;
+                case FANTOM_TESTNET_CHAIN:
+                case FANTOM_MAINNET_CHAIN:
+                  return FANTOM_TOKEN_SYMBOL;
+                case AVALANCHE_TESTNET_CHAIN:
+                case AVALANCHE_MAINNET_CHAIN:
+                  return AVALANCHE_TOKEN_SYMBOL;
+                case OPTIMISM_TESTNET_CHAIN:
+                case OPTIMISM_MAINNET_CHAIN:
+                  return OPTIMISM_TOKEN_SYMBOL;
+                case ETC_TESTNET_CHAIN:
+                case ETC_MAINNET_CHAIN:
+                  return ETC_TOKEN_SYMBOL;
+                case HARMONY_TESTNET_CHAIN:
+                case HARMONY_MAINNET_CHAIN:
+                  return HARMONY_TOKEN_SYMBOL;
+                case ARBITRUM_MAINNET_CHAIN:
+                  return ARBITRUM_TOKEN_SYMBOL;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -247,7 +277,7 @@ const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id) {
     }
 }
 
-const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";
@@ -269,6 +299,32 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id) {
                     return POLYGON_MUMBAI_NAME;
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MAINNET_NAME;
+                case BSC_MAINNET_CHAIN:
+                  return BSC_MAINNET_NAME;
+                case BSC_TESTNET_CHAIN:
+                  return BSC_TESTNET_NAME;
+                case FANTOM_MAINNET_CHAIN:
+                  return FANTOM_MAINNET_NAME;
+                case FANTOM_TESTNET_CHAIN:
+                  return FANTOM_TESTNET_NAME;
+                case AVALANCHE_MAINNET_CHAIN:
+                  return AVALANCHE_MAINNET_NAME;
+                case AVALANCHE_TESTNET_CHAIN:
+                  return AVALANCHE_TESTNET_NAME;
+                case OPTIMISM_MAINNET_CHAIN:
+                  return OPTIMISM_MAINNET_NAME;
+                case OPTIMISM_TESTNET_CHAIN:
+                  return OPTIMISM_TESTNET_NAME;
+                case ETC_MAINNET_CHAIN:
+                  return ETC_MAINNET_NAME;
+                case ETC_TESTNET_CHAIN:
+                  return ETC_TESTNET_NAME;
+                case HARMONY_MAINNET_CHAIN:
+                  return HARMONY_MAINNET_NAME;
+                case HARMONY_TESTNET_CHAIN:
+                  return HARMONY_TESTNET_NAME;
+                case ARBITRUM_MAINNET_CHAIN:
+                  return ARBITRUM_MAINNET_NAME;
                 default: {
                     ASSERT(false);
                     return "invalid";
@@ -388,9 +444,16 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
     if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->chain_index[0] >= 0x80 ||
             mdata_ptr->change->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->decimal[0] > 18) return false;
+    if (mdata_ptr->eth_val_decimal[0] > 18) return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
         BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == ETHEREUM && mdata_ptr->token_name[0] == '\0')
         return false;
     return true;
+}
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
+  uint8_t data[65] = {0};
+  size_t datalen = 0;
+  convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
+  bech32_encode(output, hrp, data, datalen);
 }
