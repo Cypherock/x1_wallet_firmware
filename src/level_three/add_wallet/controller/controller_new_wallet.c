@@ -126,7 +126,6 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
-        // TODO: Move pin value and hashes to SRAM2 CHI-2141
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
@@ -134,9 +133,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_CONFIRM: {
-        // TODO: Remove malloc for temp
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
-        ASSERT(temp != NULL);
+        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
         if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) == 0) {
@@ -149,9 +146,7 @@ void generate_wallet_controller()
             flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        // TODO: Use SHA256_DIGEST_LENGTH instead of sizeof(temp) 
         memzero(temp, sizeof(temp));
-        free(temp);
     } break;
 
     case GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {

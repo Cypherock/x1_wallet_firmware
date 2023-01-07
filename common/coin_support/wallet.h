@@ -120,7 +120,6 @@ typedef struct Wallet {
  * @note
  */
 #pragma pack(push, 1)
-// TODO: Move restored shamir data to SRAM2 CHI-2141
 typedef struct Wallet_shamir_data {
     union {
         uint8_t mnemonic_shares[TOTAL_NUMBER_OF_SHARES][BLOCK_SIZE];

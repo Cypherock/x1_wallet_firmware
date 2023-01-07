@@ -147,7 +147,7 @@ void restore_wallet_controller()
     } break;
 
     case RESTORE_WALLET_PIN_CONFIRM: {
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
         ASSERT(temp != NULL);
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
@@ -162,7 +162,6 @@ void restore_wallet_controller()
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         memzero(temp, sizeof(temp));
-        free(temp);
     } break;
 
     case RESTORE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
