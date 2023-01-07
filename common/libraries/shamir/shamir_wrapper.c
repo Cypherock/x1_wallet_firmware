@@ -236,9 +236,8 @@ int verify_shares_NC2(const uint8_t number_of_shares, const uint8_t secret_size,
         two_x_coords[0] = x_coords[pairs[i][0]];
         two_x_coords[1] = x_coords[pairs[i][1]];
 
-        // TODO: Pass secret_size as no_of_bytes to support arbitrary data
         recover_secret_from_shares(
-            32,
+            secret_size,
             MINIMUM_NO_OF_SHARES,
             two_shares,
             two_x_coords,
