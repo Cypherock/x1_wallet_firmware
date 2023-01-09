@@ -84,16 +84,17 @@ void cyt_factory_reset() {
             break;
 
         case FACTORY_RESET_CHECK:
-            instruction_scr_init(ui_text_performing_checks, NULL);
+            instruction_scr_init(ui_text_processing, NULL);
             mark_event_over();
             break;
 
         case FACTORY_RESET_ERASING:
-            instruction_scr_destructor();
-            delay_scr_init(ui_text_processing, DELAY_SHORT);
+            BSP_DelayMs(DELAY_SHORT);
+            mark_event_over();
             break;
 
         case FACTORY_RESET_DONE:
+            instruction_scr_destructor();
             delay_scr_init(ui_text_erasing, DELAY_TIME);
             break;
 

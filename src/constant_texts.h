@@ -267,7 +267,6 @@ extern const char* ui_text_unreliable_cards;
 extern const char* ui_critical_card_health_migrate_data;
 extern const char* ui_text_reset_exit[];
 extern const char* ui_text_erasing;
-extern const char* ui_text_performing_checks;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char* ui_text_send_logs_prompt;
