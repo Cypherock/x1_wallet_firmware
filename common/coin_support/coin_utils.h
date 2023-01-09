@@ -59,7 +59,7 @@
 #define NATIVE_SEGWIT 0x80000054
 
 /// NON SEGWIT purpose id
-#define NON_SEGWIT 0x8000002C
+#define   NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
@@ -395,5 +395,30 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
 
 void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
+
+/**
+ * @brief Verifies the derivation path for xpub during coin export step
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
+
+/**
+ * @brief Verifies if the specified derivation path is valid based on checks
+ * on intermediate values.
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     Returns true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
 
 #endif

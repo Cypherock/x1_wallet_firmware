@@ -67,6 +67,7 @@
 #include "optimism.h"
 #include "polygon.h"
 #include "segwit_addr.h"
+#include "solana.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -488,4 +489,76 @@ void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t
   size_t datalen = 0;
   convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
   bech32_encode(output, hrp, data, datalen);
+}
+
+bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
+    bool status = false;
+
+    if (depth < 2) return status;
+
+    uint32_t purpose = path[0], coin = path[1];
+
+    switch (coin) {
+        case NEAR:
+            status = near_verify_derivation_path(path, depth);
+            break;
+
+        case SOLANA:
+            status = sol_verify_derivation_path(path, depth);
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'
+        case ETHEREUM:          // m/44'/60' /i'
+            status = (purpose == NON_SEGWIT);
+
+        case BTC_TEST:          // m/44'/1'  /i'
+        case BITCOIN:           // m/44'/0'  /i'
+            status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT);
+            break;
+
+        default:
+            break;
+    }
+
+    return status;
+}
+
+bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
+    bool status = false;
+
+    if (depth < 2) return status;
+
+    uint32_t purpose = path[0], coin = path[1];
+
+    switch (coin) {
+        case NEAR:
+            status = near_verify_derivation_path(path, depth);
+            break;
+
+        case SOLANA:            // m/44'/501'/i'/j'
+            status = sol_verify_derivation_path(path, depth);
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'/0 /j
+            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0);
+            break;
+
+        case ETHEREUM: {        // m/44'/60' /i'/0 /0
+            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && (path[4] == 0);
+        } break;
+
+        case BTC_TEST:
+        case BITCOIN:           // m/44'/0'  /i /0 /j
+            status = (depth == 5) && (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (path[3] == 0);
+            break;
+
+        default:
+            break;
+    }
+
+    return status;
 }

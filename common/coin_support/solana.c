@@ -61,11 +61,11 @@
 
 size_t sol_get_derivation_depth(const uint16_t tag) {
   switch (tag) {
-    case 1:   // solana depth 3
+    case SOL_ACC_TYPE1:
       return 2;
-    case 2:   // solana depth 4
+    case SOL_ACC_TYPE2:
       return 3;
-    case 3:   // solana depth 5
+    case SOL_ACC_TYPE3:
       return 4;
     default:
       return 3;
@@ -235,4 +235,54 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
   // Blockhash
   memcpy(byte_array + offset, blockhash, SOLANA_BLOCKHASH_LENGTH);
   return SOL_OK;
+}
+
+bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels < 2) return status;
+
+  uint32_t purpose = path[0], coin = path[1];
+
+  switch (levels) {
+    case 2:   // m/44'/501'
+      status = (purpose == NON_SEGWIT && coin == SOLANA);
+      break;
+
+    case 3:   // m/44'/501'/i'
+      status = (purpose == NON_SEGWIT && coin == SOLANA);
+      break;
+
+    case 4: { // m/44'/501'/0'/i'
+      uint32_t account = path[2];
+      status = (purpose == NON_SEGWIT && coin == SOLANA && account == 0x80000000);
+    } break;
+
+    default:
+      break;
+  }
+
+  return status;
+}
+
+uint32_t sol_get_account_index(const uint32_t *path, solana_account_type account_tag) {
+  uint32_t index = 0;
+
+  uint8_t depth_index = sol_get_derivation_depth(account_tag) - 1;
+
+  switch (account_tag) {
+    case SOL_ACC_TYPE1:
+      index = 0;
+      break;
+
+    case SOL_ACC_TYPE2:
+    case SOL_ACC_TYPE3:
+      // discard the sign bit denoting hardened/non-harndedned value
+      index = path[depth_index] & 0x7FFFFFFF;
+      break;
+
+    default:
+      break;
+  }
+
+  return index;
 }

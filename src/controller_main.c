@@ -505,10 +505,10 @@ void desktop_listener_task(lv_task_t* data)
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
 
-                    if (byte_array_to_add_coin_data(
-                        &add_coin_data, data_array + WALLET_ID_SIZE,
-                        msg_size - WALLET_ID_SIZE) == -1)
-                    {
+                    if (byte_array_to_add_coin_data(&add_coin_data, data_array + WALLET_ID_SIZE,
+                                                    msg_size - WALLET_ID_SIZE) == -1 ||
+                        !verify_xpub_derivation_path(add_coin_data.derivation_path,
+                                                     add_coin_data.derivation_depth)) {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
                         return;
