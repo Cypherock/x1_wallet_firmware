@@ -130,7 +130,7 @@ void send_transaction_tasks_solana() {
       while (i--)
         be_lamports[i] = solana_unsigned_txn_ptr.instruction.program.transfer.lamports >> 8 * (7 - i);
       byte_array_to_hex_string(be_lamports, 8, amount_string, sizeof(amount_string));
-      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.decimal[0],
+      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.eth_val_decimal[0],
                                                 amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();
@@ -151,7 +151,7 @@ void send_transaction_tasks_solana() {
         break;
       }
 
-      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.decimal[0],
+      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.eth_val_decimal[0],
                                                 amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();

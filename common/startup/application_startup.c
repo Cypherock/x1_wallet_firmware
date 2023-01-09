@@ -163,10 +163,10 @@ static void repeated_timer_handler(void)
         inactivity_counter = 0;
         if (counter.level > LEVEL_ONE) {
             mark_error_screen(ui_text_process_reset_due_to_inactivity);
-            reset_flow_level();
-            lv_obj_clean(lv_scr_act());
             if (CY_External_Triggered())
                 comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
+            reset_flow_level();
+            lv_obj_clean(lv_scr_act());
         }
     }
 #endif

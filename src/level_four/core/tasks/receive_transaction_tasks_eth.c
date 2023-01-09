@@ -59,7 +59,10 @@
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "flash_api.h"
+#include "harmony.h"
+#include "segwit_addr.h"
 #include "tasks_level_four.h"
+#include "tasks_tap_cards.h"
 #include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
@@ -67,7 +70,6 @@
 #include "ui_instruction.h"
 #include "ui_menu.h"
 #include "utils.h"
-#include "tasks_tap_cards.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -144,10 +146,15 @@ void receive_transaction_tasks_eth()
     case RECV_TXN_DISPLAY_ADDR_ETH: {
         instruction_scr_destructor();
         char display[70];
-        char address_s[2 * sizeof(receive_transaction_data.eth_pubkeyhash) + 1] = {'\0'};
-        byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
-                       address_s, sizeof(address_s));
-        snprintf(display, sizeof(display), "%s0x%s", ui_text_20_spaces, address_s);
+        char address_s[2 + sizeof(receive_transaction_data.address) + 1] = {'0', 'x', '\0'};
+        uint64_t chain_id = receive_transaction_data.network_chain_id;
+        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN)
+          byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
+                       address_s + 2, sizeof(address_s) - 2);
+        else
+          bech32_addr_encode(address_s, "one", receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
+        strncpy(receive_transaction_data.address, address_s, sizeof(receive_transaction_data.address));
+        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address_s);
         address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
     } break;
 

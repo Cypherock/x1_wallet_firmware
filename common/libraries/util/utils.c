@@ -432,6 +432,17 @@ uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len)
     return 0;
 }
 
+uint64_t cy_read_be(const uint8_t *bytes, uint8_t size) {
+  if (bytes == NULL || size == 0) return 0;
+
+  uint64_t value = 0;
+  uint8_t offset = 0;
+  while (offset < size) {
+    value = (bytes[offset++] | (value << 8));
+  }
+  return value;
+}
+
 
 bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decimal,char* amount_string,char* amount_decimal_string, const size_t amount_decimal_string_size){
     uint8_t decimal_val_s[32 * 3] = { 0 };

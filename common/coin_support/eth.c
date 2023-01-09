@@ -301,7 +301,7 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
         return false;
     if (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0]))
         return false;
-    if (memcmp(eth_utxn_ptr->chain_id, &metadata_ptr->network_chain_id, eth_utxn_ptr->chain_id_size[0]) != 0)
+    if (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id)
         return false;
 
     // Check if payload exists, it's a token transfer operation on EVM

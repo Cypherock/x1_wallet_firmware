@@ -66,6 +66,7 @@
 #include "near.h"
 #include "optimism.h"
 #include "polygon.h"
+#include "segwit_addr.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -132,8 +133,8 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy(txn_metadata_ptr->transaction_fees, metadata_byte_array,
              size, sizeof(txn_metadata_ptr->transaction_fees), &offset);
-    s_memcpy(txn_metadata_ptr->decimal, metadata_byte_array,
-             size, sizeof(txn_metadata_ptr->decimal), &offset);
+    s_memcpy(txn_metadata_ptr->eth_val_decimal, metadata_byte_array,
+             size, sizeof(txn_metadata_ptr->eth_val_decimal), &offset);
 
     size_t token_name_len = strnlen((const char*)(metadata_byte_array+offset),size - offset ) + 1;
 
@@ -146,6 +147,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
+    if (offset + 1 <= size) txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
     return offset;
 }
 
@@ -442,9 +444,16 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
     if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->chain_index[0] >= 0x80 ||
             mdata_ptr->change->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->decimal[0] > 18) return false;
+    if (mdata_ptr->eth_val_decimal[0] > 18) return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
         BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == ETHEREUM && mdata_ptr->token_name[0] == '\0')
         return false;
     return true;
+}
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
+  uint8_t data[65] = {0};
+  size_t datalen = 0;
+  convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
+  bech32_encode(output, hrp, data, datalen);
 }

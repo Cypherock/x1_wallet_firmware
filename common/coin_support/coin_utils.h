@@ -125,12 +125,13 @@ typedef struct
 
     uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+    uint8_t eth_val_decimal[1];
 
     char *token_name;
 
     uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
 } txn_metadata;
 #pragma pack(pop)
 
@@ -153,7 +154,7 @@ typedef struct Receive_Transaction_Data {
   char *token_name;
   union {
     uint64_t network_chain_id;
-    uint8_t near_account_type;
+    uint64_t near_account_type;
   };
   char near_registered_account[65];
   uint8_t xpub[112];
@@ -359,5 +360,7 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
 
 #endif
