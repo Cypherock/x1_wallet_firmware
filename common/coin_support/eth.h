@@ -80,7 +80,7 @@ typedef struct
   uint8_t *payload;
 
   uint8_t chain_id_size[1];
-  uint8_t chain_id[4];
+  uint8_t chain_id[8];
 
   uint8_t dummy_r[1];
   uint8_t dummy_s[1];

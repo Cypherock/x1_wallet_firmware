@@ -718,7 +718,7 @@ int set_wallet_state(const uint8_t wallet_index, const wallet_state new_state)
     if (!_wallet_is_filled(wallet_index))
         return INVALID_ARGUMENT;
 
-    if (new_state == VALID_WALLET || new_state == UNVERIFIED_VALID_WALLET || INVALID_WALLET) {
+    if (new_state == VALID_WALLET || new_state == UNVERIFIED_VALID_WALLET || new_state == INVALID_WALLET) {
         // new_state is valid and can be set
         flash_ram_instance.wallets[wallet_index].state = new_state;
     } else {

@@ -142,9 +142,11 @@ int verify_card_share_data() {
     if (status == 1) {
         // verify wallet id only if secret successfully regenerated
         mnemonic_clear();
-        const char* mnemo = mnemonic_from_data(wallet.wallet_share_with_mac_and_nonce, wallet.number_of_mnemonics * 4 / 3);
+        const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
         calculate_wallet_id(wallet_id, mnemo);
-        status = memcmp(wallet.wallet_id, wallet_id, WALLET_ID_SIZE) == 0 ? 1 : 0;
+        status = memcmp(wallet.wallet_id, wallet_id, WALLET_ID_SIZE);
+        LOG_INFO("xxx36: %d", status);
+        status = (status == 0) ? 1 : 0;
         mnemonic_clear();
     }
 
