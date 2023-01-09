@@ -562,3 +562,37 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
 
     return status;
 }
+
+uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
+    uint32_t coin = path[1];
+    uint16_t length = 0;
+    char *type = "";
+
+    switch (coin) {
+        case NEAR:
+            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
+            break;
+
+        case SOLANA:            // m/44'/501'/i'/j'
+            length = snprintf(account_name, out_len, "type%u.idx.%lu", account_type, (near_get_account_index(path) + 1));
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'/0 /j
+        case ETHEREUM:          // m/44'/60' /i'/0 /0
+            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
+            break;
+
+        case BTC_TEST:          // m/44'/1'  /i'/0 /j
+        case BITCOIN:           // m/44'/0'  /i'/0 /j
+            type = NON_SEGWIT ? "legacy" : "native_segwit" ;
+            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
+            break;
+
+        default:
+            break;
+    }
+
+    return length;
+}
