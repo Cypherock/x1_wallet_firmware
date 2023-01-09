@@ -285,6 +285,77 @@ static uint8_t rlp_encode_decimal(const uint64_t dec, const uint8_t offset, uint
   return meta_size;
 }
 
+static ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_TypedDataNode *root,
+                                                            ui_display_node **display_node) {
+  queue *q = create_queue();
+  enqueue(q, root, "");
+  ui_display_node *temp = *display_node;
+  while (!is_empty(q)) {
+    int node_count = 0;
+    node_count     = q->count;
+    while (node_count > 0) {
+      queue_node *node                         = dequeue(q);
+      TypedDataStruct_TypedDataNode *curr_node = node->tree_node;
+      char buffer[BUFFER_SIZE]                 = {0};
+      snprintf(buffer, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
+
+      char data[BUFFER_SIZE] = {0};
+      fill_string_with_data(curr_node, data, sizeof(data));
+
+      temp->next = ui_create_display_node(buffer, BUFFER_SIZE, data, sizeof(data));
+      temp       = temp->next;
+
+      for (int i = 0; i < curr_node->children_count; i++) {
+        char prefix[1024] = {0};
+        strcat(prefix, node->prefix);
+        strcat(prefix, node->tree_node->name);
+        strcat(prefix, ".");
+        enqueue(q, curr_node->children + i, prefix);
+      }
+      // free(node);
+      node_count--;
+    }
+  }
+
+  return temp;
+}
+
+static uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t **out) {
+    switch (msg_data->messageType) {
+        case MessageData_MessageType_ETH_SIGN:
+        case MessageData_MessageType_PERSONAL_SIGN: {
+            char size_string[256] = {0};
+            uint8_t number_of_digits_in_data_size =
+                snprintf(size_string, sizeof(size_string), "%d", msg_data->data_bytes->size);
+            uint16_t data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 +
+                                 number_of_digits_in_data_size + msg_data->data_bytes->size;
+            uint16_t offset = 0;
+            *out            = cy_malloc(data_size);
+            memzero(*out, data_size);
+            memcpy(*out, ETH_PERSONAL_SIGN_IDENTIFIER, sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
+            offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
+            memcpy(*out + offset, size_string, number_of_digits_in_data_size);
+            offset += number_of_digits_in_data_size;
+            memcpy(*out + offset, msg_data->data_bytes->bytes, msg_data->data_bytes->size);
+            return data_size;
+        } break;
+        case MessageData_MessageType_SIGN_TYPED_DATA: {
+            uint16_t data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
+            uint16_t offset    = 0;
+            *out               = cy_malloc(data_size);
+            memzero(*out, data_size);
+            memcpy(*out, ETH_SIGN_TYPED_DATA_IDENTIFIER,
+                   sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
+            offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
+            hash_struct(&msg_data->eip712data.domain, *out + offset);
+            offset += HASH_SIZE;
+            hash_struct(&msg_data->eip712data.message, *out + offset);
+            return data_size;
+        } break;
+    }
+    return 0;
+}
+
 uint64_t bendian_byte_to_dec(const uint8_t *bytes, uint8_t len)
 {
     uint64_t result = 0;
@@ -390,21 +461,6 @@ bool is_token_whitelisted(txn_metadata *metadata_ptr) {
     return true;
 }
 
-bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_length) {
-    switch (msg_data->messageType) {
-        case MessageData_MessageType_PERSONAL_SIGN:
-            strncpy(output, (const char *)msg_data->data_bytes->bytes, out_length);
-            break;
-        case MessageData_MessageType_ETH_SIGN:
-            byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size,
-                                     output, out_length);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
 void eth_sign_msg_data(const MessageData *msg_data,
                        const txn_metadata *transaction_metadata,
                        const char *mnemonics,
@@ -412,108 +468,36 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        uint8_t *sig) {
     uint8_t *data      = NULL;
     uint16_t data_size = get_unsigned_data_array_from_msg(msg_data, &data);
-    print_hex_array("Data", data, data_size);
-    BSP_DelayMs(50);
     sig_unsigned_byte_array(data, data_size, transaction_metadata, mnemonics, passphrase, sig);
-    print_hex_array("Signature", sig, 65);
-}
-
-uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t **out) {
-    switch (msg_data->messageType) {
-        case MessageData_MessageType_ETH_SIGN:
-        case MessageData_MessageType_PERSONAL_SIGN: {
-            char size_string[256] = {0};
-            uint8_t number_of_digits_in_data_size =
-                snprintf(size_string, sizeof(size_string), "%d", msg_data->data_bytes->size);
-            uint16_t data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 +
-                                 number_of_digits_in_data_size + msg_data->data_bytes->size;
-            uint16_t offset = 0;
-            *out            = cy_malloc(data_size);
-            memzero(*out, data_size);
-            memcpy(*out, ETH_PERSONAL_SIGN_IDENTIFIER, sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
-            offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
-            memcpy(*out + offset, size_string, number_of_digits_in_data_size);
-            offset += number_of_digits_in_data_size;
-            memcpy(*out + offset, msg_data->data_bytes->bytes, msg_data->data_bytes->size);
-            return data_size;
-        } break;
-        case MessageData_MessageType_SIGN_TYPED_DATA: {
-            uint16_t data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
-            uint16_t offset    = 0;
-            *out               = cy_malloc(data_size);
-            memzero(*out, data_size);
-            memcpy(*out, ETH_SIGN_TYPED_DATA_IDENTIFIER,
-                   sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
-            offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-            hash_struct(&msg_data->eip712data.domain, *out + offset);
-            offset += HASH_SIZE;
-            hash_struct(&msg_data->eip712data.message, *out + offset);
-            print_hex_array("PRESIGN", *out, data_size);
-            return data_size;
-        } break;
-    }
-    return -1;
 }
 
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
     switch (msg_data->messageType) {
         case MessageData_MessageType_ETH_SIGN: {
-            char buffer[512] = "0x";
-            size_t value_size =
-                byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size,
-                                         buffer + 2, sizeof(buffer) - 2);
+            const size_t array_size = msg_data->data_bytes->size * 2 + 1;
+            char *buffer            = malloc(array_size);
+            memzero(buffer, array_size);
+            snprintf(buffer, array_size, "0x");
+            size_t value_size = byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size,
+                                                         buffer + 2, array_size - 2) +
+                                2;
             *node = ui_create_display_node("Verify Message", 20, buffer, value_size);
+            free(buffer);
         } break;
         case MessageData_MessageType_PERSONAL_SIGN: {
-            *node = ui_create_display_node("Verify Message", 20,
-                                           (const char *)msg_data->data_bytes->bytes,
+            *node = ui_create_display_node("Verify Message", 20, (const char *)msg_data->data_bytes->bytes,
                                            msg_data->data_bytes->size);
         } break;
         case MessageData_MessageType_SIGN_TYPED_DATA: {
             *node                 = ui_create_display_node("Verify Domain", 64, "EIP712Domain", 64);
             ui_display_node *temp = *node;
-            temp       = eth_create_typed_data_display_nodes(&msg_data->eip712data.domain, &temp);
-            temp->next = ui_create_display_node("Verify Message", 64, "Test message", 64);
-            temp =
-                eth_create_typed_data_display_nodes(&msg_data->eip712data.message, &(temp->next));
+            temp                  = eth_create_typed_data_display_nodes(&msg_data->eip712data.domain, &temp);
+            temp->next = ui_create_display_node("Verify Message", 64, msg_data->eip712data.message.struct_name, 256);
+            temp       = eth_create_typed_data_display_nodes(&msg_data->eip712data.message, &(temp->next));
         } break;
     }
 }
 
-ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_TypedDataNode *root,
-                                                     ui_display_node **display_node) {
-    queue *q = create_queue();
-    enqueue(q, root, "");
-    ui_display_node *temp = *display_node;
-    while (!is_empty(q)) {
-        int node_count = 0;
-        node_count     = q->count;
-        while (node_count > 0) {
-            queue_node *node                         = dequeue(q);
-            TypedDataStruct_TypedDataNode *curr_node = node->tree_node;
-            char buffer[BUFFER_SIZE]                 = {0};
-            snprintf(buffer, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
-
-            char data[BUFFER_SIZE] = {0};
-            fill_string_with_data(curr_node, data, sizeof(data));
-
-            temp->next = ui_create_display_node(buffer, BUFFER_SIZE, data, sizeof(data));
-            temp       = temp->next;
-
-            for (int i = 0; i < curr_node->children_count; i++) {
-                char prefix[1024] = {0};
-                strcat(prefix, node->prefix);
-                strcat(prefix, node->tree_node->name);
-                strcat(prefix, ".");
-                enqueue(q, curr_node->children + i, prefix);
-            }
-            // free(node);
-            node_count--;
-        }
-    }
-
-    return temp;
-}
 
 int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data) {
     pb_istream_t stream = pb_istream_from_buffer(eth_msg, byte_array_len);
@@ -705,7 +689,6 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
             temp->next = pAbiDispNode;
         }
 
-        /* TODO: Add pAbiDisplayNode to global linked list */
     }
 
     return numArgsInFunction;
@@ -725,8 +708,6 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
 	 * Detect if the ethereum unsigned txn payload includes a function that
 	 * we can decode
 	 * pArgumentAbiType will hold pointer to array with information regarding 
-     * pArgumentAbiType will hold pointer to array with information regarding 
-	 * pArgumentAbiType will hold pointer to array with information regarding 
 	 * the types of argument corresponding to a function signature
 	 */
     uint32_t functionTag               = U32_READ_BE_ARRAY(pCurrHeadPtr);
@@ -736,8 +717,6 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
     numArgsInFunction = ETH_DetectFunction(functionTag, &pArgumentAbiType);
 
     /**
-	 * If pArgumentAbiType is NULL, that means ETH_DetectFunction did not 
-     * If pArgumentAbiType is NULL, that means ETH_DetectFunction did not 
 	 * If pArgumentAbiType is NULL, that means ETH_DetectFunction did not 
 	 * detect a supported function
 	 * Therefore we should return from here
@@ -751,8 +730,6 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
     pCurrHeadPtr += EVM_FUNC_SIGNATURE_LENGTH;
 
     /**
-	 * Save the base address of the first argument; it will be required in case 
-     * Save the base address of the first argument; it will be required in case 
 	 * Save the base address of the first argument; it will be required in case 
 	 * of any dynamic element encoded in ABI format as the offset is calculated
 	 * from the base of the first argument.
@@ -815,12 +792,6 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPa
 
         pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
         returnCode = ETH_UTXN_ABI_DECODE_OK;
-
-        // Abi_Encode(Abi_uint256_e,
-        //             4,
-        //             NULL,
-        //             NULL);
-        /* TODO: Add pAbiDispNode to global linked list */
 
         if (current_display_node == NULL) {
             current_display_node = pAbiDispNode;

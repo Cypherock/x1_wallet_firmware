@@ -5,4 +5,3 @@ ColumnLimit: 120
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
 ReflowComments: false
-IndentWidth: 4

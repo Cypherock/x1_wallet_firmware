@@ -303,13 +303,9 @@ void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
  */
 uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPayload);
 
-uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data, uint8_t **out);
-
 void eth_sign_msg_data(const MessageData *msg_data,
                        const txn_metadata *transaction_metadata,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig);
-ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_TypedDataNode *root,
-                                                     ui_display_node **display_node);
 #endif
