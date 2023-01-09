@@ -677,17 +677,20 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
  * is completed so it is expected that the curr_cmd_state is set to CMD_STATE_DONE.
  */
 static comm_error_code_t comm_process_out_req_packet(const packet_t *rx_packet) {
-    if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no) return INVALID_SEQUENCE_NO;
+    if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no)
+        return INVALID_SEQUENCE_NO;
     if (rx_packet->header.chunk_number != 1)
         return INVALID_CHUNK_NO;
-    if (rx_packet->header.total_chunks != 1) return INVALID_CHUNK_COUNT;
-    if (rx_packet->header.payload_length != 6) return INVALID_PAYLOAD_LENGTH;
+    if (rx_packet->header.total_chunks != 1)
+        return INVALID_CHUNK_COUNT;
+    if (rx_packet->header.payload_length != 6)
+        return INVALID_PAYLOAD_LENGTH;
     if (comm_status.curr_cmd_state != CMD_STATE_DONE && comm_status.curr_cmd_state != CMD_STATE_FAILED) {
         send_status_packet();
         return NO_ERROR;
     }
     if ((U16_READ_BE_ARRAY(rx_packet->payload + 4) - 1) * COMM_MAX_PAYLOAD_SIZE > comm_get_payload_size(comm_payload))
-        return NO_MORE_CHUNKS;           // Invalid output chunk request
+        return NO_MORE_CHUNKS;  // Invalid output chunk request
 
     send_cmd_output_packet(rx_packet);
     return NO_ERROR;
