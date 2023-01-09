@@ -183,7 +183,6 @@ void generate_wallet_controller()
         
         ASSERT(mnemo != NULL);
 
-        __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), wallet_credential_data.mnemonics);
         calculate_wallet_id(wallet_for_flash.wallet_id, mnemo);
         memcpy(wallet.wallet_id, wallet_for_flash.wallet_id, WALLET_ID_SIZE);
         convert_to_shares(
@@ -193,13 +192,10 @@ void generate_wallet_controller()
             wallet_shamir_data.mnemonic_shares);
         if (WALLET_IS_PIN_SET(wallet.wallet_info))
             encrypt_shares();
-        char single_line_mnemonics[MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH];
-        __multi_to_single_line(wallet_credential_data.mnemonics, wallet.number_of_mnemonics, single_line_mnemonics);
-        derive_beneficiary_key(wallet.beneficiary_key, wallet.iv_for_beneficiary_key, single_line_mnemonics);
-        derive_wallet_key(wallet.key, single_line_mnemonics);
+        derive_beneficiary_key(wallet.beneficiary_key, wallet.iv_for_beneficiary_key, mnemo);
+        derive_wallet_key(wallet.key, mnemo);
         mnemonic_clear();
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
-        memzero(single_line_mnemonics, sizeof(single_line_mnemonics));
         flow_level.level_three = GENERATE_WALLET_SEED_GENERATED;
     } break;
 
