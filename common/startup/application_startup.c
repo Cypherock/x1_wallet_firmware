@@ -429,6 +429,11 @@ void check_invalid_wallets()
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }
+        if (get_wallet_state(i) == INVALID_WALLET) {
+            snprintf(display, sizeof(display), "'%s' is invalid", get_wallet_name(i));
+            delay_scr_init(display, DELAY_TIME);
+            fix = true;
+        }
     }
     if (fix)
         mark_error_screen(ui_text_wallet_visit_to_verify);

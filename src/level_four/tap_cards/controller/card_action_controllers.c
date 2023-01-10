@@ -143,6 +143,7 @@ int verify_card_share_data() {
         // verify wallet id only if secret successfully regenerated
         mnemonic_clear();
         const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+        ASSERT(mnemo != NULL);
         calculate_wallet_id(wallet_id, mnemo);
         status = memcmp(wallet.wallet_id, wallet_id, WALLET_ID_SIZE);
         LOG_INFO("xxx36: %d", status);
