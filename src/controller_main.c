@@ -546,11 +546,11 @@ void desktop_listener_task(lv_task_t* data)
                         return;
                     }
                     uint32_t path[5]    = {
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index)};
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.purpose_index),
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index),
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.account_index),
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.input[0].chain_index),
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.input[0].address_index)};
 
                     flow_level.show_desktop_start_screen = true;
                     var_send_transaction_data.transaction_confirmation_list_index = 0;
