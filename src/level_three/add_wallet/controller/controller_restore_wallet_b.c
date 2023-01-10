@@ -118,10 +118,6 @@ void restore_wallet_controller_b()
         flow_level.level_three = RESTORE_WALLET_PIN_INPUT;
         break;
 
-    case RESTORE_WALLET_VERIFY_SEEDS: {
-        flow_level.level_three = RESTORE_WALLET_VERIFICATION_FAILED_DISPLAY;
-    } break;
-
     default:
         reset_flow_level_greater_than(LEVEL_ONE);
         flow_level.level_one = LEVEL_TWO_NEW_WALLET;

@@ -121,6 +121,7 @@ void receive_transaction_tasks_eth()
     } break;
 
     case RECV_TXN_TAP_CARD_ETH: {
+        // TODO: Use tap_threshold_cards_for_reconstruction instead
         retrieve_key_from_card();
     } break;
 

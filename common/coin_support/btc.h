@@ -31,6 +31,7 @@
 #define OP_RETURN   0x6A
 
 #define SATOSHI_PER_BTC 100000000
+#define MAX_SCRIPT_SIG_SIZE 128
 
 /**
  * @brief Struct to store details of Unsigned Transaction Input.
@@ -184,6 +185,19 @@ typedef struct
     txn_witness *witness;
     uint8_t locktime[4];
 } signed_txn;
+#pragma pack(pop)
+
+/**
+ * @brief Stores the generated signature on transaction data for the send transaction process.
+ *
+ * @see send_transaction_controller(), send_transaction_task(), desktop_listener_task(), SEND_TXN_START
+ * @since v1.0.0
+ */
+#pragma pack(push, 1)
+typedef struct Send_Transaction_Cmd {
+  uint8_t signed_txn_byte_array[MAX_SCRIPT_SIG_SIZE];
+  int signed_txn_length;
+} Send_Transaction_Cmd;
 #pragma pack(pop)
 
 /**

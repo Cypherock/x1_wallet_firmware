@@ -21,7 +21,7 @@
  * certain checks and validations for preventing reference collisions of wallets before proceeding to the next step.
  * Thus, wallet name collision and wallet id collisions are the prior checks that happen.
  *
- * @see GENERATE_WALLET_TASKS, generate_wallet_controller_b(), random_generate(), tap_cards_for_write_flow_controller(),
+ * @see GENERATE_WALLET_TASKS, generate_wallet_controller_b(), random_generate(), tap_cards_for_write_and_verify_flow_controller(),
  * add_wallet_share_to_sec_flash(), flow_level, counter, convert_to_shares(), encrypt_shares(), derive_beneficiary_key(),
  * derive_wallet_key(), wallet.h, wallet_for_flash, wallet_shamir_data, wallet_credential_data
  * @since v1.0.0
@@ -44,7 +44,7 @@ void generate_wallet_controller_b();
  * Thus, wallet name collision and wallet id collisions are the prior checks that happen. Additionally, the mnemonic words
  * are checked for validity before proceeding to the next step.
  *
- * @see RESTORE_WALLET_TASKS, restore_wallet_controller_b(), tap_cards_for_write_flow_controller(),
+ * @see RESTORE_WALLET_TASKS, restore_wallet_controller_b(), tap_cards_for_write_and_verify_flow_controller(),
  * restore_wallet_enter_mnemonics_flow_controller(), wallet.h, mark_error_screen(), restore_wallet_controller_b()
  * @since v1.0.0
  */

@@ -404,6 +404,7 @@ void check_invalid_wallets()
 
     for (uint8_t i = 0; i < MAX_WALLETS_ALLOWED; i++) {
         if (get_wallet_state(i) != VALID_WALLET
+            && get_wallet_state(i) != INVALID_WALLET
             && get_wallet_state(i) != UNVERIFIED_VALID_WALLET
             && get_wallet_state(i) != VALID_WALLET_WITHOUT_DEVICE_SHARE)
             continue;
@@ -425,6 +426,11 @@ void check_invalid_wallets()
         }
         if (is_wallet_locked(i)) {
             snprintf(display, sizeof(display), "'%s' is in locked state", get_wallet_name(i));
+            delay_scr_init(display, DELAY_TIME);
+            fix = true;
+        }
+        if (get_wallet_state(i) == INVALID_WALLET) {
+            snprintf(display, sizeof(display), "'%s' is invalid", get_wallet_name(i));
             delay_scr_init(display, DELAY_TIME);
             fix = true;
         }

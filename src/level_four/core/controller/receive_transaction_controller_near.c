@@ -139,6 +139,7 @@ void receive_transaction_controller_near()
 
     case RECV_TXN_TAP_CARD_NEAR: {
         tap_card_data.desktop_control = true;
+        // TODO: Shorten func name
         tap_threshold_cards_for_reconstruction_flow_controller(1);
     } break;
 
@@ -159,6 +160,7 @@ void receive_transaction_controller_near()
     } break;
 
     case RECV_TXN_DERIVE_ADD_NEAR: {
+        // TODO: Extract common part i.e. secret recreation and public key derication
         uint8_t secret[BLOCK_SIZE]={0};
         if (WALLET_IS_PIN_SET(wallet.wallet_info))
             decrypt_shares();
