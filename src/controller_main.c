@@ -619,8 +619,10 @@ void desktop_listener_task(lv_task_t* data)
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index)};
+                    uint8_t depth =
+                        path[1] == SOLANA ? sol_get_derivation_depth(receive_transaction_data.address_tag) : 5;
 
-                    if(offset == -1){
+                    if (offset == -1 || !verify_receive_derivation_path(path, depth)) {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
                         return;
