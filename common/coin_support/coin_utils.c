@@ -574,7 +574,7 @@ uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *acc
             break;
 
         case SOLANA:            // m/44'/501'/i'/j'
-            type = account_type == 1 ? "sol-base" : (account_type == 2) ? "type1" : "type2";
+            type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
             length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
             break;
 
