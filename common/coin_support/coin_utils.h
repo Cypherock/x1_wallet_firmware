@@ -148,7 +148,8 @@ typedef struct
     uint64_t network_chain_id;
 
     uint8_t is_harmony_address;
-    uint16_t address_tag;
+     ///< Used to differentiate between multiple address derivation paths of the same coin
+    uint16_t address_tag; 
 } txn_metadata;
 #pragma pack(pop)
 
