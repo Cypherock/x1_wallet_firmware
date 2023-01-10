@@ -221,10 +221,6 @@ void generate_wallet_controller()
 
     case GENERATE_WALLET_VERIFY_SHARES:
         flow_level.level_three = verify_card_share_data() == 1 ? GENERATE_WALLET_SUCCESS_MESSAGE : GENERATE_WALLET_FAILED_MESSAGE;
-        break;
-
-    case GENERATE_WALLET_SUCCESS_MESSAGE:
-    case GENERATE_WALLET_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -232,7 +228,17 @@ void generate_wallet_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
+        break;
+
+    case GENERATE_WALLET_SUCCESS_MESSAGE:
         reset_flow_level();
+        break;
+
+    case GENERATE_WALLET_FAILED_MESSAGE:
+        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+        flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
+        flow_level.level_three = 1;
+        flow_level.level_four = 1;
         break;
 
    default:
