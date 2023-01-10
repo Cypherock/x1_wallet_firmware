@@ -26,6 +26,7 @@ bool crypto_random_generate(uint8_t* buf, uint16_t bufsize)
 			LOG_ERROR("err:%08X\n", RNG_MCU_ERROR_BASE | rng_status);
 			return false;
 		}
+//TODO: Utilize complete 32 bit random from MCU
 		buf[i++]=random_32bit%256;
 	}while(i<bufsize);
 	return true;

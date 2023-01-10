@@ -148,7 +148,8 @@ char arbitrary_data[4096 / 8 + 1];
  * @brief Global Flow_level instance.
  *        Will be used in other files using getter function
  */
-Flow_level flow_level;
+Flow_level CONFIDENTIAL flow_level;
+
 /**
  * @brief Global Counter instance.
  *        Will be used in other files using getter function

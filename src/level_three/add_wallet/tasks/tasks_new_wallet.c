@@ -206,6 +206,7 @@ void tasks_add_new_wallet()
 
     default:
         message_scr_init(ui_text_something_went_wrong);
+        //TODO: Add reset flow level
         break;
     }
 }

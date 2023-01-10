@@ -127,7 +127,7 @@ void arbitrary_data_controller()
     } break;
 
     case ARBITRARY_DATA_PIN_CONFIRM: {
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
 
         ASSERT(temp != NULL);
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
@@ -140,7 +140,6 @@ void arbitrary_data_controller()
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         memzero(temp, sizeof(temp));
-        free(temp);
     } break;
 
     case ARBITRARY_DATA_ENTER_DATA_INSTRUCTION: {

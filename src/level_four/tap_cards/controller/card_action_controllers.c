@@ -115,8 +115,7 @@ static void handle_retrieve_wallet_success(uint8_t xcor)
 }
 
 int verify_card_share_data() {
-    uint8_t *secret;
-    size_t secret_size = 0;
+    uint8_t CONFIDENTIAL secret[MAX_ARBITRARY_DATA_SIZE];
     uint8_t status = 0;
     uint8_t wallet_id[WALLET_ID_SIZE] = {0};
 
@@ -126,9 +125,6 @@ int verify_card_share_data() {
     if (WALLET_IS_PIN_SET(wallet.wallet_info))
         decrypt_shares();
     if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
-        secret_size = wallet.arbitrary_data_size + 1;
-        secret = (uint8_t *) malloc((wallet.arbitrary_data_size + 1) * sizeof(uint8_t));
-        ASSERT(secret != NULL);
         status = generate_data_5C2(
             wallet.arbitrary_data_size,
             wallet_shamir_data.arbitrary_data_shares,
@@ -136,9 +132,6 @@ int verify_card_share_data() {
             secret);
         memzero(wallet_shamir_data.arbitrary_data_shares, sizeof(wallet_shamir_data.arbitrary_data_shares));
     } else {
-        secret_size = BLOCK_SIZE;
-        secret = (uint8_t *) malloc(BLOCK_SIZE * sizeof(uint8_t));
-        ASSERT(secret != NULL);
         status = generate_shares_5C2(
             wallet_shamir_data.mnemonic_shares,
             wallet_shamir_data.share_x_coords,
@@ -163,7 +156,6 @@ int verify_card_share_data() {
     get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
     set_wallet_state(wallet_index, status == 1 ? VALID_WALLET : INVALID_WALLET);
 
-    memzero(secret, secret_size);
-    free(secret);
+    memzero(secret, sizeof(secret));
     return status;
 }

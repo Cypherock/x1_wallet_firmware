@@ -166,19 +166,6 @@ typedef struct Send_Transaction_Data {
 } Send_Transaction_Data;
 #pragma pack(pop)
 
-/**
- * @brief Stores the generated signature on transaction data for the send transaction process.
- *
- * @see send_transaction_controller(), send_transaction_task(), desktop_listener_task(), SEND_TXN_START
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Send_Transaction_Cmd {
-  uint8_t *signed_txn_byte_array;
-  int signed_txn_length;
-} Send_Transaction_Cmd;
-#pragma pack(pop)
-
 extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;
 extern Send_Transaction_Data var_send_transaction_data;

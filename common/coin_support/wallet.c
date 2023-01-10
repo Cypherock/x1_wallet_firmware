@@ -60,9 +60,10 @@
 #include "sha2.h"
 #include <string.h>
 #include "rfc7539.h"
+#include "options.h"
 
 /// Global Wallet instance.
-Wallet wallet = {
+Wallet CONFIDENTIAL wallet = {
     .wallet_name = {0},
     .wallet_info = 0,
     .password_double_hash = {0},
@@ -81,14 +82,14 @@ Wallet wallet = {
 };
 
 /// Global instance to store confidential data
-Wallet_credential_data wallet_credential_data = {
+Wallet_credential_data CONFIDENTIAL wallet_credential_data = {
     .mnemonics = {{'\0'}},
     .passphrase = {'\0'},
     .password_single_hash = {0}
 };
 
 /// Global instance to store shamir data
-Wallet_shamir_data wallet_shamir_data = {
+Wallet_shamir_data CONFIDENTIAL wallet_shamir_data = {
     { .arbitrary_data_shares = {{0}} },
     .share_x_coords = {0},
     .share_encryption_data = {{0}}
@@ -120,6 +121,7 @@ bool decrypt_shares()
         rfc7539_auth(&ctx, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
         chacha20poly1305_decrypt(&ctx, wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
         chacha20poly1305_finish(&ctx, (uint8_t *) (wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
+        // TODO: Add mac comparison for decryption verification
         memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     }
     memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
