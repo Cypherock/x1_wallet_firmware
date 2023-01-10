@@ -67,6 +67,7 @@
 #include "optimism.h"
 #include "polygon.h"
 #include "segwit_addr.h"
+#include "solana.h"
 
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
                      uint64_t len, int64_t *offset)
@@ -148,6 +149,11 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
     if (offset + 1 <= size) txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
+
+    if (offset + sizeof(txn_metadata_ptr->address_tag) > size) return -1;
+    txn_metadata_ptr->address_tag = U16_READ_BE_ARRAY(metadata_byte_array + offset);
+    offset += sizeof(txn_metadata_ptr->address_tag);
+
     return offset;
 }
 
@@ -175,6 +181,33 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     txn_data_ptr->network_chain_id = U64_READ_BE_ARRAY(data_byte_array + offset);
     offset += sizeof(txn_data_ptr->network_chain_id);
 
+    if (offset + sizeof(txn_data_ptr->address_tag) > size) return -1;
+    txn_data_ptr->address_tag = U16_READ_BE_ARRAY(data_byte_array + offset);
+    offset += sizeof(txn_data_ptr->address_tag);
+
+    return offset;
+}
+
+int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size) {
+    if (data_ptr == NULL || byte_array == NULL) return -1;
+    int64_t offset = 0;
+
+    data_ptr->derivation_depth = byte_array[offset++];
+    if (data_ptr->derivation_depth < 2 ||
+        data_ptr->derivation_depth > (sizeof(data_ptr->derivation_path) / sizeof(uint32_t)))
+    {
+        return -1;
+    }
+
+    for (int levelIndex = 0; levelIndex < data_ptr->derivation_depth; levelIndex++) {
+        if (offset + sizeof(uint32_t) > size) return -1;
+        data_ptr->derivation_path[levelIndex] = U32_READ_BE_ARRAY(byte_array + offset);
+        offset += sizeof(uint32_t);
+    }
+
+    if (offset + sizeof(uint64_t) > size) return -1;
+    data_ptr->network_chain_id = U64_READ_BE_ARRAY(&byte_array[offset]);
+    offset += sizeof(uint64_t);
     return offset;
 }
 
@@ -456,4 +489,111 @@ void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t
   size_t datalen = 0;
   convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
   bech32_encode(output, hrp, data, datalen);
+}
+
+bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
+    bool status = false;
+
+    if (depth < 2) return status;
+
+    uint32_t purpose = path[0], coin = path[1];
+
+    switch (coin) {
+        case NEAR:
+            status = near_verify_derivation_path(path, depth);
+            break;
+
+        case SOLANA:
+            status = sol_verify_derivation_path(path, depth);
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'
+        case ETHEREUM:          // m/44'/60' /i'
+            status = (purpose == NON_SEGWIT);
+
+        case BTC_TEST:          // m/44'/1'  /i'
+        case BITCOIN:           // m/44'/0'  /i'
+            status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT);
+            break;
+
+        default:
+            break;
+    }
+
+    return status;
+}
+
+bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
+    bool status = false;
+
+    if (depth < 2) return status;
+
+    uint32_t purpose = path[0], coin = path[1];
+
+    switch (coin) {
+        case NEAR:
+            status = near_verify_derivation_path(path, depth);
+            break;
+
+        case SOLANA:            // m/44'/501'/i'/j'
+            status = sol_verify_derivation_path(path, depth);
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'/0 /j
+            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0);
+            break;
+
+        case ETHEREUM: {        // m/44'/60' /i'/0 /0
+            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && (path[4] == 0);
+        } break;
+
+        case BTC_TEST:
+        case BITCOIN:           // m/44'/0'  /i /0 /j
+            status = (depth == 5) && (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (path[3] == 0);
+            break;
+
+        default:
+            break;
+    }
+
+    return status;
+}
+
+uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
+    uint32_t coin = path[1];
+    uint16_t length = 0;
+    char *type = "";
+
+    switch (coin) {
+        case NEAR:
+            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
+            break;
+
+        case SOLANA:            // m/44'/501'/i'/j'
+            type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
+            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
+            break;
+
+        case LITCOIN:
+        case DOGE:
+        case DASH:              // m/44'/5'  /i'/0 /j
+        case ETHEREUM:          // m/44'/60' /i'/0 /0
+            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
+            break;
+
+        case BTC_TEST:          // m/44'/1'  /i'/0 /j
+        case BITCOIN:           // m/44'/0'  /i'/0 /j
+            type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
+            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
+            break;
+
+        default:
+            break;
+    }
+
+    return length;
 }
