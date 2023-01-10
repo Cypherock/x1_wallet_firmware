@@ -190,7 +190,7 @@ void send_transaction_tasks_eth()
         bool pre_dec_digit = false, post_dec_digit = false;
         uint8_t offset = 0;
         log_hex_array("eth value: ", (uint8_t*)amount_string, len);
-        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.decimal[0];
+        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.eth_val_decimal[0];
         i = 0;
         j = dec_val_len - 1;
 
@@ -233,7 +233,7 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee),
-                           var_send_transaction_data.transaction_metadata.decimal[0]);
+                           18);
         snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));

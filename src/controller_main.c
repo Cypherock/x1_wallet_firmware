@@ -722,8 +722,8 @@ void desktop_listener_task(lv_task_t* data)
 
 #elif X1WALLET_INITIAL
             case START_CARD_AUTH: {
-                CY_Set_External_Triggered(true);
                 reset_flow_level();
+                CY_Set_External_Triggered(true);
                 counter.level = LEVEL_THREE;
                 lv_obj_clean(lv_scr_act());
                 auth_card_number = data_array[0];
