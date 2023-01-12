@@ -31,6 +31,9 @@
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
 
+/// BTC TEST coin index
+#define BTC_TEST (BITCOIN + 0x01)
+
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
 #define LTC_COIN_VERSION     0x00000000
