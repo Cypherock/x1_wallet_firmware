@@ -566,7 +566,7 @@ void desktop_listener_task(lv_task_t* data)
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            "Send %s on %s %s> from %s", var_send_transaction_data.transaction_metadata.token_name,
+                            "Send %s on %s %s from %s", var_send_transaction_data.transaction_metadata.token_name,
                             get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
                             account_name, wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
