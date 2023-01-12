@@ -570,25 +570,25 @@ uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *acc
 
     switch (coin) {
         case NEAR:
-            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
+            length = snprintf(account_name, out_len, "#%lu", near_get_account_index(path));
             break;
 
         case SOLANA:            // m/44'/501'/i'/j'
-            type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
+            type = account_type == 1 ? "(paper)" : (account_type == 2) ? "(ledger #%lu)" : "(phantom #%lu)";
+            length = snprintf(account_name, out_len, type, sol_get_account_index(path, account_type));
             break;
 
         case LITCOIN:
         case DOGE:
         case DASH:              // m/44'/5'  /i'/0 /j
         case ETHEREUM:          // m/44'/60' /i'/0 /0
-            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
+            length = snprintf(account_name, out_len, "#%lu", path[2] & 0x7FFFFFFF);
             break;
 
         case BTC_TEST:          // m/44'/1'  /i'/0 /j
         case BITCOIN:           // m/44'/0'  /i'/0 /j
             type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
+            length = snprintf(account_name, out_len, "(%s #%lu)", type, path[2] & 0x7FFFFFFF);
             break;
 
         default:
