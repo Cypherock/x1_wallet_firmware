@@ -488,7 +488,7 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
     uint8_t returnCode = UTIL_OUT_OF_BOUNDS;
 
     if ((NULL == pBaseAddr) || (NULL == pCurrentSrcAddr) ||
-        ((uint32_t)pCurrentSrcAddr < (uint32_t)pBaseAddr) || (readSize > totalSizeOfChunk)) {
+        ((uint32_t)pCurrentSrcAddr < (uint32_t)pBaseAddr)) {
         returnCode = UTIL_INVALID_ARGUMENTS;
     } else {
         if (((uint32_t)(pCurrentSrcAddr + readSize) - (uint32_t)pBaseAddr) <= (totalSizeOfChunk)) {

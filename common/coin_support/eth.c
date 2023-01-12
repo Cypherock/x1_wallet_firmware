@@ -612,42 +612,42 @@ void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decima
  * identified function.
  * @return uint8_t The number of arguments in an identified function.
  */
-static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const **dpAbiTypeArray) {
+static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const ** const dpAbiTypeArray) {
     if (NULL == dpAbiTypeArray) {
         return 0;
     }
 
-    uint8_t numArgsInFunction  = 0;
-    char *EvmFunctionTitle     = NULL;
-    char *EvmFunctionSignature = NULL;
+    uint8_t numArgsInFunction        = 0;
+    const char *EvmFunctionTitle     = NULL;
+    const char *EvmFunctionSignature = NULL;
 
     switch (functionTag) {
         case EVM_swap_TAG: {
             numArgsInFunction    = EVM_swap_NUM_ARGS;
             *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_swapDataType[0]));
-            EvmFunctionTitle     = (char *)EVM_swap_Title;
-            EvmFunctionSignature = (char *)EVM_swap_Signature;
+            EvmFunctionTitle     = EVM_swap_Title;
+            EvmFunctionSignature = EVM_swap_Signature;
             break;
         }
         case EVM_uniswapV3Swap_TAG: {
             numArgsInFunction    = EVM_uniswapV3Swap_NUM_ARGS;
             *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_uniswapV3SwapDataType[0]));
-            EvmFunctionTitle     = (char *)EVM_uniswapV3Swap_Title;
-            EvmFunctionSignature = (char *)EVM_uniswapV3Swap_Signature;
+            EvmFunctionTitle     = EVM_uniswapV3Swap_Title;
+            EvmFunctionSignature = EVM_uniswapV3Swap_Signature;
             break;
         }
         case EVM_safeTransferFrom_TAG: {
             numArgsInFunction    = EVM_safeTransferFrom_NUM_ARGS;
             *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_safeTransferFromDataType[0]));
-            EvmFunctionTitle     = (char *)EVM_safeTransferFrom_Title;
-            EvmFunctionSignature = (char *)EVM_safeTransferFrom_Signature;
+            EvmFunctionTitle     = EVM_safeTransferFrom_Title;
+            EvmFunctionSignature = EVM_safeTransferFrom_Signature;
             break;
         }
         case EVM_deposit_TAG: {
             numArgsInFunction    = EVM_deposit_NUM_ARGS;
             *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_depositDataType[0]));
-            EvmFunctionTitle     = (char *)EVM_deposit_Title;
-            EvmFunctionSignature = (char *)EVM_deposit_Signature;
+            EvmFunctionTitle     = EVM_deposit_Title;
+            EvmFunctionSignature = EVM_deposit_Signature;
             break;
         }
         default: {
