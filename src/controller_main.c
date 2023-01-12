@@ -566,9 +566,9 @@ void desktop_listener_task(lv_task_t* data)
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            "Send %s %s from %s on %s", var_send_transaction_data.transaction_metadata.token_name,
-                            account_name, wallet.wallet_name,
-                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id));
+                            "Send %s on %s %s> from %s", var_send_transaction_data.transaction_metadata.token_name,
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            account_name, wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
                         if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
@@ -640,8 +640,9 @@ void desktop_listener_task(lv_task_t* data)
                     if (coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                 "Receive %s %s with %s on %s", receive_transaction_data.token_name, account_name,
-                                 wallet.wallet_name, get_coin_name(coin_index, receive_transaction_data.network_chain_id));
+                                 "Receive %s on %s %s in %s", receive_transaction_data.token_name,
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id), account_name,
+                                 wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
