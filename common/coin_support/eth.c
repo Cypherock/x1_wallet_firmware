@@ -437,8 +437,6 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
                 return (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) ==
                         ETH_UTXN_ABI_DECODE_OK);
         }
-    } else {
-        return false;
     }
 
   return true;
