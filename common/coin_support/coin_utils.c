@@ -563,7 +563,7 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     return status;
 }
 
-uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
+uint16_t get_account_tag(const uint32_t *path, uint16_t account_type, char *account_tag, uint8_t out_len) {
     uint32_t coin = path[1];
     uint16_t length = 0;
     char *type = "";
@@ -599,7 +599,7 @@ uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *acc
             break;
     }
     format = account_index == 0 ? "%s" : format ;
-    length = snprintf(account_name, out_len, format, type, account_index);
+    length = snprintf(account_tag, out_len, format, type, account_index);
 
     return length;
 }
