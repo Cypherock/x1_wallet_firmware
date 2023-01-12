@@ -315,7 +315,7 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
         case 0x80000000:
             return "Bitcoin";
         case 0x80000001:
-            return "BTC Test";
+            return "Bitcoin Testnet";
         case 0x80000002:
             return "Litecoin";
         case 0x80000003:

@@ -15,8 +15,8 @@
 #define BSC_MAINNET_CHAIN     56
 #define BSC_TESTNET_CHAIN     97
 
-#define BSC_MAINNET_NAME  "BSC"
-#define BSC_TESTNET_NAME  "BSC Testnet"
+#define BSC_MAINNET_NAME  "BNB Smart Chain"
+#define BSC_TESTNET_NAME  "BNB Smart Testnet"
 #define BSC_TOKEN_SYMBOL  "BNB"
 
 #endif
