@@ -67,12 +67,6 @@ void sign_message_controller_b_eth() {
       counter.next_event_flag = true;
     } break;
 
-    case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
-      comm_reject_request(SIGN_MSG_START, 0);
-      reset_flow_level();
-      counter.next_event_flag = true;
-    } break;
-
     case SIGN_MSG_DISPLAY_INFO_ETH: {
       comm_reject_request(SIGN_MSG_START, 0);
       reset_flow_level();

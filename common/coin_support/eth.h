@@ -255,31 +255,11 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
 void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
 
 /**
- * @brief checks whether given token in metadata is whitelisted
- * 
- * @param metadata_ptr 
- * @return true 
- * @return false 
- */
-bool is_token_whitelisted(txn_metadata *metadata_ptr);
-
-/**
  * @brief Initialize MessageData structure from protobuf
  * 
  * @param msg_data 
  */
 void eth_init_msg_data(MessageData *msg_data);
-
-/**
- * @brief Get the data as string object
- * 
- * @param msg_data 
- * @param output 
- * @param out_length 
- * @return true 
- * @return false 
- */
-bool get_data_as_string(const MessageData *msg_data, char *output, size_t out_length);
 
 /**
  * @brief Initialize Display Nodes from message data

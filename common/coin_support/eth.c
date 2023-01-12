@@ -444,23 +444,6 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
   return true;
 }
 
-bool is_token_whitelisted(txn_metadata *metadata_ptr) {
-    if (strnlen(metadata_ptr->token_name, ETHEREUM_TOKEN_SYMBOL_LENGTH) > 0) {
-        if (strncmp(metadata_ptr->token_name, ETHEREUM_TOKEN_SYMBOL,
-                    ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-            return true;
-        }
-        for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
-            if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol,
-                        ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-    return true;
-}
-
 void eth_sign_msg_data(const MessageData *msg_data,
                        const txn_metadata *transaction_metadata,
                        const char *mnemonics,

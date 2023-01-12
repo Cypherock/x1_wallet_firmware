@@ -93,30 +93,6 @@ void sign_message_tasks_eth() {
             mark_event_over();
         } break;
 
-        case SIGN_MSG_RAW_MSG_RECEIVED_ETH: {
-            if (!is_token_whitelisted(&var_send_transaction_data.transaction_metadata)) {
-                instruction_scr_destructor();
-                delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
-            } else {
-                mark_event_over();
-            }
-        } break;
-
-        case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
-            char address[43];
-            address[0] = '0';
-            address[1] = 'x';
-            char top_heading[55];
-            char display[70];
-
-            instruction_scr_destructor();
-            byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address, ETHEREUM_ADDRESS_LENGTH,
-                                     address + 2, sizeof(address) - 2);
-            snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
-            snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
-            address_scr_init(top_heading, display, true);
-        } break;
-
         case SIGN_MSG_DISPLAY_INFO_ETH: {
             instruction_scr_destructor();
             if (current_display_node == NULL)

@@ -90,7 +90,7 @@ void sign_message_controller_eth() {
                 status     = eth_byte_array_to_msg(data_array, msg_size, &msg_data);
 
                 clear_message_received_data();
-                flow_level.level_three = SIGN_MSG_RAW_MSG_RECEIVED_ETH;
+                flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
 
                 if (status != 0) {
                     instruction_scr_destructor();
@@ -102,17 +102,6 @@ void sign_message_controller_eth() {
                 eth_init_display_nodes(&current_display_node, &msg_data);
                 ASSERT(current_display_node != NULL);
             }
-        } break;
-
-        case SIGN_MSG_RAW_MSG_RECEIVED_ETH: {
-            if (is_token_whitelisted(&var_send_transaction_data.transaction_metadata))
-                flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
-            else
-                flow_level.level_three = SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH;
-        } break;
-
-        case SIGN_MSG_VERIFY_CONTRACT_ADDRESS_ETH: {
-            flow_level.level_three = SIGN_MSG_DISPLAY_INFO_ETH;
         } break;
 
         case SIGN_MSG_DISPLAY_INFO_ETH: {
