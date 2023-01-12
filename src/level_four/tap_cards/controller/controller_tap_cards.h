@@ -35,7 +35,7 @@ typedef struct NFC_connection_data {
     uint8_t lvl4_retry_point;
     uint8_t resume_point;
     uint8_t retries;
-    uint8_t family_id[FAMILY_ID_SIZE + 2];
+    uint8_t family_id[FAMILY_ID_SIZE + 2]; //TODO: Review(need to find reason for extra byte)
     uint8_t card_key_id[4];
     uint8_t recovery_mode;
     uint8_t card_absent_retries;
@@ -123,7 +123,7 @@ void tap_card_pair_card_controller();
  *
  * @note
  */
-void tap_cards_for_write_flow_controller();
+void tap_cards_for_write_and_verify_flow_controller();
 
 /**
  * @brief

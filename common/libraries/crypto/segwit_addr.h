@@ -24,6 +24,11 @@
 
 #include <stdint.h>
 
+/**
+ * Encode 8-bit data into 5-bit
+ */
+int convert_bits(uint8_t* out, size_t* outlen, int outbits, const uint8_t* in, size_t inlen, int inbits, int pad);
+
 /** Encode a SegWit address
  *
  *  Out: output:   Pointer to a buffer of size 73 + strlen(hrp) that will be

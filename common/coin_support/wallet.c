@@ -60,9 +60,10 @@
 #include "sha2.h"
 #include <string.h>
 #include "rfc7539.h"
+#include "options.h"
 
 /// Global Wallet instance.
-Wallet wallet = {
+Wallet CONFIDENTIAL wallet = {
     .wallet_name = {0},
     .wallet_info = 0,
     .password_double_hash = {0},
@@ -81,14 +82,14 @@ Wallet wallet = {
 };
 
 /// Global instance to store confidential data
-Wallet_credential_data wallet_credential_data = {
+Wallet_credential_data CONFIDENTIAL wallet_credential_data = {
     .mnemonics = {{'\0'}},
     .passphrase = {'\0'},
     .password_single_hash = {0}
 };
 
 /// Global instance to store shamir data
-Wallet_shamir_data wallet_shamir_data = {
+Wallet_shamir_data CONFIDENTIAL wallet_shamir_data = {
     { .arbitrary_data_shares = {{0}} },
     .share_x_coords = {0},
     .share_encryption_data = {{0}}
@@ -120,10 +121,48 @@ bool decrypt_shares()
         rfc7539_auth(&ctx, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
         chacha20poly1305_decrypt(&ctx, wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
         chacha20poly1305_finish(&ctx, (uint8_t *) (wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
+        // TODO: Add mac comparison for decryption verification
         memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     }
     memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
     memzero(wallet_shamir_data.share_encryption_data, sizeof(wallet_shamir_data.share_encryption_data));
 
     return true;
+}
+
+void calculate_checksum(const Wallet *wallet, uint8_t *checksum)
+{
+    if (wallet == NULL || checksum == NULL) return;
+
+    uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+    SHA256_CTX	context = {0};
+    sha256_Init(&context);
+    sha256_Update(&context, wallet->wallet_name, sizeof(wallet->wallet_name));
+    sha256_Update(&context, &wallet->xcor, sizeof(wallet->xcor));
+    sha256_Update(&context, &wallet->number_of_mnemonics, sizeof(wallet->number_of_mnemonics));
+    sha256_Update(&context, &wallet->total_number_of_shares, sizeof(wallet->total_number_of_shares));
+    sha256_Update(&context, wallet->wallet_share_with_mac_and_nonce, sizeof(wallet->wallet_share_with_mac_and_nonce));
+    sha256_Update(&context, &wallet->minimum_number_of_shares, sizeof(wallet->minimum_number_of_shares));
+    sha256_Update(&context, &wallet->wallet_info, sizeof(wallet->wallet_info));
+    sha256_Update(&context, wallet->key, sizeof(wallet->key));
+    sha256_Update(&context, wallet->wallet_id, sizeof(wallet->wallet_id));
+    sha256_Update(&context, wallet->arbitrary_data_share, wallet->arbitrary_data_size);
+    sha256_Final(&context, digest);
+    memcpy(checksum, digest, sizeof(wallet->checksum));
+    // set the bits for indicating usability of the checksum
+    // refer doc of the Wallet.checksum
+    checksum[3] &= 0xFC; checksum[3] |= 0x01;
+}
+
+bool verify_checksum(const Wallet *wallet) {
+    if (wallet == NULL) return false;
+
+    // check if the checksum is usable i.e. `01`
+    // always return true if value is not; refer doc of Wallet.checksum
+    if ((wallet->checksum[3] & 0x03) != 0x01) return true;
+
+    uint8_t checksum[sizeof(wallet->checksum)] = {0};
+
+    calculate_checksum(wallet, checksum);
+    return (memcmp(wallet->checksum, checksum, sizeof(wallet->checksum)) == 0);
 }

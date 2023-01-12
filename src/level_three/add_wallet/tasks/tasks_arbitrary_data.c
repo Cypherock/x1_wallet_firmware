@@ -73,6 +73,7 @@
 #include "ui_address.h"
 #include "ui_instruction.h"
 #include "tasks_tap_cards.h"
+#include "ui_multi_instruction.h"
 
 extern char arbitrary_data[4096 / 8 + 1];
 
@@ -188,8 +189,21 @@ void tasks_arbitrary_data()
         tap_cards_for_write_flow();
     } break;
 
+    case ARBITRARY_DATA_VERIFY_SHARES:
+        instruction_scr_init(ui_text_processing, "");
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
+        mark_event_over();
+        break;
+
     case ARBITRARY_DATA_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_x1cards);
+        instruction_scr_destructor();
+        multi_instruction_init(ui_text_verification_is_now_complete_messages, 4, DELAY_LONG_STRING, true);
+    } break;
+
+    case ARBITRARY_DATA_FAILED_MESSAGE: {
+        instruction_scr_destructor();
+        message_scr_init(ui_text_creation_failed_delete_wallet);
     } break;
 
     default: {

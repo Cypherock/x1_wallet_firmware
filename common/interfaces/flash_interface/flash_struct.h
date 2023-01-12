@@ -31,6 +31,7 @@ typedef enum log_config {
 
 /// enum to signify the wallet state
 typedef enum wallet_state {
+    INVALID_WALLET = 1,
     UNVERIFIED_VALID_WALLET = 14,
     VALID_WALLET = 7,
     VALID_WALLET_WITHOUT_DEVICE_SHARE = 15,
@@ -58,6 +59,7 @@ typedef enum flash_save_mode {
  * @note
  */
 #pragma pack(push, 1)
+// TODO: Refactor flash storage, reduce erase cycles
 typedef struct Flash_Pow {
     uint8_t target[SHA256_SIZE];
     uint8_t random_number[POW_RAND_NUMBER_SIZE];
@@ -101,6 +103,7 @@ typedef struct Flash_Wallet {
  * @note
  */
 #pragma pack(push, 1)
+// TODO: Refactor flash storage, reduce erase cycles
 typedef struct Flash_Struct {
     uint8_t family_id[FAMILY_ID_SIZE];
     uint32_t wallet_count; // number of valid wallets

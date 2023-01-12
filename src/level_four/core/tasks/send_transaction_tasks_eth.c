@@ -56,21 +56,22 @@
  ******************************************************************************
  */
 #include "btc.h"
-#include "eth.h"
 #include "constant_texts.h"
+#include "contracts.h"
 #include "controller_level_four.h"
+#include "eth.h"
+#include "harmony.h"
+#include "math.h"
+#include "segwit_addr.h"
 #include "tasks_level_four.h"
+#include "tasks_tap_cards.h"
 #include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
-#include "math.h"
-#include "tasks_tap_cards.h"
 #include "utils.h"
-#include "contracts.h"
-#include "int-util.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -148,10 +149,15 @@ void send_transaction_tasks_eth()
         char top_heading[225];
         uint8_t address_bytes[20];
         char display[70];
+        uint64_t chain_id = var_send_transaction_data.transaction_metadata.network_chain_id;
+        uint8_t is_harmony_hrp = var_send_transaction_data.transaction_metadata.is_harmony_address;
 
         instruction_scr_destructor();
         eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
-        byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
+        if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN))
+          byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
+        else
+          bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
@@ -184,7 +190,7 @@ void send_transaction_tasks_eth()
         bool pre_dec_digit = false, post_dec_digit = false;
         uint8_t offset = 0;
         log_hex_array("eth value: ", (uint8_t*)amount_string, len);
-        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.decimal[0];
+        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.eth_val_decimal[0];
         i = 0;
         j = dec_val_len - 1;
 
@@ -227,7 +233,7 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee),
-                           var_send_transaction_data.transaction_metadata.decimal[0]);
+                           18);
         snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));
