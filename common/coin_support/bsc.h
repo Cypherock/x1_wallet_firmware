@@ -14,7 +14,7 @@
 
 #define BSC_MAINNET_CHAIN     56
 
-#define BSC_MAINNET_NAME  "BSC"
+#define BSC_MAINNET_NAME  "BNB Smart Chain"
 #define BSC_TOKEN_SYMBOL  "BNB"
 
 #endif

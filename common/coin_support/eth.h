@@ -35,7 +35,7 @@
 
 #define ETHEREUM_MAINNET_CHAIN    1
 
-#define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
+#define ETHEREUM_MAINNET_NAME   "Ethereum"
 #define ETHEREUM_TOKEN_SYMBOL   "ETH"
 
 /// Convert byte array to unit32_t
