@@ -257,7 +257,6 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
 const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000U:
-        case 0x80000001:
             return "BTC";
         case 0x80000002:
             return "LTC";
@@ -268,27 +267,19 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
         case ETHEREUM: {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
-                case ETHEREUM_ROPSTEN_CHAIN:
                     return ETHEREUM_TOKEN_SYMBOL;
-                case POLYGON_MUMBAI_CHAIN:
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_TOKEN_SYMBOL;
-                case BSC_TESTNET_CHAIN:
                 case BSC_MAINNET_CHAIN:
                   return BSC_TOKEN_SYMBOL;
-                case FANTOM_TESTNET_CHAIN:
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_TOKEN_SYMBOL;
-                case AVALANCHE_TESTNET_CHAIN:
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_TOKEN_SYMBOL;
-                case OPTIMISM_TESTNET_CHAIN:
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_TOKEN_SYMBOL;
-                case ETC_TESTNET_CHAIN:
                 case ETC_MAINNET_CHAIN:
                   return ETC_TOKEN_SYMBOL;
-                case HARMONY_TESTNET_CHAIN:
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_TOKEN_SYMBOL;
                 case ARBITRUM_MAINNET_CHAIN:
@@ -314,8 +305,6 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
     switch (coin_index) {
         case 0x80000000:
             return "Bitcoin";
-        case 0x80000001:
-            return "BTC Test";
         case 0x80000002:
             return "Litecoin";
         case 0x80000003:
@@ -326,36 +315,20 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
                     return ETHEREUM_MAINNET_NAME;
-                case ETHEREUM_ROPSTEN_CHAIN:
-                    return ETHEREUM_ROPSTEN_NAME;
-                case POLYGON_MUMBAI_CHAIN:
-                    return POLYGON_MUMBAI_NAME;
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MAINNET_NAME;
                 case BSC_MAINNET_CHAIN:
                   return BSC_MAINNET_NAME;
-                case BSC_TESTNET_CHAIN:
-                  return BSC_TESTNET_NAME;
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_MAINNET_NAME;
-                case FANTOM_TESTNET_CHAIN:
-                  return FANTOM_TESTNET_NAME;
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_MAINNET_NAME;
-                case AVALANCHE_TESTNET_CHAIN:
-                  return AVALANCHE_TESTNET_NAME;
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_MAINNET_NAME;
-                case OPTIMISM_TESTNET_CHAIN:
-                  return OPTIMISM_TESTNET_NAME;
                 case ETC_MAINNET_CHAIN:
                   return ETC_MAINNET_NAME;
-                case ETC_TESTNET_CHAIN:
-                  return ETC_TESTNET_NAME;
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_MAINNET_NAME;
-                case HARMONY_TESTNET_CHAIN:
-                  return HARMONY_TESTNET_NAME;
                 case ARBITRUM_MAINNET_CHAIN:
                   return ARBITRUM_MAINNET_NAME;
                 default: {
@@ -383,10 +356,6 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
     switch(purpose_id) {
         case NATIVE_SEGWIT:
             switch (coin_index) {
-            case BTC_TEST:
-                assigned_pub_version = 0x045f1cf6;
-                assigned_add_version = 0x6f;
-                break;
             case BITCOIN:
                 assigned_pub_version = 0x04b24746;
                 assigned_add_version = 0x00;
@@ -410,10 +379,6 @@ void get_version(const uint32_t purpose_id, const uint32_t coin_index, uint8_t* 
 
         case NON_SEGWIT:
             switch (coin_index) {
-            case BTC_TEST:
-                assigned_pub_version = 0x043587cf;
-                assigned_add_version = 0x6f;
-                break;
             case BITCOIN:
                 assigned_pub_version = 0x0488b21e;
                 assigned_add_version = 0x00;
@@ -513,7 +478,6 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
         case ETHEREUM:          // m/44'/60' /i'
             status = (purpose == NON_SEGWIT);
 
-        case BTC_TEST:          // m/44'/1'  /i'
         case BITCOIN:           // m/44'/0'  /i'
             status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT);
             break;
@@ -551,7 +515,6 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
             status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && (path[4] == 0);
         } break;
 
-        case BTC_TEST:
         case BITCOIN:           // m/44'/0'  /i /0 /j
             status = (depth == 5) && (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (path[3] == 0);
             break;
@@ -585,7 +548,6 @@ uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *acc
             length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
             break;
 
-        case BTC_TEST:          // m/44'/1'  /i'/0 /j
         case BITCOIN:           // m/44'/0'  /i'/0 /j
             type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
             length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
