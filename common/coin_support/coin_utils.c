@@ -563,37 +563,43 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     return status;
 }
 
-uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
+uint16_t get_account_tag(const uint32_t *path, uint16_t account_type, char *account_tag, uint8_t out_len) {
     uint32_t coin = path[1];
     uint16_t length = 0;
     char *type = "";
+    char *format = "(%s #%lu)";
+    uint32_t account_index = 0;
 
     switch (coin) {
         case NEAR:
-            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
+            format = "%s#%lu";
+            account_index = near_get_account_index(path);
             break;
 
         case SOLANA:            // m/44'/501'/i'/j'
             type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
+            account_index = sol_get_account_index(path, account_type);
             break;
 
         case LITCOIN:
         case DOGE:
         case DASH:              // m/44'/5'  /i'/0 /j
         case ETHEREUM:          // m/44'/60' /i'/0 /0
-            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
+            format = "%s#%lu";
+            account_index = path[2] & 0x7FFFFFFF;
             break;
 
         case BTC_TEST:          // m/44'/1'  /i'/0 /j
         case BITCOIN:           // m/44'/0'  /i'/0 /j
             type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
+            account_index = path[2] & 0x7FFFFFFF;
             break;
 
         default:
             break;
     }
+    format = account_index == 0 ? "%s" : format ;
+    length = snprintf(account_tag, out_len, format, type, account_index);
 
     return length;
 }
