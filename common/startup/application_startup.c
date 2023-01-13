@@ -85,6 +85,8 @@
 #include "controller_tap_cards.h"
 #include "ui_multi_instruction.h"
 #include "controller_main.h"
+#include "global_variables.h"
+#include "desktop_listener.h"
 
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
@@ -106,15 +108,7 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
-extern lv_task_t* authentication_task;
-extern lv_task_t *listener_task;
-extern lv_task_t* success_task;
-extern lv_task_t* timeout_task;
 extern lv_indev_t * indev_keypad;
-
-extern const char *GIT_REV;
-extern const char *GIT_TAG;
-extern const char *GIT_BRANCH;
 
 /**
  * @brief
@@ -151,33 +145,27 @@ static void clock_init(void)
  *
  * @note
  */
-static void repeated_timer_handler(void)
-{
-    lv_tick_inc(POLLING_TIME);
+static void repeated_timer_handler(void) {
+        lv_tick_inc(POLLING_TIME);
 
-    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
-    {
-        if (counter.level > LEVEL_ONE)
-        {
+#ifndef PROVISIONING_FIRMWARE
+        if (counter.level > LEVEL_ONE) {
             inactivity_counter += POLLING_TIME;
         }
 
-        if (inactivity_counter > INACTIVITY_TIME)
-        {
+        if (inactivity_counter > INACTIVITY_TIME) {
             inactivity_counter = 0;
-            
-            if (counter.level > LEVEL_ONE)
-            {
+
+            if (counter.level > LEVEL_ONE) {
                 mark_error_screen(ui_text_process_reset_due_to_inactivity);
                 reset_flow_level();
                 lv_obj_clean(lv_scr_act());
-                if (CY_External_Triggered())
-                {
+                if (CY_External_Triggered()) {
                     comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
                 }
             }
         }
-    }
+#endif /* PROVISIONING_FIRMWARE */
 }
 
 void reset_inactivity_timer() {
@@ -284,9 +272,6 @@ void device_auth(void)
         device_authentication_controller();
         mark_device_state(CY_UNUSED_STATE, counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
 
-        /* Setting state to DEVICE_AUTH_INFINITE_WAIT as we are waiting for CySync commands */
-        flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
-
         proof_of_work_task();
 
         lv_task_handler();
@@ -343,6 +328,7 @@ void application_init() {
     sys_flow_cntrl_u.bits.nfc_off = true;
     CY_Reset_Not_Allow(false);
     mark_device_state(CY_APP_DEVICE_TASK | CY_APP_BUSY, 0xFF);
+
 #if USE_SIMULATOR == 0
     uint32_t ret;
     clock_init();
@@ -392,16 +378,15 @@ void application_init() {
     ui_set_list_choice_cb(&mark_list_choice);
 
     SIM_USB_DEVICE_Init();
-#endif
+#endif /* USE_SIMULATOR == 0 */
+
     set_wallet_init();
     reset_flow_level();
 
-    /**
-     * Create authentication_task, with priority LV_TASK_PRIO_OFF.
-     * Based on flow_level and counter_level, authentication_task will be given appropriate priority. 
-     */
+#ifndef PROVISIONING_FIRMWARE
     CY_Reset_Not_Allow(true);
     authentication_task = lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
+#endif /* PROVISIONING_FIRMWARE */
 
     listener_task = lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
     nfc_set_device_key_id(get_perm_self_key_id());

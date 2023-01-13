@@ -241,20 +241,22 @@ void level_three_advanced_settings_controller()
         {
             reset_flow_level();
 
-            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+            if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
             {
-                flow_level.level_one = 6; /* TODO: take to get-started screen */
+                flow_level.level_one = 6; /* TODO: To be taken up with V1-UX onboarding fixes */
             }
 
             break;
         }
     #endif
 
+#ifdef PROVISIONING_FIRMWARE
         case LEVEL_THREE_START_DEVICE_PROVISION:
         {
             device_provision_controller();
             break;
         }
+#endif /* PROVISIONING_FIRMWARE */
 
         case LEVEL_THREE_START_DEVICE_AUTHENTICATION:
         {

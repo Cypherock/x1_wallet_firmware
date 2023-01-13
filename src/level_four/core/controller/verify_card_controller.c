@@ -105,23 +105,28 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_ESTABLISH_CONNECTION_BACKEND:
         {
-            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+            if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
             {
                 memset(tap_card_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
             }
             else
+#endif /* PROVISIONING_FIRMWARE */
             {
                 memcpy(tap_card_data.family_id, cyi_verify_fid, FAMILY_ID_SIZE);
             }
+            
             tap_card_data.lvl3_retry_point = VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND;
             
             while (1)
             {
-                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                 {
                     tap_card_data.acceptable_cards = 15; // Any card is acceptable
                 }
                 else
+#endif /* PROVISIONING_FIRMWARE */
                 {
                     tap_card_data.acceptable_cards = (1 << (auth_card_number - 1));
                 }
@@ -130,14 +135,15 @@ void verify_card_controller(void)
 
                 if (!tap_card_applet_connection())
                 {
-                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
-                            flow_level.level_one = 6; /* TODO: take to get-started screen */
+                            flow_level.level_one = 6; /* TODO: To be taken up with V1-UX onboarding fixes */
                         }
                     }
-
+#endif /* PROVISIONING_FIRMWARE */
                     break;
                 }
 
@@ -151,38 +157,43 @@ void verify_card_controller(void)
                     uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
                     memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
                     
-                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                     {
-                        get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
+                        (void)get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
                     }
                     else
+#endif /* PROVISIONING_FIRMWARE */
                     {
-                        get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
+                        (void)get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
                     }
 
                     transmit_data_to_app(SEND_SIGNATURE_TO_APP, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                     flow_level.level_three = VERIFY_CARD_FETCH_RANDOM_NUMBER;
                     buzzer_start(BUZZER_DURATION);
 
-                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                     {
                         instruction_scr_change_text(ui_text_remove_card_prompt, true);
                         nfc_detect_card_removal();
                         coded_card_number = tap_card_data.tapped_card;
                     }
+#endif /* PROVISIONING_FIRMWARE */
 
                     break;
                 }
                 else if (tap_card_handle_applet_errors())
                 {
-                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
-                            flow_level.level_one = 6;  /* TODO: take to get-started screen */
+                            flow_level.level_one = 6;  /* TODO: To be taken up with V1-UX onboarding fixes */
                         }
                     }
-
+#endif /* PROVISIONING_FIRMWARE */
                     break;
                 }
             }
@@ -192,58 +203,32 @@ void verify_card_controller(void)
         {
             En_command_type_t msg_type;
             uint8_t *data_array = NULL;
-            uint16_t msg_size;
-
-            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+            uint16_t msg_size = 0;
+            
+            /* Check if any data from USB was detected */
+            if (!get_usb_msg(&msg_type, &data_array, &msg_size))
             {
-                msg_size = 1;
-            }
-            else
-            {
-                msg_size = 0;
+                break;
             }
 
-            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+            if(msg_type == APP_SEND_RAND_NUM)
             {
-                get_usb_msg(&msg_type, &data_array, &msg_size);
-                if(msg_type == APP_SEND_RAND_NUM)
-                {
-                    memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
-                    flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
-                }
-                else
-                {
-                    flow_level.level_three = VERIFY_CARD_FAILED;
-                }
-                clear_message_received_data();
-            }
-
-            else
-            {
-                if (!get_usb_msg(&msg_type, &data_array, &msg_size))
-                {
-                    return;
-                }
-        
-                if (msg_type == STATUS_PACKET && data_array && data_array[0] == 0)
-                {
-                    flow_level.level_three = VERIFY_CARD_FAILED;
-                    clear_message_received_data();
-                    return;
-                }
-                else if (msg_type != APP_SEND_RAND_NUM)
-                {
-                    comm_reject_invalid_cmd();
-                    clear_message_received_data();
-                    return;
-                }
+                memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
+                flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
 
                 // Save the family id for this session; good point to save after server verification
                 memcpy(cyi_verify_fid, tap_card_data.family_id, FAMILY_ID_SIZE);
-                memcpy(signature, data_array, CARD_AUTH_RAND_NUMBER_SIZE);
-                flow_level.level_three = VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND;
-                clear_message_received_data();
             }
+            else if (msg_type == STATUS_PACKET && data_array && data_array[0] == 0)
+            {
+                flow_level.level_three = VERIFY_CARD_FAILED;
+            }
+            else
+            {
+                comm_reject_invalid_cmd();
+            }
+
+            clear_message_received_data();
 
             break;
         }
@@ -262,11 +247,13 @@ void verify_card_controller(void)
             
             while (1)
             {
-                if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                 {
                     tap_card_data.acceptable_cards = coded_card_number;
                 }
                 else
+#endif /* PROVISIONING_FIRMWARE */
                 {
                     tap_card_data.acceptable_cards = (1 << (auth_card_number - 1));
                 }
@@ -275,11 +262,13 @@ void verify_card_controller(void)
 
                 if (!tap_card_applet_connection())
                 {
-                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
+#endif /* PROVISIONING_FIRMWARE */
                     {
                         if (counter.level == LEVEL_ONE)
                         {
-                            flow_level.level_one = 6;  /* TODO: take to get-started screen */
+                            flow_level.level_one = 6;  /* TODO: To be taken up with V1-UX onboarding fixes */
                         }
                     }
 
@@ -295,25 +284,29 @@ void verify_card_controller(void)
                     uint8_t data_out[ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE];
                     memcpy(data_out, signature, ECDSA_SIGNATURE_SIZE);
 
-                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                     {
-                        get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
+                        (void)get_card_serial_number(tap_card_data.family_id, tap_card_data.acceptable_cards, data_out + ECDSA_SIGNATURE_SIZE);
                     }
                     else
+#endif /* PROVISIONING_FIRMWARE */
                     {
-                        get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
+                        (void)get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
                     }
                     
                     transmit_data_to_app(SIGNED_CHALLENGE, data_out, ECDSA_SIGNATURE_SIZE + CARD_ID_SIZE);
                     buzzer_start(BUZZER_DURATION);
 
-                    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
                     {
                         flow_level.level_three = VERIFY_CARD_FINAL_MESSAGE;
                     }
                     else
+#endif /* PROVISIONING_FIRMWARE */
                     {
-                        get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
+                        (void)get_card_serial_number(tap_card_data.family_id, 15 ^ tap_card_data.tapped_card, data_out + ECDSA_SIGNATURE_SIZE);
                         flow_level.level_three = VERIFY_CARD_AUTH_STATUS;
                     }
 
@@ -321,14 +314,19 @@ void verify_card_controller(void)
                 }
                 else if (tap_card_handle_applet_errors())
                 {
-                    if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+                    /**
+                     * If there are no errors take back to onboarding screen
+                     * TODO: Fix this assignment when V1-UX onboarding is taken up
+                     */
+                    if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
                     {
                         if (counter.level == LEVEL_ONE)
                         {
-                            flow_level.level_one = 6;  /* TODO: take to get-started screen */
+                            flow_level.level_one = 6;  /* TODO: To be taken up with V1-UX onboarding fixes */
                         }
                     }
-
+#endif /* PROVISIONING_FIRMWARE */
                     break;
                 }
             }
@@ -336,11 +334,6 @@ void verify_card_controller(void)
             break;
         }
 
-        /** These states are only called if training is NOT complete:
-         * @VERIFY_CARD_AUTH_STATUS
-         * @VERIFY_CARD_PAIR_FRONTEND
-         * @VERIFY_CARD_PAIR_BACKEND
-         */
         case VERIFY_CARD_AUTH_STATUS:
         {
             En_command_type_t cmd_type;
@@ -378,7 +371,7 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_FINAL_MESSAGE:
         {
-            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+            if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
             {
                 En_command_type_t msg_type;
                 uint8_t *data_array = NULL;
@@ -402,7 +395,7 @@ void verify_card_controller(void)
                 instruction_scr_destructor();
                 comm_process_complete();
                 reset_flow_level();
-                flow_level.level_one = 7; /* TODO: take to get-started screen */
+                flow_level.level_one = 7; /* TODO: To be taken up with V1-UX onboarding fixes */
             }
 
             break;
@@ -428,10 +421,10 @@ void verify_card_controller(void)
 
         case VERIFY_CARD_FAILED:
         {
-            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+            if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
             {
                 comm_process_complete();
-                flow_level.level_one = 6; /* TODO: take to get-started screen */
+                flow_level.level_one = 6; /* TODO: To be taken up with V1-UX onboarding fixes */
             }
             
             reset_flow_level();
@@ -484,7 +477,7 @@ static void _tap_card_backend(uint8_t card_number)
         {
             if (counter.level == LEVEL_ONE)
             {
-                flow_level.level_one = 6;   /* TODO: take to get-started screen */
+                flow_level.level_one = 6;   /* TODO: To be taken up with V1-UX onboarding fixes */
             }
             break;
         }
@@ -521,7 +514,7 @@ static void _tap_card_backend(uint8_t card_number)
         {
             if (counter.level == LEVEL_ONE)
             {
-                flow_level.level_one = 6;   /* TODO: take to get-started screen */
+                flow_level.level_one = 6;   /* TODO: To be taken up with V1-UX onboarding fixes */
             }
             
             break;
@@ -606,13 +599,5 @@ static uint8_t get_card_serial_number(uint8_t family_id[], uint8_t cards_state, 
 
     memcpy(serial_number_out + FAMILY_ID_SIZE, &card_number, 1);
 
-    if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
-    {
-        return CARD_ID_SIZE;
-    }
-    else
-    {
-        return FAMILY_ID_SIZE + 1;
-    }
-
+    return CARD_ID_SIZE;
 }

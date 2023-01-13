@@ -120,7 +120,7 @@ void level_two_controller_b()
                 return;
             }
 
-            if (IS_TRAINING_COMPLETE == TRAINING_INCOMPLETE)
+            if (TRAINING_INCOMPLETE == IS_TRAINING_COMPLETE)
             {
                 if(flow_level.level_two == LEVEL_THREE_SYNC_WALLET_FLOW)
                 {
@@ -139,7 +139,7 @@ void level_two_controller_b()
                 return;
             }
 #endif
-            if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+            if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
             {
                 if (flow_level.level_two == LEVEL_THREE_PAIR_CARD)
                 {

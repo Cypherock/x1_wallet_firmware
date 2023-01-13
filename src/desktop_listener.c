@@ -1,0 +1,702 @@
+/**
+ * @file    controller_main.c
+ * @author  Cypherock X1 Team
+ * @brief   Main controller.
+ *          This file defines global variables and functions used by other flows.
+ * @details
+ * This is main file for controller module.
+ *
+ * Controller module is divided into levels which are traversed recursively.
+ *
+ * Each state of the device is uniquely represented by two variables counter
+ * flow_level.
+ *
+ * Each level has a task file and a controller file. The task file contains
+ * task such as showing a particular screen. The controller file decides which
+ * task it to be executed next. Sometimes the controller file needs to take decision
+ * based on the input by user as to which screen needs to be shown next.
+ *
+ * The change of global Flow_level and Counter variable must be done in controller files
+ * if possible.
+ *
+ * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * 
+ ******************************************************************************
+ * @attention
+ *
+ * (c) Copyright 2022 by HODL TECH PTE LTD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject
+ * to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *  
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  
+ *  
+ * "Commons Clause" License Condition v1.0
+ *  
+ * The Software is provided to you by the Licensor under the License,
+ * as defined below, subject to the following condition.
+ *  
+ * Without limiting other conditions in the License, the grant of
+ * rights under the License will not include, and the License does not
+ * grant to you, the right to Sell the Software.
+ *  
+ * For purposes of the foregoing, "Sell" means practicing any or all
+ * of the rights granted to you under the License to provide to third
+ * parties, for a fee or other consideration (including without
+ * limitation fees for hosting or consulting/ support services related
+ * to the Software), a product or service whose value derives, entirely
+ * or substantially, from the functionality of the Software. Any license
+ * notice or attribution required by the License must also include
+ * this Commons Clause License Condition notice.
+ *  
+ * Software: All X1Wallet associated files.
+ * License: MIT
+ * Licensor: HODL TECH PTE LTD
+ *
+ ******************************************************************************
+ */
+
+/**
+ * @defgroup controller_main The event handler
+ * @brief This the heart of event handling logic. All the reactions (handling) to an user action (events)
+ * is done via respective controllers.
+ * @{
+ */
+
+#include <string.h>
+#include "application_startup.h"
+#include "btc.h"
+#include "chacha20poly1305.h"
+#include "communication.h"
+#include "constant_texts.h"
+#include "controller_level_four.h"
+#include "controller_level_one.h"
+#include "controller_main.h"
+#include "cryptoauthlib.h"
+#include "global_variables.h"
+#include "near.h"
+#include "rfc7539.h"
+#include "sca_fi.h"
+#include "ui_instruction.h"
+
+/**
+ * @brief Checks the state of wallet for the wallet id passed before loading the into Wallet instance.
+ * @details The functions looks for an operational wallet instance with the requested wallet id. If
+ * the wallet is found to be in a non-operational state, the function returns false with an appropriate
+ * response wrapped in the WALLET_DOES_NOT_EXISTS command sent to the desktop app.<br/>
+ * Payload transmitted along with command type (WALLET_DOES_NOT_EXISTS) data byte is the rejection reason
+ * - 0x00 - No wallets found
+ * - 0x01 - Wallet not verified/locked
+ * - 0x02 - Wallet not present
+ * And a rejection with command type WALLET_IS_LOCKED
+ * 
+ * @param data_array    Wallet id of the wallet
+ *
+ * @return bool Indicates the status for the search
+ * @retval true if an operational wallet is found
+ * @retval false otherwise
+ *
+ * @see wallet, WALLET_DOES_NOT_EXISTS, get_wallet_count(), is_wallet_partial(), get_wallet_id(), get_wallet_state(),
+ * WALLET_IS_LOCKED, VALID_WALLET, is_wallet_locked()
+ * @since v1.0.0
+ *
+ * @note
+ */
+static bool wallet_selector(uint8_t *data_array)
+{
+    uint8_t wallet_id[WALLET_ID_SIZE];
+    uint16_t offset = 0;
+    uint8_t number_of_options = get_wallet_count();
+
+    // No wallets found on device
+    if(number_of_options == 0)
+    {
+        comm_reject_request(WALLET_DOES_NOT_EXISTS, 0);
+        return false;
+    }
+
+    memcpy(wallet_id, data_array + offset, WALLET_ID_SIZE);
+    offset += WALLET_ID_SIZE;
+
+    uint8_t walletIndex = 0;
+
+    for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+        if (memcmp(wallet_id, get_wallet_id(walletIndex), WALLET_ID_SIZE) == 0) {
+            if (get_wallet_state(walletIndex) == VALID_WALLET) {
+                memcpy(wallet.wallet_name, get_wallet_name(walletIndex), NAME_SIZE);
+                wallet.wallet_info = get_wallet_info(walletIndex);
+                if (is_wallet_partial(walletIndex)) {
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 1);
+                    return false;
+                }
+                // if wallet is locked
+                if (is_wallet_locked(walletIndex)) {
+                    comm_reject_request(WALLET_IS_LOCKED, 0);
+                    return false;
+                }
+                // Found a valid wallet
+                return true;
+
+            } else {
+                // Wallet is unverified 
+                comm_reject_request(WALLET_DOES_NOT_EXISTS, 1);
+                return false;
+            }
+        }
+    }
+
+    comm_reject_request(WALLET_DOES_NOT_EXISTS, 2);
+    return false;
+}
+
+void _success_listener(lv_task_t *task) {
+    uint8_t *msg     = NULL;
+    uint16_t msg_len = 1;
+    if (get_usb_msg_by_cmd_type(STATUS_PACKET, &msg, &msg_len)) {
+        switch (msg[0]) {
+            case STATUS_CMD_ABORT:
+                mark_error_screen(ui_text_operation_has_been_cancelled);
+                reset_flow_level();
+                lv_task_del(success_task);
+                lv_task_del(timeout_task);
+                break;
+
+            case STATUS_CMD_SUCCESS:
+                mark_event_over();
+                lv_task_del(success_task);
+                lv_task_del(timeout_task);
+                break;
+            default:
+                break;
+        }
+        clear_message_received_data();
+    }
+}
+
+void desktop_listener_task(lv_task_t *data) {
+    En_command_type_t command;
+    uint8_t *data_array = NULL;
+    uint16_t msg_size   = 0;
+    if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
+        switch (command) {
+#ifndef PROVISIONING_FIRMWARE
+            case START_EXPORT_WALLET: {
+                CY_Reset_Not_Allow(false);
+                // Using these two variable for temporarily saving new flow and controller variables
+                if (get_wallet_count() == 0) {
+                    // No wallets present on device
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 0);
+                } else if (get_valid_wallet_count() == 0) {
+                    // No valid wallets found
+                    comm_reject_request(WALLET_DOES_NOT_EXISTS, 3);
+                } else {
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text), "%s",
+                             ui_text_do_you_want_import_wallet_to_desktop);
+                    flow_level.show_desktop_start_screen = true;
+                    flow_level.level_two                 = LEVEL_THREE_EXPORT_TO_DESKTOP;
+                }
+                clear_message_received_data();
+
+            } break;
+#ifdef DEV_BUILD
+            case START_CARD_UPGRADE: {
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text), "%s",
+                         ui_text_start_card_update);
+                flow_level.level_one                 = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.show_desktop_start_screen = true;
+                flow_level.level_two                 = LEVEL_THREE_CARD_UPGRADE;
+                clear_message_received_data();
+            } break;
+#endif /* DEV_BUILD */
+            case ADD_COIN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset      = WALLET_ID_SIZE;
+                    add_coin_data.resync = data_array[offset++] == 1;
+                    if ((add_coin_data.number_of_coins = data_array[offset++]) < 1) {
+                        comm_reject_invalid_cmd();
+                        clear_message_received_data();
+                        return;
+                    }
+                    flow_level.show_desktop_start_screen = true;
+                    flow_level.level_two                 = LEVEL_THREE_ADD_COIN;
+
+                    uint8_t coinIndex = 0;
+
+                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
+                        add_coin_data.coin_indexes[coinIndex] =
+                            U32_READ_BE_ARRAY(data_array + offset);
+                        offset += INDEX_SIZE;
+                    }
+
+                    coinIndex = 0;
+
+                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
+                        add_coin_data.network_chain_ids[coinIndex] = data_array[offset];
+                        offset += 1;
+                    }
+
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text),
+                             (add_coin_data.resync ? ui_text_do_you_want_to_resync_coins_to
+                                                   : ui_text_do_you_want_to_add_coins_to),
+                             wallet.wallet_name);
+                }
+                clear_message_received_data();
+            } break;
+
+            case SEND_TXN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset = WALLET_ID_SIZE;
+                    uint32_t coin_index;
+                    if (byte_array_to_txn_metadata(
+                            data_array + offset, msg_size - offset,
+                            &var_send_transaction_data.transaction_metadata) == -1) {
+                        clear_message_received_data();
+                        comm_reject_invalid_cmd();
+                        return;
+                    }
+                    flow_level.show_desktop_start_screen                          = true;
+                    var_send_transaction_data.transaction_confirmation_list_index = 0;
+                    flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+
+                    coin_index = BYTE_ARRAY_TO_UINT32(
+                        var_send_transaction_data.transaction_metadata.coin_index);
+
+                    if (coin_index == ETHEREUM) {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_eth_send_transaction_with,
+                            var_send_transaction_data.transaction_metadata.token_name,
+                            wallet.wallet_name,
+                            get_coin_name(
+                                coin_index,
+                                var_send_transaction_data.transaction_metadata.network_chain_id));
+                    } else if (coin_index == NEAR_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
+                        if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
+                            snprintf(flow_level.confirmation_screen_text,
+                                     sizeof(flow_level.confirmation_screen_text),
+                                     ui_text_add_account_with_wallet,
+                                     get_coin_name(coin_index,
+                                                   var_send_transaction_data.transaction_metadata
+                                                       .network_chain_id),
+                                     wallet.wallet_name);
+                        } else {
+                            snprintf(flow_level.confirmation_screen_text,
+                                     sizeof(flow_level.confirmation_screen_text),
+                                     ui_text_send_transaction_with,
+                                     get_coin_name(coin_index,
+                                                   var_send_transaction_data.transaction_metadata
+                                                       .network_chain_id),
+                                     wallet.wallet_name);
+                        }
+                    } else if (coin_index == SOLANA_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_send_transaction_with,
+                            get_coin_name(
+                                coin_index,
+                                var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
+                    } else {
+                        flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_send_transaction_with,
+                            get_coin_name(
+                                coin_index,
+                                var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
+                    }
+                    if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
+                        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+                        reset_flow_level();
+                    }
+                }
+                clear_message_received_data();
+            } break;
+
+            case RECV_TXN_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+
+                    int64_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,
+                                                                 data_array, msg_size);
+
+                    if (offset == -1) {
+                        comm_reject_invalid_cmd();
+                        clear_message_received_data();
+                        return;
+                    }
+                    flow_level.show_desktop_start_screen = true;
+
+                    uint32_t coin_index = BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
+
+                    if (coin_index == NEAR_COIN_INDEX &&
+                        receive_transaction_data.near_account_type == 1) {
+                        memcpy(&receive_transaction_data.near_registered_account,
+                               data_array + offset, 65);
+                    }
+
+                    if (coin_index == ETHEREUM) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_eth_recv_transaction_with, receive_transaction_data.token_name,
+                            wallet.wallet_name,
+                            get_coin_name(coin_index, receive_transaction_data.network_chain_id));
+                    } else if (coin_index == NEAR_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_recv_transaction_with,
+                            get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                            wallet.wallet_name);
+                    } else if (coin_index == SOLANA_COIN_INDEX) {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_recv_transaction_with,
+                            get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                            wallet.wallet_name);
+                    } else {
+                        flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
+                        snprintf(
+                            flow_level.confirmation_screen_text,
+                            sizeof(flow_level.confirmation_screen_text),
+                            ui_text_recv_transaction_with,
+                            get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                            wallet.wallet_name);
+                    }
+                }
+                clear_message_received_data();
+            } break;
+#ifdef DEV_BUILD
+            case EXPORT_ALL: {
+                const Flash_Wallet *flash_wallet;
+                uint8_t allWalletsID[(WALLET_ID_SIZE + NAME_SIZE + 1) * MAX_WALLETS_ALLOWED];
+                memset(allWalletsID, 0, (WALLET_ID_SIZE + NAME_SIZE + 01) * MAX_WALLETS_ALLOWED);
+                uint8_t walletCounter      = 0;
+                uint8_t walletsAdded       = 0;
+                uint8_t allWalletsIDOffset = 1;
+                for (; walletCounter < MAX_WALLETS_ALLOWED; walletCounter++) {
+                    flash_wallet = get_wallet_by_index(walletCounter);
+                    ASSERT(flash_wallet != NULL);
+                    if (flash_wallet->state == VALID_WALLET) {
+                        memcpy(allWalletsID + allWalletsIDOffset, flash_wallet->wallet_name,
+                               NAME_SIZE);
+                        allWalletsIDOffset += NAME_SIZE;
+                        memcpy(allWalletsID + allWalletsIDOffset, &flash_wallet->wallet_info, 1);
+                        allWalletsIDOffset += 1;
+                        memcpy(allWalletsID + allWalletsIDOffset, flash_wallet->wallet_id,
+                               WALLET_ID_SIZE);
+                        allWalletsIDOffset += WALLET_ID_SIZE;
+                        walletsAdded++;
+                    }
+                }
+                memset(allWalletsID + 0, walletsAdded, 1);
+                clear_message_received_data();
+                transmit_data_to_app(EXPORT_ALL_SEND, allWalletsID, allWalletsIDOffset);
+                return;
+            } break;
+#endif /* DEV_BUILD */
+#endif /* PROVISIONING_FIRMWARE */
+
+            case START_CARD_AUTH: {
+#ifndef PROVISIONING_FIRMWARE
+                /**
+                 * If we are compiling MAIN_FIRMWARE, then the device will be able to reach
+                 * card authentication flows by itself
+                 */
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text), "%s",
+                         ui_text_start_verification_of_card);
+                flow_level.show_desktop_start_screen = true;
+#else
+                /** 
+                 * If we are compiling PROVISIONING_FIRMWARE, then we need to set 
+                 * counter.level, flow_level.level_three so that it reaches
+                 * card authentication flow
+                 */
+                CY_Set_External_Triggered(true);
+                reset_flow_level();
+                lv_obj_clean(lv_scr_act());
+                counter.level          = LEVEL_THREE;
+                auth_card_number       = data_array[0];
+                flow_level.level_three = VERIFY_CARD_START_MESSAGE;
+#endif /* PROVISIONING_FIRMWARE */
+
+                flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
+                clear_message_received_data();
+
+                break;
+            }
+
+            case START_DEVICE_AUTHENTICATION: {
+                uint32_t isDesktopInputValid = SEC_FALSE;
+                CY_Reset_Not_Allow(false);
+
+#ifdef PROVISIONING_FIRMWARE
+                CY_Set_External_Triggered(true);
+#endif /* PROVISIONING_FIRMWARE */
+
+                switch (data_array[0]) {
+                    case 1: {
+#ifdef PROVISIONING_FIRMWARE
+                        lv_obj_clean(lv_scr_act());
+#endif /* PROVISIONING_FIRMWARE */
+
+                        flow_level.level_three = SIGN_SERIAL_NUMBER;
+                        isDesktopInputValid    = SEC_TRUE;
+                        break;
+                    }
+                    case 2: {
+                        memcpy(&challenge_no, &data_array[1], 32);
+                        flow_level.level_three = SIGN_CHALLENGE;
+                        isDesktopInputValid    = SEC_TRUE;
+                        break;
+                    }
+                    case 3: {
+                        flow_level.level_three = AUTHENTICATION_SUCCESS;
+                        isDesktopInputValid    = SEC_TRUE;
+                        break;
+                    }
+                    case 4: {
+                        flow_level.level_three = AUTHENTICATION_UNSUCCESSFUL;
+                        isDesktopInputValid    = SEC_TRUE;
+                        break;
+                    }
+                    default: {
+#ifdef PROVISIONING_FIRMWARE
+                        cy_exit_flow();
+#endif /* PROVISIONING_FIRMWARE */
+                        isDesktopInputValid = SEC_FALSE;
+                        break;
+                    }
+                }
+
+                /* Ensure if isDesktopInputValid is SEC_TRUE, otherwise desktop command is not valid */
+                if (SEC_TRUE != isDesktopInputValid) {
+                    break;
+                }
+
+#ifndef PROVISIONING_FIRMWARE
+                /**
+                 * If we are compiling MAIN_FIRMWARE, then the device will be able to reach
+                 * device authentication flows by itself
+                 */
+                if (main_app_ready) {
+                    snprintf(flow_level.confirmation_screen_text,
+                             sizeof(flow_level.confirmation_screen_text), "%s",
+                             ui_text_start_device_verification);
+                    flow_level.show_desktop_start_screen = true;
+                }
+
+                device_auth_flag = 1;
+#else
+                /** 
+                 * If we are compiling PROVISIONING_FIRMWARE, then we need to set 
+                 * counter.level, flow_level.level_one, flow_level.level_two so that it reaches
+                 * device authentication flow
+                 */
+                counter.level           = LEVEL_THREE;
+                flow_level.level_one    = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.level_two    = LEVEL_THREE_START_DEVICE_AUTHENTICATION;
+                counter.next_event_flag = true;
+                lv_task_set_prio(listener_task,
+                                 LV_TASK_PRIO_OFF);             // Tasks will now not run
+#endif /* PROVISIONING_FIRMWARE */
+
+                clear_message_received_data();
+                break;
+            }
+
+            case START_FIRMWARE_UPGRADE: {
+                CY_Reset_Not_Allow(false);
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text), ui_text_start_firmware_update,
+                         data_array[0], data_array[1],
+                         (uint16_t)(data_array[3] | ((uint16_t)data_array[2] << 8)));
+                flow_level.level_one                 = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.show_desktop_start_screen = true;
+                flow_level.level_two                 = LEVEL_THREE_RESET_DEVICE_CONFIRM;
+                clear_message_received_data();
+                break;
+            }
+
+            case DEVICE_INFO: {
+                clear_message_received_data();
+                uint8_t device_info[37] = {0};
+
+                if (get_device_serial() == SUCCESS) {
+                    memcpy(device_info + 1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+                } else {
+                    LOG_CRITICAL("err xx4: %d", atecc_data.status);
+                }
+
+                device_info[0] = is_device_authenticated() ? 1 : 0;
+                uint32_t fwVer = get_fwVer();
+
+                fwVer = U32_SWAP_ENDIANNESS(fwVer);
+                memcpy(device_info + 33, &fwVer, sizeof(fwVer));
+                transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
+
+                break;
+            }
+
+#ifdef ALLOW_LOG_EXPORT
+            case APP_LOG_DATA_SEND: {
+#ifndef PROVISIONING_FIRMWARE
+                if (!is_logging_enabled() && !CY_is_app_restricted()) {
+                    clear_message_received_data();
+                    comm_reject_request(APP_LOG_DATA_REJECT, 2);
+                    break;
+                }
+#endif /* PROVISIONING_FIRMWARE */
+                CY_Reset_Not_Allow(false);
+                flow_level.level_one                 = LEVEL_TWO_ADVANCED_SETTINGS;
+                flow_level.level_two                 = LEVEL_THREE_FETCH_LOGS_INIT;
+                counter.level                        = LEVEL_THREE;
+                flow_level.show_desktop_start_screen = true;
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text), "%s",
+                         ui_text_send_logs_prompt);
+
+                clear_message_received_data();
+                break;
+            }
+#endif /* ALLOW_LOG_EXPORT */
+
+#ifdef PROVISIONING_FIRMWARE
+            case START_DEVICE_PROVISION:  //81,02 success and external keys sent to device, 81,03 failure
+            {
+                CY_Set_External_Triggered(true);
+                switch (data_array[0]) {
+                    case 1: {
+                        if (msg_size < 5)
+                            break;
+                        lv_obj_clean(lv_scr_act());
+                        memcpy(provision_date, data_array + 1, 4);
+                        counter.level           = LEVEL_THREE;
+                        flow_level.level_one    = LEVEL_TWO_ADVANCED_SETTINGS;
+                        flow_level.level_two    = LEVEL_THREE_START_DEVICE_PROVISION;
+                        flow_level.level_three  = data_array[0];
+                        counter.next_event_flag = true;
+                        lv_task_set_prio(listener_task,
+                                         LV_TASK_PRIO_OFF);  // Tasks will now not run
+                    } break;
+                    case 2:
+                        if (msg_size < 183)
+                            break;
+                        memcpy(&provision_keys_data, data_array + 1, sizeof(Provision_Data_struct));
+                    case 3:
+                        counter.level           = LEVEL_THREE;
+                        flow_level.level_one    = LEVEL_TWO_ADVANCED_SETTINGS;
+                        flow_level.level_two    = LEVEL_THREE_START_DEVICE_PROVISION;
+                        flow_level.level_three  = data_array[0];
+                        counter.next_event_flag = true;
+                        lv_task_set_prio(listener_task,
+                                         LV_TASK_PRIO_OFF);  // Tasks will now not run
+                        break;
+
+                    default:
+                        cy_exit_flow();
+                }
+                clear_message_received_data();
+                break;
+            }
+#endif /* PROVISIONING_FIRMWARE */
+
+            default: {
+                clear_message_received_data();
+                comm_reject_invalid_cmd();
+                break;
+            }
+        }
+
+        if (flow_level.show_desktop_start_screen) {
+            CY_Set_External_Triggered(true);
+            counter.level = LEVEL_THREE;
+            clear_message_received_data();
+            counter.next_event_flag = true;
+            lv_obj_clean(lv_scr_act());
+
+#ifndef PROVISIONING_FIRMWARE
+            if (CY_is_app_restricted() == true) {
+                lv_task_set_prio(authentication_task,
+                                 LV_TASK_PRIO_OFF);  // Tasks will now not run
+            } else {
+                lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);  // Tasks will now not run
+            }
+#else
+            lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);  // Tasks will now not run
+#endif /* PROVISIONING_FIRMWARE */
+        }
+    }
+}
+
+#ifndef PROVISIONING_FIRMWARE
+/**
+ * @brief wrapper listener for desktop commands while authentication is not complete
+ * @details During authentication only a few select commands are allowed to be started i.e.
+ *          Device authentication, firmware update, device info, logger
+ * 
+ * @param task lv task calling __authentication listener
+ */
+void __authentication_listener(lv_task_t *task) {
+    En_command_type_t command;
+    uint8_t *data_array = NULL;
+    uint16_t msg_size   = 0;
+    if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
+        switch (command) {
+            case START_FIRMWARE_UPGRADE:
+            case APP_LOG_DATA_SEND:
+            case START_DEVICE_AUTHENTICATION:
+            case DEVICE_INFO:
+                desktop_listener_task(listener_task);
+                if (device_auth_flag == true) {
+                    //skip confirmation screen for device auth in case of restricted mode
+                    flow_level.show_desktop_start_screen = false;
+                    memset(flow_level.confirmation_screen_text, 0,
+                           sizeof(flow_level.confirmation_screen_text));
+                }
+                break;
+            default:
+                comm_reject_invalid_cmd();
+                clear_message_received_data();
+                break;
+        }
+    }
+}
+#endif /* PROVISIONING_FIRMWARE */

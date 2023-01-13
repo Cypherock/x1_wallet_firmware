@@ -104,10 +104,13 @@ typedef enum commandType {
 
 
     WALLET_DOES_NOT_EXISTS_ON_CARD = 81,    ///< Prompt by device when wallet is not found on card
-    
+
+#ifdef PROVISIONING_FIRMWARE
     START_DEVICE_PROVISION = 84,            ///< Request by desktop(provisioning tool) for provisioning device
     ADD_DEVICE_PROVISION = 82,              ///< Response by device(initial firmware) if provisioning started
     CONFIRM_PROVISION = 80,                 ///< Response by device(initial firmwaer) after provisioning complete/failed
+    START_CARD_PAIRING = 100,
+#endif /* PROVISIONING_FIRMWARE */
 
     START_DEVICE_AUTHENTICATION = 83,       ///< Request by device to start device authentication
  

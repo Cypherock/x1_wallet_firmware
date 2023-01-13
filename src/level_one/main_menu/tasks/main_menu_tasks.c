@@ -1,8 +1,8 @@
 /**
- * @file    device_authentication_task.c
+ * @file    main_menu_tasks.c
  * @author  Cypherock X1 Team
- * @brief   Device authentication task.
- *          This file contains the implementation of the device authentication task.
+ * @brief   Level one task (main).
+ *          Handles display updates for level one tasks of the main application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -55,35 +55,65 @@
  *
  ******************************************************************************
  */
-#include "constant_texts.h"
-#include "controller_level_four.h"
-#include "tasks_level_four.h"
+#include "apdu.h"
+#include "application_startup.h"
+#include "tasks_tap_cards.h"
+#include "ui_confirmation.h"
 #include "ui_delay.h"
+#include "ui_instruction.h"
+#include "ui_menu.h"
+#include "ui_message.h"
+#include "ui_multi_instruction.h"
 
-void task_device_authentication(void)
-{
-    switch (flow_level.level_three)
-    {
-        case SIGN_SERIAL_NUMBER:
-        {
-            ui_text_slideshow_init(ui_text_device_authenticating, 5, 500, false);
-            mark_event_over();
-            break;
-        }
-#ifdef PROVISIONING_FIRMWARE
-        case DEVICE_AUTH_INFINITE_WAIT:
-#endif /* PROVISIONING_FIRMWARE */
-        case SIGN_CHALLENGE:
-        case AUTHENTICATION_SUCCESS:
-        case AUTHENTICATION_UNSUCCESSFUL:
-        {
-            mark_event_over();
-            break;
-        }
+extern lv_task_t *listener_task;
 
-        default: 
-        {
-            break;
+void main_menu_tasks(void) {
+    uint8_t number_of_options = get_wallet_count();
+    LOG_INFO("wallet count %d", number_of_options);
+
+    // create list for chooses
+    char *choices[MAX_LEN_OF_MENU_OPTIONS];
+
+    uint8_t mainMenuIndex = 0;
+    uint8_t walletIndex   = 0;
+
+    for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+        if (get_wallet_state(walletIndex) == VALID_WALLET ||
+            get_wallet_state(walletIndex) == UNVERIFIED_VALID_WALLET ||
+            get_wallet_state(walletIndex) == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
+            choices[mainMenuIndex] = (char *)get_wallet_name(walletIndex);
+            mainMenuIndex++;
         }
     }
+
+    if (mainMenuIndex != number_of_options) {
+        number_of_options = mainMenuIndex;
+    }
+
+    number_of_options += NUMBER_OF_OPTIONS_MAIN_MENU;
+
+    uint8_t walletMenuOptionIndex = 0;
+
+    //initialise walletMenuOptionIndex to 0 if wallet limit is exceeded
+    if (number_of_options > 5) {
+        walletMenuOptionIndex = 2;
+    } else {
+        walletMenuOptionIndex = 1;
+    }
+
+    //check if wallet limit is exceeded or not
+    if (number_of_options > 5) {
+        number_of_options = 5;
+    }
+    // fill other options
+    for (; walletMenuOptionIndex <= NUMBER_OF_OPTIONS_MAIN_MENU; walletMenuOptionIndex++) {
+        choices[mainMenuIndex] = (char *)ui_text_options_main_menu[walletMenuOptionIndex];
+        mainMenuIndex++;
+    }
+
+    menu_init((const char **)choices, number_of_options, ui_text_options_main_menu[0], false);
+    lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
+    CY_set_app_restricted(false);
+    CY_Reset_Not_Allow(true);
+    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 }

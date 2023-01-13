@@ -95,12 +95,13 @@ uint8_t provision_date[4];
 Provision_Data_struct provision_keys_data;
 
 extern lv_task_t* listener_task;
-static lv_task_t *timeout_task;
 
+#ifdef PROVISIONING_FIRMWARE
+static lv_task_t *timeout_task;
 static void __timeout_listener(void);
 static void lock_all_slots(void);
+#endif /* PROVISIONING_FIRMWARE */
 
-/* TODO: Helper functions should not be here */
 uint32_t get_device_serial(void)
 {
     atecc_data.retries = DEFAULT_ATECC_RETRIES;
@@ -185,6 +186,7 @@ provision_status_t check_provision_status(void)
     }
 }
 
+#ifdef PROVISIONING_FIRMWARE
 void device_provision_controller(void)
 {
     switch (flow_level.level_three)
@@ -527,3 +529,4 @@ static void __timeout_listener(void)
     flow_level.level_one = 6;   // on command not received take to get-started screen /* TODO: take to get-started screen */
     lv_task_del(timeout_task);
 }
+#endif

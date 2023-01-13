@@ -16,23 +16,29 @@ IF (DEV_SWITCH)
 ENDIF(DEV_SWITCH)
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
-    add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
+    add_compile_definitions()
     target_include_directories(${EXECUTABLE} PRIVATE
             main/config/
             )
-elseif("${FIRMWARE_TYPE}" STREQUAL "Initial")
-    add_compile_definitions(X1WALLET_INITIAL=1 X1WALLET_MAIN=0)
+elseif("${FIRMWARE_TYPE}" STREQUAL "Provisioning")
+    add_compile_definitions(PROVISIONING_FIRMWARE)
     target_include_directories(${EXECUTABLE} PRIVATE
             initial/config/
             )
 else()
-    message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
+    message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Provisioning")
 endif()
 target_include_directories(${EXECUTABLE} PRIVATE
         src/
 
-        src/level_one/controller
-        src/level_one/tasks
+        src/level_one/core/controller
+        src/level_one/core/tasks
+        
+        src/level_one/main_menu/controller
+        src/level_one/main_menu/tasks
+        src/level_one/onboarding/controller
+        src/level_one/onboarding/tasks
+
         src/level_two/controller
         src/level_two/tasks
         src/level_three/add_wallet/controller
@@ -86,6 +92,9 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/lvgl/src/lv_misc
         common/lvgl/src/lv_objx
         common/lvgl/src/lv_themes
+
+        common/storage
+        common/onboarding
 
         # Device
         stm32-hal

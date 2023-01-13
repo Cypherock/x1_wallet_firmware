@@ -66,27 +66,32 @@ extern Flow_level flow_level;
 extern Counter counter;
 extern Wallet wallet;
 
+#ifndef PROVISIONING_FIRMWARE
 static lv_task_t *random_number_task;
-static lv_task_t *timeout_task;
-
-static void __timeout_listener(void);
-static void __desktop_listener(void);
+static lv_task_t *session_timeout_task;
+static void __timeout_listener(lv_task_t *task);
+static void __desktop_listener(lv_task_t *task);
+#endif /* PROVISIONING_FIRMWARE */
 
 extern uint8_t auth_card_number;
 
 void verify_card_task(void)
 {
+#ifndef PROVISIONING_FIRMWARE
 	char display[40];
+#endif /* PROVISIONING_FIRMWARE */
 	switch(flow_level.level_three)
 	{
 		case VERIFY_CARD_START_MESSAGE:
 		{
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
 				instruction_scr_init(display, ui_text_tap_1_2_cards);
 			}
 			else
+#endif /* PROVISIONING_FIRMWARE */
 			{
 				char str[50], heading[50];
 				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
@@ -100,7 +105,8 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
 		{
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				instruction_scr_destructor();
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
@@ -108,6 +114,7 @@ void verify_card_task(void)
 				mark_event_over();
 			}
 			else
+#endif /* PROVISIONING_FIRMWARE */
 			{
 				char str[50], heading[50];
 				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 3);
@@ -131,14 +138,16 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_FETCH_RANDOM_NUMBER:
 		{
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
 				lv_task_ready(random_number_task);
-				timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_MID, NULL);
-				lv_task_once(timeout_task);
+				session_timeout_task = lv_task_create(__timeout_listener, 10000, LV_TASK_PRIO_MID, NULL);
+				lv_task_once(session_timeout_task);
 			}
 			else
+#endif /* PROVISIONING_FIRMWARE */
 			{
 				mark_event_over();
 			}
@@ -148,13 +157,15 @@ void verify_card_task(void)
 
 		case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
 		{
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				instruction_scr_destructor();
 				snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
 				instruction_scr_init(display, ui_text_tap_1_2_cards);
 			}
 			else
+#endif /* PROVISIONING_FIRMWARE */
 			{
 				char str[50], heading[50];
 				snprintf(str, sizeof(str), ui_text_place_card_wait_for_beep, 2);
@@ -175,11 +186,6 @@ void verify_card_task(void)
 			break;
 		}
 
-        /** These states are only called if training is NOT complete:
-         * @VERIFY_CARD_AUTH_STATUS
-         * @VERIFY_CARD_PAIR_FRONTEND
-         * @VERIFY_CARD_PAIR_BACKEND
-         */
 		case VERIFY_CARD_AUTH_STATUS:
 		{
 			mark_event_over();
@@ -204,16 +210,19 @@ void verify_card_task(void)
 			mark_event_over();
 			break;
 		}
+
 		case VERIFY_CARD_FINAL_MESSAGE:
 		{
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				random_number_task = lv_task_create(__desktop_listener, 80, LV_TASK_PRIO_MID, NULL);
 				lv_task_ready(random_number_task);
-				timeout_task = lv_task_create(__timeout_listener, 1000, LV_TASK_PRIO_MID, NULL);
-				lv_task_once(timeout_task);
+				session_timeout_task = lv_task_create(__timeout_listener, 1000, LV_TASK_PRIO_MID, NULL);
+				lv_task_once(session_timeout_task);
 			}
 			else
+#endif /* PROVISIONING_FIRMWARE */
 			{
 				mark_event_over();
 			}
@@ -237,10 +246,12 @@ void verify_card_task(void)
 			instruction_scr_destructor();
 			delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
 
-			if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+			if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
 			{
 				CY_Reset_Not_Allow(true);
 			}
+#endif /* PROVISIONING_FIRMWARE */
 
 			break;
 		}
@@ -252,26 +263,28 @@ void verify_card_task(void)
 	}
 }
 
-static void __desktop_listener(void)
+#ifndef PROVISIONING_FIRMWARE
+static void __desktop_listener(lv_task_t *task)
 {
     if (get_usb_msg_by_cmd_type(APP_SEND_RAND_NUM, NULL, NULL)) {
-        lv_task_del(timeout_task);
+        lv_task_del(session_timeout_task);
         lv_task_del(random_number_task);            
         mark_event_over();
     }
 
     if (get_usb_msg_by_cmd_type(STATUS_PACKET, NULL, NULL)) {
-        lv_task_del(timeout_task);
+        lv_task_del(session_timeout_task);
         lv_task_del(random_number_task);
         mark_event_over();
     }
 }
 
-static void __timeout_listener(void)
+static void __timeout_listener(lv_task_t *task)
 {
     mark_error_screen(ui_text_no_response_from_desktop);
     instruction_scr_destructor();
     reset_flow_level();
     lv_task_del(random_number_task);
-    lv_task_del(timeout_task);
+    lv_task_del(session_timeout_task);
 }
+#endif /* PROVISIONING_FIRMWARE */

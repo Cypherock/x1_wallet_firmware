@@ -1,8 +1,9 @@
 /**
- * @file    device_authentication_task.c
+ * @file    onboarding_controller.c
  * @author  Cypherock X1 Team
- * @brief   Device authentication task.
- *          This file contains the implementation of the device authentication task.
+ * @brief   Level one next controller (main).
+ *          Handles post event (only next events) operations for level one
+ *          tasks of the main application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -55,34 +56,74 @@
  *
  ******************************************************************************
  */
-#include "constant_texts.h"
-#include "controller_level_four.h"
-#include "tasks_level_four.h"
+#include <inttypes.h>
+#include <string.h>
+#include "apdu.h"
+#include "application_startup.h"
+#include "communication.h"
+#include "controller_level_one.h"
+#include "controller_level_two.h"
+#include "controller_tap_cards.h"
+#include "flash_api.h"
 #include "ui_delay.h"
+#include "ui_instruction.h"
 
-void task_device_authentication(void)
-{
-    switch (flow_level.level_three)
-    {
-        case SIGN_SERIAL_NUMBER:
-        {
-            ui_text_slideshow_init(ui_text_device_authenticating, 5, 500, false);
-            mark_event_over();
-            break;
-        }
-#ifdef PROVISIONING_FIRMWARE
-        case DEVICE_AUTH_INFINITE_WAIT:
-#endif /* PROVISIONING_FIRMWARE */
-        case SIGN_CHALLENGE:
-        case AUTHENTICATION_SUCCESS:
-        case AUTHENTICATION_UNSUCCESSFUL:
-        {
-            mark_event_over();
+extern lv_task_t *listener_task;
+extern uint8_t device_auth_flag;
+extern bool main_app_ready;
+extern char card_id_fetched[];
+extern char card_version[];
+
+void onboarding_controller(void) {
+    switch (flow_level.level_one) {
+        case STAGE_0:
+        case STAGE_1: {
+            flow_level.level_one++;
             break;
         }
 
-        default: 
-        {
+        case STAGE_2: {
+            flow_level.level_one = 4;
+            break;
+        }
+
+        case STAGE_3: {
+            controller_read_card_id();
+            reset_flow_level();
+            flow_level.level_one = 5;
+            break;
+        }
+
+        case STAGE_4: {
+            controller_read_card_id();
+            char msg[32] = {'\0'};
+            snprintf(msg, sizeof(msg), "Card #%d Tapped",
+                     decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
+            delay_scr_init(msg, DELAY_TIME);
+            reset_flow_level();
+            flow_level.level_one = 6;
+
+            /**
+			 * USB driver is already initialized during application_init(), therefore, we can omit this call
+			 * It will be useful from maintainability and code readability point of view.
+		#if USE_SIMULATOR == 0
+			libusb_init();
+		#endif
+			*/
+            break;
+        }
+
+        case STAGE_5: {
+            flow_level.level_one = 6;
+            break;
+        }
+
+        case STAGE_6: {
+            flow_level.level_one = 7;
+            break;
+        }
+
+        default: {
             break;
         }
     }

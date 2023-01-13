@@ -1,8 +1,9 @@
 /**
- * @file    device_authentication_task.c
+ * @file    controller_level_one.c
  * @author  Cypherock X1 Team
- * @brief   Device authentication task.
- *          This file contains the implementation of the device authentication task.
+ * @brief   Level one next controller (main).
+ *          Handles post event (only next events) operations for level one
+ *          tasks of the main application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
@@ -55,35 +56,69 @@
  *
  ******************************************************************************
  */
-#include "constant_texts.h"
-#include "controller_level_four.h"
-#include "tasks_level_four.h"
-#include "ui_delay.h"
+#include "controller_level_one.h"
+#include "application_startup.h"
+#include "controller_level_two.h"
+#include "main_menu_controller.h"
+#include "onboarding_controller.h"
+#include "apdu.h"
 
-void task_device_authentication(void)
-{
-    switch (flow_level.level_three)
-    {
-        case SIGN_SERIAL_NUMBER:
-        {
-            ui_text_slideshow_init(ui_text_device_authenticating, 5, 500, false);
-            mark_event_over();
-            break;
+extern lv_task_t *listener_task;
+extern uint8_t device_auth_flag;
+extern bool main_app_ready;
+extern char card_id_fetched[];
+extern char card_version[];
+
+void level_one_controller(void) {
+    /** 
+     * Reset flow_level.show_error_screen & flow_level.show_desktop_start_screen
+     * as the corresponding UI element is already displayed by level_one_tasks()
+     * and level_one_controller() is invoked by an input event callback
+     */
+    if (flow_level.show_error_screen) {
+        flow_level.show_error_screen = false;
+        return;
+    }
+
+    if (flow_level.show_desktop_start_screen) {
+        flow_level.show_desktop_start_screen = false;
+        return;
+    }
+
+#ifndef PROVISIONING_FIRMWARE
+    /* Reset card health using reset_card_data_health() if previous state was DATA_HEALTH_CORRUPT */
+    if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
+        reset_card_data_health();
+        return;
+    }
+
+    if (!main_app_ready) {
+        device_auth_flag = 0;
+        return;
+    }
+
+    if (device_auth_flag) {
+        device_auth();
+        return;
+    }
+
+    if (LEVEL_ONE == counter.level) {
+        if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE) {
+            main_menu_controller();
+        } else {
+            onboarding_controller();
         }
-#ifdef PROVISIONING_FIRMWARE
-        case DEVICE_AUTH_INFINITE_WAIT:
+    }
+#else
+    /* TODO: Revisit provisioning_controller() */
+    if (counter.level == LEVEL_ONE) {
+        onboarding_controller();
+    }
 #endif /* PROVISIONING_FIRMWARE */
-        case SIGN_CHALLENGE:
-        case AUTHENTICATION_SUCCESS:
-        case AUTHENTICATION_UNSUCCESSFUL:
-        {
-            mark_event_over();
-            break;
-        }
 
-        default: 
-        {
-            break;
-        }
+    /* Go to higher levels if counter.level > LEVEL_ONE */
+    if (counter.level > LEVEL_ONE) {
+        level_two_controller();
+        return;
     }
 }

@@ -218,11 +218,13 @@ void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8
     set_keystore_key_id(keystore_index, card_pairing_data, 4, FLASH_SAVE_LATER);
     set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);    
 
-	if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
+#ifndef PROVISIONING_FIRMWARE
+	if (TRAINING_COMPLETE == IS_TRAINING_COMPLETE)
     {
         flow_level.level_four++;
     }
     else
+#endif /* PROVISIONING_FIRMWARE */
     {
         flow_level.level_three++;
     }

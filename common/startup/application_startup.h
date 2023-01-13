@@ -45,6 +45,10 @@
 #include "ui_common.h"
 #include "controller_main.h"
 #include "sec_flash.h"
+#include "global_variables.h"
+#ifndef PROVISIONING_FIRMWARE
+#include "onboarding_storage.h"
+#endif /* PROVISIONING_FIRMWARE */
 
 /**
  * @brief Interval defined to repeatedly call callback repeated_timer_handler
@@ -54,26 +58,12 @@
 /// Interval defined for user inactivity in a flow in milli seconds
 #define INACTIVITY_TIME (120 * 1000)
 
-
-
-
-extern uint8_t device_auth_flag;
-extern bool main_app_ready;
-
-/**
- * Global variable gBoolConditionTrainingDone determines if the device training
- * is complete or not
- * TODO: As on today, this is a hardcoded variable, logic to update the status will 
- * be added in subsequent tasks 
- */
-extern volatile uint8_t gBoolConditionTrainingDone;
-
 #define TRAINING_COMPLETE   0xA5
 #define TRAINING_INCOMPLETE 0xF9
 
-#define IS_TRAINING_COMPLETE (                                                          \
-                                (gBoolConditionTrainingDone == TRAINING_COMPLETE) ?     \
-                                TRAINING_COMPLETE: TRAINING_INCOMPLETE                  \
+#define IS_TRAINING_COMPLETE (                                                            \
+                                (gBoolOnboardingComplete == TRAINING_COMPLETE) ?          \
+                                TRAINING_COMPLETE: TRAINING_INCOMPLETE                    \
                              ) 
 
 /**

@@ -389,55 +389,6 @@ void set_wallet_init();
 void reset_flow_level_greater_than(enum LEVEL level);
 
 /**
- * @brief Checks the messages from desktop and initiates/processes the request sent by desktop.
- * @details The function is an lv_task handler registered with lvgl with a priority of LV_TASK_PRIO_HIGH and period of
- * 20 ms with NULL user data. This is responsible for processing desktop requests and performing/triggering flow jumps
- * based on the request from desktop. The function triggers a confirmation message which is shown to the user for
- * confirmation before actually starting the requested flow. It has the capacity to respond to certain requests directly
- * without user consent (such as DEVICE_INFO, START_CARD_AUTH, START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION).
- *
- * @param task lv_task passed while registering the callback.
- *
- * @see listener_task, flow_level, counter, En_command_type_t, get_usb_msg(), clear_message_received_data(), transmit_one_byte(),
- * transmit_data_to_app(), CY_Set_External_Triggered()
- * @since v1.0.0
- *
- * @note
- */
-void desktop_listener_task(lv_task_t* data);
-
-/**
- * @brief Checks the messages from desktop and initiates/processes restricted requests sent by desktop.
- * @details The function is an lv_task handler registered with lvgl with a priority of LV_TASK_PRIO_MID.
- * It decodes the request from desktop and allows restricted requests. Allowed requests are handled further by
- * invoking the desktop_listener_task(lv_task_t* data) function directly.
- * @param task lv_task passed while registering the callback.
- * @see 
- * @since
- *
- * @note
- */
-void __authentication_listener(lv_task_t* task);
-
-/**
- * @brief Callback function called periodically to check for success message from desktop.
- * @details This is a generic success listener for the application to work with while waiting for status from the
- * desktop app. The functions looks for any STATUS_PACKET data and only handles STATUS_CMD_ABORT or STATUS_CMD_SUCCESS.
- * In both the cases, the types of STATUS_PACKET, the function resets flow level and de-registers the lv_tasks success_task
- * and timeout_task. Additionally, if the request is for STATUS_CMD_ABORT it displays a message
- * (ref ui_text_operation_has_been_cancelled) to the user. <br/>
- * If any STATUS_PACKET is received, it is cleared from the application buffer regardless of it is processed by this
- * function or not.
- *
- * @param [in] task lv_task passed while registering the callback.
- *
- * @see STATUS_PACKET, STATUS_CMD_ABORT, STATUS_CMD_SUCCESS, ui_text_operation_has_been_cancelled, reset_flow_level(),
- * success_task, timeout_task, mark_error_screen(), mark_event_over(), clear_message_received_data()
- * @since v1.0.0
- */
-void _success_listener(lv_task_t* task);
-
-/**
  * @brief Callback function called by the task after a particular timeout to show an error screen
  * @details The function does a generic work of showing a common error message (refer ui_text_command_not_received)
  * to the user. Then it resets the flow level which will take the user to default view. The function also deletes the

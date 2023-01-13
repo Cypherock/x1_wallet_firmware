@@ -56,89 +56,76 @@
  ******************************************************************************
  */
 #include "tasks_level_two.h"
+#include "application_startup.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "flash_api.h"
 #include "tasks.h"
 #include "tasks_add_wallet.h"
-#include "tasks_old_wallet.h"
 #include "tasks_advanced_settings.h"
+#include "tasks_old_wallet.h"
 #include "ui_confirmation.h"
 #include "ui_menu.h"
 #include "ui_message.h"
-#include "application_startup.h"
 
-extern lv_task_t* listener_task;
+extern lv_task_t *listener_task;
 
-void level_two_tasks(void)
-{
-    if (flow_level.show_error_screen)
-    {
+void level_two_tasks(void) {
+    if (flow_level.show_error_screen) {
         message_scr_init(flow_level.error_screen_text);
         return;
     }
 
     // Create menu options
-    char* options_arr[MAX_LEN_OF_MENU_OPTIONS];
+    char *options_arr[MAX_LEN_OF_MENU_OPTIONS];
 
-    switch (flow_level.level_one)
-    {
+    switch (flow_level.level_one) {
         case LEVEL_TWO_OLD_WALLET: /* If training is not complete, this case cannot be triggered  */
         {
-            if (counter.level > LEVEL_TWO)
-            {
+            if (counter.level > LEVEL_TWO) {
                 level_three_old_wallet_tasks();
                 return;
             }
 
-            uint8_t wallet_index, status = get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
-            
-            if (status != SUCCESS_)
-            {
+            uint8_t wallet_index,
+                status = get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
+
+            if (status != SUCCESS_) {
                 LOG_ERROR("get %s fail %d", wallet.wallet_name, status);
                 cy_exit_flow();
                 return;
             }
-            
-            LOG_INFO("wallet %d %d %d %s",
-                get_wallet_info(wallet_index),
-                get_wallet_card_state(wallet_index),
-                get_wallet_locked_status(wallet_index),
-                get_wallet_name(wallet_index));
 
-            if (is_wallet_locked(wallet_index))
-            {
+            LOG_INFO("wallet %d %d %d %s", get_wallet_info(wallet_index),
+                     get_wallet_card_state(wallet_index), get_wallet_locked_status(wallet_index),
+                     get_wallet_name(wallet_index));
+
+            if (is_wallet_locked(wallet_index)) {
                 mark_list_choice(LEVEL_THREE_WALLET_LOCKED);
                 mark_event_over();
-                snprintf(
-                            flow_level.confirmation_screen_text,
-                            sizeof(flow_level.confirmation_screen_text),
-                            "%s",
-                            ui_text_wallet_lock_continue_to_unlock
-                        );
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text), "%s",
+                         ui_text_wallet_lock_continue_to_unlock);
 
                 flow_level.show_desktop_start_screen = true;
                 return;
             }
 
-            if (is_wallet_partial(wallet_index))
-            {
+            if (is_wallet_partial(wallet_index)) {
                 mark_list_choice(LEVEL_THREE_DELETE_WALLET);
                 mark_event_over();
                 mark_error_screen(ui_text_wallet_partial_continue_to_delete);
                 return;
             }
 
-            if (is_wallet_unverified(wallet_index))
-            {
+            if (is_wallet_unverified(wallet_index)) {
                 mark_list_choice(LEVEL_THREE_VERIFY_WALLET);
                 mark_event_over();
                 mark_error_screen(ui_text_wallet_not_verified_continue_to_verify);
                 return;
             }
 
-            if(is_wallet_share_not_present(wallet_index))
-            {
+            if (is_wallet_share_not_present(wallet_index)) {
                 mark_list_choice(LEVEL_THREE_SYNC_WALLET);
                 mark_event_over();
                 mark_error_screen(ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards);
@@ -147,55 +134,41 @@ void level_two_tasks(void)
 
             //options after selecting a wallet
             uint8_t oldWalletIndex = 0;
-            for (oldWalletIndex = 0; oldWalletIndex < NUMBER_OF_OPTIONS_OLD_WALLET; oldWalletIndex++)
-            {
-                options_arr[oldWalletIndex] = (char*)ui_text_options_old_wallet[oldWalletIndex];
+            for (oldWalletIndex = 0; oldWalletIndex < NUMBER_OF_OPTIONS_OLD_WALLET;
+                 oldWalletIndex++) {
+                options_arr[oldWalletIndex] = (char *)ui_text_options_old_wallet[oldWalletIndex];
             }
-            if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-            {
-                options_arr[0] = (char*) ui_text_view_data;
+            if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
+                options_arr[0] = (char *)ui_text_view_data;
             }
 
             char arr[NAME_SIZE];
             snprintf(arr, sizeof(arr), "%s", wallet.wallet_name);
-            menu_init(
-                        (const char**) options_arr,
-                        NUMBER_OF_OPTIONS_OLD_WALLET,
-                        arr,
-                        true
-                     );
+            menu_init((const char **)options_arr, NUMBER_OF_OPTIONS_OLD_WALLET, arr, true);
 
             break;
         }
 
         case LEVEL_TWO_NEW_WALLET: /* If training is not complete, this case cannot be triggered  */
         {
-            if (counter.level > LEVEL_TWO)
-            {
-                if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET)
-                {
+            if (counter.level > LEVEL_TWO) {
+                if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
                     tasks_add_new_wallet();
-                }
-                else
-                {
+                } else {
                     tasks_restore_wallet();
                 }
-                
+
                 return;
             }
 
-
-            for (uint8_t newWalletIndex = 0; newWalletIndex < NUMBER_OF_OPTIONS_NEW_WALLET; newWalletIndex++)
-            {
-                options_arr[newWalletIndex] = (char *)ui_text_options_new_wallet[newWalletIndex + 1];
+            for (uint8_t newWalletIndex = 0; newWalletIndex < NUMBER_OF_OPTIONS_NEW_WALLET;
+                 newWalletIndex++) {
+                options_arr[newWalletIndex] =
+                    (char *)ui_text_options_new_wallet[newWalletIndex + 1];
             }
 
-            menu_init(
-                        (const char**) options_arr,
-                        NUMBER_OF_OPTIONS_NEW_WALLET,
-                        ui_text_options_new_wallet[0],
-                        true
-                     );
+            menu_init((const char **)options_arr, NUMBER_OF_OPTIONS_NEW_WALLET,
+                      ui_text_options_new_wallet[0], true);
 
             break;
         }
@@ -205,54 +178,39 @@ void level_two_tasks(void)
          * All counter.level assignments and flow_level.level_x assignments are done by the desktop_listener_app()
          * and no UI/ menu is rendered.
         */
-        case LEVEL_TWO_ADVANCED_SETTINGS:
-        {
-            if (counter.level > LEVEL_TWO)
-            {
+        case LEVEL_TWO_ADVANCED_SETTINGS: {
+            if (counter.level > LEVEL_TWO) {
                 level_three_advanced_settings_tasks();
                 return;
             }
 
-            uint8_t advancedSettingsIndex = 0, optionsIndex=1;
-            for (advancedSettingsIndex = 0; advancedSettingsIndex < NUMBER_OF_OPTIONS_ADVANCED_OPTIONS; advancedSettingsIndex++)
-            {
-                if (optionsIndex == LEVEL_THREE_TOGGLE_LOGGING)
-                {
-                    options_arr[advancedSettingsIndex] = (char *)   (
-                                                                        is_logging_enabled() ? 
-                                                                        ui_text_logging_export_options[0] : 
-                                                                        ui_text_logging_export_options[1]
-                                                                    );
+            uint8_t advancedSettingsIndex = 0, optionsIndex = 1;
+            for (advancedSettingsIndex = 0;
+                 advancedSettingsIndex < NUMBER_OF_OPTIONS_ADVANCED_OPTIONS;
+                 advancedSettingsIndex++) {
+                if (optionsIndex == LEVEL_THREE_TOGGLE_LOGGING) {
+                    options_arr[advancedSettingsIndex] =
+                        (char *)(is_logging_enabled() ? ui_text_logging_export_options[0]
+                                                      : ui_text_logging_export_options[1]);
+                } else if (optionsIndex == LEVEL_THREE_TOGGLE_PASSPHRASE) {
+                    options_arr[advancedSettingsIndex] =
+                        (char *)(is_passphrase_enabled() ? u_text_passphrase_options[0]
+                                                         : u_text_passphrase_options[1]);
+                } else {
+                    options_arr[advancedSettingsIndex] =
+                        (char *)ui_text_options_advanced_settings[optionsIndex];
                 }
-                else if (optionsIndex == LEVEL_THREE_TOGGLE_PASSPHRASE)
-                {
-                    options_arr[advancedSettingsIndex] = (char *)   (
-                                                                        is_passphrase_enabled() ?
-                                                                        u_text_passphrase_options[0] :
-                                                                        u_text_passphrase_options[1]
-                                                                    );
-                }
-                else
-                {
-                    options_arr[advancedSettingsIndex] = (char*)ui_text_options_advanced_settings[optionsIndex];
-                }
-                
+
                 optionsIndex++;
             }
 
-            menu_init(
-                        (const char**) options_arr,
-                        NUMBER_OF_OPTIONS_ADVANCED_OPTIONS,
-                        ui_text_options_advanced_settings[0],
-                        true
-                     );
+            menu_init((const char **)options_arr, NUMBER_OF_OPTIONS_ADVANCED_OPTIONS,
+                      ui_text_options_advanced_settings[0], true);
 
             break;
         }
 
-
-        default:
-        {
+        default: {
             message_scr_init(ui_text_something_went_wrong);
             break;
         }

@@ -18,14 +18,14 @@ if [ $# -gt 0 ]; then
         ACTIVE_TYPE=Main
         ;;
 
-        initial)
-        ACTIVE_TYPE=Initial
+        provisioning)
+        ACTIVE_TYPE=Provisioning
         ;;
 
         *)
         echo "Wrong type selection"
         echo "USAGE: $0 [type]"
-        echo "type can 'main' or 'initial'"
+        echo "type can 'main' or 'provisioning'"
         exit 1
         ;;
     esac

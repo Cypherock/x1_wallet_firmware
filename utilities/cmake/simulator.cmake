@@ -12,17 +12,17 @@ include_directories(${SDL2_INCLUDE_DIRS})
 add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
-    add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
+    add_compile_definitions()
     target_include_directories(${PROJECT_NAME} PRIVATE
             main/config/
             )
-elseif("${FIRMWARE_TYPE}" STREQUAL "Initial")
-    add_compile_definitions(X1WALLET_INITIAL=1 X1WALLET_MAIN=0)
+elseif("${FIRMWARE_TYPE}" STREQUAL "Provisioning")
+    add_compile_definitions(PROVISIONING_FIRMWARE)
     target_include_directories(${PROJECT_NAME} PRIVATE
             initial/config/
             )
 else()
-    message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
+    message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Provisioning")
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         src/

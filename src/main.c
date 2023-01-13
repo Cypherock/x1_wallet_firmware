@@ -96,6 +96,7 @@
 #include "ui_logo.h"
 #include "ui_delay.h"
 #include "lv_port_indev.h"
+#include "global_variables.h"
 
 #if USE_SIMULATOR == 0
 #include "main.h"
@@ -104,34 +105,18 @@
 #include "nfc.h"
 #include "ui_message.h"
 
-#endif //USE_SIMULATOR
+#endif /* USE_SIMULATOR == 0 */
 
 #if USE_SIMULATOR == 1
 #include "sim_usb.h"
 extern lv_indev_t *indev_keypad;
-#endif
-extern Counter counter;
-extern bool main_app_ready;
-
-#if USE_SIMULATOR == 1
-
 /*On OSX SDL needs different handling*/
 #if defined(__APPLE__) && defined(TARGET_OS_MAC)
 #if __APPLE__ && TARGET_OS_MAC
 #define SDL_APPLE
 #endif
 #endif
-
-static int tick_thread(void *data);
-static void memory_monitor(lv_task_t *param);
-
-#endif
-
-/**
- * Hard assign training status to training complete
- * TODO: Add logic to update the condition based on flash based status storage.
- */
-volatile uint8_t gBoolConditionTrainingDone = TRAINING_COMPLETE;
+#endif /* USE_SIMULATOR == 1 */
 
 /**
   * @brief  The entry point to the application.
@@ -141,28 +126,35 @@ int main(void)
 {
     application_init();
 
+#ifndef PROVISIONING_FIRMWARE
+    /* Get device onboarding stage on start-up */
+    gOnboardingStg = OnboardingStorage_GetLastStageData();
+    if ((STAGE_MAX_VAL == gOnboardingStg.StageNum) &&
+        (STAGE_n_COMPLETE == gOnboardingStg.StageEncoding)) {
+        gBoolOnboardingComplete = TRAINING_COMPLETE;
+    }
+#endif /* PROVISIONING_FIRMWARE */
+
 #if USE_SIMULATOR == 0
     if(fault_in_prev_boot())
     {
         handle_fault_in_prev_boot();
     }
     else
-#endif //USE_SIMULATOR
+#endif /* USE_SIMULATOR == 0 */
     {
         logo_scr_init(2000);
         device_provision_check();
         reset_flow_level();
 
-        if (IS_TRAINING_COMPLETE == TRAINING_COMPLETE)
-        {
-            if(device_auth_check() == DEVICE_AUTHENTICATED)
-            {
-                check_invalid_wallets();
-            }
+    #ifndef PROVISIONING_FIRMWARE
+        /* Check for invalid wallets only if onboarding is complete and device is authenticated */
+        if ((TRAINING_COMPLETE == IS_TRAINING_COMPLETE) &&
+            (DEVICE_AUTHENTICATED == device_auth_check())) {
+            check_invalid_wallets();
         }
+    #endif /* PROVISIONING_FIRMWARE */
     }
-
-
 
     while (true)
     {
