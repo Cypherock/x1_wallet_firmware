@@ -59,11 +59,12 @@
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
-#include "ui_confirmation.h"
-#include "ui_instruction.h"
 #include "controller_tap_cards.h"
+#include "harmony.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
+#include "ui_confirmation.h"
+#include "ui_instruction.h"
 
 extern Receive_Transaction_Data receive_transaction_data;
 extern Wallet_shamir_data wallet_shamir_data;
@@ -73,7 +74,7 @@ void receive_transaction_controller_eth()
 {
 
     switch (flow_level.level_three) {
-
+// TODO: Rename RECV_TXN_FIND_XPUB in all receive tasks to a relevant name (PROCESS_METADATA)
     case RECV_TXN_FIND_XPUB_ETH: {
         memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
         if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
@@ -174,10 +175,18 @@ void receive_transaction_controller_eth()
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        uint8_t data[1 + sizeof(receive_transaction_data.eth_pubkeyhash)];
+        uint64_t chain_id = receive_transaction_data.network_chain_id;
+        uint8_t data[1 + sizeof(receive_transaction_data.address) + 1];     // confirm byte + address length + null byte
+        size_t datalen;
         data[0] = 1;  // confirmation byte
-        memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
-        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
+        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN) {
+          memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
+          datalen = 1 + sizeof(receive_transaction_data.eth_pubkeyhash);
+        } else {
+          strncpy((char *)data + 1, receive_transaction_data.address, sizeof(data) - 1);
+          datalen = strnlen((char *) data, sizeof(data));   // send excluding the null byte
+        }
+        transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, datalen);
         reset_flow_level();
     } break;
 

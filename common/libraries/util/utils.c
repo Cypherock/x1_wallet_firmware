@@ -274,8 +274,9 @@ void get_firmaware_version(uint16_t pid, const char *product_hash , char message
     }
 }
 
+//TODO: Update len return size to 16 bit
 void random_generate(uint8_t* arr,int len){
-    if(len > 32) return ;
+    ASSERT(len <= 32);
 
     ASSERT(crypto_random_generate(arr,len) == true);
 
@@ -431,6 +432,17 @@ uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len)
         j--;
     }
     return 0;
+}
+
+uint64_t cy_read_be(const uint8_t *bytes, uint8_t size) {
+  if (bytes == NULL || size == 0) return 0;
+
+  uint64_t value = 0;
+  uint8_t offset = 0;
+  while (offset < size) {
+    value = (bytes[offset++] | (value << 8));
+  }
+  return value;
 }
 
 

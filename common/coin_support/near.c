@@ -184,3 +184,20 @@ size_t near_get_account_ids_count(const uint8_t* data,const uint16_t data_len){
   }
   return count;
 }
+
+bool near_verify_derivation_path(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels < 5) return status;
+
+  uint32_t purpose = path[0], coin = path[1], account = path[2], change = path[3];
+
+  // m/44'/397'/0'/0'/i'
+  status = (purpose == NON_SEGWIT && coin == NEAR && account == 0x80000000 && change == 0x80000000);
+
+  return status;
+}
+
+uint32_t near_get_account_index(const uint32_t *path) {
+  // discard the sign bit denoting hardened/non-harndedned value
+  return (path[4] & 0x7FFFFFFF);
+}

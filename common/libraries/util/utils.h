@@ -341,6 +341,19 @@ uint8_t dec_to_hex(const uint64_t dec, uint8_t *hex, uint8_t len);
 uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len);
 
 /**
+ * Reads bytes and returns big-endian unsigned integer.
+ *
+ * NOTE:
+ * 1. If bytes is NULL or size is 0, then '0' will be returned.
+ * 2. If size is greater than 8, then value will overflow. Returned value is wrong
+ *
+ * @param bytes     The byte array to read
+ * @param size      The number of bytes to read
+ * @return          uint64_t big endian value
+ */
+uint64_t cy_read_be(const uint8_t *bytes, uint8_t size);
+
+/**
  * @brief Convert byte array to decimal string with given decimal place
  * 
  * @param len 

@@ -84,7 +84,7 @@ Send_Transaction_Data var_send_transaction_data = {
         .input_count = {0}, .input = NULL,
         .output_count = {0}, .output = NULL,
         .change_count = {0}, .change = NULL,
-        .transaction_fees = {0}, .decimal = {0},
+        .transaction_fees = {0}, .eth_val_decimal = {0},
         .token_name = NULL, .network_chain_id = 0
     },
     .signed_transaction = {
@@ -96,7 +96,7 @@ Send_Transaction_Data var_send_transaction_data = {
     }
 };
 Send_Transaction_Cmd send_transaction_cmd = {
-    .signed_txn_byte_array = NULL
+    .signed_txn_byte_array = {0}
 };
 
 
@@ -230,8 +230,7 @@ void send_transaction_controller()
         }
         txn_preimage preimage;
         memzero(&preimage, sizeof(txn_preimage));
-        send_transaction_cmd.signed_txn_byte_array = (uint8_t *) malloc(128 /* max size for script_sig */ * sizeof(uint8_t));
-        ASSERT(send_transaction_cmd.signed_txn_byte_array != NULL);
+        memzero(send_transaction_cmd.signed_txn_byte_array, MAX_SCRIPT_SIG_SIZE);
         send_transaction_cmd.signed_txn_length = sig_from_unsigned_txn(&var_send_transaction_data.unsigned_transaction,
                                                       &var_send_transaction_data.transaction_metadata,
                                                       input_index, mnemo, wallet_credential_data.passphrase, &preimage,
@@ -256,7 +255,7 @@ void send_transaction_controller()
             flow_level.level_three = SEND_TXN_FINAL_SCREEN;
             memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
             memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
-            free(send_transaction_cmd.signed_txn_byte_array);
+            memzero(send_transaction_cmd.signed_txn_byte_array, MAX_SCRIPT_SIG_SIZE);
         }
     } break;
 

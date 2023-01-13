@@ -127,6 +127,7 @@ target_compile_options(${EXECUTABLE} PRIVATE
         -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
         -fdata-sections -ffunction-sections
         -Wall -Wno-format-truncation -Wno-unused-but-set-variable -Wno-return-type
+        -Werror
         -D_POSIX_C_SOURCE=200809L
         $<$<CONFIG:Debug>:-g3>
         )

@@ -89,6 +89,23 @@ typedef struct solana_unsigned_txn {
 
 } solana_unsigned_txn;
 
+typedef enum solana_account_type {
+  UNUSED = 0,
+  SOL_ACC_TYPE1 = 1,
+  SOL_ACC_TYPE2 = 2,
+  SOL_ACC_TYPE3 = 3,
+} solana_account_type;
+
+/**
+ * @brief Returns the derivation depth for each account_type
+ * If the account tag/type is invalid, this will return 3 as the default depth
+ *
+ * @param[in] tag   The account type/tag to find depth
+ *
+ * @since v1.0.0
+ */
+size_t sol_get_derivation_depth(uint16_t tag);
+
 /**
  * @brief Get the compact array size and number of bytes used to store the size 
  * 
@@ -159,4 +176,32 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
  * @return int 
  */
 int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *blockhash);
+
+/**
+ * @brief Verifies the derivation path for any inconsistent/unsupported values.
+ * If depth level < 2 this function returns false indicating invalid derivation path.
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] levels        The number of levels in the derivation path
+ *
+ * @return bool     Returns true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels);
+
+/**
+ * @brief Returns the account number based on incrementing index. For account type1,
+ * index is fixed and is always 0. For type2, this will be `account - 1`. For type3,
+ * this will return `change - 1`;
+ *
+ * @param[in] path          The address derivation path
+ * @param[in] account_tag   The account type/tag in consideration
+ *
+ * @return uint32_t     The index of the account specified by derivation path
+ *
+ * @since v1.0.0
+ */
+uint32_t sol_get_account_index(const uint32_t *path, solana_account_type account_tag);
+
 #endif  // SOLANA_HEADER

@@ -223,4 +223,29 @@ void near_deserialize_account_ids(const uint8_t *data,const uint16_t data_len, c
  * @return size_t       count of account ids.
  */
 size_t near_get_account_ids_count(const uint8_t* data,const uint16_t data_len);
+
+/**
+ * @brief Verifies the derivation path for any inconsistent/unsupported values.
+ * The derivation depth is fixed at level 5. So if the depth level < 5, then this function
+ * return false indicating invalid derivation path.
+ *
+ * @param[in] path      The address derivation path to be checked
+ * @param[in] levels    The number of levels in the derivation path
+ *
+ * @return bool     Returns true if the path values are valid. False otherwise.
+ */
+bool near_verify_derivation_path(const uint32_t *path, uint8_t levels);
+
+/**
+ * @brief Returns the account number based on incrementing index. The address
+ * index is account_index - 1
+ *
+ * @param[in] path          The address derivation path
+ *
+ * @return uint32_t     The index of the account specified by derivation path
+ *
+ * @since v1.0.0
+ */
+uint32_t near_get_account_index(const uint32_t *path);
+
 #endif //NEAR_HEADER

@@ -59,7 +59,7 @@
 #define NATIVE_SEGWIT 0x80000054
 
 /// NON SEGWIT purpose id
-#define NON_SEGWIT 0x8000002C
+#define   NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN          = 0x01,
@@ -97,6 +97,22 @@ typedef struct
 } address_type;
 #pragma pack(pop)
 
+/**
+ * @brief Stores the chosen wallet's public information for the export wallet process.
+ * @details The instance of this struct is stored temporarily in the RAM during the add coin process. The coin's
+ * information is provided by the desktop app and updated in desktop listener task.
+ *
+ * @see add_coin_controller(), add_coin_task(), desktop_listener_task(), ADD_COIN_START
+ * @since v1.0.0
+ */
+#pragma pack(push, 1)
+typedef struct Add_Coin_Data {
+  size_t derivation_depth;
+  uint32_t derivation_path[5];
+  uint64_t network_chain_id;
+} Add_Coin_Data;
+#pragma pack(pop)
+
 #pragma pack(push, 1)
 /**
  * @brief Struct to store the meta data details of a transaction.
@@ -125,12 +141,15 @@ typedef struct
 
     uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+    uint8_t eth_val_decimal[1];
 
     char *token_name;
 
     uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
+     ///< Used to differentiate between multiple address derivation paths of the same coin
+    uint16_t address_tag; 
 } txn_metadata;
 #pragma pack(pop)
 
@@ -153,8 +172,9 @@ typedef struct Receive_Transaction_Data {
   char *token_name;
   union {
     uint64_t network_chain_id;
-    uint8_t near_account_type;
+    uint64_t near_account_type;
   };
+  uint16_t address_tag;
   char near_registered_account[65];
   uint8_t xpub[112];
   char address[43];
@@ -192,6 +212,21 @@ typedef struct ui_display_node {
  * @note
  */
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int64_t *offset);
+
+/**
+ * @brief Deserialize the request payload to add coin.
+ * @details If any of the input references are NULL, this function returns `-1`.
+ * The minimum and maximum depth for derivation is 2 and 5 respectively. If the input byte array
+ * is shorter than the expected data to be parsed, this function will return -1.
+ *
+ * @param [out]   Pointer to the add coin data instace
+ * @param [in]    Serialized payload to be deserialized
+ * @param [in]    Size of the input payload
+ *
+ * @return Offset used in the conversion
+ * @retval -1 if the input does not meet expected format/requirements
+ */
+int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size);
 
 /**
  * @brief Converts byte array represented transaction metadata to struct txn_metadata.
@@ -364,6 +399,48 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
+
+/**
+ * @brief Verifies the derivation path for xpub during coin export step
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
+
+/**
+ * @brief Verifies if the specified derivation path is valid based on checks
+ * on intermediate values.
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     Returns true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
+
+/**
+ * @brief Generates an user readable account name comprising account type and account
+ * number as a reflection of the unchecked derivation path values/levels.
+ *
+ * @param[in] path            The address derivation path to be checked
+ * @param[in] account_type    The account type/tag
+ * @param[out] account_name   Storage for resulting account name by this function
+ * @param[in] out_len         The max length of the output storage
+ *
+ * @return uint16_t     The length of the resulting account name
+ *
+ * @since v1.0.0
+ */
+uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len);
 
 /**
  * @brief Create a new display node and return its pointer

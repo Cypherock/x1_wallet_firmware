@@ -110,8 +110,7 @@ const char* ui_text_logging_export_options[] = {
 
 // wallet creation
 const char* ui_text_verification_is_now_complete_messages[] = {
-    "Verification complete",
-    "You may now safely wipe out any written seed phrase",
+    "Wallet created successfully!",
     "You'll need this device and a card to make transactions",
     "To get started export this wallet to the CySync app",
     "Press the center button to return to the main menu",
@@ -281,8 +280,6 @@ const char* ui_text_recovery_successfull = "Recovery Successful!";
 const char* ui_text_processing = "Processing...";
 const char* ui_text_syncing_complete = "Syncing wallets complete";
 const char* ui_text_seed_generated_successfully = "Seed generated successfully";
-const char* ui_text_wallet_synced_with_x1cards = "Wallet synced with cards!";
-const char* ui_text_wallet_created_successfully = "Wallet created successfully!";
 const char* ui_text_press_enter_to_start_verification = "Proceed to verify wallet on cards";
 const char* ui_text_now_enter_your_seed_phrase = "Now enter your\nseed phrase";
 const char* ui_text_now_enter_your_data = "Now enter your\ndata";
@@ -388,7 +385,6 @@ const char* ui_text_reset_exit[] = {
     "Press the center button to proceed",
 };
 const char* ui_text_erasing = "Factory reset done Device will restart";
-const char* ui_text_performing_checks = "Performing checks...";
 
 #ifdef ALLOW_LOG_EXPORT
 const char* ui_text_send_logs_prompt = "Send logs to the CySync app?";

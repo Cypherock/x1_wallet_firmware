@@ -166,6 +166,7 @@ static uint8_t eval(const uint16_t n, const uint8_t coeffs[n], const uint8_t x)
     return ret;
 }
 
+// TODO: To be reviewed function prototype
 void convert_to_shares(
     const uint8_t secret_len, const uint8_t secret[secret_len],
     const uint8_t total_number_of_shares,
@@ -236,11 +237,12 @@ int verify_shares_NC2(const uint8_t number_of_shares, const uint8_t secret_size,
         two_x_coords[1] = x_coords[pairs[i][1]];
 
         recover_secret_from_shares(
-            32,
+            secret_size,
             MINIMUM_NO_OF_SHARES,
             two_shares,
             two_x_coords,
             secret_calculated);
+        // TODO: Restructure if statements to return 0 by default
         if(i == 0){
             memcpy(secret, secret_calculated, BLOCK_SIZE);
         }
