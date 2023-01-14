@@ -200,14 +200,12 @@ typedef struct Receive_Transaction_Data {
  * byte_array_to_swap_txn_data(), SWAP_TXN_START
  */
 typedef struct Swap_Transaction_Data {
-  uint32_t send_amount;
-  uint32_t receive_amount;
-  uint32_t fee;
+  char * send_amount_str;
+  char * receive_amount_str;
+  char * fee_str;
   uint8_t send_txn_wallet_id[WALLET_ID_SIZE];
   txn_metadata send_txn_metadata;
   Receive_Transaction_Data receive_txn_data;
-  uint8_t *unsigned_txn_data_array;
-  uint16_t unsigned_txn_data_array_size;
 } Swap_Transaction_Data;
 #pragma pack(pop)
 
@@ -293,7 +291,9 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
  * Receive_Transaction_Data struct. They are deserialized separately by invoking
  * byte_array_to_txn_metadata() and byte_array_to_recv_txn_data() respectively.
  */
-int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size);
+int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
+                                    const uint8_t *data_byte_array,
+                                    const uint32_t size);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.

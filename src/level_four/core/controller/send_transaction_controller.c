@@ -109,6 +109,11 @@ void send_transaction_controller()
 
     case SEND_TXN_VERIFY_COIN: {
         uint8_t arr[3] = {0x01, 0x1f, 0x40};
+        /*
+         * 0x01: coin verified by user
+         * [0x1f, 0x40]: maximum size of unsigned transaction in big endian
+         * format, 0x401f = 16447 bytes ~ 16KB
+         */
         transmit_data_to_app(SEND_TXN_REQ_UNSIGNED_TXN, arr, sizeof(arr));
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN;
         input_index = 0;
@@ -117,32 +122,18 @@ void send_transaction_controller()
     case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN: {
         uint8_t *data_array = NULL;
         uint16_t msg_size = 0;
-
-        if (is_swap_txn) {
-            data_array = swap_transaction_data.unsigned_txn_data_array;
-            msg_size = swap_transaction_data.unsigned_txn_data_array_size;
-            is_swap_txn = false;
-        } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
-                                           &data_array,
-                                           &msg_size)) {
-            return;
+        if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
+            byte_array_to_unsigned_txn(data_array, msg_size, &var_send_transaction_data.unsigned_transaction);
+            clear_message_received_data();
+            flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
+            if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
+                instruction_scr_destructor();
+                comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+                reset_flow_level();
+                mark_error_screen(ui_text_wrong_btc_transaction);
+                return;
+            }
         }
-
-        byte_array_to_unsigned_txn(data_array,
-                                   msg_size,
-                                   &var_send_transaction_data.unsigned_transaction);
-
-        clear_message_received_data();
-        flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
-
-        if (!btc_validate_unsigned_txn(&var_send_transaction_data.unsigned_transaction)) {
-            instruction_scr_destructor();
-            comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
-            reset_flow_level();
-            mark_error_screen(ui_text_wrong_btc_transaction);
-            return;
-        }
-
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED: {

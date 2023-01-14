@@ -84,37 +84,29 @@ void send_transaction_controller_solana() {
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_SOLANA: {
-      uint8_t *data_array = NULL;
-      uint16_t msg_size   = 0;
+        uint8_t *data_array = NULL;
+        uint16_t msg_size   = 0;
+        if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
+            solana_unsigned_txn_byte_array = (uint8_t *)cy_malloc(msg_size);
+            solana_unsigned_txn_len        = msg_size;
+            memcpy(solana_unsigned_txn_byte_array, data_array, msg_size);
 
-        if (is_swap_txn) {
-            data_array = swap_transaction_data.unsigned_txn_data_array;
-            msg_size = swap_transaction_data.unsigned_txn_data_array_size;
-            is_swap_txn = false;
-        } else if (!get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
-                                            &data_array, &msg_size)) {
-            return;
-        }
+            int status = solana_byte_array_to_unsigned_txn(solana_unsigned_txn_byte_array, solana_unsigned_txn_len,
+                                                           &solana_unsigned_txn_ptr);
 
-        solana_unsigned_txn_byte_array = (uint8_t *)cy_malloc(msg_size);
-        solana_unsigned_txn_len        = msg_size;
-        memcpy(solana_unsigned_txn_byte_array, data_array, msg_size);
+            clear_message_received_data();
+            flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA;
 
-        int status = solana_byte_array_to_unsigned_txn(solana_unsigned_txn_byte_array, solana_unsigned_txn_len,
-                                                       &solana_unsigned_txn_ptr);
+            if (status == SOL_OK)
+                status = solana_validate_unsigned_txn(&solana_unsigned_txn_ptr);
 
-        clear_message_received_data();
-        flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_SOLANA;
-
-        if (status == SOL_OK)
-          status = solana_validate_unsigned_txn(&solana_unsigned_txn_ptr);
-
-        if (status != SOL_OK) {
-          LOG_ERROR("Solana error code: %d", status);
-          instruction_scr_destructor();
-          mark_error_screen(ui_text_worng_eth_transaction);
-          comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-          reset_flow_level();
+            if (status != SOL_OK) {
+                LOG_ERROR("Solana error code: %d", status);
+                instruction_scr_destructor();
+                mark_error_screen(ui_text_worng_eth_transaction);
+                comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+                reset_flow_level();
+            }
         }
     } break;
 

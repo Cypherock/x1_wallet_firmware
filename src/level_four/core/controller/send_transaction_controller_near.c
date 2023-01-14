@@ -83,35 +83,20 @@ void send_transaction_controller_near() {
         case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_NEAR: {
             uint8_t *data_array = NULL;
             uint16_t msg_size = 0;
+            if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
+                near_unsigned_txn_byte_array = (uint8_t*) cy_malloc(msg_size);
+                near_unsigned_txn_len = msg_size;
+                memcpy(near_unsigned_txn_byte_array, data_array, msg_size);
 
-            if (is_swap_txn) {
-                data_array = swap_transaction_data.unsigned_txn_data_array;
-                msg_size = swap_transaction_data.unsigned_txn_data_array_size;
-                is_swap_txn = false;
-            } else if (get_usb_msg_by_cmd_type(SEND_TXN_UNSIGNED_TXN,
-                                               &data_array,
-                                               &msg_size)) {
+                near_byte_array_to_unsigned_txn(near_unsigned_txn_byte_array, near_unsigned_txn_len, &near_utxn);
 
-                return;
+                clear_message_received_data();
+                if(near_utxn.actions_type== NEAR_ACTION_FUNCTION_CALL){
+                    flow_level.level_three = SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR;
+                }else{
+                    flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR; // skip nonce verify
+                }
             }
-
-            near_unsigned_txn_byte_array =
-                (uint8_t *) cy_malloc(msg_size);
-            near_unsigned_txn_len = msg_size;
-            memcpy(near_unsigned_txn_byte_array, data_array, msg_size);
-
-            near_byte_array_to_unsigned_txn(near_unsigned_txn_byte_array,
-                                            near_unsigned_txn_len,
-                                            &near_utxn);
-
-            clear_message_received_data();
-            if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
-                flow_level.level_three = SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR;
-            } else {
-                flow_level.level_three =
-                    SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR; // skip nonce verify
-            }
-
         } break;
 
         case SEND_TXN_VERIFY_TXN_NONCE_NEAR: {

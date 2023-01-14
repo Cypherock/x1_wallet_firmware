@@ -6,12 +6,14 @@ void swap_transaction_controller_b() {
         case SWAP_CONFIRM_SEND_COIN: {
             reset_flow_level();
             counter.next_event_flag = true;
-        } break;
+        }
+            break;
 
         case SWAP_CONFIRM_RECEIVE_COIN: {
             reset_flow_level();
             counter.next_event_flag = true;
-        } break;
+        }
+            break;
 
         case SWAP_SELECT_RECEIVE_WALLET_ID: {
             reset_flow_level();
