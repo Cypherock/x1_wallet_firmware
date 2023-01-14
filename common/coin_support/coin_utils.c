@@ -184,23 +184,20 @@ int64_t byte_array_to_swap_txn_data(Swap_Transaction_Data *txn_data_ptr,
 
     int64_t offset = 0;
 
-    if (offset + sizeof(txn_data_ptr->send_amount) > size) return -1;
+    size_t send_amount_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
+    if (data_byte_array[offset+send_amount_len-1] != 0) return -1;
+    txn_data_ptr->send_amount_str =(char *) cy_malloc(send_amount_len);
+    s_memcpy((uint8_t *) txn_data_ptr->send_amount_str, data_byte_array, size, send_amount_len, &offset);
 
-    txn_data_ptr->send_amount =
-        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-    offset += sizeof(txn_data_ptr->send_amount);
-
-    if (offset + sizeof(txn_data_ptr->receive_amount) > size) return -1;
-
-    txn_data_ptr->receive_amount =
-        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-    offset += sizeof(txn_data_ptr->receive_amount);
-
-    if (offset + sizeof(txn_data_ptr->fee) > size) return -1;
-
-    txn_data_ptr->fee =
-        BYTE_ARRAY_TO_UINT32(data_byte_array + offset);
-    offset += sizeof(txn_data_ptr->fee);
+    size_t receive_amount_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
+    if (data_byte_array[offset+receive_amount_len-1] != 0) return -1;
+    txn_data_ptr->receive_amount_str =(char *) cy_malloc(receive_amount_len);
+    s_memcpy((uint8_t *) txn_data_ptr->receive_amount_str, data_byte_array, size, receive_amount_len, &offset);
+    
+    size_t fee_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
+    if (data_byte_array[offset+fee_len-1] != 0) return -1;
+    txn_data_ptr->fee_str =(char *) cy_malloc(fee_len);
+    s_memcpy((uint8_t *) txn_data_ptr->fee_str, data_byte_array, size, fee_len, &offset);
 
     s_memcpy(txn_data_ptr->send_txn_wallet_id,
              data_byte_array,

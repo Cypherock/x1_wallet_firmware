@@ -4,16 +4,19 @@
 #include "ui_instruction.h"
 #include "stdio.h"
 #include "btc.h"
+#include "utils.h"
+#include "near.h"
+#include "solana.h"
 
 extern Swap_Transaction_Data swap_transaction_data;
 extern Receive_Transaction_Data receive_transaction_data;
 
-static const uint8_t* get_wallet_name_from_wallet_id(uint8_t *wallet_id)
-{
+static const uint8_t *get_wallet_name_from_wallet_id(uint8_t *wallet_id) {
     uint8_t walletIndex = 0;
 
     for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
-        if (memcmp(wallet_id, get_wallet_id(walletIndex), WALLET_ID_SIZE) == 0) {
+        if (memcmp(wallet_id, get_wallet_id(walletIndex), WALLET_ID_SIZE)
+            == 0) {
             if (get_wallet_state(walletIndex) == VALID_WALLET) {
                 return get_wallet_name(walletIndex);
             } else {
@@ -37,10 +40,12 @@ void swap_transaction_tasks() {
             snprintf(display, sizeof(display), UI_TEXT_SWAP_SEND_PROMPT,
                      swap_transaction_data.send_txn_metadata.token_name,
                      get_wallet_name_from_wallet_id(swap_transaction_data.send_txn_wallet_id),
-                     get_coin_name(send_coin_index, swap_transaction_data.send_txn_metadata.network_chain_id));
+                     get_coin_name(send_coin_index,
+                                   swap_transaction_data.send_txn_metadata.network_chain_id));
             confirm_scr_init(display);
 
-        } break;
+        }
+            break;
 
         case SWAP_CONFIRM_RECEIVE_COIN: {
             instruction_scr_destructor();
@@ -53,10 +58,12 @@ void swap_transaction_tasks() {
             snprintf(display, sizeof(display), UI_TEXT_SWAP_RECEIVE_PROMPT,
                      swap_transaction_data.receive_txn_data.token_name,
                      get_wallet_name_from_wallet_id(swap_transaction_data.receive_txn_data.wallet_id),
-                     get_coin_name(receive_coin_index, swap_transaction_data.receive_txn_data.network_chain_id));
+                     get_coin_name(receive_coin_index,
+                                   swap_transaction_data.receive_txn_data.network_chain_id));
 
             confirm_scr_init(display);
-        } break;
+        }
+            break;
 
         case SWAP_SELECT_RECEIVE_WALLET_ID: {
             if (wallet_selector(swap_transaction_data.receive_txn_data
@@ -71,14 +78,9 @@ void swap_transaction_tasks() {
 
         case SWAP_CONFIRM_SEND_AMOUNT: {
             instruction_scr_destructor();
-            double amount_in_btc = 1.0 * swap_transaction_data.send_amount /
-                (SATOSHI_PER_BTC);
             char display[125] = {0};
-            uint8_t precision =
-                get_floating_precision(swap_transaction_data.send_amount,
-                                       SATOSHI_PER_BTC);
-            snprintf(display, sizeof(display), "Send\n%0.*f\n%s",
-                     precision, amount_in_btc, get_coin_symbol
+            snprintf(display, sizeof(display), "Amount to Send\n%s\n%s",
+                     swap_transaction_data.send_amount_str, get_coin_symbol
                          (BYTE_ARRAY_TO_UINT32(swap_transaction_data
                                                    .send_txn_metadata.coin_index),
                           swap_transaction_data.send_txn_metadata.network_chain_id));
@@ -88,15 +90,12 @@ void swap_transaction_tasks() {
 
         case SWAP_CONFIRM_RECEIVE_AMOUNT: {
             instruction_scr_destructor();
-            double amount_in_btc = 1.0 * swap_transaction_data
-                .receive_amount /
-                (SATOSHI_PER_BTC);
             char display[125] = {0};
-            uint8_t precision =
-                get_floating_precision(swap_transaction_data.receive_amount,
-                                       SATOSHI_PER_BTC);
-            snprintf(display, sizeof(display), "Receive approx.\n%0.*f\n%s",
-                     precision, amount_in_btc, get_coin_symbol
+            snprintf(display,
+                     sizeof(display),
+                     "Approx. Amount to Receive\n%s\n%s",
+                     swap_transaction_data.receive_amount_str,
+                     get_coin_symbol
                          (BYTE_ARRAY_TO_UINT32(swap_transaction_data
                                                    .receive_txn_data.coin_index),
                           swap_transaction_data.receive_txn_data.network_chain_id));
@@ -106,14 +105,12 @@ void swap_transaction_tasks() {
 
         case SWAP_CONFIRM_NETWORK_FEES: {
             instruction_scr_destructor();
-            double amount_in_btc = 1.0 * swap_transaction_data.fee /
-                (SATOSHI_PER_BTC);
             char display[125] = {0};
-            uint8_t precision =
-                get_floating_precision(swap_transaction_data.fee,
-                                       SATOSHI_PER_BTC);
-            snprintf(display, sizeof(display), "Network Fees \n%0.*f\n",
-                     precision, amount_in_btc);
+            snprintf(display, sizeof(display), "Transaction Fee\n%s\n%s",
+                     swap_transaction_data.fee_str, get_coin_symbol
+                         (BYTE_ARRAY_TO_UINT32(swap_transaction_data
+                                                   .send_txn_metadata.coin_index),
+                          swap_transaction_data.send_txn_metadata.network_chain_id));
             confirm_scr_init(display);
         }
             break;
@@ -140,6 +137,13 @@ void swap_transaction_tasks() {
             memcpy((uint8_t *) &swap_transaction_data.receive_txn_data,
                    (uint8_t *) &receive_transaction_data,
                    sizeof(Receive_Transaction_Data));
+            mark_event_over();
+        }
+            break;
+
+        case SWAP_VERIFY_SIGNATURE: {
+            instruction_scr_init("", NULL);
+            instruction_scr_change_text(ui_text_processing, true);
             mark_event_over();
         }
             break;

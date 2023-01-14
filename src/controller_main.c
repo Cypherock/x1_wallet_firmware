@@ -627,25 +627,29 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
             } break;
 
-          case SWAP_TXN_START: {
-              CY_Reset_Not_Allow(false);
+            case SWAP_TXN_START: {
+                CY_Reset_Not_Allow(false);
 
-              int64_t offset =
-                  byte_array_to_swap_txn_data(&swap_transaction_data,
-                                              data_array,
-                                              msg_size);
+                int64_t offset =
+                    byte_array_to_swap_txn_data(&swap_transaction_data,
+                                                data_array,
+                                                msg_size);
 
-              if (offset == -1) {
-                  comm_reject_invalid_cmd();
-                  clear_message_received_data();
-                  return;
-              }
+                if (offset == -1) {
+                    comm_reject_invalid_cmd();
+                    clear_message_received_data();
+                    return;
+                }
 
-              flow_level.show_desktop_start_screen = true;
+                flow_level.show_desktop_start_screen = true;
 
-              is_swap_txn = true;
-              flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
-          }
+                is_swap_txn = true;
+                flow_level.level_two = LEVEL_THREE_SWAP_TRANSACTION;
+                snprintf(flow_level.confirmation_screen_text,
+                         sizeof(flow_level.confirmation_screen_text),
+                         "Start Swap Transaction?");
+
+            }
             break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {
