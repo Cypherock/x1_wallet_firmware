@@ -238,4 +238,13 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
  */
 void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
 
+/**
+ * @brief Return the string representation of the derivation path received in transaction metadata for ethereum transaction.
+ * 
+ * @param txn_metadata_ptr      Pointer to transaction metadata
+ * @param output                Pointer to the output string
+ * @param out_len               Maximum length of output string
+ */
+void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len);
+
 #endif

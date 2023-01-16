@@ -425,3 +425,12 @@ void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decima
   byte_array_to_hex_string(fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
   convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1, decimal, fee_hex_string, fee_decimal_string, size);
 }
+
+void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len) {
+  const uint32_t path[] = {BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->purpose_index),
+                           BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index),
+                           BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index),
+                           BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].chain_index),
+                           BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].address_index)};
+  derivation_path_array_to_string(path, 5, false, output, out_len);
+}

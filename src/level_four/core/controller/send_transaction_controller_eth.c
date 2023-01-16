@@ -125,6 +125,10 @@ void send_transaction_controller_eth()
     } break;
 
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
+        flow_level.level_three = SEND_TXN_VERIFY_DERIVATION_PATH;
+    } break;
+
+    case SEND_TXN_VERIFY_DERIVATION_PATH: {
         flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH;
     } break;
 
