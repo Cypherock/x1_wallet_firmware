@@ -263,26 +263,3 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
 
   return status;
 }
-
-uint32_t sol_get_account_index(const uint32_t *path, solana_account_type account_tag) {
-  uint32_t index = 0;
-
-  uint8_t depth_index = sol_get_derivation_depth(account_tag) - 1;
-
-  switch (account_tag) {
-    case SOL_ACC_TYPE1:
-      index = 0;
-      break;
-
-    case SOL_ACC_TYPE2:
-    case SOL_ACC_TYPE3:
-      // discard the sign bit denoting hardened/non-harndedned value
-      index = path[depth_index] & 0x7FFFFFFF;
-      break;
-
-    default:
-      break;
-  }
-
-  return index;
-}

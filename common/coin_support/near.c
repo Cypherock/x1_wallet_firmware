@@ -196,8 +196,3 @@ bool near_verify_derivation_path(const uint32_t *path, uint8_t levels) {
 
   return status;
 }
-
-uint32_t near_get_account_index(const uint32_t *path) {
-  // discard the sign bit denoting hardened/non-harndedned value
-  return (path[4] & 0x7FFFFFFF);
-}
