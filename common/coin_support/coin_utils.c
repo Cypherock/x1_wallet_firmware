@@ -603,18 +603,18 @@ void derivation_path_array_to_string(const uint32_t *path,
                                      const bool harden_all,
                                      char *output,
                                      const size_t out_len) {
+    if (out_len == 0 || output == NULL)
+        return;
     int offset = 0;
-    offset += snprintf(output + offset, out_len - offset, "m/");
+    offset += snprintf(output + offset, out_len - offset, "m");
 
-    for (int i = 0; i < path_length; i++) {
+    for (int i = 0; i < path_length && out_len > offset; i++) {
         const bool hardened  = path[i] & 0x80000000;
         const uint32_t value = path[i] & 0x7FFFFFFF;
 
-        offset += snprintf(output + offset, out_len - offset, "%ld", value);
+        offset += snprintf(output + offset, out_len - offset, "/%ld", value);
 
-        if (harden_all || hardened)
+        if ((harden_all || hardened) && out_len > offset)
             offset += snprintf(output + offset, out_len - offset, "'");
-
-        offset += snprintf(output + offset, out_len - offset, "%c", (char)("/ "[i == path_length - 1]));
     }
 }
