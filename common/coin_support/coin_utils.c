@@ -623,6 +623,10 @@ FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
 
         if (harden_all || hardened)
             offset += snprintf(output + offset, out_len - offset, "'");
+
+        //extra check needed as snprintf returns estimated size rather than actual size written
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
     }
     return FRC_SUCCESS;
 }
