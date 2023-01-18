@@ -55,34 +55,35 @@
  *
  ******************************************************************************
  */
-#include "stdlib.h"
 #include "ui_scroll_list.h"
+#include "stdlib.h"
 
 Ui_HorizontalScreenData_t *pHorizontalScrData  = NULL;
 Ui_HorizontalScreenObject_t *pHorizontalScrObj = NULL;
 
 static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvglEvent);
 static void Ui_AcceptEventHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvglEvent);
-static void Ui_ArrowHandler(lv_obj_t *instruction, const lv_event_t event);
 
-static void Ui_IncreaseCurrPage(void) {
+static bool Ui_IncreaseCurrPage(void) {
     ASSERT(NULL != pHorizontalScrData);
 
     if (pHorizontalScrData->currPageNum < pHorizontalScrData->totalPageNum) {
         pHorizontalScrData->currPageNum += 1;
+        return true;
     }
 
-    return;
+    return false;
 }
 
-static void Ui_DecreaseCurrPage(void) {
+static bool Ui_DecreaseCurrPage(void) {
     ASSERT(NULL != pHorizontalScrData);
 
     if (pHorizontalScrData->currPageNum > 1) {
         pHorizontalScrData->currPageNum -= 1;
+        return true;
     }
 
-    return;
+    return false;
 }
 
 static void Ui_UpdateArrows(void) {
@@ -118,7 +119,6 @@ static void Ui_UpdateButtons(void) {
 
 static void Ui_UpdateDynamicIcons(void) {
     ASSERT((NULL != pHorizontalScrData) && (NULL != pHorizontalScrObj));
-
     Ui_UpdateArrows();
     Ui_UpdateButtons();
 
@@ -137,16 +137,6 @@ static void Ui_UpdateDynamicIcons(void) {
     ui_paragraph(pHorizontalScrObj->pLvglPageNum, pHorizontalScrData->pagesFootnote,
                  LV_LABEL_ALIGN_CENTER);
     lv_obj_align(pHorizontalScrObj->pLvglPageNum, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-}
-
-static void Ui_GetCurrentPageBody(void) {
-    ASSERT(NULL != pHorizontalScrData);
-    
-    char *pCurrPagePtr = (char *)(pHorizontalScrData->pBodyUi) +
-                         (pHorizontalScrData->currPageNum - 1) * MAX_CHARACTERS_IN_BODY;
-    
-    snprintf(pHorizontalScrData->bodyTxtUi, MAX_CHARACTERS_IN_BODY + 1, "%s",
-             pCurrPagePtr);
 }
 
 static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvglEvent) {
@@ -217,20 +207,21 @@ static void Ui_ArrowHandler(lv_obj_t *pLvglArrowObject, const lv_event_t lvglEve
     ASSERT((NULL != pHorizontalScrData) && (NULL != pHorizontalScrObj) &&
            (NULL != pLvglArrowObject));
 
-    if (lv_obj_get_hidden(pLvglArrowObject)) {
-        return;
-    }
-
     switch (lvglEvent) {
         case LV_EVENT_KEY: {
-            if (LV_KEY_LEFT == lv_indev_get_key(ui_get_indev())) {
-                Ui_DecreaseCurrPage();
-            } else if (LV_KEY_RIGHT == lv_indev_get_key(ui_get_indev())) {
-                Ui_IncreaseCurrPage();
+            lv_key_t keyPressed = lv_indev_get_key(ui_get_indev());
+            if (LV_KEY_RIGHT == keyPressed) {
+                if (true == Ui_IncreaseCurrPage()) {
+                    lv_page_scroll_ver(pHorizontalScrObj->pUiPage,
+                                       -lv_obj_get_height(pHorizontalScrObj->pUiPage));
+                }
+            } else if (LV_KEY_LEFT == keyPressed) {
+                if (true == Ui_DecreaseCurrPage()) {
+                    lv_page_scroll_ver(pHorizontalScrObj->pUiPage,
+                                       lv_obj_get_height(pHorizontalScrObj->pUiPage));
+                }
             }
 
-            Ui_GetCurrentPageBody();
-            lv_label_set_static_text(pHorizontalScrObj->pLvglBody, pHorizontalScrData->bodyTxtUi);
             Ui_UpdateDynamicIcons();
         }
 
@@ -246,68 +237,69 @@ void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharact
     pHorizontalScrData = (Ui_HorizontalScreenData_t *)malloc(sizeof(Ui_HorizontalScreenData_t));
     ASSERT(NULL != pHorizontalScrData);
 
+    pHorizontalScrData->pHdgUi  = pHdrCharacter;
+    pHorizontalScrData->pBodyUi = pBodyCharacter;
+
+    pHorizontalScrObj = (Ui_HorizontalScreenObject_t *)malloc(sizeof(Ui_HorizontalScreenObject_t));
+    ASSERT(NULL != pHorizontalScrObj);
+
     /* Assign data pointers to Ui_HorizontalScreenData_t object from input */
     pHorizontalScrData->pHdgUi  = pHdrCharacter;
     pHorizontalScrData->pBodyUi = pBodyCharacter;
 
-    pHorizontalScrData->totalCharCount =
-        strnlen(pBodyCharacter, (MAX_PAGES_SUPPORTED * MAX_CHARACTERS_IN_BODY));
-    pHorizontalScrData->currPageNum = 1;
-    pHorizontalScrData->totalPageNum =
-        (pHorizontalScrData->totalCharCount + MAX_CHARACTERS_IN_BODY - 1) / MAX_CHARACTERS_IN_BODY;
-
-    pHorizontalScrData->bLeftArrowHidden    = true;
-    pHorizontalScrData->bRightArrowHidden   = true;
-    pHorizontalScrData->bAcceptCancelHidden = false;
-
-    if (1 < (pHorizontalScrData->totalPageNum)) {
-        pHorizontalScrData->bRightArrowHidden   = false;
-        pHorizontalScrData->bAcceptCancelHidden = true;
-    }
-
-    Ui_GetCurrentPageBody();
-
-    /* Assign LVGL data objects */
-    pHorizontalScrObj = (Ui_HorizontalScreenObject_t *)malloc(sizeof(Ui_HorizontalScreenObject_t));
-    ASSERT(NULL != pHorizontalScrObj);
+    pHorizontalScrObj->pUiPage = lv_page_create(lv_scr_act(), NULL);
+    lv_obj_set_size(pHorizontalScrObj->pUiPage, 128, 32);
+    lv_page_set_style(pHorizontalScrObj->pUiPage, LV_PAGE_STYLE_BG, &lv_style_transp);
+    lv_page_set_style(pHorizontalScrObj->pUiPage, LV_PAGE_STYLE_SCRL, &lv_style_transp_fit);
+    lv_page_set_sb_mode(pHorizontalScrObj->pUiPage, LV_SB_MODE_OFF);
+    lv_obj_align(pHorizontalScrObj->pUiPage, NULL, LV_ALIGN_CENTER, 0, 0);
 
     pHorizontalScrObj->pLvglHdr = lv_label_create(lv_scr_act(), NULL);
     ui_heading(pHorizontalScrObj->pLvglHdr, pHorizontalScrData->pHdgUi, LV_HOR_RES - 20,
                LV_LABEL_ALIGN_CENTER);
 
-    pHorizontalScrObj->pLvglBody = lv_label_create(lv_scr_act(), NULL);
-    ui_paragraph(pHorizontalScrObj->pLvglBody, pHorizontalScrData->bodyTxtUi,
-                 LV_LABEL_ALIGN_CENTER);
-    lv_obj_set_width(pHorizontalScrObj->pLvglBody, LV_HOR_RES - 18);
-    lv_obj_align(pHorizontalScrObj->pLvglBody, NULL, LV_ALIGN_CENTER, 0, 0);
+    /*Create a pHorizontalScrObj->pLvglBody on the pHorizontalScrObj->pUiPage*/
+    pHorizontalScrObj->pLvglBody = lv_label_create(pHorizontalScrObj->pUiPage, NULL);
+    lv_label_set_long_mode(pHorizontalScrObj->pLvglBody, LV_LABEL_LONG_BREAK);
+    lv_obj_set_size(pHorizontalScrObj->pLvglBody,
+                    lv_page_get_fit_width(pHorizontalScrObj->pUiPage) - 16,
+                    lv_page_get_fit_height(pHorizontalScrObj->pUiPage));
+    lv_label_set_text(pHorizontalScrObj->pLvglBody, pHorizontalScrData->pBodyUi);
+    lv_label_set_align(pHorizontalScrObj->pLvglBody, LV_LABEL_ALIGN_CENTER);
+    lv_obj_align(pHorizontalScrObj->pLvglBody, NULL, LV_ALIGN_IN_TOP_MID, 0, -4);
     lv_obj_set_event_cb(pHorizontalScrObj->pLvglBody, Ui_ArrowHandler);
-    lv_group_add_obj(ui_get_group(), pHorizontalScrObj->pLvglBody);
-    lv_indev_set_group(ui_get_indev(), ui_get_group());
 
     pHorizontalScrObj->pLvglLeftArrow = lv_label_create(lv_scr_act(), NULL);
     lv_label_set_text(pHorizontalScrObj->pLvglLeftArrow, LV_SYMBOL_LEFT);
-    lv_obj_align(pHorizontalScrObj->pLvglLeftArrow, pHorizontalScrObj->pLvglBody,
-                 LV_ALIGN_OUT_LEFT_MID, -1, 0);
-    lv_obj_set_hidden(pHorizontalScrObj->pLvglLeftArrow, pHorizontalScrData->bLeftArrowHidden);
+    lv_obj_align(pHorizontalScrObj->pLvglLeftArrow, lv_scr_act(),
+                 LV_ALIGN_IN_LEFT_MID, 0, 0);
 
     pHorizontalScrObj->pLvglRightArrow = lv_label_create(lv_scr_act(), NULL);
     lv_label_set_text(pHorizontalScrObj->pLvglRightArrow, LV_SYMBOL_RIGHT);
-    lv_obj_align(pHorizontalScrObj->pLvglRightArrow, pHorizontalScrObj->pLvglBody,
-                 LV_ALIGN_OUT_RIGHT_MID, 1, 0);
-    lv_obj_set_hidden(pHorizontalScrObj->pLvglRightArrow, pHorizontalScrData->bRightArrowHidden);
+    lv_obj_align(pHorizontalScrObj->pLvglRightArrow, lv_scr_act(),
+                 LV_ALIGN_IN_RIGHT_MID, 0, 0);
+
+    int16_t totalPageHeight = (int16_t)lv_page_get_scrl_height(pHorizontalScrObj->pUiPage);
+    int16_t currPageHeight  = (int16_t)lv_obj_get_height(pHorizontalScrObj->pUiPage);
+    ASSERT(0 != currPageHeight);
+    pHorizontalScrData->currPageNum  = 1;
+    pHorizontalScrData->totalPageNum = (totalPageHeight + currPageHeight - 1) / (currPageHeight);
+
+    lv_group_add_obj(ui_get_group(), pHorizontalScrObj->pLvglBody);
+    lv_indev_set_group(ui_get_indev(), ui_get_group());
+    lv_group_focus_obj(pHorizontalScrObj->pLvglBody);
 
     pHorizontalScrObj->pLvglCancelBtn = lv_btn_create(lv_scr_act(), NULL);
     ui_cancel_btn(pHorizontalScrObj->pLvglCancelBtn, Ui_CancelEventHandler,
                   pHorizontalScrData->bAcceptCancelHidden);
     lv_obj_set_size(pHorizontalScrObj->pLvglCancelBtn, 16, 16);
-    lv_obj_align(pHorizontalScrObj->pLvglCancelBtn, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 3);
 
     pHorizontalScrObj->pLvglAcceptBtn = lv_btn_create(lv_scr_act(), NULL);
     ui_next_btn(pHorizontalScrObj->pLvglAcceptBtn, Ui_AcceptEventHandler,
                 pHorizontalScrData->bAcceptCancelHidden);
     lv_obj_set_size(pHorizontalScrObj->pLvglAcceptBtn, 16, 16);
-    lv_obj_align(pHorizontalScrObj->pLvglAcceptBtn, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 2, 2);
 
     pHorizontalScrObj->pLvglPageNum = lv_label_create(lv_scr_act(), NULL);
     Ui_UpdateDynamicIcons();
 }
+

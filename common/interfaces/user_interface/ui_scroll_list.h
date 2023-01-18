@@ -20,8 +20,7 @@ typedef struct {
 	const char *pHdgUi;
 	const char *pBodyUi;
 	char bodyTxtUi[MAX_CHARACTERS_IN_BODY + 1];
-	int32_t totalCharCount;
-	uint8_t totalPageNum;
+	int16_t totalPageNum;
 	uint8_t currPageNum; /* TODO: Do calculations */
 	char pagesFootnote[MAX_CHARACTERS_IN_BODY];
 	bool bLeftArrowHidden;
@@ -30,6 +29,7 @@ typedef struct {
 } Ui_HorizontalScreenData_t;
 
 typedef struct {
+	lv_obj_t *pUiPage;
 	lv_obj_t *pLvglHdr;
 	lv_obj_t *pLvglBody;
 	lv_obj_t *pLvglLeftArrow;
