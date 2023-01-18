@@ -111,7 +111,9 @@ const char* ui_text_logging_export_options[] = {
 // wallet creation
 const char* ui_text_verification_is_now_complete_messages[] = {
     "Wallet created successfully!",
+    "You can view the seed phrase on the X1",
     "You'll need this device and a card to make transactions",
+    "You'll require the PIN to view seed or transact",
     "To get started export this wallet to the CySync app",
     "Press the center button to return to the main menu",
 };
