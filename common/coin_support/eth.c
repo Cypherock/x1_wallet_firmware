@@ -432,5 +432,9 @@ void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *o
                            BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index),
                            BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].chain_index),
                            BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].address_index)};
-  derivation_path_array_to_string(path, 5, false, output, out_len);
+  FUNC_RETURN_CODES code = derivation_path_array_to_string(path, 5, false, output, out_len);
+  if (code != FRC_SUCCESS) {
+    LOG_ERROR("DP-ETH:%d", code);
+    ASSERT(false);
+  }
 }

@@ -56,10 +56,10 @@ typedef enum { NONE, STRING, LIST } seq_type;
  */
 typedef enum {
   PAYLOAD_ABSENT = 0x0,               // No payload present in the transaction
-  PAYLOAD_SIGNATURE_NOT_WHITELISTED,  // Payload signature is not recognized [Blind Signing]
-  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // Payload Contract is not recognized [Unverified Contract]
-  PAYLOAD_CONTRACT_INVALID,           // Payload Contract is invalid [Invalid Transaction]
-  PAYLOAD_WHITELISTED,                // Payload is recognized [Clear Signing]
+  PAYLOAD_SIGNATURE_NOT_WHITELISTED,  // Payload function signature is not recognized [Blind Signing]
+  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract]
+  PAYLOAD_CONTRACT_INVALID,           // Payload function signature and contract both are whitelisted but doesn't match [Invalid Transaction]
+  PAYLOAD_WHITELISTED,                // Payload is completely recognized [Clear Signing]
 } PAYLOAD_STATUS;
 
 /**
