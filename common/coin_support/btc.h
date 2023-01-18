@@ -297,7 +297,7 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, uint32_t coin
  *
  * @note
  */
-int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_output);
+int get_address(const char* hrp, const uint8_t* script_pub_key, uint8_t addr_version, char* address_output);
 
 /**
  * @brief Get the transaction fee of an unsigned transaction.
