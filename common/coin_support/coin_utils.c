@@ -268,27 +268,19 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
         case ETHEREUM: {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
-                case ETHEREUM_ROPSTEN_CHAIN:
                     return ETHEREUM_TOKEN_SYMBOL;
-                case POLYGON_MUMBAI_CHAIN:
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_TOKEN_SYMBOL;
-                case BSC_TESTNET_CHAIN:
                 case BSC_MAINNET_CHAIN:
                   return BSC_TOKEN_SYMBOL;
-                case FANTOM_TESTNET_CHAIN:
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_TOKEN_SYMBOL;
-                case AVALANCHE_TESTNET_CHAIN:
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_TOKEN_SYMBOL;
-                case OPTIMISM_TESTNET_CHAIN:
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_TOKEN_SYMBOL;
-                case ETC_TESTNET_CHAIN:
                 case ETC_MAINNET_CHAIN:
                   return ETC_TOKEN_SYMBOL;
-                case HARMONY_TESTNET_CHAIN:
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_TOKEN_SYMBOL;
                 case ARBITRUM_MAINNET_CHAIN:
@@ -315,7 +307,7 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
         case 0x80000000:
             return "Bitcoin";
         case 0x80000001:
-            return "BTC Test";
+            return "Bitcoin Testnet";
         case 0x80000002:
             return "Litecoin";
         case 0x80000003:
@@ -326,36 +318,20 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
                     return ETHEREUM_MAINNET_NAME;
-                case ETHEREUM_ROPSTEN_CHAIN:
-                    return ETHEREUM_ROPSTEN_NAME;
-                case POLYGON_MUMBAI_CHAIN:
-                    return POLYGON_MUMBAI_NAME;
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MAINNET_NAME;
                 case BSC_MAINNET_CHAIN:
                   return BSC_MAINNET_NAME;
-                case BSC_TESTNET_CHAIN:
-                  return BSC_TESTNET_NAME;
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_MAINNET_NAME;
-                case FANTOM_TESTNET_CHAIN:
-                  return FANTOM_TESTNET_NAME;
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_MAINNET_NAME;
-                case AVALANCHE_TESTNET_CHAIN:
-                  return AVALANCHE_TESTNET_NAME;
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_MAINNET_NAME;
-                case OPTIMISM_TESTNET_CHAIN:
-                  return OPTIMISM_TESTNET_NAME;
                 case ETC_MAINNET_CHAIN:
                   return ETC_MAINNET_NAME;
-                case ETC_TESTNET_CHAIN:
-                  return ETC_TESTNET_NAME;
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_MAINNET_NAME;
-                case HARMONY_TESTNET_CHAIN:
-                  return HARMONY_TESTNET_NAME;
                 case ARBITRUM_MAINNET_CHAIN:
                   return ARBITRUM_MAINNET_NAME;
                 default: {
@@ -563,37 +539,43 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     return status;
 }
 
-uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
+uint16_t get_account_tag(const uint32_t *path, uint16_t account_type, char *account_tag, uint8_t out_len) {
     uint32_t coin = path[1];
     uint16_t length = 0;
     char *type = "";
+    char *format = "(%s #%lu)";
+    uint32_t account_index = 0;
 
     switch (coin) {
         case NEAR:
-            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
+            format = "%s#%lu";
+            account_index = near_get_account_index(path);
             break;
 
         case SOLANA:            // m/44'/501'/i'/j'
             type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
+            account_index = sol_get_account_index(path, account_type);
             break;
 
         case LITCOIN:
         case DOGE:
         case DASH:              // m/44'/5'  /i'/0 /j
         case ETHEREUM:          // m/44'/60' /i'/0 /0
-            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
+            format = "%s#%lu";
+            account_index = path[2] & 0x7FFFFFFF;
             break;
 
         case BTC_TEST:          // m/44'/1'  /i'/0 /j
         case BITCOIN:           // m/44'/0'  /i'/0 /j
             type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
+            account_index = path[2] & 0x7FFFFFFF;
             break;
 
         default:
             break;
     }
+    format = account_index == 0 ? "%s" : format ;
+    length = snprintf(account_tag, out_len, format, type, account_index);
 
     return length;
 }

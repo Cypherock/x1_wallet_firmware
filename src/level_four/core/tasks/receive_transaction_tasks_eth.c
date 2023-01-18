@@ -149,7 +149,7 @@ void receive_transaction_tasks_eth()
         char display[70];
         char address_s[sizeof(receive_transaction_data.address)] = {'0', 'x', '\0'};
         uint64_t chain_id = receive_transaction_data.network_chain_id;
-        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN)
+        if (chain_id != HARMONY_MAINNET_CHAIN)
           byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
                        address_s + 2, sizeof(address_s) - 2);
         else

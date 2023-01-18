@@ -106,7 +106,6 @@ bool encrypt_shares()
         chacha20poly1305_finish(&ctx, (uint8_t *) (wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
         memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     }
-    memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
 
     return true;
 }
