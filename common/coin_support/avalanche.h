@@ -15,7 +15,7 @@
 #define AVALANCHE_MAINNET_CHAIN    43114
 #define AVALANCHE_TESTNET_CHAIN    43113
 
-#define AVALANCHE_MAINNET_NAME   "Avalanche"
+#define AVALANCHE_MAINNET_NAME   "Avalanche (C-Chain)"
 #define AVALANCHE_TESTNET_NAME   "Fuji Testnet"
 #define AVALANCHE_TOKEN_SYMBOL   "AVAX"
 

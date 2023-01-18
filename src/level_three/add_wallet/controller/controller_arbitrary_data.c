@@ -195,10 +195,6 @@ void arbitrary_data_controller()
 
     case ARBITRARY_DATA_VERIFY_SHARES:
         flow_level.level_three = verify_card_share_data() == 1 ? ARBITRARY_DATA_SUCCESS_MESSAGE : ARBITRARY_DATA_FAILED_MESSAGE;
-        break;
-
-    case ARBITRARY_DATA_SUCCESS_MESSAGE:
-    case ARBITRARY_DATA_FAILED_MESSAGE:
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
@@ -206,7 +202,17 @@ void arbitrary_data_controller()
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
+        break;
+
+    case ARBITRARY_DATA_SUCCESS_MESSAGE:
         reset_flow_level();
+        break;
+
+    case ARBITRARY_DATA_FAILED_MESSAGE:
+        flow_level.level_one = LEVEL_TWO_OLD_WALLET;
+        flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
+        flow_level.level_three = 1;
+        flow_level.level_four = 1;
         break;
 
     default:

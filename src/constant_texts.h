@@ -17,8 +17,8 @@
 #define UI_TEXT_IS_WORD "Is Word #%d\n%s"
 #define UI_TEXT_TAP_CARD "Tap card #%d"
 #define UI_TEXT_PLACE_CARD "Place Card #%d"
-#define UI_TEXT_RECEIVE_PROMPT "Receive %s with %s"
-#define UI_TEXT_SEND_PROMPT "Send %s with %s"
+#define UI_TEXT_RECEIVE_PROMPT "Receive %s with %s %s"
+#define UI_TEXT_SEND_PROMPT "Send %s with %s %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
@@ -265,7 +265,6 @@ extern const char* ui_text_unreliable_cards;
 extern const char* ui_critical_card_health_migrate_data;
 extern const char* ui_text_reset_exit[];
 extern const char* ui_text_erasing;
-extern const char* ui_text_performing_checks;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char* ui_text_send_logs_prompt;

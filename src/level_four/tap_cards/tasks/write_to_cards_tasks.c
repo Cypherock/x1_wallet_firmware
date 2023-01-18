@@ -63,6 +63,7 @@
 #include "ui_instruction.h"
 #include "ui_message.h"
 #include "tasks_tap_cards.h"
+#include "nfc.h"
 
 
 extern char* ALPHABET;
@@ -84,14 +85,16 @@ void tap_cards_for_write_flow()
         mark_event_over();
     } break;
 
-    case CARD_ONE_WRITE:
     case CARD_ONE_READBACK:
-    case CARD_TWO_WRITE:
     case CARD_TWO_READBACK:
-    case CARD_THREE_WRITE:
     case CARD_THREE_READBACK:
-    case CARD_FOUR_WRITE:
     case CARD_FOUR_READBACK:
+        if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
+            instruction_scr_change_text(ui_text_card_removed_fast, true);
+    case CARD_ONE_WRITE:
+    case CARD_TWO_WRITE:
+    case CARD_THREE_WRITE:
+    case CARD_FOUR_WRITE:
         mark_event_over();
         break;
 
