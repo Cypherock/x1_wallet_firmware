@@ -126,9 +126,15 @@ typedef enum commandType {
     SEND_TXN_PRE_SIGNING_DATA = 92,                    ///< Command for data required just before signing in send transaction
 
     DEVICE_FLOW_RESET_REQ = 0xFF,            ///< unused enum
+    DEVICE_TEST_STATUS = 0x1000,
     DEVICE_SHAMIR_GENERATE_TEST = 0x1001,
     DEVICE_SHAMIR_RESTORE_SEED = 0x1002,
     DEVICE_SHAMIR_VERIFY_SHARES = 0x1003,
+    DEVICE_SHAMIR_VERIFY_SHARES_FAILED = 0x1004,
+    DEVICE_SHAMIR_GENERATE_TEST_WITH_PIN = 0x1005,
+    DEVICE_SHAMIR_RESTORE_SEED_WITH_PIN = 0x1006,
+    DEVICE_SHAMIR_VERIFY_SHARES_WITH_PIN = 0x1007,
+    DEVICE_SHAMIR_VERIFY_SHARES_FAILED_WITH_PIN = 0x1008,
 } En_command_type_t;
 
 /**

@@ -120,7 +120,7 @@ int verify_card_share_data() {
     uint8_t wallet_id[WALLET_ID_SIZE] = {0};
 
     wallet_shamir_data.share_x_coords[4] = 5;
-    get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[4]);
+    // get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[4]);
 
     if (WALLET_IS_PIN_SET(wallet.wallet_info))
         decrypt_shares();
@@ -151,10 +151,10 @@ int verify_card_share_data() {
         mnemonic_clear();
     }
 
-    // both checks complete; accordingly update on flash
-    uint8_t wallet_index;
-    get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
-    set_wallet_state(wallet_index, status == 1 ? VALID_WALLET : INVALID_WALLET);
+    // // both checks complete; accordingly update on flash
+    // uint8_t wallet_index;
+    // get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
+    // set_wallet_state(wallet_index, status == 1 ? VALID_WALLET : INVALID_WALLET);
 
     memzero(secret, sizeof(secret));
     return status;

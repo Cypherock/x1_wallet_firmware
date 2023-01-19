@@ -6,6 +6,8 @@
 #include "logger.h"
 #include "sys_state.h"
 #include "test_cases.h"
+#include "ui_input_text.h"
+#include "crypto_random.h"
 
 typedef struct{
     uint8_t     level;
@@ -40,6 +42,7 @@ void set_test_case(){
         return;
 
     switch(test_case){
+        case TEST_GENERATE_SEED_WITH_PIN:
         case TEST_GENERATE_SEED:
             test_data.level = LEVEL_THREE;
             test_data.start_flow.level_one = LEVEL_TWO_NEW_WALLET;
@@ -52,6 +55,7 @@ void set_test_case(){
             LOG_INFO("TEST: generate seed triggered");
             test_state = TEST_DATA_READY;
         break;
+        case TEST_RESTORE_SEED_WITH_PIN:
         case TEST_RESTORE_SEED:
             test_data.level = LEVEL_THREE;
             test_data.start_flow.level_one = LEVEL_TWO_NEW_WALLET;
@@ -64,15 +68,16 @@ void set_test_case(){
             LOG_INFO("TEST: restore seed triggered");
             test_state = TEST_DATA_READY;
         break;
+        case TEST_VERIFY_SHARES_WITH_PIN:
         case TEST_VERIFY_SHARES:
             test_data.level = LEVEL_THREE;
-            test_data.start_flow.level_one = LEVEL_TWO_OLD_WALLET;
-            test_data.start_flow.level_two = LEVEL_THREE_VERIFY_WALLET;
-            test_data.start_flow.level_three = VERIFY_WALLET_SHOW_MNEMONICS;
+            test_data.start_flow.level_one = LEVEL_TWO_NEW_WALLET;
+            test_data.start_flow.level_two = LEVEL_THREE_GENERATE_WALLET;
+            test_data.start_flow.level_three = GENERATE_WALLET_VERIFY_SHARES;
 
-            test_data.end_flow.level_one = LEVEL_TWO_OLD_WALLET;
-            test_data.end_flow.level_two = LEVEL_THREE_VERIFY_WALLET;
-            test_data.end_flow.level_three = VERIFY_WALLET_SHOW_MNEMONICS;
+            test_data.end_flow.level_one = LEVEL_TWO_NEW_WALLET;
+            test_data.end_flow.level_two = LEVEL_THREE_GENERATE_WALLET;
+            test_data.end_flow.level_three = GENERATE_WALLET_VERIFY_SHARES;
             LOG_INFO("TEST: restore seed triggered");
             test_state = TEST_DATA_READY;
         break;
@@ -105,17 +110,51 @@ void jump_to_test(){
     switch (test_case)
     {
         case TEST_GENERATE_SEED:{
-            Flash_Wallet wallet_for_flash;
-            WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
             WALLET_UNSET_PIN(wallet.wallet_info);
             memcpy(wallet.wallet_share_with_mac_and_nonce, test_input_data, 32);
         }break;
+        case TEST_GENERATE_SEED_WITH_PIN:{
+            wallet.wallet_info = 0;
+            uint8_t pin_size = test_input_data[32];
+            if(pin_size > 0 && pin_size <= MAX_PIN_SIZE)    {WALLET_SET_PIN(wallet.wallet_info);}
+            else if (pin_size == 0)     {WALLET_UNSET_PIN(wallet.wallet_info);}
+            else {
+                test_data_len = 0;
+                test_output_data[test_data_len++] = test_case;
+                test_output_data[test_data_len++] = 1;  //Invalid argument
+                transmit_data_to_app(DEVICE_TEST_STATUS, test_output_data, test_data_len);
+                test_state = TEST_COMPLETED;
+                return;
+            }
+            sha256_Raw(test_input_data+33, strnlen((char*)(test_input_data+1), pin_size), wallet_credential_data.password_single_hash);
+            // Random 32bytes data for mnemonics generation
+            memcpy(wallet.wallet_share_with_mac_and_nonce, test_input_data, 32);
+        }break;
         case TEST_RESTORE_SEED:{
-            Flash_Wallet wallet_for_flash;
-            WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
             WALLET_UNSET_PIN(wallet.wallet_info);
             wallet.number_of_mnemonics = 24;
-            __single_to_multi_line((const char*)test_input_data, strlen(test_input_data), wallet_credential_data.mnemonics);            
+            __single_to_multi_line((const char*)test_input_data, strlen((const char*)test_input_data), wallet_credential_data.mnemonics);
+            LOG_INFO("TEST: Input mnemonics");
+            for(int i = 0; i < 24; i++)
+                LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
+        }break;
+        case TEST_RESTORE_SEED_WITH_PIN:{
+            wallet.wallet_info = 0;
+            // Random 32bytes data for mnemonics generation
+            wallet.number_of_mnemonics = 24;
+            uint8_t pin_size = test_input_data[0];
+            if(pin_size > 0 && pin_size <= MAX_PIN_SIZE)    {WALLET_SET_PIN(wallet.wallet_info);}
+            else if (pin_size == 0)     {WALLET_UNSET_PIN(wallet.wallet_info);}
+            else {
+                test_data_len = 0;
+                test_output_data[test_data_len++] = test_case;
+                test_output_data[test_data_len++] = 1;  //Invalid argument
+                transmit_data_to_app(DEVICE_TEST_STATUS, test_output_data, test_data_len);
+                test_state = TEST_COMPLETED;
+                return;
+            }
+            sha256_Raw(test_input_data+1, strnlen((char*)(test_input_data+1), pin_size), wallet_credential_data.password_single_hash);
+            __single_to_multi_line((const char*)test_input_data+pin_size+1, strlen((const char*)test_input_data), wallet_credential_data.mnemonics);
             LOG_INFO("TEST: Input mnemonics");
             for(int i = 0; i < 24; i++)
                 LOG_INFO("MNEMO WORD %d: %s", i+1, wallet_credential_data.mnemonics[i]);
@@ -127,6 +166,34 @@ void jump_to_test(){
                 memcpy(wallet_shamir_data.mnemonic_shares[i], test_input_data + (i * 32), 32);
                 wallet_shamir_data.share_x_coords[i] = i+1;
             }
+        }break;
+        case TEST_VERIFY_SHARES_WITH_PIN:{
+            WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
+            WALLET_UNSET_ARBITRARY_DATA(wallet.wallet_info);
+            uint16_t offset = 0;
+            memcpy(wallet.wallet_id, test_input_data, WALLET_ID_SIZE);
+            offset += WALLET_ID_SIZE;
+
+            for(int i = 0; i < 5; i++){
+                memcpy(wallet_shamir_data.mnemonic_shares[i], test_input_data + offset, BLOCK_SIZE);
+                offset += BLOCK_SIZE;
+                memcpy(wallet_shamir_data.share_encryption_data[i], test_input_data + offset, NONCE_SIZE + WALLET_MAC_SIZE);
+                offset += BLOCK_SIZE;
+                wallet_shamir_data.share_x_coords[i] = i+1;
+            }
+
+            uint8_t pin_size = test_input_data[offset], *pin =  &test_input_data[offset+1];
+            if(pin_size > 0 && pin_size <= MAX_PIN_SIZE)    {WALLET_SET_PIN(wallet.wallet_info);}
+            else if (pin_size == 0)     {WALLET_UNSET_PIN(wallet.wallet_info);}
+            else {
+                test_data_len = 0;
+                test_output_data[test_data_len++] = test_case;
+                test_output_data[test_data_len++] = 1;  //Invalid argument
+                transmit_data_to_app(DEVICE_TEST_STATUS, test_output_data, test_data_len);
+                test_state = TEST_COMPLETED;
+                return;
+            }
+            sha256_Raw(pin, strnlen((char*)pin, pin_size), wallet_credential_data.password_single_hash);
         }break;
         default:
             break;
@@ -146,12 +213,12 @@ void detect_end(){
             }
             break;
         case LEVEL_THREE:
-            if(flow_level.level_three == test_data.end_flow.level_three){
+            if(flow_level.level_three >= test_data.end_flow.level_three){
                 test_state = TEST_END_REACHED;
             }
             break;
         case LEVEL_FOUR:
-            if(flow_level.level_four == test_data.end_flow.level_four){
+            if(flow_level.level_four >= test_data.end_flow.level_four){
                 test_state = TEST_END_REACHED;
             }
             break;
@@ -190,6 +257,19 @@ void log_test_result(){
         }
         transmit_data_to_app(DEVICE_SHAMIR_GENERATE_TEST, test_output_data, test_data_len);
     }break;
+    case TEST_GENERATE_SEED_WITH_PIN:{
+        LOG_INFO("TEST: Generated seed from random secret with pin");
+        memcpy(test_output_data+test_data_len, wallet.wallet_id, sizeof(wallet.wallet_id));
+        test_data_len+=WALLET_ID_SIZE;
+        for(int i = 0; i < 5; i++){
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            test_data_len+=BLOCK_SIZE;
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.share_encryption_data[i], NONCE_SIZE + WALLET_MAC_SIZE);
+            test_data_len+=NONCE_SIZE + WALLET_MAC_SIZE;
+        }
+        LOG_INFO("TEST: Log done.");
+        transmit_data_to_app(DEVICE_SHAMIR_GENERATE_TEST_WITH_PIN, test_output_data, test_data_len);
+    }break;
     case TEST_RESTORE_SEED:{
         LOG_INFO("TEST: Generated shares");
         for(int i = 0; i < 5; i++){
@@ -199,6 +279,19 @@ void log_test_result(){
         }
         LOG_INFO("TEST: Log done.");
         transmit_data_to_app(DEVICE_SHAMIR_RESTORE_SEED, test_output_data, test_data_len);
+    }break;
+    case TEST_RESTORE_SEED_WITH_PIN:{
+        LOG_INFO("TEST: Generated shares with PIN");
+        memcpy(test_output_data+test_data_len, wallet.wallet_id, sizeof(wallet.wallet_id));
+        test_data_len+=WALLET_ID_SIZE;
+        for(int i = 0; i < 5; i++){
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            test_data_len+=BLOCK_SIZE;
+            memcpy(test_output_data+test_data_len, wallet_shamir_data.share_encryption_data[i], NONCE_SIZE + WALLET_MAC_SIZE);
+            test_data_len+=NONCE_SIZE + WALLET_MAC_SIZE;
+        }
+        LOG_INFO("TEST: Log done.");
+        transmit_data_to_app(DEVICE_SHAMIR_RESTORE_SEED_WITH_PIN, test_output_data, test_data_len);
     }break;
     case TEST_VERIFY_SHARES:{
         LOG_INFO("TEST: VERIFY SHARES 5C2");
@@ -210,6 +303,19 @@ void log_test_result(){
             test_data_len+=strlen(wallet_credential_data.mnemonics[i])+1;
         }
         transmit_data_to_app(DEVICE_SHAMIR_VERIFY_SHARES, test_output_data, test_data_len);
+    }break;
+    case TEST_VERIFY_SHARES_WITH_PIN:{
+        LOG_INFO("TEST: VERIFY SHARES 5C2");
+        test_output_data[0] = 0xff;
+        test_data_len = 1;
+        if (flow_level.level_three == GENERATE_WALLET_SUCCESS_MESSAGE){
+            test_output_data[0] = 1;
+            transmit_data_to_app(DEVICE_SHAMIR_VERIFY_SHARES_WITH_PIN, test_output_data, test_data_len);
+        }
+        else{
+            test_output_data[0] = 0;
+            transmit_data_to_app(DEVICE_SHAMIR_VERIFY_SHARES_FAILED_WITH_PIN, test_output_data, test_data_len);
+        }
     }break;
     default:
         break;

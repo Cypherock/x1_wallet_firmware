@@ -847,6 +847,27 @@ void desktop_listener_task(lv_task_t* data)
                 test_state = NO_TEST;
                 clear_message_received_data();
             }break;
+            case DEVICE_SHAMIR_GENERATE_TEST_WITH_PIN:{
+                memcpy(test_input_data, data_array, msg_size);
+                test_data_len = msg_size;
+                test_case = TEST_GENERATE_SEED_WITH_PIN;
+                test_state = NO_TEST;
+                clear_message_received_data();
+            }break;
+            case DEVICE_SHAMIR_RESTORE_SEED_WITH_PIN:{
+                memcpy(test_input_data, data_array, msg_size);
+                test_data_len = msg_size;
+                test_case = TEST_RESTORE_SEED_WITH_PIN;
+                test_state = NO_TEST;
+                clear_message_received_data();
+            }break;
+            case DEVICE_SHAMIR_VERIFY_SHARES_WITH_PIN:{
+                memcpy(test_input_data, data_array, msg_size);
+                test_data_len = msg_size;
+                test_case = TEST_VERIFY_SHARES_WITH_PIN;
+                test_state = NO_TEST;
+                clear_message_received_data();
+            }break;
 #endif
 #ifdef ALLOW_LOG_EXPORT
             case APP_LOG_DATA_SEND: {
