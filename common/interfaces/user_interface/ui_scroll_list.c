@@ -3,13 +3,13 @@
  * @author  Cypherock X1 Team
  * @brief   Title of the file.
  *          Short description of the file
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -85,7 +85,25 @@ static bool Ui_HorScrDecrementPage(void);
 static void Ui_HorScrUpdateIcons(void);
 
 /**
- * @brief This function cleans the memory used by the Ui_HorScrInit();
+ * @brief This function hides or shows the left and right arrows based on current page number
+ * 
+ */
+static void Ui_HorScrUpdateArrows(void);
+
+/**
+ * @brief This function hides or shows the cancel or accept buttons on the last page
+ * If the buttons are visible, it focuses on the accept button by default
+ */
+static void Ui_HorScrUpdateButtons(void);
+
+/**
+ * @brief This function updates the text in the footnote of the screen
+ * 
+ */
+static void Ui_HorScrUpdateFootnode(void);
+
+/**
+ * @brief This function cleans the global memory used by the Ui_HorScrInit() and clears the screen
  * 
  */
 static void Ui_HorScrDestructor(void);
@@ -136,8 +154,8 @@ static bool Ui_HorScrDecrementPage(void) {
     return false;
 }
 
-static void Ui_UpdateArrows(void) {
-    ASSERT(NULL != gPHorScrData);
+static void Ui_HorScrUpdateArrows(void) {
+    ASSERT((NULL != gPHorScrData) && (NULL != gPHorScrLvglObj));
 
     gPHorScrData->bLeftArrowHidden  = true;
     gPHorScrData->bRightArrowHidden = true;
@@ -152,11 +170,14 @@ static void Ui_UpdateArrows(void) {
         gPHorScrData->bRightArrowHidden = false;
     }
 
+    lv_obj_set_hidden(gPHorScrLvglObj->pLvglLeftArrow, gPHorScrData->bLeftArrowHidden);
+    lv_obj_set_hidden(gPHorScrLvglObj->pLvglRightArrow, gPHorScrData->bRightArrowHidden);
+
     return;
 }
 
-static void Ui_UpdateButtons(void) {
-    ASSERT(NULL != gPHorScrData);
+static void Ui_HorScrUpdateButtons(void) {
+    ASSERT((NULL != gPHorScrData) && (NULL != gPHorScrLvglObj));
 
     gPHorScrData->bAcceptCancelHidden = true;
 
@@ -164,16 +185,6 @@ static void Ui_UpdateButtons(void) {
         gPHorScrData->bAcceptCancelHidden = false;
     }
 
-    return;
-}
-
-static void Ui_HorScrUpdateIcons(void) {
-    ASSERT((NULL != gPHorScrData) && (NULL != gPHorScrLvglObj));
-    Ui_UpdateArrows();
-    Ui_UpdateButtons();
-
-    lv_obj_set_hidden(gPHorScrLvglObj->pLvglLeftArrow, gPHorScrData->bLeftArrowHidden);
-    lv_obj_set_hidden(gPHorScrLvglObj->pLvglRightArrow, gPHorScrData->bRightArrowHidden);
     lv_obj_set_hidden(gPHorScrLvglObj->pLvglCancelBtn, gPHorScrData->bAcceptCancelHidden);
     lv_obj_set_hidden(gPHorScrLvglObj->pLvglAcceptBtn, gPHorScrData->bAcceptCancelHidden);
 
@@ -181,11 +192,26 @@ static void Ui_HorScrUpdateIcons(void) {
         lv_group_focus_obj(gPHorScrLvglObj->pLvglAcceptBtn);
     }
 
+    return;
+}
+
+static void Ui_HorScrUpdateFootnode(void) {
+    ASSERT((NULL != gPHorScrData) && (NULL != gPHorScrLvglObj));
+
     snprintf(gPHorScrData->pagesFootnote, MAXIMUM_CHARACTERS_IN_FOOTNOTE, "%d/%d",
              gPHorScrData->currPageNum, gPHorScrData->totalPageNum);
-
     ui_paragraph(gPHorScrLvglObj->pLvglPageNum, gPHorScrData->pagesFootnote, LV_LABEL_ALIGN_CENTER);
     lv_obj_align(gPHorScrLvglObj->pLvglPageNum, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+
+    return;
+}
+
+static void Ui_HorScrUpdateIcons(void) {
+    Ui_HorScrUpdateArrows();
+    Ui_HorScrUpdateButtons();
+    Ui_HorScrUpdateFootnode();
+
+    return;
 }
 
 static void Ui_HorScrDestructor(void) {
@@ -321,13 +347,17 @@ static void Ui_HorScrArrowHandler(lv_obj_t *pLvglArrowObject, const lv_event_t l
 }
 
 void Ui_HorScrInit(const char *pHdrCharacter, const char *pBodyCharacter) {
-    ASSERT((NULL != pHdrCharacter) && (NULL != pBodyCharacter));
+    if ((NULL == pHdrCharacter) || (NULL == pBodyCharacter)) {
+        return;
+    }
 
     gPHorScrData = (Ui_HorScrollScr_t *)malloc(sizeof(Ui_HorScrollScr_t));
     ASSERT(NULL != gPHorScrData);
 
-    gPHorScrData->pHdgUi              = pHdrCharacter;
-    gPHorScrData->pBodyUi             = pBodyCharacter;
+    gPHorScrData->pHdgUi  = pHdrCharacter;
+    gPHorScrData->pBodyUi = pBodyCharacter;
+
+    /* Below fields will be overwritten below, when page settings are being applied */
     gPHorScrData->totalPageNum        = 1;
     gPHorScrData->currPageNum         = 1;
     gPHorScrData->bLeftArrowHidden    = true;
@@ -448,6 +478,8 @@ void Ui_HorScrInit(const char *pHdrCharacter, const char *pBodyCharacter) {
      * as part of a footnote on the current screen
      */
     gPHorScrLvglObj->pLvglPageNum = lv_label_create(lv_scr_act(), NULL);
+
+    /* Update all icons: Left/right arrows, Accept/Cancel buttons and Footnote */
     Ui_HorScrUpdateIcons();
 
     return;
