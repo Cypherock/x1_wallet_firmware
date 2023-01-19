@@ -101,7 +101,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataInputIndex = 0;
     for (; metadataInputIndex < *txn_metadata_ptr->input_count; metadataInputIndex++) {
         address_type *input = &txn_metadata_ptr->input[metadataInputIndex];
-        s_memcpy(input->chain_index, metadata_byte_array, size, sizeof(input->chain_index), &offset);
+        s_memcpy(input->change_index, metadata_byte_array, size, sizeof(input->change_index), &offset);
         s_memcpy(input->address_index, metadata_byte_array, size, sizeof(input->address_index), &offset);
     }
 
@@ -115,7 +115,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataOutputIndex = 0;
     for (; metadataOutputIndex < 1; metadataOutputIndex++) {
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
-        s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
+        s_memcpy(output->change_index, metadata_byte_array, size, sizeof(output->change_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
     } 
 
@@ -128,7 +128,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataChangeIndex = 0;
     for (; metadataChangeIndex < *txn_metadata_ptr->change_count; metadataChangeIndex++) {
         address_type *change = &txn_metadata_ptr->change[metadataChangeIndex];
-        s_memcpy(change->chain_index, metadata_byte_array, size, sizeof(change->chain_index), &offset);
+        s_memcpy(change->change_index, metadata_byte_array, size, sizeof(change->change_index), &offset);
         s_memcpy(change->address_index, metadata_byte_array, size, sizeof(change->address_index), &offset);
     }
 
@@ -166,7 +166,7 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     s_memcpy(txn_data_ptr->purpose, data_byte_array, size, sizeof(txn_data_ptr->purpose), &offset);
     s_memcpy(txn_data_ptr->coin_index, data_byte_array, size, sizeof(txn_data_ptr->coin_index), &offset);
     s_memcpy(txn_data_ptr->account_index, data_byte_array, size, sizeof(txn_data_ptr->account_index), &offset);
-    s_memcpy(txn_data_ptr->chain_index, data_byte_array, size, sizeof(txn_data_ptr->chain_index), &offset);
+    s_memcpy(txn_data_ptr->change_index, data_byte_array, size, sizeof(txn_data_ptr->change_index), &offset);
     s_memcpy(txn_data_ptr->address_index, data_byte_array, size, sizeof(txn_data_ptr->address_index), &offset);
 
     size_t token_name_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
@@ -244,10 +244,10 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index));
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index));
     if (index == -1) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].address_index));
     } else if (index >= 0) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].address_index));
     }
     hdnode_fill_public_key(hdnode);
@@ -463,18 +463,18 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
         (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
-        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
+        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;
         return true;
     }
-    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] >= 0x80 ||
             mdata_ptr->input->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->change_index[0] >= 0x80 ||
             mdata_ptr->output->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->change_index[0] >= 0x80 ||
             mdata_ptr->change->address_index[0] >= 0x80))
         return false;
     if (mdata_ptr->eth_val_decimal[0] > 18) return false;
