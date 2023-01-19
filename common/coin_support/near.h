@@ -236,16 +236,4 @@ size_t near_get_account_ids_count(const uint8_t* data,const uint16_t data_len);
  */
 bool near_verify_derivation_path(const uint32_t *path, uint8_t levels);
 
-/**
- * @brief Returns the account number based on incrementing index. The address
- * index is account_index - 1
- *
- * @param[in] path          The address derivation path
- *
- * @return uint32_t     The index of the account specified by derivation path
- *
- * @since v1.0.0
- */
-uint32_t near_get_account_index(const uint32_t *path);
-
 #endif //NEAR_HEADER

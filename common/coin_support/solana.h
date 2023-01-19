@@ -190,18 +190,4 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
  */
 bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels);
 
-/**
- * @brief Returns the account number based on incrementing index. For account type1,
- * index is fixed and is always 0. For type2, this will be `account - 1`. For type3,
- * this will return `change - 1`;
- *
- * @param[in] path          The address derivation path
- * @param[in] account_tag   The account type/tag in consideration
- *
- * @return uint32_t     The index of the account specified by derivation path
- *
- * @since v1.0.0
- */
-uint32_t sol_get_account_index(const uint32_t *path, solana_account_type account_tag);
-
 #endif  // SOLANA_HEADER
