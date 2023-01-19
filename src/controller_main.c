@@ -549,7 +549,7 @@ void desktop_listener_task(lv_task_t* data)
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            "Send %s on %s from %s", var_send_transaction_data.transaction_metadata.token_name,
+                            UI_TEXT_SEND_PROMPT, var_send_transaction_data.transaction_metadata.token_name,
                             get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
                             wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
@@ -563,6 +563,7 @@ void desktop_listener_task(lv_task_t* data)
                         } else {
                           snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
                                    UI_TEXT_SEND_PROMPT,
+                                   get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
                                    get_coin_name(coin_index,
                                                  var_send_transaction_data.transaction_metadata.network_chain_id),
                                    wallet.wallet_name);
@@ -572,13 +573,14 @@ void desktop_listener_task(lv_task_t* data)
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
                             UI_TEXT_SEND_PROMPT,
+                            get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
                             get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
                             wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            UI_TEXT_SEND_PROMPT,
+                            "Send %s from %s",
                             get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
                             wallet.wallet_name);
                     }
@@ -620,25 +622,27 @@ void desktop_listener_task(lv_task_t* data)
                     if (coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                 "Receive %s on %s in %s", receive_transaction_data.token_name,
+                                 UI_TEXT_RECEIVE_PROMPT, receive_transaction_data.token_name,
                                  get_coin_name(coin_index, receive_transaction_data.network_chain_id),
                                  wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
                                  UI_TEXT_RECEIVE_PROMPT,
+                                 get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
                                  get_coin_name(coin_index, receive_transaction_data.network_chain_id),
                                  wallet.wallet_name);
                     } else if (coin_index == SOLANA_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
                                  UI_TEXT_RECEIVE_PROMPT,
+                                 get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
                                  get_coin_name(coin_index, receive_transaction_data.network_chain_id),
                                  wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                 UI_TEXT_RECEIVE_PROMPT,
+                                 "Receive %s in %s",
                                  get_coin_name(coin_index, receive_transaction_data.network_chain_id),
                                  wallet.wallet_name);
                     }
