@@ -61,6 +61,10 @@
 Ui_HorizontalScreenData_t *pHorizontalScrData  = NULL;
 Ui_HorizontalScreenObject_t *pHorizontalScrObj = NULL;
 
+static bool Ui_IncreaseCurrPage(void);
+static bool Ui_DecreaseCurrPage(void);
+static void Ui_UpdateDynamicIcons(void);
+static void Ui_Delete(void);
 static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvglEvent);
 static void Ui_AcceptEventHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvglEvent);
 
@@ -131,12 +135,30 @@ static void Ui_UpdateDynamicIcons(void) {
         lv_group_focus_obj(pHorizontalScrObj->pLvglAcceptBtn);
     }
 
-    snprintf(pHorizontalScrData->pagesFootnote, MAX_CHARACTERS_IN_BODY, "%d/%d",
-             pHorizontalScrData->currPageNum, pHorizontalScrData->totalPageNum);
+    snprintf(pHorizontalScrData->pagesFootnote, 30, "%d/%d", pHorizontalScrData->currPageNum,
+             pHorizontalScrData->totalPageNum);
 
     ui_paragraph(pHorizontalScrObj->pLvglPageNum, pHorizontalScrData->pagesFootnote,
                  LV_LABEL_ALIGN_CENTER);
     lv_obj_align(pHorizontalScrObj->pLvglPageNum, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+}
+
+static void Ui_Delete(void) {
+    lv_obj_clean(lv_scr_act());
+
+    if (NULL != pHorizontalScrData) {
+        memzero(pHorizontalScrData, sizeof(Ui_HorizontalScreenData_t));
+        free(pHorizontalScrData);
+        pHorizontalScrData = NULL;
+    } 
+    
+    if (NULL != pHorizontalScrObj) {
+        memzero(pHorizontalScrObj, sizeof(Ui_HorizontalScreenObject_t));
+        free(pHorizontalScrObj);
+        pHorizontalScrObj = NULL;
+    }
+
+    return;
 }
 
 static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvglEvent) {
@@ -157,6 +179,7 @@ static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvg
             break;
         }
         case LV_EVENT_CLICKED: {
+            Ui_Delete();
             if (ui_mark_event_cancel)
                 ui_mark_event_cancel();
             break;
@@ -169,6 +192,8 @@ static void Ui_CancelEventHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lvg
             break;
         }
     }
+
+    return;
 }
 
 static void Ui_AcceptEventHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvglEvent) {
@@ -189,6 +214,7 @@ static void Ui_AcceptEventHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvg
             break;
         }
         case LV_EVENT_CLICKED: {
+            Ui_Delete();
             if (ui_mark_event_over)
                 ui_mark_event_over();
             break;
@@ -201,6 +227,8 @@ static void Ui_AcceptEventHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvg
             break;
         }
     }
+
+    return;
 }
 
 static void Ui_ArrowHandler(lv_obj_t *pLvglArrowObject, const lv_event_t lvglEvent) {
@@ -212,23 +240,40 @@ static void Ui_ArrowHandler(lv_obj_t *pLvglArrowObject, const lv_event_t lvglEve
             lv_key_t keyPressed = lv_indev_get_key(ui_get_indev());
             if (LV_KEY_RIGHT == keyPressed) {
                 if (true == Ui_IncreaseCurrPage()) {
+                    lv_label_set_style(pHorizontalScrObj->pLvglRightArrow, LV_LABEL_STYLE_MAIN,
+                                       &(pHorizontalScrObj->lvglArrowStylePressed));
                     lv_page_scroll_ver(pHorizontalScrObj->pUiPage,
                                        -lv_obj_get_height(pHorizontalScrObj->pUiPage));
+                    lv_obj_align(pHorizontalScrObj->pLvglBody, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
                 }
             } else if (LV_KEY_LEFT == keyPressed) {
                 if (true == Ui_DecreaseCurrPage()) {
+                    lv_label_set_style(pHorizontalScrObj->pLvglLeftArrow, LV_LABEL_STYLE_MAIN,
+                                       &(pHorizontalScrObj->lvglArrowStylePressed));
                     lv_page_scroll_ver(pHorizontalScrObj->pUiPage,
                                        lv_obj_get_height(pHorizontalScrObj->pUiPage));
+                    lv_obj_align(pHorizontalScrObj->pLvglBody, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
                 }
             }
 
             Ui_UpdateDynamicIcons();
+            break;
+        }
+
+        case LV_EVENT_RELEASED: {
+            lv_label_set_style(pHorizontalScrObj->pLvglRightArrow, LV_LABEL_STYLE_MAIN,
+                               &(pHorizontalScrObj->lvglArrowStyleReleased));
+            lv_label_set_style(pHorizontalScrObj->pLvglLeftArrow, LV_LABEL_STYLE_MAIN,
+                               &(pHorizontalScrObj->lvglArrowStyleReleased));
+            break;
         }
 
         default: {
             break;
         }
     }
+
+    return;
 }
 
 void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharacter) {
@@ -243,10 +288,6 @@ void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharact
     pHorizontalScrObj = (Ui_HorizontalScreenObject_t *)malloc(sizeof(Ui_HorizontalScreenObject_t));
     ASSERT(NULL != pHorizontalScrObj);
 
-    /* Assign data pointers to Ui_HorizontalScreenData_t object from input */
-    pHorizontalScrData->pHdgUi  = pHdrCharacter;
-    pHorizontalScrData->pBodyUi = pBodyCharacter;
-
     pHorizontalScrObj->pUiPage = lv_page_create(lv_scr_act(), NULL);
     lv_obj_set_size(pHorizontalScrObj->pUiPage, 128, 32);
     lv_page_set_style(pHorizontalScrObj->pUiPage, LV_PAGE_STYLE_BG, &lv_style_transp);
@@ -258,7 +299,6 @@ void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharact
     ui_heading(pHorizontalScrObj->pLvglHdr, pHorizontalScrData->pHdgUi, LV_HOR_RES - 20,
                LV_LABEL_ALIGN_CENTER);
 
-    /*Create a pHorizontalScrObj->pLvglBody on the pHorizontalScrObj->pUiPage*/
     pHorizontalScrObj->pLvglBody = lv_label_create(pHorizontalScrObj->pUiPage, NULL);
     lv_label_set_long_mode(pHorizontalScrObj->pLvglBody, LV_LABEL_LONG_BREAK);
     lv_obj_set_size(pHorizontalScrObj->pLvglBody,
@@ -266,24 +306,41 @@ void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharact
                     lv_page_get_fit_height(pHorizontalScrObj->pUiPage));
     lv_label_set_text(pHorizontalScrObj->pLvglBody, pHorizontalScrData->pBodyUi);
     lv_label_set_align(pHorizontalScrObj->pLvglBody, LV_LABEL_ALIGN_CENTER);
-    lv_obj_align(pHorizontalScrObj->pLvglBody, NULL, LV_ALIGN_IN_TOP_MID, 0, -4);
+    lv_obj_align(pHorizontalScrObj->pLvglBody, pHorizontalScrObj->pUiPage, LV_ALIGN_IN_TOP_MID, 0,
+                 0);
     lv_obj_set_event_cb(pHorizontalScrObj->pLvglBody, Ui_ArrowHandler);
+
+    lv_obj_t *paddingLabel = lv_label_create(pHorizontalScrObj->pUiPage, NULL);
+    lv_label_set_long_mode(paddingLabel, LV_LABEL_LONG_BREAK);
+    lv_obj_set_size(paddingLabel, lv_page_get_fit_width(pHorizontalScrObj->pUiPage) - 16,
+                    lv_page_get_fit_height(pHorizontalScrObj->pUiPage) / 2);
+    lv_label_set_text(paddingLabel, "\n");
+    lv_label_set_align(paddingLabel, LV_LABEL_ALIGN_CENTER);
+    lv_obj_align(paddingLabel, pHorizontalScrObj->pLvglBody, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
 
     pHorizontalScrObj->pLvglLeftArrow = lv_label_create(lv_scr_act(), NULL);
     lv_label_set_text(pHorizontalScrObj->pLvglLeftArrow, LV_SYMBOL_LEFT);
-    lv_obj_align(pHorizontalScrObj->pLvglLeftArrow, lv_scr_act(),
-                 LV_ALIGN_IN_LEFT_MID, 0, 0);
+    lv_obj_align(pHorizontalScrObj->pLvglLeftArrow, lv_scr_act(), LV_ALIGN_IN_LEFT_MID, 0, 0);
 
     pHorizontalScrObj->pLvglRightArrow = lv_label_create(lv_scr_act(), NULL);
     lv_label_set_text(pHorizontalScrObj->pLvglRightArrow, LV_SYMBOL_RIGHT);
-    lv_obj_align(pHorizontalScrObj->pLvglRightArrow, lv_scr_act(),
-                 LV_ALIGN_IN_RIGHT_MID, 0, 0);
+    lv_obj_align(pHorizontalScrObj->pLvglRightArrow, lv_scr_act(), LV_ALIGN_IN_RIGHT_MID, 0, 0);
+
+    lv_style_copy(&(pHorizontalScrObj->lvglArrowStyleReleased), &lv_style_plain);
+
+    lv_style_copy(&(pHorizontalScrObj->lvglArrowStylePressed), &lv_style_plain);
+    (pHorizontalScrObj->lvglArrowStylePressed).body.main_color = LV_COLOR_BLACK;
+    (pHorizontalScrObj->lvglArrowStylePressed).body.grad_color = LV_COLOR_BLACK;
+    (pHorizontalScrObj->lvglArrowStylePressed).body.radius     = 30;
+    (pHorizontalScrObj->lvglArrowStylePressed).text.color      = LV_COLOR_WHITE;
+    lv_label_set_body_draw(pHorizontalScrObj->pLvglLeftArrow, true);
+    lv_label_set_body_draw(pHorizontalScrObj->pLvglRightArrow, true);
 
     int16_t totalPageHeight = (int16_t)lv_page_get_scrl_height(pHorizontalScrObj->pUiPage);
     int16_t currPageHeight  = (int16_t)lv_obj_get_height(pHorizontalScrObj->pUiPage);
     ASSERT(0 != currPageHeight);
     pHorizontalScrData->currPageNum  = 1;
-    pHorizontalScrData->totalPageNum = (totalPageHeight + currPageHeight - 1) / (currPageHeight);
+    pHorizontalScrData->totalPageNum = totalPageHeight / currPageHeight;
 
     lv_group_add_obj(ui_get_group(), pHorizontalScrObj->pLvglBody);
     lv_indev_set_group(ui_get_indev(), ui_get_group());
@@ -301,5 +358,7 @@ void Ui_HorizontalScreenInit(const char *pHdrCharacter, const char *pBodyCharact
 
     pHorizontalScrObj->pLvglPageNum = lv_label_create(lv_scr_act(), NULL);
     Ui_UpdateDynamicIcons();
+
+    return;
 }
 

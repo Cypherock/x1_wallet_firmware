@@ -13,16 +13,12 @@
 
 #include "ui_common.h"
 
-#define MAX_CHARACTERS_IN_BODY              (34)
-#define MAX_PAGES_SUPPORTED                 (50)
-
 typedef struct {
 	const char *pHdgUi;
 	const char *pBodyUi;
-	char bodyTxtUi[MAX_CHARACTERS_IN_BODY + 1];
 	int16_t totalPageNum;
-	uint8_t currPageNum; /* TODO: Do calculations */
-	char pagesFootnote[MAX_CHARACTERS_IN_BODY];
+	uint16_t currPageNum;
+	char pagesFootnote[30];
 	bool bLeftArrowHidden;
 	bool bRightArrowHidden;
 	bool bAcceptCancelHidden;
@@ -34,6 +30,8 @@ typedef struct {
 	lv_obj_t *pLvglBody;
 	lv_obj_t *pLvglLeftArrow;
 	lv_obj_t *pLvglRightArrow;
+	lv_style_t lvglArrowStylePressed;
+	lv_style_t lvglArrowStyleReleased;
 	lv_obj_t *pLvglCancelBtn;
 	lv_obj_t *pLvglAcceptBtn;
 	lv_obj_t *pLvglPageNum;
