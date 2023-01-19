@@ -92,7 +92,7 @@ typedef enum Coin_Type {
  */
 typedef struct
 {
-    uint8_t chain_index[4];
+    uint8_t change_index[4];
     uint8_t address_index[4];
 } address_type;
 #pragma pack(pop)
@@ -167,7 +167,7 @@ typedef struct Receive_Transaction_Data {
   uint8_t purpose[4];
   uint8_t coin_index[4];
   uint8_t account_index[4];
-  uint8_t chain_index[4];
+  uint8_t change_index[4];
   uint8_t address_index[4];
   char *token_name;
   union {

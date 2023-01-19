@@ -550,7 +550,7 @@ void desktop_listener_task(lv_task_t* data)
                         BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.purpose_index),
                         BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index),
                         BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.account_index),
-                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.input[0].chain_index),
+                        BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.input[0].change_index),
                         BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.input[0].address_index)};
 
                     flow_level.show_desktop_start_screen = true;
@@ -618,7 +618,7 @@ void desktop_listener_task(lv_task_t* data)
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.change_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index)};
                     uint8_t depth =
                         path[1] == SOLANA ? sol_get_derivation_depth(receive_transaction_data.address_tag) : 5;
