@@ -98,7 +98,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (!eth_unsigned_txn_ptr.contract_verified){
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_CONTRACT_NOT_WHITELISTED){
             instruction_scr_destructor();
             delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
         } else {
@@ -119,6 +119,30 @@ void send_transaction_tasks_eth()
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
+    } break;
+
+    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "%s Blind Signing\nProceed at your own risk!", LV_SYMBOL_WARNING);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
+    } break;
+
+    case SEND_TXN_VERIFY_DERIVATION_PATH:{
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            char path[128] = {0};
+            eth_derivation_path_to_string(&var_send_transaction_data.transaction_metadata,path,sizeof(path));
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "Verify Derivation Path\n%s",path);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {

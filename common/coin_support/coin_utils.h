@@ -28,6 +28,7 @@
 #include "logger.h"
 #include "assert_conf.h"
 
+
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
 
@@ -436,5 +437,23 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
  * @since v1.0.0
  */
 uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len);
+
+/**
+ * @brief Generates an user readable derivation path from a uint32_t path array.
+ *        will only write the output until the out_len is reached, i.e. an error will be returned
+ *        if the output exceeds the out_len. Will also return an error if path or output is NULL
+ *        or out_len is 0.
+ * 
+ * @param path              The derivation path array to be used
+ * @param path_length       Number of elements (depth) of the path array
+ * @param harden_all        Treat all elements as hardened i.e. insert ' after every element
+ * @param output            Pointer to the character array to be used for output
+ * @param out_len           Maximum length of the output character array
+ */
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                     const size_t path_length,
+                                     const bool harden_all,
+                                     char *output,
+                                     const size_t out_len);
 
 #endif

@@ -83,6 +83,8 @@ void send_transaction_controller_b_eth()
     }break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS:
+    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH:
+    case SEND_TXN_VERIFY_DERIVATION_PATH:
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
         comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
         reset_flow_level();

@@ -597,3 +597,36 @@ uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *acc
 
     return length;
 }
+
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                                  const size_t path_length,
+                                                  const bool harden_all,
+                                                  char *output,
+                                                  const size_t out_len) {
+    if (out_len == 0 || output == NULL || path == NULL)
+        return FRC_INVALID_ARGUMENTS;
+
+    int offset = 0;
+    offset += snprintf(output + offset, out_len - offset, "m");
+
+    for (int i = 0; i < path_length; i++) {
+        const bool hardened  = path[i] & 0x80000000;
+        const uint32_t value = path[i] & 0x7FFFFFFF;
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        offset += snprintf(output + offset, out_len - offset, "/%ld", value);
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        if (harden_all || hardened)
+            offset += snprintf(output + offset, out_len - offset, "'");
+
+        //extra check needed as snprintf returns estimated size rather than actual size written
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+    }
+    return FRC_SUCCESS;
+}
