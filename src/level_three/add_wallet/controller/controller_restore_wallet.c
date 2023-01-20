@@ -254,8 +254,12 @@ void restore_wallet_controller()
                 wallet.minimum_number_of_shares,
                 wallet_shamir_data.mnemonic_shares);
             memzero(secret, sizeof(secret));
-            if (WALLET_IS_PIN_SET(wallet.wallet_info))
+            if (WALLET_IS_PIN_SET(wallet.wallet_info)){
+                log_hex_array("PIN HASH", wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH);
                 encrypt_shares();
+                for(int i=0; i< 5; i++)
+                    log_hex_array("UNENCRYPTED SHARE", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+            }
             derive_beneficiary_key(wallet.beneficiary_key, wallet.iv_for_beneficiary_key, single_line_mnemonics);
             derive_wallet_key(wallet.key, single_line_mnemonics);
             flow_level.level_three = RESTORE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE;

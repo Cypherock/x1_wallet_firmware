@@ -190,8 +190,12 @@ void generate_wallet_controller()
             wallet.total_number_of_shares,
             wallet.minimum_number_of_shares,
             wallet_shamir_data.mnemonic_shares);
-        if (WALLET_IS_PIN_SET(wallet.wallet_info))
+        if (WALLET_IS_PIN_SET(wallet.wallet_info)){
+            log_hex_array("PIN HASH", wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH);
+            for(int i=0; i< 5; i++)
+                log_hex_array("UNENCRYPTED SHARE", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
             encrypt_shares();
+        }
         derive_beneficiary_key(wallet.beneficiary_key, wallet.iv_for_beneficiary_key, mnemo);
         derive_wallet_key(wallet.key, mnemo);
         mnemonic_clear();

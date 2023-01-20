@@ -122,8 +122,13 @@ int verify_card_share_data() {
     wallet_shamir_data.share_x_coords[4] = 5;
     // get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[4]);
 
-    if (WALLET_IS_PIN_SET(wallet.wallet_info))
+    if (WALLET_IS_PIN_SET(wallet.wallet_info)){
+        log_hex_array("PIN HASH", wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH);
         decrypt_shares();
+        for(int i=0; i< 5; i++)
+            log_hex_array("DECRYPTED SHARE", wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
+    }
+
     if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
         status = generate_data_5C2(
             wallet.arbitrary_data_size,

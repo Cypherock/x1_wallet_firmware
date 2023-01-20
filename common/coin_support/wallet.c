@@ -61,6 +61,7 @@
 #include <string.h>
 #include "rfc7539.h"
 #include "options.h"
+#include "logger.h"
 
 /// Global Wallet instance.
 Wallet CONFIDENTIAL wallet = {
@@ -114,12 +115,16 @@ bool decrypt_shares()
 {
     // always consider 4 shares for decryption
     uint8_t share[BLOCK_SIZE];
+    uint8_t mac[WALLET_MAC_SIZE] = {0}, res;
     chacha20poly1305_ctx ctx;
     for (int i = 0; i < wallet.total_number_of_shares; i++) {
         rfc7539_init(&ctx, wallet_credential_data.password_single_hash, wallet_shamir_data.share_encryption_data[i]);
         rfc7539_auth(&ctx, wallet_shamir_data.mnemonic_shares[i], BLOCK_SIZE);
         chacha20poly1305_decrypt(&ctx, wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
-        chacha20poly1305_finish(&ctx, (uint8_t *) (wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
+        chacha20poly1305_finish(&ctx, mac);
+
+        res = memcmp(mac, (uint8_t*) wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE, WALLET_MAC_SIZE);
+        LOG_CRITICAL("xxx37: %d, %d", i, res);
         // TODO: Add mac comparison for decryption verification
         memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     }

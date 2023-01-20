@@ -126,7 +126,7 @@ void jump_to_test(){
                 test_state = TEST_COMPLETED;
                 return;
             }
-            sha256_Raw(test_input_data+33, strnlen((char*)(test_input_data+1), pin_size), wallet_credential_data.password_single_hash);
+            sha256_Raw(test_input_data+33, pin_size, wallet_credential_data.password_single_hash);
             // Random 32bytes data for mnemonics generation
             memcpy(wallet.wallet_share_with_mac_and_nonce, test_input_data, 32);
         }break;
@@ -153,7 +153,7 @@ void jump_to_test(){
                 test_state = TEST_COMPLETED;
                 return;
             }
-            sha256_Raw(test_input_data+1, strnlen((char*)(test_input_data+1), pin_size), wallet_credential_data.password_single_hash);
+            sha256_Raw(test_input_data+1, pin_size, wallet_credential_data.password_single_hash);
             __single_to_multi_line((const char*)test_input_data+pin_size+1, strlen((const char*)test_input_data), wallet_credential_data.mnemonics);
             LOG_INFO("TEST: Input mnemonics");
             for(int i = 0; i < 24; i++)
@@ -193,7 +193,7 @@ void jump_to_test(){
                 test_state = TEST_COMPLETED;
                 return;
             }
-            sha256_Raw(pin, strnlen((char*)pin, pin_size), wallet_credential_data.password_single_hash);
+            sha256_Raw(pin, pin_size, wallet_credential_data.password_single_hash);
         }break;
         default:
             break;
