@@ -294,6 +294,20 @@ void send_transaction_controller_eth();
 void send_transaction_controller_b_eth();
 
 /**
+ * @brief Next button controller is executed for processing and signing messages of Ethereum.
+ * @details This controller is used to process and sign the messages for ETH that is requested from the desktop app.
+ *
+ */
+void sign_message_controller_eth();
+
+/**
+ * @brief Back button controller for sign message Ethereum flow.
+ * @details This controller is used to handle back button events during processing and signing messages for ETH.
+ *
+ */
+void sign_message_controller_b_eth();
+
+/**
  * @brief Next button controller is executed for processing and signing unsigned
  * transaction.
  */

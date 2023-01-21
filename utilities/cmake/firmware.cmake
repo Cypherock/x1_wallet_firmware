@@ -69,9 +69,11 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
+        common/libraries/nanopb
         common/startup
         common/logger
         common/coin_support
+        common/coin_support/eth_sign_data
         common/flash
         common/Firewall
 

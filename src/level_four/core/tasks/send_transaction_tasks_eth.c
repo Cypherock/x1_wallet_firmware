@@ -79,6 +79,7 @@ extern char* NUMBERS;
 extern char* PASSPHRASE;
 
 extern lv_task_t* timeout_task;
+extern ui_display_node *current_display_node;
 
 
 void send_transaction_tasks_eth()
@@ -242,6 +243,14 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
         mark_event_over();
+    } break;
+
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+      instruction_scr_destructor();
+      if (current_display_node == NULL)
+        mark_event_over();
+      else
+        address_scr_init(current_display_node->title, current_display_node->value, false);
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {

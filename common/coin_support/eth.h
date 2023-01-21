@@ -29,6 +29,8 @@
 #include "../crypto/base58.h"
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
+#include "abi.h"
+#include "simple.pb.h"
 
 #define ETHEREUM_PURPOSE_INDEX    0x8000002C
 #define ETHEREUM_COIN_INDEX       0x8000003C
@@ -39,6 +41,9 @@
 #define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
 #define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
 #define ETHEREUM_TOKEN_SYMBOL   "ETH"
+// \x45(E) is needed otherwise \x19e is considered instead of \x19
+#define ETH_PERSONAL_SIGN_IDENTIFIER   "\x19\x45thereum Signed Message:\n"
+#define ETH_SIGN_TYPED_DATA_IDENTIFIER "\x19\x01"
 
 /// Convert byte array to unit32_t
 #define ETH_VALUE_SIZE_BYTES (32U)
@@ -46,6 +51,11 @@
 #define ETH_GWEI_INDEX       (9U)
 
 #define ETH_COIN_VERSION     0x00000000
+
+#define ETH_UTXN_ABI_DECODE_OK      (0xAA)
+#define ETH_UTXN_BAD_PAYLOAD        (0x11)
+#define ETH_UTXN_FUNCTION_NOT_FOUND (0x11)
+#define ETH_BAD_ARGUMENTS           (0x22)
 
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;
@@ -195,6 +205,25 @@ int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
                                     eth_unsigned_txn *unsigned_txn_ptr);
 
 /**
+ * @brief Convert byte array representation of message to an object using protobuf.
+ * @details
+ *
+ * @param [in] eth_msg                      Byte array of message.
+ * @param [in] byte_array_len               Length of byte array.
+ * @param [out] msg_data                    Pointer to the MessageData instance to store the message details.
+ *
+ * @return Status of conversion
+ * @retval 0 Success
+ * @retval -1 Failure
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data);
+
+/**
  * @brief Signed unsigned byte array.
  * @details
  *
@@ -225,4 +254,38 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
  */
 void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
 
+/**
+ * @brief Initialize MessageData structure from protobuf
+ * 
+ * @param msg_data 
+ */
+void eth_init_msg_data(MessageData *msg_data);
+
+/**
+ * @brief Initialize Display Nodes from message data
+ * 
+ * @param node 
+ * @param msg_data 
+ */
+void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
+
+/**
+ * @brief This function extracts Abi encoded arguments for EVM functions into UI 
+ * compatible nodes ui_display_node(s)
+ * 
+ * @param pAbiPayload Pointer to start of payload of the EVM transaction
+ * @param sizeOfUTxn Size of payload of the EVM transaction
+ * @return uint8_t Depicts the status of operation for this function
+ * ETH_BAD_ARGUMENTS: If any argument is invalid
+ * ETH_UTXN_FUNCTION_NOT_FOUND: If a function NOT supported by X1 wallet is in the EVM tx
+ * ETH_UTXN_BAD_PAYLOAD: If a payload contains invalid data
+ * ETH_UTXN_ABI_DECODE_OK: If the arguments are extracted successfully
+ */
+uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPayload);
+
+void eth_sign_msg_data(const MessageData *msg_data,
+                       const txn_metadata *transaction_metadata,
+                       const char *mnemonics,
+                       const char *passphrase,
+                       uint8_t *sig);
 #endif
