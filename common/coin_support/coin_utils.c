@@ -483,26 +483,6 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         return false;
     return true;
 }
-ui_display_node *ui_create_display_node(const char *title,
-                                        const size_t title_size,
-                                        const char *value,
-                                        const size_t value_size) {
-  ui_display_node *result = cy_malloc(sizeof(ui_display_node));
-  memzero(result, sizeof(ui_display_node));
-
-  size_t title_length = strnlen(title, title_size) + 1;
-  result->title       = cy_malloc(title_length);
-  memzero(result->title, title_length);
-  strncpy(result->title, title, title_length);
-
-  size_t value_length = strnlen(value, value_size) + 1;
-  result->value       = cy_malloc(value_length);
-  memzero(result->value, value_length);
-  strncpy(result->value, value, value_length);
-
-  result->next = NULL;
-  return result;
-}
 
 void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
   uint8_t data[65] = {0};

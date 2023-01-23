@@ -101,12 +101,6 @@ void send_transaction_controller_b_eth()
         counter.next_event_flag = true;
     } break;
 
-    case SEND_TXN_DISPLAY_INFO_ETH: {
-      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 4);
-      reset_flow_level();
-      counter.next_event_flag = true;
-    } break;
-
     case SEND_TXN_ENTER_PIN_ETH: {
         comm_reject_request(USER_REJECT_PIN_INPUT, 0);
         reset_flow_level();

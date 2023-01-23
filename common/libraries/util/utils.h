@@ -48,10 +48,6 @@
 /// Find minimum of two values
 #define CY_MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define UTIL_INVALID_ARGUMENTS      (0x11)
-#define UTIL_OUT_OF_BOUNDS          (0x22)
-#define UTIL_IN_BOUNDS              (0xAA)
-
 /**
  * @brief Allocates memory via malloc and makes an entry for each allocation into its global list
  * of memory allocation.
@@ -368,23 +364,4 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,
                                           char *amount_string,
                                           char *amount_decimal_string,
                                           const size_t amount_decimal_string_size);
-
-/**
- * @brief Checks if reading n bytes from a memory chunk of m bytes is safe or not
- * 
- * @param pBaseAddr: Base address of the memory chunk
- * @param totalSizeOfChunk: Total size of memory chunk in bytes
- * @param pCurrentSrcAddr: Base address of the chunk to read from
- * @param readSize: Size of data to be read in bytes starting from pCurrentSrcAddr
- * @return uint8_t: Depicting return value of the operation
- * UTIL_INVALID_ARGUMENTS: If any argument is invalid
- * UTIL_OUT_OF_BOUNDS: If the memory access is out of bounds
- * UTIL_IN_BOUNDS: If the memory access is within bounds
- */
-uint8_t UTIL_CheckBound(
-                        const uint8_t *pBaseAddr,
-                        const uint32_t totalSizeOfChunk,
-                        const uint8_t *pCurrentSrcAddr,
-                        const uint32_t readSize
-                       );
 #endif

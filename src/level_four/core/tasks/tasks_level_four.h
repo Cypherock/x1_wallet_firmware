@@ -12,10 +12,9 @@
 
 #pragma once
 
-#include "coin_utils.h"
 #include "controller_main.h"
-#include "eth.h"
 #include "tasks.h"
+#include "eth.h"
 
 extern eth_unsigned_txn eth_unsigned_txn_ptr;
 extern uint8_t challenge_no[32];
@@ -61,12 +60,6 @@ void send_transaction_tasks_near();
  * @since v1.0.0
  */
 void send_transaction_tasks_eth();
-
-/**
- * @brief This task is executed for processing and signing unsigned transaction  of Ethereum.
- *
- */
-void sign_message_tasks_eth();
 
 /**
  * @brief This task is executed for processing and signing unsigned transaction.
