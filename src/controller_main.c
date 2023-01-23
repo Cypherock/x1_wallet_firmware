@@ -556,7 +556,7 @@ void desktop_listener_task(lv_task_t* data)
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
                         if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
                           snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                   "Add %s account with %s",
+                                   "Add %s account to %s",
                                    get_coin_name(coin_index,
                                                  var_send_transaction_data.transaction_metadata.network_chain_id),
                                    wallet.wallet_name);
