@@ -29,6 +29,7 @@ typedef struct {
 typedef struct {
     lv_obj_t *pUiPage;
     lv_obj_t *pLvglHdr;
+    lv_style_t LvglHdrStyle;
     lv_obj_t *pLvglBody;
     lv_obj_t *pLvglLeftArrow;
     lv_obj_t *pLvglRightArrow;

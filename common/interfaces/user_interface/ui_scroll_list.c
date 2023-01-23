@@ -260,8 +260,11 @@ static void Ui_HorScrCancelHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lv
         }
         case LV_EVENT_CLICKED: {
             Ui_HorScrDestructor();
-            if (ui_mark_event_cancel)
+
+            if (NULL != ui_mark_event_cancel) {
                 ui_mark_event_cancel();
+            }
+
             break;
         }
         case LV_EVENT_DEFOCUSED: {
@@ -295,8 +298,11 @@ static void Ui_HorScrAcceptHandler(lv_obj_t *pAcceptLvglObj, const lv_event_t lv
         }
         case LV_EVENT_CLICKED: {
             Ui_HorScrDestructor();
-            if (ui_mark_event_over)
+
+            if (NULL != ui_mark_event_over) {
                 ui_mark_event_over();
+            }
+
             break;
         }
         case LV_EVENT_DEFOCUSED: {
@@ -380,6 +386,13 @@ void Ui_HorScrInit(const char *pHdrCharacter, const char *pBodyCharacter) {
     gPHorScrLvglObj->pLvglHdr = lv_label_create(lv_scr_act(), NULL);
     ui_heading(gPHorScrLvglObj->pLvglHdr, gPHorScrData->pHdgUi, LV_HOR_RES - 20,
                LV_LABEL_ALIGN_CENTER);
+    lv_style_copy(&(gPHorScrLvglObj->LvglHdrStyle), &lv_style_plain);
+    (gPHorScrLvglObj->LvglHdrStyle).body.padding.bottom = 1;
+    (gPHorScrLvglObj->LvglHdrStyle).body.border.width   = 1;
+    (gPHorScrLvglObj->LvglHdrStyle).body.border.part    = LV_BORDER_BOTTOM;
+    lv_label_set_style(gPHorScrLvglObj->pLvglHdr, LV_LABEL_STYLE_MAIN,
+                       &(gPHorScrLvglObj->LvglHdrStyle));
+    lv_label_set_body_draw(gPHorScrLvglObj->pLvglHdr, true);
 
     /* Create a page gPHorScrLvglObj->pUiPage of size 128x32 pixels in the middle of the screen */
     gPHorScrLvglObj->pUiPage = lv_page_create(lv_scr_act(), NULL);
