@@ -181,6 +181,7 @@ static void Ui_HorScrUpdateButtons(void) {
 
     gPHorScrData->bAcceptCancelHidden = true;
 
+    /* Cancel/Accept buttons are only visible if we are on the last page */
     if (gPHorScrData->currPageNum == gPHorScrData->totalPageNum) {
         gPHorScrData->bAcceptCancelHidden = false;
     }
@@ -246,6 +247,14 @@ static void Ui_HorScrCancelHandler(lv_obj_t *pCancelLvglObj, const lv_event_t lv
                 lv_group_focus_obj(gPHorScrLvglObj->pLvglAcceptBtn);
             } else if (LV_KEY_UP == keyPressed) {
                 lv_group_focus_obj(gPHorScrLvglObj->pLvglBody);
+            } else if (LV_KEY_LEFT == keyPressed) {
+                /** 
+                 * If the cancel icon is pressed and the user moves joystick to left, we
+                 * should scroll to the previous page (if any)
+                 * So manually call Ui_HorScrArrowHandler(); for this special case.
+                 */
+                lv_group_focus_obj(gPHorScrLvglObj->pLvglBody);
+                Ui_HorScrArrowHandler(gPHorScrLvglObj->pLvglBody, LV_EVENT_KEY);
             }
             break;
         }
@@ -326,11 +335,11 @@ static void Ui_HorScrArrowHandler(lv_obj_t *pLvglArrowObject, const lv_event_t l
                 }
             }
 
-            Ui_HorScrUpdateIcons();
             break;
         }
 
         case LV_EVENT_RELEASED: {
+            Ui_HorScrUpdateIcons();
             lv_label_set_style(gPHorScrLvglObj->pLvglRightArrow, LV_LABEL_STYLE_MAIN,
                                &(gPHorScrLvglObj->lvglArrowStyleReleased));
             lv_label_set_style(gPHorScrLvglObj->pLvglLeftArrow, LV_LABEL_STYLE_MAIN,
