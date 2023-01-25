@@ -121,6 +121,7 @@ void receive_transaction_tasks_eth()
     } break;
 
     case RECV_TXN_TAP_CARD_ETH: {
+        // TODO: Use tap_threshold_cards_for_reconstruction instead
         retrieve_key_from_card();
     } break;
 
@@ -146,9 +147,9 @@ void receive_transaction_tasks_eth()
     case RECV_TXN_DISPLAY_ADDR_ETH: {
         instruction_scr_destructor();
         char display[70];
-        char address_s[2 + sizeof(receive_transaction_data.address) + 1] = {'0', 'x', '\0'};
+        char address_s[sizeof(receive_transaction_data.address)] = {'0', 'x', '\0'};
         uint64_t chain_id = receive_transaction_data.network_chain_id;
-        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN)
+        if (chain_id != HARMONY_MAINNET_CHAIN)
           byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
                        address_s + 2, sizeof(address_s) - 2);
         else

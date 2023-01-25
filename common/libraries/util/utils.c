@@ -273,8 +273,9 @@ void get_firmaware_version(uint16_t pid, const char *product_hash , char message
     }
 }
 
+//TODO: Update len return size to 16 bit
 void random_generate(uint8_t* arr,int len){
-    if(len > 32) return ;
+    ASSERT(len <= 32);
 
     ASSERT(crypto_random_generate(arr,len) == true);
 

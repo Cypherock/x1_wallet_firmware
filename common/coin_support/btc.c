@@ -487,7 +487,7 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, const uint32_
     return segwit_addr_encode(address, hrp, 0x00, rip, 20);
 }
 
-int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_output)
+int get_address(const char* hrp, const uint8_t* script_pub_key, uint8_t version, char* address_output)
 {
   if (script_pub_key == NULL || address_output == NULL) return 0;
 
@@ -497,7 +497,7 @@ int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_ou
   }
 
   uint8_t address[SHA3_256_DIGEST_LENGTH] = {0};
-  uint8_t offset = 1, script_offset = 0, version = 0;
+  uint8_t offset = 1, script_offset = 0;
 
   //refer https://learnmeabitcoin.com/technical/script for script type explaination
   if (script_pub_key[0] == 0x41) {

@@ -67,6 +67,7 @@
 #include "ui_message.h"
 #include "wallet_utilities.h"
 #include "flash_if.h"
+#include "card_action_controllers.h"
 
 
 extern char* ALPHABET;
@@ -146,7 +147,7 @@ void restore_wallet_controller()
     } break;
 
     case RESTORE_WALLET_PIN_CONFIRM: {
-        uint8_t* temp = (uint8_t*)malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
         ASSERT(temp != NULL);
         sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), temp);
         sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
@@ -161,7 +162,6 @@ void restore_wallet_controller()
         }
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         memzero(temp, sizeof(temp));
-        free(temp);
     } break;
 
     case RESTORE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
@@ -287,20 +287,30 @@ void restore_wallet_controller()
     } break;
 
     case RESTORE_WALLET_TAP_CARDS:
-        tap_cards_for_write_flow_controller();
+        tap_cards_for_write_and_verify_flow_controller();
         break;
 
-    case RESTORE_WALLET_SUCCESS_MESSAGE:
+    case RESTORE_WALLET_VERIFY_SHARES:
+        flow_level.level_three = verify_card_share_data() == 1 ? RESTORE_WALLET_SUCCESS_MESSAGE : RESTORE_WALLET_FAILED_MESSAGE;
         memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
+        memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
         memzero(wallet.wallet_share_with_mac_and_nonce, sizeof(wallet.wallet_share_with_mac_and_nonce));
         memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
         memzero(wallet.checksum, sizeof(wallet.checksum));
         memzero(wallet.key, sizeof(wallet.key));
         memzero(wallet.beneficiary_key, sizeof(wallet.beneficiary_key));
         memzero(wallet.iv_for_beneficiary_key, sizeof(wallet.iv_for_beneficiary_key));
+        break;
+
+    case RESTORE_WALLET_SUCCESS_MESSAGE:
+        reset_flow_level();
+        break;
+
+    case RESTORE_WALLET_FAILED_MESSAGE:
         flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-        flow_level.level_two = LEVEL_THREE_VERIFY_WALLET;
+        flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
         flow_level.level_three = 1;
+        flow_level.level_four = 1;
         break;
 
     default:

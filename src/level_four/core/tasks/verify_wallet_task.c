@@ -68,6 +68,7 @@
 #include "controller_main.h"
 #include "flash_api.h"
 #include "ui_multi_instruction.h"
+#include "ui_instruction.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -80,7 +81,7 @@ void verify_wallet_tasks()
 {
     switch (flow_level.level_three) {
     case VERIFY_WALLET_START:
-        message_scr_init(ui_text_press_enter_to_start_verification);
+        mark_event_over();
         break;
 
     case VERIFY_WALLET_PIN_INPUT:
@@ -96,74 +97,33 @@ void verify_wallet_tasks()
         tap_cards_for_verification_flow();
         break;
 
-    case VERIFY_WALLET_READ_DEVICE_SHARE:
+    case VERIFY_WALLET_DATA: {
+        instruction_scr_init(ui_text_processing, "");
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
-        break;
-
-    case VERIFY_WALLET_SHOW_MNEMONICS: {
-        uint8_t *secret;
-        uint8_t output;
-
-        if (WALLET_IS_PIN_SET(wallet.wallet_info))
-            decrypt_shares();
-        if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
-            secret = (uint8_t *) malloc((wallet.arbitrary_data_size + 1) * sizeof(uint8_t));
-            ASSERT(secret != NULL);
-            output = generate_data_5C2(
-                wallet.arbitrary_data_size,
-                wallet_shamir_data.arbitrary_data_shares,
-                wallet_shamir_data.share_x_coords,
-                secret);
-            memzero(wallet_shamir_data.arbitrary_data_shares, sizeof(wallet_shamir_data.arbitrary_data_shares));
-        } else {
-            secret = (uint8_t *) malloc(BLOCK_SIZE * sizeof(uint8_t));
-            ASSERT(secret != NULL);
-            output = generate_shares_5C2(
-                wallet_shamir_data.mnemonic_shares,
-                wallet_shamir_data.share_x_coords,
-                secret);
-            memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
-        }
-
-        if (output == 0) {
-            free(secret);
-            LOG_ERROR("xx01 5C2");
-            mark_event_cancel();
-            return;
-        }
-        if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
-            secret[wallet.arbitrary_data_size] = '\0';
-            address_scr_init(ui_text_confirm_data, (char *) secret, false);
-            memzero(secret, wallet.arbitrary_data_size);
-        } else {
-            char verify_words[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH];
-            mnemonic_clear();
-            const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-            __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), verify_words);
-
-            set_theme(LIGHT);
-            list_init(
-                verify_words,
-                wallet.number_of_mnemonics,
-                ui_text_verify_word_hash,
-                true);
-            reset_theme();
-            memzero(secret, BLOCK_SIZE);
-            mnemonic_clear();
-            memzero(verify_words, sizeof(verify_words));
-        }
-        free(secret);
     } break;
 
-    case VERIFY_WALLET_COMPLETE_INSTRUCTION:
-        multi_instruction_init(ui_text_verification_is_now_complete_messages, 5, DELAY_LONG_STRING, true);
-        break;
+    case VERIFY_WALLET_SUCCESS: {
+        instruction_scr_destructor();
+        const char *messages[6] = {
+            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
+            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
+            ui_text_verification_is_now_complete_messages[5], NULL};
+        uint8_t count = 5;
 
-    case VERIFY_WALLET_SUCCESS:
-        message_scr_init(ui_text_wallet_created_successfully);
-        break;
+        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+            messages[3] = ui_text_verification_is_now_complete_messages[3];
+            messages[4] = ui_text_verification_is_now_complete_messages[4];
+            messages[5] = ui_text_verification_is_now_complete_messages[5];
+            count = 6;
+        }
+
+        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+    } break;
 
     case VERIFY_WALLET_DELETE:
+        instruction_scr_destructor();
         address_scr_init(ui_text_verification_cancelled, (char *) ui_text_delete_this_wallet, false);
         break;
 

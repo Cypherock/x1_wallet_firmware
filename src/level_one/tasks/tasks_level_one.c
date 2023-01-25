@@ -116,6 +116,7 @@ void level_one_tasks()
 
     for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
         if (get_wallet_state(walletIndex) == VALID_WALLET
+            || get_wallet_state(walletIndex) == INVALID_WALLET
             || get_wallet_state(walletIndex) == UNVERIFIED_VALID_WALLET
             || get_wallet_state(walletIndex) == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
             choices[mainMenuIndex] = (char*)get_wallet_name(walletIndex);

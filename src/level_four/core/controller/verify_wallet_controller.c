@@ -59,6 +59,7 @@
 #include "controller_tap_cards.h"
 #include "sha2.h"
 #include "flash_api.h"
+#include "card_action_controllers.h"
 
 extern Wallet_credential_data wallet_credential_data;
 
@@ -83,23 +84,9 @@ void verify_wallet_controller()
         tap_cards_for_verification_flow_controller();
         break;
 
-    case VERIFY_WALLET_READ_DEVICE_SHARE:
-        wallet_shamir_data.share_x_coords[4] = 5;
-        get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[4]);
-        memcpy(wallet_shamir_data.share_encryption_data[4], wallet_shamir_data.share_encryption_data[0], NONCE_SIZE+WALLET_MAC_SIZE);
-        flow_level.level_three = VERIFY_WALLET_SHOW_MNEMONICS;
-        break;
-
-    case VERIFY_WALLET_SHOW_MNEMONICS: {
-        uint8_t wallet_index;
-        get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
-        set_wallet_state(wallet_index, VALID_WALLET);
-        flow_level.level_three = VERIFY_WALLET_COMPLETE_INSTRUCTION;
+    case VERIFY_WALLET_DATA: {
+        flow_level.level_three = (verify_card_share_data() == 1) ? VERIFY_WALLET_SUCCESS : VERIFY_WALLET_DELETE;
     } break;
-
-    case VERIFY_WALLET_COMPLETE_INSTRUCTION:
-        flow_level.level_three = VERIFY_WALLET_SUCCESS;
-        break;
 
     case VERIFY_WALLET_SUCCESS:
         reset_flow_level();

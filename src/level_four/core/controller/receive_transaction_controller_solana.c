@@ -152,8 +152,11 @@ void receive_transaction_controller_solana() {
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
+          BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
+          BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index),
       };
-      derive_hdnode_from_path(path, 3, ED25519_NAME, seed, &node);
+      size_t depth = sol_get_derivation_depth(receive_transaction_data.address_tag);
+      derive_hdnode_from_path(path, depth, ED25519_NAME, seed, &node);
       size_t public_key_size = sizeof(receive_transaction_data.solana_address);
       memzero(receive_transaction_data.solana_address, sizeof(receive_transaction_data.solana_address));
       b58enc(receive_transaction_data.solana_address, &public_key_size, (char *)(node.public_key + 1), 32);

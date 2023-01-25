@@ -73,6 +73,7 @@
 #include "ui_address.h"
 #include "ui_instruction.h"
 #include "tasks_tap_cards.h"
+#include "ui_multi_instruction.h"
 
 extern char arbitrary_data[4096 / 8 + 1];
 
@@ -188,8 +189,34 @@ void tasks_arbitrary_data()
         tap_cards_for_write_flow();
     } break;
 
+    case ARBITRARY_DATA_VERIFY_SHARES:
+        instruction_scr_init(ui_text_processing, "");
+        instruction_scr_change_text(ui_text_processing, true);
+        BSP_DelayMs(DELAY_SHORT);
+        mark_event_over();
+        break;
+
     case ARBITRARY_DATA_SUCCESS_MESSAGE: {
-        message_scr_init(ui_text_wallet_synced_with_x1cards);
+        instruction_scr_destructor();
+        const char *messages[6] = {
+            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
+            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
+            ui_text_verification_is_now_complete_messages[5], NULL};
+        uint8_t count = 5;
+
+        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+            messages[3] = ui_text_verification_is_now_complete_messages[3];
+            messages[4] = ui_text_verification_is_now_complete_messages[4];
+            messages[5] = ui_text_verification_is_now_complete_messages[5];
+            count = 6;
+        }
+
+        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+    } break;
+
+    case ARBITRARY_DATA_FAILED_MESSAGE: {
+        instruction_scr_destructor();
+        message_scr_init(ui_text_creation_failed_delete_wallet);
     } break;
 
     default: {

@@ -31,6 +31,7 @@
 #define OP_RETURN   0x6A
 
 #define SATOSHI_PER_BTC 100000000
+#define MAX_SCRIPT_SIG_SIZE 128
 
 /**
  * @brief Struct to store details of Unsigned Transaction Input.
@@ -187,6 +188,19 @@ typedef struct
 #pragma pack(pop)
 
 /**
+ * @brief Stores the generated signature on transaction data for the send transaction process.
+ *
+ * @see send_transaction_controller(), send_transaction_task(), desktop_listener_task(), SEND_TXN_START
+ * @since v1.0.0
+ */
+#pragma pack(push, 1)
+typedef struct Send_Transaction_Cmd {
+  uint8_t signed_txn_byte_array[MAX_SCRIPT_SIG_SIZE];
+  int signed_txn_length;
+} Send_Transaction_Cmd;
+#pragma pack(pop)
+
+/**
  * @brief Converts byte array represented unsigned transaction to struct unsigned_txn.
  * @details
  *
@@ -283,7 +297,7 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, uint32_t coin
  *
  * @note
  */
-int get_address(const char* hrp, const uint8_t* script_pub_key, char* address_output);
+int get_address(const char* hrp, const uint8_t* script_pub_key, uint8_t addr_version, char* address_output);
 
 /**
  * @brief Get the transaction fee of an unsigned transaction.
