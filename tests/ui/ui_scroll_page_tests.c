@@ -1,5 +1,5 @@
 /**
- * @file    ui_scroll_list_tests.c
+ * @file    ui_scroll_page_tests.c
  * @author  Cypherock X1 Team
  * @brief   Title of the file.
  *          Short description of the file
@@ -55,22 +55,22 @@
  *
  ******************************************************************************
  */
-#include "ui_scroll_list.h"
+#include "ui_scroll_page.h"
 
-#ifdef UI_HOR_SCROLL_LIST_UNIT_TESTS
+#ifdef UI_HOR_SCROLL_PAGE_UNIT_TESTS
 
 void Ui_HorScrUnitTests(void) {
     /* Negative checks: Should immediately return and not crash the board */
-    Ui_HorScrInit("Header1", NULL);
-    Ui_HorScrInit(NULL, "Body1");
+    ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
+    ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
 
     /* Positive check: Should see UI and buttons working properly */
-    Ui_HorScrInit("ThisIsAHeading.HeadingShouldBeFloatingText!",
+    ui_scrollable_page("ThisIsAHeading.HeadingShouldBeFloatingText!",
                   "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
-                  "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||");
+                  "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||", MENU_SCROLL_HORIZONTAL, true);
     while (1) {
         lv_task_handler();
     }
 }
 
-#endif /* UI_HOR_SCROLL_LIST_UNIT_TESTS */
+#endif /* UI_HOR_SCROLL_PAGE_UNIT_TESTS */
