@@ -89,8 +89,14 @@ void tap_cards_for_write_flow()
     case CARD_TWO_READBACK:
     case CARD_THREE_READBACK:
     case CARD_FOUR_READBACK:
+    {
+        char display[40];
+        instruction_scr_destructor();
+        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, flow_level.level_four / 3);
+        instruction_scr_init(ui_text_place_card_below, display);
         if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
             instruction_scr_change_text(ui_text_card_removed_fast, true);
+    }
     case CARD_ONE_WRITE:
     case CARD_TWO_WRITE:
     case CARD_THREE_WRITE:

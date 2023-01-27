@@ -104,10 +104,23 @@ void verify_wallet_tasks()
         mark_event_over();
     } break;
 
-    case VERIFY_WALLET_SUCCESS:
+    case VERIFY_WALLET_SUCCESS: {
         instruction_scr_destructor();
-        multi_instruction_init(ui_text_verification_is_now_complete_messages, 4, DELAY_LONG_STRING, true);
-        break;
+        const char *messages[6] = {
+            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
+            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
+            ui_text_verification_is_now_complete_messages[5], NULL};
+        uint8_t count = 5;
+
+        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+            messages[3] = ui_text_verification_is_now_complete_messages[3];
+            messages[4] = ui_text_verification_is_now_complete_messages[4];
+            messages[5] = ui_text_verification_is_now_complete_messages[5];
+            count = 6;
+        }
+
+        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+    } break;
 
     case VERIFY_WALLET_DELETE:
         instruction_scr_destructor();

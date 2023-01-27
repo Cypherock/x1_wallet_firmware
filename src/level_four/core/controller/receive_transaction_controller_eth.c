@@ -179,7 +179,7 @@ void receive_transaction_controller_eth()
         uint8_t data[1 + sizeof(receive_transaction_data.address) + 1];     // confirm byte + address length + null byte
         size_t datalen;
         data[0] = 1;  // confirmation byte
-        if (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN) {
+        if (chain_id != HARMONY_MAINNET_CHAIN) {
           memcpy(data + 1, receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
           datalen = 1 + sizeof(receive_transaction_data.eth_pubkeyhash);
         } else {

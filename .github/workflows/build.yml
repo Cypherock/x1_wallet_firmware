@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.ref_type }} == 'tag'
     steps:
+    - name: Checkout
+      uses: actions/checkout@v3
     - name: Download artifacts
       uses: actions/download-artifact@master
       with:
@@ -37,7 +39,10 @@ jobs:
       run: |
         chkmain=$(sha256sum main-release-outputs/release/Cypherock-Main.bin | cut -f -1 -d ' ')
         chkinit=$(sha256sum initial-release-outputs/release/Cypherock-Initial.bin | cut -f -1 -d ' ')
-        curl   -X POST   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   https://api.github.com/repos/${REPOSITORY}/releases   -d '{"tag_name":"'${TAG_NAME}'","target_commitish":"main","name":"'${TAG_NAME}'","body":"## SHA256 of binaries:\r\n**Cypherock-Initial.bin** : '${chkinit}' \r\n**Cypherock-Main.bin** : '${chkmain}'","draft":true,"prerelease":false,"generate_release_notes":true}' > output.txt
+        APP_VERSION=$(cat version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
+        HW_VERSION=$(cat version.txt | grep hardware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
+        echo ${APP_VERSION}:${HW_VERSION}
+        curl   -X POST   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   https://api.github.com/repos/${REPOSITORY}/releases   -d '{"tag_name":"'${TAG_NAME}'","target_commitish":"main","name":"'${TAG_NAME}'","body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Initial.bin** : '${chkinit}' \r\n**Cypherock-Main.bin** : '${chkmain}'","draft":true,"prerelease":false,"generate_release_notes":true}' > output.txt
         echo "upload_url=$(cat output.txt | grep "\"upload_url\":" | cut -f 4-4 -d '"' | cut -f 1-1 -d '{')" >> $GITHUB_ENV
     - name: Upload assets
       env:
@@ -46,3 +51,4 @@ jobs:
         content_type=$(file -b --mime-type main-release-outputs/release/Cypherock-Main.bin)
         curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=Cypherock-Main.bin  --data-binary @main-release-outputs/release/Cypherock-Main.bin
         curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=Cypherock-Initial.bin  --data-binary @initial-release-outputs/release/Cypherock-Initial.bin
+        curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=version.txt  --data-binary @version.txt

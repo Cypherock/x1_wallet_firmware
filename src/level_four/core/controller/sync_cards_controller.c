@@ -133,6 +133,7 @@ void sync_cards_controller()
             memcpy(wallet_credential_data.password_single_hash, temp_password_hash, SHA256_DIGEST_LENGTH);
             memzero(temp_password_hash, SHA256_DIGEST_LENGTH);
             encrypt_shares();
+            memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
         }
 
         uint32_t wallet_index;
