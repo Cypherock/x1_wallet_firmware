@@ -345,12 +345,14 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvgl
                     lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_right_arrow_lvgl,
                                        LV_LABEL_STYLE_MAIN,
                                        &(gp_scrollabe_page_lvgl->ui_arrow_pressed_style));
-                    // lv_page_scroll_ver(gp_scrollabe_page_lvgl->p_ui_page_lvgl,
-                    //                    -lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+
+                    lv_obj_t *p_scrollable =
+                        lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl);
+                    lv_coord_t page_y = lv_obj_get_y(p_scrollable);
                     lv_obj_set_y(
-                        lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl),
-                        lv_obj_get_y(lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl)) -
-                            lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+                        p_scrollable,
+                        page_y - lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+
                     lv_obj_align(gp_scrollabe_page_lvgl->p_ui_body_lvgl, NULL, LV_ALIGN_IN_TOP_MID,
                                  0, 0);
                 }
@@ -359,12 +361,13 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvgl
                     lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_left_arrow_lvgl,
                                        LV_LABEL_STYLE_MAIN,
                                        &(gp_scrollabe_page_lvgl->ui_arrow_pressed_style));
-                    // lv_page_scroll_ver(gp_scrollabe_page_lvgl->p_ui_page_lvgl,
-                    //                    lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+                    lv_obj_t *p_scrollable =
+                        lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl);
+                    lv_coord_t page_y = lv_obj_get_y(p_scrollable);
                     lv_obj_set_y(
-                        lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl),
-                        lv_obj_get_y(lv_page_get_scrl(gp_scrollabe_page_lvgl->p_ui_page_lvgl)) +
-                            lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+                        p_scrollable,
+                        page_y + lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl));
+
                     lv_obj_align(gp_scrollabe_page_lvgl->p_ui_body_lvgl, NULL, LV_ALIGN_IN_TOP_MID,
                                  0, 0);
                 }
