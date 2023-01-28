@@ -200,7 +200,7 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
                       BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index),
                       BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].change_index),
                       BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].address_index)};
-  size_t depth = sol_get_derivation_depth(transaction_metadata->address_tag);
+  size_t depth     = sol_get_derivation_depth(transaction_metadata->address_tag);
   uint8_t seed[64] = {0};
   HDNode hdnode;
   mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
@@ -239,22 +239,23 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
 
 bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
   bool status = false;
-  if (levels < 2) return status;
+  if (levels < 2)
+    return status;
 
   uint32_t purpose = path[0], coin = path[1];
 
   switch (levels) {
-    case 2:   // m/44'/501'
+    case 2:  // m/44'/501'
       status = (purpose == NON_SEGWIT && coin == SOLANA);
       break;
 
-    case 3:   // m/44'/501'/i'
+    case 3:  // m/44'/501'/i'
       status = (purpose == NON_SEGWIT && coin == SOLANA);
       break;
 
-    case 4: { // m/44'/501'/0'/i'
-      uint32_t account = path[2];
-      status = (purpose == NON_SEGWIT && coin == SOLANA && account == 0x80000000);
+    case 4: {  // m/44'/501'/i'/0'
+      uint32_t change = path[3];
+      status          = (purpose == NON_SEGWIT && coin == SOLANA && change == 0x80000000);
     } break;
 
     default:
@@ -262,27 +263,4 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
   }
 
   return status;
-}
-
-uint32_t sol_get_account_index(const uint32_t *path, solana_account_type account_tag) {
-  uint32_t index = 0;
-
-  uint8_t depth_index = sol_get_derivation_depth(account_tag) - 1;
-
-  switch (account_tag) {
-    case SOL_ACC_TYPE1:
-      index = 0;
-      break;
-
-    case SOL_ACC_TYPE2:
-    case SOL_ACC_TYPE3:
-      // discard the sign bit denoting hardened/non-harndedned value
-      index = path[depth_index] & 0x7FFFFFFF;
-      break;
-
-    default:
-      break;
-  }
-
-  return index;
 }
