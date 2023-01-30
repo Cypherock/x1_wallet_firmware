@@ -63,23 +63,23 @@
 #define   NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
-    COIN_TYPE_BITCOIN = 0x01,
-    COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITECOIN = 0x03,
-    COIN_TYPE_DOGE = 0x04,
-    COIN_TYPE_DASH = 0x05,
-    COIN_TYPE_ETHEREUM = 0x06,
-    COIN_TYPE_NEAR = 0x07,
-    COIN_TYPE_POLYGON = 0x08,
-    COIN_TYPE_SOLANA = 0x09,
-  COIN_TYPE_BSC = 0x0A,
-  COIN_TYPE_FANTOM = 0x0B,
-  COIN_TYPE_AVALANCHE = 0x0C,
-  COIN_TYPE_OPTIMISM = 0x0D,
-  COIN_TYPE_HARMONY = 0x0E,
-  COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
-  COIN_TYPE_ARBITRUM = 0x10,
-}Coin_Type;
+    COIN_TYPE_BITCOIN          = 0x01,
+    COIN_TYPE_BTC_TEST         = 0x02,
+    COIN_TYPE_LITECOIN         = 0x03,
+    COIN_TYPE_DOGE             = 0x04,
+    COIN_TYPE_DASH             = 0x05,
+    COIN_TYPE_ETHEREUM         = 0x06,
+    COIN_TYPE_NEAR             = 0x07,
+    COIN_TYPE_POLYGON          = 0x08,
+    COIN_TYPE_SOLANA           = 0x09,
+    COIN_TYPE_BSC              = 0x0A,
+    COIN_TYPE_FANTOM           = 0x0B,
+    COIN_TYPE_AVALANCHE        = 0x0C,
+    COIN_TYPE_OPTIMISM         = 0x0D,
+    COIN_TYPE_HARMONY          = 0x0E,
+    COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
+    COIN_TYPE_ARBITRUM         = 0x10,
+} Coin_Type;
 
 #pragma pack(push, 1)
 /**
@@ -188,6 +188,11 @@ typedef struct Receive_Transaction_Data {
 } Receive_Transaction_Data;
 #pragma pack(pop)
 
+typedef struct ui_display_node {
+  char *title;
+  char *value;
+  struct ui_display_node *next;
+} ui_display_node;
 
 /**
  * @brief Copies the byte values from source after offset to destination under the given size limit.
@@ -440,5 +445,19 @@ FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
                                      const bool harden_all,
                                      char *output,
                                      const size_t out_len);
+
+/**
+ * @brief Create a new display node and return its pointer
+ * 
+ * @param title 
+ * @param title_size 
+ * @param value 
+ * @param value_size 
+ * @return ui_display_node* 
+ */
+ui_display_node *ui_create_display_node(const char *title,
+                                        const size_t title_size,
+                                        const char *value,
+                                        const size_t value_size);
 
 #endif
