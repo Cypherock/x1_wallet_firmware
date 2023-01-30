@@ -178,7 +178,7 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
-        if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN && chain_id != HARMONY_TESTNET_CHAIN))
+        if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN))
           byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         else
           bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));

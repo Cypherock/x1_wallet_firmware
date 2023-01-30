@@ -119,7 +119,7 @@ void near_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array, uint64
       BYTE_ARRAY_TO_UINT32(transaction_metadata->purpose_index),
       BYTE_ARRAY_TO_UINT32(transaction_metadata->coin_index),
       BYTE_ARRAY_TO_UINT32(transaction_metadata->account_index),
-      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].chain_index),
+      BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].change_index),
       BYTE_ARRAY_TO_UINT32(transaction_metadata->input[0].address_index)
     };
     uint8_t seed[64]={0};
@@ -195,9 +195,4 @@ bool near_verify_derivation_path(const uint32_t *path, uint8_t levels) {
   status = (purpose == NON_SEGWIT && coin == NEAR && account == 0x80000000 && change == 0x80000000);
 
   return status;
-}
-
-uint32_t near_get_account_index(const uint32_t *path) {
-  // discard the sign bit denoting hardened/non-harndedned value
-  return (path[4] & 0x7FFFFFFF);
 }

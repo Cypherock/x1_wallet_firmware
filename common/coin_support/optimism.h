@@ -13,10 +13,8 @@
 #define OPTIMISM_COIN_VERSION    0x00000000
 
 #define OPTIMISM_MAINNET_CHAIN    10
-#define OPTIMISM_TESTNET_CHAIN    420
 
 #define OPTIMISM_MAINNET_NAME   "Optimism"
-#define OPTIMISM_TESTNET_NAME   "Optimism Goerli Testnet"
 #define OPTIMISM_TOKEN_SYMBOL   "ETH"
 
 #endif
