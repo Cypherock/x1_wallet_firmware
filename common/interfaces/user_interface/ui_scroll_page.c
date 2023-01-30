@@ -132,6 +132,14 @@ static void page_accept_handler(lv_obj_t *pAcceptLvglObj, const lv_event_t lvglE
  */
 static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvglEvent);
 
+/**
+ * @brief This function populates LVGL objects in gp_scrollabe_page_lvgl variable for a UI screen 
+ * which is scrollabe, contains left/right arrow buttons and cancel/accept buttons
+ * Note: Before calling this function: gp_scrollabe_page_data variable should be malloced and
+ * populated with appropriate values
+ */
+static void ui_scrollable_page_create(void);
+
 static bool page_increment(void) {
     ASSERT(NULL != gp_scrollabe_page_data);
 
@@ -395,27 +403,8 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvgl
     return;
 }
 
-void ui_scrollable_page(const char *p_page_ui_heading,
-                        const char *p_page_ui_body,
-                        e_scrollable_page_orientation_t page_orientation,
-                        bool bool_cancel_accept_btn_visible) {
-    if ((NULL == p_page_ui_heading) || (NULL == p_page_ui_body)) {
-        return;
-    }
-
-    gp_scrollabe_page_data = (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));
+static void ui_scrollable_page_create(void) {
     ASSERT(NULL != gp_scrollabe_page_data);
-
-    gp_scrollabe_page_data->p_ui_heading               = p_page_ui_heading;
-    gp_scrollabe_page_data->p_ui_body                  = p_page_ui_body;
-    gp_scrollabe_page_data->bool_accept_cancel_visible = bool_cancel_accept_btn_visible;
-
-    /* Below fields will be overwritten below, when page settings are being applied */
-    gp_scrollabe_page_data->total_page_num            = 1;
-    gp_scrollabe_page_data->curr_page_num             = 1;
-    gp_scrollabe_page_data->bool_left_arrow_hidden    = true;
-    gp_scrollabe_page_data->bool_right_arrow_hidden   = true;
-    gp_scrollabe_page_data->bool_accept_cancel_hidden = false;
 
     gp_scrollabe_page_lvgl = (scrolling_page_lvgl_t *)malloc(sizeof(scrolling_page_lvgl_t));
     ASSERT(NULL != gp_scrollabe_page_lvgl);
@@ -551,6 +540,33 @@ void ui_scrollable_page(const char *p_page_ui_heading,
 
     /* Update all icons: Left/right arrows, Accept/Cancel buttons and Footnote */
     page_update_icons();
+
+    return;
+}
+
+void ui_scrollable_page(const char *p_page_ui_heading,
+                        const char *p_page_ui_body,
+                        e_scrollable_page_orientation_t page_orientation,
+                        bool bool_cancel_accept_btn_visible) {
+    if ((NULL == p_page_ui_heading) || (NULL == p_page_ui_body)) {
+        return;
+    }
+
+    gp_scrollabe_page_data = (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));
+    ASSERT(NULL != gp_scrollabe_page_data);
+
+    gp_scrollabe_page_data->p_ui_heading               = p_page_ui_heading;
+    gp_scrollabe_page_data->p_ui_body                  = p_page_ui_body;
+    gp_scrollabe_page_data->bool_accept_cancel_visible = bool_cancel_accept_btn_visible;
+
+    /* Below fields will be overwritten below, when page settings are being applied */
+    gp_scrollabe_page_data->total_page_num            = 1;
+    gp_scrollabe_page_data->curr_page_num             = 1;
+    gp_scrollabe_page_data->bool_left_arrow_hidden    = true;
+    gp_scrollabe_page_data->bool_right_arrow_hidden   = true;
+    gp_scrollabe_page_data->bool_accept_cancel_hidden = false;
+
+    ui_scrollable_page_create();
 
     return;
 }
