@@ -453,7 +453,7 @@ void eth_sign_msg_data(const MessageData *msg_data,
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
     switch (msg_data->messageType) {
     case MessageData_MessageType_ETH_SIGN: {
-            const size_t array_size = msg_data->data_bytes->size * 2 + 1;
+            const size_t array_size = msg_data->data_bytes->size * 2 + 3;
             char *buffer            = malloc(array_size);
             memzero(buffer, array_size);
             snprintf(buffer, array_size, "0x");

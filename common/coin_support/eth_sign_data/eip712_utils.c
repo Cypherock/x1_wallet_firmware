@@ -42,6 +42,24 @@ queue_node *dequeue(queue *q) {
   return temp;
 }
 
+static void twos_complement_of_byte_array(uint8_t *arr, size_t size) {
+  size_t i;
+
+  // flip all the bits
+  for (i = 0; i < size; i++)
+    arr[i] = ~arr[i];
+
+  // add 1 to the least significant bit
+  for (i = size - 1; i >= 0; i--) {
+    if (arr[i] == 255) {
+      arr[i] = 0;
+    } else {
+      arr[i]++;
+      break;
+    }
+  }
+}
+
 void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char *output, const size_t output_size) {
   memzero(output, output_size);
   char buffer[BUFFER_SIZE] = {0};
@@ -50,10 +68,33 @@ void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char 
     case TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT:
       snprintf(buffer, sizeof(buffer), "Contains %ld elements", data_node->size);
       break;
-    case TypedDataStruct_TypedDataNode_Eip712DataType_UINT:
-    case TypedDataStruct_TypedDataNode_Eip712DataType_INT:
+    case TypedDataStruct_TypedDataNode_Eip712DataType_UINT: {
+      char hex_string[65] = {0};
+      byte_array_to_hex_string(data_node->data->bytes, data_node->size, hex_string, sizeof(hex_string));
+      convert_byte_array_to_decimal_string(data_node->size * 2, 0, hex_string, buffer, sizeof(buffer));
+    } break;
+    case TypedDataStruct_TypedDataNode_Eip712DataType_INT: {
+      char hex_string[65] = {0};
+      uint8_t array[32]   = {0};
+      uint8_t offset      = 0;
+      memccpy(array, data_node->data->bytes, data_node->size, sizeof(array));
+
+      // if signed integer get 2's complement
+      if (array[0] & 0x80) {
+        twos_complement_of_byte_array(array, data_node->size);
+        snprintf(buffer, sizeof(buffer), "-");
+        offset++;
+      }
+
+      byte_array_to_hex_string(array, data_node->size, hex_string, sizeof(hex_string));
+      convert_byte_array_to_decimal_string(data_node->size * 2, 0, hex_string, buffer + offset,
+                                           sizeof(buffer) - offset);
+    } break;
     case TypedDataStruct_TypedDataNode_Eip712DataType_BOOL:
-      snprintf(buffer, sizeof(buffer), "%d", *(data_node->data->bytes));
+      if (data_node->data->bytes[0] == 1)
+        snprintf(buffer, sizeof(buffer), "true");
+      else
+        snprintf(buffer, sizeof(buffer), "false");
       break;
     case TypedDataStruct_TypedDataNode_Eip712DataType_STRING:
       snprintf(buffer, data_node->data->size + 1, "%s", data_node->data->bytes);
@@ -67,7 +108,7 @@ void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char 
   }
   snprintf(output, output_size, "%s: %s", data_node->struct_name, buffer);
 }
-int hash_struct(const TypedDataStruct_TypedDataNode *data_node, uint8_t *output);
+
 int encode_data(const TypedDataStruct_TypedDataNode *data_node,
                 uint8_t *output,
                 const size_t output_size,
