@@ -623,9 +623,9 @@ void desktop_listener_task(lv_task_t* data)
                         flow_level.level_two = LEVEL_THREE_SIGN_MESSAGE_ETH;
                         snprintf(
                             flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            "Send %s with %s on %s", var_send_transaction_data.transaction_metadata.token_name,
-                            wallet.wallet_name,
-                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id));
+                            UI_TEXT_SIGN_PROMPT, var_send_transaction_data.transaction_metadata.token_name,
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
                     }
                     if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
                         comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);

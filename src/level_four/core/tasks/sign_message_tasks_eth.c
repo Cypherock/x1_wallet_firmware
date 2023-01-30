@@ -70,6 +70,7 @@
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
+#include "ui_scroll_page.h"
 #include "utils.h"
 
 extern char *ALPHABET;
@@ -98,7 +99,7 @@ void sign_message_tasks_eth() {
             if (current_display_node == NULL)
                 mark_event_over();
             else
-                address_scr_init(current_display_node->title, current_display_node->value, false);
+                ui_scrollable_page(current_display_node->title, current_display_node->value, MENU_SCROLL_HORIZONTAL, false);
         } break;
 
         case SIGN_MSG_CHECK_PASSPHRASE_ETH: {

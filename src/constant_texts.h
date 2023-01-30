@@ -19,6 +19,7 @@
 #define UI_TEXT_PLACE_CARD "Place Card #%d"
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
@@ -26,6 +27,9 @@
 #define UI_TEXT_PIN_INS1 "In next step you can setup PIN for %s"
 #define UI_TEXT_PASSPHRASE_INS1 "In next step you can setup Passphrase for %s"
 #define UI_TEXT_PLACE_CARD_TILL_BEEP "Do not lift until you hear %d beep sound"
+#define UI_TEXT_VERIFY_MESSAGE "Verify Message"
+#define UI_TEXT_VERIFY_DOMAIN "Verify Domain"
+#define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
 
 //product hash
 extern const char *product_hash ;

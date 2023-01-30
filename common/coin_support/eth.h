@@ -30,7 +30,7 @@
 #include "../crypto/sha3.h"
 #include "coin_utils.h"
 #include "abi.h"
-#include "simple.pb.h"
+#include "eip712.pb.h"
 
 #define ETHEREUM_PURPOSE_INDEX    0x8000002C
 #define ETHEREUM_COIN_INDEX       0x8000003C

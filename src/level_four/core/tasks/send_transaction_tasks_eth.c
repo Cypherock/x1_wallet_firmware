@@ -71,6 +71,7 @@
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
+#include "ui_scroll_page.h"
 #include "utils.h"
 
 extern char* ALPHABET;
@@ -270,11 +271,11 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_DISPLAY_INFO_ETH: {
-      instruction_scr_destructor();
-      if (current_display_node == NULL)
-        mark_event_over();
-      else
-        address_scr_init(current_display_node->title, current_display_node->value, false);
+        instruction_scr_destructor();
+        if (current_display_node == NULL)
+            mark_event_over();
+        else
+            ui_scrollable_page(current_display_node->title, current_display_node->value, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {

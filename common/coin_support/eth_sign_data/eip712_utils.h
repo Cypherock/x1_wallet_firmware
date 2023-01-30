@@ -1,6 +1,6 @@
 #ifndef EIP712_UTILS
 #define EIP712_UTILS
-#include "simple.pb.h"
+#include "eip712.pb.h"
 #include "abi.h"
 
 #define BUFFER_SIZE      1024

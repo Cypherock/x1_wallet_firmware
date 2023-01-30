@@ -56,12 +56,13 @@
  ******************************************************************************
  */
 #include "eth.h"
-#include "pb_decode.h"
 #include "assert_conf.h"
+#include "constant_texts.h"
 #include "contracts.h"
 #include "eth_sign_data/eip712_utils.h"
 #include "int-util.h"
 #include "logger.h"
+#include "pb_decode.h"
 #include "utils.h"
 
 extern ui_display_node *current_display_node;
@@ -296,13 +297,13 @@ static ui_display_node *eth_create_typed_data_display_nodes(TypedDataStruct_Type
     while (node_count > 0) {
       queue_node *node                         = dequeue(q);
       TypedDataStruct_TypedDataNode *curr_node = node->tree_node;
-      char buffer[BUFFER_SIZE]                 = {0};
-      snprintf(buffer, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
+      char title[BUFFER_SIZE]                 = {0};
+      snprintf(title, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
 
       char data[BUFFER_SIZE] = {0};
       fill_string_with_data(curr_node, data, sizeof(data));
 
-      temp->next = ui_create_display_node(buffer, BUFFER_SIZE, data, sizeof(data));
+      temp->next = ui_create_display_node(title, BUFFER_SIZE, data, sizeof(data));
       temp       = temp->next;
 
       for (int i = 0; i < curr_node->children_count; i++) {
@@ -451,31 +452,31 @@ void eth_sign_msg_data(const MessageData *msg_data,
 
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
     switch (msg_data->messageType) {
-        case MessageData_MessageType_ETH_SIGN: {
+    case MessageData_MessageType_ETH_SIGN: {
             const size_t array_size = msg_data->data_bytes->size * 2 + 1;
             char *buffer            = malloc(array_size);
             memzero(buffer, array_size);
             snprintf(buffer, array_size, "0x");
             size_t value_size = byte_array_to_hex_string(msg_data->data_bytes->bytes, msg_data->data_bytes->size,
-                                                         buffer + 2, array_size - 2) +
-                                2;
-            *node = ui_create_display_node("Verify Message", 20, buffer, value_size);
+                                                         buffer + 2, array_size - 2) + 2;
+            *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE, sizeof(UI_TEXT_VERIFY_MESSAGE), buffer, value_size);
             free(buffer);
-        } break;
-        case MessageData_MessageType_PERSONAL_SIGN: {
-            *node = ui_create_display_node("Verify Message", 20, (const char *)msg_data->data_bytes->bytes,
-                                           msg_data->data_bytes->size);
-        } break;
-        case MessageData_MessageType_SIGN_TYPED_DATA: {
-            *node                 = ui_create_display_node("Verify Domain", 64, "EIP712Domain", 64);
+    } break;
+    case MessageData_MessageType_PERSONAL_SIGN: {
+            *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE, sizeof(UI_TEXT_VERIFY_MESSAGE),
+                                           (const char *)msg_data->data_bytes->bytes, msg_data->data_bytes->size);
+    } break;
+    case MessageData_MessageType_SIGN_TYPED_DATA: {
+            *node                 = ui_create_display_node(UI_TEXT_VERIFY_DOMAIN, sizeof(UI_TEXT_VERIFY_DOMAIN),
+                                                           UI_TEXT_EIP712_DOMAIN_TYPE, sizeof(UI_TEXT_EIP712_DOMAIN_TYPE));
             ui_display_node *temp = *node;
             temp                  = eth_create_typed_data_display_nodes(&msg_data->eip712data.domain, &temp);
-            temp->next = ui_create_display_node("Verify Message", 64, msg_data->eip712data.message.struct_name, 256);
-            temp       = eth_create_typed_data_display_nodes(&msg_data->eip712data.message, &(temp->next));
-        } break;
+            temp->next            = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE, sizeof(UI_TEXT_VERIFY_MESSAGE),
+                                                           msg_data->eip712data.message.struct_name, 256);
+            temp                  = eth_create_typed_data_display_nodes(&msg_data->eip712data.message, &(temp->next));
+    } break;
     }
 }
-
 
 int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data) {
     pb_istream_t stream = pb_istream_from_buffer(eth_msg, byte_array_len);
