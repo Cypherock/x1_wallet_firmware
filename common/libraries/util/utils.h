@@ -53,6 +53,38 @@
 #define UTIL_IN_BOUNDS              (0xAA)
 
 /**
+ * @brief Generic return codes for functions
+ */
+typedef enum FUNC_RETURN_CODES {
+  /**
+   * Signifies everything went as expected.
+   */
+  FRC_SUCCESS = 0x0,
+  /**
+   * Generic error occurred should ideally be never be used.
+   */
+  FRC_ERROR,
+  /**
+   * Signifies passed arguments was not expected by the function.
+   */
+  FRC_INVALID_ARGUMENTS,
+  /**
+   * Signifies a NULL pointer was found at runtime.
+   */
+  FRC_NULL_POINTER,
+  /**
+   * Signifies some variable size was exceeded during
+   * function execution at runtime.
+   */
+  FRC_SIZE_EXCEEDED,
+  /**
+   * Signifies an unexpected value was encountered
+   * during the execution of the function at runtime.
+   */
+  FRC_UNEXPECTED_VALUE,
+} FUNC_RETURN_CODES;
+
+/**
  * @brief Allocates memory via malloc and makes an entry for each allocation into its global list
  * of memory allocation.
  * @details

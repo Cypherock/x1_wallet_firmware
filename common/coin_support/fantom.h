@@ -13,10 +13,8 @@
 #define FANTOM_COIN_VERSION    0x00000000
 
 #define FANTOM_MAINNET_CHAIN    250
-#define FANTOM_TESTNET_CHAIN    4002
 
 #define FANTOM_MAINNET_NAME   "Fantom Opera"
-#define FANTOM_TESTNET_NAME   "Fantom Testnet"
 #define FANTOM_TOKEN_SYMBOL   "FTM"
 
 #endif

@@ -36,10 +36,8 @@
 #define ETHEREUM_COIN_INDEX       0x8000003C
 
 #define ETHEREUM_MAINNET_CHAIN    1
-#define ETHEREUM_ROPSTEN_CHAIN    3
 
-#define ETHEREUM_MAINNET_NAME   "ETH Mainnet"
-#define ETHEREUM_ROPSTEN_NAME   "ETH Ropsten"
+#define ETHEREUM_MAINNET_NAME   "Ethereum"
 #define ETHEREUM_TOKEN_SYMBOL   "ETH"
 // \x45(E) is needed otherwise \x19e is considered instead of \x19
 #define ETH_PERSONAL_SIGN_IDENTIFIER   "\x19\x45thereum Signed Message:\n"
@@ -59,6 +57,18 @@
 
 /// Enum used to differentiate between a single val, string of bytes and list of strings during rlp decoding/encoding in raw eth byte array
 typedef enum { NONE, STRING, LIST } seq_type;
+
+/**
+ * @brief Enum used to represent the status of payload field in a transaction.
+ * 
+ */
+typedef enum {
+  PAYLOAD_ABSENT = 0x0,               // No payload present in the transaction
+  PAYLOAD_SIGNATURE_NOT_WHITELISTED,  // Payload function signature is not recognized [Blind Signing]
+  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract]
+  PAYLOAD_CONTRACT_INVALID,           // Payload function signature and contract both are whitelisted but doesn't match [Invalid Transaction]
+  PAYLOAD_WHITELISTED,                // Payload is completely recognized [Clear Signing]
+} PAYLOAD_STATUS;
 
 /**
  * @brief Struct to store Unsigned Ethereum Transaction details.
@@ -95,7 +105,7 @@ typedef struct
   uint8_t dummy_r[1];
   uint8_t dummy_s[1];
 
-  uint8_t contract_verified;
+  PAYLOAD_STATUS payload_status;
 } eth_unsigned_txn;
 #pragma pack(pop)
 
@@ -181,7 +191,7 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value
  *
  * @note
  */
-bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr);
+bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr);
 
 /**
  * @brief Convert byte array representation of unsigned transaction to eth_unsigned_txn.
@@ -200,9 +210,10 @@ bool eth_validate_unsigned_txn(eth_unsigned_txn *eth_utxn_ptr, txn_metadata *met
  *
  * @note
  */
-int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array, 
-                                    size_t byte_array_len,
-                                    eth_unsigned_txn *unsigned_txn_ptr);
+int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
+                                   size_t byte_array_len,
+                                   eth_unsigned_txn *unsigned_txn_ptr,
+                                   const txn_metadata *metadata_ptr);
 
 /**
  * @brief Convert byte array representation of message to an object using protobuf.
@@ -288,4 +299,13 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig);
+/**
+ * @brief Return the string representation of the derivation path received in transaction metadata for ethereum transaction.
+ * 
+ * @param txn_metadata_ptr      Pointer to transaction metadata
+ * @param output                Pointer to the output string
+ * @param out_len               Maximum length of output string
+ */
+void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len);
+
 #endif

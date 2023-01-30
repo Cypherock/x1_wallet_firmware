@@ -101,7 +101,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataInputIndex = 0;
     for (; metadataInputIndex < *txn_metadata_ptr->input_count; metadataInputIndex++) {
         address_type *input = &txn_metadata_ptr->input[metadataInputIndex];
-        s_memcpy(input->chain_index, metadata_byte_array, size, sizeof(input->chain_index), &offset);
+        s_memcpy(input->change_index, metadata_byte_array, size, sizeof(input->change_index), &offset);
         s_memcpy(input->address_index, metadata_byte_array, size, sizeof(input->address_index), &offset);
     }
 
@@ -115,7 +115,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataOutputIndex = 0;
     for (; metadataOutputIndex < 1; metadataOutputIndex++) {
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
-        s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
+        s_memcpy(output->change_index, metadata_byte_array, size, sizeof(output->change_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
     } 
 
@@ -128,7 +128,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataChangeIndex = 0;
     for (; metadataChangeIndex < *txn_metadata_ptr->change_count; metadataChangeIndex++) {
         address_type *change = &txn_metadata_ptr->change[metadataChangeIndex];
-        s_memcpy(change->chain_index, metadata_byte_array, size, sizeof(change->chain_index), &offset);
+        s_memcpy(change->change_index, metadata_byte_array, size, sizeof(change->change_index), &offset);
         s_memcpy(change->address_index, metadata_byte_array, size, sizeof(change->address_index), &offset);
     }
 
@@ -166,7 +166,7 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
     s_memcpy(txn_data_ptr->purpose, data_byte_array, size, sizeof(txn_data_ptr->purpose), &offset);
     s_memcpy(txn_data_ptr->coin_index, data_byte_array, size, sizeof(txn_data_ptr->coin_index), &offset);
     s_memcpy(txn_data_ptr->account_index, data_byte_array, size, sizeof(txn_data_ptr->account_index), &offset);
-    s_memcpy(txn_data_ptr->chain_index, data_byte_array, size, sizeof(txn_data_ptr->chain_index), &offset);
+    s_memcpy(txn_data_ptr->change_index, data_byte_array, size, sizeof(txn_data_ptr->change_index), &offset);
     s_memcpy(txn_data_ptr->address_index, data_byte_array, size, sizeof(txn_data_ptr->address_index), &offset);
 
     size_t token_name_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
@@ -244,10 +244,10 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index));
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index));
     if (index == -1) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].address_index));
     } else if (index >= 0) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].address_index));
     }
     hdnode_fill_public_key(hdnode);
@@ -268,27 +268,19 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
         case ETHEREUM: {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
-                case ETHEREUM_ROPSTEN_CHAIN:
                     return ETHEREUM_TOKEN_SYMBOL;
-                case POLYGON_MUMBAI_CHAIN:
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_TOKEN_SYMBOL;
-                case BSC_TESTNET_CHAIN:
                 case BSC_MAINNET_CHAIN:
                   return BSC_TOKEN_SYMBOL;
-                case FANTOM_TESTNET_CHAIN:
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_TOKEN_SYMBOL;
-                case AVALANCHE_TESTNET_CHAIN:
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_TOKEN_SYMBOL;
-                case OPTIMISM_TESTNET_CHAIN:
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_TOKEN_SYMBOL;
-                case ETC_TESTNET_CHAIN:
                 case ETC_MAINNET_CHAIN:
                   return ETC_TOKEN_SYMBOL;
-                case HARMONY_TESTNET_CHAIN:
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_TOKEN_SYMBOL;
                 case ARBITRUM_MAINNET_CHAIN:
@@ -315,7 +307,7 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
         case 0x80000000:
             return "Bitcoin";
         case 0x80000001:
-            return "BTC Test";
+            return "Bitcoin Testnet";
         case 0x80000002:
             return "Litecoin";
         case 0x80000003:
@@ -326,36 +318,20 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
             switch (chain_id) {
                 case ETHEREUM_MAINNET_CHAIN:
                     return ETHEREUM_MAINNET_NAME;
-                case ETHEREUM_ROPSTEN_CHAIN:
-                    return ETHEREUM_ROPSTEN_NAME;
-                case POLYGON_MUMBAI_CHAIN:
-                    return POLYGON_MUMBAI_NAME;
                 case POLYGON_MAINNET_CHAIN:
                     return POLYGON_MAINNET_NAME;
                 case BSC_MAINNET_CHAIN:
                   return BSC_MAINNET_NAME;
-                case BSC_TESTNET_CHAIN:
-                  return BSC_TESTNET_NAME;
                 case FANTOM_MAINNET_CHAIN:
                   return FANTOM_MAINNET_NAME;
-                case FANTOM_TESTNET_CHAIN:
-                  return FANTOM_TESTNET_NAME;
                 case AVALANCHE_MAINNET_CHAIN:
                   return AVALANCHE_MAINNET_NAME;
-                case AVALANCHE_TESTNET_CHAIN:
-                  return AVALANCHE_TESTNET_NAME;
                 case OPTIMISM_MAINNET_CHAIN:
                   return OPTIMISM_MAINNET_NAME;
-                case OPTIMISM_TESTNET_CHAIN:
-                  return OPTIMISM_TESTNET_NAME;
                 case ETC_MAINNET_CHAIN:
                   return ETC_MAINNET_NAME;
-                case ETC_TESTNET_CHAIN:
-                  return ETC_TESTNET_NAME;
                 case HARMONY_MAINNET_CHAIN:
                   return HARMONY_MAINNET_NAME;
-                case HARMONY_TESTNET_CHAIN:
-                  return HARMONY_TESTNET_NAME;
                 case ARBITRUM_MAINNET_CHAIN:
                   return ARBITRUM_MAINNET_NAME;
                 default: {
@@ -463,18 +439,18 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
         (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
-        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
+        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;
         return true;
     }
-    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] >= 0x80 ||
             mdata_ptr->input->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->change_index[0] >= 0x80 ||
             mdata_ptr->output->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->change_index[0] >= 0x80 ||
             mdata_ptr->change->address_index[0] >= 0x80))
         return false;
     if (mdata_ptr->eth_val_decimal[0] > 18) return false;
@@ -583,37 +559,35 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     return status;
 }
 
-uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len) {
-    uint32_t coin = path[1];
-    uint16_t length = 0;
-    char *type = "";
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                                  const size_t path_length,
+                                                  const bool harden_all,
+                                                  char *output,
+                                                  const size_t out_len) {
+    if (out_len == 0 || output == NULL || path == NULL)
+        return FRC_INVALID_ARGUMENTS;
 
-    switch (coin) {
-        case NEAR:
-            length = snprintf(account_name, out_len, "idx.%lu", (near_get_account_index(path) + 1));
-            break;
+    int offset = 0;
+    offset += snprintf(output + offset, out_len - offset, "m");
 
-        case SOLANA:            // m/44'/501'/i'/j'
-            type = account_type == 1 ? "paper" : (account_type == 2) ? "ledger" : "phantom";
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (sol_get_account_index(path, account_type) + 1));
-            break;
+    for (int i = 0; i < path_length; i++) {
+        const bool hardened  = path[i] & 0x80000000;
+        const uint32_t value = path[i] & 0x7FFFFFFF;
 
-        case LITCOIN:
-        case DOGE:
-        case DASH:              // m/44'/5'  /i'/0 /j
-        case ETHEREUM:          // m/44'/60' /i'/0 /0
-            length = snprintf(account_name, out_len, "idx.%lu", (path[2] & 0x7FFFFFFF) + 1);
-            break;
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
 
-        case BTC_TEST:          // m/44'/1'  /i'/0 /j
-        case BITCOIN:           // m/44'/0'  /i'/0 /j
-            type = (path[0] == NON_SEGWIT) ? "legacy" : "native_segwit" ;
-            length = snprintf(account_name, out_len, "%s.idx.%lu", type, (path[2] & 0x7FFFFFFF) + 1);
-            break;
+        offset += snprintf(output + offset, out_len - offset, "/%ld", value);
 
-        default:
-            break;
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        if (harden_all || hardened)
+            offset += snprintf(output + offset, out_len - offset, "'");
+
+        //extra check needed as snprintf returns estimated size rather than actual size written
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
     }
-
-    return length;
+    return FRC_SUCCESS;
 }

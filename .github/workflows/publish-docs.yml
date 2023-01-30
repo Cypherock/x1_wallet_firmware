@@ -1,0 +1,29 @@
+name: Publish documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.c'
+      - '**.h'
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Generate docs
+      run: |
+        sudo apt install doxygen graphviz -y
+        cd doxygen
+        doxygen
+    - name: Upload
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: aws s3 cp ./doxygen/html s3://docs-x1.cypherock.com --recursive

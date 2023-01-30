@@ -100,8 +100,13 @@ void send_transaction_tasks()
         instruction_scr_destructor();
         char address[64];
         char *hrp;
+        uint32_t purpose_index = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.purpose_index);
+        uint32_t coin_index    = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index);
+        uint8_t version        = 0;
 
-        if (BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index) == BITCOIN)
+        get_version(purpose_index, coin_index, &version, NULL);
+
+        if (coin_index == BITCOIN)
             hrp = "bc";
         else
             hrp = "tb";
@@ -109,7 +114,7 @@ void send_transaction_tasks()
                     var_send_transaction_data.unsigned_transaction
                         .output[var_send_transaction_data.transaction_confirmation_list_index]
                         .script_public_key,
-                    address);
+                    version, address);
         if (status <= 0) {
             comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
             reset_flow_level();
