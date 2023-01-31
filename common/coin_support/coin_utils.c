@@ -459,6 +459,26 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         return false;
     return true;
 }
+ui_display_node *ui_create_display_node(const char *title,
+                                        const size_t title_size,
+                                        const char *value,
+                                        const size_t value_size) {
+  ui_display_node *result = cy_malloc(sizeof(ui_display_node));
+  memzero(result, sizeof(ui_display_node));
+
+  size_t title_length = strnlen(title, title_size) + 1;
+  result->title       = cy_malloc(title_length);
+  memzero(result->title, title_length);
+  strncpy(result->title, title, title_length);
+
+  size_t value_length = strnlen(value, value_size) + 1;
+  result->value       = cy_malloc(value_length);
+  memzero(result->value, value_length);
+  strncpy(result->value, value, value_length);
+
+  result->next = NULL;
+  return result;
+}
 
 void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
   uint8_t data[65] = {0};
@@ -537,4 +557,37 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     }
 
     return status;
+}
+
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                                  const size_t path_length,
+                                                  const bool harden_all,
+                                                  char *output,
+                                                  const size_t out_len) {
+    if (out_len == 0 || output == NULL || path == NULL)
+        return FRC_INVALID_ARGUMENTS;
+
+    int offset = 0;
+    offset += snprintf(output + offset, out_len - offset, "m");
+
+    for (int i = 0; i < path_length; i++) {
+        const bool hardened  = path[i] & 0x80000000;
+        const uint32_t value = path[i] & 0x7FFFFFFF;
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        offset += snprintf(output + offset, out_len - offset, "/%ld", value);
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        if (harden_all || hardened)
+            offset += snprintf(output + offset, out_len - offset, "'");
+
+        //extra check needed as snprintf returns estimated size rather than actual size written
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+    }
+    return FRC_SUCCESS;
 }

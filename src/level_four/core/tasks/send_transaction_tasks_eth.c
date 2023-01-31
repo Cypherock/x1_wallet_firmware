@@ -71,6 +71,7 @@
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
+#include "ui_scroll_page.h"
 #include "utils.h"
 
 extern char* ALPHABET;
@@ -79,6 +80,7 @@ extern char* NUMBERS;
 extern char* PASSPHRASE;
 
 extern lv_task_t* timeout_task;
+extern ui_display_node *current_display_node;
 
 
 void send_transaction_tasks_eth()
@@ -98,7 +100,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (!eth_unsigned_txn_ptr.contract_verified){
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_CONTRACT_NOT_WHITELISTED){
             instruction_scr_destructor();
             delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
         } else {
@@ -119,6 +121,30 @@ void send_transaction_tasks_eth()
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
+    } break;
+
+    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "%s Blind Signing\nProceed at your own risk!", LV_SYMBOL_WARNING);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
+    } break;
+
+    case SEND_TXN_VERIFY_DERIVATION_PATH:{
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            char path[128] = {0};
+            eth_derivation_path_to_string(&var_send_transaction_data.transaction_metadata,path,sizeof(path));
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "Verify Derivation Path\n%s",path);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {
@@ -242,6 +268,14 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
         mark_event_over();
+    } break;
+
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+        instruction_scr_destructor();
+        if (current_display_node == NULL)
+            mark_event_over();
+        else
+            ui_scrollable_page(current_display_node->title, current_display_node->value, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {
