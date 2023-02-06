@@ -85,6 +85,7 @@ extern const char* ui_text_incorrect_mnemonics;
 extern const char* ui_text_incorrect_choice_view_seed_again;
 extern const char* ui_text_xpub_not_found_add_coin_first;
 extern const char* ui_wallet_pin_instruction_2;
+extern const char* ui_wallet_pin_instruction_3;
 extern const char* ui_wallet_passphrase_instruction_2;
 extern const char* ui_wallet_passphrase_instruction_3;
 extern const char* ui_wallet_passphrase_instruction_4;

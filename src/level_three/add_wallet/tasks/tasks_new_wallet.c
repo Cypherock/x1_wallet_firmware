@@ -116,6 +116,10 @@ void tasks_add_new_wallet()
     
     } break;
 
+    case GENERATE_WALLET_PIN_INSTRUCTIONS_3: {
+      delay_scr_init(ui_wallet_pin_instruction_3,DELAY_LONG_STRING);
+    } break;
+
     case GENERATE_WALLET_SKIP_PIN: {
         confirm_scr_init(ui_text_do_you_want_to_set_pin);
         confirm_scr_focus_cancel();
