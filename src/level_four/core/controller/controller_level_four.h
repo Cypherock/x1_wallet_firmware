@@ -22,6 +22,7 @@
 #include "solana.h"
 #include "tasks.h"
 #include "atecc_utils.h"
+#include "session_utils.h"
 
 #define DEFAULT_ATECC_RETRIES 5
 

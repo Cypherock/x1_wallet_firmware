@@ -2,6 +2,7 @@
 #include "ui_instruction.h"
 #include "nist256p1.h"
 
+
 Swap_Transaction_Data
     swap_transaction_data;
 
@@ -113,51 +114,6 @@ static auth_data_t atecc_sign(uint8_t *hash) {
            POSTFIX2_SIZE);     //postfix 2 (12bytes)
 
     return auth_challenge_packet;
-}
-
-static bool verify_digest(uint8_t *payload, uint16_t payload_length,
-                          uint8_t *buffer) {
-
-    uint8_t hash[32] = {0};
-    sha256_Raw(payload, payload_length, hash);
-    uint8_t session_key_derv_data[12] = {0};
-    HDNode session_node;
-    uint32_t index;
-    char xpub[112] = {'\0'};
-
-    base58_encode_check(get_card_root_xpub(), FS_KEYSTORE_XPUB_LEN,
-                        nist256p1_info.hasher_base58, xpub, 112);
-    hdnode_deserialize_public((char *) xpub,
-                              0x0488b21e,
-                              NIST256P1_NAME,
-                              &session_node,
-                              NULL);
-
-    index = read_be(session_key_derv_data);
-    hdnode_public_ckd(&session_node, index);
-
-    index = read_be(session_key_derv_data + 4);
-    hdnode_public_ckd(&session_node, index);
-
-    index = read_be(session_key_derv_data + 8);
-    hdnode_public_ckd(&session_node, index);
-
-    uint8_t
-        status = ecdsa_verify_digest(&nist256p1,
-                                     session_node.public_key,
-                                     buffer,
-                                     hash);
-    if (status) {
-        LOG_CRITICAL("xxec %d:%d", status, __LINE__);
-        log_hex_array("payload", payload, sizeof(payload));
-        log_hex_array("sig", buffer, sizeof(buffer));
-        reset_flow_level();
-        instruction_scr_init("", NULL);
-        mark_error_screen("signature verification failed");
-        return false;
-    }
-
-    return true;
 }
 
 static size_t append_signature(uint8_t *payload, uint8_t *address, size_t
@@ -356,12 +312,19 @@ void swap_transaction_controller() {
                 memcpy(buffer, data_array + payload_length -
                     DEVICE_SERIAL_SIZE, 64);
 
-                if (verify_digest(payload, payload_length, buffer)) {
+                if (verify_session_digest(payload, payload_length, buffer)) {
                     uint8_t result[1] = {1};
                     transmit_data_to_app(SWAP_TXN_VERIFY_SEND_ADDR,
                                          result,
                                          1);
                 } else {
+                    LOG_CRITICAL("xxec %d:%d", false, __LINE__);
+                    log_hex_array("payload", payload, sizeof(payload));
+                    log_hex_array("sig", buffer, sizeof(buffer));
+                    reset_flow_level();
+                    instruction_scr_init("", NULL);
+                    mark_error_screen("signature verification failed");
+
                     uint8_t result[1] = {0};
                     transmit_data_to_app(SWAP_TXN_VERIFY_SEND_ADDR,
                                          result,
