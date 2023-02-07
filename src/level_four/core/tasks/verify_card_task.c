@@ -76,15 +76,17 @@ void verify_card_task() {
   switch(flow_level.level_three) {
 
     case VERIFY_CARD_START_MESSAGE:
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+        snprintf(display, sizeof(display), UI_TEXT_PLACE_CARD_TILL_BEEP, 2);
         instruction_scr_init(display, ui_text_tap_1_2_cards);
         mark_event_over();
         break;
 
     case VERIFY_CARD_ESTABLISH_CONNECTION_FRONTEND:
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 2);
+        snprintf(display, sizeof(display), UI_TEXT_PLACE_CARD_TILL_BEEP, 2);
         instruction_scr_init(display, ui_text_tap_1_2_cards);
+        instruction_scr_change_text(display, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
         break;
 
@@ -101,8 +103,10 @@ void verify_card_task() {
 
     case VERIFY_CARD_SIGN_RANDOM_NUMBER_FRONTEND:
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), ui_text_place_card_wait_for_beep, 1);
+        snprintf(display, sizeof(display), UI_TEXT_PLACE_CARD_TILL_BEEP, 1);
         instruction_scr_init(display, ui_text_tap_1_2_cards);
+        instruction_scr_change_text(display, true);
+        BSP_DelayMs(DELAY_SHORT);
         mark_event_over();
         break;
 

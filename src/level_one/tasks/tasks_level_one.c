@@ -116,6 +116,7 @@ void level_one_tasks()
 
     for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
         if (get_wallet_state(walletIndex) == VALID_WALLET
+            || get_wallet_state(walletIndex) == INVALID_WALLET
             || get_wallet_state(walletIndex) == UNVERIFIED_VALID_WALLET
             || get_wallet_state(walletIndex) == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
             choices[mainMenuIndex] = (char*)get_wallet_name(walletIndex);
@@ -151,6 +152,7 @@ void level_one_tasks()
     lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
     CY_set_app_restricted(false);
     CY_Reset_Not_Allow(true);
+    CY_Set_External_Triggered(false);
     mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #endif
 }

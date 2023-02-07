@@ -2,14 +2,7 @@
 The X1Wallet ships with a minimal funtionality (allowing for device authentication and [setup process](#device-setup-flow)) and later updates to a fully-functional firmware ([go through feature list](#functionality-of-x1wallet)) via the desktop application which communicates with the secure servers.
 
 ### Responsible disclosure policy
-At cypherock, we believe that coordinated vulnerability disclosure is the right approach to better protect users. When submitting a vulnerability report, you enter a form of coorporation in which you allow cypherock the opportunity to diagnose and remedy the vulnerability before disclosing its details to third parties and/or general public. We will ensure that you get proper credits for all your works
-
-You should use PGP encrypted emails. Please use our [PGP public key](0x70D75D95C3A16AA7.asc), as necessary. Start with a cleartext message with your public key, and we'll reply appropriately.
-
-Please include:
-- Code which reproduces the issue as a proof of concept.
-- Detailed description and potential impact of your bug.
-- Your name and link for attribution (or a comment if you don't want that).
+At Cypherock, we believe that coordinated vulnerability disclosure is the right approach to better protect users. Please go through the [bug bounty](https://www.cypherock.com/bug-bounty) page on the Cypherock website to learn about the process to be followed when submitting a vulnerability report. Please report suspected vulnerabilities in private to bounty@cypherock.com.
 
 ## Device setup flow
 The X1Wallet ships with a firmware to take the user through the device setup flow. The device setup flow includes following steps:

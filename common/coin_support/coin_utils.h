@@ -36,12 +36,15 @@
 
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
+#define LTC_COIN_VERSION     0x00000000
 
 /// DOGE coin index
 #define DOGE (BITCOIN + 0x03)
+#define DOGE_COIN_VERSION     0x00000000
 
 /// DASH coin index
 #define DASH (BITCOIN + 0x05)
+#define DASH_COIN_VERSION     0x00000000
 
 /// ETHEREUM coin index
 #define ETHEREUM ETHEREUM_COIN_INDEX
@@ -56,18 +59,25 @@
 #define NATIVE_SEGWIT 0x80000054
 
 /// NON SEGWIT purpose id
-#define NON_SEGWIT 0x8000002C
+#define   NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
     COIN_TYPE_BITCOIN = 0x01,
     COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITCOIN = 0x03,
+    COIN_TYPE_LITECOIN = 0x03,
     COIN_TYPE_DOGE = 0x04,
     COIN_TYPE_DASH = 0x05,
     COIN_TYPE_ETHEREUM = 0x06,
     COIN_TYPE_NEAR = 0x07,
     COIN_TYPE_POLYGON = 0x08,
     COIN_TYPE_SOLANA = 0x09,
+  COIN_TYPE_BSC = 0x0A,
+  COIN_TYPE_FANTOM = 0x0B,
+  COIN_TYPE_AVALANCHE = 0x0C,
+  COIN_TYPE_OPTIMISM = 0x0D,
+  COIN_TYPE_HARMONY = 0x0E,
+  COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
+  COIN_TYPE_ARBITRUM = 0x10,
 }Coin_Type;
 
 #pragma pack(push, 1)
@@ -85,6 +95,22 @@ typedef struct
     uint8_t chain_index[4];
     uint8_t address_index[4];
 } address_type;
+#pragma pack(pop)
+
+/**
+ * @brief Stores the chosen wallet's public information for the export wallet process.
+ * @details The instance of this struct is stored temporarily in the RAM during the add coin process. The coin's
+ * information is provided by the desktop app and updated in desktop listener task.
+ *
+ * @see add_coin_controller(), add_coin_task(), desktop_listener_task(), ADD_COIN_START
+ * @since v1.0.0
+ */
+#pragma pack(push, 1)
+typedef struct Add_Coin_Data {
+  size_t derivation_depth;
+  uint32_t derivation_path[5];
+  uint64_t network_chain_id;
+} Add_Coin_Data;
 #pragma pack(pop)
 
 #pragma pack(push, 1)
@@ -115,12 +141,15 @@ typedef struct
 
     uint8_t transaction_fees[8];
 
-    uint8_t decimal[1];
+    uint8_t eth_val_decimal[1];
 
     char *token_name;
 
-    uint8_t network_chain_id;
+    uint64_t network_chain_id;
 
+    uint8_t is_harmony_address;
+     ///< Used to differentiate between multiple address derivation paths of the same coin
+    uint16_t address_tag; 
 } txn_metadata;
 #pragma pack(pop)
 
@@ -142,9 +171,10 @@ typedef struct Receive_Transaction_Data {
   uint8_t address_index[4];
   char *token_name;
   union {
-    uint8_t network_chain_id;
-    uint8_t near_account_type;
+    uint64_t network_chain_id;
+    uint64_t near_account_type;
   };
+  uint16_t address_tag;
   char near_registered_account[65];
   uint8_t xpub[112];
   char address[43];
@@ -177,6 +207,21 @@ typedef struct Receive_Transaction_Data {
  * @note
  */
 void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size, uint64_t len, int64_t *offset);
+
+/**
+ * @brief Deserialize the request payload to add coin.
+ * @details If any of the input references are NULL, this function returns `-1`.
+ * The minimum and maximum depth for derivation is 2 and 5 respectively. If the input byte array
+ * is shorter than the expected data to be parsed, this function will return -1.
+ *
+ * @param [out]   Pointer to the add coin data instace
+ * @param [in]    Serialized payload to be deserialized
+ * @param [in]    Size of the input payload
+ *
+ * @return Offset used in the conversion
+ * @retval -1 if the input does not meet expected format/requirements
+ */
+int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size);
 
 /**
  * @brief Converts byte array represented transaction metadata to struct txn_metadata.
@@ -280,7 +325,7 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
  *
  * @note
  */
-const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_name(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the coin symbol for the passed coin index and chain id
@@ -297,7 +342,7 @@ const char *get_coin_name(uint32_t coin_index, uint32_t chain_id);
  *
  * @note
  */
-const char *get_coin_symbol(uint32_t coin_index, uint32_t chain_id);
+const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
 
 /**
  * @brief Get the version address and public key for segwit and non segwit coins.
@@ -349,5 +394,32 @@ bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
  * @note
  */
 bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
+
+void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len);
+
+/**
+ * @brief Verifies the derivation path for xpub during coin export step
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
+
+/**
+ * @brief Verifies if the specified derivation path is valid based on checks
+ * on intermediate values.
+ *
+ * @param[in] path          The address derivation path to be checked
+ * @param[in] depth         The number of levels in the derivation path
+ *
+ * @return bool     Returns true if the path values are valid. False otherwise.
+ *
+ * @since v1.0.0
+ */
+bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
 
 #endif

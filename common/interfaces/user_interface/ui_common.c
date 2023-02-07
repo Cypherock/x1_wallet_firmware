@@ -88,7 +88,7 @@ void ui_heading(lv_obj_t* heading, const char text[], const uint8_t width, const
     ASSERT(text != NULL);
     ASSERT(width != 0);
 
-    if (strlen(text) < SCROLLING_THRESHOLD) {
+    if (strnlen(text, MAX_HEADING_LEN) < SCROLLING_THRESHOLD) {
         lv_label_set_long_mode(heading, LV_LABEL_LONG_SROLL);
     } else {
         lv_label_set_long_mode(heading, LV_LABEL_LONG_SROLL_CIRC);
@@ -98,7 +98,7 @@ void ui_heading(lv_obj_t* heading, const char text[], const uint8_t width, const
      * lvgl time variable is only 16 bits
      * https://forum.lvgl.io/t/animation-lv-label-long-sroll-lv-label-long-sroll-circ-stop-for-large-strings/1802/2
      */
-    if(strlen(text) > SCROLLING_LEN_THRESHOLD){  
+    if(strnlen(text, MAX_HEADING_LEN) > SCROLLING_LEN_THRESHOLD){
         lv_label_set_anim_speed(heading, 20);
     }else{
         lv_label_set_anim_speed(heading, 15);

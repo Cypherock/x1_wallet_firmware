@@ -487,25 +487,38 @@ int get_segwit_address(const uint8_t *public_key, uint8_t key_len, const uint32_
     return segwit_addr_encode(address, hrp, 0x00, rip, 20);
 }
 
-void get_address(const uint8_t version, const uint8_t* script_pub_key, char* address_output)
+int get_address(const char* hrp, const uint8_t* script_pub_key, uint8_t version, char* address_output)
 {
-    uint8_t address[25];
-    uint8_t offset = 0x0;
+  if (script_pub_key == NULL || address_output == NULL) return 0;
 
-    memcpy(address, &version, 1);
-    offset += 1;
+  if (script_pub_key[0] == 0) {
+    // Segwit address
+    return segwit_addr_encode(address_output, hrp, 0x00, script_pub_key + 2, script_pub_key[1]);
+  }
 
-    memcpy(address + offset, script_pub_key + 3, 20);
-    offset += 20;
+  uint8_t address[SHA3_256_DIGEST_LENGTH] = {0};
+  uint8_t offset = 1, script_offset = 0;
 
-    uint8_t double_hash[32];
-    sha256_Raw(address, offset, double_hash);
-    sha256_Raw(double_hash, SHA256_DIGEST_LENGTH, double_hash);
+  //refer https://learnmeabitcoin.com/technical/script for script type explaination
+  if (script_pub_key[0] == 0x41) {
+    // hash160 P2PK
+    hasher_Raw(HASHER_SHA2_RIPEMD, script_pub_key + 1, 65, address + offset); // overwrite with RIPEMD160
+    offset += RIPEMD160_DIGEST_LENGTH;
+  } else if (script_pub_key[0] == 0x76) {
+    script_offset = 3; // P2PKH
+  } else if (script_pub_key[0] == 0xa9) {
+    script_offset = 2;  // P2SH upto 15 pub keys
+    version = 5;     // Version for P2SH: 5
+  } else if (script_pub_key[1] > 0x50 && script_pub_key[1] <= 0x53) return -1; // P2MS upto 3 pub keys
+  else return -2; // Unknown script type
 
-    memcpy(address + offset, double_hash, 4);
+  if (script_pub_key[0] != 0x41) {
+    memcpy(address + offset, script_pub_key + script_offset, RIPEMD160_DIGEST_LENGTH);
+    offset += RIPEMD160_DIGEST_LENGTH;
+  }
+  address[0] = version;
 
-    uint16_t len = 35;
-    b58enc(address_output, (size_t*) &len, address, 25);
+  return base58_encode_check(address, offset, HASHER_SHA2D, address_output, 35);
 }
 
 uint64_t btc_get_txn_fee(const unsigned_txn *utxn_ptr)

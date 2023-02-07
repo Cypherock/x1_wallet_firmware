@@ -17,6 +17,8 @@
 
 #include "pow.h"
 
+uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]);
+
 /**
  * @brief Given a target this function calculates the time required to
  * find a suitable nonce.

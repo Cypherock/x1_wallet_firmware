@@ -94,7 +94,7 @@ void sync_cards_controller()
     } break;
 
     case SYNC_CARDS_ENTER_PIN_FLOW:{
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strlen(flow_level.screen_input.input_text), wallet_credential_data.password_single_hash);
+        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
         sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
         flow_level.level_three = SYNC_CARDS_TAP_TWO_CARDS_FLOW;
@@ -133,6 +133,7 @@ void sync_cards_controller()
             memcpy(wallet_credential_data.password_single_hash, temp_password_hash, SHA256_DIGEST_LENGTH);
             memzero(temp_password_hash, SHA256_DIGEST_LENGTH);
             encrypt_shares();
+            memzero(wallet_credential_data.password_single_hash, sizeof(wallet_credential_data.password_single_hash));
         }
 
         uint32_t wallet_index;

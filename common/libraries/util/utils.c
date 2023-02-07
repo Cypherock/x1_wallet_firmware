@@ -181,7 +181,7 @@ void __multi_to_single_line(const char input[24][15], const uint8_t number_of_mn
     uint16_t offset = 0U;
     uint16_t i = 0U;
     for (; i < number_of_mnemonics; i++) {
-        word_len = strlen(input[i]);
+        word_len = strnlen(input[i], 15);    // TODO: Define handling of overflow cases
         memcpy(output + offset, input[i], word_len);
         offset += word_len;
         memcpy(output + offset, " ", 1);
@@ -273,8 +273,9 @@ void get_firmaware_version(uint16_t pid, const char *product_hash , char message
     }
 }
 
+//TODO: Update len return size to 16 bit
 void random_generate(uint8_t* arr,int len){
-    if(len > 32) return ;
+    ASSERT(len <= 32);
 
     ASSERT(crypto_random_generate(arr,len) == true);
 
@@ -430,6 +431,17 @@ uint8_t cy_reverse_byte_array(uint8_t *byte_data, uint16_t len)
         j--;
     }
     return 0;
+}
+
+uint64_t cy_read_be(const uint8_t *bytes, uint8_t size) {
+  if (bytes == NULL || size == 0) return 0;
+
+  uint64_t value = 0;
+  uint8_t offset = 0;
+  while (offset < size) {
+    value = (bytes[offset++] | (value << 8));
+  }
+  return value;
 }
 
 

@@ -25,8 +25,7 @@
 #define DEFAULT_ATECC_RETRIES 5
 
 #define DEVICE_SERIAL_SIZE     32
-#define MAXIMUM_COIN_SUPPORTED (7 + 5)  // 5 for segwit support
-#define INDEX_SIZE             4
+#define MAXIMUM_COIN_SUPPORTED (14 + 5)  // 5 for segwit support
 
 typedef enum {
   slot_0_unused       = 0U,
@@ -117,23 +116,6 @@ typedef struct Cmd_Export_Wallet_t {
 #pragma pack(pop)
 
 /**
- * @brief Stores the chosen wallet's public information for the export wallet process.
- * @details The instance of this struct is stored temporarily in the RAM during the add coin process. The coin's
- * information is provided by the desktop app and updated in desktop listener task.
- *
- * @see add_coin_controller(), add_coin_task(), desktop_listener_task(), ADD_COIN_START
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Add_Coin_Data {
-  uint8_t number_of_coins;
-  bool resync;
-  uint32_t coin_indexes[MAXIMUM_COIN_SUPPORTED];
-  uint8_t network_chain_ids[MAXIMUM_COIN_SUPPORTED];
-} Add_Coin_Data;
-#pragma pack(pop)
-
-/**
  * @brief Stores the generated xpubs list for the add coin process.
  * @details The generated xpubs list is stored temporarily in the RAM during the add coin process before it is sent
  * to the desktop app.
@@ -145,7 +127,7 @@ typedef struct Add_Coin_Data {
  */
 #pragma pack(push, 1)
 typedef struct Cmd_Add_Coin_t {
-  uint8_t xpubs[MAXIMUM_COIN_SUPPORTED][XPUB_SIZE];
+  uint8_t xpub[XPUB_SIZE];
 } Cmd_Add_Coin_t;
 #pragma pack(pop)
 
@@ -164,19 +146,6 @@ typedef struct Send_Transaction_Data {
   signed_txn signed_transaction;
 
 } Send_Transaction_Data;
-#pragma pack(pop)
-
-/**
- * @brief Stores the generated signature on transaction data for the send transaction process.
- *
- * @see send_transaction_controller(), send_transaction_task(), desktop_listener_task(), SEND_TXN_START
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Send_Transaction_Cmd {
-  uint8_t *signed_txn_byte_array;
-  int signed_txn_length;
-} Send_Transaction_Cmd;
 #pragma pack(pop)
 
 extern Coin_Specific_Data_Struct coin_specific_data;

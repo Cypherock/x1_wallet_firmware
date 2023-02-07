@@ -134,22 +134,21 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics)
     memcpy(key, hash, KEY_SIZE);
 }
 
-bool validate_wallet(Wallet *wallet) {
+Card_Data_errors_t validate_wallet(Wallet *wallet) {
     if (wallet == NULL) return true;
-    if (strlen((char *) wallet->wallet_name) >= NAME_SIZE) { LOG_ERROR("xx13"); return false; }
-    if (wallet->wallet_info & 0xF8) { LOG_ERROR("xx14"); return false; }
+    if (!verify_checksum(wallet)) return INVALID_CHECKSUM;
+    if (strnlen((char *) wallet->wallet_name, NAME_SIZE) >= NAME_SIZE) return INVALID_NAME_LENGTH;
+    if (wallet->wallet_info & 0xF8) return INVALID_WALLET_CONFIG;
     if (WALLET_IS_PIN_SET(wallet->wallet_info) && 
         is_zero(wallet->password_double_hash, sizeof(wallet->password_double_hash))) {
-        LOG_ERROR("xx15");
-        return false; 
+        return INVALID_WALLET_CONFIG;
     }
     if (wallet->number_of_mnemonics % 6 || wallet->number_of_mnemonics < 12 || wallet->number_of_mnemonics > 24) {
-        LOG_ERROR("xx16");
-        return false;
+        return INVALID_MNEMONIC_LENGTH;
     }
-    if (wallet->minimum_number_of_shares != MINIMUM_NO_OF_SHARES) { LOG_ERROR("xx17"); return false; }
-    if (wallet->total_number_of_shares != TOTAL_NUMBER_OF_SHARES) { LOG_ERROR("xx18"); return false; }
-    if (wallet->xcor >= TOTAL_NUMBER_OF_SHARES) { LOG_ERROR("xx19"); return false; }
-    if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id))) { LOG_ERROR("xx1a"); return false; }
-    return true;
+    if (wallet->minimum_number_of_shares != MINIMUM_NO_OF_SHARES) return INVALID_SHAMIR_CONFIG;
+    if (wallet->total_number_of_shares != TOTAL_NUMBER_OF_SHARES) return INVALID_SHAMIR_CONFIG;
+    if (wallet->xcor >= TOTAL_NUMBER_OF_SHARES) return INVALID_SHARE_INDEX;
+    if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id))) return INVALID_WALLET_ID;
+    return VALID_DATA;
 }

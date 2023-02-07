@@ -80,18 +80,26 @@
  */
 
 #include "controller_main.h"
+#include <string.h>
+#include "application_startup.h"
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
 #include "btc.h"
+#include "chacha20poly1305.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "controller_level_one.h"
-#include "ui_instruction.h"
-#include "rfc7539.h"
-#include "chacha20poly1305.h"
 #include "cryptoauthlib.h"
-#include "application_startup.h"
-#include <string.h>
+#include "etc.h"
+#include "fantom.h"
+#include "harmony.h"
 #include "near.h"
+#include "optimism.h"
+#include "polygon.h"
+#include "rfc7539.h"
+#include "ui_instruction.h"
 
 /**
  * @brief A task declared to periodically execute a callback which checks for a success from the desktop.
@@ -140,7 +148,8 @@ char arbitrary_data[4096 / 8 + 1];
  * @brief Global Flow_level instance.
  *        Will be used in other files using getter function
  */
-Flow_level flow_level;
+Flow_level CONFIDENTIAL flow_level;
+
 /**
  * @brief Global Counter instance.
  *        Will be used in other files using getter function
@@ -209,6 +218,7 @@ void reset_flow_level()
 {
     //reset device state
     CY_Reset_Not_Allow(true);
+    CY_Set_External_Triggered(false);
     if (main_app_ready) {
         mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
     }
@@ -495,34 +505,23 @@ void desktop_listener_task(lv_task_t* data)
             case ADD_COIN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
-                    uint16_t offset = WALLET_ID_SIZE;
-                    add_coin_data.resync = data_array[offset++] == 1;
-                    if ((add_coin_data.number_of_coins = data_array[offset++]) < 1) {
+
+                    if (byte_array_to_add_coin_data(&add_coin_data, data_array + WALLET_ID_SIZE,
+                                                    msg_size - WALLET_ID_SIZE) == -1 ||
+                        !verify_xpub_derivation_path(add_coin_data.derivation_path,
+                                                     add_coin_data.derivation_depth)) {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
                         return;
                     }
                     flow_level.show_desktop_start_screen = true;
                     flow_level.level_two = LEVEL_THREE_ADD_COIN;
-
-                    uint8_t coinIndex = 0;
-
-                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-                        add_coin_data.coin_indexes[coinIndex] = U32_READ_BE_ARRAY(data_array + offset);
-                        offset += INDEX_SIZE;
-                    }
-
-                    coinIndex = 0;
-
-                    for (; coinIndex < add_coin_data.number_of_coins; coinIndex++) {
-                        add_coin_data.network_chain_ids[coinIndex] = data_array[offset];
-                        offset += 1;
-                    }
-
                     snprintf(flow_level.confirmation_screen_text,
-                        sizeof(flow_level.confirmation_screen_text),
-                        (add_coin_data.resync ? ui_text_do_you_want_to_resync_coins_to : ui_text_do_you_want_to_add_coins_to),
-                        wallet.wallet_name);
+                             sizeof(flow_level.confirmation_screen_text),
+                             "Add %s to %s",
+                             get_coin_name(add_coin_data.derivation_path[1],
+                                           add_coin_data.network_chain_id),
+                             wallet.wallet_name);
                 }
                 clear_message_received_data();
             } break;
@@ -539,32 +538,51 @@ void desktop_listener_task(lv_task_t* data)
                         comm_reject_invalid_cmd();
                         return;
                     }
+
                     flow_level.show_desktop_start_screen = true;
                     var_send_transaction_data.transaction_confirmation_list_index = 0;
                     flow_level.level_one = LEVEL_TWO_OLD_WALLET;
 
                     coin_index = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index);
-                    
-                    if(coin_index == ETHEREUM) {
+
+                    if (coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                            ui_text_eth_send_transaction_with,
-                            var_send_transaction_data.transaction_metadata.token_name,wallet.wallet_name,
-                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id));
+                        snprintf(
+                            flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                            UI_TEXT_SEND_PROMPT, var_send_transaction_data.transaction_metadata.token_name,
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
                     } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
                         if (var_send_transaction_data.transaction_metadata.network_chain_id == 1) {
-                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_add_account_with_wallet , get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                          snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                   "Add %s account to %s",
+                                   get_coin_name(coin_index,
+                                                 var_send_transaction_data.transaction_metadata.network_chain_id),
+                                   wallet.wallet_name);
+                        } else {
+                          snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                   UI_TEXT_SEND_PROMPT,
+                                   get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
+                                   get_coin_name(coin_index,
+                                                 var_send_transaction_data.transaction_metadata.network_chain_id),
+                                   wallet.wallet_name);
                         }
-                        else {
-                            snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
-                        }
-                    } else if(coin_index == SOLANA_COIN_INDEX) {
+                    } else if (coin_index == SOLANA_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                        snprintf(
+                            flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                            UI_TEXT_SEND_PROMPT,
+                            get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_send_transaction_with, get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id), wallet.wallet_name);
+                        snprintf(
+                            flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                            "Send %s from %s",
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
                     }
                     if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
                         comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
@@ -579,8 +597,16 @@ void desktop_listener_task(lv_task_t* data)
                     CY_Reset_Not_Allow(false);
 
                     int64_t offset = byte_array_to_recv_txn_data(&receive_transaction_data,data_array,msg_size);
+                    uint32_t path[5]    = {
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index)};
+                    uint8_t depth =
+                        path[1] == SOLANA ? sol_get_derivation_depth(receive_transaction_data.address_tag) : 5;
 
-                    if(offset == -1){
+                    if (offset == -1 || !verify_receive_derivation_path(path, depth)) {
                         comm_reject_invalid_cmd();
                         clear_message_received_data();
                         return;
@@ -593,20 +619,32 @@ void desktop_listener_task(lv_task_t* data)
                         memcpy(&receive_transaction_data.near_registered_account, data_array + offset, 65);
                     }
 
-                    if(coin_index == ETHEREUM) {
+                    if (coin_index == ETHEREUM) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_ETH;
                         snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
-                                 ui_text_eth_recv_transaction_with, receive_transaction_data.token_name, wallet.wallet_name,
-                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id));
-                    } else if(coin_index==NEAR_COIN_INDEX){
+                                 UI_TEXT_RECEIVE_PROMPT, receive_transaction_data.token_name,
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                                 wallet.wallet_name);
+                    } else if (coin_index == NEAR_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
-                    } else if(coin_index==SOLANA_COIN_INDEX) {
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                 UI_TEXT_RECEIVE_PROMPT,
+                                 get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                                 wallet.wallet_name);
+                    } else if (coin_index == SOLANA_COIN_INDEX) {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                 UI_TEXT_RECEIVE_PROMPT,
+                                 get_coin_symbol(coin_index, receive_transaction_data.network_chain_id),
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                                 wallet.wallet_name);
                     } else {
                         flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
-                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_recv_transaction_with, get_coin_name(coin_index, receive_transaction_data.network_chain_id), wallet.wallet_name);
+                        snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                                 "Receive %s in %s",
+                                 get_coin_name(coin_index, receive_transaction_data.network_chain_id),
+                                 wallet.wallet_name);
                     }
                 }
                 clear_message_received_data();
@@ -671,8 +709,8 @@ void desktop_listener_task(lv_task_t* data)
 
 #elif X1WALLET_INITIAL
             case START_CARD_AUTH: {
-                CY_Set_External_Triggered(true);
                 reset_flow_level();
+                CY_Set_External_Triggered(true);
                 counter.level = LEVEL_THREE;
                 lv_obj_clean(lv_scr_act());
                 auth_card_number = data_array[0];
@@ -744,7 +782,7 @@ void desktop_listener_task(lv_task_t* data)
 #endif
             case START_FIRMWARE_UPGRADE: {
                 CY_Reset_Not_Allow(false);
-                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), ui_text_start_firmware_update, data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
+                snprintf(flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text), "Update firmware to version %d.%d.%d", data_array[0], data_array[1], (uint16_t)(data_array[3]|((uint16_t)data_array[2]<<8)));
                 flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
                 flow_level.show_desktop_start_screen = true;
                 flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;
@@ -786,7 +824,29 @@ void desktop_listener_task(lv_task_t* data)
                              ui_text_send_logs_prompt);
                 }
             } break;
-#endif  // end X1WALLET_
+#endif
+
+            case LIST_SUPPORTED_COINS: {
+                uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN), U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_BTC_TEST), U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_LITECOIN), U32_SWAP_ENDIANNESS(LTC_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_DOGE), U32_SWAP_ENDIANNESS(DOGE_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_DASH), U32_SWAP_ENDIANNESS(DASH_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM), U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR), U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_SOLANA), U32_SWAP_ENDIANNESS(SOL_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_POLYGON), U32_SWAP_ENDIANNESS(POLYGON_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_BSC), U32_SWAP_ENDIANNESS(BSC_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_FANTOM), U32_SWAP_ENDIANNESS(FANTOM_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_AVALANCHE), U32_SWAP_ENDIANNESS(AVALANCHE_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_OPTIMISM), U32_SWAP_ENDIANNESS(OPTIMISM_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_HARMONY), U32_SWAP_ENDIANNESS(HARMONY_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM_CLASSIC), U32_SWAP_ENDIANNESS(ETC_COIN_VERSION),
+                                    U32_SWAP_ENDIANNESS(COIN_TYPE_ARBITRUM), U32_SWAP_ENDIANNESS(ARBITRUM_COIN_VERSION)};
+                clear_message_received_data();
+                transmit_data_to_app(LIST_SUPPORTED_COINS, (uint8_t *) coins, sizeof(coins));
+            } break;
+
             default:  clear_message_received_data();
                 comm_reject_invalid_cmd();
                 break;

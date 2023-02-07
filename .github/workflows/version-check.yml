@@ -1,0 +1,27 @@
+name: Version Downgrade Protection
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release**
+    paths:
+      - 'version.txt'
+
+jobs:
+  verify-version-change:
+    runs-on: ubuntu-latest
+    env:
+      SHA_BASE: ${{ github.event.pull_request.base.sha }}
+      SHA_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Verify versions
+      run: |
+        version0=$(git show ${SHA_BASE}:version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print $1*2**24 + $2*2**16 + $3*2**8 + $4 }')
+        version1=$(git show ${SHA_HEAD}:version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print $1*2**24 + $2*2**16 + $3*2**8 + $4 }')
+        echo $version0:$version1
+        if [[ $version0 > $version1 ]]; then echo -e "Version downgrade detected\nfrom $version0 to $version1\n"; exit 1; fi

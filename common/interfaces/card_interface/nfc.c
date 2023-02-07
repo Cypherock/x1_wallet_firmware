@@ -64,7 +64,6 @@
 #include "application_startup.h"
 #include "app_error.h"
 
-#define DEFAULT_NFC_TG_INIT_TIME    25
 #define SEND_PACKET_MAX_LEN         236
 #define RECV_PACKET_MAX_ENC_LEN     242
 #define RECV_PACKET_MAX_LEN         225
@@ -330,6 +329,7 @@ ISO7816 nfc_add_wallet(const struct Wallet* wallet)
     uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
     uint16_t send_len = 0, recv_len = 236;
 
+    calculate_checksum(wallet, (uint8_t *) wallet->checksum);
     if (WALLET_IS_ARBITRARY_DATA(wallet->wallet_info))
         send_len = create_apdu_add_arbitrary_data(wallet, send_apdu);
     else
@@ -380,7 +380,11 @@ ISO7816 nfc_retrieve_wallet(struct Wallet* wallet)
         if (status_word == SW_NO_ERROR) {
             //Extract data from APDU and add it to struct Wallet
             extract_from_apdu(wallet, recv_apdu, recv_len);
-            if (!validate_wallet(wallet)) status_word = 0;
+            Card_Data_errors_t status = validate_wallet(wallet);
+            if (status != VALID_DATA) {
+                LOG_CRITICAL("edat", status);
+                status_word = 0;
+            }
         }
     }
 
