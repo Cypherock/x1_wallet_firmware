@@ -122,13 +122,17 @@ typedef enum commandType {
     DEVICE_INFO = 87,                       ///< Command for device information
     COMM_SDK_VERSION_REQ = 88,              ///< Command for Communication SDK version
 
-    RECV_TXN_USER_VERIFIED_ACCOUNT= 96,         ///< Prompt for user for verification of account
-    RECV_TXN_REPLACE_ACCOUNT= 97,               ///< Request by desktop to start replace account
+    RECV_TXN_USER_VERIFIED_ACCOUNT= 96,     ///< Prompt for user for verification of account
+    RECV_TXN_REPLACE_ACCOUNT= 97,           ///< Request by desktop to start replace account
     
-    COIN_SPECIFIC_DATA_ERROR = 98,              ///< Command for Coin Specific Data Error
+    COIN_SPECIFIC_DATA_ERROR = 98,          ///< Command for Coin Specific Data Error
     LIST_SUPPORTED_COINS = 99,              ///< Exchange the list of supported coins on device
 
-    SEND_TXN_PRE_SIGNING_DATA = 92,                    ///< Command for data required just before signing in send transaction
+    SEND_TXN_PRE_SIGNING_DATA = 92,         ///< Command for data required just before signing in send transaction
+
+    SIGN_MSG_START = 93,                    ///< Request by desktop to start a sign message flow
+    SIGN_MSG_RAW_MSG = 94,                  ///< Request by device to fetch raw message
+    SIGN_MSG_SEND_SIG = 95,                 ///< Response by device for send transaction with signed transaction
 
     DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
 

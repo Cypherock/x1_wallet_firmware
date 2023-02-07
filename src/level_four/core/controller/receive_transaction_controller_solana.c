@@ -152,7 +152,7 @@ void receive_transaction_controller_solana() {
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
-          BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
+          BYTE_ARRAY_TO_UINT32(receive_transaction_data.change_index),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index),
       };
       size_t depth = sol_get_derivation_depth(receive_transaction_data.address_tag);

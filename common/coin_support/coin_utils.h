@@ -28,6 +28,7 @@
 #include "logger.h"
 #include "assert_conf.h"
 
+
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
 
@@ -62,23 +63,23 @@
 #define   NON_SEGWIT 0x8000002C
 
 typedef enum Coin_Type {
-    COIN_TYPE_BITCOIN = 0x01,
-    COIN_TYPE_BTC_TEST = 0x02,
-    COIN_TYPE_LITECOIN = 0x03,
-    COIN_TYPE_DOGE = 0x04,
-    COIN_TYPE_DASH = 0x05,
-    COIN_TYPE_ETHEREUM = 0x06,
-    COIN_TYPE_NEAR = 0x07,
-    COIN_TYPE_POLYGON = 0x08,
-    COIN_TYPE_SOLANA = 0x09,
-  COIN_TYPE_BSC = 0x0A,
-  COIN_TYPE_FANTOM = 0x0B,
-  COIN_TYPE_AVALANCHE = 0x0C,
-  COIN_TYPE_OPTIMISM = 0x0D,
-  COIN_TYPE_HARMONY = 0x0E,
-  COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
-  COIN_TYPE_ARBITRUM = 0x10,
-}Coin_Type;
+    COIN_TYPE_BITCOIN          = 0x01,
+    COIN_TYPE_BTC_TEST         = 0x02,
+    COIN_TYPE_LITECOIN         = 0x03,
+    COIN_TYPE_DOGE             = 0x04,
+    COIN_TYPE_DASH             = 0x05,
+    COIN_TYPE_ETHEREUM         = 0x06,
+    COIN_TYPE_NEAR             = 0x07,
+    COIN_TYPE_POLYGON          = 0x08,
+    COIN_TYPE_SOLANA           = 0x09,
+    COIN_TYPE_BSC              = 0x0A,
+    COIN_TYPE_FANTOM           = 0x0B,
+    COIN_TYPE_AVALANCHE        = 0x0C,
+    COIN_TYPE_OPTIMISM         = 0x0D,
+    COIN_TYPE_HARMONY          = 0x0E,
+    COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
+    COIN_TYPE_ARBITRUM         = 0x10,
+} Coin_Type;
 
 #pragma pack(push, 1)
 /**
@@ -92,7 +93,7 @@ typedef enum Coin_Type {
  */
 typedef struct
 {
-    uint8_t chain_index[4];
+    uint8_t change_index[4];
     uint8_t address_index[4];
 } address_type;
 #pragma pack(pop)
@@ -167,7 +168,7 @@ typedef struct Receive_Transaction_Data {
   uint8_t purpose[4];
   uint8_t coin_index[4];
   uint8_t account_index[4];
-  uint8_t chain_index[4];
+  uint8_t change_index[4];
   uint8_t address_index[4];
   char *token_name;
   union {
@@ -186,6 +187,12 @@ typedef struct Receive_Transaction_Data {
   char solana_address[45];
 } Receive_Transaction_Data;
 #pragma pack(pop)
+
+typedef struct ui_display_node {
+  char *title;
+  char *value;
+  struct ui_display_node *next;
+} ui_display_node;
 
 #pragma pack(push, 1)
 /**
@@ -467,18 +474,35 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
 bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
 
 /**
- * @brief Generates an user readable account name comprising account type and account
- * number as a reflection of the unchecked derivation path values/levels.
- *
- * @param[in] path            The address derivation path to be checked
- * @param[in] account_type    The account type/tag
- * @param[out] account_name   Storage for resulting account name by this function
- * @param[in] out_len         The max length of the output storage
- *
- * @return uint16_t     The length of the resulting account name
- *
- * @since v1.0.0
+ * @brief Generates an user readable derivation path from a uint32_t path array.
+ *        will only write the output until the out_len is reached, i.e. an error will be returned
+ *        if the output exceeds the out_len. Will also return an error if path or output is NULL
+ *        or out_len is 0.
+ * 
+ * @param path              The derivation path array to be used
+ * @param path_length       Number of elements (depth) of the path array
+ * @param harden_all        Treat all elements as hardened i.e. insert ' after every element
+ * @param output            Pointer to the character array to be used for output
+ * @param out_len           Maximum length of the output character array
  */
-uint16_t get_account_name(const uint32_t *path, uint16_t account_type, char *account_name, uint8_t out_len);
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                     const size_t path_length,
+                                     const bool harden_all,
+                                     char *output,
+                                     const size_t out_len);
+
+/**
+ * @brief Create a new display node and return its pointer
+ * 
+ * @param title 
+ * @param title_size 
+ * @param value 
+ * @param value_size 
+ * @return ui_display_node* 
+ */
+ui_display_node *ui_create_display_node(const char *title,
+                                        const size_t title_size,
+                                        const char *value,
+                                        const size_t value_size);
 
 #endif

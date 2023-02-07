@@ -87,6 +87,10 @@ void level_three_old_wallet_controller()
         send_transaction_controller_eth();
     } break;
 
+    case LEVEL_THREE_SIGN_MESSAGE_ETH: {
+        sign_message_controller_eth();
+    } break;
+
     case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
         send_transaction_controller_near();
     } break;

@@ -170,7 +170,7 @@ void receive_transaction_controller()
 
         hdnode_fill_public_key(&node);
 
-        hdnode_public_ckd(&node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index));
+        hdnode_public_ckd(&node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.change_index));
         hdnode_fill_public_key(&node);
         hdnode_public_ckd(&node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index));
         hdnode_fill_public_key(&node);

@@ -85,6 +85,8 @@ eth_unsigned_txn eth_unsigned_txn_ptr = {
 uint8_t *eth_unsigned_txn_byte_array = NULL;
 uint16_t eth_unsigned_txn_len;
 
+extern ui_display_node *current_display_node;
+
 void send_transaction_controller_eth()
 {
 
@@ -104,7 +106,8 @@ void send_transaction_controller_eth()
             eth_unsigned_txn_len = msg_size;
             memcpy(eth_unsigned_txn_byte_array, data_array, msg_size);
 
-            eth_byte_array_to_unsigned_txn(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, &eth_unsigned_txn_ptr);
+            eth_byte_array_to_unsigned_txn(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, &eth_unsigned_txn_ptr,
+                                           &var_send_transaction_data.transaction_metadata);
 
             clear_message_received_data();
             flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
@@ -118,10 +121,18 @@ void send_transaction_controller_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (eth_unsigned_txn_ptr.contract_verified)
-            flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH;
-        else
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_CONTRACT_NOT_WHITELISTED)
             flow_level.level_three = SEND_TXN_VERIFY_CONTRACT_ADDRESS;
+        else
+            flow_level.level_three = SEND_TXN_VERIFY_BLIND_SIGNING_ETH;
+    } break;
+
+    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
+        flow_level.level_three = SEND_TXN_VERIFY_DERIVATION_PATH;
+    } break;
+
+    case SEND_TXN_VERIFY_DERIVATION_PATH: {
+        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH;
     } break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS: {
@@ -143,7 +154,6 @@ void send_transaction_controller_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {
         flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_FEES_ETH;
-
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
@@ -151,11 +161,19 @@ void send_transaction_controller_eth()
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
-        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-        if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-            flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
+        flow_level.level_three = SEND_TXN_DISPLAY_INFO_ETH;
+    } break;
+
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+        if (current_display_node == NULL) {
+            memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+            if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+                flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
+            } else {
+                flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
+            }
         } else {
-            flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
+            current_display_node = current_display_node->next;
         }
     } break;
 
