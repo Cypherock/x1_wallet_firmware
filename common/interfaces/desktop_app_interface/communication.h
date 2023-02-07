@@ -84,6 +84,8 @@ typedef enum commandType {
 
     SWAP_TXN_START = 66,                    ///< Request by desktop to start a swap transaction
     SWAP_TXN_SIGNED_RECV_ADDR = 67,         ///< Send desktop the receive address for swap along with signature
+    SWAP_TXN_RECV_SIGNATURE = 68,           ///< Request by desktop to verify the receive address signature
+    SWAP_TXN_VERIFY_SEND_ADDR = 69,         ///< Send desktop the verification result
 
     #ifdef DEV_BUILD
     START_CARD_UPGRADE = 60,

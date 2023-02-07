@@ -132,8 +132,6 @@ void swap_transaction_tasks() {
 
         case SWAP_SIGN_RECEIVE_ADDRESS: {
             is_swap_txn = true;
-            // TODO: show message processing
-
             memcpy((uint8_t *) &swap_transaction_data.receive_txn_data,
                    (uint8_t *) &receive_transaction_data,
                    sizeof(Receive_Transaction_Data));

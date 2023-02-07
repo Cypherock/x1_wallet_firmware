@@ -50,6 +50,12 @@ void swap_transaction_controller_b() {
         }
             break;
 
+        case SWAP_VERIFY_SIGNATURE: {
+            reset_flow_level();
+            counter.next_event_flag = true;
+        }
+            break;
+
         case SWAP_SELECT_SEND_WALLET_ID: {
             reset_flow_level();
             counter.next_event_flag = true;

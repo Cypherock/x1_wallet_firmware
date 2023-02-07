@@ -115,6 +115,51 @@ static auth_data_t atecc_sign(uint8_t *hash) {
     return auth_challenge_packet;
 }
 
+static bool verify_digest(uint8_t *payload, uint16_t payload_length,
+                          uint8_t *buffer) {
+
+    uint8_t hash[32] = {0};
+    sha256_Raw(payload, payload_length, hash);
+    uint8_t session_key_derv_data[12] = {0};
+    HDNode session_node;
+    uint32_t index;
+    char xpub[112] = {'\0'};
+
+    base58_encode_check(get_card_root_xpub(), FS_KEYSTORE_XPUB_LEN,
+                        nist256p1_info.hasher_base58, xpub, 112);
+    hdnode_deserialize_public((char *) xpub,
+                              0x0488b21e,
+                              NIST256P1_NAME,
+                              &session_node,
+                              NULL);
+
+    index = read_be(session_key_derv_data);
+    hdnode_public_ckd(&session_node, index);
+
+    index = read_be(session_key_derv_data + 4);
+    hdnode_public_ckd(&session_node, index);
+
+    index = read_be(session_key_derv_data + 8);
+    hdnode_public_ckd(&session_node, index);
+
+    uint8_t
+        status = ecdsa_verify_digest(&nist256p1,
+                                     session_node.public_key,
+                                     buffer,
+                                     hash);
+    if (status) {
+        LOG_CRITICAL("xxec %d:%d", status, __LINE__);
+        log_hex_array("payload", payload, sizeof(payload));
+        log_hex_array("sig", buffer, sizeof(buffer));
+        reset_flow_level();
+        instruction_scr_init("", NULL);
+        mark_error_screen("signature verification failed");
+        return false;
+    }
+
+    return true;
+}
+
 static size_t append_signature(uint8_t *payload, uint8_t *address, size_t
 address_length) {
     size_t payload_size = 0;
@@ -293,6 +338,38 @@ void swap_transaction_controller() {
         case SWAP_VERIFY_SIGNATURE: {
             uint8_t *data_array = NULL;
             uint16_t msg_size = 0;
+
+            if (get_usb_msg_by_cmd_type(SWAP_TXN_RECV_SIGNATURE,
+                                        &data_array, &msg_size)) {
+                uint8_t payload_length = msg_size + DEVICE_SERIAL_SIZE - 64;
+                uint8_t index = 0;
+                uint8_t *payload = (uint8_t *) malloc(payload_length);
+                memset(payload, 0, payload_length);
+
+                get_device_serial();
+                memcpy(payload, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+                index += DEVICE_SERIAL_SIZE;
+                memcpy(payload + index, data_array, payload_length -
+                    DEVICE_SERIAL_SIZE);
+
+                uint8_t buffer[64] = {0};
+                memcpy(buffer, data_array + payload_length -
+                    DEVICE_SERIAL_SIZE, 64);
+
+                if (verify_digest(payload, payload_length, buffer)) {
+                    uint8_t result[1] = {1};
+                    transmit_data_to_app(SWAP_TXN_VERIFY_SEND_ADDR,
+                                         result,
+                                         1);
+                } else {
+                    uint8_t result[1] = {0};
+                    transmit_data_to_app(SWAP_TXN_VERIFY_SEND_ADDR,
+                                         result,
+                                         1);
+                }
+
+            }
+
             if (get_usb_msg_by_cmd_type(SEND_TXN_START,
                                         &data_array,
                                         &msg_size)) {
