@@ -102,7 +102,7 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
-      char display[65];
+      char display[75];
       if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
       else
@@ -112,12 +112,8 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_2: {
       
-      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_TIME);
+      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_LONG_STRING);
     
-    } break;
-
-    case GENERATE_WALLET_PIN_INSTRUCTIONS_3: {
-      delay_scr_init(ui_wallet_pin_instruction_3,DELAY_LONG_STRING);
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
