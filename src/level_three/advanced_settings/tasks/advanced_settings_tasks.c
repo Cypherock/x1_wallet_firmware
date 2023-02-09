@@ -161,14 +161,14 @@ void level_three_advanced_settings_tasks()
         LV_IMG_DECLARE(fcc_logo_black_2020);
         LV_IMG_DECLARE(ce_mark);
         content[0].img = &fcc_logo_black_2020;
-        content[0].img_x_offset = 48;
-        content[0].img_y_offset = 2;
+        content[0].img_x_offset = (128 - fcc_logo_black_2020.header.w) >> 1;
+        content[0].img_y_offset = 1;
         content[0].text_align = LV_ALIGN_OUT_BOTTOM_MID;
         content[6].img = &ce_mark;
         content[6].img_x_offset = 22;
         content[6].img_y_offset = 2;
 
-        snprintf(content[0].text, sizeof(content[0].text), "FCC ID: 2A9MU-X1-VAULT");
+        // snprintf(content[0].text, sizeof(content[0].text), "");
         snprintf(content[1].text, sizeof(content[1].text), "This device complies with Part 15 of the FCC Rules. Operation is");
         snprintf(content[2].text, sizeof(content[2].text), "subject to the following two conditions: (1) this device may not");
         snprintf(content[3].text, sizeof(content[3].text), "cause harmful interference, and (2) this device must accept any");
