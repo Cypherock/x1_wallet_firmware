@@ -177,7 +177,7 @@ log_read_e_t get_log_read_status();
 void set_start_log_read();
 
 /**
- * @brief Function to write the log for LVGL library. If error level of log is detected, then
+ * @brief Function to write the log for LVGL. If error level of log is detected, then
  * this function will reset the device and restart. Internally, this function does an
  * ASSERT(false) to trigger the reset.
  * 
@@ -186,6 +186,6 @@ void set_start_log_read();
  * @param line  line number at which event occurred
  * @param dsc   description of the event
  */
-void lv_custom_log_handler(lv_log_level_t level, const char * file, int line, const char * dsc);
+void lv_custom_log_handler(lv_log_level_t level, const char * file, uint32_t line, const char * dsc);
 
 #endif //_DEVICE_LOGGER_H

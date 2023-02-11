@@ -319,7 +319,7 @@ log_read_e_t get_log_read_status()
     return sg_log_data.read_sm_e;
 }
 
-void lv_custom_log_handler(lv_log_level_t level, const char *file, int line, const char *dsc) {
+void lv_custom_log_handler(lv_log_level_t level, const char *file, uint32_t line, const char *dsc) {
     logger("LVGL#L%d in %s at Line %d : %s\n\n", level, file, line, dsc);
     if (level == LV_LOG_LEVEL_ERROR)
         ASSERT(false);
