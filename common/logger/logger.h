@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "logger_config.h"
+#include "lv_log.h"
 #include "mem_config.h"
 
 /// Defines max size of log
@@ -174,5 +175,15 @@ void log_hex_array(const char text[], const uint8_t *arr, uint8_t length);
 log_read_e_t get_log_read_status();
 
 void set_start_log_read();
+
+/**
+ * @brief Function to write the log for LVGL library.
+ * 
+ * @param level LVGL log level
+ * @param file  file in which event occurred
+ * @param line  line number at which event occurred
+ * @param dsc   description of the event
+ */
+void lv_custom_log_handler(lv_log_level_t level, const char * file, int line, const char * dsc);
 
 #endif //_DEVICE_LOGGER_H
