@@ -171,6 +171,9 @@ Flash_Wallet wallet_for_flash;
 MessageData msg_data;
 ui_display_node *current_display_node = NULL;
 
+// create a new session object
+Session session;
+
 Flow_level* get_flow_level()
 {
     ASSERT((&flow_level) != NULL);
@@ -692,6 +695,38 @@ void desktop_listener_task(lv_task_t* data)
                 }
                 clear_message_received_data();
             } break;
+
+            case SESSION_INIT_START: {
+                Message session_pre_init_details;
+                session_pre_init(&session, &session_pre_init_details);
+
+                uint8_t *session_details_data_array = (uint8_t *) malloc
+                    (session_pre_init_details.message_size + SIGNATURE_SIZE +
+                        POSTFIX1_SIZE + POSTFIX2_SIZE);
+                uint8_t session_detail_data_array_size =
+                    session_message_to_byte_array(session_pre_init_details,
+                                                  session_details_data_array);
+
+                //  Device Random (32) + Device Serial (32) + Signature (64) + Postfix1 + Postfix2
+                transmit_data_to_app(SESSION_INIT_SEND_DEVICE_RANDOM,
+                                     session_details_data_array,
+                                     session_detail_data_array_size);
+
+            }
+                break;
+
+            case SESSION_INIT_RECV_SESSION_ID: {
+                Message session_init_details;
+                byte_array_to_session_message(data_array, msg_size,
+                                              &session_init_details);
+
+                if (!session_init(&session, &session_init_details)) {
+                    LOG_CRITICAL("xxec %d:%d", false, __LINE__);
+                    comm_reject_invalid_cmd();
+                    clear_message_received_data();
+                }
+            }
+                break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {
                 const Flash_Wallet* flash_wallet;

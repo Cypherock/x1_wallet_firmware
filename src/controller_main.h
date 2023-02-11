@@ -42,6 +42,7 @@
 #include "sha2.h"
 #include "sys_state.h"
 #include "tasks_level_four.h"
+#include "session_utils.h"
 
 #ifdef DEV_BUILD
 #define SKIP_ENTER_MNEMONICS_DEBUG

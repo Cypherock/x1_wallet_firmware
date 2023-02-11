@@ -21,8 +21,43 @@
 #include "base58.h"
 #include "nist256p1.h"
 #include "nfc.h"
+#include "atecc_utils.h"
+#include "rand.h"
 
-bool verify_session_digest(uint8_t *payload, uint16_t payload_length,
-                           uint8_t *buffer);
+#define SESSION_ID_SIZE    32
+#define DEVICE_RANDOM_SIZE 32
+
+#pragma pack(push, 1)
+typedef struct {
+  uint8_t device_random[DEVICE_RANDOM_SIZE];
+  uint8_t device_id[DEVICE_SERIAL_SIZE];
+  uint8_t session_id[SESSION_ID_SIZE];  
+} Session;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct {
+  uint16_t message_size;
+  uint8_t *message;
+  uint8_t *signature;
+  uint8_t postfix1[POSTFIX1_SIZE];
+  uint8_t postfix2[POSTFIX2_SIZE];
+} Message;
+#pragma pack(pop)
+
+bool verify_session_signature(uint8_t *payload, uint16_t payload_length,
+                              uint8_t *buffer);
+
+void session_pre_init(Session *session, Message *session_pre_init_details);
+
+bool session_init(Session *session, Message *session_init_details);
+
+void byte_array_to_session_message(uint8_t *data_array, uint16_t msg_size,
+                           Message *msg);
+
+uint8_t session_message_to_byte_array(Message msg, uint8_t *data_array);
+
+void append_signature(uint8_t *payload, uint16_t payload_length, Message
+*message);
 
 #endif //SESSION_UTILS

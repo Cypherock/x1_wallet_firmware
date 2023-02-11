@@ -76,13 +76,13 @@ typedef struct {
  * @param data
  * @param digest
  * @param postfix
- * @param atecc_data
+ * @param atecc_value
  */
 void helper_get_gendig_hash(atecc_slot_define_t slot,
                             uint8_t *data,
                             uint8_t *digest,
                             uint8_t *postfix,
-                            atecc_data_t atecc_data);
+                            atecc_data_t atecc_value);
 
 /**
  * @brief
@@ -94,13 +94,15 @@ void helper_get_gendig_hash(atecc_slot_define_t slot,
  * @param mode
  * @param priv_key_id
  * @param data_key_id
- * @param atecc_data
+ * @param atecc_value
  * @return
  */
 ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
                                      uint8_t mode,
                                      uint8_t priv_key_id,
                                      uint8_t data_key_id,
-                                     atecc_data_t atecc_data);
+                                     atecc_data_t atecc_value);
+
+auth_data_t atecc_sign(uint8_t *hash);
 
 #endif //ATECC_UTILS_H

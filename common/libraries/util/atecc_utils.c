@@ -1,5 +1,7 @@
 #include "atecc_utils.h"
 #include "sha2.h"
+#include "flash_api.h"
+#include "controller_level_four.h"
 
 static ATCA_STATUS helper_config_to_sign_internal(ATCADeviceType device_type,
                                                   struct atca_sign_internal_in_out *param,
@@ -40,14 +42,14 @@ void helper_get_gendig_hash(atecc_slot_define_t slot,
                             uint8_t *data,
                             uint8_t *digest,
                             uint8_t *postfix,
-                            atecc_data_t atecc_data) {
+                            atecc_data_t atecc_value) {
     if (digest == NULL || data == NULL || postfix == NULL) {
         return;
     }
 
     uint8_t tempkey_init[96] = {0};
     uint8_t atecc_serial[9];
-    atecc_data.status = atcab_read_serial_number(atecc_serial);
+    atecc_value.status = atcab_read_serial_number(atecc_serial);
     memcpy(tempkey_init, data, 32);
     postfix[0] = tempkey_init[32] = 0x15;
     postfix[1] = tempkey_init[33] = 0x02;
@@ -64,7 +66,7 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
                                      uint8_t mode,
                                      uint8_t priv_key_id,
                                      uint8_t data_key_id,
-                                     atecc_data_t atecc_data) {
+                                     atecc_data_t atecc_value) {
     uint8_t msg[55];
     uint8_t cfg[128] = {0}, sn[9] = {0};
     atca_temp_key_t temp_key = {0};
@@ -74,11 +76,11 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
     temp_key.valid = 1;
     temp_key.source_flag = 1;
 
-    atecc_data.status = atcab_read_config_zone(cfg);
+    atecc_value.status = atcab_read_config_zone(cfg);
     memcpy(temp_key.value, param->message, 32);
     param->temp_key = &temp_key;
     helper_config_to_sign_internal(ATECC608A, param, cfg);
-    atecc_data.status = atcab_read_serial_number(sn);
+    atecc_value.status = atcab_read_serial_number(sn);
 
     if (param == NULL || param->temp_key == NULL) {
         return ATCA_BAD_PARAM;
@@ -137,4 +139,107 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
     } else {
         return ATCA_SUCCESS;
     }
+}
+
+auth_data_t atecc_sign(uint8_t *hash) {
+    uint8_t io_protection_key[32] = {0};
+    uint8_t nonce[32] = {0};
+    auth_data_t auth_challenge_packet = {0};
+    uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
+    uint8_t final_hash[32] = {0};
+    get_io_protection_key(io_protection_key);
+
+    memset(challenge_no, 0, sizeof(challenge_no));
+    for (int i = 0; i < 32; ++i)
+        challenge_no[i] = challenge_no[i] ^ hash[i];
+
+    atca_sign_internal_in_out_t sign_internal_param = {0};
+
+    atecc_data.retries = DEFAULT_ATECC_RETRIES;
+    bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+    NVIC_DisableIRQ(OTG_FS_IRQn);
+    do {
+        OTG_FS_IRQHandler();
+
+        if (atecc_data.status != ATCA_SUCCESS)
+            LOG_CRITICAL("AERR CH: %04x, count:%d",
+                         atecc_data.status,
+                         DEFAULT_ATECC_RETRIES - atecc_data.retries);
+
+        if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface))
+            != ATCA_SUCCESS) {
+            continue;
+        }
+
+        atecc_data.status = atcab_write_enc(slot_5_challenge,
+                                            0,
+                                            challenge_no,
+                                            io_protection_key,
+                                            slot_6_io_key);
+        if (atecc_data.status != ATCA_SUCCESS) {
+            continue;
+        }
+
+        atecc_data.status = atcab_nonce(nonce);
+        if (atecc_data.status != ATCA_SUCCESS) {
+            continue;
+        }
+
+        atecc_data.status =
+            atcab_gendig(ATCA_ZONE_DATA, slot_5_challenge, NULL, 0);
+        if (atecc_data.status != ATCA_SUCCESS) {
+            continue;
+        }
+
+        atecc_data.status = atcab_sign_internal(slot_2_auth_key,
+                                                false,
+                                                false,
+                                                auth_challenge_packet.signature);
+        if (atecc_data.status != ATCA_SUCCESS) {
+            continue;
+        }
+
+        helper_get_gendig_hash(slot_5_challenge, challenge_no,
+                               tempkey_hash, auth_challenge_packet
+                                   .postfix1, atecc_data);
+
+        sign_internal_param.message = tempkey_hash;
+        sign_internal_param.digest = final_hash;
+
+        helper_sign_internal_msg(&sign_internal_param,
+                                 SIGN_MODE_INTERNAL,
+                                 slot_2_auth_key, slot_5_challenge,
+                                 atecc_data);
+
+        memset(challenge_no, 0, sizeof(challenge_no));
+        atecc_data.status = atcab_write_enc(slot_5_challenge,
+                                            0,
+                                            challenge_no,
+                                            io_protection_key,
+                                            slot_6_io_key);
+        if (atecc_data.status != ATCA_SUCCESS) {
+            continue;
+        }
+
+        {
+            uint8_t result = ecdsa_verify_digest(&nist256p1,
+                                                 get_auth_public_key(),
+                                                 auth_challenge_packet.signature,
+                                                 sign_internal_param.digest);
+            if (atecc_data.status != ATCA_SUCCESS || result != 0) {
+                LOG_ERROR("err xxx33 fault %d verify %d",
+                          atecc_data.status,
+                          result);
+            }
+        }
+
+    } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
+    if (usb_irq_enable_on_entry == true)
+        NVIC_EnableIRQ(OTG_FS_IRQn);
+
+    memcpy(auth_challenge_packet.postfix2,
+           &tempkey_hash[32],
+           POSTFIX2_SIZE);     //postfix 2 (12bytes)
+
+    return auth_challenge_packet;
 }
