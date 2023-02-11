@@ -177,7 +177,9 @@ log_read_e_t get_log_read_status();
 void set_start_log_read();
 
 /**
- * @brief Function to write the log for LVGL library.
+ * @brief Function to write the log for LVGL library. If error level of log is detected, then
+ * this function will reset the device and restart. Internally, this function does an
+ * ASSERT(false) to trigger the reset.
  * 
  * @param level LVGL log level
  * @param file  file in which event occurred
