@@ -31,7 +31,8 @@
 typedef struct {
   uint8_t device_random[DEVICE_RANDOM_SIZE];
   uint8_t device_id[DEVICE_SERIAL_SIZE];
-  uint8_t session_id[SESSION_ID_SIZE];  
+  uint8_t session_id[SESSION_ID_SIZE];
+  uint16_t session_age;
 } Session;
 #pragma pack(pop)
 

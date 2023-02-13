@@ -48,7 +48,13 @@ void append_signature(uint8_t *payload, uint16_t payload_length, Message
 }
 
 void session_pre_init(Session *session, Message *session_pre_init_details) {
-    random_buffer(session->device_random, DEVICE_RANDOM_SIZE);
+    // random_buffer(session->device_random, DEVICE_RANDOM_SIZE);
+    uint8_t hardcoded[] = {0x01, 0x0B, 0x07, 0xE6, 0x03, 0x00, 0x01, 0x00,
+                           0x3F, 0x00, 0x46, 0x00, 0x11, 0x50, 0x56, 0x39,
+                           0x55, 0x32, 0x31, 0x20, 0x8B, 0x4B, 0x4C, 0x8F,
+                           0x0C, 0xAD, 0x37, 0x06, 0x70, 0xEA, 0x13, 0xA9};
+
+    memcpy(session->device_random, hardcoded, DEVICE_RANDOM_SIZE);
     get_device_serial();
     memcpy(session->device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
 
@@ -122,6 +128,11 @@ bool session_init(Session *session, Message *session_init_details) {
                session->device_id, DEVICE_SERIAL_SIZE) != 0) {
         return false;
     }
+
+    session->session_age = bendian_byte_to_dec(session_init_details->message +
+                                               SESSION_ID_SIZE +
+                                               DEVICE_SERIAL_SIZE,
+                                               sizeof(session->session_age));
 
     return true;
 }

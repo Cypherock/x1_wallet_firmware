@@ -130,8 +130,8 @@ typedef enum commandType {
     SIGN_MSG_SEND_SIG = 95,                 ///< Response by device for send transaction with signed transaction
 
     SESSION_INIT_START = 100,               ///< Request by desktop to start a session
-    SESSION_INIT_SEND_DEVICE_RANDOM = 101,            ///< Response by device with device random
-    SESSION_INIT_RECV_SESSION_ID = 102,             ///< Request by desktop to send session id
+    SESSION_INIT_SEND_DEVICE_RANDOM = 101,  ///< Response by device with device random
+    SESSION_INIT_RECV_SESSION_ID = 102,     ///< Request by desktop to send session id
 
     DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
 
