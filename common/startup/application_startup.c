@@ -358,7 +358,6 @@ void application_init() {
         ui_rotate();
     }
     logger_init();
-    lv_log_register_print_cb(lv_custom_log_handler);
 #else
     srand(time(0));
     /*Initialize LittlevGL*/
