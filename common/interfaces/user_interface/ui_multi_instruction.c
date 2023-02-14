@@ -327,9 +327,7 @@ void multi_instruction_create()
     obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
     if(data->heading_object)
         obj->heading = lv_label_create(lv_scr_act(), NULL);
-    if(data->img_object){
-        obj->img = lv_img_create(lv_scr_act(), NULL);
-    }
+    obj->img = lv_img_create(lv_scr_act(), NULL);
 
     lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
     lv_obj_set_width(obj->text, LV_HOR_RES - 22);
