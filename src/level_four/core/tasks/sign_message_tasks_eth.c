@@ -108,7 +108,7 @@ void sign_message_tasks_eth() {
 
         case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
             if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-                flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH;
+                flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
                 break;
             }
             input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
