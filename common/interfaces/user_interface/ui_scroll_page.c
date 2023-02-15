@@ -363,7 +363,6 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvgl
 
                     lv_obj_align(gp_scrollabe_page_lvgl->p_ui_body_lvgl, NULL, LV_ALIGN_IN_TOP_MID,
                                  0, 0);
-                    page_update_icons();
                 }
             } else if (LV_KEY_LEFT == keyPressed) {
                 if (true == page_decrement()) {
@@ -379,10 +378,12 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject, const lv_event_t lvgl
 
                     lv_obj_align(gp_scrollabe_page_lvgl->p_ui_body_lvgl, NULL, LV_ALIGN_IN_TOP_MID,
                                  0, 0);
-                    page_update_icons();
                 }
             } else if (LV_KEY_DOWN == keyPressed) {
-                lv_group_focus_obj(gp_scrollabe_page_lvgl->p_ui_accept_btn_lvgl);
+                /* Only focus on accept button if the button is visible */
+                if (false == gp_scrollabe_page_data->bool_accept_cancel_hidden) {
+                    lv_group_focus_obj(gp_scrollabe_page_lvgl->p_ui_accept_btn_lvgl);
+                }
             }
 
             break;
