@@ -106,6 +106,15 @@ void sign_message_tasks_eth() {
             mark_event_over();
         } break;
 
+        case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
+            if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+                flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
+                break;
+            }
+            input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+
+        } break;
+
         case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
             char display[65];
             snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
