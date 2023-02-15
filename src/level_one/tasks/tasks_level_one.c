@@ -63,6 +63,7 @@
 #include "ui_menu.h"
 #include "ui_message.h"
 #include "apdu.h"
+#include "ui_scroll_page.h"
 
 extern lv_task_t* listener_task;
 
@@ -85,7 +86,8 @@ void level_one_tasks()
 
     if (flow_level.show_desktop_start_screen) {
         mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
-        confirm_scr_init(flow_level.confirmation_screen_text);
+        ui_scrollable_page(ui_heading_confirm_action, flow_level.confirmation_screen_text,
+                           MENU_SCROLL_HORIZONTAL, false);
         return;
     }
 

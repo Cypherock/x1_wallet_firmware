@@ -74,6 +74,7 @@
 #include "ui_delay.h"
 #include "controller_main.h"
 #include "flash_api.h"
+#include "ui_scroll_page.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -92,7 +93,8 @@ void sync_cards_task(){
     } break;
 
     case SYNC_CARDS_CURRENT_WALLET_CONFIRM:{
-        address_scr_init("Sync Wallet?", (char *)wallet.wallet_name, false);
+        ui_scrollable_page("Sync Wallet?", (char *)wallet.wallet_name, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init("Sync Wallet?", (char *)wallet.wallet_name, false);
     } break;
     case SYNC_CARDS_CHECK_WALLET_PIN:{
         mark_event_over();

@@ -153,6 +153,7 @@ extern const char* ui_text_confirm_data;
 extern const char* ui_text_verification_cancelled;
 extern const char* ui_text_verify_nonce;
 extern const char* ui_text_waiting_for_desktop;
+extern const char* ui_heading_confirm_action;
 
 // headings near specific
 extern const char* ui_text_verify_create_from;

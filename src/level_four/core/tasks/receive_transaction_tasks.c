@@ -67,6 +67,7 @@
 #include "ui_instruction.h"
 #include "ui_menu.h"
 #include "tasks_tap_cards.h"
+#include "ui_scroll_page.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -99,7 +100,8 @@ void receive_transaction_tasks()
     case RECV_TXN_CONFIRM_PASSPHRASE: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
+        ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 
@@ -146,8 +148,9 @@ void receive_transaction_tasks()
     case RECV_TXN_DISPLAY_ADDR: {
         instruction_scr_destructor();
         char display[70];
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, receive_transaction_data.address);
-        address_scr_init(ui_text_receive_on, display, true);
+        snprintf(display, sizeof(display), "%s", receive_transaction_data.address);
+        ui_scrollable_page(ui_text_receive_on, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_receive_on, display, true);
     } break;
 
     default:

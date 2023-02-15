@@ -59,16 +59,9 @@
 #include "constant_texts.h"
 #include "tasks.h"
 #include "tasks_add_wallet.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
-#include "ui_multi_instruction.h"
-#include "ui_address.h"
 #include "tasks_tap_cards.h"
-#include "ui_list.h"
 #include "controller_main.h"
+#include "ui_screens.h"
 
 extern Flash_Wallet wallet_for_flash;
 
@@ -98,7 +91,8 @@ void tasks_add_new_wallet()
     case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_wallet_name, display, false);
+        ui_scrollable_page(ui_text_confirm_wallet_name, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
@@ -117,8 +111,9 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-        confirm_scr_init(ui_text_do_you_want_to_set_pin);
-        confirm_scr_focus_cancel();
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
+        // confirm_scr_init(ui_text_do_you_want_to_set_pin);
+        // confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
@@ -161,8 +156,9 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-        confirm_scr_init(ui_text_use_passphrase_question);
-        confirm_scr_focus_cancel();
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_use_passphrase_question);
+        // confirm_scr_init(ui_text_use_passphrase_question);
+        // confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PROCESSING: {

@@ -58,11 +58,7 @@
 #include "constant_texts.h"
 #include "shamir_wrapper.h"
 #include "tasks.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_message.h"
+#include "ui_screens.h"
 #include "wallet.h"
 #include "tasks_tap_cards.h"
 #include <stdint.h>
@@ -76,7 +72,8 @@ void delete_wallet_task()
 {
     switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-        confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_need_all_x1cards_to_delete_wallet_entirely);
+        // confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
         break;
     case DELETE_WALLET_ENTER_PIN:
         if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {

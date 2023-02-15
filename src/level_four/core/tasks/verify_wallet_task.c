@@ -69,6 +69,7 @@
 #include "flash_api.h"
 #include "ui_multi_instruction.h"
 #include "ui_instruction.h"
+#include "ui_scroll_page.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -124,7 +125,8 @@ void verify_wallet_tasks()
 
     case VERIFY_WALLET_DELETE:
         instruction_scr_destructor();
-        address_scr_init(ui_text_verification_cancelled, (char *) ui_text_delete_this_wallet, false);
+        ui_scrollable_page(ui_text_verification_cancelled, (char *) ui_text_delete_this_wallet, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_verification_cancelled, (char *) ui_text_delete_this_wallet, false);
         break;
 
     default:

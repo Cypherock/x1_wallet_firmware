@@ -56,13 +56,9 @@
  ******************************************************************************
  */
 #include "controller_level_four.h"
-#include "ui_instruction.h"
-#include "ui_delay.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_input_text.h"
 #include "tasks_tap_cards.h"
 #include "byte_utilities.h"
+#include "ui_screens.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -103,7 +99,8 @@ void send_transaction_tasks_near() {
             nonce_dec_str[index - offset] = nonce_dec_str[index] + '0';
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
-        address_scr_init(ui_text_verify_nonce, (char*)nonce_dec_str, false);
+        ui_scrollable_page(ui_text_verify_nonce, (char*)nonce_dec_str, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_verify_nonce, (char*)nonce_dec_str, false);
     } break;
 
     case SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR: {
@@ -112,8 +109,9 @@ void send_transaction_tasks_near() {
         char display[110];
 
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_create_from);
-        snprintf(display, sizeof(display), "%s%s%.*s", ui_text_20_spaces, ui_text_20_spaces, (int)near_utxn.signer_id_length, near_utxn.signer);
-        address_scr_init(top_heading, display, true);
+        snprintf(display, sizeof(display), "%.*s", (int)near_utxn.signer_id_length, near_utxn.signer);
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR: {
@@ -123,16 +121,16 @@ void send_transaction_tasks_near() {
 
         if (near_utxn.actions_type == NEAR_ACTION_TRANSFER) {
             snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
-            snprintf(display, sizeof(display), "%s%s%.*s", ui_text_20_spaces, ui_text_20_spaces, (int)near_utxn.receiver_id_length, near_utxn.receiver);
+            snprintf(display, sizeof(display), "%.*s", (int)near_utxn.receiver_id_length, near_utxn.receiver);
         }
         else if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
             snprintf(top_heading, sizeof(top_heading), "%s",ui_text_verify_new_account_id);
             char account[NEAR_ACC_ID_MAX_LEN + 1] = { 0 };
             size_t account_length = near_get_new_account_id_from_fn_args((const char*)near_utxn.action.fn_call.args, near_utxn.action.fn_call.args_length, account);
-            snprintf(display, sizeof(display), "%s%s%.*s", ui_text_20_spaces, ui_text_20_spaces, (int)account_length, account);
+            snprintf(display, sizeof(display), "%.*s", (int)account_length, account);
         }
-
-        address_scr_init(top_heading, display, true);
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_NEAR: {
@@ -201,7 +199,8 @@ void send_transaction_tasks_near() {
     case SEND_TXN_CONFIRM_PASSPHRASE_NEAR: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
+        ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

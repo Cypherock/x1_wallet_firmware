@@ -65,6 +65,7 @@
 #include "ui_menu.h"
 #include "ui_message.h"
 #include "ui_multi_instruction.h"
+#include "ui_scroll_page.h"
 
 extern lv_task_t *listener_task;
 
@@ -83,10 +84,12 @@ void level_one_tasks_initial() {
   }
 
   if (flow_level.show_desktop_start_screen) {
-    if(flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
-      message_scr_init(flow_level.confirmation_screen_text);
-    else
-      confirm_scr_init(flow_level.confirmation_screen_text);
+    if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM) {
+        message_scr_init(flow_level.confirmation_screen_text);
+    } else {
+        ui_scrollable_page(ui_heading_confirm_action, flow_level.confirmation_screen_text,
+                           MENU_SCROLL_HORIZONTAL, false);
+    }
     return;
   }
 

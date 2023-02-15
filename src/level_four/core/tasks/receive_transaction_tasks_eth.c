@@ -70,6 +70,7 @@
 #include "ui_instruction.h"
 #include "ui_menu.h"
 #include "utils.h"
+#include "ui_scroll_page.h"
 
 extern char* ALPHABET;
 extern char* ALPHA_NUMERIC;
@@ -103,7 +104,8 @@ void receive_transaction_tasks_eth()
     case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
+        ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 
@@ -155,8 +157,9 @@ void receive_transaction_tasks_eth()
         else
           bech32_addr_encode(address_s, "one", receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
         strncpy(receive_transaction_data.address, address_s, sizeof(receive_transaction_data.address));
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address_s);
-        address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
+        snprintf(display, sizeof(display), "%s", address_s);
+        ui_scrollable_page(ui_text_receive_on, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
     } break;
 
     default:

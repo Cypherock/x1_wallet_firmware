@@ -65,13 +65,7 @@
 #include "segwit_addr.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
-#include "ui_scroll_page.h"
+#include "ui_screens.h"
 #include "utils.h"
 
 extern char* ALPHABET;
@@ -119,8 +113,9 @@ void send_transaction_tasks_eth()
         byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address,
                                  ETHEREUM_ADDRESS_LENGTH, address + 2, sizeof(address) - 2);
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
-        address_scr_init(top_heading, display, true);
+        snprintf(display, sizeof(display), "%s", address);
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, true);
+        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
@@ -164,7 +159,8 @@ void send_transaction_tasks_eth()
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
         instruction_scr_destructor();
-        address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
+        ui_scrollable_page("Verify nonce", (char *) nonce_dec_str, MENU_SCROLL_HORIZONTAL, true);
+        // address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
@@ -185,8 +181,9 @@ void send_transaction_tasks_eth()
         else
           bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
-        address_scr_init(top_heading, display, true);
+        snprintf(display, sizeof(display), "%s", address);
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
@@ -295,7 +292,8 @@ void send_transaction_tasks_eth()
     case SEND_TXN_CONFIRM_PASSPHRASE_ETH: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
+        ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

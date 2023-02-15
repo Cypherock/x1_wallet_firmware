@@ -64,13 +64,8 @@
 #include "solana.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
 #include "utils.h"
+#include "ui_screens.h"
 
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
@@ -111,8 +106,9 @@ void send_transaction_tasks_solana() {
       b58enc(address, &address_size, solana_unsigned_txn_ptr.instruction.program.transfer.recipient_account,
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
-      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
-      address_scr_init(top_heading, display, true);
+      snprintf(display, sizeof(display), "%s", address);
+      ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
+      // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_SOLANA: {
@@ -176,7 +172,8 @@ void send_transaction_tasks_solana() {
     case SEND_TXN_CONFIRM_PASSPHRASE_SOLANA: {
       char display[65];
       snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-      address_scr_init(ui_text_confirm_passphrase, display, false);
+      ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+      // address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
 

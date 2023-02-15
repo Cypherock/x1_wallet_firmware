@@ -68,6 +68,8 @@
 #include "wallet.h"
 #include "bip39.h"
 #include "tasks_tap_cards.h"
+#include "ui_scroll_page.h"
+
 #include <string.h>
 
 
@@ -121,8 +123,8 @@ void view_seed_task()
                 wallet_shamir_data.share_x_coords,
                 secret);
             secret[wallet.arbitrary_data_size] = '\0';
-
-            address_scr_init(ui_text_confirm_data, (char *) secret, false);
+            ui_scrollable_page(ui_text_confirm_data, (char *) secret, MENU_SCROLL_HORIZONTAL, false);
+            // address_scr_init(ui_text_confirm_data, (char *) secret, false);
         } else {
             recover_secret_from_shares(
                 BLOCK_SIZE, // visualise this as horizontal length

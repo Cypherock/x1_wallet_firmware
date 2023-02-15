@@ -69,6 +69,7 @@
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_menu.h"
+#include "ui_scroll_page.h"
 
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
@@ -98,7 +99,8 @@ void receive_transaction_tasks_near() {
     case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
       char display[65];
       snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-      address_scr_init(ui_text_confirm_passphrase, display, false);
+      ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+      // address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
 
@@ -146,9 +148,10 @@ void receive_transaction_tasks_near() {
 
     case RECV_TXN_DISPLAY_ACC_NEAR: {
       char display[110];
-      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces,
+      snprintf(display, sizeof(display), "%s",
                receive_transaction_data.near_registered_account);
-      address_scr_init(ui_text_new_account_id, display, true);
+      ui_scrollable_page(ui_text_new_account_id, display, MENU_SCROLL_HORIZONTAL, true);
+      // address_scr_init(ui_text_new_account_id, display, true);
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_NEAR: {
@@ -171,10 +174,10 @@ void receive_transaction_tasks_near() {
                                  sizeof(receive_transaction_data.near_pubkey),
                                  address_s, sizeof(address_s));
       }
-      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces, address_s);
+      snprintf(display, sizeof(display), "%s", address_s);
 
-      address_scr_init(heading, display, true);
-
+      ui_scrollable_page(heading, display, MENU_SCROLL_HORIZONTAL, false);
+      // address_scr_init(heading, display, true);
     } break;
 
     case RECV_TXN_WAIT_FOR_REPLACE_NEAR_SCREEN: {
@@ -202,8 +205,10 @@ void receive_transaction_tasks_near() {
       char *acc_id[NEAR_REGISTERED_ACCOUNT_COUNT] = {0};
 
       near_deserialize_account_ids(coin_specific_data.coin_data, NEAR_COIN_DATA_MAX_LEN, acc_id, receive_transaction_data.near_acc_count);
-
-      address_scr_init(ui_text_confirm_account, acc_id[receive_transaction_data.near_acc_index], false);
+      ui_scrollable_page(ui_text_confirm_account,
+                                 acc_id[receive_transaction_data.near_acc_index],
+                                 MENU_SCROLL_HORIZONTAL, false);
+      // address_scr_init(ui_text_confirm_account, acc_id[receive_transaction_data.near_acc_index], false);
 
     } break;
 

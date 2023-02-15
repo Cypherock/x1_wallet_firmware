@@ -59,12 +59,7 @@
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "tasks_level_four.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
+#include "ui_screens.h"
 #include "tasks_tap_cards.h"
 #include "segwit_addr.h"
 
@@ -125,9 +120,10 @@ void send_transaction_tasks()
         char display[70];
 
         snprintf(top_heading, sizeof(top_heading), "Receiver #%d Address", var_send_transaction_data.transaction_confirmation_list_index + 1);
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
-        address_scr_init(top_heading, display, true);
-        address_scr_focus_next();
+        snprintf(display, sizeof(display), "%s", address);
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(top_heading, display, true);
+        // address_scr_focus_next();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT: {
@@ -144,8 +140,9 @@ void send_transaction_tasks()
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
         if (btc_get_txn_fee(&var_send_transaction_data.unsigned_transaction) > get_transaction_fee_threshold(&var_send_transaction_data.unsigned_transaction, BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index))) {
-            confirm_scr_init(ui_text_warning_transaction_fee_too_high);
-            confirm_scr_focus_cancel();
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_warning_transaction_fee_too_high);
+            // confirm_scr_init(ui_text_warning_transaction_fee_too_high);
+            // confirm_scr_focus_cancel();
         } else {
         	mark_event_over();
         }
@@ -183,7 +180,8 @@ void send_transaction_tasks()
     case SEND_TXN_CONFIRM_PASSPHRASE: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
+        ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

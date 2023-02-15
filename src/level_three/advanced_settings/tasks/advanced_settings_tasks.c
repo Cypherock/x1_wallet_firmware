@@ -60,17 +60,13 @@
 #include "controller_main.h"
 #include "board.h"
 #include "tasks.h"
-#include "ui_confirmation.h"
 #include "constant_texts.h"
 #include "utils.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
 #include "tasks_tap_cards.h"
 #include "tasks_level_four.h"
-#include "ui_delay.h"
 #include "cy_factory_reset.h"
 #include "cy_card_hc.h"
-#include "ui_multi_instruction.h"
+#include "ui_screens.h"
 
 extern lv_task_t* timeout_task;
 
@@ -104,20 +100,25 @@ void level_three_advanced_settings_tasks()
             mark_error_screen(ui_text_error_pair_atleast_2_cards);
             break;
         }
-        confirm_scr_init(ui_text_sync_x1card_confirm);
+
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_sync_x1card_confirm);
+        // confirm_scr_init(ui_text_sync_x1card_confirm);
     } break;
 
 
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-        confirm_scr_init(ui_text_rotate_display_confirm);
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_rotate_display_confirm);
+        // confirm_scr_init(ui_text_rotate_display_confirm);
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
         if(is_passphrase_disabled()) {
-            confirm_scr_init(ui_text_enable_passphrase_step);
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_passphrase_step);
+            // confirm_scr_init(ui_text_enable_passphrase_step);
         }
         else{
-            confirm_scr_init(ui_text_disable_passphrase_step);
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_passphrase_step);
+            // confirm_scr_init(ui_text_disable_passphrase_step);
         }
     } break;
 
@@ -236,10 +237,14 @@ void level_three_advanced_settings_tasks()
     } break;
 
     case LEVEL_THREE_TOGGLE_LOGGING: {
-        if (!is_logging_enabled())
-            confirm_scr_init(ui_text_enable_log_export);
-        else
-            confirm_scr_init(ui_text_disable_log_export);
+        if (!is_logging_enabled()) {
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_log_export);
+            // confirm_scr_init(ui_text_enable_log_export);
+        }
+        else {
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_log_export);
+            // confirm_scr_init(ui_text_disable_log_export);
+        }
     } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)

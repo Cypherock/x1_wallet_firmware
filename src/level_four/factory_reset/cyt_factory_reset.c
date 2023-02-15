@@ -56,10 +56,7 @@
  ******************************************************************************
  */
 #include "cy_factory_reset.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "ui_multi_instruction.h"
-#include "ui_confirmation.h"
+#include "ui_screens.h"
 
 void cyt_factory_reset() {
     switch (flow_level.level_three) {
@@ -68,7 +65,8 @@ void cyt_factory_reset() {
             break;
 
         case FACTORY_RESET_CONFIRM:
-            confirm_scr_init(ui_text_confirm_factory_reset);
+            ui_scrollabe_page(ui_heading_confirm_action, ui_text_confirm_factory_reset);
+            // confirm_scr_init(ui_text_confirm_factory_reset);
             break;
 
         case FACTORY_RESET_TAP_CARD1:

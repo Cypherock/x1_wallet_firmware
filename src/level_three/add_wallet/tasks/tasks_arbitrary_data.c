@@ -61,19 +61,9 @@
 #include "stdint.h"
 #include "tasks.h"
 #include "tasks_add_wallet.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_mnemonics.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_menu.h"
-#include "ui_message.h"
-#include "ui_text_slideshow.h"
 #include "wallet.h"
-#include "ui_address.h"
-#include "ui_instruction.h"
 #include "tasks_tap_cards.h"
-#include "ui_multi_instruction.h"
+#include "ui_screens.h"
 
 extern char arbitrary_data[4096 / 8 + 1];
 
@@ -116,7 +106,8 @@ void tasks_arbitrary_data()
     case ARBITRARY_DATA_NAME_CONFIRM: {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_wallet_name, display, false);
+        ui_scrollable_page(ui_text_confirm_wallet_name, display, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
@@ -133,8 +124,9 @@ void tasks_arbitrary_data()
     } break;
 
     case ARBITRARY_DATA_SKIP_PIN: {
-        confirm_scr_init(ui_text_do_you_want_to_set_pin);
-        confirm_scr_focus_cancel();
+        ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
+        // confirm_scr_init(ui_text_do_you_want_to_set_pin);
+        // confirm_scr_focus_cancel();
     } break;
 
     case ARBITRARY_DATA_PIN_INPUT: {
@@ -172,7 +164,8 @@ void tasks_arbitrary_data()
     case ARBITRARY_DATA_CONFIRM_DATA: {
         snprintf(arbitrary_data, sizeof(arbitrary_data), "%s", flow_level.screen_input.input_text);
         memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        address_scr_init(ui_text_confirm_data, arbitrary_data, false);
+        ui_scrollable_page(ui_text_confirm_data, arbitrary_data, MENU_SCROLL_HORIZONTAL, false);
+        // address_scr_init(ui_text_confirm_data, arbitrary_data, false);
     } break;
 
     case ARBITRARY_DATA_CREATING_WAIT_SCREEN: {
