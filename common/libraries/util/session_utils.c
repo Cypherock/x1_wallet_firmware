@@ -48,13 +48,8 @@ void append_signature(uint8_t *payload, uint16_t payload_length, Message
 }
 
 void session_pre_init(Session *session, Message *session_pre_init_details) {
-    // random_buffer(session->device_random, DEVICE_RANDOM_SIZE);
-    uint8_t hardcoded[] = {0x01, 0x0B, 0x07, 0xE6, 0x03, 0x00, 0x01, 0x00,
-                           0x3F, 0x00, 0x46, 0x00, 0x11, 0x50, 0x56, 0x39,
-                           0x55, 0x32, 0x31, 0x20, 0x8B, 0x4B, 0x4C, 0x8F,
-                           0x0C, 0xAD, 0x37, 0x06, 0x70, 0xEA, 0x13, 0xA9};
+    random_generate(session->device_random, DEVICE_RANDOM_SIZE);
 
-    memcpy(session->device_random, hardcoded, DEVICE_RANDOM_SIZE);
     get_device_serial();
     memcpy(session->device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
 
@@ -70,7 +65,6 @@ void session_pre_init(Session *session, Message *session_pre_init_details) {
            session->device_id,
            DEVICE_SERIAL_SIZE);
 
-    session_pre_init_details->signature = (uint8_t *) malloc(SIGNATURE_SIZE);
     append_signature(session_pre_init_details->message,
                      DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE,
                      session_pre_init_details);
@@ -81,7 +75,6 @@ void byte_array_to_session_message(uint8_t *data_array, uint16_t msg_size,
     msg->message_size = msg_size - SIGNATURE_SIZE;
     msg->message = (uint8_t *) malloc(msg->message_size);
     memcpy(msg->message, data_array, msg->message_size);
-    msg->signature = (uint8_t *) malloc(SIGNATURE_SIZE);
     memcpy(msg->signature, data_array + msg->message_size,
            SIGNATURE_SIZE);
 }
@@ -130,8 +123,8 @@ bool session_init(Session *session, Message *session_init_details) {
     }
 
     session->session_age = bendian_byte_to_dec(session_init_details->message +
-                                               SESSION_ID_SIZE +
-                                               DEVICE_SERIAL_SIZE,
+                                                   SESSION_ID_SIZE +
+                                                   DEVICE_SERIAL_SIZE,
                                                sizeof(session->session_age));
 
     return true;

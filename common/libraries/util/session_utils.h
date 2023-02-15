@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
   uint16_t message_size;
   uint8_t *message;
-  uint8_t *signature;
+  uint8_t signature[SIGNATURE_SIZE];
   uint8_t postfix1[POSTFIX1_SIZE];
   uint8_t postfix2[POSTFIX2_SIZE];
 } Message;

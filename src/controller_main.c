@@ -700,9 +700,10 @@ void desktop_listener_task(lv_task_t* data)
                 Message session_pre_init_details;
                 session_pre_init(&session, &session_pre_init_details);
 
-                uint8_t *session_details_data_array = (uint8_t *) malloc
-                    (session_pre_init_details.message_size + SIGNATURE_SIZE +
-                        POSTFIX1_SIZE + POSTFIX2_SIZE);
+                uint8_t session_details_data_array[DEVICE_RANDOM_SIZE +
+                DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE +
+                POSTFIX2_SIZE];
+
                 uint8_t session_detail_data_array_size =
                     session_message_to_byte_array(session_pre_init_details,
                                                   session_details_data_array);
