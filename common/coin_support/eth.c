@@ -408,7 +408,6 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value
 
 bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
     return !((eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0) ||
-             (is_zero(eth_utxn_ptr->value, eth_utxn_ptr->value_size[0]) && eth_utxn_ptr->payload_size == 0) ||
              (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0])) ||
              (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0])) ||
              (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id) ||
