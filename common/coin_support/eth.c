@@ -462,12 +462,8 @@ void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
             free(buffer);
     } break;
     case MessageData_MessageType_PERSONAL_SIGN: {
-            size_t buffer_size = msg_data->data_bytes->size + 1;
-            char *buffer       = malloc(buffer_size);
-            memzero(buffer, buffer_size);
-            memcpy(buffer, (const char *)msg_data->data_bytes->bytes, msg_data->data_bytes->size);
-            *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE, sizeof(UI_TEXT_VERIFY_MESSAGE), buffer, buffer_size);
-            free(buffer);
+            *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE, sizeof(UI_TEXT_VERIFY_MESSAGE),
+                                           (const char *)msg_data->data_bytes->bytes, msg_data->data_bytes->size);
     } break;
     case MessageData_MessageType_SIGN_TYPED_DATA: {
             *node                 = ui_create_display_node(UI_TEXT_VERIFY_DOMAIN, sizeof(UI_TEXT_VERIFY_DOMAIN),

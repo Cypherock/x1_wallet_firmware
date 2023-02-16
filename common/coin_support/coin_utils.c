@@ -469,12 +469,12 @@ ui_display_node *ui_create_display_node(const char *title,
   size_t title_length = strnlen(title, title_size) + 1;
   result->title       = cy_malloc(title_length);
   memzero(result->title, title_length);
-  strncpy(result->title, title, title_length);
+  strncpy(result->title, title, title_length - 1);
 
   size_t value_length = strnlen(value, value_size) + 1;
   result->value       = cy_malloc(value_length);
   memzero(result->value, value_length);
-  strncpy(result->value, value, value_length);
+  strncpy(result->value, value, value_length - 1);
 
   result->next = NULL;
   return result;
