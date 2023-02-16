@@ -77,7 +77,7 @@ void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char 
       char hex_string[65] = {0};
       uint8_t array[32]   = {0};
       uint8_t offset      = 0;
-      memccpy(array, data_node->data->bytes, data_node->size, sizeof(array));
+      memcpy(array, data_node->data->bytes, sizeof(array));
 
       // if signed integer get 2's complement
       if (array[0] & 0x80) {
