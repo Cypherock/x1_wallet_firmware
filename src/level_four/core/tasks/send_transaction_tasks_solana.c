@@ -108,7 +108,6 @@ void send_transaction_tasks_solana() {
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
       snprintf(display, sizeof(display), "%s", address);
       ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_SOLANA: {
@@ -133,7 +132,6 @@ void send_transaction_tasks_solana() {
       snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
       ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
-      // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_SOLANA: {
@@ -155,7 +153,6 @@ void send_transaction_tasks_solana() {
       snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
       ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
-      // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_SOLANA: {
@@ -175,7 +172,6 @@ void send_transaction_tasks_solana() {
       char display[65];
       snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
       ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
 

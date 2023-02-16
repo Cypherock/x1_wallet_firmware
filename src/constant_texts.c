@@ -261,6 +261,7 @@ const char* ui_text_waiting_for_desktop = "Follow the\ninstructions on\nthe CySy
 const char* ui_heading_confirm_action = "Confirm action";
 const char* ui_heading_verify_amount = "Verify amount";
 const char *ui_heading_verify_transaction_fee = "Verify transaction fee";
+const char *ui_heading_verify_derivation_path = "Verify derivation path";
 
 
 // headings near specific

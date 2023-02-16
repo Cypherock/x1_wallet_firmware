@@ -115,7 +115,6 @@ void send_transaction_tasks_eth()
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
         snprintf(display, sizeof(display), "%s", address);
         ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, true);
-        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
@@ -124,7 +123,6 @@ void send_transaction_tasks_eth()
             instruction_scr_destructor();
             snprintf(display, sizeof(display), "%s Blind Signing\nProceed at your own risk!", LV_SYMBOL_WARNING);
             ui_scrollabe_page(ui_heading_confirm_action, display, MENU_SCROLL_HORIZONTAL, false);
-            // confirm_scr_init(display);
         } else {
             mark_event_over();
         }
@@ -137,8 +135,7 @@ void send_transaction_tasks_eth()
             eth_derivation_path_to_string(&var_send_transaction_data.transaction_metadata,path,sizeof(path));
             instruction_scr_destructor();
             snprintf(display, sizeof(display), "%s",path);
-            ui_scrollabe_page("Verify Derivation Path", display, MENU_SCROLL_HORIZONTAL, false);
-            // confirm_scr_init(display);
+            ui_scrollabe_page(ui_heading_verify_derivation_path, display, MENU_SCROLL_HORIZONTAL, false);
         } else {
             mark_event_over();
         }
@@ -162,7 +159,6 @@ void send_transaction_tasks_eth()
         nonce_dec_str[index - offset] = '\0';
         instruction_scr_destructor();
         ui_scrollable_page(ui_text_verify_nonce, (char *) nonce_dec_str, MENU_SCROLL_HORIZONTAL, true);
-        // address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
@@ -185,7 +181,6 @@ void send_transaction_tasks_eth()
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
         snprintf(display, sizeof(display), "%s", address);
         ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
@@ -251,7 +246,6 @@ void send_transaction_tasks_eth()
         instruction_scr_destructor();
         snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
         ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
-        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
@@ -264,7 +258,6 @@ void send_transaction_tasks_eth()
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));
         ui_scrollabe_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
-        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
@@ -297,7 +290,6 @@ void send_transaction_tasks_eth()
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

@@ -124,7 +124,6 @@ void view_seed_task()
                 secret);
             secret[wallet.arbitrary_data_size] = '\0';
             ui_scrollable_page(ui_text_confirm_data, (char *) secret, MENU_SCROLL_HORIZONTAL, false);
-            // address_scr_init(ui_text_confirm_data, (char *) secret, false);
         } else {
             recover_secret_from_shares(
                 BLOCK_SIZE, // visualise this as horizontal length

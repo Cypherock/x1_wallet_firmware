@@ -65,7 +65,6 @@ void tap_card_pair_card_tasks()
     switch (flow_level.level_four) {
     case PAIR_CARD_TAP_A_CARD_DUMMY:
         ui_scrollabe_page(ui_heading_confirm_action, ui_text_continue_with_pairing);
-        // confirm_scr_init(ui_text_continue_with_pairing);
         break;
 
     case PAIR_CARD_RED_FRONTEND:

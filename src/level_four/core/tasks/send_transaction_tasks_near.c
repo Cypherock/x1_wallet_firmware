@@ -100,7 +100,6 @@ void send_transaction_tasks_near() {
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
         ui_scrollable_page(ui_text_verify_nonce, (char*)nonce_dec_str, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_verify_nonce, (char*)nonce_dec_str, false);
     } break;
 
     case SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR: {
@@ -111,7 +110,6 @@ void send_transaction_tasks_near() {
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_create_from);
         snprintf(display, sizeof(display), "%.*s", (int)near_utxn.signer_id_length, near_utxn.signer);
         ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR: {
@@ -130,7 +128,6 @@ void send_transaction_tasks_near() {
             snprintf(display, sizeof(display), "%.*s", (int)account_length, account);
         }
         ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_NEAR: {
@@ -155,7 +152,6 @@ void send_transaction_tasks_near() {
         instruction_scr_destructor();
         snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index),0));
         ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
-        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
@@ -177,7 +173,6 @@ void send_transaction_tasks_near() {
             //TODO: add error handling / handling for other actions
         }
         ui_scrollabe_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
-        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_NEAR: {
@@ -202,7 +197,6 @@ void send_transaction_tasks_near() {
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

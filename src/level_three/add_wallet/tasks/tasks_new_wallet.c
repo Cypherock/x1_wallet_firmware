@@ -92,7 +92,6 @@ void tasks_add_new_wallet()
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         ui_scrollable_page(ui_text_confirm_wallet_name, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
@@ -112,8 +111,6 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_SKIP_PIN: {
         ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
-        // confirm_scr_init(ui_text_do_you_want_to_set_pin);
-        // confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
@@ -157,8 +154,6 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
         ui_scrollabe_page(ui_heading_confirm_action, ui_text_use_passphrase_question);
-        // confirm_scr_init(ui_text_use_passphrase_question);
-        // confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PROCESSING: {

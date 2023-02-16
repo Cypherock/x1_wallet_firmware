@@ -98,7 +98,6 @@ void receive_transaction_tasks_solana() {
       snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
       ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL,
                                  false);
-      // address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
 
@@ -138,7 +137,6 @@ void receive_transaction_tasks_solana() {
       char display[70] = {0};
       snprintf(display, sizeof(display), "%s", receive_transaction_data.solana_address);
       ui_scrollable_page(ui_text_receive_on, display, MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(ui_text_receive_on, display, true);
     } break;
 
     default:

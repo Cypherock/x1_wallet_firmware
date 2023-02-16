@@ -102,23 +102,19 @@ void level_three_advanced_settings_tasks()
         }
 
         ui_scrollabe_page(ui_heading_confirm_action, ui_text_sync_x1card_confirm);
-        // confirm_scr_init(ui_text_sync_x1card_confirm);
     } break;
 
 
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
         ui_scrollabe_page(ui_heading_confirm_action, ui_text_rotate_display_confirm);
-        // confirm_scr_init(ui_text_rotate_display_confirm);
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
         if(is_passphrase_disabled()) {
             ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_passphrase_step);
-            // confirm_scr_init(ui_text_enable_passphrase_step);
         }
         else{
             ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_passphrase_step);
-            // confirm_scr_init(ui_text_disable_passphrase_step);
         }
     } break;
 
@@ -239,11 +235,9 @@ void level_three_advanced_settings_tasks()
     case LEVEL_THREE_TOGGLE_LOGGING: {
         if (!is_logging_enabled()) {
             ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_log_export);
-            // confirm_scr_init(ui_text_enable_log_export);
         }
         else {
             ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_log_export);
-            // confirm_scr_init(ui_text_disable_log_export);
         }
     } break;
 #else

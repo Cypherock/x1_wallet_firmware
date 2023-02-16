@@ -105,7 +105,6 @@ void receive_transaction_tasks_eth()
         char display[65];
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 
@@ -159,7 +158,6 @@ void receive_transaction_tasks_eth()
         strncpy(receive_transaction_data.address, address_s, sizeof(receive_transaction_data.address));
         snprintf(display, sizeof(display), "%s", address_s);
         ui_scrollable_page(ui_text_receive_on, display, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
     } break;
 
     default:

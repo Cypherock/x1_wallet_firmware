@@ -154,6 +154,7 @@ extern const char* ui_text_waiting_for_desktop;
 extern const char* ui_heading_confirm_action;
 extern const char* ui_heading_verify_amount;
 extern const char *ui_heading_verify_transaction_fee;
+extern const char *ui_heading_verify_derivation_path;
 
 // headings near specific
 extern const char* ui_text_verify_create_from;

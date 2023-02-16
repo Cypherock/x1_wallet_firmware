@@ -66,7 +66,6 @@ void cyt_factory_reset() {
 
         case FACTORY_RESET_CONFIRM:
             ui_scrollabe_page(ui_heading_confirm_action, ui_text_confirm_factory_reset);
-            // confirm_scr_init(ui_text_confirm_factory_reset);
             break;
 
         case FACTORY_RESET_TAP_CARD1:

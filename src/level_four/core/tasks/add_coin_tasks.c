@@ -108,7 +108,6 @@ void add_coin_tasks()
         snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
         ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL,
                                    false);
-        // address_scr_init(ui_text_confirm_passphrase, display, false);
         memzero(display, sizeof(display));
     } break;
 

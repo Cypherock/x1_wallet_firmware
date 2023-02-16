@@ -100,7 +100,6 @@ void receive_transaction_tasks_near() {
       char display[65];
       snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
       ui_scrollable_page(ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
 
@@ -151,7 +150,6 @@ void receive_transaction_tasks_near() {
       snprintf(display, sizeof(display), "%s",
                receive_transaction_data.near_registered_account);
       ui_scrollable_page(ui_text_new_account_id, display, MENU_SCROLL_HORIZONTAL, true);
-      // address_scr_init(ui_text_new_account_id, display, true);
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_NEAR: {
@@ -177,7 +175,6 @@ void receive_transaction_tasks_near() {
       snprintf(display, sizeof(display), "%s", address_s);
 
       ui_scrollable_page(heading, display, MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(heading, display, true);
     } break;
 
     case RECV_TXN_WAIT_FOR_REPLACE_NEAR_SCREEN: {
@@ -208,8 +205,6 @@ void receive_transaction_tasks_near() {
       ui_scrollable_page(ui_text_confirm_account,
                                  acc_id[receive_transaction_data.near_acc_index],
                                  MENU_SCROLL_HORIZONTAL, false);
-      // address_scr_init(ui_text_confirm_account, acc_id[receive_transaction_data.near_acc_index], false);
-
     } break;
 
     case RECV_TXN_FINAL_SCREEN_NEAR: {

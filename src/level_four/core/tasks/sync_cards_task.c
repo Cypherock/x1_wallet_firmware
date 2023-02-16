@@ -94,7 +94,6 @@ void sync_cards_task(){
 
     case SYNC_CARDS_CURRENT_WALLET_CONFIRM:{
         ui_scrollable_page("Sync Wallet?", (char *)wallet.wallet_name, MENU_SCROLL_HORIZONTAL, false);
-        // address_scr_init("Sync Wallet?", (char *)wallet.wallet_name, false);
     } break;
     case SYNC_CARDS_CHECK_WALLET_PIN:{
         mark_event_over();
