@@ -24,7 +24,6 @@
  */
 typedef struct{
     char text[MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION];
-    char heading[20];
     const void *img;                                    // Image file object of type `lv_img_dsc_t`
     uint8_t img_x_offset;                               // X offset starting from left
     uint8_t img_y_offset;                               // Y offset starting from top
@@ -46,7 +45,6 @@ struct Multi_Instruction_Data
     bool one_cycle_completed; //if all the text has been shown once then this variable will be true else false
     bool destruct_on_click;   // if destruct_on_click == true the screen will destroy on a button click
     bool img_object;
-    bool heading_object;
     uint8_t total_strings;
     uint8_t index_of_current_string;
 };
@@ -66,7 +64,6 @@ struct Multi_Instruction_Object
     lv_obj_t *left_arrow;
     lv_obj_t *right_arrow;
     lv_obj_t *img;
-    lv_obj_t *heading;
 };
 
 /**

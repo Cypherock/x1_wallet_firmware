@@ -153,7 +153,7 @@ static void change_current_index(const lv_key_t PRESSED_KEY)
 
 static void update_text(uint8_t index){
     lv_label_set_static_text(obj->text, data->instruction_content[index].text);
-    if(data->instruction_content[index].heading[index]=='\0' && data->instruction_content[index].img == NULL){
+    if(data->instruction_content[index].img == NULL){
         lv_obj_align(obj->text, NULL, LV_ALIGN_CENTER, 0, 0);
         lv_img_set_src(obj->img, LV_SYMBOL_DUMMY "");
         lv_obj_set_pos(obj->img, 0, 0);
@@ -325,8 +325,6 @@ void multi_instruction_create()
     obj->text = lv_label_create(lv_scr_act(), NULL);
     obj->left_arrow = lv_label_create(lv_scr_act(), NULL);
     obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
-    if(data->heading_object)
-        obj->heading = lv_label_create(lv_scr_act(), NULL);
     obj->img = lv_img_create(lv_scr_act(), NULL);
 
     lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
@@ -363,8 +361,6 @@ void multi_instruction_create()
     lv_group_add_obj(ui_get_group(), obj->right_arrow);
     if(data->img_object)
         lv_group_add_obj(ui_get_group(), obj->img);
-    if(data->heading_object)
-        lv_group_add_obj(ui_get_group(), obj->heading);
 
     lv_indev_set_group(ui_get_indev(), ui_get_group());
     lv_obj_set_hidden(obj->left_arrow, true);
@@ -372,7 +368,7 @@ void multi_instruction_create()
     {
         lv_obj_set_hidden(obj->right_arrow, true);
     }
-    if(data->instruction_content[0].heading[0]=='\0' && data->instruction_content[0].img == NULL){
+    if(data->instruction_content[0].img == NULL){
         lv_obj_realign(obj->text);
         lv_obj_realign(obj->left_arrow);
         lv_obj_realign(obj->right_arrow);
@@ -425,9 +421,6 @@ void multi_instruction_with_image_init(instruction_content_t content[], const ui
         memcpy(&(data->instruction_content[i]), &content[i], sizeof(instruction_content_t));
         if(content[i].img != NULL){
             data->img_object |= 1;
-        }
-        if(content[i].heading[0] != '\0'){
-            data->heading_object |= 1;
         }
     }
 
