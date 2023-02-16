@@ -396,7 +396,7 @@ void check_invalid_wallets()
     bool fix = false;
     char display[64];
 
-    if(get_keystore_used_count() == 0){
+    if(get_keystore_used_count() < 4){
         tap_card_take_to_pairing();
         mark_error_screen(ui_text_error_no_card_paired);
         return;
