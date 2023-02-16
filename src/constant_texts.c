@@ -259,6 +259,9 @@ const char* ui_text_verification_cancelled = "Verification cancelled";
 const char* ui_text_verify_nonce = "Verify nonce";
 const char* ui_text_waiting_for_desktop = "Follow the\ninstructions on\nthe CySync app";
 const char* ui_heading_confirm_action = "Confirm action";
+const char* ui_heading_verify_amount = "Verify amount";
+const char *ui_heading_verify_transaction_fee = "Verify transaction fee";
+
 
 // headings near specific
 const char* ui_text_verify_create_from = "Verify Create from";

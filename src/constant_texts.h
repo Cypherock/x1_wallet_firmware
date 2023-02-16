@@ -20,8 +20,6 @@
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
-#define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
-#define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
 #define UI_TEXT_WALLET_LOCKED_WAIT_MSG "%s is currently locked\nWait for %d %s"
 #define UI_TEXT_PIN_INS1 "In next step you can setup PIN for %s"
@@ -154,6 +152,8 @@ extern const char* ui_text_verification_cancelled;
 extern const char* ui_text_verify_nonce;
 extern const char* ui_text_waiting_for_desktop;
 extern const char* ui_heading_confirm_action;
+extern const char* ui_heading_verify_amount;
+extern const char *ui_heading_verify_transaction_fee;
 
 // headings near specific
 extern const char* ui_text_verify_create_from;

@@ -123,7 +123,8 @@ void send_transaction_tasks_eth()
             char display[125] = {0};
             instruction_scr_destructor();
             snprintf(display, sizeof(display), "%s Blind Signing\nProceed at your own risk!", LV_SYMBOL_WARNING);
-            confirm_scr_init(display);
+            ui_scrollabe_page(ui_heading_confirm_action, display, MENU_SCROLL_HORIZONTAL, false);
+            // confirm_scr_init(display);
         } else {
             mark_event_over();
         }
@@ -135,8 +136,9 @@ void send_transaction_tasks_eth()
             char path[128] = {0};
             eth_derivation_path_to_string(&var_send_transaction_data.transaction_metadata,path,sizeof(path));
             instruction_scr_destructor();
-            snprintf(display, sizeof(display), "Verify Derivation Path\n%s",path);
-            confirm_scr_init(display);
+            snprintf(display, sizeof(display), "%s",path);
+            ui_scrollabe_page("Verify Derivation Path", display, MENU_SCROLL_HORIZONTAL, false);
+            // confirm_scr_init(display);
         } else {
             mark_event_over();
         }
@@ -159,7 +161,7 @@ void send_transaction_tasks_eth()
         ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
         nonce_dec_str[index - offset] = '\0';
         instruction_scr_destructor();
-        ui_scrollable_page("Verify nonce", (char *) nonce_dec_str, MENU_SCROLL_HORIZONTAL, true);
+        ui_scrollable_page(ui_text_verify_nonce, (char *) nonce_dec_str, MENU_SCROLL_HORIZONTAL, true);
         // address_scr_init("Verify nonce", (char *) nonce_dec_str, false);
     } break;
 
@@ -247,8 +249,9 @@ void send_transaction_tasks_eth()
         }
 
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
-        confirm_scr_init(display);
+        snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
+        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
@@ -257,10 +260,11 @@ void send_transaction_tasks_eth()
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee),
                            18);
-        snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
+        snprintf(display, sizeof(display), "%s\n%s", fee,
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));
-        confirm_scr_init(display);
+        ui_scrollabe_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
+        // confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
