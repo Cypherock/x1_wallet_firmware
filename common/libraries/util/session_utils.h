@@ -32,6 +32,7 @@ typedef struct {
   uint8_t device_random[DEVICE_RANDOM_SIZE];
   uint8_t device_id[DEVICE_SERIAL_SIZE];
   uint8_t session_id[SESSION_ID_SIZE];
+  uint8_t public_key[33];
   uint16_t session_age;
 } Session;
 #pragma pack(pop)
@@ -46,15 +47,19 @@ typedef struct {
 } Message;
 #pragma pack(pop)
 
-bool verify_session_signature(uint8_t *payload, uint16_t payload_length,
-                              uint8_t *buffer);
+extern uint8_t session_key_derv_data[12];
+
+void derive_public_key(Session *session);
+
+bool verify_session_signature(Session *session, uint8_t *payload, uint16_t
+payload_length, uint8_t *buffer);
 
 void session_pre_init(Session *session, Message *session_pre_init_details);
 
 bool session_init(Session *session, Message *session_init_details);
 
 void byte_array_to_session_message(uint8_t *data_array, uint16_t msg_size,
-                           Message *msg);
+                                   Message *msg);
 
 uint8_t session_message_to_byte_array(Message msg, uint8_t *data_array);
 

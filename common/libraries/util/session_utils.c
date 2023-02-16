@@ -1,12 +1,9 @@
 #include "session_utils.h"
 #include "controller_level_four.h"
 
-bool verify_session_signature(uint8_t *payload, uint16_t payload_length,
-                              uint8_t *buffer) {
+uint8_t session_key_derv_data[12] = {0};
 
-    uint8_t hash[32] = {0};
-    sha256_Raw(payload, payload_length, hash);
-    uint8_t session_key_derv_data[12] = {0};
+void derive_public_key(Session *session) {
     HDNode session_node;
     uint32_t index;
     char xpub[112] = {'\0'};
@@ -27,10 +24,17 @@ bool verify_session_signature(uint8_t *payload, uint16_t payload_length,
 
     index = read_be(session_key_derv_data + 8);
     hdnode_public_ckd(&session_node, index);
+}
+
+bool verify_session_signature(Session *session, uint8_t *payload, uint16_t
+payload_length, uint8_t *buffer) {
+
+    uint8_t hash[32] = {0};
+    sha256_Raw(payload, payload_length, hash);
 
     uint8_t
         status = ecdsa_verify_digest(&nist256p1,
-                                     session_node.public_key,
+                                     session->public_key,
                                      buffer,
                                      hash);
 
@@ -49,6 +53,8 @@ void append_signature(uint8_t *payload, uint16_t payload_length, Message
 
 void session_pre_init(Session *session, Message *session_pre_init_details) {
     random_generate(session->device_random, DEVICE_RANDOM_SIZE);
+
+    derive_public_key(session);
 
     get_device_serial();
     memcpy(session->device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
@@ -111,7 +117,7 @@ bool session_init(Session *session, Message *session_init_details) {
            DEVICE_SERIAL_SIZE);
     payload_length += DEVICE_SERIAL_SIZE;
 
-    if (!verify_session_signature(payload,
+    if (!verify_session_signature(session, payload,
                                   payload_length,
                                   session_init_details->signature)) {
         return false;
