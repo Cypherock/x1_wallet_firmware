@@ -395,10 +395,13 @@ void check_invalid_wallets()
 {
     bool fix = false;
     char display[64];
+    uint8_t paired_card_count = get_keystore_used_count();
 
-    if(get_keystore_used_count() == 0){
+    if(paired_card_count < MAX_KEYSTORE_ENTRY){
+        char msg[64] = {0};
+        snprintf(msg, sizeof(msg), "%u card(s) not paired with device", (MAX_KEYSTORE_ENTRY - paired_card_count));
         tap_card_take_to_pairing();
-        mark_error_screen(ui_text_error_no_card_paired);
+        mark_error_screen(paired_card_count == 0 ? ui_text_error_no_card_paired : msg);
         return;
     }
 
