@@ -145,6 +145,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
              size, token_name_len, &offset);
+
+    txn_metadata_ptr->is_token_transfer = strncmp(txn_metadata_ptr->token_name, ETHEREUM_TOKEN_SYMBOL,token_name_len) != 0;
+
     if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);

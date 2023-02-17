@@ -384,18 +384,19 @@ uint64_t hex2dec(const char *source) {
   return sum;
 }
 
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address)
-{
-  if (eth_unsigned_txn_ptr->payload_size && U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE)
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+                        uint8_t *address,
+                        const txn_metadata *metadata_ptr) {
+  if (eth_unsigned_txn_ptr->payload_size &&
+      U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer)
     memcpy(address, eth_unsigned_txn_ptr->payload + 16, sizeof(eth_unsigned_txn_ptr->to_address));
   else
     memcpy(address, eth_unsigned_txn_ptr->to_address, sizeof(eth_unsigned_txn_ptr->to_address));
 }
 
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value)
-{
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value, const txn_metadata *metadata_ptr) {
   if (eth_unsigned_txn_ptr->payload_size &&
-      U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) {
+      U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer) {
     byte_array_to_hex_string(eth_unsigned_txn_ptr->payload + EVM_FUNC_SIGNATURE_LENGTH + EVM_FUNC_PARAM_BLOCK_LENGTH,
                              EVM_FUNC_PARAM_BLOCK_LENGTH, value, 2 * EVM_FUNC_PARAM_BLOCK_LENGTH + 1);
     return 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
@@ -419,16 +420,19 @@ static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_pt
     if (eth_utxn_ptr->payload_size > 0) {
     switch (U32_READ_BE_ARRAY(eth_utxn_ptr->payload)) {
             case TRANSFER_FUNC_SIGNATURE:
-        result = PAYLOAD_CONTRACT_NOT_WHITELISTED;
-        for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
-          if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-            result = (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
-                         ? PAYLOAD_WHITELISTED
-                         : PAYLOAD_CONTRACT_INVALID;
-            break;
+        if (metadata_ptr->is_token_transfer) {
+          result = PAYLOAD_CONTRACT_NOT_WHITELISTED;
+          for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
+            if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
+              result =
+                  (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
+                      ? PAYLOAD_WHITELISTED
+                      : PAYLOAD_CONTRACT_INVALID;
+              break;
+            }
           }
+          break;
         }
-        break;
             default:
         result = (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) == ETH_UTXN_ABI_DECODE_OK)
                      ? PAYLOAD_WHITELISTED
