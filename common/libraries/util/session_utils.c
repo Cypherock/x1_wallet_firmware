@@ -3,7 +3,7 @@
 
 uint8_t session_key_derv_data[12] = {0};
 
-void derive_public_key(Session *session) {
+static void derive_public_key(Session *session) {
     HDNode session_node;
     uint32_t index;
     char xpub[112] = {'\0'};
@@ -24,9 +24,21 @@ void derive_public_key(Session *session) {
 
     index = read_be(session_key_derv_data + 8);
     hdnode_public_ckd(&session_node, index);
+
+    memcpy(session->public_key, session_node.public_key,
+           sizeof(session->public_key));
 }
 
-bool verify_session_signature(Session *session, uint8_t *payload, uint16_t
+static void derive_session_id(Session *session) {
+    uint8_t payload[SESSION_RANDOM_SIZE + DEVICE_RANDOM_SIZE];
+    memcpy(payload, session->session_random, SESSION_RANDOM_SIZE);
+    memcpy(payload + SESSION_RANDOM_SIZE, session->device_random,
+           DEVICE_RANDOM_SIZE);
+
+    sha256_Raw(payload, sizeof(payload), session->session_id);
+}
+
+bool verify_session_signature(Session *session, uint8_t *payload, uint8_t
 payload_length, uint8_t *buffer) {
 
     uint8_t hash[32] = {0};
@@ -38,42 +50,21 @@ payload_length, uint8_t *buffer) {
                                      buffer,
                                      hash);
 
-    return status;
-}
+    return (status == 0);
+};
 
-void append_signature(uint8_t *payload, uint16_t payload_length, Message
-*message) {
+void append_signature(uint8_t *payload, uint8_t payload_length, uint8_t
+*signature_details) {
     uint8_t hash[32] = {0};
     sha256_Raw(payload, payload_length, hash);
     auth_data_t signed_data = atecc_sign(hash);
-    memcpy(message->signature, signed_data.signature, SIGNATURE_SIZE);
-    memcpy(message->postfix1, signed_data.postfix1, POSTFIX1_SIZE);
-    memcpy(message->postfix2, signed_data.postfix2, POSTFIX2_SIZE);
-}
-
-void session_pre_init(Session *session, Message *session_pre_init_details) {
-    random_generate(session->device_random, DEVICE_RANDOM_SIZE);
-
-    derive_public_key(session);
-
-    get_device_serial();
-    memcpy(session->device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-
-    session_pre_init_details->message = (uint8_t *) malloc
-        (DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE);
-    session_pre_init_details->message_size = DEVICE_RANDOM_SIZE +
-        DEVICE_SERIAL_SIZE;
-
-    memcpy(session_pre_init_details->message,
-           session->device_random,
-           DEVICE_RANDOM_SIZE);
-    memcpy(session_pre_init_details->message + DEVICE_RANDOM_SIZE,
-           session->device_id,
-           DEVICE_SERIAL_SIZE);
-
-    append_signature(session_pre_init_details->message,
-                     DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE,
-                     session_pre_init_details);
+    uint8_t offset = 0;
+    memcpy(signature_details, signed_data.signature, SIGNATURE_SIZE);
+    offset += SIGNATURE_SIZE;
+    memcpy(signature_details + offset, signed_data.postfix1, POSTFIX1_SIZE);
+    offset += POSTFIX1_SIZE;
+    memcpy(signature_details + offset, signed_data.postfix2, POSTFIX2_SIZE);
+    offset += POSTFIX2_SIZE;
 }
 
 void byte_array_to_session_message(uint8_t *data_array, uint16_t msg_size,
@@ -99,39 +90,72 @@ uint8_t session_message_to_byte_array(Message msg, uint8_t *data_array) {
     return data_array_size;
 }
 
-bool session_init(Session *session, Message *session_init_details) {
+void session_pre_init(Session *session, uint8_t *session_details_data_array) {
+    random_generate(session->device_random, DEVICE_RANDOM_SIZE);
+    derive_public_key(session);
 
-    memcpy(session->session_id,
-           session_init_details->message,
-           SESSION_ID_SIZE);
+    get_device_serial();
+    memcpy(session->device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
 
-    uint8_t payload[SESSION_ID_SIZE + DEVICE_RANDOM_SIZE +
-        DEVICE_SERIAL_SIZE];
-    size_t payload_length = 0;
-    memcpy(payload, session->session_id, SESSION_ID_SIZE);
-    payload_length += SESSION_ID_SIZE;
-    memcpy(payload + payload_length, session->device_random,
+    uint8_t session_details_data_array_size = 0;
+
+    memcpy(session_details_data_array,
+           session->device_random,
            DEVICE_RANDOM_SIZE);
-    payload_length += DEVICE_RANDOM_SIZE;
+    session_details_data_array_size += DEVICE_RANDOM_SIZE;
+
+    memcpy(session_details_data_array + session_details_data_array_size,
+           session->device_id,
+           DEVICE_SERIAL_SIZE);
+    session_details_data_array_size += DEVICE_SERIAL_SIZE;
+
+    // Payload: Device Random + Device Id 
+    append_signature(session_details_data_array,
+                     session_details_data_array_size,
+                     session_details_data_array
+                         + session_details_data_array_size);
+}
+
+bool session_init(Session *session, uint8_t *session_init_details, uint8_t
+*verification_details) {
+    // Message contains: Session Random + Session Age
+    // Signature Payload: Session Random + Session Age + Device Id + Device Random
+    uint8_t offset = 0;
+    memcpy(session->session_random,
+           session_init_details,
+           SESSION_RANDOM_SIZE);
+    offset += SESSION_RANDOM_SIZE;
+
+    memcpy(&session->session_age, session_init_details + offset, sizeof
+        (session->session_age));
+    offset += sizeof(session->session_age);
+
+    uint8_t payload[SESSION_RANDOM_SIZE + sizeof(session->session_age) +
+        DEVICE_SERIAL_SIZE + DEVICE_RANDOM_SIZE];
+
+    size_t payload_length = 0;
+    memcpy(payload, session_init_details, offset);
+    payload_length += offset;
     memcpy(payload + payload_length, session->device_id,
            DEVICE_SERIAL_SIZE);
     payload_length += DEVICE_SERIAL_SIZE;
+    memcpy(payload + payload_length, session->device_random,
+           DEVICE_RANDOM_SIZE);
+    payload_length += DEVICE_RANDOM_SIZE;
 
     if (!verify_session_signature(session, payload,
                                   payload_length,
-                                  session_init_details->signature)) {
+                                  session_init_details + offset)) {
         return false;
     }
 
-    if (memcmp(session_init_details->message + SESSION_ID_SIZE,
-               session->device_id, DEVICE_SERIAL_SIZE) != 0) {
-        return false;
-    }
+    derive_session_id(session);
 
-    session->session_age = bendian_byte_to_dec(session_init_details->message +
-                                                   SESSION_ID_SIZE +
-                                                   DEVICE_SERIAL_SIZE,
-                                               sizeof(session->session_age));
+    // Verification details: Device Id + Signature + Postfix1 + Postfix2
+    memcpy(verification_details, session->device_id, DEVICE_SERIAL_SIZE);
+    offset = DEVICE_SERIAL_SIZE;
+    append_signature(payload, payload_length,
+                     verification_details + offset);
 
     return true;
 }

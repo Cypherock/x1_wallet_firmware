@@ -696,35 +696,40 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
             } break;
 
-            case SESSION_INIT_START: {
-                Message session_pre_init_details;
-                session_pre_init(&session, &session_pre_init_details);
-
+            case SESSION_INIT: {
+                // Send: Device Random (32) + Device Id (32) + Signature (64) + Postfix1 + Postfix2
                 uint8_t session_details_data_array[DEVICE_RANDOM_SIZE +
-                DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE +
-                POSTFIX2_SIZE];
+                    DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE +
+                    POSTFIX2_SIZE];
 
-                uint8_t session_detail_data_array_size =
-                    session_message_to_byte_array(session_pre_init_details,
-                                                  session_details_data_array);
+                session_pre_init(&session, session_details_data_array);
 
-                //  Device Random (32) + Device Serial (32) + Signature (64) + Postfix1 + Postfix2
-                transmit_data_to_app(SESSION_INIT_SEND_DEVICE_RANDOM,
+                transmit_data_to_app(SESSION_INIT_SEND_DETAILS,
                                      session_details_data_array,
-                                     session_detail_data_array_size);
+                                     DEVICE_RANDOM_SIZE +
+                                         DEVICE_SERIAL_SIZE + SIGNATURE_SIZE
+                                         + POSTFIX1_SIZE + POSTFIX2_SIZE);
 
             }
                 break;
 
-            case SESSION_INIT_RECV_SESSION_ID: {
-                Message session_init_details;
-                byte_array_to_session_message(data_array, msg_size,
-                                              &session_init_details);
+            case SESSION_ESTABLISH: {
+                // Send: Device Id (32) + Signature (64) + Postfix1 + Postfix2
+                uint8_t verification_details[DEVICE_SERIAL_SIZE +
+                    SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE];
 
-                if (!session_init(&session, &session_init_details)) {
+                if (!session_init(&session,
+                                  data_array,
+                                  verification_details)) {
                     LOG_CRITICAL("xxec %d:%d", false, __LINE__);
                     comm_reject_invalid_cmd();
                     clear_message_received_data();
+                } else {
+                    transmit_data_to_app(SESSION_ESTABLISH_VERIFY,
+                                         verification_details,
+                                         DEVICE_SERIAL_SIZE +
+                                             SIGNATURE_SIZE + POSTFIX1_SIZE
+                                             + POSTFIX2_SIZE);
                 }
             }
                 break;
