@@ -134,7 +134,6 @@ typedef enum commandType {
     SESSION_ESTABLISH = 102,          ///< Response by desktop with session random
     SESSION_ESTABLISH_VERIFY = 103,   ///< Response by device with session establishment verification
     DEVICE_FLOW_RESET_REQ = 0xFF            ///< unused enum
-
 } En_command_type_t;
 
 /**

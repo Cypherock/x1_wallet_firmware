@@ -171,9 +171,6 @@ Flash_Wallet wallet_for_flash;
 MessageData msg_data;
 ui_display_node *current_display_node = NULL;
 
-// create a new session object
-Session session;
-
 Flow_level* get_flow_level()
 {
     ASSERT((&flow_level) != NULL);
@@ -702,7 +699,7 @@ void desktop_listener_task(lv_task_t* data)
                     DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE +
                     POSTFIX2_SIZE];
 
-                session_pre_init(&session, session_details_data_array);
+                session_pre_init(session_details_data_array);
 
                 transmit_data_to_app(SESSION_INIT_SEND_DETAILS,
                                      session_details_data_array,
@@ -718,9 +715,7 @@ void desktop_listener_task(lv_task_t* data)
                 uint8_t verification_details[DEVICE_SERIAL_SIZE +
                     SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE];
 
-                if (!session_init(&session,
-                                  data_array,
-                                  verification_details)) {
+                if (!session_init(data_array, verification_details)) {
                     LOG_CRITICAL("xxec %d:%d", false, __LINE__);
                     comm_reject_invalid_cmd();
                     clear_message_received_data();
