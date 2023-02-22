@@ -145,6 +145,7 @@ typedef struct
     uint8_t eth_val_decimal[1];
 
     char *token_name;
+    bool is_token_transfer;
 
     uint64_t network_chain_id;
 

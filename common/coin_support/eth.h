@@ -148,6 +148,7 @@ uint64_t hex2dec(const char *source);
  *
  * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction instance.
  * @param [in] address                  Byte array of receiver's address.
+ * @param [in] metadata_ptr             Pointer to metadata instance
  *
  * @return
  * @retval
@@ -157,7 +158,9 @@ uint64_t hex2dec(const char *source);
  *
  * @note
  */
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address);
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+                        uint8_t *address,
+                        const txn_metadata *metadata_ptr);
 
 /**
  * @brief Get amount to be sent set in the eth_unsigned_txn instance
@@ -165,6 +168,7 @@ void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *a
  *
  * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction instance.
  * @param [in] value                    char array to store value.
+ * @param [in] metadata_ptr             Pointer to metadata instance
  *
  * @return
  * @retval
@@ -174,7 +178,7 @@ void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *a
  *
  * @note
  */
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value);
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value, const txn_metadata *metadata_ptr);
 
 /**
  * @brief Verifies the unsigned transaction.

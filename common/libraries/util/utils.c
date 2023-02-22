@@ -486,7 +486,7 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,const uint8_t decima
         i++;
     }
     if (!post_dec_digit && !pre_dec_digit) {
-        snprintf(amount_decimal_string, (amount_decimal_string_size) - 1, "0.0");
+        snprintf(amount_decimal_string, (amount_decimal_string_size) - 1, "0");
     }
 
     LOG_INFO("amt %s %d:%d", amount_string, decimal, i);
