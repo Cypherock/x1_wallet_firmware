@@ -166,7 +166,7 @@ int encode_data(const TypedDataStruct_TypedDataNode *data_node,
         }
       }
       case TypedDataStruct_TypedDataNode_Eip712DataType_STRING:
-        keccak_256(data_node->data->bytes, data_node->data->size, output);
+        keccak_256(data_node->data->bytes, data_node->size, output);
         *bytes_written += HASH_SIZE;
         break;
       case TypedDataStruct_TypedDataNode_Eip712DataType_ARRAY: {
