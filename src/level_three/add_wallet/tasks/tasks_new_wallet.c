@@ -110,7 +110,8 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
+      ui_scrollable_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin,
+                         MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
@@ -153,7 +154,8 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_use_passphrase_question);
+      ui_scrollable_page(ui_heading_confirm_action, ui_text_use_passphrase_question,
+                         MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case GENERATE_WALLET_PROCESSING: {

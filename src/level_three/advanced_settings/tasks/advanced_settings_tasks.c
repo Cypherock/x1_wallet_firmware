@@ -101,20 +101,22 @@ void level_three_advanced_settings_tasks()
             break;
         }
 
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_sync_x1card_confirm);
+        ui_scrollable_page(ui_heading_confirm_action, ui_text_sync_x1card_confirm,
+                           MENU_SCROLL_HORIZONTAL, false);
     } break;
 
-
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_rotate_display_confirm);
+        ui_scrollable_page(ui_heading_confirm_action, ui_text_rotate_display_confirm,
+                           MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
         if(is_passphrase_disabled()) {
-            ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_passphrase_step);
-        }
-        else{
-            ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_passphrase_step);
+            ui_scrollable_page(ui_heading_confirm_action, ui_text_enable_passphrase_step,
+                               MENU_SCROLL_HORIZONTAL, false);
+        } else {
+            ui_scrollable_page(ui_heading_confirm_action, ui_text_disable_passphrase_step,
+                               MENU_SCROLL_HORIZONTAL, false);
         }
     } break;
 
@@ -234,10 +236,11 @@ void level_three_advanced_settings_tasks()
 
     case LEVEL_THREE_TOGGLE_LOGGING: {
         if (!is_logging_enabled()) {
-            ui_scrollabe_page(ui_heading_confirm_action, ui_text_enable_log_export);
-        }
-        else {
-            ui_scrollabe_page(ui_heading_confirm_action, ui_text_disable_log_export);
+            ui_scrollable_page(ui_heading_confirm_action, ui_text_enable_log_export,
+                               MENU_SCROLL_HORIZONTAL, false);
+        } else {
+            ui_scrollable_page(ui_heading_confirm_action, ui_text_disable_log_export,
+                               MENU_SCROLL_HORIZONTAL, false);
         }
     } break;
 #else

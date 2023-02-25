@@ -64,7 +64,8 @@ void tap_card_pair_card_tasks()
     char display[40];
     switch (flow_level.level_four) {
     case PAIR_CARD_TAP_A_CARD_DUMMY:
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_continue_with_pairing);
+        ui_scrollable_page(ui_heading_confirm_action, ui_text_continue_with_pairing,
+                           MENU_SCROLL_HORIZONTAL, false);
         break;
 
     case PAIR_CARD_RED_FRONTEND:

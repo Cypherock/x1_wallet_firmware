@@ -72,7 +72,9 @@ void delete_wallet_task()
 {
     switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_need_all_x1cards_to_delete_wallet_entirely);
+        ui_scrollable_page(ui_heading_confirm_action,
+                           ui_text_need_all_x1cards_to_delete_wallet_entirely,
+                           MENU_SCROLL_HORIZONTAL, false);
         break;
     case DELETE_WALLET_ENTER_PIN:
         if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {

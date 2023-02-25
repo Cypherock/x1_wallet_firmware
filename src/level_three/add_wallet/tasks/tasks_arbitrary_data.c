@@ -123,7 +123,8 @@ void tasks_arbitrary_data()
     } break;
 
     case ARBITRARY_DATA_SKIP_PIN: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
+      ui_scrollable_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin,
+                         MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case ARBITRARY_DATA_PIN_INPUT: {

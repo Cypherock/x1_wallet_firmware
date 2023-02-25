@@ -133,12 +133,12 @@ void send_transaction_tasks()
         char display[225] = {0};
         uint8_t precision = get_floating_precision(value, SATOSHI_PER_BTC);
         snprintf(display, sizeof(display), "Receiver #%d\nSend %0.*f\n%s", var_send_transaction_data.transaction_confirmation_list_index + 1, precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
-        ui_scrollabe_page(ui_heading_confirm_action, display, MENU_SCROLL_HORIZONTAL, false);
+        ui_scrollable_page(ui_heading_confirm_action, display, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
         if (btc_get_txn_fee(&var_send_transaction_data.unsigned_transaction) > get_transaction_fee_threshold(&var_send_transaction_data.unsigned_transaction, BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index))) {
-            ui_scrollabe_page(ui_heading_confirm_action, ui_text_warning_transaction_fee_too_high, MENU_SCROLL_HORIZONTAL, false);
+            ui_scrollable_page(ui_heading_confirm_action, ui_text_warning_transaction_fee_too_high, MENU_SCROLL_HORIZONTAL, false);
         } else {
         	mark_event_over();
         }
@@ -152,7 +152,7 @@ void send_transaction_tasks()
         uint8_t precision = get_floating_precision(txn_fees, SATOSHI_PER_BTC);
         snprintf(display, sizeof(display), "%0.*f\n%s",
             precision, txn_fees_in_btc, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
-        ui_scrollabe_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
+        ui_scrollable_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD: {

@@ -122,7 +122,8 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_SKIP_PASSWORD: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin);
+      ui_scrollable_page(ui_heading_confirm_action, ui_text_do_you_want_to_set_pin,
+                         MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case RESTORE_WALLET_PIN_INPUT: {
@@ -165,7 +166,8 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_SKIP_PASSPHRASE: {
-        ui_scrollabe_page(ui_heading_confirm_action, ui_text_use_passphrase_question);
+      ui_scrollable_page(ui_heading_confirm_action, ui_text_use_passphrase_question,
+                         MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case RESTORE_WALLET_NUMBER_OF_WORDS_INPUT: {

@@ -151,7 +151,7 @@ void send_transaction_tasks_near() {
         if(!convert_byte_array_to_decimal_string(32,var_send_transaction_data.transaction_metadata.eth_val_decimal[0], amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
         instruction_scr_destructor();
         snprintf(display, sizeof(display), "%s\n%s", amount_decimal_string, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index),0));
-        ui_scrollabe_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
+        ui_scrollable_page(ui_heading_verify_amount, display, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
@@ -172,7 +172,7 @@ void send_transaction_tasks_near() {
         }else{
             //TODO: add error handling / handling for other actions
         }
-        ui_scrollabe_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
+        ui_scrollable_page(ui_heading_verify_transaction_fee, display, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_NEAR: {
