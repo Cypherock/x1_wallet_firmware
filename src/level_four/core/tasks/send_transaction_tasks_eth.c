@@ -246,7 +246,7 @@ void send_transaction_tasks_eth()
             i++;
         }
         if(!post_dec_digit && !pre_dec_digit){
-            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0.0");
+            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0");
         }
 
         instruction_scr_destructor();

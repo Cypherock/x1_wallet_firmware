@@ -316,6 +316,7 @@ static uint32_t serialize_unsigned_txn_to_sign(const unsigned_txn *utxn_ptr, con
 
 int32_t byte_array_to_unsigned_txn(const uint8_t *utxn_byte_array, const uint32_t size, unsigned_txn *utxn_ptr)
 {
+    memzero(utxn_ptr, sizeof(unsigned_txn));
     int64_t offset = 0, len = 0;
 
     s_memcpy(utxn_ptr->network_version, utxn_byte_array,
