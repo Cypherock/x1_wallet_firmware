@@ -56,6 +56,10 @@
  ******************************************************************************
  */
 #include "ui_address.h"
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+extern ekp_queue *ekp_q;
+#endif
 
 static struct Address_Data* data = NULL;
 static struct Address_Object* obj = NULL;
@@ -75,6 +79,12 @@ void address_scr_init(const char text[], const char address[], const bool hide_b
         snprintf(data->address, sizeof(data->address), "%s", address);
     }
 
+#ifdef DEV_BUILD
+    address_scr_create(false);
+    ekp_enqueue(ekp_q,LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(ekp_q,LV_KEY_ENTER,DEFAULT_DELAY);
+    return;
+#endif
     address_scr_create(hide_buttons);
 }
 
