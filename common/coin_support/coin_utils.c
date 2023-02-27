@@ -83,6 +83,8 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
 int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
+    if(metadata_byte_array == NULL || txn_metadata_ptr == NULL) return -1;
+    memzero(txn_metadata_ptr,sizeof(txn_metadata));
 
     int64_t offset = 0, len = 0;
 
@@ -163,6 +165,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
                                    
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
 
+    if(txn_data_ptr == NULL || data_byte_array == NULL) return -1;
+    memzero(txn_data_ptr,sizeof(Receive_Transaction_Data));
+
     int64_t offset = 0;
 
     s_memcpy(txn_data_ptr->wallet_id, data_byte_array, size, sizeof(txn_data_ptr->wallet_id), &offset);
@@ -193,6 +198,8 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 
 int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size) {
     if (data_ptr == NULL || byte_array == NULL) return -1;
+    memzero(data_ptr, sizeof(Add_Coin_Data));
+
     int64_t offset = 0;
 
     data_ptr->derivation_depth = byte_array[offset++];
