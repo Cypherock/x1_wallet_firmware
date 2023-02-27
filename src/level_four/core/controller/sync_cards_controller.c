@@ -72,11 +72,13 @@ extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 extern Flash_Wallet wallet_for_flash;
 static uint32_t valid_wallet_index = 0;
+uint32_t wallets_synced_count = 0;
 void sync_cards_controller()
 {
 
     switch(flow_level.level_three) {
     case SYNC_CARDS_START:{
+        wallets_synced_count = 0;
         valid_wallet_index++;
         flow_level.level_three = SYNC_CARDS_CURRENT_WALLET_CONFIRM;
     } break;
@@ -142,10 +144,14 @@ void sync_cards_controller()
         get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
         memcpy(&wallet_for_flash, flash_wallet, sizeof(Flash_Wallet));
         put_wallet_share_sec_flash(wallet_index, wallet_shamir_data.mnemonic_shares[4]);
-
+        
+        
         if(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS){
-            if(valid_wallet_index)
+            wallets_synced_count++;
+
+            if(valid_wallet_index) {
                 valid_wallet_index--;
+            }
             flow_level.level_three = SYNC_CARDS_CHECK_NEXT_WALLET;
         }else{
             flow_level.level_three = SYNC_CARDS_SUCCESS;
