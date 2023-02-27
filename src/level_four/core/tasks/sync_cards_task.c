@@ -121,7 +121,7 @@ void sync_cards_task(){
     case SYNC_CARDS_SUCCESS:{
         char display[35];
         if(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS)
-            snprintf(display, sizeof(display), "%ld%s", wallets_synced_count, ui_text_syncing_complete);
+            snprintf(display, sizeof(display), "%ld %s", wallets_synced_count, ui_text_syncing_complete);
         else{
             snprintf(display, sizeof(display), "Syncing %s complete", wallet.wallet_name);
         }
