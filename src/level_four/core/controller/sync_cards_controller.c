@@ -78,7 +78,6 @@ void sync_cards_controller()
 
     switch(flow_level.level_three) {
     case SYNC_CARDS_START:{
-        wallets_synced_count = 0;
         valid_wallet_index++;
         flow_level.level_three = SYNC_CARDS_CURRENT_WALLET_CONFIRM;
     } break;
@@ -172,6 +171,7 @@ void sync_cards_controller()
 
     case SYNC_CARDS_SUCCESS:{
         valid_wallet_index=0;
+        wallets_synced_count = 0;
         reset_flow_level();
     } break;
 
