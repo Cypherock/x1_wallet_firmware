@@ -58,7 +58,9 @@
 #include "near.h"
 
 void near_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, near_unsigned_txn *utxn) {
+    if(byte_array == NULL || utxn == NULL) return;
     memzero(utxn, sizeof(near_unsigned_txn));
+
     uint16_t offset = 0;
     utxn->signer_id_length = U32_READ_LE_ARRAY(byte_array);
     offset += 4;

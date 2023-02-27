@@ -92,7 +92,9 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error)
 }
 
 int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn) {
+  if(byte_array == NULL || utxn == NULL) return SOL_ERROR;
   memzero(utxn, sizeof(solana_unsigned_txn));
+
   uint16_t offset = 0;
   int error       = 0;
 

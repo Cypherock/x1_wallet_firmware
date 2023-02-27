@@ -501,7 +501,9 @@ void eth_init_msg_data(MessageData *msg_data) {
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
                                    size_t byte_array_len, eth_unsigned_txn *unsigned_txn_ptr, const txn_metadata *metadata_ptr)
 {
+  if(eth_unsigned_txn_byte_array == NULL || unsigned_txn_ptr == NULL || metadata_ptr == NULL) return -1; 
   memzero(unsigned_txn_ptr,sizeof(eth_unsigned_txn));
+
   seq_type type = NONE;
   int64_t offset = 0;
   uint64_t decoded_len = 0;
