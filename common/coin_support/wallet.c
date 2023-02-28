@@ -61,6 +61,7 @@
 #include <string.h>
 #include "rfc7539.h"
 #include "options.h"
+#include "wallet_utilities.h"
 
 /// Global Wallet instance.
 Wallet CONFIDENTIAL wallet = {
@@ -165,3 +166,17 @@ bool verify_checksum(const Wallet *wallet) {
     calculate_checksum(wallet, checksum);
     return (memcmp(wallet->checksum, checksum, sizeof(wallet->checksum)) == 0);
 }
+
+bool check_wallet_id(const Wallet *p_selected_wallet, const char *p_mnemonics) {
+    if ((NULL == p_selected_wallet) || (NULL == p_mnemonics)) {
+        return false;
+    }
+
+    uint8_t recovered_wallet_id[WALLET_ID_SIZE];
+    memzero(recovered_wallet_id, WALLET_ID_SIZE);
+        
+    calculate_wallet_id(&(recovered_wallet_id[0]), p_mnemonics);
+    return (memcmp(&(recovered_wallet_id[0]), &(p_selected_wallet->wallet_id[0]), WALLET_ID_SIZE) == 0); 
+}
+
+

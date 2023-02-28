@@ -181,6 +181,9 @@ void sign_message_controller_eth() {
             const char *mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
             ASSERT(mnemo != NULL);
 
+            /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+            ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+ 
             uint8_t sig[65] = {0};
 
             eth_sign_msg_data(&msg_data,

@@ -148,6 +148,10 @@ void receive_transaction_controller()
         memzero(wallet_shamir_data.share_encryption_data, sizeof(wallet_shamir_data.share_encryption_data));
         mnemonic_clear();
         const char* mnemo = mnemonic_from_data(secret,wallet.number_of_mnemonics * 4 / 3);
+        
+        /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+        ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+        
         HDNode node;
         uint8_t seed[64];
 

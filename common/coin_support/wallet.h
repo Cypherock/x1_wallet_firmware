@@ -240,4 +240,19 @@ void calculate_checksum(const Wallet *wallet, uint8_t *checksum);
  */
 bool verify_checksum(const Wallet *wallet);
 
+/**
+ * @brief This function verifies if mnemonics correspond to a particular wallet
+ * This function computes the wallet_id from p_menmonics and compares the result
+ * against wallet_id member of struct Wallet
+ * It is assumed that wallet_id is popoulated in struct pointed by p_selected_wallet
+ * @param p_selected_wallet : Pointer to a Wallet instance
+ * @param p_mnemonics: Pointer to mnemonics 
+ *
+ * @return Wallet ID comparison status 
+ * @retval true If the mnemonics result in the same wallet ID as populated in p_selected_wallet 
+ * @retval false Otherwise
+ */
+bool check_wallet_id(const Wallet *p_selected_wallet, const char *p_mnemonics); 
+
 #endif
+

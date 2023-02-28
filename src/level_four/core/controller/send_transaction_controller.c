@@ -220,6 +220,10 @@ void send_transaction_controller()
             secret);
         mnemonic_clear();
         const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+
+        /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+        ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+ 
         if (input_index == 0 && !validate_change_address(&var_send_transaction_data.unsigned_transaction,
             &var_send_transaction_data.transaction_metadata, mnemo, wallet_credential_data.passphrase)) {
             instruction_scr_destructor();

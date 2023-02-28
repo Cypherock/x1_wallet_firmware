@@ -232,6 +232,9 @@ void send_transaction_controller_eth()
         const char* mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
         ASSERT(mnemo != NULL);
 
+        /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+        ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+ 
         uint8_t sig[65];
         sig_unsigned_byte_array(eth_unsigned_txn_byte_array, eth_unsigned_txn_len,
                 (const txn_metadata*) &var_send_transaction_data.transaction_metadata, mnemo, wallet_credential_data.passphrase, sig);

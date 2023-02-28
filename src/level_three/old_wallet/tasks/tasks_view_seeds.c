@@ -135,6 +135,10 @@ void view_seed_task()
             const char *mnemo = mnemonic_from_data(secret, BLOCK_SIZE);
 
             ASSERT(mnemo != NULL);
+
+            /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+            ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+ 
             __single_to_multi_line(mnemo, strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH), words);
             mnemonic_clear();
 

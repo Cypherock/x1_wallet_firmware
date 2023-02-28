@@ -146,6 +146,10 @@ void add_coin_controller()
         const char* mnemo = mnemonic_from_data(secret,wallet.number_of_mnemonics * 4 / 3);
 
         ASSERT(mnemo != NULL);
+
+        /* Assert if the recovered mnemonics match the corresponding wallet_id of the selected wallet */ 
+        ASSERT (true == check_wallet_id((const Wallet *)&wallet, mnemo));
+ 
         uint8_t seed[64]={0};
         const char *curve = NULL;
         const uint32_t coin_index = add_coin_data.derivation_path[1];
