@@ -148,6 +148,7 @@ void level_one_controller()
             }
             cy_exit_flow();
         }
+        memcpy(wallet.wallet_id, get_wallet_id(index), WALLET_ID_SIZE);
         memcpy(
             wallet.wallet_name,
             get_wallet_name(index), NAME_SIZE);
