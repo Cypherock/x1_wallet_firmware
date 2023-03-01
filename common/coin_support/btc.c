@@ -671,8 +671,6 @@ bool validate_change_address(const unsigned_txn *utxn_ptr, const txn_metadata *t
         change_address = utxn_ptr->output[index].script_public_key + 3;
     else return false;
 
-    if (U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BITCOIN || U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BTC_TEST)
-        dec_to_hex(0x80000054, (uint8_t *) txn_metadata_ptr->purpose_index, 4);
     get_address_node(txn_metadata_ptr, -1, mnemonic, passphrase, &hdnode);
     memzero(hdnode.chain_code, sizeof(hdnode.chain_code));
     memzero(hdnode.private_key, sizeof(hdnode.private_key));

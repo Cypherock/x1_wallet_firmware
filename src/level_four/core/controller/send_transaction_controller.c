@@ -223,7 +223,7 @@ void send_transaction_controller()
         if (input_index == 0 && !validate_change_address(&var_send_transaction_data.unsigned_transaction,
             &var_send_transaction_data.transaction_metadata, mnemo, wallet_credential_data.passphrase)) {
             instruction_scr_destructor();
-            comm_reject_request(SEND_TXN_SENDING_SIGNED_TXN, 0x02);
+            comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0x02);
             mark_error_screen(ui_text_btc_change_address_mismatch);
             reset_flow_level();
             return;
