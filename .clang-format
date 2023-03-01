@@ -1,8 +1,7 @@
 ---
 BasedOnStyle: Chromium
 PointerAlignment: Right
-ColumnLimit: 100
-IndentWidth: 4
+ColumnLimit: 120
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
 ReflowComments: false
