@@ -81,6 +81,7 @@
 
 #include "controller_main.h"
 #include <string.h>
+#include "pb_decode.h"
 #include "application_startup.h"
 #include "arbitrum.h"
 #include "avalanche.h"
@@ -93,6 +94,7 @@
 #include "controller_level_one.h"
 #include "cryptoauthlib.h"
 #include "etc.h"
+#include "eth.h"
 #include "fantom.h"
 #include "harmony.h"
 #include "near.h"
@@ -161,6 +163,13 @@ Counter counter;
  * 
  */
 Flash_Wallet wallet_for_flash;
+
+/**
+ * @brief Message data for wallet connect EIP-712 using protobuf 
+ * 
+ */
+MessageData msg_data;
+ui_display_node *current_display_node = NULL;
 
 Flow_level* get_flow_level()
 {
@@ -241,6 +250,7 @@ void reset_flow_level()
     memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
     memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
     cy_free();
+    pb_release(MessageData_fields, &msg_data);
 }
 
 void reset_next_event_flag()
@@ -592,6 +602,39 @@ void desktop_listener_task(lv_task_t* data)
                 clear_message_received_data();
             } break;
 
+            case SIGN_MSG_START: {
+                if (wallet_selector(data_array)) {
+                    CY_Reset_Not_Allow(false);
+                    uint16_t offset = WALLET_ID_SIZE;
+                    uint32_t coin_index;
+                    if (byte_array_to_txn_metadata(data_array + offset, msg_size - offset,
+                                                   &var_send_transaction_data.transaction_metadata) == -1) {
+                        clear_message_received_data();
+                        comm_reject_invalid_cmd();
+                        return;
+                    }
+                    flow_level.show_desktop_start_screen                          = true;
+                    var_send_transaction_data.transaction_confirmation_list_index = 0;
+                    flow_level.level_one                                          = LEVEL_TWO_OLD_WALLET;
+
+                    coin_index = BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index);
+
+                    if (coin_index == ETHEREUM) {
+                        flow_level.level_two = LEVEL_THREE_SIGN_MESSAGE_ETH;
+                        snprintf(
+                            flow_level.confirmation_screen_text, sizeof(flow_level.confirmation_screen_text),
+                            UI_TEXT_SIGN_PROMPT, var_send_transaction_data.transaction_metadata.token_name,
+                            get_coin_name(coin_index, var_send_transaction_data.transaction_metadata.network_chain_id),
+                            wallet.wallet_name);
+                    }
+                    if (!validate_txn_metadata(&var_send_transaction_data.transaction_metadata)) {
+                        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+                        reset_flow_level();
+                    }
+                }
+                clear_message_received_data();
+            } break;
+
             case RECV_TXN_START: {
                 if (wallet_selector(data_array)) {
                     CY_Reset_Not_Allow(false);
@@ -601,7 +644,7 @@ void desktop_listener_task(lv_task_t* data)
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index),
-                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.chain_index),
+                        BYTE_ARRAY_TO_UINT32(receive_transaction_data.change_index),
                         BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index)};
                     uint8_t depth =
                         path[1] == SOLANA ? sol_get_derivation_depth(receive_transaction_data.address_tag) : 5;

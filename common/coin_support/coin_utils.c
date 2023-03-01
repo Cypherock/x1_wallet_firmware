@@ -83,6 +83,8 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
 int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
+    if(metadata_byte_array == NULL || txn_metadata_ptr == NULL) return -1;
+    memzero(txn_metadata_ptr,sizeof(txn_metadata));
 
     int64_t offset = 0, len = 0;
 
@@ -101,7 +103,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataInputIndex = 0;
     for (; metadataInputIndex < *txn_metadata_ptr->input_count; metadataInputIndex++) {
         address_type *input = &txn_metadata_ptr->input[metadataInputIndex];
-        s_memcpy(input->chain_index, metadata_byte_array, size, sizeof(input->chain_index), &offset);
+        s_memcpy(input->change_index, metadata_byte_array, size, sizeof(input->change_index), &offset);
         s_memcpy(input->address_index, metadata_byte_array, size, sizeof(input->address_index), &offset);
     }
 
@@ -115,7 +117,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataOutputIndex = 0;
     for (; metadataOutputIndex < 1; metadataOutputIndex++) {
         address_type *output = &txn_metadata_ptr->output[metadataOutputIndex];
-        s_memcpy(output->chain_index, metadata_byte_array, size, sizeof(output->chain_index), &offset);
+        s_memcpy(output->change_index, metadata_byte_array, size, sizeof(output->change_index), &offset);
         s_memcpy(output->address_index, metadata_byte_array, size, sizeof(output->address_index), &offset);
     } 
 
@@ -128,7 +130,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
     uint8_t metadataChangeIndex = 0;
     for (; metadataChangeIndex < *txn_metadata_ptr->change_count; metadataChangeIndex++) {
         address_type *change = &txn_metadata_ptr->change[metadataChangeIndex];
-        s_memcpy(change->chain_index, metadata_byte_array, size, sizeof(change->chain_index), &offset);
+        s_memcpy(change->change_index, metadata_byte_array, size, sizeof(change->change_index), &offset);
         s_memcpy(change->address_index, metadata_byte_array, size, sizeof(change->address_index), &offset);
     }
 
@@ -145,6 +147,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
              size, token_name_len, &offset);
+
+    txn_metadata_ptr->is_token_transfer = strncmp(txn_metadata_ptr->token_name, ETHEREUM_TOKEN_SYMBOL,token_name_len) != 0;
+
     if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
@@ -160,13 +165,16 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
                                    
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
 
+    if(txn_data_ptr == NULL || data_byte_array == NULL) return -1;
+    memzero(txn_data_ptr,sizeof(Receive_Transaction_Data));
+
     int64_t offset = 0;
 
     s_memcpy(txn_data_ptr->wallet_id, data_byte_array, size, sizeof(txn_data_ptr->wallet_id), &offset);
     s_memcpy(txn_data_ptr->purpose, data_byte_array, size, sizeof(txn_data_ptr->purpose), &offset);
     s_memcpy(txn_data_ptr->coin_index, data_byte_array, size, sizeof(txn_data_ptr->coin_index), &offset);
     s_memcpy(txn_data_ptr->account_index, data_byte_array, size, sizeof(txn_data_ptr->account_index), &offset);
-    s_memcpy(txn_data_ptr->chain_index, data_byte_array, size, sizeof(txn_data_ptr->chain_index), &offset);
+    s_memcpy(txn_data_ptr->change_index, data_byte_array, size, sizeof(txn_data_ptr->change_index), &offset);
     s_memcpy(txn_data_ptr->address_index, data_byte_array, size, sizeof(txn_data_ptr->address_index), &offset);
 
     size_t token_name_len = strnlen((const char*)(data_byte_array+offset),size - offset ) + 1;
@@ -190,6 +198,8 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 
 int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size) {
     if (data_ptr == NULL || byte_array == NULL) return -1;
+    memzero(data_ptr, sizeof(Add_Coin_Data));
+
     int64_t offset = 0;
 
     data_ptr->derivation_depth = byte_array[offset++];
@@ -244,10 +254,10 @@ void get_address_node(const txn_metadata *txn_metadata_ptr, const int16_t index,
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index));
     hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index));
     if (index == -1) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->change[0].address_index));
     } else if (index >= 0) {
-        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].chain_index));
+        hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].change_index));
         hdnode_private_ckd(hdnode, BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[index].address_index));
     }
     hdnode_fill_public_key(hdnode);
@@ -439,18 +449,18 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         return false;
     if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
         (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR || BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)){
-        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] < 0x80 ||
+        if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] < 0x80 ||
                 mdata_ptr->input->address_index[0] < 0x80))
             return false;
         return true;
     }
-    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->input_count[0] > 0 && (mdata_ptr->input->change_index[0] >= 0x80 ||
             mdata_ptr->input->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->output_count[0] > 0 && (mdata_ptr->output->change_index[0] >= 0x80 ||
             mdata_ptr->output->address_index[0] >= 0x80))
         return false;
-    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->chain_index[0] >= 0x80 ||
+    if (mdata_ptr->change_count[0] > 0 && (mdata_ptr->change->change_index[0] >= 0x80 ||
             mdata_ptr->change->address_index[0] >= 0x80))
         return false;
     if (mdata_ptr->eth_val_decimal[0] > 18) return false;
@@ -458,6 +468,26 @@ bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
         BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == ETHEREUM && mdata_ptr->token_name[0] == '\0')
         return false;
     return true;
+}
+ui_display_node *ui_create_display_node(const char *title,
+                                        const size_t title_size,
+                                        const char *value,
+                                        const size_t value_size) {
+  ui_display_node *result = cy_malloc(sizeof(ui_display_node));
+  memzero(result, sizeof(ui_display_node));
+
+  size_t title_length = strnlen(title, title_size) + 1;
+  result->title       = cy_malloc(title_length);
+  memzero(result->title, title_length);
+  strncpy(result->title, title, title_length - 1);
+
+  size_t value_length = strnlen(value, value_size) + 1;
+  result->value       = cy_malloc(value_length);
+  memzero(result->value, value_length);
+  strncpy(result->value, value, value_length - 1);
+
+  result->next = NULL;
+  return result;
 }
 
 void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t byte_len) {
@@ -537,4 +567,37 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     }
 
     return status;
+}
+
+FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
+                                                  const size_t path_length,
+                                                  const bool harden_all,
+                                                  char *output,
+                                                  const size_t out_len) {
+    if (out_len == 0 || output == NULL || path == NULL)
+        return FRC_INVALID_ARGUMENTS;
+
+    int offset = 0;
+    offset += snprintf(output + offset, out_len - offset, "m");
+
+    for (int i = 0; i < path_length; i++) {
+        const bool hardened  = path[i] & 0x80000000;
+        const uint32_t value = path[i] & 0x7FFFFFFF;
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        offset += snprintf(output + offset, out_len - offset, "/%ld", value);
+
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+
+        if (harden_all || hardened)
+            offset += snprintf(output + offset, out_len - offset, "'");
+
+        //extra check needed as snprintf returns estimated size rather than actual size written
+        if (out_len <= offset)
+            return FRC_SIZE_EXCEEDED;
+    }
+    return FRC_SUCCESS;
 }
