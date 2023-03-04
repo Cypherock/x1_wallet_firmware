@@ -267,3 +267,7 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
 
   return status;
 }
+
+uint8_t solana_get_decimal(){
+  return SOLANA_DECIMAL;
+}
