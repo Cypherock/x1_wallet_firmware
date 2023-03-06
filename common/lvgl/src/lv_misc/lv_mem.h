@@ -22,6 +22,8 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 #include "lv_log.h"
+#include "logger.h"
+#include "assert_conf.h"
 
 /*********************
  *      DEFINES
@@ -115,11 +117,19 @@ uint32_t lv_mem_get_size(const void * data);
  * p pointer to a memory
  */
 #if LV_USE_LOG == 0
+/**
+* @brief Custom handling for lv_mem_assert to prevent
+* size of binary when LV_USE_LOG is enabled
+*/
 #define lv_mem_assert(p)                                                                                               \
     {                                                                                                                  \
-        if(p == NULL)                                                                                                  \
-            while(1)                                                                                                   \
-                ;                                                                                                      \
+        if(p == NULL) {                                                                                                \
+            lv_mem_monitor_t mon;                                                                                      \
+            lv_mem_monitor(&mon);                                                                                      \
+            logger("LVGL:[%ld / %ld - u:%d\%, f:%d\%]\n\n", mon.free_size, mon.total_size, mon.used_pct,               \
+                   mon.frag_pct);                                                                                      \
+            ASSERT(false);                                                                                             \
+        }                                                                                                              \
     }
 #else
 #define lv_mem_assert(p)                                                                                               \

@@ -111,7 +111,9 @@ const char* ui_text_logging_export_options[] = {
 // wallet creation
 const char* ui_text_verification_is_now_complete_messages[] = {
     "Wallet created successfully!",
+    "You can view the seed phrase on the device",
     "You'll need this device and a card to make transactions",
+    "You'll require the PIN to view seed or transact",
     "To get started export this wallet to the CySync app",
     "Press the center button to return to the main menu",
 };
@@ -361,7 +363,7 @@ const char* ui_text_cannot_verify_card_contact_support = "Couldn't verify card! 
 const char* ui_text_wrong_btc_transaction = "Wrong transaction formatting";
 const char* ui_text_btc_change_address_mismatch = "Change address mismatch";
 const char* ui_text_worng_eth_transaction = "Invalid transaction detected";
-const char* ui_text_error_no_card_paired = "No card paired with device";
+const char* ui_text_error_no_card_paired = "No cards paired with device";
 const char* ui_text_error_pair_all_cards = "Pair all four cards first";
 const char* ui_text_error_pair_atleast_2_cards = "Pair at least two cards to restore";
 const char* ui_text_card_pairing_success = "Card pairing successful";

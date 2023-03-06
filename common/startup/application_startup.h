@@ -52,7 +52,7 @@
  */
 #define POLLING_TIME 10
 /// Interval defined for user inactivity in a flow in milli seconds
-#define INACTIVITY_TIME (120 * 1000)
+#define INACTIVITY_TIME (300 * 1000)
 
 
 

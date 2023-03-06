@@ -102,7 +102,7 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
-      char display[65];
+      char display[75];
       if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
       else
@@ -112,7 +112,7 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_2: {
       
-      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_TIME);
+      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_LONG_STRING);
     
     } break;
 
@@ -196,7 +196,20 @@ void tasks_add_new_wallet()
 
     case GENERATE_WALLET_SUCCESS_MESSAGE: {
         instruction_scr_destructor();
-        multi_instruction_init(ui_text_verification_is_now_complete_messages, 4, DELAY_LONG_STRING, true);
+        const char *messages[6] = {
+            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
+            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
+            ui_text_verification_is_now_complete_messages[5], NULL};
+        uint8_t count = 5;
+
+        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+            messages[3] = ui_text_verification_is_now_complete_messages[3];
+            messages[4] = ui_text_verification_is_now_complete_messages[4];
+            messages[5] = ui_text_verification_is_now_complete_messages[5];
+            count = 6;
+        }
+
+        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
     } break;
 
     case GENERATE_WALLET_FAILED_MESSAGE:

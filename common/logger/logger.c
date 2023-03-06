@@ -68,7 +68,6 @@
 #include "app_error.h"
 
 #include "communication.h"
-#include "logger.h"
 
 extern const char *GIT_REV;
 extern const char *GIT_TAG;
