@@ -140,14 +140,14 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
                 }
 
                 helper_get_gendig_hash(slot_8_serial, auth_serial_packet
-                    .serial, tempkey_hash, auth_serial_packet.postfix1, atecc_data);
+                    .serial, tempkey_hash, auth_serial_packet.postfix1, &atecc_data);
 
                 sign_internal_param.message=tempkey_hash;
                 sign_internal_param.digest=final_hash;
 
                 helper_sign_internal_msg(&sign_internal_param,
                                          SIGN_MODE_INTERNAL,
-                                         slot_2_auth_key, slot_8_serial, atecc_data);
+                                         slot_2_auth_key, slot_8_serial, &atecc_data);
                 {
                     uint8_t result = ecdsa_verify_digest(&nist256p1, get_auth_public_key(), auth_serial_packet.signature, sign_internal_param.digest);
                     if (atecc_data.status != ATCA_SUCCESS || result != 0){
@@ -225,7 +225,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
 
                 helper_get_gendig_hash(slot_5_challenge, challenge_no,
                                        tempkey_hash, auth_challenge_packet
-                                           .postfix1, atecc_data);
+                                           .postfix1, &atecc_data);
 
                 sign_internal_param.message=tempkey_hash;
                 sign_internal_param.digest=final_hash;
@@ -233,7 +233,7 @@ void __attribute__((optimize("O0"))) device_authentication_controller(){
                 helper_sign_internal_msg(&sign_internal_param,
                                          SIGN_MODE_INTERNAL,
                                          slot_2_auth_key, slot_5_challenge,
-                                         atecc_data);
+                                         &atecc_data);
 
                 //overwrite challenge slot to signature generation on same challenge
                 memset(challenge_no, 0, sizeof(challenge_no));

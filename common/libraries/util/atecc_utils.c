@@ -42,14 +42,14 @@ void helper_get_gendig_hash(atecc_slot_define_t slot,
                             uint8_t *data,
                             uint8_t *digest,
                             uint8_t *postfix,
-                            atecc_data_t atecc_value) {
+                            atecc_data_t *atecc_value) {
     if (digest == NULL || data == NULL || postfix == NULL) {
         return;
     }
 
     uint8_t tempkey_init[96] = {0};
     uint8_t atecc_serial[9];
-    atecc_value.status = atcab_read_serial_number(atecc_serial);
+    atecc_value->status = atcab_read_serial_number(atecc_serial);
     memcpy(tempkey_init, data, 32);
     postfix[0] = tempkey_init[32] = 0x15;
     postfix[1] = tempkey_init[33] = 0x02;
@@ -66,7 +66,7 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
                                      uint8_t mode,
                                      uint8_t priv_key_id,
                                      uint8_t data_key_id,
-                                     atecc_data_t atecc_value) {
+                                     atecc_data_t *atecc_value) {
     uint8_t msg[55];
     uint8_t cfg[128] = {0}, sn[9] = {0};
     atca_temp_key_t temp_key = {0};
@@ -76,11 +76,11 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
     temp_key.valid = 1;
     temp_key.source_flag = 1;
 
-    atecc_value.status = atcab_read_config_zone(cfg);
+    atecc_value->status = atcab_read_config_zone(cfg);
     memcpy(temp_key.value, param->message, 32);
     param->temp_key = &temp_key;
     helper_config_to_sign_internal(ATECC608A, param, cfg);
-    atecc_value.status = atcab_read_serial_number(sn);
+    atecc_value->status = atcab_read_serial_number(sn);
 
     if (param == NULL || param->temp_key == NULL) {
         return ATCA_BAD_PARAM;
@@ -201,7 +201,7 @@ auth_data_t atecc_sign(uint8_t *hash) {
 
         helper_get_gendig_hash(slot_5_challenge, challenge_no,
                                tempkey_hash, auth_challenge_packet
-                                   .postfix1, atecc_data);
+                                   .postfix1, &atecc_data);
 
         sign_internal_param.message = tempkey_hash;
         sign_internal_param.digest = final_hash;
@@ -209,7 +209,7 @@ auth_data_t atecc_sign(uint8_t *hash) {
         helper_sign_internal_msg(&sign_internal_param,
                                  SIGN_MODE_INTERNAL,
                                  slot_2_auth_key, slot_5_challenge,
-                                 atecc_data);
+                                 &atecc_data);
 
         memset(challenge_no, 0, sizeof(challenge_no));
         atecc_data.status = atcab_write_enc(slot_5_challenge,
