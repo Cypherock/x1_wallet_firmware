@@ -179,7 +179,7 @@ void send_transaction_tasks_eth()
         uint8_t is_harmony_hrp = var_send_transaction_data.transaction_metadata.is_harmony_address;
 
         instruction_scr_destructor();
-        eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
+        eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes, &var_send_transaction_data.transaction_metadata);
         if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN))
           byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         else
@@ -204,8 +204,8 @@ void send_transaction_tasks_eth()
 
         char token[9];
         snprintf(token, sizeof(token), "%s", var_send_transaction_data.transaction_metadata.token_name);
-        
-        len = eth_get_value(&eth_unsigned_txn_ptr, amount_string);
+
+        len = eth_get_value(&eth_unsigned_txn_ptr, amount_string, &var_send_transaction_data.transaction_metadata);
         uint8_t decimal_val_s[ETH_VALUE_SIZE_BYTES * 3] = {0};
         if (sizeof(decimal_val_s)/sizeof(decimal_val_s[0]) > UINT8_MAX){
           LOG_ERROR("0xxx#");
@@ -246,7 +246,7 @@ void send_transaction_tasks_eth()
             i++;
         }
         if(!post_dec_digit && !pre_dec_digit){
-            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0.0");
+            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0");
         }
 
         instruction_scr_destructor();

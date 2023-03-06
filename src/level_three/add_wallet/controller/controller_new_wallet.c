@@ -113,9 +113,7 @@ void generate_wallet_controller()
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_2: {
-      
         flow_level.level_three = GENERATE_WALLET_SKIP_PIN;
-    
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {

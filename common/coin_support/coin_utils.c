@@ -83,6 +83,8 @@ void s_memcpy(uint8_t *dst, const uint8_t *src, uint32_t size,
 int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uint32_t size,
                                    txn_metadata *txn_metadata_ptr)
 {
+    if(metadata_byte_array == NULL || txn_metadata_ptr == NULL) return -1;
+    memzero(txn_metadata_ptr,sizeof(txn_metadata));
 
     int64_t offset = 0, len = 0;
 
@@ -145,6 +147,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
     s_memcpy((uint8_t *) txn_metadata_ptr->token_name, metadata_byte_array,
              size, token_name_len, &offset);
+
+    txn_metadata_ptr->is_token_transfer = strncmp(txn_metadata_ptr->token_name, ETHEREUM_TOKEN_SYMBOL,token_name_len) != 0;
+
     if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size) return -1;
     txn_metadata_ptr->network_chain_id = U64_READ_BE_ARRAY(metadata_byte_array + offset);
     offset += sizeof(txn_metadata_ptr->network_chain_id);
@@ -159,6 +164,9 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array, const uin
 
                                    
 int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const uint8_t *data_byte_array, const uint32_t size) {
+
+    if(txn_data_ptr == NULL || data_byte_array == NULL) return -1;
+    memzero(txn_data_ptr,sizeof(Receive_Transaction_Data));
 
     int64_t offset = 0;
 
@@ -190,6 +198,8 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,const
 
 int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr, const uint8_t *byte_array, size_t size) {
     if (data_ptr == NULL || byte_array == NULL) return -1;
+    memzero(data_ptr, sizeof(Add_Coin_Data));
+
     int64_t offset = 0;
 
     data_ptr->derivation_depth = byte_array[offset++];
@@ -469,12 +479,12 @@ ui_display_node *ui_create_display_node(const char *title,
   size_t title_length = strnlen(title, title_size) + 1;
   result->title       = cy_malloc(title_length);
   memzero(result->title, title_length);
-  strncpy(result->title, title, title_length);
+  strncpy(result->title, title, title_length - 1);
 
   size_t value_length = strnlen(value, value_size) + 1;
   result->value       = cy_malloc(value_length);
   memzero(result->value, value_length);
-  strncpy(result->value, value, value_length);
+  strncpy(result->value, value, value_length - 1);
 
   result->next = NULL;
   return result;

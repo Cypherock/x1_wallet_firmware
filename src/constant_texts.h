@@ -24,7 +24,7 @@
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
 #define UI_TEXT_WALLET_LOCKED_WAIT_MSG "%s is currently locked\nWait for %d %s"
-#define UI_TEXT_PIN_INS1 "In next step you can setup PIN for %s"
+#define UI_TEXT_PIN_INS1 "In next step you can setup an alphanumeric PIN for %s"
 #define UI_TEXT_PASSPHRASE_INS1 "In next step you can setup Passphrase for %s"
 #define UI_TEXT_PLACE_CARD_TILL_BEEP "Do not lift until you hear %d beep sound"
 #define UI_TEXT_VERIFY_MESSAGE "Verify Message"
