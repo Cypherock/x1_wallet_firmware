@@ -21,36 +21,12 @@
 #include "near.h"
 #include "solana.h"
 #include "tasks.h"
+#include "atecc_utils.h"
+#include "session_utils.h"
 
 #define DEFAULT_ATECC_RETRIES 5
 
-#define DEVICE_SERIAL_SIZE     32
 #define MAXIMUM_COIN_SUPPORTED (14 + 5)  // 5 for segwit support
-
-typedef enum {
-  slot_0_unused       = 0U,
-  slot_1_unused       = 1U,
-  slot_2_auth_key     = 2U,
-  slot_3_nfc_pair_key = 3U,
-  slot_4_unused       = 4U,
-  slot_5_challenge    = 5U,
-  slot_6_io_key       = 6U,
-  slot_7_unused       = 7U,
-  slot_8_serial       = 8U,
-  slot_9_unused       = 9U,
-  slot_10_unused      = 10U,
-  slot_11_unused      = 11U,
-  slot_12_unused      = 12U,
-  slot_13_unused      = 13U,
-  slot_14_unused      = 14U,
-  slot_15_unused      = 15U
-} atecc_slot_define_t;
-
-typedef struct {
-  uint8_t device_serial[DEVICE_SERIAL_SIZE], retries;
-  ATCA_STATUS status;
-  ATCAIfaceCfg *cfg_atecc608a_iface;
-} atecc_data_t;
 
 extern atecc_data_t atecc_data;
 
@@ -330,6 +306,8 @@ void send_transaction_controller_b_solana();
  */
 void receive_transaction_controller();
 
+void swap_transaction_controller();
+
 /**
  * @brief Next button controller is executed for generating address using xpub.
  * @details This controller handles is used to generate receiving address for
@@ -352,6 +330,7 @@ void receive_transaction_controller_near();
  */
 void receive_transaction_controller_b();
 
+void swap_transaction_controller_b();
 /**
  * @brief Next button controller is executed for generating address using xpub of Ethereum.
  * @details This controller handles is used to generate receiving address for the ETH coins requested by desktop from a

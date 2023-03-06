@@ -692,6 +692,42 @@ void desktop_listener_task(lv_task_t* data)
                 }
                 clear_message_received_data();
             } break;
+
+            case SESSION_INIT: {
+                // Send: Device Random (32) + Device Id (32) + Signature (64) + Postfix1 + Postfix2
+                uint8_t session_details_data_array[DEVICE_RANDOM_SIZE +
+                    DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE +
+                    POSTFIX2_SIZE];
+
+                session_pre_init(session_details_data_array);
+
+                transmit_data_to_app(SESSION_INIT_SEND_DETAILS,
+                                     session_details_data_array,
+                                     DEVICE_RANDOM_SIZE +
+                                         DEVICE_SERIAL_SIZE + SIGNATURE_SIZE
+                                         + POSTFIX1_SIZE + POSTFIX2_SIZE);
+
+            }
+                break;
+
+            case SESSION_ESTABLISH: {
+                // Send: Device Id (32) + Signature (64) + Postfix1 + Postfix2
+                uint8_t verification_details[DEVICE_SERIAL_SIZE +
+                    SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE];
+
+                if (!session_init(data_array, verification_details)) {
+                    LOG_CRITICAL("xxec %d:%d", false, __LINE__);
+                    comm_reject_invalid_cmd();
+                    clear_message_received_data();
+                } else {
+                    transmit_data_to_app(SESSION_ESTABLISH_VERIFY,
+                                         verification_details,
+                                         DEVICE_SERIAL_SIZE +
+                                             SIGNATURE_SIZE + POSTFIX1_SIZE
+                                             + POSTFIX2_SIZE);
+                }
+            }
+                break;
 #ifdef DEV_BUILD
             case EXPORT_ALL: {
                 const Flash_Wallet* flash_wallet;
