@@ -111,7 +111,7 @@ typedef struct {
 } Message;
 #pragma pack(pop)
 
-extern uint8_t session_key_derv_data[12];
+extern uint32_t session_key_derv_data[3];
 extern Session session;
 
 /**

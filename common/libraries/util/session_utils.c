@@ -61,7 +61,7 @@
 #include "session_utils.h"
 #include "controller_level_four.h"
 
-uint8_t session_key_derv_data[12] = {0};
+uint32_t session_key_derv_data[3] = {0};
 Session session;
 
 static void derive_public_key() {
@@ -77,13 +77,13 @@ static void derive_public_key() {
                               &session_node,
                               NULL);
 
-    index = read_be(session_key_derv_data);
+    index = session_key_derv_data[0];
     hdnode_public_ckd(&session_node, index);
 
-    index = read_be(session_key_derv_data + 4);
+    index = session_key_derv_data[1];
     hdnode_public_ckd(&session_node, index);
 
-    index = read_be(session_key_derv_data + 8);
+    index = session_key_derv_data[2];
     hdnode_public_ckd(&session_node, index);
 
     memcpy(session.public_key, session_node.public_key,
