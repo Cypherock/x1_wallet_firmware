@@ -129,6 +129,7 @@ target_compile_options(${EXECUTABLE} PRIVATE
         -Wall -Wno-format-truncation -Wno-unused-but-set-variable -Wno-return-type
         -D_POSIX_C_SOURCE=200809L
         $<$<CONFIG:Debug>:-g3>
+        $<$<CONFIG:Release>:-Werror>
         )
 
 target_link_options(${EXECUTABLE} PRIVATE
