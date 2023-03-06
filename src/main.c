@@ -96,7 +96,6 @@
 #include "ui_logo.h"
 #include "ui_delay.h"
 #include "lv_port_indev.h"
-#include "lvgl/lvgl.h"
 
 #if USE_SIMULATOR == 0
 #include "main.h"
