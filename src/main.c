@@ -129,7 +129,6 @@ static void memory_monitor(lv_task_t *param);
 #endif
 #ifdef DEV_BUILD
 #include "dev_utils.h"
-ekp_queue* ekp_q;
 #endif
 /**
   * @brief  The entry point to the application.
@@ -138,7 +137,7 @@ ekp_queue* ekp_q;
 int main(void)
 {
 #ifdef DEV_BUILD
-    ekp_q = ekp_create_queue();
+    ekp_queue_init();
 #endif
 
     application_init();
@@ -261,9 +260,6 @@ int _write(int file, char *ptr, int len) {
         ITM_SendChar(*ptr++);
     }
     return len;
-#endif
-#ifdef DEV_BUILD
-    free(ekp_q);
 #endif
 }
 

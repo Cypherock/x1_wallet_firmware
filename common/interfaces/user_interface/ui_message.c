@@ -61,7 +61,6 @@
 #include "ui_message.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
-extern ekp_queue *ekp_q;
 #endif
 
 static struct Message_Data* data = NULL;
@@ -78,8 +77,8 @@ void message_scr_init(const char* message)
         data->message = (char*)message;
     }
 #ifdef DEV_BUILD
-    ekp_enqueue(ekp_q,LV_KEY_UP,DEFAULT_DELAY);
-    ekp_enqueue(ekp_q,LV_KEY_ENTER,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
 #endif
     message_scr_create();
 }

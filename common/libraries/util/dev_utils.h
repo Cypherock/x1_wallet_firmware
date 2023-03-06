@@ -20,9 +20,10 @@ typedef struct ekp_queue {
 
 ekp_queue_node *ekp_new_queue_node(const lv_event_t event, const uint32_t delay);
 ekp_queue *ekp_create_queue();
-int ekp_is_empty(ekp_queue *q);
-void ekp_enqueue(ekp_queue *q, const lv_event_t event, const uint32_t delay);
-ekp_queue_node *ekp_dequeue(ekp_queue *q);
+int ekp_is_empty();
+void ekp_enqueue( const lv_event_t event, const uint32_t delay);
+ekp_queue_node *ekp_dequeue();
+void ekp_queue_init();
 
 #endif //DEV_UTILS_H
 #endif //DEV_BUILD

@@ -59,7 +59,6 @@
 #include "stdlib.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
-extern ekp_queue *ekp_q;
 #endif
 
 scrolling_page_data_t *gp_scrollabe_page_data = NULL;
@@ -579,11 +578,11 @@ void ui_scrollable_page(const char *p_page_ui_heading,
     
     
 #ifdef DEV_BUILD
-    ekp_enqueue(ekp_q,LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
     for(int i=0; i<gp_scrollabe_page_data->total_page_num;i++)
-    ekp_enqueue(ekp_q,LV_KEY_RIGHT,DEFAULT_DELAY);
-    // ekp_enqueue(ekp_q,LV_KEY_DOWN,DEFAULT_DELAY);
-    ekp_enqueue(ekp_q,LV_KEY_ENTER,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_RIGHT,DEFAULT_DELAY);
+    // ekp_enqueue(LV_KEY_DOWN,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
 #endif
 
     return;

@@ -58,7 +58,6 @@
 #include "ui_confirmation.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
-extern ekp_queue *ekp_q;
 #endif
 
 static struct Confirm_Data* data = NULL;
@@ -76,8 +75,8 @@ void confirm_scr_init(const char* text)
     }
     
 #ifdef DEV_BUILD
-    ekp_enqueue(ekp_q,LV_KEY_UP,DEFAULT_DELAY);
-    ekp_enqueue(ekp_q,LV_KEY_ENTER,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
 #endif
     confirm_scr_create();
 }
