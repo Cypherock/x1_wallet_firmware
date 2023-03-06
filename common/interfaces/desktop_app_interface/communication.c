@@ -424,7 +424,11 @@ static void comm_packet_parser(const uint8_t *data, const uint16_t length) {
     static uint32_t packet_crc = 0;
 
     if (memcmp(data, SDK_REQ_PACKET, CY_MIN(sizeof(SDK_REQ_PACKET), length)) == 0)
-        return BSP_DebugPort_Write(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET));
+#if USE_SIMULATOR == 1
+        return SIM_Transmit_FS(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET));
+#else
+        return lusb_write(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET));
+#endif
 
     for (int i = 0; i < length; i++) {
         uint8_t byte = data[i];
@@ -785,5 +789,9 @@ static void comm_write_packet(const uint16_t chunk_number, const uint16_t total_
     }
     crc = update_crc16(crc, 0); crc = update_crc16(crc, 0);
     buffer[COMM_CHECKSUM_INDEX] = (crc >> 8) & 0xFF; buffer[COMM_CHECKSUM_INDEX + 1] = crc & 0xFF;
-    BSP_DebugPort_Write(buffer, payload_size + COMM_HEADER_SIZE);
+#if USE_SIMULATOR == 1
+    SIM_Transmit_FS(buffer, payload_size + COMM_HEADER_SIZE);
+#else
+    lusb_write(buffer, payload_size + COMM_HEADER_SIZE);
+#endif
 }
