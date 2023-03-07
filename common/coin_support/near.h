@@ -20,7 +20,8 @@
 #define NEAR_CHANGE_INDEX    0x80000000
 #define NEAR_ADDRESS_INDEX   0x80000001
 
-#define NEAR_DECIMAL          (24U)
+#define NEAR_DECIMAL      (24U)
+#define NEAR_FEES_DECIMAL (20U)
 
 #define NEAR_COIN_VERSION    0x00000000
 

@@ -168,7 +168,7 @@ void send_transaction_tasks_near() {
             LOG_ERROR("0xxx#");
             break;
         }
-        if (!convert_byte_array_to_decimal_string(16, near_get_decimal() - 4, amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
+        if (!convert_byte_array_to_decimal_string(16, NEAR_FEES_DECIMAL, amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
         instruction_scr_destructor();
         if (near_utxn.actions_type == NEAR_ACTION_TRANSFER) {
             snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, amount_decimal_string, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index),0));
