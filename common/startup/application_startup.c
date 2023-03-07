@@ -85,6 +85,10 @@
 #include "controller_tap_cards.h"
 #include "ui_multi_instruction.h"
 
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
+
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
 
@@ -223,6 +227,9 @@ static void display_init()
     lv_port_disp_init();
     lv_port_indev_init();
     ui_init(indev_keypad);
+#ifdef DEV_BUILD
+    ekp_register_process_func(ekp_process_queue);
+#endif
 }
 
 #if X1WALLET_MAIN

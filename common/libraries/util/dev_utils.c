@@ -46,4 +46,22 @@ ekp_queue_node *ekp_dequeue() {
 void ekp_queue_init() {
   q = ekp_create_queue();
 }
+
+void ekp_process_queue(lv_indev_data_t *data) {
+  static bool alternate = false;
+  if (!alternate) {
+    if (!ekp_is_empty()) {
+      ekp_queue_node *qn = ekp_dequeue();
+      data->state        = LV_INDEV_STATE_PR;
+      data->key          = qn->event;
+      BSP_DelayMs(qn->delay);
+      free(qn);
+      alternate = !alternate;
+    }
+  } else {
+    data->state = LV_INDEV_STATE_REL;
+    BSP_DelayMs(RELEASE_DELAY);
+    alternate = !alternate;
+  }
+}
 #endif  //DEV_BUILD
