@@ -66,7 +66,9 @@
 #include "nist256p1.h"
 #include "flash_api.h"
 #include "controller_tap_cards.h"
+#if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
+#endif
 
 #define CARD_AUTH_RAND_NUMBER_SIZE 32
 

@@ -40,8 +40,11 @@ extern "C" {
 } /* extern "C" */
 #endif
 
+void invert_key_pad();
 void lv_port_indev_init(void);
 uint32_t keypad_get_key(void);
+extern lv_indev_t* indev_keypad;
+extern bool nfc_tapped;
 
 #endif /*LV_PORT_INDEV_TEMPL_H*/
 

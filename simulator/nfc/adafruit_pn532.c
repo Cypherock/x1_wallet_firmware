@@ -648,9 +648,38 @@ ret_code_t adafruit_pn532_command_write(uint8_t * p_cmd, uint8_t cmd_len)
     return STM_SUCCESS;
 }
 
+ret_code_t adafruit_pn532_field_on(void)
+{
+    return STM_SUCCESS;
+}
+
+ret_code_t adafruit_pn532_field_off(void)
+{
+    return STM_SUCCESS;
+}
+
+ret_code_t adafruit_pn532_release() {
+    return STM_SUCCESS;
+}
+
 /**  @brief Function for clearing sensitive data from the local buffer.
  */
 void adafruit_pn532_clear_buffers(void)
 {}
+
+ret_code_t adafruit_diagnose_comm_line(uint8_t * p_send, uint8_t send_len)
+{
+    return STM_SUCCESS;
+}
+
+ret_code_t adafruit_diagnose_card_presence()
+{
+    return STM_SUCCESS;
+}
+
+ret_code_t adafruit_diagnose_self_antenna(uint8_t threshold)
+{
+    return STM_SUCCESS;
+}
 
 #endif // ADAFRUIT_PN532_ENABLED
