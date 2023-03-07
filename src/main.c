@@ -107,6 +107,7 @@
 #endif //USE_SIMULATOR
 
 #if USE_SIMULATOR == 1
+#define main SDL_main
 #include "sim_usb.h"
 extern lv_indev_t *indev_keypad;
 #endif

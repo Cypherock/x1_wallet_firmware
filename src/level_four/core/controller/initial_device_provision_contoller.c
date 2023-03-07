@@ -67,7 +67,9 @@
 #include "string.h"
 #include "ui_instruction.h"
 #include "flash_api.h"
+#if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
+#endif
 
 #define ATECC_CFG_88_MASK   0x4C
 #define ATECC_CFG_89_MASK   0x01
