@@ -516,13 +516,17 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
         case LITCOIN:
         case DOGE:
         case DASH:              // m/44'/5'  /i'
-        case ETHEREUM:          // m/44'/60' /i'
-            status = (purpose == NON_SEGWIT);
+        case ETHEREUM: {        // m/44'/60' /i'
+            uint32_t account = path[2];
+            status = (purpose == NON_SEGWIT && depth == XPUB_DEFAULT_DEPTH && ((account & 0x80000000) == 0x80000000));
+        } break;
 
         case BTC_TEST:          // m/44'/1'  /i'
-        case BITCOIN:           // m/44'/0'  /i'
-            status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT);
-            break;
+        case BITCOIN: {         // m/44'/0'  /i'
+            uint32_t account = path[2];
+            status           = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (depth == XPUB_DEFAULT_DEPTH) &&
+                     ((account & 0x80000000) == 0x80000000);
+        } break;
 
         default:
             break;

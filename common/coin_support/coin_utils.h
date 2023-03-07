@@ -28,6 +28,7 @@
 #include "logger.h"
 #include "assert_conf.h"
 
+#define XPUB_DEFAULT_DEPTH  3
 
 /// Bitcoin coin index
 #define BITCOIN 0x80000000

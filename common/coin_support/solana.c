@@ -245,7 +245,7 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
   if (levels < 2)
     return status;
 
-  uint32_t purpose = path[0], coin = path[1];
+  uint32_t purpose = path[0], coin = path[1], account = path[2];
 
   switch (levels) {
     case 2:  // m/44'/501'
@@ -253,12 +253,13 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
       break;
 
     case 3:  // m/44'/501'/i'
-      status = (purpose == NON_SEGWIT && coin == SOLANA);
+      status = (purpose == NON_SEGWIT && coin == SOLANA && ((account & 0x80000000) == 0x80000000));
       break;
 
     case 4: {  // m/44'/501'/i'/0'
       uint32_t change = path[3];
-      status          = (purpose == NON_SEGWIT && coin == SOLANA && change == 0x80000000);
+      status =
+          (purpose == NON_SEGWIT && coin == SOLANA && ((account & 0x80000000) == 0x80000000) && change == 0x80000000);
     } break;
 
     default:
