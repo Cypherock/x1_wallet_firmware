@@ -553,18 +553,24 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
 
         case LITCOIN:
         case DOGE:
-        case DASH:              // m/44'/5'  /i'/0 /j
-            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0);
-            break;
+        case DASH: {            // m/44'/5'  /i'/0 /j
+            uint32_t account = path[2];
+            status =
+                (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && ((account & 0x80000000) == 0x80000000);
+        } break;
 
         case ETHEREUM: {        // m/44'/60' /i'/0 /0
-            status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && (path[4] == 0);
+            uint32_t account = path[2];
+            status           = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) && (path[4] == 0) &&
+                     ((account & 0x80000000) == 0x80000000);
         } break;
 
         case BTC_TEST:
-        case BITCOIN:           // m/44'/0'  /i /0 /j
-            status = (depth == 5) && (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (path[3] == 0);
-            break;
+        case BITCOIN: {         // m/44'/0'  /i'/0 /j
+            uint32_t account = path[2];
+            status           = (depth == 5) && (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) && (path[3] == 0) &&
+                     ((account & 0x80000000) == 0x80000000);
+        } break;
 
         default:
             break;
