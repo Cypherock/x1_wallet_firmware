@@ -22,6 +22,7 @@
 #define SOLANA_ACCOUNT_INDEX 0x80000000
 
 
+/// Ref: https://docs.solana.com/terminology#lamport
 #define SOLANA_DECIMAL (9U)
 
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32

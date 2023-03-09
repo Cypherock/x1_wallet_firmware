@@ -47,6 +47,7 @@
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
+/// Ref: https://ethereum.org/en/developers/docs/intro-to-ether/#denominations
 #define ETH_DECIMAL          (18U)
 
 #define ETH_COIN_VERSION     0x00000000
