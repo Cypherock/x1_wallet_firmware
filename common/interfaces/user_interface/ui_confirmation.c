@@ -56,6 +56,9 @@
  ******************************************************************************
  */
 #include "ui_confirmation.h"
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 
 static struct Confirm_Data* data = NULL;
 static struct Confirm_Object* obj = NULL;
@@ -70,6 +73,11 @@ void confirm_scr_init(const char* text)
     if (data != NULL) {
         data->text = (char*)text;
     }
+    
+#ifdef DEV_BUILD
+    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
+#endif
     confirm_scr_create();
 }
 
