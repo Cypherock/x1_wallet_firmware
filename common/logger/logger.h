@@ -77,6 +77,7 @@ void logger(char *fmt, ...);
 
 #else
 
+#define LOG_SWV  printf
 #define LOG_INFO printf
 #define LOG_ERROR printf
 #define LOG_CRITICAL printf

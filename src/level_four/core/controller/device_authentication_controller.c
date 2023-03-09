@@ -70,7 +70,9 @@
 #include "ui_instruction.h"
 #include "board.h"
 #include "stdint.h"
+#if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
+#endif
 
 #define SIGNATURE_SIZE          64
 #define POSTFIX1_SIZE           7

@@ -136,7 +136,7 @@ static void flash_struct_load()
 {
     ASSERT((&flash_ram_instance) != NULL);
 #if USE_SIMULATOR == 1
-    uint8_t serialized_flash_metadata[8];
+    uint32_t serialized_flash_metadata[2];
     read_cmd(FLASH_DATA_ADDRESS, serialized_flash_metadata, 8);
 #else
     uint8_t *serialized_flash_metadata = (uint8_t *)FLASH_DATA_ADDRESS;

@@ -57,6 +57,11 @@ lv_indev_t * indev_button;
 
 static int32_t encoder_diff;
 static lv_indev_state_t encoder_state;
+static uint8_t invert = 0x00;
+bool nfc_tapped = false;
+#ifdef DEV_BUILD
+static ekp_process_queue_fptr process_key_presses_queue = NULL;
+#endif
 
 /**********************
  *      MACROS
@@ -65,7 +70,11 @@ static lv_indev_state_t encoder_state;
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-
+#ifdef DEV_BUILD
+void ekp_register_process_func(ekp_process_queue_fptr func) {
+    process_key_presses_queue = func;
+}
+#endif
 void lv_port_indev_init(void)
 {
     /* Here you will find example implementation of input devices supported by LittelvGL:
@@ -318,6 +327,11 @@ static bool keypad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
     }
 
     data->key = last_key;
+#ifdef DEV_BUILD
+    if (process_key_presses_queue != NULL)
+        process_key_presses_queue(data);
+#endif
+
 
     /*Return `false` because we are not buffering and no more data to read*/
     return false;

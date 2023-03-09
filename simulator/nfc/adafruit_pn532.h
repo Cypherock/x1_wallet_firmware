@@ -484,9 +484,82 @@ ret_code_t adafruit_pn532_data_read(uint8_t * p_buff, uint8_t n);
  *                                  an error code is returned.
  */
 ret_code_t adafruit_pn532_command_write(uint8_t * p_cmd, uint8_t cmd_len);
+/** @} */
+
+/**
+ *@}
+ **/
 
 /**  @brief Function for clearing sensitive data from the local buffer.
  */
 void adafruit_pn532_clear_buffers(void);
+
+/**
+ * @brief Diagnose the communication line between MCU and PN532 for any disconnection
+ * @details The test exchanges the provided test data and internally checks for the return from PN532.
+ * If the returned data and the sent data match, then the test is considered to be success.
+ *
+ * @param p_send    Data to be exchanged for testing the communication line between the components
+ * @param send_len  Size of the data to be exchanged
+ * @return uint32_t     Indicates the status of the test
+ * @retval 0x00     Test success: The presence of at least one card was success
+ * @retval 0xXX     Test fail
+ */
+ret_code_t adafruit_diagnose_comm_line(uint8_t * p_send, uint8_t send_len);
+
+/**
+ * @brief Detect card presence in the RF range of the device
+ * @details The check helps determine if any card is available inside the field of device.
+ *
+ * @return uint32_t     Indicates the status of the test
+ * @retval 0x00     Test success: The presence of at least one card was success
+ * @retval 0x01     Test fail: The card previously selected has been removed from the field
+ * @retval 0x27     Test fail: No card has not been selected yet
+ */
+ret_code_t adafruit_diagnose_card_presence();
+
+/**
+ * @brief Perform NFC antenna detection test
+ * @details The test helps detect the presence of NFC antenna with the PN532 chip. Any failure in the check
+ * indicates some problem in the circuit of the antenna. The test happens against the specified thershold which
+ * is an encoded value. For encoding of the threshold, refer Section 8.6.9.2 (Table 158) of the
+ * <a href="https://www.nxp.com/docs/en/nxp/data-sheets/PN532_C1.pdf" target=_blank>PN532 data sheet</a>.
+ * The acceptable ranges and their encoding is as follows (refer data sheet for complete list):
+ * <ol>
+ * <li>`Lower limit 00mA: 0x0Y`</li>
+ * <li>`Lower limit 25mA: 0x2Y`</li>
+ * <li>`Lower limit 35mA: 0x3Y`</li>
+ * <li>`Upper limit 45mA: 0xY0`</li>
+ * <li>`Upper limit 60mA: 0xY2`</li>
+ * <li>`Upper limit 75mA: 0xY4`</li>
+ * <li>`Upper limit 90mA: 0xY6`</li>
+ * </ol>
+ * The preferred check threshold is around 25-105 mA which would encode to threshold value of `0x28`.
+ *
+ * @param threshold     The allowed current threshold (ranges: both upper and lower) value against which to test
+ * @return uint32_t      Indicates the status of the test
+ * @retval 0x00     Test success: Antenna working between specified current bounds
+ * @retval 0x80     Test fail: Too low power consumption has been detected
+ * @retval 0x40     Test fail: Too high power consumption has been detected
+ */
+ret_code_t adafruit_diagnose_self_antenna(uint8_t threshold);
+
+/**
+ * @brief Performs deselection of all the cards present in the field.
+ *
+ * @return uint32_t      Indicates the status of the card deselection
+ * @retval 0 Indicates successful deselection operation
+ * @retval `otherwise` Indicates unsuccessful operation
+ */
+ret_code_t adafruit_pn532_deselect();
+
+/**
+ * @brief Releases the already selected card. The function attempts to release all the selected cards in single request to PN532.
+ *
+ * @return uint32_t      Indicates the status of the card deselection
+ * @retval 0 Indicates successful deselection operation
+ * @retval `otherwise` Indicates unsuccessful operation
+ */
+ret_code_t adafruit_pn532_release();
 
 #endif

@@ -1,15 +1,15 @@
 /**
- * @file    ui_message.c
- * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @file dev_utils.c
+ * @author Cypherock X1 Team
+ * @brief Utilities for DEV build
+ * 
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -55,98 +55,70 @@
  *
  ******************************************************************************
  */
-/** A type of a confirmation screen but without cancel button.
- */
-
-#include "ui_message.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
-#endif
+static ekp_queue *q = NULL;
 
-static struct Message_Data* data = NULL;
-static struct Message_Object* obj = NULL;
-
-void message_scr_init(const char* message)
-{
-    ASSERT(message != NULL);
-
-    data = malloc(sizeof(struct Message_Data));
-    obj = malloc(sizeof(struct Message_Object));
-
-    if (data != NULL) {
-        data->message = (char*)message;
-    }
-#ifdef DEV_BUILD
-    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
-    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
-#endif
-    message_scr_create();
+ekp_queue_node *ekp_new_queue_node(const lv_event_t event, const uint32_t delay) {
+  ekp_queue_node *temp = (ekp_queue_node *)malloc(sizeof(ekp_queue_node));
+  temp->event          = event;
+  temp->delay          = delay;
+  temp->next           = NULL;
+  return temp;
 }
 
-/**
- * @brief Clear screen
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void message_scr_destructor()
-{
-    lv_obj_clean(lv_scr_act());
-    if (data != NULL) {
-        memzero(data, sizeof(struct Message_Data));
-        free(data);
-        data = NULL;
-    }
-    if (obj != NULL) {
-        free(obj);
-        obj = NULL;
-    }
+ekp_queue *ekp_create_queue() {
+  ekp_queue *q = (ekp_queue *)malloc(sizeof(ekp_queue));
+  q->front = q->rear = NULL;
+  q->count           = 0;
+  return q;
 }
 
-/**
- * @brief Next button event handler.
- * @details
- * 
- * @param next_btn Next button lvgl object.
- * @param event Type of event.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void next_btn_event_handler(lv_obj_t* obj, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+bool ekp_is_empty() {
+  return (q->count == 0);
+}
 
-    if (event == LV_EVENT_CLICKED) {
-        if (ui_mark_event_over) (*ui_mark_event_over)();
-        message_scr_destructor();
+void ekp_enqueue(const lv_event_t event, const uint32_t delay) {
+  ekp_queue_node *temp = ekp_new_queue_node(event, delay);
+  q->count++;
+  if (q->rear == NULL) {
+    q->front = q->rear = temp;
+    return;
+  }
+  q->rear->next = temp;
+  q->rear       = temp;
+}
+
+ekp_queue_node *ekp_dequeue() {
+  if (ekp_is_empty(q))
+    return NULL;
+  ekp_queue_node *temp = q->front;
+  q->front             = q->front->next;
+  if (q->front == NULL)
+    q->rear = NULL;
+  q->count--;
+  return temp;
+}
+
+void ekp_queue_init() {
+  q = ekp_create_queue();
+}
+
+void ekp_process_queue(lv_indev_data_t *data) {
+  static bool alternate = false;
+  if (!alternate) {
+    if (!ekp_is_empty()) {
+      ekp_queue_node *qn = ekp_dequeue();
+      data->state        = LV_INDEV_STATE_PR;
+      data->key          = qn->event;
+      BSP_DelayMs(qn->delay);
+      free(qn);
+      alternate = !alternate;
     }
+  } else {
+    data->state = LV_INDEV_STATE_REL;
+    BSP_DelayMs(RELEASE_DELAY);
+    alternate = !alternate;
+  }
 }
-
-void message_scr_create()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-
-    obj->message = lv_label_create(lv_scr_act(), NULL);
-    obj->next_btn = lv_btn_create(lv_scr_act(), NULL);
-
-    ui_paragraph(obj->message, data->message, LV_LABEL_ALIGN_CENTER);
-    ui_next_btn(obj->next_btn, next_btn_event_handler, false);
-
-    lv_obj_align(obj->next_btn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -2);
-}
+#endif  //DEV_BUILD

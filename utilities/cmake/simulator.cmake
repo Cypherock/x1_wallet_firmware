@@ -39,6 +39,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         src/level_three/old_wallet/tasks
         src/level_four/core/controller
         src/level_four/core/tasks
+        src/level_four/card_health_check/
+        src/level_four/factory_reset/
         src/level_four/tap_cards/controller
         src/level_four/tap_cards/tasks
 
@@ -63,10 +65,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
-
-        common/logger
+        common/libraries/nanopb
         common/startup
+        common/logger
         common/coin_support
+        common/coin_support/eth_sign_data
         common/flash
         common/Firewall
 
