@@ -393,7 +393,9 @@ void application_init() {
         set_auth_state(get_auth_state());
     }
 #ifdef DEV_BUILD
+#if USE_SIMULATOR == 0
     buzzer_disabled = true;
+#endif
 #endif
 }
 
