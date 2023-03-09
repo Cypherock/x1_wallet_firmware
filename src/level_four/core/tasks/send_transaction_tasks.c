@@ -131,9 +131,12 @@ void send_transaction_tasks()
         log_hex_array("value", (uint8_t*) &value, sizeof(value));
         double valueToDisplay = 1.0 * value / (SATOSHI_PER_BTC);
         char display[225] = {0};
+        char top_heading[225];
+
+        snprintf(top_heading, sizeof(top_heading), "Receiver #%d", var_send_transaction_data.transaction_confirmation_list_index + 1);
         uint8_t precision = get_floating_precision(value, SATOSHI_PER_BTC);
-        snprintf(display, sizeof(display), "Receiver #%d\nSend %0.*f\n%s", var_send_transaction_data.transaction_confirmation_list_index + 1, precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
-        ui_scrollable_page(ui_heading_confirm_action, display, MENU_SCROLL_HORIZONTAL, false);
+        snprintf(display, sizeof(display), "Send %0.*f\n%s", precision, valueToDisplay, get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), var_send_transaction_data.transaction_metadata.network_chain_id));
+        ui_scrollable_page(top_heading, display, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
