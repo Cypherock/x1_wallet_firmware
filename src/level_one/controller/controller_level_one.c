@@ -148,6 +148,7 @@ void level_one_controller()
             }
             cy_exit_flow();
         }
+        // further down the flow, this gets overwritten by the wallet_id fetched from cards
         memcpy(wallet.wallet_id, get_wallet_id(index), WALLET_ID_SIZE);
         memcpy(
             wallet.wallet_name,

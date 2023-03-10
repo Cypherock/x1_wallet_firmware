@@ -438,6 +438,7 @@ static bool wallet_selector(uint8_t *data_array)
     for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
         if (memcmp(wallet_id, get_wallet_id(walletIndex), WALLET_ID_SIZE) == 0) {
             if (get_wallet_state(walletIndex) == VALID_WALLET) {
+                // further down the flow, this gets overwritten by the wallet_id fetched from cards
                 memcpy(wallet.wallet_id, wallet_id, WALLET_ID_SIZE);
                 memcpy(wallet.wallet_name, get_wallet_name(walletIndex), NAME_SIZE);
                 wallet.wallet_info = get_wallet_info(walletIndex);
