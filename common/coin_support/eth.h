@@ -47,6 +47,8 @@
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
+/// Ref: https://ethereum.org/en/developers/docs/intro-to-ether/#denominations
+#define ETH_DECIMAL          (18U)
 
 #define ETH_COIN_VERSION     0x00000000
 
@@ -312,4 +314,11 @@ void eth_sign_msg_data(const MessageData *msg_data,
  */
 void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len);
 
+/**
+ * @brief Returns the decimal value of ethereum asset from metadata
+ * 
+ * @param txn_metadata_ptr Pointer to transaction metadata
+ * @return uint8_t Decimal value of current asset
+ */
+uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr);
 #endif

@@ -804,3 +804,7 @@ void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *o
     ASSERT(false);
   }
 }
+
+uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr) {
+  return txn_metadata_ptr->is_token_transfer ? txn_metadata_ptr->eth_val_decimal[0] : ETH_DECIMAL;
+}
