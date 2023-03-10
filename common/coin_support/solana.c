@@ -245,21 +245,23 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
   if (levels < 2)
     return status;
 
-  uint32_t purpose = path[0], coin = path[1], account = path[2];
+  uint32_t purpose = path[0], coin = path[1];
 
   switch (levels) {
     case 2:  // m/44'/501'
       status = (purpose == NON_SEGWIT && coin == SOLANA);
       break;
 
-    case 3:  // m/44'/501'/i'
-      status = (purpose == NON_SEGWIT && coin == SOLANA && ((account & 0x80000000) == 0x80000000));
-      break;
+    case 3: { // m/44'/501'/i'
+      uint32_t account = path[2];
+      status = (purpose == NON_SEGWIT && coin == SOLANA && IS_HARDENED(account));
+    } break;
 
     case 4: {  // m/44'/501'/i'/0'
       uint32_t change = path[3];
+      uint32_t account = path[2];
       status =
-          (purpose == NON_SEGWIT && coin == SOLANA && ((account & 0x80000000) == 0x80000000) && change == 0x80000000);
+          (purpose == NON_SEGWIT && coin == SOLANA && IS_HARDENED(account) && change == 0x80000000);
     } break;
 
     default:

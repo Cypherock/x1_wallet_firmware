@@ -28,7 +28,11 @@
 #include "logger.h"
 #include "assert_conf.h"
 
+#define IS_HARDENED(x)     ((x & 0x80000000) == 0x80000000)
+#define IS_NON_HARDENED(x) ((x & 0x80000000) == 0)
+
 #define XPUB_DEFAULT_DEPTH  3
+#define ADDR_DEFAULT_DEPTH  5
 
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
@@ -407,6 +411,11 @@ void bech32_addr_encode(char *output, char *hrp, uint8_t *address_bytes, uint8_t
 
 /**
  * @brief Verifies the derivation path for xpub during coin export step
+ * The function verifies all the indices for exact match of purpose_id, coin_id,
+ * and other relevant indices. The hardness of the derivation index in the path
+ * is also checked for validity. If the depth of derivation does not match the
+ * supported derivation paths or any of the above checks do not pass for a given
+ * coin, this function will return false.
  *
  * @param[in] path          The address derivation path to be checked
  * @param[in] depth         The number of levels in the derivation path
@@ -420,6 +429,11 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
 /**
  * @brief Verifies if the specified derivation path is valid based on checks
  * on intermediate values.
+ * The function verifies all the indices for exact match of purpose_id, coin_id,
+ * and other relevant indices. The hardness of the derivation index in the path
+ * is also checked for validity. If the depth of derivation does not match the
+ * supported derivation paths or any of the above checks do not pass for a given
+ * coin, this function will return false.
  *
  * @param[in] path          The address derivation path to be checked
  * @param[in] depth         The number of levels in the derivation path

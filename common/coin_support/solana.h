@@ -180,6 +180,9 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
 /**
  * @brief Verifies the derivation path for any inconsistent/unsupported values.
  * If depth level < 2 this function returns false indicating invalid derivation path.
+ * The function supports checks for `m/44'/501'`, `m/44'/501'/i'` & `m/44'/501'/i'/0'`
+ * any other format would be considered as invalid. It is important that the
+ * hardened derivation is used. Non-hardened derivation paths will be invalid.
  *
  * @param[in] path          The address derivation path to be checked
  * @param[in] levels        The number of levels in the derivation path
