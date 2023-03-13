@@ -320,7 +320,19 @@ void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *o
  */
 uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr);
 
+/**
+ * @brief Returns the asset symbol which is currently being used in the flow
+ * 
+ * @param metadata_ptr Pointer to transaction metadata
+ * @return const char* 
+ */
 const char* eth_get_asset_symbol(const txn_metadata *metadata_ptr);
 
+/**
+ * @brief Returns the title for address verification in ethereum send flow
+ *        Contract address is verified when sending data with payload except for whitelisted tokens
+ * @param eth_unsigned_txn_ptr Pointer to the unsigned transaction for ethereum
+ * @return const char* 
+ */
 const char *eth_get_address_title(const eth_unsigned_txn *eth_unsigned_txn_ptr);
 #endif

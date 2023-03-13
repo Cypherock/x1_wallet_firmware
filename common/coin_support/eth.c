@@ -429,8 +429,8 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadat
 
 static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
     PAYLOAD_STATUS result = PAYLOAD_ABSENT;
+    eth_is_token_whitelisted = false;
     if (eth_utxn_ptr->payload_size > 0) {
-      eth_is_token_whitelisted = false;
       if (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer) {
               for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
                   if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
