@@ -179,12 +179,12 @@ void send_transaction_tasks_eth()
         uint8_t is_harmony_hrp = var_send_transaction_data.transaction_metadata.is_harmony_address;
 
         instruction_scr_destructor();
-        eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes, &var_send_transaction_data.transaction_metadata);
+        eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
         if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN))
           byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         else
           bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));
-        snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
+        snprintf(top_heading, sizeof(top_heading), "%s", eth_get_address_title(&eth_unsigned_txn_ptr));
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
     } break;
@@ -202,10 +202,7 @@ void send_transaction_tasks_eth()
         memzero(amount_string, sizeof(amount_string));
         uint8_t len = 0, i = 0, j = 0;
 
-        char token[9];
-        snprintf(token, sizeof(token), "%s", var_send_transaction_data.transaction_metadata.token_name);
-
-        len = eth_get_value(&eth_unsigned_txn_ptr, amount_string, &var_send_transaction_data.transaction_metadata);
+        len = eth_get_value(&eth_unsigned_txn_ptr, amount_string);
         uint8_t decimal_val_s[ETH_VALUE_SIZE_BYTES * 3] = {0};
         if (sizeof(decimal_val_s)/sizeof(decimal_val_s[0]) > UINT8_MAX){
           LOG_ERROR("0xxx#");
@@ -250,7 +247,7 @@ void send_transaction_tasks_eth()
         }
 
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, eth_get_asset_symbol(&var_send_transaction_data.transaction_metadata));
         confirm_scr_init(display);
     } break;
 
