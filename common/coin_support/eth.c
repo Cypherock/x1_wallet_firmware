@@ -419,11 +419,12 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value
 }
 
 bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
-    return !((eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0) ||
-             (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0])) ||
-             (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0])) ||
-             (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id) ||
-             (eth_utxn_ptr->payload_status == PAYLOAD_CONTRACT_INVALID));
+    return !((eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0) || // Check if the chain id size or nonce size is zero
+             (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0])) || // Check if the gas limit is zero
+             (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0])) || // Check if the gas price is zero
+             (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id) || // Check if the chain id from metadata matches with the chain id from the unsigned transaction
+             (metadata_ptr->is_token_transfer && eth_is_token_whitelisted && !is_zero(eth_utxn_ptr->value,eth_utxn_ptr->value_size[0])) || // Check if token transfer is triggered with whitelisted token and amount is non zero
+             (eth_utxn_ptr->payload_status == PAYLOAD_CONTRACT_INVALID)); // Check if the payload status is invalid
 }
 
 static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
