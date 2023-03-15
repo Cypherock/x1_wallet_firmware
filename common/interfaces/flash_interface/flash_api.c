@@ -789,6 +789,9 @@ int set_io_protection_key(const uint8_t* key) {
     memcpy(&flash_perm_instance.permKeyData.io_protection_key, key, IO_KEY_SIZE);
     flash_perm_struct_save_IOProtectKey();
 
+    /* Zero-ise buffer to ensure that comparison happens on the latest data */ 
+    memzero(&(flash_perm_instance.permKeyData.io_protection_key), IO_KEY_SIZE);
+
     is_flash_perm_instance_loaded = false;
     get_flash_perm_instance();
 
@@ -811,6 +814,9 @@ int set_ext_key(const Perm_Ext_Keys_Struct* ext_keys) {
 
     memcpy(&flash_perm_instance.permKeyData.ext_keys, ext_keys, sizeof(Perm_Ext_Keys_Struct));
     flash_perm_struct_save_ext_keys();
+
+    /* Zero-ise buffer to ensure that comparison happens on the latest data */ 
+    memzero(&(flash_perm_instance.permKeyData.ext_keys), sizeof(Perm_Ext_Keys_Struct));
 
     is_flash_perm_instance_loaded = false;
     get_flash_perm_instance();
