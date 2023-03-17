@@ -428,25 +428,26 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadat
 }
 
 static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
-    PAYLOAD_STATUS result = PAYLOAD_ABSENT;
+    PAYLOAD_STATUS result    = PAYLOAD_ABSENT;
     eth_is_token_whitelisted = false;
     if (eth_utxn_ptr->payload_size > 0) {
-      if (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer) {
-              for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
-                  if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-                    metadata_ptr->eth_val_decimal[0] = whitelisted_contracts[i].decimal;
-                    eth_is_token_whitelisted         = true;
-                    result = (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
-                                 ? PAYLOAD_WHITELISTED
-                                 : PAYLOAD_CONTRACT_INVALID;
-                    break;
-                  }
-              }
-      }
-      if (!eth_is_token_whitelisted)
-              result = (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) == ETH_UTXN_ABI_DECODE_OK)
-                           ? PAYLOAD_WHITELISTED
-                           : PAYLOAD_SIGNATURE_NOT_WHITELISTED;
+    if ((eth_utxn_ptr->payload_size >= 4) && (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
+        (metadata_ptr->is_token_transfer)) {
+            for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
+        if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
+          metadata_ptr->eth_val_decimal[0] = whitelisted_contracts[i].decimal;
+          eth_is_token_whitelisted         = true;
+          result = (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
+                       ? PAYLOAD_WHITELISTED
+                       : PAYLOAD_CONTRACT_INVALID;
+          break;
+        }
+            }
+    }
+    if (!eth_is_token_whitelisted)
+            result = (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) == ETH_UTXN_ABI_DECODE_OK)
+                         ? PAYLOAD_WHITELISTED
+                         : PAYLOAD_SIGNATURE_NOT_WHITELISTED;
     }
     return result;
 }
