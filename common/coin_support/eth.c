@@ -677,8 +677,8 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
     if ((NULL != EvmFunctionTitle) && (NULL != EvmFunctionSignature)) {
         ui_display_node *pAbiDispNode;
         pAbiDispNode =
-            ui_create_display_node(EvmFunctionTitle, strnlen(EvmFunctionTitle, 50),
-                                   EvmFunctionSignature, strnlen(EvmFunctionSignature, 50));
+            ui_create_display_node(EvmFunctionTitle, strnlen(EvmFunctionTitle, 100),
+                                   EvmFunctionSignature, strnlen(EvmFunctionSignature, 100));
 
         if (current_display_node == NULL) {
             current_display_node = pAbiDispNode;
@@ -825,6 +825,6 @@ uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr) {
 }
 
 const char *eth_get_address_title(const eth_unsigned_txn *eth_unsigned_txn_ptr) {
-  return (eth_unsigned_txn_ptr->payload_status != PAYLOAD_ABSENT && !eth_is_token_whitelisted) ? ui_text_verify_contract
-                                                                                               : ui_text_verify_address;
+  return ((eth_unsigned_txn_ptr->payload_status != PAYLOAD_ABSENT && !eth_is_token_whitelisted) ? ui_text_verify_contract
+                                                                                               : ui_text_verify_address);
 }
