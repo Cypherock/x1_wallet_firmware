@@ -716,7 +716,7 @@ void desktop_listener_task(lv_task_t* data)
                     SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE];
 
                 if (!session_init(data_array, verification_details)) {
-                    LOG_CRITICAL("xxec %d:%d", false, __LINE__);
+                    LOG_CRITICAL("xxec %d", __LINE__);
                     comm_reject_invalid_cmd();
                     clear_message_received_data();
                 } else {
