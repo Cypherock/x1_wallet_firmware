@@ -61,7 +61,7 @@
 #include "session_utils.h"
 #include "controller_level_four.h"
 
-uint32_t session_key_derv_data[3] = {0};
+const uint32_t session_key_derv_data[3] = {0};
 Session session;
 
 static void derive_public_key() {
