@@ -1,19 +1,8 @@
 #!/bin/sh
 
-if [ -z ${BIN_FILE_NAME+x} ]; then
-    BIN_FILE_NAME=Cypherock.bin
-fi
-
-if [ -z ${DFU_FILE_NAME+x} ]; then
-    DFU_FILE_NAME=app_dfu_package.bin
-fi
-
 usage () {
     echo -e "\tUSAGE: $0 [main|initial] [dev|debug|release] [device|simulator]"
     echo -e "\tParameters are optional and assumes 'main debug device' if not provided"
-    echo -e ""
-    echo -e "\tFollowing paths/value can be set:"
-    echo -e "\tDFU_FILE_NAME, BIN_FILE_NAME"
     exit 1
 }
 
