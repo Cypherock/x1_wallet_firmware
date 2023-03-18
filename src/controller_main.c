@@ -251,6 +251,7 @@ void reset_flow_level()
     memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
     cy_free();
     pb_release(MessageData_fields, &msg_data);
+    current_display_node = NULL;
 }
 
 void reset_next_event_flag()

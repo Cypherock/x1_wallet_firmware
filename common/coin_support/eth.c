@@ -101,12 +101,19 @@ const char *EVM_safeTransferFrom_Signature = "safeTransferFrom(address,address,u
 /* Refer https://www.4byte.directory/signatures/?bytes4_signature=0xd0e30db0 */
 #define EVM_deposit_TAG      (0xd0e30db0)
 #define EVM_deposit_NUM_ARGS 0
-const Abi_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] = {
-
-};
+const Abi_Type_e EVM_depositDataType[EVM_deposit_NUM_ARGS] = {};
 
 const char *EVM_deposit_Title     = "Function: deposit";
 const char *EVM_deposit_Signature = "deposit()";
+
+/* Refer https://www.4byte.directory/signatures/?bytes4_signature=0xa9059cbb */
+#define EVM_transfer_TAG      (0xa9059cbb)
+#define EVM_transfer_NUM_ARGS 2
+const Abi_Type_e EVM_transferDataType[EVM_transfer_NUM_ARGS] = {Abi_address_e, Abi_uint256_e};
+const char *EVM_transfer_Title     = "Function: transfer";
+const char *EVM_transfer_Signature = "transfer(address,uint256)";
+
+static bool eth_is_token_whitelisted = false;
 
 /**
  * @brief
@@ -384,19 +391,23 @@ uint64_t hex2dec(const char *source) {
   return sum;
 }
 
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        uint8_t *address,
-                        const txn_metadata *metadata_ptr) {
-  if (eth_unsigned_txn_ptr->payload_size &&
-      U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer)
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address) {
+  if (eth_is_token_whitelisted)
     memcpy(address, eth_unsigned_txn_ptr->payload + 16, sizeof(eth_unsigned_txn_ptr->to_address));
   else
     memcpy(address, eth_unsigned_txn_ptr->to_address, sizeof(eth_unsigned_txn_ptr->to_address));
 }
 
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value, const txn_metadata *metadata_ptr) {
-  if (eth_unsigned_txn_ptr->payload_size &&
-      U32_READ_BE_ARRAY(eth_unsigned_txn_ptr->payload) == TRANSFER_FUNC_SIGNATURE && metadata_ptr->is_token_transfer) {
+const char* eth_get_asset_symbol(const txn_metadata *metadata_ptr) {
+  if (eth_is_token_whitelisted)
+    return metadata_ptr->token_name;
+  else
+    return get_coin_symbol(ETHEREUM, metadata_ptr->network_chain_id);
+}
+
+
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value) {
+  if (eth_is_token_whitelisted) {
     byte_array_to_hex_string(eth_unsigned_txn_ptr->payload + EVM_FUNC_SIGNATURE_LENGTH + EVM_FUNC_PARAM_BLOCK_LENGTH,
                              EVM_FUNC_PARAM_BLOCK_LENGTH, value, 2 * EVM_FUNC_PARAM_BLOCK_LENGTH + 1);
     return 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
@@ -408,37 +419,35 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value
 }
 
 bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
-    return !((eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0) ||
-             (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0])) ||
-             (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0])) ||
-             (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id) ||
-             (eth_utxn_ptr->payload_status == PAYLOAD_CONTRACT_INVALID));
+    return !((eth_utxn_ptr->chain_id_size[0] == 0 || eth_utxn_ptr->nonce_size[0] == 0) || // Check if the chain id size or nonce size is zero
+             (is_zero(eth_utxn_ptr->gas_limit, eth_utxn_ptr->gas_limit_size[0])) || // Check if the gas limit is zero
+             (is_zero(eth_utxn_ptr->gas_price, eth_utxn_ptr->gas_price_size[0])) || // Check if the gas price is zero
+             (cy_read_be(eth_utxn_ptr->chain_id, eth_utxn_ptr->chain_id_size[0]) != metadata_ptr->network_chain_id) || // Check if the chain id from metadata matches with the chain id from the unsigned transaction
+             (metadata_ptr->is_token_transfer && eth_is_token_whitelisted && !is_zero(eth_utxn_ptr->value,eth_utxn_ptr->value_size[0])) || // Check if token transfer is triggered with whitelisted token and amount is non zero
+             (eth_utxn_ptr->payload_status == PAYLOAD_CONTRACT_INVALID)); // Check if the payload status is invalid
 }
 
-static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_ptr, const txn_metadata *metadata_ptr) {
-    PAYLOAD_STATUS result = PAYLOAD_ABSENT;
+static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr) {
+    PAYLOAD_STATUS result    = PAYLOAD_ABSENT;
+    eth_is_token_whitelisted = false;
     if (eth_utxn_ptr->payload_size > 0) {
-    switch (U32_READ_BE_ARRAY(eth_utxn_ptr->payload)) {
-            case TRANSFER_FUNC_SIGNATURE:
-        if (metadata_ptr->is_token_transfer) {
-          result = PAYLOAD_CONTRACT_NOT_WHITELISTED;
-          for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
-            if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-              result =
-                  (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
-                      ? PAYLOAD_WHITELISTED
-                      : PAYLOAD_CONTRACT_INVALID;
-              break;
-            }
-          }
+    if ((eth_utxn_ptr->payload_size >= 4) && (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
+        (metadata_ptr->is_token_transfer)) {
+            for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
+        if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
+          metadata_ptr->eth_val_decimal[0] = whitelisted_contracts[i].decimal;
+          eth_is_token_whitelisted         = true;
+          result = (memcmp(eth_utxn_ptr->to_address, whitelisted_contracts[i].address, ETHEREUM_ADDRESS_LENGTH) == 0)
+                       ? PAYLOAD_WHITELISTED
+                       : PAYLOAD_CONTRACT_INVALID;
           break;
         }
-            default:
-        result = (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) == ETH_UTXN_ABI_DECODE_OK)
-                     ? PAYLOAD_WHITELISTED
-                     : PAYLOAD_SIGNATURE_NOT_WHITELISTED;
-        break;
+            }
     }
+    if (!eth_is_token_whitelisted)
+            result = (ETH_ExtractArguments(eth_utxn_ptr->payload, eth_utxn_ptr->payload_size) == ETH_UTXN_ABI_DECODE_OK)
+                         ? PAYLOAD_WHITELISTED
+                         : PAYLOAD_SIGNATURE_NOT_WHITELISTED;
     }
     return result;
 }
@@ -499,7 +508,7 @@ void eth_init_msg_data(MessageData *msg_data) {
 }
 
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
-                                   size_t byte_array_len, eth_unsigned_txn *unsigned_txn_ptr, const txn_metadata *metadata_ptr)
+                                   size_t byte_array_len, eth_unsigned_txn *unsigned_txn_ptr, txn_metadata *metadata_ptr)
 {
   if(eth_unsigned_txn_byte_array == NULL || unsigned_txn_ptr == NULL || metadata_ptr == NULL) return -1; 
   memzero(unsigned_txn_ptr,sizeof(eth_unsigned_txn));
@@ -653,6 +662,13 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
             EvmFunctionSignature = EVM_deposit_Signature;
             break;
         }
+        case EVM_transfer_TAG: {
+            numArgsInFunction    = EVM_transfer_NUM_ARGS;
+            *(dpAbiTypeArray)    = (Abi_Type_e *)(&(EVM_transferDataType[0]));
+            EvmFunctionTitle     = EVM_transfer_Title;
+            EvmFunctionSignature = EVM_transfer_Signature;
+            break;
+        }
         default: {
             break;
         }
@@ -662,8 +678,8 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag, Abi_Type_e const *
     if ((NULL != EvmFunctionTitle) && (NULL != EvmFunctionSignature)) {
         ui_display_node *pAbiDispNode;
         pAbiDispNode =
-            ui_create_display_node(EvmFunctionTitle, strnlen(EvmFunctionTitle, 50),
-                                   EvmFunctionSignature, strnlen(EvmFunctionSignature, 50));
+            ui_create_display_node(EvmFunctionTitle, strnlen(EvmFunctionTitle, 100),
+                                   EvmFunctionSignature, strnlen(EvmFunctionSignature, 100));
 
         if (current_display_node == NULL) {
             current_display_node = pAbiDispNode;
@@ -807,4 +823,9 @@ void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *o
 
 uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr) {
   return txn_metadata_ptr->is_token_transfer ? txn_metadata_ptr->eth_val_decimal[0] : ETH_DECIMAL;
+}
+
+const char *eth_get_address_title(const eth_unsigned_txn *eth_unsigned_txn_ptr) {
+  return ((eth_unsigned_txn_ptr->payload_status != PAYLOAD_ABSENT && !eth_is_token_whitelisted) ? ui_text_verify_contract
+                                                                                               : ui_text_verify_address);
 }

@@ -84,7 +84,7 @@ Send_Transaction_Data var_send_transaction_data = {
         .input_count = {0}, .input = NULL,
         .output_count = {0}, .output = NULL,
         .change_count = {0}, .change = NULL,
-        .transaction_fees = {0}, .eth_val_decimal = {0},
+        .transaction_fees = {0}, .eth_val_decimal={0xff},
         .token_name = NULL, .network_chain_id = 0
     },
     .signed_transaction = {
