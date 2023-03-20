@@ -62,6 +62,7 @@
 
 void level_three_old_wallet_controller()
 {
+#if X1WALLET_MAIN == 1
     switch (flow_level.level_two) {
     case LEVEL_THREE_VIEW_SEED: {
         view_seed_controller();
@@ -128,6 +129,6 @@ void level_three_old_wallet_controller()
     default:
         break;
     }
-
     return;
+#endif
 }
