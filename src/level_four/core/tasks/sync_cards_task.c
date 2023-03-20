@@ -86,6 +86,7 @@ extern Wallet wallet;
 extern uint32_t wallets_synced_count;
 
 void sync_cards_task(){
+#if X1WALLET_MAIN == 1
     switch(flow_level.level_three) {
     case SYNC_CARDS_START:{
         mark_event_over();
@@ -131,4 +132,5 @@ void sync_cards_task(){
 
     } break;
     }
+#endif
 }
