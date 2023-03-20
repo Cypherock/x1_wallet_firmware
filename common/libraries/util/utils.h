@@ -28,13 +28,13 @@
 /// Convert bit array of size 4 to uint32
 #define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 16-bit value from big-endian serialized byte-array
-#define U16_READ_BE_ARRAY(x) ((x)[0] << 8 | (x)[1])
+#define U16_READ_BE_ARRAY(x) ((uint16_t)(x)[0] << 8 | (x)[1])
 /// Read 16-bit value from little-endian serialized byte-array
-#define U16_READ_LE_ARRAY(x) ((x)[1] << 8 | (x)[0])
+#define U16_READ_LE_ARRAY(x) ((uint16_t)(x)[1] << 8 | (x)[0])
 /// Read 32-bit value from big-endian serialized byte-array
-#define U32_READ_BE_ARRAY(x) (U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
+#define U32_READ_BE_ARRAY(x) ((uint32_t)U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
 /// Read 32-bit value from little-endian serialized byte-array
-#define U32_READ_LE_ARRAY(x) (U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
+#define U32_READ_LE_ARRAY(x) ((uint32_t)U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
 /// Read 64-bit value from big-endian serialized byte-array
 #define U64_READ_BE_ARRAY(x) (((uint64_t)U32_READ_BE_ARRAY(x) << 32) | U32_READ_BE_ARRAY(x + 4))
 /// Read 64-bit value from little-endian serialized byte-array
