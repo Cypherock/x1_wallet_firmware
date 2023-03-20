@@ -99,4 +99,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_link_libraries(${EXECUTABLE} PRIVATE ${SDL2_LIBRARIES} -lm)
+target_link_options(${EXECUTABLE} PRIVATE ${inherited})
 add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXECUTABLE})
