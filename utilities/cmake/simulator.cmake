@@ -98,6 +98,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         simulator/USB
         )
 
-target_link_libraries(${EXECUTABLE} PRIVATE ${SDL2_LIBRARIES})
-target_link_options(${EXECUTABLE} PRIVATE ${inherited} -lSDL2 -lm)
+target_link_libraries(${EXECUTABLE} PRIVATE ${SDL2_LIBRARIES} -lm)
 add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXECUTABLE})
