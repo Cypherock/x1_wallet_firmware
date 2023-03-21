@@ -60,23 +60,23 @@
 #include "tasks_level_four.h"
 #include "ui_delay.h"
 
-void task_device_authentication(){
+void task_device_authentication() {
 #if X1WALLET_INITIAL
-    switch (flow_level.level_three) {
+  switch (flow_level.level_three) {
+    case SIGN_SERIAL_NUMBER: {
+      ui_text_slideshow_init(ui_text_device_authenticating, 5, 500, false);
+      mark_event_over();
+    } break;
 
-        case SIGN_SERIAL_NUMBER: {
-            ui_text_slideshow_init(ui_text_device_authenticating, 5, 500, false);
-            mark_event_over();
-        } break;
+    case DEVICE_AUTH_INFINITE_WAIT:
+    case SIGN_CHALLENGE:
+    case AUTHENTICATION_SUCCESS:
+    case AUTHENTICATION_UNSUCCESSFUL:
+      mark_event_over();
+      break;
 
-        case DEVICE_AUTH_INFINITE_WAIT:
-        case SIGN_CHALLENGE:
-        case AUTHENTICATION_SUCCESS:
-        case AUTHENTICATION_UNSUCCESSFUL:
-          mark_event_over();
-          break;
-
-        default: break;
-    }
+    default:
+      break;
+  }
 #endif
 }

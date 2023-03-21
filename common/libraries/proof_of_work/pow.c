@@ -56,9 +56,9 @@
  ******************************************************************************
  */
 #include "pow.h"
-#include "pow_utilities.h"
-#include "board.h"
 #include "application_startup.h"
+#include "board.h"
+#include "pow_utilities.h"
 
 /**
  * @note Every byte array is assumed to be in big endian form
@@ -67,24 +67,25 @@
 static uint8_t nonce[POW_NONCE_SIZE], hash[SHA256_SIZE];
 static bool status;
 static SHA256_CTX sha2;
-static Flash_Wallet* flash_wallet; // Pointer to wallet which the device is currently trying to unlock
+static Flash_Wallet *
+    flash_wallet;  // Pointer to wallet which the device is currently trying to unlock
 extern Wallet wallet;
 //APP_TIMER_DEF(pow_timer_id);
 size_t pow_hash_rate = 1;
 
-#define SECS_TO_HASHES(sec) ((sec) *pow_hash_rate)
+#define SECS_TO_HASHES(sec) ((sec)*pow_hash_rate)
 
 void pow_init_hash_rate() {
-    uint8_t bytes_1[64] = {0};
-    size_t start_time = uwTick, hashes = 8192;
-    for (size_t i = 0; i < hashes; i++) {
-        sha256_Raw(bytes_1, sizeof(bytes_1), bytes_1);
-    }
-    size_t duration = uwTick - start_time;
-    pow_hash_rate = (hashes * 1000 / duration);
+  uint8_t bytes_1[64] = {0};
+  size_t start_time = uwTick, hashes = 8192;
+  for (size_t i = 0; i < hashes; i++) {
+    sha256_Raw(bytes_1, sizeof(bytes_1), bytes_1);
+  }
+  size_t duration = uwTick - start_time;
+  pow_hash_rate   = (hashes * 1000 / duration);
 
-    // Adjust for 5% margin of error due to 50ms hard delay in the main event loop
-    pow_hash_rate = (pow_hash_rate * 95 / 100);
+  // Adjust for 5% margin of error due to 50ms hard delay in the main event loop
+  pow_hash_rate = (pow_hash_rate * 95 / 100);
 }
 
 /**
@@ -110,23 +111,27 @@ void pow_init_hash_rate() {
  *
  * @note
  */
-static void pow_timer_handler()
-{
-    // Defining them static so that memory does not get allocated on stack after every call
-    static char new_text[MAX_NUM_OF_CHARS_IN_A_SLIDE];
-    static uint32_t new_time_to_unlock_in_secs;
+static void pow_timer_handler() {
+  // Defining them static so that memory does not get allocated on stack after every call
+  static char new_text[MAX_NUM_OF_CHARS_IN_A_SLIDE];
+  static uint32_t new_time_to_unlock_in_secs;
 
-    new_time_to_unlock_in_secs = flash_wallet->challenge.time_to_unlock_in_secs - (uint32_t)(POW_TIMER_MS / 1000);
+  new_time_to_unlock_in_secs = flash_wallet->challenge.time_to_unlock_in_secs -
+                               (uint32_t)(POW_TIMER_MS / 1000);
 
-    if (new_time_to_unlock_in_secs > flash_wallet->challenge.time_to_unlock_in_secs) {
-        // This means time has become negative
-        new_time_to_unlock_in_secs = 0;
-    }
+  if (new_time_to_unlock_in_secs >
+      flash_wallet->challenge.time_to_unlock_in_secs) {
+    // This means time has become negative
+    new_time_to_unlock_in_secs = 0;
+  }
 
-    save_nonce_flash((char *) flash_wallet->wallet_name, nonce);
-    update_time_to_unlock_flash((char *) flash_wallet->wallet_name, new_time_to_unlock_in_secs);
-    convert_secs_to_time(new_time_to_unlock_in_secs, (char *) wallet.wallet_name, new_text);
-    ui_text_slideshow_change_text(new_text, strnlen(new_text, MAX_NUM_OF_CHARS_IN_A_SLIDE), 0);
+  save_nonce_flash((char *)flash_wallet->wallet_name, nonce);
+  update_time_to_unlock_flash((char *)flash_wallet->wallet_name,
+                              new_time_to_unlock_in_secs);
+  convert_secs_to_time(new_time_to_unlock_in_secs, (char *)wallet.wallet_name,
+                       new_text);
+  ui_text_slideshow_change_text(
+      new_text, strnlen(new_text, MAX_NUM_OF_CHARS_IN_A_SLIDE), 0);
 }
 
 /**
@@ -143,67 +148,67 @@ static void pow_timer_handler()
  *
  * @note
  */
-static bool hash_smaller_than_target()
-{
-    return memcmp(flash_wallet->challenge.target, hash, SHA256_SIZE) > 0;
+static bool hash_smaller_than_target() {
+  return memcmp(flash_wallet->challenge.target, hash, SHA256_SIZE) > 0;
 }
 
-void start_proof_of_work_task(const char* name)
-{
-    if (get_flash_wallet_by_name(name, &flash_wallet) != SUCCESS_)
-        return;
+void start_proof_of_work_task(const char *name) {
+  if (get_flash_wallet_by_name(name, &flash_wallet) != SUCCESS_)
+    return;
 
-    // Set nonce = nonce in flash
-    memcpy(nonce, flash_wallet->challenge.nonce, POW_NONCE_SIZE);
-    status = true;
+  // Set nonce = nonce in flash
+  memcpy(nonce, flash_wallet->challenge.nonce, POW_NONCE_SIZE);
+  status = true;
 
-    sha256_Init(&sha2);
+  sha256_Init(&sha2);
 
-    BSP_App_Timer_Create(BSP_POW_TIMER, pow_timer_handler);
-   // APP_ERROR_CHECK(err_code);
-    BSP_App_Timer_Start(BSP_POW_TIMER, POW_TIMER_MS);
-    log_hex_array("hash", hash, sizeof(hash));
-    log_hex_array("nonce", nonce, sizeof(nonce));
-    log_hex_array("target", flash_wallet->challenge.target, sizeof(flash_wallet->challenge.target));
+  BSP_App_Timer_Create(BSP_POW_TIMER, pow_timer_handler);
+  // APP_ERROR_CHECK(err_code);
+  BSP_App_Timer_Start(BSP_POW_TIMER, POW_TIMER_MS);
+  log_hex_array("hash", hash, sizeof(hash));
+  log_hex_array("nonce", nonce, sizeof(nonce));
+  log_hex_array("target", flash_wallet->challenge.target,
+                sizeof(flash_wallet->challenge.target));
 }
 
-void stop_proof_of_work_task()
-{
-    status = false;
-    log_hex_array("hash", hash, sizeof(hash));
-    log_hex_array("nonce", nonce, sizeof(nonce));
-    log_hex_array("target", flash_wallet->challenge.target, sizeof(flash_wallet->challenge.target));
-    BSP_App_Timer_Stop(BSP_POW_TIMER);
-    pow_timer_handler();
+void stop_proof_of_work_task() {
+  status = false;
+  log_hex_array("hash", hash, sizeof(hash));
+  log_hex_array("nonce", nonce, sizeof(nonce));
+  log_hex_array("target", flash_wallet->challenge.target,
+                sizeof(flash_wallet->challenge.target));
+  BSP_App_Timer_Stop(BSP_POW_TIMER);
+  pow_timer_handler();
 }
 
-void proof_of_work_task()
-{
-    if (status) {
-        reset_inactivity_timer();
-        uint16_t limit = SECS_TO_HASHES(1); // The counter will run for x secs if limit = SECS_TO_HASHES(x)
-        //        uint32_t ticks = app_timer_cnt_get();
+void proof_of_work_task() {
+  if (status) {
+    reset_inactivity_timer();
+    uint16_t limit = SECS_TO_HASHES(
+        1);  // The counter will run for x secs if limit = SECS_TO_HASHES(x)
+    //        uint32_t ticks = app_timer_cnt_get();
 
-        //        printf("Starting Hash\n");
-        for (uint16_t counter = 0; counter < limit; counter++) {
-            // TODO : Use hardware accelerated SHA256 here
-            sha256_Init(&sha2); // To reset SHA, A better way can be searched to reset
-            sha256_Update(&sha2, flash_wallet->challenge.random_number, POW_RAND_NUMBER_SIZE);
-            sha256_Update(&sha2, nonce, POW_NONCE_SIZE);
-            sha256_Final(&sha2, hash);
+    //        printf("Starting Hash\n");
+    for (uint16_t counter = 0; counter < limit; counter++) {
+      // TODO : Use hardware accelerated SHA256 here
+      sha256_Init(
+          &sha2);  // To reset SHA, A better way can be searched to reset
+      sha256_Update(&sha2, flash_wallet->challenge.random_number,
+                    POW_RAND_NUMBER_SIZE);
+      sha256_Update(&sha2, nonce, POW_NONCE_SIZE);
+      sha256_Final(&sha2, hash);
 
-            if (hash_smaller_than_target()) {
-                stop_proof_of_work_task();
-                mark_event_over();
-                break;
-            }
+      if (hash_smaller_than_target()) {
+        stop_proof_of_work_task();
+        mark_event_over();
+        break;
+      }
 
-            increament_byte_array(nonce, POW_NONCE_SIZE);
-        }
+      increament_byte_array(nonce, POW_NONCE_SIZE);
     }
+  }
 }
 
-uint8_t* get_proof_of_work_nonce()
-{
-    return &nonce[0];
+uint8_t *get_proof_of_work_nonce() {
+  return &nonce[0];
 }

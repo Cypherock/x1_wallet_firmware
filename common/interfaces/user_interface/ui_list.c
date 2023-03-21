@@ -60,30 +60,33 @@
 
 #include "ui_list.h"
 
-static struct List_Data* data = NULL;
-static struct List_Object* obj = NULL;
+static struct List_Data *data  = NULL;
+static struct List_Object *obj = NULL;
 
-void list_init(const char option_list[24][15], const int number_of_options, const char* heading, bool dynamic_heading)
-{
-    ASSERT(option_list != NULL);
-    ASSERT(heading != NULL);
+void list_init(const char option_list[24][15],
+               const int number_of_options,
+               const char *heading,
+               bool dynamic_heading) {
+  ASSERT(option_list != NULL);
+  ASSERT(heading != NULL);
 
-    data = malloc(sizeof(struct List_Data));
-    obj = malloc(sizeof(struct List_Object));
-    ASSERT(data != NULL && obj != NULL);
+  data = malloc(sizeof(struct List_Data));
+  obj  = malloc(sizeof(struct List_Object));
+  ASSERT(data != NULL && obj != NULL);
 
-    if (data != NULL) {
-        data->number_of_options = number_of_options;
-        data->current_index = 0;
-        data->heading = (char *)heading;
+  if (data != NULL) {
+    data->number_of_options = number_of_options;
+    data->current_index     = 0;
+    data->heading           = (char *)heading;
 
-        for (uint8_t i = 0; i < number_of_options; i++) {
-            snprintf(data->option_list[i], sizeof(data->option_list[i]), "%s", option_list[i]);
-        }
+    for (uint8_t i = 0; i < number_of_options; i++) {
+      snprintf(data->option_list[i], sizeof(data->option_list[i]), "%s",
+               option_list[i]);
     }
-    data->dynamic_heading = dynamic_heading;
-    list_create();
-    LOG_INFO("list %s, %d", heading, number_of_options);
+  }
+  data->dynamic_heading = dynamic_heading;
+  list_create();
+  LOG_INFO("list %s, %d", heading, number_of_options);
 }
 
 /**
@@ -100,18 +103,17 @@ void list_init(const char option_list[24][15], const int number_of_options, cons
  *
  * @note
  */
-static void list_destructor()
-{
-    lv_obj_clean(lv_scr_act());
-    if (data != NULL) {
-        memzero(data, sizeof(struct List_Data));
-        free(data);
-        data = NULL;
-    }
-    if (obj != NULL) {
-        free(obj);
-        obj = NULL;
-    }
+static void list_destructor() {
+  lv_obj_clean(lv_scr_act());
+  if (data != NULL) {
+    memzero(data, sizeof(struct List_Data));
+    free(data);
+    data = NULL;
+  }
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
 }
 
 /**
@@ -128,27 +130,26 @@ static void list_destructor()
  *
  * @note
  */
-static void change_current_index(const lv_key_t PRESSED_KEY)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+static void change_current_index(const lv_key_t PRESSED_KEY) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    if (data->number_of_options == 1)
-        return;
-    switch (PRESSED_KEY) {
+  if (data->number_of_options == 1)
+    return;
+  switch (PRESSED_KEY) {
     case LV_KEY_RIGHT:
-        if (data->current_index < (data->number_of_options - 1)) {
-            data->current_index++;
-        }
-        break;
+      if (data->current_index < (data->number_of_options - 1)) {
+        data->current_index++;
+      }
+      break;
     case LV_KEY_LEFT:
-        if (data->current_index > 0) {
-            data->current_index--;
-        }
-        break;
+      if (data->current_index > 0) {
+        data->current_index--;
+      }
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 /**
@@ -165,25 +166,25 @@ static void change_current_index(const lv_key_t PRESSED_KEY)
  *
  * @note
  */
-static void change_arrows()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+static void change_arrows() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    if (data->number_of_options == 1)
-        return;
-    if (data->current_index <= 0) {
-        lv_obj_set_hidden(obj->left_arrow, true);
-        lv_obj_set_hidden(obj->right_arrow, false);
-    }
-    if (data->current_index >= (data->number_of_options - 1)) {
-        lv_obj_set_hidden(obj->right_arrow, true);
-        lv_obj_set_hidden(obj->left_arrow, false);
-    }
-    if (data->current_index > 0 && data->current_index < (data->number_of_options - 1)) {
-        lv_obj_set_hidden(obj->left_arrow, false);
-        lv_obj_set_hidden(obj->right_arrow, false);
-    }
+  if (data->number_of_options == 1)
+    return;
+  if (data->current_index <= 0) {
+    lv_obj_set_hidden(obj->left_arrow, true);
+    lv_obj_set_hidden(obj->right_arrow, false);
+  }
+  if (data->current_index >= (data->number_of_options - 1)) {
+    lv_obj_set_hidden(obj->right_arrow, true);
+    lv_obj_set_hidden(obj->left_arrow, false);
+  }
+  if (data->current_index > 0 &&
+      data->current_index < (data->number_of_options - 1)) {
+    lv_obj_set_hidden(obj->left_arrow, false);
+    lv_obj_set_hidden(obj->right_arrow, false);
+  }
 }
 
 /**
@@ -200,14 +201,14 @@ static void change_arrows()
  *
  * @note
  */
-static void change_heading()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+static void change_heading() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    char buffer[36]; //TODO : Add Constant
-    snprintf(buffer, sizeof(buffer), "%s%d", data->heading, data->current_index + 1);
-    lv_label_set_text(obj->heading, buffer);
+  char buffer[36];  //TODO : Add Constant
+  snprintf(buffer, sizeof(buffer), "%s%d", data->heading,
+           data->current_index + 1);
+  lv_label_set_text(obj->heading, buffer);
 }
 
 /**
@@ -225,46 +226,51 @@ static void change_heading()
  *
  * @note
  */
-static void options_event_handler(lv_obj_t* options, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-    ASSERT(options != NULL);
+static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+  ASSERT(options != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        switch (lv_indev_get_key(ui_get_indev())) {
+      switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_RIGHT:
-            if (data->number_of_options == 1)
-                break;
-            change_current_index(LV_KEY_RIGHT);
-            lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
-            change_arrows();
-            if (data->dynamic_heading == true)  change_heading();
-            if (data->current_index >= (data->number_of_options - 1)) {
-                lv_obj_set_hidden(obj->next_btn, false);
-            }
+          if (data->number_of_options == 1)
             break;
+          change_current_index(LV_KEY_RIGHT);
+          lv_label_set_static_text(lv_obj_get_child(options, NULL),
+                                   data->option_list[data->current_index]);
+          change_arrows();
+          if (data->dynamic_heading == true)
+            change_heading();
+          if (data->current_index >= (data->number_of_options - 1)) {
+            lv_obj_set_hidden(obj->next_btn, false);
+          }
+          break;
         case LV_KEY_LEFT:
-            if (data->number_of_options == 1)
-                break;
-            change_current_index(LV_KEY_LEFT);
-            lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
-            change_arrows();
-            if (data->dynamic_heading == true)  change_heading();
+          if (data->number_of_options == 1)
             break;
+          change_current_index(LV_KEY_LEFT);
+          lv_label_set_static_text(lv_obj_get_child(options, NULL),
+                                   data->option_list[data->current_index]);
+          change_arrows();
+          if (data->dynamic_heading == true)
+            change_heading();
+          break;
         case LV_KEY_DOWN:
-            lv_group_focus_obj(lv_obj_get_hidden(obj->next_btn) ? obj->back_btn : obj->next_btn);
-            break;
-        default: break;
-        }
-        break;
+          lv_group_focus_obj(lv_obj_get_hidden(obj->next_btn) ? obj->back_btn
+                                                              : obj->next_btn);
+          break;
+        default:
+          break;
+      }
+      break;
     case LV_EVENT_DEFOCUSED:
-        lv_btn_set_state(options, LV_BTN_STATE_REL);
-        break;
+      lv_btn_set_state(options, LV_BTN_STATE_REL);
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 /**
@@ -282,36 +288,36 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
  *
  * @note
  */
-static void back_btn_event_handler(lv_obj_t* back_btn, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-    ASSERT(back_btn != NULL);
+static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+  ASSERT(back_btn != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        switch (lv_indev_get_key(ui_get_indev())) {
+      switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_RIGHT:
-            if (!lv_obj_get_hidden(obj->next_btn))
-                lv_group_focus_obj(obj->next_btn);
-            break;
+          if (!lv_obj_get_hidden(obj->next_btn))
+            lv_group_focus_obj(obj->next_btn);
+          break;
         case LV_KEY_UP:
-            lv_group_focus_obj(obj->options);
-            break;
+          lv_group_focus_obj(obj->options);
+          break;
         default:
-            break;
-        }
-        break;
+          break;
+      }
+      break;
     case LV_EVENT_CLICKED:
-        if (ui_mark_event_cancel) (*ui_mark_event_cancel)();
-        list_destructor();
-        break;
+      if (ui_mark_event_cancel)
+        (*ui_mark_event_cancel)();
+      list_destructor();
+      break;
     case LV_EVENT_DEFOCUSED:
-        lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
-        break;
+      lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 /**
@@ -329,68 +335,69 @@ static void back_btn_event_handler(lv_obj_t* back_btn, const lv_event_t event)
  *
  * @note
  */
-static void next_btn_event_handler(lv_obj_t* next_btn, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-    ASSERT(next_btn != NULL);
+static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+  ASSERT(next_btn != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        switch (lv_indev_get_key(ui_get_indev())) {
+      switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_UP:
-            lv_group_focus_obj(obj->options);
-            break;
+          lv_group_focus_obj(obj->options);
+          break;
         case LV_KEY_LEFT:
-            lv_group_focus_obj(obj->back_btn);
-            break;
+          lv_group_focus_obj(obj->back_btn);
+          break;
         default:
-            break;
-        }
-        break;
+          break;
+      }
+      break;
     case LV_EVENT_CLICKED:
-        if (ui_mark_event_over) (*ui_mark_event_over)();
-        list_destructor();
-        break;
+      if (ui_mark_event_over)
+        (*ui_mark_event_over)();
+      list_destructor();
+      break;
     case LV_EVENT_DEFOCUSED:
-        lv_btn_set_state(next_btn, LV_BTN_STATE_REL);
-        break;
+      lv_btn_set_state(next_btn, LV_BTN_STATE_REL);
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
-void list_create()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+void list_create() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    char buffer[36] = {0};
+  char buffer[36] = {0};
 
-    if (data->dynamic_heading == true) {
-        snprintf(buffer, sizeof(buffer), "%s%d", data->heading, data->current_index + 1);
-    } else {
-        strcpy(buffer, data->heading);
-    }
+  if (data->dynamic_heading == true) {
+    snprintf(buffer, sizeof(buffer), "%s%d", data->heading,
+             data->current_index + 1);
+  } else {
+    strcpy(buffer, data->heading);
+  }
 
-    obj->heading = lv_label_create(lv_scr_act(), NULL);
-    obj->options = lv_btn_create(lv_scr_act(), NULL);
-    obj->left_arrow = lv_label_create(lv_scr_act(), NULL);
-    obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
-    obj->back_btn = lv_btn_create(lv_scr_act(), NULL);
-    obj->next_btn = lv_btn_create(lv_scr_act(), NULL);
+  obj->heading     = lv_label_create(lv_scr_act(), NULL);
+  obj->options     = lv_btn_create(lv_scr_act(), NULL);
+  obj->left_arrow  = lv_label_create(lv_scr_act(), NULL);
+  obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
+  obj->back_btn    = lv_btn_create(lv_scr_act(), NULL);
+  obj->next_btn    = lv_btn_create(lv_scr_act(), NULL);
 
-    ui_heading(obj->heading, buffer, LV_HOR_RES - 20, LV_LABEL_ALIGN_CENTER);
-    ui_options(obj->options, options_event_handler, obj->right_arrow, obj->left_arrow, data->option_list[data->current_index]);
-    ui_back_btn(obj->back_btn, back_btn_event_handler);
-    ui_next_btn(obj->next_btn, next_btn_event_handler, false);
+  ui_heading(obj->heading, buffer, LV_HOR_RES - 20, LV_LABEL_ALIGN_CENTER);
+  ui_options(obj->options, options_event_handler, obj->right_arrow,
+             obj->left_arrow, data->option_list[data->current_index]);
+  ui_back_btn(obj->back_btn, back_btn_event_handler);
+  ui_next_btn(obj->next_btn, next_btn_event_handler, false);
 
-    lv_obj_set_hidden(obj->left_arrow, true);
-    lv_obj_set_click(obj->options, false); // Disable the middle button
+  lv_obj_set_hidden(obj->left_arrow, true);
+  lv_obj_set_click(obj->options, false);  // Disable the middle button
 
-    if (data->number_of_options == 1) {
-        lv_obj_set_hidden(obj->right_arrow, true);
-    } else {
-        lv_obj_set_hidden(obj->next_btn, true);
-    }
+  if (data->number_of_options == 1) {
+    lv_obj_set_hidden(obj->right_arrow, true);
+  } else {
+    lv_obj_set_hidden(obj->next_btn, true);
+  }
 }

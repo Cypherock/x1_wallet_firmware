@@ -24,4 +24,4 @@
 #define DEBUG_TO_TERMINAL (1)
 #define DEBUG_TO_APP      (1)
 
-#endif //LOGGER_CONFIG_H
+#endif  //LOGGER_CONFIG_H

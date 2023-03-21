@@ -56,78 +56,76 @@
  ******************************************************************************
  */
 #include "bip39.h"
+#include "controller_main.h"
+#include "flash_api.h"
 #include "shamir_wrapper.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_message.h"
 #include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
-#include "controller_main.h"
-#include "flash_api.h"
-#include "ui_multi_instruction.h"
+#include "ui_input_text.h"
 #include "ui_instruction.h"
+#include "ui_list.h"
+#include "ui_message.h"
+#include "ui_multi_instruction.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 
-void verify_wallet_tasks()
-{
-    switch (flow_level.level_three) {
+void verify_wallet_tasks() {
+  switch (flow_level.level_three) {
     case VERIFY_WALLET_START:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case VERIFY_WALLET_PIN_INPUT:
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
-        break;
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      break;
 
     case VERIFY_WALLET_TAP_CARDS_FLOW:
-        tap_cards_for_verification_flow();
-        break;
+      tap_cards_for_verification_flow();
+      break;
 
     case VERIFY_WALLET_DATA: {
-        instruction_scr_init(ui_text_processing, "");
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
+      instruction_scr_init(ui_text_processing, "");
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
     } break;
 
     case VERIFY_WALLET_SUCCESS: {
-        instruction_scr_destructor();
-        const char *messages[6] = {
-            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
-            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
-            ui_text_verification_is_now_complete_messages[5], NULL};
-        uint8_t count = 5;
+      instruction_scr_destructor();
+      const char *messages[6] = {
+          ui_text_verification_is_now_complete_messages[0],
+          ui_text_verification_is_now_complete_messages[1],
+          ui_text_verification_is_now_complete_messages[2],
+          ui_text_verification_is_now_complete_messages[4],
+          ui_text_verification_is_now_complete_messages[5],
+          NULL};
+      uint8_t count = 5;
 
-        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            messages[3] = ui_text_verification_is_now_complete_messages[3];
-            messages[4] = ui_text_verification_is_now_complete_messages[4];
-            messages[5] = ui_text_verification_is_now_complete_messages[5];
-            count = 6;
-        }
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        messages[3] = ui_text_verification_is_now_complete_messages[3];
+        messages[4] = ui_text_verification_is_now_complete_messages[4];
+        messages[5] = ui_text_verification_is_now_complete_messages[5];
+        count       = 6;
+      }
 
-        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+      multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
     } break;
 
     case VERIFY_WALLET_DELETE:
-        instruction_scr_destructor();
-        address_scr_init(ui_text_verification_cancelled, (char *) ui_text_delete_this_wallet, false);
-        break;
+      instruction_scr_destructor();
+      address_scr_init(ui_text_verification_cancelled,
+                       (char *)ui_text_delete_this_wallet, false);
+      break;
 
     default:
-        break;
-    }
+      break;
+  }
 }

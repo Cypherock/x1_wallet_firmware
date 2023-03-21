@@ -47,7 +47,8 @@ uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]);
  *
  * Time in secs ~ 2^(256-n)/(Hash Rate)
  */
-void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* time_in_secs_out);
+void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE],
+                                 uint32_t *time_in_secs_out);
 
 /**
  * @brief Convert secs to displayable string
@@ -66,9 +67,8 @@ void pow_get_approx_time_in_secs(const uint8_t target[SHA256_SIZE], uint32_t* ti
  * @note This function rounds off to nearest and largest exceptable time. Exceptable time includes : 5 mins, 1 hour, 5 hours, 1 day...
  * @example 120 seconds --> 5 minutes
  */
-void convert_secs_to_time(
-    uint32_t time_in_secs,
-    const char wallet_name[NAME_SIZE],
-    char out_string[MAX_NUM_OF_CHARS_IN_A_SLIDE]);
+void convert_secs_to_time(uint32_t time_in_secs,
+                          const char wallet_name[NAME_SIZE],
+                          char out_string[MAX_NUM_OF_CHARS_IN_A_SLIDE]);
 
 #endif

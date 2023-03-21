@@ -18,27 +18,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-#include "../crypto/bip39.h"
+#include "../crypto/base58.h"
 #include "../crypto/bip32.h"
+#include "../crypto/bip39.h"
 #include "../crypto/curves.h"
-#include "../crypto/secp256k1.h"
-#include "../crypto/sha2.h"
 #include "../crypto/ecdsa.h"
 #include "../crypto/ripemd160.h"
-#include "../crypto/base58.h"
+#include "../crypto/secp256k1.h"
+#include "../crypto/sha2.h"
 #include "../crypto/sha3.h"
-#include "coin_utils.h"
 #include "abi.h"
+#include "coin_utils.h"
 #include "eip712.pb.h"
 
-#define ETHEREUM_PURPOSE_INDEX    0x8000002C
-#define ETHEREUM_COIN_INDEX       0x8000003C
+#define ETHEREUM_PURPOSE_INDEX 0x8000002C
+#define ETHEREUM_COIN_INDEX    0x8000003C
 
-#define ETHEREUM_MAINNET_CHAIN    1
+#define ETHEREUM_MAINNET_CHAIN 1
 
-#define ETHEREUM_MAINNET_NAME   "Ethereum"
-#define ETHEREUM_TOKEN_SYMBOL   "ETH"
+#define ETHEREUM_MAINNET_NAME "Ethereum"
+#define ETHEREUM_TOKEN_SYMBOL "ETH"
 // \x45(E) is needed otherwise \x19e is considered instead of \x19
 #define ETH_PERSONAL_SIGN_IDENTIFIER   "\x19\x45thereum Signed Message:\n"
 #define ETH_SIGN_TYPED_DATA_IDENTIFIER "\x19\x01"
@@ -48,9 +47,9 @@
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
 /// Ref: https://ethereum.org/en/developers/docs/intro-to-ether/#denominations
-#define ETH_DECIMAL          (18U)
+#define ETH_DECIMAL (18U)
 
-#define ETH_COIN_VERSION     0x00000000
+#define ETH_COIN_VERSION 0x00000000
 
 #define ETH_UTXN_ABI_DECODE_OK      (0xAA)
 #define ETH_UTXN_BAD_PAYLOAD        (0x11)
@@ -65,11 +64,11 @@ typedef enum { NONE, STRING, LIST } seq_type;
  * 
  */
 typedef enum {
-  PAYLOAD_ABSENT = 0x0,               // No payload present in the transaction
+  PAYLOAD_ABSENT = 0x0,  // No payload present in the transaction
   PAYLOAD_SIGNATURE_NOT_WHITELISTED,  // Payload function signature is not recognized [Blind Signing]
-  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // [OBSOLETE] Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract] [OBSOLETE]
-  PAYLOAD_CONTRACT_INVALID,           // Payload function signature and contract both are whitelisted but doesn't match [Invalid Transaction]
-  PAYLOAD_WHITELISTED,                // Payload is completely recognized [Clear Signing]
+  PAYLOAD_CONTRACT_NOT_WHITELISTED,  // [OBSOLETE] Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract] [OBSOLETE]
+  PAYLOAD_CONTRACT_INVALID,  // Payload function signature and contract both are whitelisted but doesn't match [Invalid Transaction]
+  PAYLOAD_WHITELISTED,       // Payload is completely recognized [Clear Signing]
 } PAYLOAD_STATUS;
 
 /**
@@ -82,8 +81,7 @@ typedef enum {
  * @note
  */
 #pragma pack(push, 1)
-typedef struct
-{
+typedef struct {
   uint8_t nonce_size[1];
   uint8_t nonce[32];
 
@@ -160,7 +158,8 @@ uint64_t hex2dec(const char *source);
  *
  * @note
  */
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address);
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+                        uint8_t *address);
 
 /**
  * @brief Get amount to be sent set in the eth_unsigned_txn instance
@@ -178,7 +177,8 @@ void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *a
  *
  * @note
  */
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value);
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+                       char *value);
 
 /**
  * @brief Verifies the unsigned transaction.
@@ -195,7 +195,8 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value
  *
  * @note
  */
-bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadata *metadata_ptr);
+bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
+                               txn_metadata *metadata_ptr);
 
 /**
  * @brief Convert byte array representation of unsigned transaction to eth_unsigned_txn.
@@ -236,7 +237,9 @@ int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
  *
  * @note
  */
-int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, MessageData *msg_data);
+int eth_byte_array_to_msg(const uint8_t *eth_msg,
+                          size_t byte_array_len,
+                          MessageData *msg_data);
 
 /**
  * @brief Signed unsigned byte array.
@@ -257,9 +260,12 @@ int eth_byte_array_to_msg(const uint8_t *eth_msg, size_t byte_array_len, Message
  *
  * @note
  */
-void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_t eth_unsigned_txn_len,
-                             const txn_metadata *transaction_metadata, const char *mnemonics,
-                             const char *passphrase, uint8_t *sig);
+void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
+                             uint64_t eth_unsigned_txn_len,
+                             const txn_metadata *transaction_metadata,
+                             const char *mnemonics,
+                             const char *passphrase,
+                             uint8_t *sig);
 
 /**
  * @brief Return the string representation of decimal value of transaction fee in ETH.
@@ -267,7 +273,10 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array, uint64_
  * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit and gas_price
  * @param fee_decimal_string    Output decimal string of at least 30 character long
  */
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr, char *fee_decimal_string, uint8_t size, uint8_t decimal);
+void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr,
+                        char *fee_decimal_string,
+                        uint8_t size,
+                        uint8_t decimal);
 
 /**
  * @brief Initialize MessageData structure from protobuf
@@ -296,7 +305,8 @@ void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
  * ETH_UTXN_BAD_PAYLOAD: If a payload contains invalid data
  * ETH_UTXN_ABI_DECODE_OK: If the arguments are extracted successfully
  */
-uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload, const uint64_t sizeOfPayload);
+uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
+                             const uint64_t sizeOfPayload);
 
 void eth_sign_msg_data(const MessageData *msg_data,
                        const txn_metadata *transaction_metadata,
@@ -310,7 +320,9 @@ void eth_sign_msg_data(const MessageData *msg_data,
  * @param output                Pointer to the output string
  * @param out_len               Maximum length of output string
  */
-void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len);
+void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr,
+                                   char *output,
+                                   const size_t out_len);
 
 /**
  * @brief Returns the decimal value of ethereum asset from metadata
@@ -326,7 +338,7 @@ uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr);
  * @param metadata_ptr Pointer to transaction metadata
  * @return const char* 
  */
-const char* eth_get_asset_symbol(const txn_metadata *metadata_ptr);
+const char *eth_get_asset_symbol(const txn_metadata *metadata_ptr);
 
 /**
  * @brief Returns the title for address verification in ethereum send flow

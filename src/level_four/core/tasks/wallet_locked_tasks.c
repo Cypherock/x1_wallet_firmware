@@ -66,51 +66,55 @@
 extern Flow_level flow_level;
 extern Counter counter;
 extern Wallet wallet;
-extern char* ALPHA_NUMERIC;
+extern char *ALPHA_NUMERIC;
 
-void wallet_locked_task()
-{
-    switch (flow_level.level_three) {
+void wallet_locked_task() {
+  switch (flow_level.level_three) {
     case WALLET_LOCKED_MESSAGE: {
-        char slideshow[2][MAX_NUM_OF_CHARS_IN_A_SLIDE];
-        uint8_t wallet_index;
+      char slideshow[2][MAX_NUM_OF_CHARS_IN_A_SLIDE];
+      uint8_t wallet_index;
 
-        get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
+      get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
 
-        convert_secs_to_time(get_wallet_time_to_unlock(wallet_index), (char *) wallet.wallet_name, slideshow[0]);
-        snprintf(slideshow[1], sizeof(slideshow[1]), "Multiple incorrect attempts may block %s", wallet.wallet_name);
-        char *temp[3] = {slideshow[0], (char*) ui_text_do_not_detach_device, slideshow[1]};
-        ui_text_slideshow_init((const char**) temp, 3, DELAY_TIME, false);
-        start_proof_of_work_task((const char *)wallet.wallet_name);
+      convert_secs_to_time(get_wallet_time_to_unlock(wallet_index),
+                           (char *)wallet.wallet_name, slideshow[0]);
+      snprintf(slideshow[1], sizeof(slideshow[1]),
+               "Multiple incorrect attempts may block %s", wallet.wallet_name);
+      char *temp[3] = {slideshow[0], (char *)ui_text_do_not_detach_device,
+                       slideshow[1]};
+      ui_text_slideshow_init((const char **)temp, 3, DELAY_TIME, false);
+      start_proof_of_work_task((const char *)wallet.wallet_name);
 
     } break;
 
     case WALLET_LOCKED_ENTER_PIN:
-        input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
-        break;
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      break;
 
     case WALLET_LOCKED_TAP_CARD_FRONTEND: {
-        Flash_Wallet* flash_wallet;
-        get_flash_wallet_by_name((const char *) wallet.wallet_name, &flash_wallet);
+      Flash_Wallet *flash_wallet;
+      get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
 
-        char msg[32];
-        snprintf(msg, sizeof(msg), UI_TEXT_TAP_CARD, decode_card_number(flash_wallet->challenge.card_locked));
+      char msg[32];
+      snprintf(msg, sizeof(msg), UI_TEXT_TAP_CARD,
+               decode_card_number(flash_wallet->challenge.card_locked));
 
-        instruction_scr_init(msg, NULL);
-        mark_event_over();
+      instruction_scr_init(msg, NULL);
+      mark_event_over();
     } break;
 
     case WALLET_LOCKED_TAP_CARD_BACKEND:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case WALLET_LOCKED_SUCCESS: {
-        char msg[50];
-        snprintf(msg, sizeof(msg), "Correct PIN! %s is now unlocked", wallet.wallet_name);
-        delay_scr_init(msg, DELAY_TIME);
+      char msg[50];
+      snprintf(msg, sizeof(msg), "Correct PIN! %s is now unlocked",
+               wallet.wallet_name);
+      delay_scr_init(msg, DELAY_TIME);
     } break;
 
     default:
-        break;
-    }
+      break;
+  }
 }

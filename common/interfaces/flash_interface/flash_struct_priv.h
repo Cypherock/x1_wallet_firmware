@@ -33,7 +33,7 @@ extern bool is_flash_ram_instance_loaded;
  *
  * @note
  */
-const Flash_Struct* get_flash_ram_instance();
+const Flash_Struct *get_flash_ram_instance();
 
 /**
  * @brief Save changes made to Flash_struct instance to flash.

@@ -23,11 +23,11 @@
  * @note
  */
 struct List_Data {
-	char option_list[24][15];
-	int number_of_options;
-	int current_index;
-	bool dynamic_heading;
-	char *heading;
+  char option_list[24][15];
+  int number_of_options;
+  int current_index;
+  bool dynamic_heading;
+  char *heading;
 };
 
 /**
@@ -40,12 +40,12 @@ struct List_Data {
  * @note
  */
 struct List_Object {
-	lv_obj_t *heading;
-	lv_obj_t *options;
-	lv_obj_t *left_arrow;
-	lv_obj_t *right_arrow;
-	lv_obj_t *back_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *heading;
+  lv_obj_t *options;
+  lv_obj_t *left_arrow;
+  lv_obj_t *right_arrow;
+  lv_obj_t *back_btn;
+  lv_obj_t *next_btn;
 };
 
 /**
@@ -65,7 +65,10 @@ struct List_Object {
  *
  * @note Do not use this if number of options to be displayed in list is 1.
  */
-void list_init(const char option_list[24][15], int number_of_options, const char *heading, bool dynamic_heading);
+void list_init(const char option_list[24][15],
+               int number_of_options,
+               const char *heading,
+               bool dynamic_heading);
 
 /**
  * @brief Create UI for list
@@ -73,4 +76,4 @@ void list_init(const char option_list[24][15], int number_of_options, const char
  */
 void list_create();
 
-#endif // !LIST_H
+#endif  // !LIST_H

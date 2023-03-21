@@ -1,7 +1,7 @@
 #ifndef EIP712_UTILS
 #define EIP712_UTILS
-#include "eip712.pb.h"
 #include "abi.h"
+#include "eip712.pb.h"
 
 #define BUFFER_SIZE      1024
 #define HASH_SIZE        32
@@ -28,19 +28,25 @@ typedef struct queue {
   int count;
 } queue;
 
-queue_node *new_queue_node(TypedDataStruct_TypedDataNode *tree_node, const char *prefix);
+queue_node *new_queue_node(TypedDataStruct_TypedDataNode *tree_node,
+                           const char *prefix);
 
 queue *create_queue();
 
 int is_empty(queue *q);
 
-void enqueue(queue *q, TypedDataStruct_TypedDataNode *tree_node, const char *prefix);
+void enqueue(queue *q,
+             TypedDataStruct_TypedDataNode *tree_node,
+             const char *prefix);
 
 queue_node *dequeue(queue *q);
 
-void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node, char *output, const size_t output_size);
+void fill_string_with_data(const TypedDataStruct_TypedDataNode *data_node,
+                           char *output,
+                           const size_t output_size);
 
-int hash_struct(const TypedDataStruct_TypedDataNode *data_node, uint8_t *output);
+int hash_struct(const TypedDataStruct_TypedDataNode *data_node,
+                uint8_t *output);
 
 int encode_data(const TypedDataStruct_TypedDataNode *data_node,
                 uint8_t *output,

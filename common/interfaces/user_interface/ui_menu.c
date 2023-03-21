@@ -57,29 +57,31 @@
  */
 #include "ui_menu.h"
 
-static struct Menu_Data* data = NULL;
-static struct Menu_Object* obj = NULL;
+static struct Menu_Data *data  = NULL;
+static struct Menu_Object *obj = NULL;
 
-void menu_init(const char* option_list[], const int number_of_options, const char heading[], const bool back_button_allowed)
-{
-    data = NULL;
-    data = malloc(sizeof(struct Menu_Data));
-    obj = NULL;
-    obj = malloc(sizeof(struct Menu_Object));
-    ASSERT(data != NULL && obj != NULL);
+void menu_init(const char *option_list[],
+               const int number_of_options,
+               const char heading[],
+               const bool back_button_allowed) {
+  data = NULL;
+  data = malloc(sizeof(struct Menu_Data));
+  obj  = NULL;
+  obj  = malloc(sizeof(struct Menu_Object));
+  ASSERT(data != NULL && obj != NULL);
 
-    if (data != NULL) {
-        data->number_of_options = number_of_options;
-        data->current_index = 0;
-        data->back_button_allowed = back_button_allowed;
-        snprintf(data->heading, sizeof(data->heading), "%s", heading);
+  if (data != NULL) {
+    data->number_of_options   = number_of_options;
+    data->current_index       = 0;
+    data->back_button_allowed = back_button_allowed;
+    snprintf(data->heading, sizeof(data->heading), "%s", heading);
 
-        for (uint8_t i = 0; i < number_of_options; i++) {
-            data->option_list[i] = (char*) option_list[i];
-        }
+    for (uint8_t i = 0; i < number_of_options; i++) {
+      data->option_list[i] = (char *)option_list[i];
     }
-    menu_create();
-    LOG_INFO("menu %s, %d", heading, number_of_options);
+  }
+  menu_create();
+  LOG_INFO("menu %s, %d", heading, number_of_options);
 }
 
 /**
@@ -96,17 +98,16 @@ void menu_init(const char* option_list[], const int number_of_options, const cha
  *
  * @note
  */
-static void menu_destructor()
-{
-    if (data != NULL) {
-        memzero(data, sizeof(struct Menu_Data));
-        free(data);
-        data = NULL;
-    }
-    if (obj != NULL) {
-        free(obj);
-        obj = NULL;
-    }
+static void menu_destructor() {
+  if (data != NULL) {
+    memzero(data, sizeof(struct Menu_Data));
+    free(data);
+    data = NULL;
+  }
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
 }
 
 /**
@@ -124,50 +125,56 @@ static void menu_destructor()
  *
  * @note
  */
-static void options_event_handler(lv_obj_t* options, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-    ASSERT(options != NULL);
+static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+  ASSERT(options != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        if (lv_btn_get_state(options) == LV_BTN_STATE_PR) {
-            lv_btn_set_state(options, LV_BTN_STATE_REL);
-        }
-        switch (lv_indev_get_key(ui_get_indev())) {
-        case LV_KEY_RIGHT:
-            data->current_index++;
-            data->current_index = data->current_index % data->number_of_options;
-            lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
-            break;
-        case LV_KEY_LEFT:
-            data->current_index--;
-            data->current_index += data->number_of_options; //Adding this to ensure current_index does not return negative number
-            data->current_index = data->current_index % data->number_of_options;
-            lv_label_set_static_text(lv_obj_get_child(options, NULL), data->option_list[data->current_index]);
-            break;
-        case LV_KEY_UP:
-            //nothing to focus above this button
-            break;
-        case LV_KEY_DOWN:
-            if (data->back_button_allowed)
-                lv_group_focus_obj(obj->back_btn);
-            break;
-        default: break;
-        }
-        break;
-    case LV_EVENT_CLICKED:
-        if (ui_mark_list_choice) (*ui_mark_list_choice)(data->current_index + 1);
-        lv_obj_clean(lv_scr_act());
-        if (ui_mark_event_over) (*ui_mark_event_over)();
-        menu_destructor();
-        break;
-    case LV_EVENT_DEFOCUSED:
+      if (lv_btn_get_state(options) == LV_BTN_STATE_PR) {
         lv_btn_set_state(options, LV_BTN_STATE_REL);
-        break;
-    default: break;
-    }
+      }
+      switch (lv_indev_get_key(ui_get_indev())) {
+        case LV_KEY_RIGHT:
+          data->current_index++;
+          data->current_index = data->current_index % data->number_of_options;
+          lv_label_set_static_text(lv_obj_get_child(options, NULL),
+                                   data->option_list[data->current_index]);
+          break;
+        case LV_KEY_LEFT:
+          data->current_index--;
+          data->current_index +=
+              data->number_of_options;  //Adding this to ensure current_index does not return negative number
+          data->current_index = data->current_index % data->number_of_options;
+          lv_label_set_static_text(lv_obj_get_child(options, NULL),
+                                   data->option_list[data->current_index]);
+          break;
+        case LV_KEY_UP:
+          //nothing to focus above this button
+          break;
+        case LV_KEY_DOWN:
+          if (data->back_button_allowed)
+            lv_group_focus_obj(obj->back_btn);
+          break;
+        default:
+          break;
+      }
+      break;
+    case LV_EVENT_CLICKED:
+      if (ui_mark_list_choice)
+        (*ui_mark_list_choice)(data->current_index + 1);
+      lv_obj_clean(lv_scr_act());
+      if (ui_mark_event_over)
+        (*ui_mark_event_over)();
+      menu_destructor();
+      break;
+    case LV_EVENT_DEFOCUSED:
+      lv_btn_set_state(options, LV_BTN_STATE_REL);
+      break;
+    default:
+      break;
+  }
 }
 
 /**
@@ -185,53 +192,54 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
  *
  * @note
  */
-static void back_btn_event_handler(lv_obj_t* back_btn, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
-    ASSERT(back_btn != NULL);
+static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+  ASSERT(back_btn != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        switch (lv_indev_get_key(ui_get_indev())) {
+      switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_UP:
-            lv_group_focus_obj(obj->options);
-            break;
+          lv_group_focus_obj(obj->options);
+          break;
         default:
-            break;
-        }
-        break;
+          break;
+      }
+      break;
     case LV_EVENT_CLICKED:
-        lv_obj_clean(lv_scr_act());
-        if (ui_mark_event_cancel) (*ui_mark_event_cancel)();
-        menu_destructor();
-        break;
+      lv_obj_clean(lv_scr_act());
+      if (ui_mark_event_cancel)
+        (*ui_mark_event_cancel)();
+      menu_destructor();
+      break;
     case LV_EVENT_DEFOCUSED:
-        lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
-        break;
+      lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
-void menu_create()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+void menu_create() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    obj->heading = lv_label_create(lv_scr_act(), NULL);
-    obj->options = lv_btn_create(lv_scr_act(), NULL);
-    obj->left_arrow = lv_label_create(lv_scr_act(), NULL);
-    obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
-    if (data->back_button_allowed)
-        obj->back_btn = lv_btn_create(lv_scr_act(), NULL);
+  obj->heading     = lv_label_create(lv_scr_act(), NULL);
+  obj->options     = lv_btn_create(lv_scr_act(), NULL);
+  obj->left_arrow  = lv_label_create(lv_scr_act(), NULL);
+  obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
+  if (data->back_button_allowed)
+    obj->back_btn = lv_btn_create(lv_scr_act(), NULL);
 
-    ui_heading(obj->heading, data->heading, LV_HOR_RES - 20, LV_LABEL_ALIGN_CENTER);
-    ui_options(obj->options, options_event_handler, obj->right_arrow, obj->left_arrow, data->option_list[data->current_index]);
-    if (data->back_button_allowed)
-        ui_back_btn(obj->back_btn, back_btn_event_handler);
-    if(data->number_of_options<=1){
-      lv_obj_set_hidden(obj->left_arrow, true);
-      lv_obj_set_hidden(obj->right_arrow, true);
-    }
+  ui_heading(obj->heading, data->heading, LV_HOR_RES - 20,
+             LV_LABEL_ALIGN_CENTER);
+  ui_options(obj->options, options_event_handler, obj->right_arrow,
+             obj->left_arrow, data->option_list[data->current_index]);
+  if (data->back_button_allowed)
+    ui_back_btn(obj->back_btn, back_btn_event_handler);
+  if (data->number_of_options <= 1) {
+    lv_obj_set_hidden(obj->left_arrow, true);
+    lv_obj_set_hidden(obj->right_arrow, true);
+  }
 }

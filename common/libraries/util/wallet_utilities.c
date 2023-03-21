@@ -56,99 +56,108 @@
  ******************************************************************************
  */
 #include "wallet_utilities.h"
+#include <string.h>
 #include "bip32.h"
 #include "bip39.h"
-#include "sha2.h"
 #include "curves.h"
-#include "utils.h"
 #include "logger.h"
-#include <string.h>
+#include "sha2.h"
+#include "utils.h"
 
-void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonics)
-{
-    HDNode node;
-    uint8_t seed[64];
-    char passphrase[256];
+void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE],
+                         const char *mnemonics) {
+  HDNode node;
+  uint8_t seed[64];
+  char passphrase[256];
 
-    memset(seed, 0, 64);
-    memset(passphrase, 0, 256);
-    mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
-    //m
-    hdnode_from_seed(seed, 64, SECP256K1_NAME, &node);
-    hdnode_fill_public_key(&node);
-    //m/44'
-    hdnode_private_ckd(&node, 0x800003E8);
-    hdnode_private_ckd(&node, 0x80000000);
-    hdnode_private_ckd(&node, 0x80000003);
-    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/3'/1
-    hdnode_fill_public_key(&node);
+  memset(seed, 0, 64);
+  memset(passphrase, 0, 256);
+  mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
+  //m
+  hdnode_from_seed(seed, 64, SECP256K1_NAME, &node);
+  hdnode_fill_public_key(&node);
+  //m/44'
+  hdnode_private_ckd(&node, 0x800003E8);
+  hdnode_private_ckd(&node, 0x80000000);
+  hdnode_private_ckd(&node, 0x80000003);
+  hdnode_private_ckd(&node, 0x00000001);  // m/1000'/0'/3'/1
+  hdnode_fill_public_key(&node);
 
-    sha256_Raw(node.public_key, sizeof(node.public_key), wallet_id);
-    sha256_Raw(wallet_id, SHA256_DIGEST_LENGTH, wallet_id);
+  sha256_Raw(node.public_key, sizeof(node.public_key), wallet_id);
+  sha256_Raw(wallet_id, SHA256_DIGEST_LENGTH, wallet_id);
 }
 
 void derive_beneficiary_key(
     uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
     uint8_t iv_for_beneficiary_key[IV_FOR_BENEFICIARY_KEY_SIZE],
-    const char* mnemonics)
-{
-    HDNode node;
-    uint8_t seed[64];
-    char passphrase[256];
+    const char *mnemonics) {
+  HDNode node;
+  uint8_t seed[64];
+  char passphrase[256];
 
-    memset(seed, 0, 64);
-    memset(passphrase, 0, 256);
-    mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
-    hdnode_from_seed(seed, 64, SECP256K1_NAME, &node); //m
-    hdnode_private_ckd(&node, 0x800003E8);
-    hdnode_private_ckd(&node, 0x80000000);
-    hdnode_private_ckd(&node, 0x80000004);
-    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/4'/1
+  memset(seed, 0, 64);
+  memset(passphrase, 0, 256);
+  mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
+  hdnode_from_seed(seed, 64, SECP256K1_NAME, &node);  //m
+  hdnode_private_ckd(&node, 0x800003E8);
+  hdnode_private_ckd(&node, 0x80000000);
+  hdnode_private_ckd(&node, 0x80000004);
+  hdnode_private_ckd(&node, 0x00000001);  // m/1000'/0'/4'/1
 
-    uint8_t hash[64];
-    sha512_Raw(node.private_key, 32, hash);
+  uint8_t hash[64];
+  sha512_Raw(node.private_key, 32, hash);
 
-    uint8_t bytes_copied = 0;
-    memcpy(beneficiary_key, hash + bytes_copied, BENEFICIARY_KEY_SIZE);
-    bytes_copied += BENEFICIARY_KEY_SIZE;
-    memcpy(iv_for_beneficiary_key, hash + bytes_copied, IV_FOR_BENEFICIARY_KEY_SIZE);
+  uint8_t bytes_copied = 0;
+  memcpy(beneficiary_key, hash + bytes_copied, BENEFICIARY_KEY_SIZE);
+  bytes_copied += BENEFICIARY_KEY_SIZE;
+  memcpy(iv_for_beneficiary_key, hash + bytes_copied,
+         IV_FOR_BENEFICIARY_KEY_SIZE);
 }
 
-void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics)
-{
-    HDNode node;
-    uint8_t seed[64];
-    char passphrase[256];
+void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics) {
+  HDNode node;
+  uint8_t seed[64];
+  char passphrase[256];
 
-    memset(seed, 0, 64);
-    memset(passphrase, 0, 256);
-    mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
-    hdnode_from_seed(seed, 64, SECP256K1_NAME, &node); //m
-    hdnode_private_ckd(&node, 0x800003E8);
-    hdnode_private_ckd(&node, 0x80000000);
-    hdnode_private_ckd(&node, 0x80000002);
-    hdnode_private_ckd(&node, 0x00000001);      // m/1000'/0'/2'/1
+  memset(seed, 0, 64);
+  memset(passphrase, 0, 256);
+  mnemonic_to_seed(mnemonics, passphrase, seed, NULL);
+  hdnode_from_seed(seed, 64, SECP256K1_NAME, &node);  //m
+  hdnode_private_ckd(&node, 0x800003E8);
+  hdnode_private_ckd(&node, 0x80000000);
+  hdnode_private_ckd(&node, 0x80000002);
+  hdnode_private_ckd(&node, 0x00000001);  // m/1000'/0'/2'/1
 
-    uint8_t hash[KEY_SIZE];
-    sha256_Raw(node.private_key, sizeof(node.private_key), hash);
-    memcpy(key, hash, KEY_SIZE);
+  uint8_t hash[KEY_SIZE];
+  sha256_Raw(node.private_key, sizeof(node.private_key), hash);
+  memcpy(key, hash, KEY_SIZE);
 }
 
 Card_Data_errors_t validate_wallet(Wallet *wallet) {
-    if (wallet == NULL) return true;
-    if (!verify_checksum(wallet)) return INVALID_CHECKSUM;
-    if (strnlen((char *) wallet->wallet_name, NAME_SIZE) >= NAME_SIZE) return INVALID_NAME_LENGTH;
-    if (wallet->wallet_info & 0xF8) return INVALID_WALLET_CONFIG;
-    if (WALLET_IS_PIN_SET(wallet->wallet_info) && 
-        is_zero(wallet->password_double_hash, sizeof(wallet->password_double_hash))) {
-        return INVALID_WALLET_CONFIG;
-    }
-    if (wallet->number_of_mnemonics % 6 || wallet->number_of_mnemonics < 12 || wallet->number_of_mnemonics > 24) {
-        return INVALID_MNEMONIC_LENGTH;
-    }
-    if (wallet->minimum_number_of_shares != MINIMUM_NO_OF_SHARES) return INVALID_SHAMIR_CONFIG;
-    if (wallet->total_number_of_shares != TOTAL_NUMBER_OF_SHARES) return INVALID_SHAMIR_CONFIG;
-    if (wallet->xcor >= TOTAL_NUMBER_OF_SHARES) return INVALID_SHARE_INDEX;
-    if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id))) return INVALID_WALLET_ID;
-    return VALID_DATA;
+  if (wallet == NULL)
+    return true;
+  if (!verify_checksum(wallet))
+    return INVALID_CHECKSUM;
+  if (strnlen((char *)wallet->wallet_name, NAME_SIZE) >= NAME_SIZE)
+    return INVALID_NAME_LENGTH;
+  if (wallet->wallet_info & 0xF8)
+    return INVALID_WALLET_CONFIG;
+  if (WALLET_IS_PIN_SET(wallet->wallet_info) &&
+      is_zero(wallet->password_double_hash,
+              sizeof(wallet->password_double_hash))) {
+    return INVALID_WALLET_CONFIG;
+  }
+  if (wallet->number_of_mnemonics % 6 || wallet->number_of_mnemonics < 12 ||
+      wallet->number_of_mnemonics > 24) {
+    return INVALID_MNEMONIC_LENGTH;
+  }
+  if (wallet->minimum_number_of_shares != MINIMUM_NO_OF_SHARES)
+    return INVALID_SHAMIR_CONFIG;
+  if (wallet->total_number_of_shares != TOTAL_NUMBER_OF_SHARES)
+    return INVALID_SHAMIR_CONFIG;
+  if (wallet->xcor >= TOTAL_NUMBER_OF_SHARES)
+    return INVALID_SHARE_INDEX;
+  if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id)))
+    return INVALID_WALLET_ID;
+  return VALID_DATA;
 }

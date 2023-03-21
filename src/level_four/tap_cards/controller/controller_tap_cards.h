@@ -11,9 +11,9 @@
 #ifndef CONTROLLER_TAP_CARDS_H
 #define CONTROLLER_TAP_CARDS_H
 
+#include "buzzer.h"
 #include "controller_main.h"
 #include "nfc.h"
-#include "buzzer.h"
 #include "sha2.h"
 
 /**
@@ -26,20 +26,21 @@
  * @note
  */
 typedef struct NFC_connection_data {
-    uint8_t desktop_control;
-    uint8_t active_cmd_type;
-    int8_t keystore_index;
-    uint8_t acceptable_cards;
-    uint8_t tapped_card;
-    uint8_t lvl3_retry_point;
-    uint8_t lvl4_retry_point;
-    uint8_t resume_point;
-    uint8_t retries;
-    uint8_t family_id[FAMILY_ID_SIZE + 2]; //TODO: Review(need to find reason for extra byte)
-    uint8_t card_key_id[4];
-    uint8_t recovery_mode;
-    uint8_t card_absent_retries;
-    ISO7816 status;
+  uint8_t desktop_control;
+  uint8_t active_cmd_type;
+  int8_t keystore_index;
+  uint8_t acceptable_cards;
+  uint8_t tapped_card;
+  uint8_t lvl3_retry_point;
+  uint8_t lvl4_retry_point;
+  uint8_t resume_point;
+  uint8_t retries;
+  uint8_t family_id[FAMILY_ID_SIZE +
+                    2];  //TODO: Review(need to find reason for extra byte)
+  uint8_t card_key_id[4];
+  uint8_t recovery_mode;
+  uint8_t card_absent_retries;
+  ISO7816 status;
 } NFC_connection_data;
 
 extern NFC_connection_data tap_card_data;

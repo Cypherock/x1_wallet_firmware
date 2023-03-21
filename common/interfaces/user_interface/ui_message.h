@@ -22,7 +22,7 @@
  * @note Add constant
  */
 struct Message_Data {
-    char* message;
+  char *message;
 };
 
 /**
@@ -35,8 +35,8 @@ struct Message_Data {
  * @note
  */
 struct Message_Object {
-    lv_obj_t* message;
-    lv_obj_t* next_btn;
+  lv_obj_t *message;
+  lv_obj_t *next_btn;
 };
 
 /**
@@ -54,7 +54,7 @@ struct Message_Object {
  *
  * @note
  */
-void message_scr_init(const char* message);
+void message_scr_init(const char *message);
 
 /**
  * @brief Create message screen
@@ -72,4 +72,4 @@ void message_scr_init(const char* message);
  */
 void message_scr_create();
 
-#endif // !UI_MESSAGE_H
+#endif  // !UI_MESSAGE_H

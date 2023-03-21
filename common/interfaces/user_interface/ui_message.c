@@ -63,24 +63,23 @@
 #include "dev_utils.h"
 #endif
 
-static struct Message_Data* data = NULL;
-static struct Message_Object* obj = NULL;
+static struct Message_Data *data  = NULL;
+static struct Message_Object *obj = NULL;
 
-void message_scr_init(const char* message)
-{
-    ASSERT(message != NULL);
+void message_scr_init(const char *message) {
+  ASSERT(message != NULL);
 
-    data = malloc(sizeof(struct Message_Data));
-    obj = malloc(sizeof(struct Message_Object));
+  data = malloc(sizeof(struct Message_Data));
+  obj  = malloc(sizeof(struct Message_Object));
 
-    if (data != NULL) {
-        data->message = (char*)message;
-    }
+  if (data != NULL) {
+    data->message = (char *)message;
+  }
 #ifdef DEV_BUILD
-    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
-    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
+  ekp_enqueue(LV_KEY_UP, DEFAULT_DELAY);
+  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
 #endif
-    message_scr_create();
+  message_scr_create();
 }
 
 /**
@@ -97,18 +96,17 @@ void message_scr_init(const char* message)
  *
  * @note
  */
-static void message_scr_destructor()
-{
-    lv_obj_clean(lv_scr_act());
-    if (data != NULL) {
-        memzero(data, sizeof(struct Message_Data));
-        free(data);
-        data = NULL;
-    }
-    if (obj != NULL) {
-        free(obj);
-        obj = NULL;
-    }
+static void message_scr_destructor() {
+  lv_obj_clean(lv_scr_act());
+  if (data != NULL) {
+    memzero(data, sizeof(struct Message_Data));
+    free(data);
+    data = NULL;
+  }
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
 }
 
 /**
@@ -126,27 +124,26 @@ static void message_scr_destructor()
  *
  * @note
  */
-static void next_btn_event_handler(lv_obj_t* obj, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    if (event == LV_EVENT_CLICKED) {
-        if (ui_mark_event_over) (*ui_mark_event_over)();
-        message_scr_destructor();
-    }
+  if (event == LV_EVENT_CLICKED) {
+    if (ui_mark_event_over)
+      (*ui_mark_event_over)();
+    message_scr_destructor();
+  }
 }
 
-void message_scr_create()
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+void message_scr_create() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    obj->message = lv_label_create(lv_scr_act(), NULL);
-    obj->next_btn = lv_btn_create(lv_scr_act(), NULL);
+  obj->message  = lv_label_create(lv_scr_act(), NULL);
+  obj->next_btn = lv_btn_create(lv_scr_act(), NULL);
 
-    ui_paragraph(obj->message, data->message, LV_LABEL_ALIGN_CENTER);
-    ui_next_btn(obj->next_btn, next_btn_event_handler, false);
+  ui_paragraph(obj->message, data->message, LV_LABEL_ALIGN_CENTER);
+  ui_next_btn(obj->next_btn, next_btn_event_handler, false);
 
-    lv_obj_align(obj->next_btn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -2);
+  lv_obj_align(obj->next_btn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -2);
 }

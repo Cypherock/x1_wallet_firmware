@@ -22,8 +22,8 @@
  * @note
  */
 struct Address_Data {
-	char text[512];
-	char address[512];
+  char text[512];
+  char address[512];
 };
 
 /**
@@ -36,10 +36,10 @@ struct Address_Data {
  * @note
  */
 struct Address_Object {
-	lv_obj_t *heading;
-	lv_obj_t *address;
-	lv_obj_t *cancel_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *heading;
+  lv_obj_t *address;
+  lv_obj_t *cancel_btn;
+  lv_obj_t *next_btn;
 };
 
 /**
@@ -58,7 +58,9 @@ struct Address_Object {
  *
  * @note
  */
-void address_scr_init(const char text[], const char address[], bool hide_buttons);
+void address_scr_init(const char text[],
+                      const char address[],
+                      bool hide_buttons);
 
 /**
  * @brief Create address screen
@@ -108,4 +110,4 @@ void address_scr_focus_cancel();
  */
 void address_scr_focus_next();
 
-#endif // !UI_ADDRESS_H
+#endif  // !UI_ADDRESS_H

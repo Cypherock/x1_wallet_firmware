@@ -17,4 +17,4 @@ extern void cyt_card_hc(void);
 
 extern void cyc_card_hc(void);
 
-#endif // CY_CARD_HEALTH_CHECK_H
+#endif  // CY_CARD_HEALTH_CHECK_H

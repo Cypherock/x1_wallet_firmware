@@ -10,11 +10,11 @@
 #ifndef FANTOM_H
 #define FANTOM_H
 
-#define FANTOM_COIN_VERSION    0x00000000
+#define FANTOM_COIN_VERSION 0x00000000
 
-#define FANTOM_MAINNET_CHAIN    250
+#define FANTOM_MAINNET_CHAIN 250
 
-#define FANTOM_MAINNET_NAME   "Fantom Opera"
-#define FANTOM_TOKEN_SYMBOL   "FTM"
+#define FANTOM_MAINNET_NAME "Fantom Opera"
+#define FANTOM_TOKEN_SYMBOL "FTM"
 
 #endif

@@ -18,4 +18,4 @@ void cyc_factory_reset(void);
 
 void cyt_factory_reset(void);
 
-#endif // CY_FACTORY_RESET_H
+#endif  // CY_FACTORY_RESET_H

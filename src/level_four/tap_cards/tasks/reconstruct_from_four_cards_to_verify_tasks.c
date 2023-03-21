@@ -60,40 +60,37 @@
 #include "controller_main.h"
 #include "stdint.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
-#include "tasks_tap_cards.h"
 
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+void tap_cards_for_verification_flow() {
+  char display[40];
 
-
-
-void tap_cards_for_verification_flow()
-{
-    char display[40];
-
-    switch (flow_level.level_four) {
+  switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
     case TAP_CARD_TWO_FRONTEND:
     case TAP_CARD_THREE_FRONTEND:
     case TAP_CARD_FOUR_FRONTEND:
-        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
-        instruction_scr_init(ui_text_place_card_below, display);
-        mark_event_over();
-        break;
+      snprintf(display, sizeof(display), UI_TEXT_TAP_CARD,
+               ((flow_level.level_four - 1) >> 1) + 1);
+      instruction_scr_init(ui_text_place_card_below, display);
+      mark_event_over();
+      break;
 
     case TAP_CARD_ONE_BACKEND:
     case TAP_CARD_TWO_BACKEND:
     case TAP_CARD_THREE_BACKEND:
     case TAP_CARD_FOUR_BACKEND:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     default:
-        message_scr_init(ui_text_something_went_wrong);
-        break;
-    }
+      message_scr_init(ui_text_something_went_wrong);
+      break;
+  }
 }

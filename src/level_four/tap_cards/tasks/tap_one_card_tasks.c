@@ -56,118 +56,112 @@
  ******************************************************************************
  */
 #include "apdu.h"
+#include "buzzer.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_main.h"
-#include "flash_if.h"
 #include "flash_api.h"
+#include "flash_if.h"
 #include "nfc.h"
+#include "pow_utilities.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
 #include "utils.h"
-#include "pow_utilities.h"
-#include "buzzer.h"
-#include "tasks_tap_cards.h"
 
-
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-extern char* HEX;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
+extern char *HEX;
 char card_id_fetched[2 * CARD_ID_SIZE + 1];
 char card_version[2 * CARD_VERSION_SIZE + 1];
 
-
 extern bool no_wallet_on_cards;
-void tap_a_card_and_sync_task()
-{
-    switch (flow_level.level_three) { // revert back from level_three to level_four if broken
+void tap_a_card_and_sync_task() {
+  switch (
+      flow_level
+          .level_three) {  // revert back from level_three to level_four if broken
     case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-        instruction_scr_init(ui_text_tap_a_card, NULL);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_tap_a_card, NULL);
+      mark_event_over();
+      break;
     case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
     case TAP_ONE_CARD_SUCCESS_MESSAGE:
-        if(no_wallet_on_cards == true){
-            reset_flow_level();
-            flow_level.show_error_screen = true;
-            snprintf(flow_level.error_screen_text, 90, "%s", ui_text_wallet_not_found_on_x1card);
-        }
-        else{
-            delay_scr_init(ui_text_sync_wallets_next_steps, DELAY_TIME);
-        }
+      if (no_wallet_on_cards == true) {
+        reset_flow_level();
+        flow_level.show_error_screen = true;
+        snprintf(flow_level.error_screen_text, 90, "%s",
+                 ui_text_wallet_not_found_on_x1card);
+      } else {
+        delay_scr_init(ui_text_sync_wallets_next_steps, DELAY_TIME);
+      }
 
-        break;
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
-static void get_card_version(char * arr, char message[22]){
-    int offset = snprintf(message, 22, "Card version\n ");
-    message[offset++] = arr[0],message[offset++] = '.',message[offset++] = arr[1] , message[offset++] = '.' ;
-    if(arr[2] != '0')
-        message[offset++] = arr[2] , message[offset++] = arr[3];
-    else
-        message[offset++] = arr[3], message[offset++] = 0;
-
+static void get_card_version(char *arr, char message[22]) {
+  int offset        = snprintf(message, 22, "Card version\n ");
+  message[offset++] = arr[0], message[offset++] = '.',
+  message[offset++] = arr[1], message[offset++] = '.';
+  if (arr[2] != '0')
+    message[offset++] = arr[2], message[offset++] = arr[3];
+  else
+    message[offset++] = arr[3], message[offset++] = 0;
 }
 
-void tasks_read_card_id()
-{
-    switch (flow_level.level_three) { // revert back from level_three to level_four if broken
+void tasks_read_card_id() {
+  switch (
+      flow_level
+          .level_three) {  // revert back from level_three to level_four if broken
     case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-        instruction_scr_init(ui_text_tap_a_card, NULL);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_tap_a_card, NULL);
+      mark_event_over();
+      break;
     case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
-        mark_event_over();
-        break;
-    case TAP_ONE_CARD_SUCCESS_MESSAGE:{
-        char message[22];
-        get_card_version(card_version, message);
-        message_scr_init((const char *)message);
-        break;
-    
-    default:
+      mark_event_over();
+      break;
+    case TAP_ONE_CARD_SUCCESS_MESSAGE: {
+      char message[22];
+      get_card_version(card_version, message);
+      message_scr_init((const char *)message);
+      break;
+
+      default:
         break;
     }
-    }
+  }
 }
 
-void tasks_update_card_id()
-{
-    switch (flow_level.level_three) {
+void tasks_update_card_id() {
+  switch (flow_level.level_three) {
     case 1: {
-        input_text_init(
-            HEX,
-            ui_text_family_id_hex,
-            10,
-            DATA_TYPE_TEXT,
-            8);
+      input_text_init(HEX, ui_text_family_id_hex, 10, DATA_TYPE_TEXT, 8);
     }
 
     break;
 
     case 2: {
-        instruction_scr_init(ui_text_tap_a_card, NULL);
-        mark_event_over();
+      instruction_scr_init(ui_text_tap_a_card, NULL);
+      mark_event_over();
     } break;
 
     case 3: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case 4:
-        message_scr_init(ui_text_successfull);
-        break;
-    
+      message_scr_init(ui_text_successfull);
+      break;
+
     default:
-        break;
-    }
+      break;
+  }
 }

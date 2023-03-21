@@ -28,12 +28,11 @@
  *
  * @note memory to be allocated by client
  */
-void convert_to_shares(
-		uint8_t secret_len, const uint8_t secret[secret_len],
-		uint8_t total_number_of_shares,
-		uint8_t threshold_number_of_shares,
-		uint8_t shares_OUT[total_number_of_shares][secret_len]
-); 
+void convert_to_shares(uint8_t secret_len,
+                       const uint8_t secret[secret_len],
+                       uint8_t total_number_of_shares,
+                       uint8_t threshold_number_of_shares,
+                       uint8_t shares_OUT[total_number_of_shares][secret_len]);
 
 /**
  * @brief
@@ -51,12 +50,12 @@ void convert_to_shares(
  * @note memory to be allocated by client
  */
 void recover_secret_from_shares(
-		uint8_t number_of_bytes, // visualise this as horizontal length
-		uint8_t num_shares, //threshold. shares is a 2D array. visualise this as vertical height
-		const uint8_t shares[num_shares][number_of_bytes],
-		uint8_t x_coords[num_shares],
-		uint8_t secret_OUT[number_of_bytes]
-);
+    uint8_t number_of_bytes,  // visualise this as horizontal length
+    uint8_t
+        num_shares,  //threshold. shares is a 2D array. visualise this as vertical height
+    const uint8_t shares[num_shares][number_of_bytes],
+    uint8_t x_coords[num_shares],
+    uint8_t secret_OUT[number_of_bytes]);
 
 /**
  * @brief
@@ -73,14 +72,13 @@ void recover_secret_from_shares(
  * @note
  */
 void recover_share_from_shares(
-        uint8_t number_of_bytes, // visualise this as horizontal length
-        uint8_t num_shares, //threshold. shares is a 2D array. visualise this as vertical height
-        const uint8_t shares[num_shares][number_of_bytes],
-        const uint8_t x_coords[num_shares],
-        uint8_t share_OUT[number_of_bytes],
-        uint8_t out_x_cor
-);
-
+    uint8_t number_of_bytes,  // visualise this as horizontal length
+    uint8_t
+        num_shares,  //threshold. shares is a 2D array. visualise this as vertical height
+    const uint8_t shares[num_shares][number_of_bytes],
+    const uint8_t x_coords[num_shares],
+    uint8_t share_OUT[number_of_bytes],
+    uint8_t out_x_cor);
 
 /**
  * @brief
@@ -100,8 +98,12 @@ void recover_share_from_shares(
  *
  * @note
  */
-int verify_shares_NC2(uint8_t number_of_shares, uint8_t secret_size, uint8_t recovered_shamir_data_ver[number_of_shares][secret_size],
-					  uint8_t x_coords[number_of_shares], uint8_t secret[secret_size]);
+int verify_shares_NC2(
+    uint8_t number_of_shares,
+    uint8_t secret_size,
+    uint8_t recovered_shamir_data_ver[number_of_shares][secret_size],
+    uint8_t x_coords[number_of_shares],
+    uint8_t secret[secret_size]);
 
 /**
  * @brief
@@ -117,7 +119,9 @@ int verify_shares_NC2(uint8_t number_of_shares, uint8_t secret_size, uint8_t rec
  *
  * @note
  */
-int generate_shares_4C2(uint8_t recovered_shamir_data_ver[4][32], uint8_t x_coords[4], uint8_t secret[32]);
+int generate_shares_4C2(uint8_t recovered_shamir_data_ver[4][32],
+                        uint8_t x_coords[4],
+                        uint8_t secret[32]);
 
 /**
  * @brief
@@ -133,7 +137,10 @@ int generate_shares_4C2(uint8_t recovered_shamir_data_ver[4][32], uint8_t x_coor
  *
  * @note
  */
-int generate_data_4C2(uint8_t length, uint8_t recovered_shamir_data_ver[4][length], uint8_t x_coords[4], uint8_t secret[]);
+int generate_data_4C2(uint8_t length,
+                      uint8_t recovered_shamir_data_ver[4][length],
+                      uint8_t x_coords[4],
+                      uint8_t secret[]);
 
 /**
  * @brief
@@ -149,7 +156,9 @@ int generate_data_4C2(uint8_t length, uint8_t recovered_shamir_data_ver[4][lengt
  *
  * @note
  */
-int generate_shares_5C2(const uint8_t recovered_shamir_data_ver[5][32], const uint8_t x_coords[5], uint8_t secret[32]);
+int generate_shares_5C2(const uint8_t recovered_shamir_data_ver[5][32],
+                        const uint8_t x_coords[5],
+                        uint8_t secret[32]);
 
 /**
  * @brief
@@ -165,6 +174,9 @@ int generate_shares_5C2(const uint8_t recovered_shamir_data_ver[5][32], const ui
  *
  * @note
  */
-int generate_data_5C2(uint8_t length, const uint8_t recovered_shamir_data_ver[5][length], const uint8_t x_coords[5], uint8_t secret[]);
+int generate_data_5C2(uint8_t length,
+                      const uint8_t recovered_shamir_data_ver[5][length],
+                      const uint8_t x_coords[5],
+                      uint8_t secret[]);
 
 #endif

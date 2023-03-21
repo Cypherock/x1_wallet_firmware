@@ -71,14 +71,18 @@ typedef struct _MessageData {
 } MessageData;
 
 /* Helper constants for enums */
-#define _TypedDataStruct_TypedDataNode_Eip712DataType_MIN TypedDataStruct_TypedDataNode_Eip712DataType_UINT
-#define _TypedDataStruct_TypedDataNode_Eip712DataType_MAX TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT
-#define _TypedDataStruct_TypedDataNode_Eip712DataType_ARRAYSIZE \
-  ((TypedDataStruct_TypedDataNode_Eip712DataType)(TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT + 1))
+#define _TypedDataStruct_TypedDataNode_Eip712DataType_MIN \
+  TypedDataStruct_TypedDataNode_Eip712DataType_UINT
+#define _TypedDataStruct_TypedDataNode_Eip712DataType_MAX \
+  TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT
+#define _TypedDataStruct_TypedDataNode_Eip712DataType_ARRAYSIZE                                         \
+  ((TypedDataStruct_TypedDataNode_Eip712DataType)(TypedDataStruct_TypedDataNode_Eip712DataType_STRUCT + \
+                                                  1))
 
-#define _MessageData_MessageType_MIN       MessageData_MessageType_ETH_SIGN
-#define _MessageData_MessageType_MAX       MessageData_MessageType_SIGN_TYPED_DATA
-#define _MessageData_MessageType_ARRAYSIZE ((MessageData_MessageType)(MessageData_MessageType_SIGN_TYPED_DATA + 1))
+#define _MessageData_MessageType_MIN MessageData_MessageType_ETH_SIGN
+#define _MessageData_MessageType_MAX MessageData_MessageType_SIGN_TYPED_DATA
+#define _MessageData_MessageType_ARRAYSIZE \
+  ((MessageData_MessageType)(MessageData_MessageType_SIGN_TYPED_DATA + 1))
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,10 +95,16 @@ extern "C" {
   { 0, NULL }
 #define KAryTree_init_default \
   { 0, NULL, 0, NULL, NULL }
-#define TypedDataStruct_init_default \
-  { TypedDataStruct_TypedDataNode_init_default, TypedDataStruct_TypedDataNode_init_default }
-#define TypedDataStruct_TypedDataNode_init_default \
-  { NULL, _TypedDataStruct_TypedDataNode_Eip712DataType_MIN, 0, NULL, NULL, NULL, 0, NULL }
+#define TypedDataStruct_init_default               \
+  {                                                \
+    TypedDataStruct_TypedDataNode_init_default,    \
+        TypedDataStruct_TypedDataNode_init_default \
+  }
+#define TypedDataStruct_TypedDataNode_init_default                          \
+  {                                                                         \
+    NULL, _TypedDataStruct_TypedDataNode_Eip712DataType_MIN, 0, NULL, NULL, \
+        NULL, 0, NULL                                                       \
+  }
 #define MessageData_init_default \
   { _MessageData_MessageType_MIN, NULL, false, TypedDataStruct_init_default }
 #define SimpleMessage_init_zero \
@@ -103,10 +113,16 @@ extern "C" {
   { 0, NULL }
 #define KAryTree_init_zero \
   { 0, NULL, 0, NULL, NULL }
-#define TypedDataStruct_init_zero \
-  { TypedDataStruct_TypedDataNode_init_zero, TypedDataStruct_TypedDataNode_init_zero }
-#define TypedDataStruct_TypedDataNode_init_zero \
-  { NULL, _TypedDataStruct_TypedDataNode_Eip712DataType_MIN, 0, NULL, NULL, NULL, 0, NULL }
+#define TypedDataStruct_init_zero               \
+  {                                             \
+    TypedDataStruct_TypedDataNode_init_zero,    \
+        TypedDataStruct_TypedDataNode_init_zero \
+  }
+#define TypedDataStruct_TypedDataNode_init_zero                             \
+  {                                                                         \
+    NULL, _TypedDataStruct_TypedDataNode_Eip712DataType_MIN, 0, NULL, NULL, \
+        NULL, 0, NULL                                                       \
+  }
 #define MessageData_init_zero \
   { _MessageData_MessageType_MIN, NULL, false, TypedDataStruct_init_zero }
 
@@ -172,9 +188,10 @@ extern "C" {
   X(a, POINTER, OPTIONAL, BYTES, data, 5)             \
   X(a, POINTER, OPTIONAL, BYTES, type_hash, 6)        \
   X(a, POINTER, REPEATED, MESSAGE, children, 7)
-#define TypedDataStruct_TypedDataNode_CALLBACK         NULL
-#define TypedDataStruct_TypedDataNode_DEFAULT          (const pb_byte_t *)"\x10\x01\x00"
-#define TypedDataStruct_TypedDataNode_children_MSGTYPE TypedDataStruct_TypedDataNode
+#define TypedDataStruct_TypedDataNode_CALLBACK NULL
+#define TypedDataStruct_TypedDataNode_DEFAULT  (const pb_byte_t *)"\x10\x01\x00"
+#define TypedDataStruct_TypedDataNode_children_MSGTYPE \
+  TypedDataStruct_TypedDataNode
 
 #define MessageData_FIELDLIST(X, a)             \
   X(a, STATIC, REQUIRED, UENUM, messageType, 1) \

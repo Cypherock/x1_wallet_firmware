@@ -58,16 +58,15 @@
 #include "communication.h"
 #include "controller_level_four.h"
 
-void export_wallet_controller_b()
-{
-    switch (flow_level.level_three) {
+void export_wallet_controller_b() {
+  switch (flow_level.level_three) {
     case EXPORT_WALLET_SELECT_WALLET: {
-        comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     default:
-        break;
-    }
+      break;
+  }
 }

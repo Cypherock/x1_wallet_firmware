@@ -22,7 +22,7 @@
  * @note
  */
 struct Confirm_Data {
-	char *text;
+  char *text;
 };
 
 /**
@@ -35,9 +35,9 @@ struct Confirm_Data {
  * @note
  */
 struct Confirm_Object {
-	lv_obj_t *text;
-	lv_obj_t *cancel_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *text;
+  lv_obj_t *cancel_btn;
+  lv_obj_t *next_btn;
 };
 
 /**

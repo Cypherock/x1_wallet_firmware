@@ -20,8 +20,8 @@
 /// Possible device auth states
 /// @todo Use secure true/false value
 typedef enum device_auth_state {
-    DEVICE_NOT_AUTHENTICATED = 1,   ///< Signifies device is not authenticated
-    DEVICE_AUTHENTICATED = 0,       ///< Signifies device is authenticated
+  DEVICE_NOT_AUTHENTICATED = 1,  ///< Signifies device is not authenticated
+  DEVICE_AUTHENTICATED     = 0,  ///< Signifies device is authenticated
 } device_auth_state;
 
 /**
@@ -57,10 +57,10 @@ extern uint32_t FW_get_bootloader_version();
  * @since v1.0.0
  */
 #pragma pack(push, 1)
-typedef struct Wallet_share{
-    uint8_t wallet_id[WALLET_ID_SIZE];  ///< Wallet ID derived from seed
-    uint8_t wallet_share[BLOCK_SIZE];   ///< Device's (5th) share derived from seed
-}Wallet_Share_Data;
+typedef struct Wallet_share {
+  uint8_t wallet_id[WALLET_ID_SIZE];  ///< Wallet ID derived from seed
+  uint8_t wallet_share[BLOCK_SIZE];  ///< Device's (5th) share derived from seed
+} Wallet_Share_Data;
 #pragma pack(pop)
 
 /**
@@ -70,9 +70,9 @@ typedef struct Wallet_share{
  */
 #pragma pack(push, 1)
 typedef struct card_keystore {
-    uint8_t used;               ///< Flag to indicate if keystore is used
-    uint8_t key_id[4];          ///< Key ID to indentify keystore entry
-    uint8_t pairing_key[64];    ///< Shared secret for encrypted NFC communication
+  uint8_t used;             ///< Flag to indicate if keystore is used
+  uint8_t key_id[4];        ///< Key ID to indentify keystore entry
+  uint8_t pairing_key[64];  ///< Shared secret for encrypted NFC communication
 } Card_Keystore;
 #pragma pack(pop)
 
@@ -82,10 +82,10 @@ typedef struct card_keystore {
  * @since v1.0.0
  */
 #pragma pack(push, 1)
-typedef struct Sec_Flash_Data{
-    Wallet_Share_Data wallet_share_data[MAX_WALLETS_ALLOWED];
-    Card_Keystore keystore[MAX_KEYSTORE_ENTRY];
-}Sec_Flash_Struct;
+typedef struct Sec_Flash_Data {
+  Wallet_Share_Data wallet_share_data[MAX_WALLETS_ALLOWED];
+  Card_Keystore keystore[MAX_KEYSTORE_ENTRY];
+} Sec_Flash_Struct;
 #pragma pack(pop)
 
 /**
@@ -94,13 +94,17 @@ typedef struct Sec_Flash_Data{
  * @since v1.0.0
  */
 #pragma pack(push, 1)
-typedef struct Perm_Ext_Keys{
-    uint8_t device_auth_public_key[ECDSA_PUB_KEY_SIZE]; ///< Public key component of device-auth
-    uint8_t self_key_id[FS_KEYSTORE_KEYID_LEN];         ///< Key id of self key (first 4-bytes of sha256 on private key)
-    uint8_t self_key_path[FS_KEYSTORE_KEYPATH_LEN];     ///< Key path of self key
-    uint8_t priv_key[FS_KEYSTORE_PRIVKEY_LEN];          ///< Private key of device for card pairing
-    uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN];       ///< Card root xpub used for verification of card signatures
-}Perm_Ext_Keys_Struct;
+typedef struct Perm_Ext_Keys {
+  uint8_t device_auth_public_key
+      [ECDSA_PUB_KEY_SIZE];  ///< Public key component of device-auth
+  uint8_t self_key_id
+      [FS_KEYSTORE_KEYID_LEN];  ///< Key id of self key (first 4-bytes of sha256 on private key)
+  uint8_t self_key_path[FS_KEYSTORE_KEYPATH_LEN];  ///< Key path of self key
+  uint8_t priv_key
+      [FS_KEYSTORE_PRIVKEY_LEN];  ///< Private key of device for card pairing
+  uint8_t card_root_xpub
+      [FS_KEYSTORE_XPUB_LEN];  ///< Card root xpub used for verification of card signatures
+} Perm_Ext_Keys_Struct;
 #pragma pack(pop)
 
 /**
@@ -111,11 +115,13 @@ typedef struct Perm_Ext_Keys{
  * @since v1.0.0
  */
 #pragma pack(push, 1)
-typedef struct Perm_Key_Data{
-    uint8_t io_protection_key[IO_KEY_SIZE]; /** IO protection key used to establish encrypted 
+typedef struct Perm_Key_Data {
+  uint8_t io_protection_key
+      [IO_KEY_SIZE]; /** IO protection key used to establish encrypted 
                                               * communication b/w MCU and ATECC608A */
-    Perm_Ext_Keys_Struct ext_keys;          /** Keys & related-info derived on external sources */
-}Perm_Key_Data_Struct;
+  Perm_Ext_Keys_Struct
+      ext_keys; /** Keys & related-info derived on external sources */
+} Perm_Key_Data_Struct;
 #pragma pack(pop)
 
 /**
@@ -126,9 +132,9 @@ typedef struct Perm_Key_Data{
  */
 #pragma pack(push, 1)
 typedef struct Flash_Perm_Struct {
-	upgradeInfo_t bootData;             ///< Firmware upgrade data
-	Perm_Key_Data_Struct permKeyData;   ///< One-time writable keys
-	uint32_t bootCount;                 ///< Number of Boot cycles of the main application
+  upgradeInfo_t bootData;            ///< Firmware upgrade data
+  Perm_Key_Data_Struct permKeyData;  ///< One-time writable keys
+  uint32_t bootCount;  ///< Number of Boot cycles of the main application
 } Flash_Perm_Struct;
 #pragma pack(pop)
 

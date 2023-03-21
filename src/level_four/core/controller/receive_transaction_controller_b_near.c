@@ -60,57 +60,56 @@
 #include "ui_confirmation.h"
 #include "ui_instruction.h"
 
-void receive_transaction_controller_b_near()
-{
-    switch (flow_level.level_three) {
-
+void receive_transaction_controller_b_near() {
+  switch (flow_level.level_three) {
     case RECV_TXN_FIND_XPUB_NEAR: {
-        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS,0);
-        reset_flow_level();
+      comm_reject_request(RECV_TXN_USER_VERIFIED_COINS, 0);
+      reset_flow_level();
     } break;
 
-
     case RECV_TXN_ENTER_PIN_NEAR: {
-        comm_reject_request(USER_REJECT_PIN_INPUT,0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
 
     } break;
 
     case RECV_TXN_ENTER_PASSPHRASE_NEAR: {
-       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT,0);
-       reset_flow_level();
-       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-   } break;
-
-   case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
-       memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-       flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
-   } break;
-
-    case RECV_TXN_DISPLAY_ACC_NEAR:{
-        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
-        reset_flow_level();
+      comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
     } break;
 
-    case RECV_TXN_DISPLAY_ADDR_NEAR:{
-        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS,0);
-        reset_flow_level();
+    case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
+      flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_NEAR;
     } break;
 
-
-    case RECV_TXN_SELECT_REPLACE_ACC_NEAR:{
-        comm_reject_request(RECV_TXN_REPLACE_ACCOUNT,0);
-        reset_flow_level();
-        
+    case RECV_TXN_DISPLAY_ACC_NEAR: {
+      comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS, 0);
+      reset_flow_level();
     } break;
 
-    case RECV_TXN_VERIFY_SAVE_ACC_NEAR:{
-       flow_level.level_three = RECV_TXN_SELECT_REPLACE_ACC_NEAR;
+    case RECV_TXN_DISPLAY_ADDR_NEAR: {
+      comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS, 0);
+      reset_flow_level();
+    } break;
+
+    case RECV_TXN_SELECT_REPLACE_ACC_NEAR: {
+      comm_reject_request(RECV_TXN_REPLACE_ACCOUNT, 0);
+      reset_flow_level();
+
+    } break;
+
+    case RECV_TXN_VERIFY_SAVE_ACC_NEAR: {
+      flow_level.level_three = RECV_TXN_SELECT_REPLACE_ACC_NEAR;
     } break;
 
     default:
-        reset_flow_level();
-        break;
-    }
+      reset_flow_level();
+      break;
+  }
 }

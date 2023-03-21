@@ -61,89 +61,90 @@
 #include "tasks.h"
 #include "tasks_level_four.h"
 
-void level_three_old_wallet_tasks()
-{
-    // Check if desktop sent an abort command (view seed and delete wallet are not initiated by desktop, therefore excluded here)
-    if (flow_level.level_two != LEVEL_THREE_VIEW_SEED && flow_level.level_two != LEVEL_THREE_DELETE_WALLET &&
-        flow_level.level_two != LEVEL_THREE_WALLET_LOCKED && flow_level.level_two != LEVEL_THREE_VERIFY_WALLET &&
-        CY_Read_Reset_Flow()) {
-        mark_error_screen(ui_text_aborted);
-        reset_flow_level();
-        return;
-    }
+void level_three_old_wallet_tasks() {
+  // Check if desktop sent an abort command (view seed and delete wallet are not initiated by desktop, therefore excluded here)
+  if (flow_level.level_two != LEVEL_THREE_VIEW_SEED &&
+      flow_level.level_two != LEVEL_THREE_DELETE_WALLET &&
+      flow_level.level_two != LEVEL_THREE_WALLET_LOCKED &&
+      flow_level.level_two != LEVEL_THREE_VERIFY_WALLET &&
+      CY_Read_Reset_Flow()) {
+    mark_error_screen(ui_text_aborted);
+    reset_flow_level();
+    return;
+  }
 
-    switch (flow_level.level_two) {
+  switch (flow_level.level_two) {
     case LEVEL_THREE_VIEW_SEED: {
-        view_seed_task();
+      view_seed_task();
     } break;
 
     case LEVEL_THREE_DELETE_WALLET: {
-        delete_wallet_task();
+      delete_wallet_task();
     } break;
 
     case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-        if (get_wallet_count() == 0) {
-            mark_error_screen(ui_text_no_wallet_found);
-            reset_flow_level();
-        } else {
-            // Check for abort command here
-            // if aborted mark_error_screen and reset_flow_level
-            export_wallet_task();
-        }
+      if (get_wallet_count() == 0) {
+        mark_error_screen(ui_text_no_wallet_found);
+        reset_flow_level();
+      } else {
+        // Check for abort command here
+        // if aborted mark_error_screen and reset_flow_level
+        export_wallet_task();
+      }
     } break;
 
     case LEVEL_THREE_ADD_COIN: {
-        add_coin_tasks();
+      add_coin_tasks();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION: {
-        send_transaction_tasks();
+      send_transaction_tasks();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
-        send_transaction_tasks_eth();
+      send_transaction_tasks_eth();
     } break;
 
     case LEVEL_THREE_SIGN_MESSAGE_ETH: {
-        sign_message_tasks_eth();
+      sign_message_tasks_eth();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
-        send_transaction_tasks_near();
+      send_transaction_tasks_near();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
-        send_transaction_tasks_solana();
+      send_transaction_tasks_solana();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
-        receive_transaction_tasks();
+      receive_transaction_tasks();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
-        receive_transaction_tasks_eth();
+      receive_transaction_tasks_eth();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
-        receive_transaction_tasks_near();
+      receive_transaction_tasks_near();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
-        receive_transaction_tasks_solana();
+      receive_transaction_tasks_solana();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED:
-        wallet_locked_task();
-        break;
+      wallet_locked_task();
+      break;
 
     case LEVEL_THREE_VERIFY_WALLET:
-        verify_wallet_tasks();
-        break;
-    case LEVEL_THREE_SYNC_WALLET:{
-        sync_cards_task();
+      verify_wallet_tasks();
+      break;
+    case LEVEL_THREE_SYNC_WALLET: {
+      sync_cards_task();
     } break;
     default:
-        break;
-    }
-    return;
+      break;
+  }
+  return;
 }

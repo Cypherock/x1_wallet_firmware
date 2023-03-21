@@ -71,99 +71,92 @@
 #include "ui_menu.h"
 #include "utils.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-extern char* PASSPHRASE;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
+extern char *PASSPHRASE;
 
 extern Receive_Transaction_Data receive_transaction_data;
 
-void receive_transaction_tasks_eth()
-{
-
-    switch (flow_level.level_three) {
-
+void receive_transaction_tasks_eth() {
+  switch (flow_level.level_three) {
     case RECV_TXN_FIND_XPUB_ETH: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_ENTER_PASSPHRASE_ETH: {
-        if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-            flow_level.level_three = ADD_COINS_VERIFY;
-            break;
-        }
-        input_text_init(
-            PASSPHRASE,
-            ui_text_enter_passphrase,
-            0,
-            DATA_TYPE_PASSPHRASE,
-            64);
+      if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+        flow_level.level_three = ADD_COINS_VERIFY;
+        break;
+      }
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
-        char display[65];
-        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
-        memzero(display, sizeof(display));
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_passphrase, display, false);
+      memzero(display, sizeof(display));
     } break;
 
     case RECV_TXN_CHECK_PIN_ETH: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_ENTER_PIN_ETH: {
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RECV_TXN_TAP_CARD_ETH: {
-        // TODO: Use tap_threshold_cards_for_reconstruction instead
-        retrieve_key_from_card();
+      // TODO: Use tap_threshold_cards_for_reconstruction instead
+      retrieve_key_from_card();
     } break;
 
     case RECV_TXN_TAP_CARD_SEND_CMD_ETH: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_READ_DEVICE_SHARE_ETH: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN_ETH: {
-        instruction_scr_init("", NULL);
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
     } break;
 
     case RECV_TXN_DERIVE_ADD_ETH: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        instruction_scr_destructor();
-        char display[70];
-        char address_s[sizeof(receive_transaction_data.address)] = {'0', 'x', '\0'};
-        uint64_t chain_id = receive_transaction_data.network_chain_id;
-        if (chain_id != HARMONY_MAINNET_CHAIN)
-          byte_array_to_hex_string(receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash),
-                       address_s + 2, sizeof(address_s) - 2);
-        else
-          bech32_addr_encode(address_s, "one", receive_transaction_data.eth_pubkeyhash, sizeof(receive_transaction_data.eth_pubkeyhash));
-        strncpy(receive_transaction_data.address, address_s, sizeof(receive_transaction_data.address));
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address_s);
-        address_scr_init(ui_text_receive_on, display, true);//add 0x prefix
+      instruction_scr_destructor();
+      char display[70];
+      char address_s[sizeof(receive_transaction_data.address)] = {'0', 'x',
+                                                                  '\0'};
+      uint64_t chain_id = receive_transaction_data.network_chain_id;
+      if (chain_id != HARMONY_MAINNET_CHAIN)
+        byte_array_to_hex_string(
+            receive_transaction_data.eth_pubkeyhash,
+            sizeof(receive_transaction_data.eth_pubkeyhash), address_s + 2,
+            sizeof(address_s) - 2);
+      else
+        bech32_addr_encode(address_s, "one",
+                           receive_transaction_data.eth_pubkeyhash,
+                           sizeof(receive_transaction_data.eth_pubkeyhash));
+      strncpy(receive_transaction_data.address, address_s,
+              sizeof(receive_transaction_data.address));
+      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address_s);
+      address_scr_init(ui_text_receive_on, display, true);  //add 0x prefix
     } break;
 
     default:
-        break;
-    }
+      break;
+  }
 
-    return;
-
-
+  return;
 }

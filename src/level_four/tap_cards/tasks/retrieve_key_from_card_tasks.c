@@ -58,31 +58,26 @@
 #include "constant_texts.h"
 #include "controller_main.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
-#include "tasks_tap_cards.h"
 
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-
-
-
-void retrieve_key_from_card()
-{
-    switch (flow_level.level_four) {
+void retrieve_key_from_card() {
+  switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        instruction_scr_init(ui_text_tap_1_2_cards, NULL);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_tap_1_2_cards, NULL);
+      mark_event_over();
+      break;
 
     case TAP_CARD_ONE_BACKEND:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     default:
-        break;
-
-    }
+      break;
+  }
 }

@@ -58,20 +58,23 @@
 #include "ui_logo.h"
 
 void logo_scr_init(const uint16_t delay_in_ms) {
-    lv_obj_t *label = lv_label_create(lv_scr_act(), NULL);
-	lv_label_set_align(label, LV_LABEL_ALIGN_CENTER);
-	lv_obj_align(label, NULL, LV_ALIGN_IN_TOP_LEFT, 5, 25);        //Alignment may have to be manually changed according to text
+  lv_obj_t *label = lv_label_create(lv_scr_act(), NULL);
+  lv_label_set_align(label, LV_LABEL_ALIGN_CENTER);
+  lv_obj_align(
+      label, NULL, LV_ALIGN_IN_TOP_LEFT, 5,
+      25);  //Alignment may have to be manually changed according to text
 
-	static lv_style_t style;
-	lv_style_copy(&style, lv_theme_get_mono()->style.label.prim);
-	style.text.font = &my_logo;                                   //This is a file in lvgl/src/lv_font
-	lv_label_set_style(label, LV_LABEL_STYLE_MAIN, &style);
+  static lv_style_t style;
+  lv_style_copy(&style, lv_theme_get_mono()->style.label.prim);
+  style.text.font = &my_logo;  //This is a file in lvgl/src/lv_font
+  lv_label_set_style(label, LV_LABEL_STYLE_MAIN, &style);
 
-	lv_label_set_text(label, MY_LOGO_SYMBOL);
+  lv_label_set_text(label, MY_LOGO_SYMBOL);
 
-    lv_task_handler();
-    BSP_DelayMs(delay_in_ms);
-    lv_obj_clean(lv_scr_act());
+  lv_task_handler();
+  BSP_DelayMs(delay_in_ms);
+  lv_obj_clean(lv_scr_act());
 
-    if (ui_mark_event_over) (*ui_mark_event_over)();
+  if (ui_mark_event_over)
+    (*ui_mark_event_over)();
 }

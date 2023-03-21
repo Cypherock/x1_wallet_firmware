@@ -26,31 +26,37 @@
 #include "wallet.h"
 
 /// Convert bit array of size 4 to uint32
-#define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
+#define BYTE_ARRAY_TO_UINT32(x) \
+  ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 16-bit value from big-endian serialized byte-array
 #define U16_READ_BE_ARRAY(x) ((uint16_t)(x)[0] << 8 | (x)[1])
 /// Read 16-bit value from little-endian serialized byte-array
 #define U16_READ_LE_ARRAY(x) ((uint16_t)(x)[1] << 8 | (x)[0])
 /// Read 32-bit value from big-endian serialized byte-array
-#define U32_READ_BE_ARRAY(x) ((uint32_t)U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
+#define U32_READ_BE_ARRAY(x) \
+  ((uint32_t)U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
 /// Read 32-bit value from little-endian serialized byte-array
-#define U32_READ_LE_ARRAY(x) ((uint32_t)U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
+#define U32_READ_LE_ARRAY(x) \
+  ((uint32_t)U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
 /// Read 64-bit value from big-endian serialized byte-array
-#define U64_READ_BE_ARRAY(x) (((uint64_t)U32_READ_BE_ARRAY(x) << 32) | U32_READ_BE_ARRAY(x + 4))
+#define U64_READ_BE_ARRAY(x) \
+  (((uint64_t)U32_READ_BE_ARRAY(x) << 32) | U32_READ_BE_ARRAY(x + 4))
 /// Read 64-bit value from little-endian serialized byte-array
-#define U64_READ_LE_ARRAY(x) (((uint64_t)U32_READ_LE_ARRAY(x + 4) << 32) | U32_READ_LE_ARRAY(x))
+#define U64_READ_LE_ARRAY(x) \
+  (((uint64_t)U32_READ_LE_ARRAY(x + 4) << 32) | U32_READ_LE_ARRAY(x))
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U16_SWAP_ENDIANNESS(x) ((x) >> 8 | (x) << 8)
 /// Change little-endian value to big-endian ordering and vice-versa
-#define U32_SWAP_ENDIANNESS(x) ((x) << 24 | ((x)&0xff00) << 8 | ((x)&0xff0000) >> 8 | (x) >> 24)
+#define U32_SWAP_ENDIANNESS(x) \
+  ((x) << 24 | ((x)&0xff00) << 8 | ((x)&0xff0000) >> 8 | (x) >> 24)
 /// Find maximum of two values
 #define CY_MAX(a, b) ((a) > (b) ? (a) : (b))
 /// Find minimum of two values
 #define CY_MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define UTIL_INVALID_ARGUMENTS      (0x11)
-#define UTIL_OUT_OF_BOUNDS          (0x22)
-#define UTIL_IN_BOUNDS              (0xAA)
+#define UTIL_INVALID_ARGUMENTS (0x11)
+#define UTIL_OUT_OF_BOUNDS     (0x22)
+#define UTIL_IN_BOUNDS         (0xAA)
 
 /**
  * @brief Generic return codes for functions
@@ -153,7 +159,10 @@ int is_zero(const uint8_t *bytes, uint8_t len);
  *
  * @note
  */
-uint32_t byte_array_to_hex_string(const uint8_t *bytes, uint32_t len, char *hex_char, size_t out_len);
+uint32_t byte_array_to_hex_string(const uint8_t *bytes,
+                                  uint32_t len,
+                                  char *hex_char,
+                                  size_t out_len);
 
 /**
  * @brief  convert single-d mnemonics to multi-d array for listing ui
@@ -171,7 +180,9 @@ uint32_t byte_array_to_hex_string(const uint8_t *bytes, uint32_t len, char *hex_
  *
  * @note
  */
-void __single_to_multi_line(const char *input, uint16_t input_len, char output[24][15]);
+void __single_to_multi_line(const char *input,
+                            uint16_t input_len,
+                            char output[24][15]);
 
 /**
  * @brief  convert multi-d mnemonics to single-d array for trezor crypto functions
@@ -189,7 +200,9 @@ void __single_to_multi_line(const char *input, uint16_t input_len, char output[2
  *
  * @note
  */
-void __multi_to_single_line(const char input[24][15], uint8_t number_of_mnemonics, char *output);
+void __multi_to_single_line(const char input[24][15],
+                            uint8_t number_of_mnemonics,
+                            char *output);
 
 /**
  * @brief Converts a hex string to a byte array.
@@ -207,7 +220,9 @@ void __multi_to_single_line(const char input[24][15], uint8_t number_of_mnemonic
  *
  * @note
  */
-void hex_string_to_byte_array(const char *hex_string, uint32_t string_length, uint8_t *byte_array);
+void hex_string_to_byte_array(const char *hex_string,
+                              uint32_t string_length,
+                              uint8_t *byte_array);
 
 /**
  * @brief printf hex array
@@ -277,7 +292,9 @@ uint8_t encode_card_number(uint8_t decoded_card_number);
  *
  * @note
  */
-void get_firmaware_version(uint16_t pid, const char *product_hash, char message[]);
+void get_firmaware_version(uint16_t pid,
+                           const char *product_hash,
+                           char message[]);
 
 /**
  * @brief Genrate random 32 byte using BSP and atecc random generator function's
@@ -347,7 +364,10 @@ void der_to_sig(const uint8_t *der, uint8_t *sig);
  *
  * @note
  */
-void convertbase16tobase10(const uint8_t size_inp, const char *u_Inp, uint8_t *Out, const uint8_t size_out);
+void convertbase16tobase10(const uint8_t size_inp,
+                           const char *u_Inp,
+                           uint8_t *Out,
+                           const uint8_t size_out);
 
 /**
  * @brief Convert decimal to byte array
@@ -395,11 +415,12 @@ uint64_t cy_read_be(const uint8_t *bytes, uint8_t size);
  * @return true if success
  * @return false if fails
  */
-bool convert_byte_array_to_decimal_string(const uint8_t len,
-                                          const uint8_t decimal,
-                                          char *amount_string,
-                                          char *amount_decimal_string,
-                                          const size_t amount_decimal_string_size);
+bool convert_byte_array_to_decimal_string(
+    const uint8_t len,
+    const uint8_t decimal,
+    char *amount_string,
+    char *amount_decimal_string,
+    const size_t amount_decimal_string_size);
 
 /**
  * @brief Checks if reading n bytes from a memory chunk of m bytes is safe or not
@@ -413,10 +434,8 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,
  * UTIL_OUT_OF_BOUNDS: If the memory access is out of bounds
  * UTIL_IN_BOUNDS: If the memory access is within bounds
  */
-uint8_t UTIL_CheckBound(
-                        const uint8_t *pBaseAddr,
+uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
                         const uint32_t totalSizeOfChunk,
                         const uint8_t *pCurrentSrcAddr,
-                        const uint32_t readSize
-                       );
+                        const uint32_t readSize);
 #endif

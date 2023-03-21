@@ -58,100 +58,89 @@
 #include "btc.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
+#include "controller_tap_cards.h"
 #include "tasks_level_four.h"
+#include "tasks_tap_cards.h"
+#include "ui_address.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_instruction.h"
+#include "ui_list.h"
 #include "ui_menu.h"
 #include "ui_message.h"
-#include "ui_list.h"
-#include "ui_address.h"
-#include "controller_tap_cards.h"
-#include "tasks_tap_cards.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-extern char* PASSPHRASE;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
+extern char *PASSPHRASE;
 
-extern lv_task_t* success_task;
-extern lv_task_t* timeout_task;
+extern lv_task_t *success_task;
+extern lv_task_t *timeout_task;
 
 extern Add_Coin_Data add_coin_data;
 
-
-void add_coin_tasks()
-{
-    switch (flow_level.level_three) {
-
+void add_coin_tasks() {
+  switch (flow_level.level_three) {
     case ADD_COINS_VERIFY: {
-        // obsolete case; simply proceed
-        mark_event_over();
+      // obsolete case; simply proceed
+      mark_event_over();
     } break;
 
     case ADD_COINS_ENTER_PASSPHRASE: {
-        if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-            flow_level.level_three = ADD_COINS_VERIFY;
-            break;
-        }
-        input_text_init(
-            PASSPHRASE,
-            ui_text_enter_passphrase,
-            0,
-            DATA_TYPE_PASSPHRASE,
-            64);
+      if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+        flow_level.level_three = ADD_COINS_VERIFY;
+        break;
+      }
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
     } break;
 
     case ADD_COINS_CONFIRM_PASSPHRASE: {
-        char display[65];
-        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
-        memzero(display, sizeof(display));
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_passphrase, display, false);
+      memzero(display, sizeof(display));
     } break;
 
     case ADD_COINS_CHECK_PIN: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case ADD_COINS_ENTER_PIN: {
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = ADD_COINS_CHECK_PIN;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = ADD_COINS_CHECK_PIN;
+        break;
+      }
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case ADD_COINS_TAP_CARD: {
-        tap_threshold_cards_for_reconstruction();
+      tap_threshold_cards_for_reconstruction();
     } break;
 
     case ADD_COINS_TAP_CARD_SEND_CMD: {
-        instruction_scr_init("", NULL);
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
     } break;
 
     case ADD_COINS_READ_DEVICE_SHARE: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case ADD_COIN_GENERATING_XPUBS: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case ADD_COINS_FINAL_SCREEN:
-        instruction_scr_destructor();
-        delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-        CY_Reset_Not_Allow(true);
-        break;
-    
+      instruction_scr_destructor();
+      delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+      CY_Reset_Not_Allow(true);
+      break;
+
     default:
-        break;
-    }
+      break;
+  }
 }

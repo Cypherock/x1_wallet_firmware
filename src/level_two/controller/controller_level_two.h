@@ -12,7 +12,6 @@
 
 #include "controller_main.h"
 
-
 /**
  * @brief
  * @details
@@ -28,7 +27,6 @@
  * @note
  */
 void level_two_controller();
-
 
 /**
  * @brief

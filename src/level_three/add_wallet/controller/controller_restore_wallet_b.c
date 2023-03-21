@@ -62,66 +62,62 @@
 
 extern Flash_Wallet wallet_for_flash;
 
-
-static void restore_wallet_enter_mnemonics_controller_b()
-{
-    if (flow_level.level_four > 1) {
-        flow_level.level_four--;
-    } else {
-        flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
-        reset_flow_level_greater_than(LEVEL_THREE);
-    }
+static void restore_wallet_enter_mnemonics_controller_b() {
+  if (flow_level.level_four > 1) {
+    flow_level.level_four--;
+  } else {
+    flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
+    reset_flow_level_greater_than(LEVEL_THREE);
+  }
 }
 
-void restore_wallet_controller_b()
-{
-    switch (flow_level.level_three) {
+void restore_wallet_controller_b() {
+  switch (flow_level.level_three) {
     case RESTORE_WALLET_NAME_CONFIRM: {
-        flow_level.level_three = RESTORE_WALLET_NAME_INPUT;
+      flow_level.level_three = RESTORE_WALLET_NAME_INPUT;
     } break;
     case RESTORE_WALLET_NUMBER_OF_WORDS_INPUT:
-        flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
-        break;
+      flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
+      break;
 
     case RESTORE_WALLET_ENTER_MNEMONICS:
-        restore_wallet_enter_mnemonics_controller_b();
-        break;
+      restore_wallet_enter_mnemonics_controller_b();
+      break;
 
     case RESTORE_WALLET_VERIFY:
-        flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
-        break;
+      flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
+      break;
 
     case RESTORE_WALLET_SKIP_PASSPHRASE: {
-        flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT; // RESTORE_WALLET_TAP_CARDS;
+      flow_level.level_three =
+          RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;  // RESTORE_WALLET_TAP_CARDS;
 
-        WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
+      WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
     } break;
 
     case RESTORE_WALLET_SKIP_PASSWORD: {
-        
+      if (is_passphrase_enabled())
+        flow_level.level_three = RESTORE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
+      else
+        flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
 
-		if(is_passphrase_enabled())
-			flow_level.level_three = RESTORE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
-		else
-			flow_level.level_three = RESTORE_WALLET_NUMBER_OF_WORDS_INPUT;
-
-        WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PIN(wallet.wallet_info);
+      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PIN(wallet.wallet_info);
     } break;
 
     case RESTORE_WALLET_PIN_INPUT:
-        flow_level.level_three = RESTORE_WALLET_SKIP_PASSWORD;
-        break;
+      flow_level.level_three = RESTORE_WALLET_SKIP_PASSWORD;
+      break;
 
     case RESTORE_WALLET_PIN_CONFIRM:
-        flow_level.level_three = RESTORE_WALLET_PIN_INPUT;
-        break;
+      flow_level.level_three = RESTORE_WALLET_PIN_INPUT;
+      break;
 
     default:
-        reset_flow_level_greater_than(LEVEL_ONE);
-        flow_level.level_one = LEVEL_TWO_NEW_WALLET;
-        counter.level = LEVEL_TWO;
-        break;
-    }
+      reset_flow_level_greater_than(LEVEL_ONE);
+      flow_level.level_one = LEVEL_TWO_NEW_WALLET;
+      counter.level        = LEVEL_TWO;
+      break;
+  }
 }

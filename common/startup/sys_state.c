@@ -60,7 +60,7 @@
 
 volatile sys_flow_control_u_t sys_flow_cntrl_u;
 
-void sys_state_init(void)
-{
-  memset((sys_flow_control_u_t*) &sys_flow_cntrl_u,0,sizeof(sys_flow_control_u_t));
+void sys_state_init(void) {
+  memset((sys_flow_control_u_t *)&sys_flow_cntrl_u, 0,
+         sizeof(sys_flow_control_u_t));
 }

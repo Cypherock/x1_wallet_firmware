@@ -40,7 +40,8 @@
  *
  * @note
  */
-void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonics);
+void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE],
+                         const char *mnemonics);
 
 /**
  * @brief
@@ -56,9 +57,10 @@ void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonic
  *
  * @note
  */
-void derive_beneficiary_key(uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
+void derive_beneficiary_key(
+    uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
     uint8_t iv_for_beneficiary_key[IV_FOR_BENEFICIARY_KEY_SIZE],
-    const char* mnemonics);
+    const char *mnemonics);
 
 /**
  * @brief Derive wallet key. It is used to encrypt xPUB using chacha20 polly1305
@@ -78,7 +80,7 @@ void derive_beneficiary_key(uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
  * node = m/190'/1' <br/>
  * key = sha256(node.private_key)
  */
-void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics);
+void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics);
 
 /**
  * @brief Validates the contents of Wallet instance. If any check fails,

@@ -28,32 +28,33 @@
 #ifndef NFC_H
 #define NFC_H
 
-#define NFC_COMM_LINE_STATUS_BIT        0
-#define NFC_CARD_PRESENCE_BIT           1
-#define NFC_ANTENNA_STATUS_BIT          2
+#define NFC_COMM_LINE_STATUS_BIT 0
+#define NFC_CARD_PRESENCE_BIT    1
+#define NFC_ANTENNA_STATUS_BIT   2
 
-#define NFC_ANTENNA_CURRENT_TH          0x28        ///< Defines the preferred threshold range (25-105 mA) of current in antenna. @see adafruit_diagnose_self_antenna
+#define NFC_ANTENNA_CURRENT_TH \
+  0x28  ///< Defines the preferred threshold range (25-105 mA) of current in antenna. @see adafruit_diagnose_self_antenna
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "board.h"
 
 #include "adafruit_pn532.h"
 
 #include "apdu.h"
-#include "flash_if.h"
-#include "wallet.h"
 #include "controller_main.h"
+#include "flash_if.h"
 #include "memzero.h"
+#include "wallet.h"
 
-#define SHA256_SIZE 32
+#define SHA256_SIZE          32
 #define ECDSA_SIGNATURE_SIZE 64
-#define SHA256_SIZE 32
+#define SHA256_SIZE          32
 #define POW_RAND_NUMBER_SIZE 32
-#define POW_NONCE_SIZE 32
+#define POW_NONCE_SIZE       32
 
-#define DEFAULT_NFC_TG_INIT_TIME    25
+#define DEFAULT_NFC_TG_INIT_TIME 25
 
 /**
  * @brief Initialize PN532 module
@@ -182,7 +183,7 @@ ISO7816 nfc_unpair();
  *
  * @note
  */
-ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len);
+ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t *recv_len);
 
 /**
  * @brief Select Applet
@@ -212,7 +213,11 @@ ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t* recv_len);
  *
  * @note
  */
-ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t *acceptable_cards, uint8_t *version, uint8_t *card_key_id, uint8_t *recovery_mode);
+ISO7816 nfc_select_applet(uint8_t expected_family_id[],
+                          uint8_t *acceptable_cards,
+                          uint8_t *version,
+                          uint8_t *card_key_id,
+                          uint8_t *recovery_mode);
 
 /**
  * @brief Adds wallet in card
@@ -228,7 +233,7 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[], uint8_t *acceptable_card
  *
  * @note
  */
-ISO7816 nfc_add_wallet(const struct Wallet* wallet);
+ISO7816 nfc_add_wallet(const struct Wallet *wallet);
 
 /**
  * @brief Delete wallet in card
@@ -246,7 +251,7 @@ ISO7816 nfc_add_wallet(const struct Wallet* wallet);
  *
  * @note
  */
-ISO7816 nfc_delete_wallet(const struct Wallet* wallet);
+ISO7816 nfc_delete_wallet(const struct Wallet *wallet);
 
 /**
  * @brief Retrieve wallet in card
@@ -266,7 +271,7 @@ ISO7816 nfc_delete_wallet(const struct Wallet* wallet);
  *
  * @note
  */
-ISO7816 nfc_retrieve_wallet(struct Wallet* wallet);
+ISO7816 nfc_retrieve_wallet(struct Wallet *wallet);
 
 /**
  * @brief Sign data using card's private key
@@ -284,7 +289,8 @@ ISO7816 nfc_retrieve_wallet(struct Wallet* wallet);
  *
  * @note
  */
-ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE], uint16_t* length_inOut);
+ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
+                  uint16_t *length_inOut);
 
 /**
  * @brief Verify Proof of Work challenge
@@ -304,7 +310,9 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE], uint16_t* length_inO
  *
  * @note
  */
-ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE], const uint8_t nonce[POW_NONCE_SIZE], const uint8_t password[BLOCK_SIZE]);
+ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE],
+                             const uint8_t nonce[POW_NONCE_SIZE],
+                             const uint8_t password[BLOCK_SIZE]);
 
 /**
  * @brief Get challenge from card
@@ -322,7 +330,9 @@ ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE], const uint8_t nonce[
  *
  * @note
  */
-ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE], uint8_t target[SHA256_SIZE], uint8_t random_number[POW_RAND_NUMBER_SIZE]);
+ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE],
+                          uint8_t target[SHA256_SIZE],
+                          uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
  * @brief Encrypt Data required for Inheritance flow
@@ -346,7 +356,11 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE], uint8_t target[SHA256_S
  *
  * @note
  */
-ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE], const uint8_t *plain_data, uint16_t plain_data_size, uint8_t *encrypted_data, uint16_t *encrypted_data_size);
+ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
+                         const uint8_t *plain_data,
+                         uint16_t plain_data_size,
+                         uint8_t *encrypted_data,
+                         uint16_t *encrypted_data_size);
 
 /**
  * @brief Decrypt Data required for Inheritance flow
@@ -370,7 +384,11 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE], const uint8_t *plain_dat
  *
  * @note
  */
-ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE], uint8_t *plain_data, uint16_t *plain_data_size, const uint8_t *encrypted_data, uint16_t encrypted_data_size);
+ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
+                         uint8_t *plain_data,
+                         uint16_t *plain_data_size,
+                         const uint8_t *encrypted_data,
+                         uint16_t encrypted_data_size);
 
 /**
  * @brief Exchange raw apdu
@@ -389,7 +407,10 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE], uint8_t *plain_data, uin
  *
  * @note The length of reponse APDU will be truncated to recv_len by the PN532 library
  */
-ret_code_t nfc_exchange_apdu(uint8_t send_apdu[], uint16_t send_len, uint8_t recv_apdu[], uint16_t* recv_len);
+ret_code_t nfc_exchange_apdu(uint8_t send_apdu[],
+                             uint16_t send_len,
+                             uint8_t recv_apdu[],
+                             uint16_t *recv_len);
 
 /**
  * @brief Set the abort callback function.

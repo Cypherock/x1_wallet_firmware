@@ -454,7 +454,9 @@ void sync_cards_controller_b();
  * @param [in] session_nonce     - session nonce of the device
  * @param [in] card_pairing_data - card pairing data received from the card
  */
-void handle_pair_card_success(uint8_t card_number, uint8_t *session_nonce, uint8_t *card_pairing_data);
+void handle_pair_card_success(uint8_t card_number,
+                              uint8_t *session_nonce,
+                              uint8_t *card_pairing_data);
 
 /**
  * @brief

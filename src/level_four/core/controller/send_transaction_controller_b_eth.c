@@ -59,48 +59,45 @@
 #include "controller_level_four.h"
 
 extern Wallet_credential_data wallet_credential_data;
-void send_transaction_controller_b_eth()
-{
-
-    switch (flow_level.level_three) {
-
+void send_transaction_controller_b_eth() {
+  switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN_ETH: {
-        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 4);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 4);
+      reset_flow_level();
+      counter.next_event_flag = true;
     }
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
-        reset_flow_level();
-        counter.next_event_flag = true;
-    }break;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
+      reset_flow_level();
+      counter.next_event_flag = true;
+    } break;
 
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS:
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH:
     case SEND_TXN_VERIFY_DERIVATION_PATH:
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_DISPLAY_INFO_ETH: {
@@ -110,27 +107,28 @@ void send_transaction_controller_b_eth()
     } break;
 
     case SEND_TXN_ENTER_PIN_ETH: {
-        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {
-        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
+      comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_CONFIRM_PASSPHRASE_ETH: {
-        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-        flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
+      flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_ETH;
     } break;
 
     default:
-        break;
-
-    }
-
+      break;
+  }
 }

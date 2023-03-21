@@ -12,7 +12,7 @@
 
 #include "ui_common.h"
 
-#define MAX_NUM_OF_SLIDESHOWS 6
+#define MAX_NUM_OF_SLIDESHOWS       6
 #define MAX_NUM_OF_CHARS_IN_A_SLIDE 80
 
 /**
@@ -25,11 +25,13 @@
  * @note
  */
 struct Text_Slideshow_Data {
-    char strings[MAX_NUM_OF_SLIDESHOWS][MAX_NUM_OF_CHARS_IN_A_SLIDE];
-    bool one_cycle_completed; //if all the text has been shown once then this variable will be true else false
-    bool destruct_on_click; // if destruct_on_click == true the screen will destroy on a button click
-    uint8_t total_strings;
-    uint8_t index_of_current_string;
+  char strings[MAX_NUM_OF_SLIDESHOWS][MAX_NUM_OF_CHARS_IN_A_SLIDE];
+  bool
+      one_cycle_completed;  //if all the text has been shown once then this variable will be true else false
+  bool
+      destruct_on_click;  // if destruct_on_click == true the screen will destroy on a button click
+  uint8_t total_strings;
+  uint8_t index_of_current_string;
 };
 
 /**
@@ -48,7 +50,9 @@ struct Text_Slideshow_Data {
  *
  * @note
  */
-void ui_text_slideshow_change_text(const char* str, uint8_t str_length, uint8_t slide_index);
+void ui_text_slideshow_change_text(const char *str,
+                                   uint8_t str_length,
+                                   uint8_t slide_index);
 
 /**
  * @brief Clear screen
@@ -85,6 +89,9 @@ void ui_text_slideshow_destructor();
  *
  * @note
  */
-void ui_text_slideshow_init(const char* arr[MAX_NUM_OF_CHARS_IN_A_SLIDE], uint8_t count, uint16_t delay_in_ms, bool destruct_on_click);
+void ui_text_slideshow_init(const char *arr[MAX_NUM_OF_CHARS_IN_A_SLIDE],
+                            uint8_t count,
+                            uint16_t delay_in_ms,
+                            bool destruct_on_click);
 
-#endif //UI_TEXT_SLIDESHOW_H
+#endif  //UI_TEXT_SLIDESHOW_H

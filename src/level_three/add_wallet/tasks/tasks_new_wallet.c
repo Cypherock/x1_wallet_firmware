@@ -57,94 +57,84 @@
  */
 #include "bip39_english.h"
 #include "constant_texts.h"
+#include "controller_main.h"
 #include "tasks.h"
 #include "tasks_add_wallet.h"
+#include "tasks_tap_cards.h"
+#include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_instruction.h"
+#include "ui_list.h"
 #include "ui_message.h"
 #include "ui_multi_instruction.h"
-#include "ui_address.h"
-#include "tasks_tap_cards.h"
-#include "ui_list.h"
-#include "controller_main.h"
 
 extern Flash_Wallet wallet_for_flash;
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
 extern Wallet_credential_data wallet_credential_data;
 
-void tasks_add_new_wallet()
-{
-    if (flow_level.show_error_screen) {
-        message_scr_init(flow_level.error_screen_text);
-        return;
-    }
+void tasks_add_new_wallet() {
+  if (flow_level.show_error_screen) {
+    message_scr_init(flow_level.error_screen_text);
+    return;
+  }
 
-    switch (flow_level.level_three) {
+  switch (flow_level.level_three) {
     case GENERATE_WALLET_NAME_INPUT: {
-        input_text_init(
-            ALPHABET,
-            ui_text_enter_wallet_name,
-            2,
-            DATA_TYPE_TEXT,
-            15);
+      input_text_init(ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT,
+                      15);
     } break;
 
     case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
-        char display[65];
-        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_wallet_name, display, false);
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
       char display[75];
-      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
-        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
+      if (strnlen(flow_level.screen_input.input_text,
+                  sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1,
+                 wallet.wallet_name);
       else
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 
     case GENERATE_WALLET_PIN_INSTRUCTIONS_2: {
-      
-      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_LONG_STRING);
-    
+      delay_scr_init(ui_wallet_pin_instruction_2, DELAY_LONG_STRING);
+
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-        confirm_scr_init(ui_text_do_you_want_to_set_pin);
-        confirm_scr_focus_cancel();
+      confirm_scr_init(ui_text_do_you_want_to_set_pin);
+      confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PIN_INPUT: {
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case GENERATE_WALLET_PIN_CONFIRM: {
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_confirm_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
       char display[65];
-      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
-        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, wallet.wallet_name);
+      if (strnlen(flow_level.screen_input.input_text,
+                  sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1,
+                 wallet.wallet_name);
       else
-        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, "this wallet");
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1,
+                 "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 
@@ -161,65 +151,68 @@ void tasks_add_new_wallet()
     } break;
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-        confirm_scr_init(ui_text_use_passphrase_question);
-        confirm_scr_focus_cancel();
+      confirm_scr_init(ui_text_use_passphrase_question);
+      confirm_scr_focus_cancel();
     } break;
 
     case GENERATE_WALLET_PROCESSING: {
-        instruction_scr_init(ui_text_processing, NULL);
-        mark_event_over();
+      instruction_scr_init(ui_text_processing, NULL);
+      mark_event_over();
     } break;
 
     case GENERATE_WALLET_SEED_GENERATE: {
-        instruction_scr_destructor();
-        mark_event_over();
+      instruction_scr_destructor();
+      mark_event_over();
     } break;
 
     case GENERATE_WALLET_SEED_GENERATED: {
-        message_scr_init(ui_text_seed_generated_successfully);
+      message_scr_init(ui_text_seed_generated_successfully);
     } break;
 
     case GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case GENERATE_WALLET_TAP_CARD_FLOW: {
-        tap_cards_for_write_flow();
+      tap_cards_for_write_flow();
     } break;
 
     case GENERATE_WALLET_VERIFY_SHARES:
-        instruction_scr_init(ui_text_processing, "");
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_processing, "");
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
 
     case GENERATE_WALLET_SUCCESS_MESSAGE: {
-        instruction_scr_destructor();
-        const char *messages[6] = {
-            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
-            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
-            ui_text_verification_is_now_complete_messages[5], NULL};
-        uint8_t count = 5;
+      instruction_scr_destructor();
+      const char *messages[6] = {
+          ui_text_verification_is_now_complete_messages[0],
+          ui_text_verification_is_now_complete_messages[1],
+          ui_text_verification_is_now_complete_messages[2],
+          ui_text_verification_is_now_complete_messages[4],
+          ui_text_verification_is_now_complete_messages[5],
+          NULL};
+      uint8_t count = 5;
 
-        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            messages[3] = ui_text_verification_is_now_complete_messages[3];
-            messages[4] = ui_text_verification_is_now_complete_messages[4];
-            messages[5] = ui_text_verification_is_now_complete_messages[5];
-            count = 6;
-        }
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        messages[3] = ui_text_verification_is_now_complete_messages[3];
+        messages[4] = ui_text_verification_is_now_complete_messages[4];
+        messages[5] = ui_text_verification_is_now_complete_messages[5];
+        count       = 6;
+      }
 
-        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+      multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
     } break;
 
     case GENERATE_WALLET_FAILED_MESSAGE:
-        instruction_scr_destructor();
-        message_scr_init(ui_text_creation_failed_delete_wallet);
-        break;
+      instruction_scr_destructor();
+      message_scr_init(ui_text_creation_failed_delete_wallet);
+      break;
 
     default:
-        message_scr_init(ui_text_something_went_wrong);
-        //TODO: Add reset flow level
-        break;
-    }
+      message_scr_init(ui_text_something_went_wrong);
+      //TODO: Add reset flow level
+      break;
+  }
 }

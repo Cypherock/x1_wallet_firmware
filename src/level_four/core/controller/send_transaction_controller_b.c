@@ -60,60 +60,60 @@
 
 extern Wallet_credential_data wallet_credential_data;
 
-void send_transaction_controller_b()
-{
-    switch (flow_level.level_three) {
-
+void send_transaction_controller_b() {
+  switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN: {
-        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PIN: {
-        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE: {
-        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
+      comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
     } break;
 
     case SEND_TXN_CONFIRM_PASSPHRASE: {
-        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-        flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
+      flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
     } break;
 
     default:
-        break;
-
-    }
+      break;
+  }
 }

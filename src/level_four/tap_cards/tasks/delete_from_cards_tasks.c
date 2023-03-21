@@ -58,38 +58,35 @@
 #include "constant_texts.h"
 #include "controller_main.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
-#include "tasks_tap_cards.h"
 
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+void tap_cards_for_delete_flow() {
+  uint8_t index;
+  char display[40];
+  get_index_by_name((const char *)wallet.wallet_name, &index);
 
-
-
-void tap_cards_for_delete_flow()
-{
-    uint8_t index;
-    char display[40];
-    get_index_by_name((const char *)wallet.wallet_name, &index);
-
-    switch (flow_level.level_four) {
+  switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
     case TAP_CARD_TWO_FRONTEND:
     case TAP_CARD_THREE_FRONTEND:
     case TAP_CARD_FOUR_FRONTEND:
-      if (!card_already_deleted_flash(index, ((flow_level.level_four-1)>>1)+1)) {
-        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1)>>1)+1);
+      if (!card_already_deleted_flash(index,
+                                      ((flow_level.level_four - 1) >> 1) + 1)) {
+        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD,
+                 ((flow_level.level_four - 1) >> 1) + 1);
         instruction_scr_init(ui_text_place_card_below, display);
         mark_event_over();
       } else {
-        if(flow_level.level_four == TAP_CARD_FOUR_FRONTEND){
-            flow_level.level_four = 1;
-            flow_level.level_three++;
-        }
-        else{
+        if (flow_level.level_four == TAP_CARD_FOUR_FRONTEND) {
+          flow_level.level_four = 1;
+          flow_level.level_three++;
+        } else {
           flow_level.level_four += 2;
         }
         counter.next_event_flag = true;
@@ -100,11 +97,11 @@ void tap_cards_for_delete_flow()
     case TAP_CARD_TWO_BACKEND:
     case TAP_CARD_THREE_BACKEND:
     case TAP_CARD_FOUR_BACKEND:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     default:
-        reset_flow_level();
-        break;
-    }
+      reset_flow_level();
+      break;
+  }
 }

@@ -16,7 +16,7 @@
 
 // EMULATE KEY PRESSES FUNCTIONALITY
 // This is intended for the purpose of testing UI intensive flows which require user interaction
-// This functionality adds the ability to emulate key inputs which by default is added to every 
+// This functionality adds the ability to emulate key inputs which by default is added to every
 // UI element which supports an accept button i.e. every UI screen with an accept button
 // will automatically be activated when this feature is enabled.
 
@@ -53,7 +53,8 @@ typedef struct ekp_queue {
  * @param delay the delay for which the key must be held down
  * @return ekp_queue_node* 
  */
-ekp_queue_node *ekp_new_queue_node(const lv_event_t event, const uint32_t delay);
+ekp_queue_node *ekp_new_queue_node(const lv_event_t event,
+                                   const uint32_t delay);
 
 /**
  * @brief Creates a new Queue and returns its pointer

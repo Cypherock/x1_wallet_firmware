@@ -10,22 +10,22 @@
 #ifndef FLASH_API_H
 #define FLASH_API_H
 
+#include "flash_if.h"
 #include "flash_struct.h"
 #include "sec_flash.h"
-#include "flash_if.h"
 
 #define is_device_authenticated() (get_auth_state() == DEVICE_AUTHENTICATED)
 
 #define is_passphrase_enabled() (get_enable_passphrase() == PASSPHRASE_ENABLED)
 
-#define is_passphrase_disabled() (get_enable_passphrase() == PASSPHRASE_DISABLED || get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
+#define is_passphrase_disabled()                     \
+  (get_enable_passphrase() == PASSPHRASE_DISABLED || \
+   get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
 
 /**
  * Update auth state and first_boot_on_update variables in firewall
  */
 int set_auth_state(device_auth_state);
-
-
 
 /**
  * @brief Adds wallet to flash
@@ -41,7 +41,7 @@ int set_auth_state(device_auth_state);
  * @retval ALREADY_EXISTS wallet name already exists behavior
  * @retval VALID_WALLET writes a wallet to flash
  */
-int add_wallet_to_flash(const Flash_Wallet* wallet, uint32_t* index_OUT);
+int add_wallet_to_flash(const Flash_Wallet *wallet, uint32_t *index_OUT);
 
 /**
  * @brief Adds device's share to firewall region in flash
@@ -54,7 +54,9 @@ int add_wallet_to_flash(const Flash_Wallet* wallet, uint32_t* index_OUT);
  * @retval INVALID_ARGUMENT empty name or name > NAME_SIZE or state is not
  * @retval ALREADY_EXISTS Device's share entry already exists
  */
-int add_wallet_share_to_sec_flash(const Flash_Wallet* fwallet, uint32_t* index_OUT, const uint8_t* wallet_share);
+int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
+                                  uint32_t *index_OUT,
+                                  const uint8_t *wallet_share);
 
 /**
  * @brief Deletes a wallet from flash
@@ -88,7 +90,6 @@ int delete_wallet_share_from_sec_flash(uint8_t wallet_index);
  */
 int set_family_id_flash(const uint8_t family_id[FAMILY_ID_SIZE]);
 
-
 /**
  * @brief Tells if wallet is in partial state
  * 
@@ -118,7 +119,6 @@ bool is_wallet_unverified(uint8_t wallet_index);
  */
 bool is_wallet_share_not_present(uint8_t wallet_index);
 
-
 /**
  * @brief Tells if wallet is in locked state
  * 
@@ -141,7 +141,7 @@ bool is_wallet_locked(uint8_t wallet_index);
  * @retval INVALID_ARGUMENT empty name or name > NAME_SIZE
  * @retval ALREADY_EXISTS wallet name already exists
  */
-int put_wallet_flash(uint8_t index, const Flash_Wallet* wallet);
+int put_wallet_flash(uint8_t index, const Flash_Wallet *wallet);
 
 /** @brief Save wallet share in flash
  * 
@@ -151,7 +151,7 @@ int put_wallet_flash(uint8_t index, const Flash_Wallet* wallet);
  * @retval SUCCESS wallet share written to firewall region
  * @retval INVALID_ARGUMENT non-existent wallet reference or wallet_index >= MAX_WALLETS_ALLOWED
  */
-int put_wallet_share_sec_flash(uint8_t index, const uint8_t* wallet_share);
+int put_wallet_share_sec_flash(uint8_t index, const uint8_t *wallet_share);
 
 /**
  * @brief Outputs the index of the wallet with given name
@@ -163,7 +163,7 @@ int put_wallet_share_sec_flash(uint8_t index, const uint8_t* wallet_share);
  * @retval INVALID_ARGUMENT empty name or name > NAME_SIZE
  * @retval WALLET_NOT_FOUND wallet not found
  */
-int get_index_by_name(const char* name, uint8_t* index_OUT);
+int get_index_by_name(const char *name, uint8_t *index_OUT);
 
 /**
  * @brief Get the first matching wallet index by wallet id
@@ -175,7 +175,8 @@ int get_index_by_name(const char* name, uint8_t* index_OUT);
  * @retval DOESNT_EXIST no index found for the id
  * 
  */
-int get_first_matching_index_by_id(const uint8_t wallet_id[WALLET_ID_SIZE], uint8_t* index_OUT);
+int get_first_matching_index_by_id(const uint8_t wallet_id[WALLET_ID_SIZE],
+                                   uint8_t *index_OUT);
 
 /**
  * @brief Get the ith valid wallet index
@@ -186,7 +187,7 @@ int get_first_matching_index_by_id(const uint8_t wallet_id[WALLET_ID_SIZE], uint
  * @retval SUCCESS found index for the ith valid wallet
  * @retval INVALID_ARGUMENT i is greater than wallet count
  */
-int get_ith_valid_wallet_index(uint8_t i, uint8_t* index_OUT);
+int get_ith_valid_wallet_index(uint8_t i, uint8_t *index_OUT);
 
 /**
  * @brief Get the ith valid wallet to export
@@ -197,7 +198,7 @@ int get_ith_valid_wallet_index(uint8_t i, uint8_t* index_OUT);
  * @retval SUCCESS found index for the ith valid wallet
  * @retval INVALID_ARGUMENT i is greater than wallet count
  */
-int get_ith_wallet_to_export(uint8_t i, uint8_t* index_OUT);
+int get_ith_wallet_to_export(uint8_t i, uint8_t *index_OUT);
 
 /**
  * @brief Get the ith valid wallet share index
@@ -207,7 +208,7 @@ int get_ith_wallet_to_export(uint8_t i, uint8_t* index_OUT);
  * @retval SUCCESS found index for the ith valid wallet share
  * @retval INVALID_ARGUMENT i is greater than wallet count
  */
-int get_ith_wallet_without_share(uint8_t i, uint8_t* index_OUT);
+int get_ith_wallet_without_share(uint8_t i, uint8_t *index_OUT);
 
 /**
  * @brief Get the count of valid wallets present on device
@@ -226,7 +227,7 @@ int get_valid_wallet_count();
  * @retval INVALID_ARGUMENT Passed name invalid
  * @retval DOESNT_EXIST Wallet does not exist
  */
-int get_flash_wallet_by_name(const char* name, Flash_Wallet** flash_wallet_OUT);
+int get_flash_wallet_by_name(const char *name, Flash_Wallet **flash_wallet_OUT);
 
 /**
  * @brief Get the flash wallet by wallet name
@@ -237,8 +238,7 @@ int get_flash_wallet_by_name(const char* name, Flash_Wallet** flash_wallet_OUT);
  * @retval INVALID_ARGUMENT Passed name is invalid
  * @retval DOESNT_EXIST Wallet does not exist with given name
  */
-int get_flash_wallet_share_by_name(const char* name, uint8_t *wallet_share);
-
+int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share);
 
 /**
  * @brief Update the card states for the wallet at specified index (on deletion of the wallet from the given card number)
@@ -270,8 +270,9 @@ bool card_already_deleted_flash(uint8_t index, uint8_t card_number);
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Updated successfully
  */
-int update_challenge_flash(const char* name, const uint8_t target[SHA256_SIZE],
-    const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
+int update_challenge_flash(const char *name,
+                           const uint8_t target[SHA256_SIZE],
+                           const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
  * @brief Add challenge to flash
@@ -284,8 +285,10 @@ int update_challenge_flash(const char* name, const uint8_t target[SHA256_SIZE],
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Added successfully
  */
-int add_challenge_flash(const char* name, const uint8_t target[SHA256_SIZE],
-    const uint8_t random_number[POW_RAND_NUMBER_SIZE], uint8_t card_locked);
+int add_challenge_flash(const char *name,
+                        const uint8_t target[SHA256_SIZE],
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
+                        uint8_t card_locked);
 
 /**
  * @brief Update the unlocked status of wallet and reset the nonce.
@@ -296,7 +299,7 @@ int add_challenge_flash(const char* name, const uint8_t target[SHA256_SIZE],
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Status updated successfully
  */
-int update_wallet_locked_flash(const char* name, bool is_wallet_locked);
+int update_wallet_locked_flash(const char *name, bool is_wallet_locked);
 
 /**
  * @brief Update the unlock time of locked wallet
@@ -307,7 +310,8 @@ int update_wallet_locked_flash(const char* name, bool is_wallet_locked);
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Time updated successfully
  */
-int update_time_to_unlock_flash(const char* name, uint32_t time_to_unlock_in_secs);
+int update_time_to_unlock_flash(const char *name,
+                                uint32_t time_to_unlock_in_secs);
 
 /**
  * @brief Save the wallet nonce in flash
@@ -318,7 +322,7 @@ int update_time_to_unlock_flash(const char* name, uint32_t time_to_unlock_in_sec
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Nonce saved successfully
  */
-int save_nonce_flash(const char* name, const uint8_t nonce[POW_NONCE_SIZE]);
+int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]);
 
 /**
  * @brief Set the wallet state in flash
@@ -347,7 +351,8 @@ int set_display_rotation(display_rotation _rotation, flash_save_mode save_mode);
  * @param save true/false to save the changes so far to flash
  * @return SUCCESS_ Display rotation set successfully
  */
-int set_enable_passphrase(passphrase_config enable_passphrase, flash_save_mode save_mode);
+int set_enable_passphrase(passphrase_config enable_passphrase,
+                          flash_save_mode save_mode);
 
 /**
  * @brief Get the io protection key from flash
@@ -357,7 +362,7 @@ int set_enable_passphrase(passphrase_config enable_passphrase, flash_save_mode s
  * @retval INVALID_ARGUMENT key is NULL
  * @retval SUCCESS Retrieve successful
  */
-int get_io_protection_key(uint8_t* key);
+int get_io_protection_key(uint8_t *key);
 
 /**
  * @brief Save the io protection key in flash
@@ -367,7 +372,7 @@ int get_io_protection_key(uint8_t* key);
  * @retval INVALID_ARGUMENT key is NULL
  * @retval SUCCESS Save successful
  */
-int set_io_protection_key(const uint8_t* key);
+int set_io_protection_key(const uint8_t *key);
 
 /**
  * @brief
@@ -383,7 +388,7 @@ int set_io_protection_key(const uint8_t* key);
  *
  * @note
  */
-int set_ext_key(const Perm_Ext_Keys_Struct* ext_keys);
+int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys);
 
 /**
  * @brief
@@ -500,7 +505,7 @@ uint32_t get_fwSize();
  *
  * @note
  */
-const uint8_t* get_perm_self_key_id();
+const uint8_t *get_perm_self_key_id();
 
 /**
  * @brief
@@ -516,7 +521,7 @@ const uint8_t* get_perm_self_key_id();
  *
  * @note
  */
-const uint8_t* get_auth_public_key();
+const uint8_t *get_auth_public_key();
 
 /**
  * @brief
@@ -564,7 +569,7 @@ uint32_t get_fwVer();
  *
  * @note
  */
-const uint8_t* get_perm_self_key_path();
+const uint8_t *get_perm_self_key_path();
 
 /**
  * @brief
@@ -580,7 +585,7 @@ const uint8_t* get_perm_self_key_path();
  *
  * @note
  */
-const uint8_t* get_priv_key();
+const uint8_t *get_priv_key();
 
 /**
  * @brief
@@ -596,7 +601,7 @@ const uint8_t* get_priv_key();
  *
  * @note
  */
-const uint8_t* get_card_root_xpub();
+const uint8_t *get_card_root_xpub();
 
 /**
  * @brief
@@ -612,8 +617,6 @@ const uint8_t* get_card_root_xpub();
  *
  * @note
  */
-
-
 
 /**
  * @brief
@@ -693,7 +696,7 @@ const uint8_t get_wallet_card_state(uint8_t wallet_index);
  *
  * @note
  */
-const uint8_t* get_wallet_name(uint8_t wallet_index);
+const uint8_t *get_wallet_name(uint8_t wallet_index);
 
 /**
  * @brief
@@ -741,7 +744,7 @@ const uint8_t get_wallet_info(uint8_t wallet_index);
  *
  * @note
  */
-const uint8_t* get_wallet_id(uint8_t wallet_index);
+const uint8_t *get_wallet_id(uint8_t wallet_index);
 
 /**
  * @brief
@@ -773,7 +776,7 @@ const uint8_t get_wallet_locked_status(uint8_t wallet_index);
  *
  * @note
  */
-const uint8_t* get_family_id();
+const uint8_t *get_family_id();
 
 /**
  * @brief
@@ -821,7 +824,7 @@ const uint32_t get_wallet_time_to_unlock(uint8_t wallet_index);
  *
  * @note
  */
-const Flash_Wallet* get_wallet_by_index(uint8_t wallet_index);
+const Flash_Wallet *get_wallet_by_index(uint8_t wallet_index);
 /**
  * @brief Returns if the requested keystore entry is used or empty.
  *
@@ -859,7 +862,10 @@ const uint8_t get_keystore_used_count();
  *
  * @note
  */
-uint8_t set_keystore_pairing_key(uint8_t keystore_index, const uint8_t *pairing_key, uint8_t len, flash_save_mode save_mode);
+uint8_t set_keystore_pairing_key(uint8_t keystore_index,
+                                 const uint8_t *pairing_key,
+                                 uint8_t len,
+                                 flash_save_mode save_mode);
 
 /**
  * @brief
@@ -875,7 +881,7 @@ uint8_t set_keystore_pairing_key(uint8_t keystore_index, const uint8_t *pairing_
  *
  * @note
  */
-const uint8_t* get_keystore_pairing_key(uint8_t keystore_index);
+const uint8_t *get_keystore_pairing_key(uint8_t keystore_index);
 
 /**
  * @brief
@@ -891,7 +897,10 @@ const uint8_t* get_keystore_pairing_key(uint8_t keystore_index);
  *
  * @note
  */
-uint8_t set_keystore_key_id(uint8_t keystore_index, const uint8_t* _key_id, uint8_t len, flash_save_mode save_mode);
+uint8_t set_keystore_key_id(uint8_t keystore_index,
+                            const uint8_t *_key_id,
+                            uint8_t len,
+                            flash_save_mode save_mode);
 
 /**
  * @brief
@@ -907,7 +916,9 @@ uint8_t set_keystore_key_id(uint8_t keystore_index, const uint8_t* _key_id, uint
  *
  * @note
  */
-uint8_t set_keystore_used_status(uint8_t keystore_index, uint8_t _used, flash_save_mode save_mode);
+uint8_t set_keystore_used_status(uint8_t keystore_index,
+                                 uint8_t _used,
+                                 flash_save_mode save_mode);
 
 /**
  * @brief Delete all wallet data from the flash

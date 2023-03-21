@@ -60,98 +60,89 @@
 #include "controller_level_four.h"
 #include "flash_api.h"
 #include "tasks_level_four.h"
+#include "tasks_tap_cards.h"
 #include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_menu.h"
-#include "tasks_tap_cards.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-extern char* PASSPHRASE;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
+extern char *PASSPHRASE;
 
 extern Receive_Transaction_Data receive_transaction_data;
 
-void receive_transaction_tasks()
-{
-    switch (flow_level.level_three) {
-
+void receive_transaction_tasks() {
+  switch (flow_level.level_three) {
     case RECV_TXN_FIND_XPUB: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_ENTER_PASSPHRASE: {
-        if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-            flow_level.level_three = ADD_COINS_VERIFY;
-            break;
-        }
-        input_text_init(
-            PASSPHRASE,
-            ui_text_enter_passphrase,
-            0,
-            DATA_TYPE_PASSPHRASE,
-            64);
+      if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+        flow_level.level_three = ADD_COINS_VERIFY;
+        break;
+      }
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE: {
-        char display[65];
-        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_passphrase, display, false);
-        memzero(display, sizeof(display));
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_passphrase, display, false);
+      memzero(display, sizeof(display));
     } break;
 
     case RECV_TXN_CHECK_PIN: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_ENTER_PIN: {
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = RECV_TXN_CHECK_PIN;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = RECV_TXN_CHECK_PIN;
+        break;
+      }
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RECV_TXN_TAP_CARD: {
-        tap_threshold_cards_for_reconstruction();
+      tap_threshold_cards_for_reconstruction();
     } break;
 
     case RECV_TXN_TAP_CARD_SEND_CMD: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_READ_DEVICE_SHARE: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_DERIVE_ADD_SCREEN: {
-        instruction_scr_init("", NULL);
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
     } break;
 
     case RECV_TXN_DERIVE_ADD: {
-        mark_event_over();
+      mark_event_over();
     } break;
 
     case RECV_TXN_DISPLAY_ADDR: {
-        instruction_scr_destructor();
-        char display[70];
-        snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, receive_transaction_data.address);
-        address_scr_init(ui_text_receive_on, display, true);
+      instruction_scr_destructor();
+      char display[70];
+      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces,
+               receive_transaction_data.address);
+      address_scr_init(ui_text_receive_on, display, true);
     } break;
 
     default:
-        break;
-    }
-    return;
+      break;
+  }
+  return;
 }

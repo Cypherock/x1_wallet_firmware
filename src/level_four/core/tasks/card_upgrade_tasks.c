@@ -55,31 +55,31 @@
  *
  ******************************************************************************
  */
-#include "tasks_level_four.h"
 #include "communication.h"
+#include "tasks_level_four.h"
 #include "ui_instruction.h"
 
 extern Flow_level flow_level;
 extern Counter counter;
 extern Wallet wallet;
 void card_upgrade_task() {
-    #ifdef DEV_BUILD
-    switch (flow_level.level_three) {
+#ifdef DEV_BUILD
+  switch (flow_level.level_three) {
     case CARD_UPGRADE_TAP_CARD_MESSAGE:
-        instruction_scr_init(ui_text_tap_card_to_start, NULL);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_tap_card_to_start, NULL);
+      mark_event_over();
+      break;
 
     case CARD_UPGRADE_SELECT_CARD:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case CARD_UPGRADE_FORWARD_MESSAGE:
-        mark_event_over();
-        break;
-    
+      mark_event_over();
+      break;
+
     default:
-        break;
-    }
-    #endif
+      break;
+  }
+#endif
 }

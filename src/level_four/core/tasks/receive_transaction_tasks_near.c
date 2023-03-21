@@ -97,7 +97,8 @@ void receive_transaction_tasks_near() {
 
     case RECV_TXN_CONFIRM_PASSPHRASE_NEAR: {
       char display[65];
-      snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
@@ -146,7 +147,8 @@ void receive_transaction_tasks_near() {
 
     case RECV_TXN_DISPLAY_ACC_NEAR: {
       char display[110];
-      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces,
+      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,
+               ui_text_20_spaces,
                receive_transaction_data.near_registered_account);
       address_scr_init(ui_text_new_account_id, display, true);
     } break;
@@ -171,7 +173,8 @@ void receive_transaction_tasks_near() {
                                  sizeof(receive_transaction_data.near_pubkey),
                                  address_s, sizeof(address_s));
       }
-      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,ui_text_20_spaces, address_s);
+      snprintf(display, sizeof(display), "%s%s%s", ui_text_20_spaces,
+               ui_text_20_spaces, address_s);
 
       address_scr_init(heading, display, true);
 
@@ -189,9 +192,12 @@ void receive_transaction_tasks_near() {
     case RECV_TXN_SELECT_REPLACE_ACC_NEAR: {
       char *acc_id[NEAR_REGISTERED_ACCOUNT_COUNT] = {0};
 
-      near_deserialize_account_ids(coin_specific_data.coin_data, NEAR_COIN_DATA_MAX_LEN, acc_id, receive_transaction_data.near_acc_count);
+      near_deserialize_account_ids(coin_specific_data.coin_data,
+                                   NEAR_COIN_DATA_MAX_LEN, acc_id,
+                                   receive_transaction_data.near_acc_count);
 
-      menu_init((const char **)acc_id, NEAR_REGISTERED_ACCOUNT_COUNT, ui_text_replace_account, true);
+      menu_init((const char **)acc_id, NEAR_REGISTERED_ACCOUNT_COUNT,
+                ui_text_replace_account, true);
 
     } break;
 
@@ -201,9 +207,12 @@ void receive_transaction_tasks_near() {
 
       char *acc_id[NEAR_REGISTERED_ACCOUNT_COUNT] = {0};
 
-      near_deserialize_account_ids(coin_specific_data.coin_data, NEAR_COIN_DATA_MAX_LEN, acc_id, receive_transaction_data.near_acc_count);
+      near_deserialize_account_ids(coin_specific_data.coin_data,
+                                   NEAR_COIN_DATA_MAX_LEN, acc_id,
+                                   receive_transaction_data.near_acc_count);
 
-      address_scr_init(ui_text_confirm_account, acc_id[receive_transaction_data.near_acc_index], false);
+      address_scr_init(ui_text_confirm_account,
+                       acc_id[receive_transaction_data.near_acc_index], false);
 
     } break;
 

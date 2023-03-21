@@ -16,34 +16,34 @@
 #define MAXIMUM_CHARACTERS_IN_FOOTNOTE (15)
 
 typedef struct {
-    const char *p_ui_heading;
-    const char *p_ui_body;
-    uint16_t curr_page_num;
-    int16_t total_page_num;
-    char p_ui_footnote[MAXIMUM_CHARACTERS_IN_FOOTNOTE];
-    bool bool_left_arrow_hidden;
-    bool bool_right_arrow_hidden;
-    bool bool_accept_cancel_visible;
-    bool bool_accept_cancel_hidden;
+  const char *p_ui_heading;
+  const char *p_ui_body;
+  uint16_t curr_page_num;
+  int16_t total_page_num;
+  char p_ui_footnote[MAXIMUM_CHARACTERS_IN_FOOTNOTE];
+  bool bool_left_arrow_hidden;
+  bool bool_right_arrow_hidden;
+  bool bool_accept_cancel_visible;
+  bool bool_accept_cancel_hidden;
 } scrolling_page_data_t;
 
 typedef struct {
-    lv_obj_t *p_ui_page_lvgl;
-    lv_obj_t *p_ui_header_lvgl;
-    lv_style_t ui_header_style;
-    lv_obj_t *p_ui_body_lvgl;
-    lv_obj_t *p_ui_left_arrow_lvgl;
-    lv_obj_t *p_ui_right_arrow_lvgl;
-    lv_style_t ui_arrow_pressed_style;
-    lv_style_t ui_arrow_released_style;
-    lv_obj_t *p_ui_cancel_btn_lvgl;
-    lv_obj_t *p_ui_accept_btn_lvgl;
-    lv_obj_t *p_ui_footnote_lvgl;
+  lv_obj_t *p_ui_page_lvgl;
+  lv_obj_t *p_ui_header_lvgl;
+  lv_style_t ui_header_style;
+  lv_obj_t *p_ui_body_lvgl;
+  lv_obj_t *p_ui_left_arrow_lvgl;
+  lv_obj_t *p_ui_right_arrow_lvgl;
+  lv_style_t ui_arrow_pressed_style;
+  lv_style_t ui_arrow_released_style;
+  lv_obj_t *p_ui_cancel_btn_lvgl;
+  lv_obj_t *p_ui_accept_btn_lvgl;
+  lv_obj_t *p_ui_footnote_lvgl;
 } scrolling_page_lvgl_t;
 
 typedef enum {
-    MENU_SCROLL_HORIZONTAL = 0,
-    MENU_SCROLL_UNDEFINED,
+  MENU_SCROLL_HORIZONTAL = 0,
+  MENU_SCROLL_UNDEFINED,
 } e_scrollable_page_orientation_t;
 
 /**

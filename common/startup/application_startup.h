@@ -31,20 +31,19 @@
 //#include "app_error.h"
 //#include "app_timer.h"
 
-
 #if USE_SIMULATOR == 0
 #include "SSD1306.h"
-#endif //USE_SIMULATOR
+#endif  //USE_SIMULATOR
 
 #include "adafruit_pn532.h"
 #include "buzzer.h"
+#include "controller_main.h"
 #include "flash_if.h"
 #include "lv_port_disp.h"
 #include "lv_port_indev.h"
 #include "lvgl.h"
-#include "ui_common.h"
-#include "controller_main.h"
 #include "sec_flash.h"
+#include "ui_common.h"
 
 /**
  * @brief Interval defined to repeatedly call callback repeated_timer_handler
@@ -54,12 +53,8 @@
 /// Interval defined for user inactivity in a flow in milli seconds
 #define INACTIVITY_TIME (300 * 1000)
 
-
-
-
 extern uint8_t device_auth_flag;
 extern bool main_app_ready;
-
 
 /**
  * @brief This function should be called from main to setup application level

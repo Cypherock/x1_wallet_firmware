@@ -82,88 +82,93 @@ extern lv_task_t *timeout_task;
 extern ui_display_node *current_display_node;
 
 void sign_message_tasks_eth() {
-    switch (flow_level.level_three) {
-        case SIGN_MSG_VERIFY_COIN_ETH: {
-            instruction_scr_init("", NULL);
-            instruction_scr_change_text(ui_text_processing, true);
-            BSP_DelayMs(DELAY_SHORT);
-            mark_event_over();
-        } break;
+  switch (flow_level.level_three) {
+    case SIGN_MSG_VERIFY_COIN_ETH: {
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_RAW_MSG_WAIT_SCREEN_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_DISPLAY_INFO_ETH: {
-            instruction_scr_destructor();
-            if (current_display_node == NULL)
-                mark_event_over();
-            else
-                ui_scrollable_page(current_display_node->title, current_display_node->value, MENU_SCROLL_HORIZONTAL, false);
-        } break;
+    case SIGN_MSG_DISPLAY_INFO_ETH: {
+      instruction_scr_destructor();
+      if (current_display_node == NULL)
+        mark_event_over();
+      else
+        ui_scrollable_page(current_display_node->title,
+                           current_display_node->value, MENU_SCROLL_HORIZONTAL,
+                           false);
+    } break;
 
-        case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_CHECK_PASSPHRASE_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
-            if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-                flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
-                break;
-            }
-            input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+    case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
+      if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
+        flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
+        break;
+      }
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
 
-        } break;
+    } break;
 
-        case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
-            char display[65];
-            snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-            address_scr_init(ui_text_confirm_passphrase, display, false);
-            memzero(display, sizeof(display));
-        } break;
+    case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_passphrase, display, false);
+      memzero(display, sizeof(display));
+    } break;
 
-        case SIGN_MSG_CHECK_PIN_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_CHECK_PIN_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_ENTER_PIN_ETH: {
-            if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-                flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
-                break;
-            }
-            input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+    case SIGN_MSG_ENTER_PIN_ETH: {
+      if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
+        break;
+      }
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
 
-        } break;
+    } break;
 
-        case SIGN_MSG_TAP_CARD_ETH: {
-            tap_threshold_cards_for_reconstruction();
-        } break;
+    case SIGN_MSG_TAP_CARD_ETH: {
+      tap_threshold_cards_for_reconstruction();
+    } break;
 
-        case SIGN_MSG_TAP_CARD_SEND_CMD_ETH: {
-            instruction_scr_init("", NULL);
-            instruction_scr_change_text(ui_text_processing, true);
-            BSP_DelayMs(DELAY_SHORT);
-            mark_event_over();
-        } break;
+    case SIGN_MSG_TAP_CARD_SEND_CMD_ETH: {
+      instruction_scr_init("", NULL);
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_READ_DEVICE_SHARE_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_READ_DEVICE_SHARE_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_SIGN_TXN_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_SIGN_TXN_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_WAITING_SCREEN_ETH: {
-            mark_event_over();
-        } break;
+    case SIGN_MSG_WAITING_SCREEN_ETH: {
+      mark_event_over();
+    } break;
 
-        case SIGN_MSG_FINAL_SCREEN_ETH:
-            delay_scr_init(ui_text_exported_signed_transaction_to_desktop, DELAY_TIME);
-            CY_Reset_Not_Allow(true);
-            break;
+    case SIGN_MSG_FINAL_SCREEN_ETH:
+      delay_scr_init(ui_text_exported_signed_transaction_to_desktop,
+                     DELAY_TIME);
+      CY_Reset_Not_Allow(true);
+      break;
 
-        default:
-            break;
-    }
+    default:
+      break;
+  }
 }

@@ -22,7 +22,7 @@
  * @note
  */
 struct Card_Detect_Data {
-	char *text;
+  char *text;
 };
 
 /**
@@ -35,8 +35,8 @@ struct Card_Detect_Data {
  * @note
  */
 struct Card_Detect_Object {
-	lv_obj_t *text;
-	lv_obj_t *skip_btn;
+  lv_obj_t *text;
+  lv_obj_t *skip_btn;
 };
 
 /**

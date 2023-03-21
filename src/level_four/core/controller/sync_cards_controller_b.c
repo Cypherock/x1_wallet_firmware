@@ -64,25 +64,24 @@
 #include "communication.h"
 #include "controller_level_four.h"
 
-void sync_cards_controller_b()
-{
+void sync_cards_controller_b() {
+  switch (flow_level.level_three) {
+    case SYNC_CARDS_CURRENT_WALLET_CONFIRM: {
+      if (flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS)
+        flow_level.level_three = SYNC_CARDS_CHECK_NEXT_WALLET;
+      else
+        reset_flow_level();
+      counter.next_event_flag = true;
+    } break;
+    case SYNC_CARDS_ENTER_PIN_FLOW: {
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      flow_level.level_three = SYNC_CARDS_CURRENT_WALLET_CONFIRM;
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
+    } break;
 
-    switch(flow_level.level_three) {
-    case SYNC_CARDS_CURRENT_WALLET_CONFIRM:{
-        if(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS)
-            flow_level.level_three = SYNC_CARDS_CHECK_NEXT_WALLET;
-        else
-            reset_flow_level();
-        counter.next_event_flag = true;
-    } break;
-    case SYNC_CARDS_ENTER_PIN_FLOW:{
-        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
-        flow_level.level_three = SYNC_CARDS_CURRENT_WALLET_CONFIRM;
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
-    } break;
-    
     default:
-        break;
-    }
+      break;
+  }
 }

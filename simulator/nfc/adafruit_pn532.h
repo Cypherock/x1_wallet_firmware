@@ -31,11 +31,11 @@
 #ifndef ADAFRUIT_PN532__
 #define ADAFRUIT_PN532__
 
-#include <unistd.h>
-#include <stdint.h>
 #include <stdbool.h>
-#include "board.h"
+#include <stdint.h>
+#include <unistd.h>
 #include "applet.h"
+#include "board.h"
 
 /** @file
  *  @brief Adafruit PN532 NFC Shield library for reading and writing tags.
@@ -77,10 +77,10 @@
  * @brief Start and end location of frame token identifiers.
  * @{
  */
-#define PN532_PREAMBLE          (0x00)
-#define PN532_STARTCODE1        (0x00)
-#define PN532_STARTCODE2        (0xFF)
-#define PN532_POSTAMBLE         (0x00)
+#define PN532_PREAMBLE   (0x00)
+#define PN532_STARTCODE1 (0x00)
+#define PN532_STARTCODE2 (0xFF)
+#define PN532_POSTAMBLE  (0x00)
 /**
  * @}
  *
@@ -175,9 +175,11 @@
  * @brief Macros for Type 2 Tag specific parameters.
  * @{
  */
-#define T2T_MAX_DATA_EXCHANGE            16 ///< Type 2 Tag maximal command data size (in bytes).
-#define T2T_PAGE_SIZE                    4  ///< Type 2 Tag page/block size (in bytes).
-#define T2T_END_PAGE_OFFSET              3  ///< Offset of the last page/block in Type 2 Tag response payload.
+#define T2T_MAX_DATA_EXCHANGE \
+  16                     ///< Type 2 Tag maximal command data size (in bytes).
+#define T2T_PAGE_SIZE 4  ///< Type 2 Tag page/block size (in bytes).
+#define T2T_END_PAGE_OFFSET \
+  3  ///< Offset of the last page/block in Type 2 Tag response payload.
 /** @} */
 
 /**
@@ -191,23 +193,24 @@
 #define MAX_NFC_A_ID_LEN                 10
 /** @} */
 
-#define PN532_MIFARE_ISO14443A_BAUD      (0x00)      ///< Code identifying the baud rate for the ISO14443A (NFC-A) card type.
+#define PN532_MIFARE_ISO14443A_BAUD \
+  (0x00)  ///< Code identifying the baud rate for the ISO14443A (NFC-A) card type.
 
-#define PN532_I2C_ADDRESS                 (0x24 << 1) ///< Address of the I2C peripheral of the Adafruit PN532 Shield.
+#define PN532_I2C_ADDRESS \
+  (0x24 << 1)  ///< Address of the I2C peripheral of the Adafruit PN532 Shield.
 
 #ifndef PN532_PACKBUFF_SIZE
-    #define PN532_PACKBUFF_SIZE 64
+#define PN532_PACKBUFF_SIZE 64
 #endif
 
 /**
  * @brief Basic information about detected NFC-A tag.
  */
-typedef struct
-{
-    uint8_t sens_res[SENS_RES_SIZE];  ///< SENS_RES response bytes.
-    uint8_t sel_res;                  ///< SEL_RES response byte.
-    uint8_t nfc_id_len;               ///< UID length.
-    uint8_t nfc_id[MAX_NFC_A_ID_LEN]; ///< NFC-A UID.
+typedef struct {
+  uint8_t sens_res[SENS_RES_SIZE];   ///< SENS_RES response bytes.
+  uint8_t sel_res;                   ///< SEL_RES response byte.
+  uint8_t nfc_id_len;                ///< UID length.
+  uint8_t nfc_id[MAX_NFC_A_ID_LEN];  ///< NFC-A UID.
 } nfc_a_tag_info;
 
 /**
@@ -274,7 +277,7 @@ ret_code_t adafruit_pn532_wake_up(void);
  *   @retval        STM_SUCCESS     If the function completed successfully. Otherwise,
  *                                  an error code is returned.
  */
-ret_code_t adafruit_pn532_firmware_version_get(uint32_t * p_response);
+ret_code_t adafruit_pn532_firmware_version_get(uint32_t *p_response);
 
 /**  @brief Function for sending a command and waiting a specified period for the ACK.
  *
@@ -285,7 +288,9 @@ ret_code_t adafruit_pn532_firmware_version_get(uint32_t * p_response);
  *   @retval    STM_SUCCESS            If the command was sent successfully. Otherwise,
  *                                     an error code is returned.
  */
-ret_code_t adafruit_pn532_cmd_send(uint8_t * p_cmd, uint8_t cmd_len, uint16_t timeout);
+ret_code_t adafruit_pn532_cmd_send(uint8_t *p_cmd,
+                                   uint8_t cmd_len,
+                                   uint16_t timeout);
 
 /**  @brief Function for enabling the PN532 RF field.
  *
@@ -331,8 +336,8 @@ ret_code_t adafruit_pn532_field_off(void);
  *   @retval        STM_SUCCESS           If the function completed successfully. Otherwise,
  *                                        an error code is returned.
  */
-ret_code_t adafruit_pn532_nfc_a_target_init(nfc_a_tag_info * p_tag_info,
-                                            uint16_t         timeout);
+ret_code_t adafruit_pn532_nfc_a_target_init(nfc_a_tag_info *p_tag_info,
+                                            uint16_t timeout);
 
 /** @brief Function for exchanging an Application Protocol Data Unit (APDU) with the currently enlisted peer.
  *
@@ -347,10 +352,10 @@ ret_code_t adafruit_pn532_nfc_a_target_init(nfc_a_tag_info * p_tag_info,
  *   @retval        STM_SUCCESS            If the function completed successfully. Otherwise,
  *                                         an error code is returned.
  */
-ret_code_t adafruit_pn532_in_data_exchange(uint8_t * p_send,
-                                           uint8_t   send_len,
-                                           uint8_t * p_response,
-                                           uint8_t * p_response_len);
+ret_code_t adafruit_pn532_in_data_exchange(uint8_t *p_send,
+                                           uint8_t send_len,
+                                           uint8_t *p_response,
+                                           uint8_t *p_response_len);
 
 /**  @brief Function for setting the MxRtyPassiveActivation parameter of the RFConfiguration register.
  *
@@ -385,7 +390,7 @@ ret_code_t adafruit_pn532_passive_activation_retries_set(uint8_t max_retries);
  *   @retval        STM_SUCCESS           If the data was read successfully. Otherwise,
  *                                        an error code is returned.
  */
-ret_code_t adafruit_pn532_tag2_read(uint8_t start_page, uint8_t * p_buffer);
+ret_code_t adafruit_pn532_tag2_read(uint8_t start_page, uint8_t *p_buffer);
 
 /**  @brief Function for writing an entire 4-byte page/block to the Type 2 Tag at the specified 
  *          page/block address.
@@ -400,7 +405,7 @@ ret_code_t adafruit_pn532_tag2_read(uint8_t start_page, uint8_t * p_buffer);
  *   @retval        STM_SUCCESS         If the data was written successfully. Otherwise,
  *                                      an error code is returned.
  */
-ret_code_t adafruit_pn532_tag2_page_write(uint8_t page, uint8_t * p_data);
+ret_code_t adafruit_pn532_tag2_page_write(uint8_t page, uint8_t *p_data);
 
 /**  @brief Function for writing an NDEF URI record to Type 2 Tag at the specified page (4..nn).
  *
@@ -416,7 +421,9 @@ ret_code_t adafruit_pn532_tag2_page_write(uint8_t page, uint8_t * p_data);
  *   @retval        STM_SUCCESS        If the record was written successfully. Otherwise,
  *                                     an error code is returned.
  */
-ret_code_t adafruit_pn532_ndef_uri_tag2_write(uint8_t uri_id, char * p_url, uint8_t data_len);
+ret_code_t adafruit_pn532_ndef_uri_tag2_write(uint8_t uri_id,
+                                              char *p_url,
+                                              uint8_t data_len);
 
 /** @} */
 
@@ -431,7 +438,7 @@ ret_code_t adafruit_pn532_ndef_uri_tag2_write(uint8_t uri_id, char * p_url, uint
  *
  *   @param[in] p_tag_info Pointer to the NFC-A Tag Info descriptor.
  */
-void adafruit_pn532_tag_info_printout(nfc_a_tag_info const * const p_tag_info);
+void adafruit_pn532_tag_info_printout(nfc_a_tag_info const *const p_tag_info);
 
 /** @} */
 
@@ -470,7 +477,7 @@ ret_code_t adafruit_pn532_ack_read(void);
  *   @retval        STM_SUCCESS            If the data was read successfully. Otherwise,
  *                                         an error code is returned.
  */
-ret_code_t adafruit_pn532_data_read(uint8_t * p_buff, uint8_t n);
+ret_code_t adafruit_pn532_data_read(uint8_t *p_buff, uint8_t n);
 
 /**  @brief Function for writing a command to the PN532 Shield.
  *
@@ -483,7 +490,7 @@ ret_code_t adafruit_pn532_data_read(uint8_t * p_buff, uint8_t n);
  *   @retval     STM_SUCCESS        If the command was written successfully. Otherwise,
  *                                  an error code is returned.
  */
-ret_code_t adafruit_pn532_command_write(uint8_t * p_cmd, uint8_t cmd_len);
+ret_code_t adafruit_pn532_command_write(uint8_t *p_cmd, uint8_t cmd_len);
 /** @} */
 
 /**
@@ -505,7 +512,7 @@ void adafruit_pn532_clear_buffers(void);
  * @retval 0x00     Test success: The presence of at least one card was success
  * @retval 0xXX     Test fail
  */
-ret_code_t adafruit_diagnose_comm_line(uint8_t * p_send, uint8_t send_len);
+ret_code_t adafruit_diagnose_comm_line(uint8_t *p_send, uint8_t send_len);
 
 /**
  * @brief Detect card presence in the RF range of the device

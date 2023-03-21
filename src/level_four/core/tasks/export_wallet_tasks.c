@@ -66,36 +66,36 @@
 
 extern Export_Wallet_Data data;
 
-extern lv_task_t* success_task;
-extern lv_task_t* timeout_task;
+extern lv_task_t *success_task;
+extern lv_task_t *timeout_task;
 
-void export_wallet_task()
-{
-    switch (flow_level.level_three) {
+void export_wallet_task() {
+  switch (flow_level.level_three) {
     case EXPORT_WALLET_SELECT_WALLET: {
-        char* wallet_names[MAX_WALLETS_ALLOWED];
+      char *wallet_names[MAX_WALLETS_ALLOWED];
 
-        uint8_t walletAdded = 0;
-        uint8_t walletIndex = 0;
+      uint8_t walletAdded = 0;
+      uint8_t walletIndex = 0;
 
-        for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
-            if (get_wallet_state(walletIndex) == VALID_WALLET &&
-                get_wallet_card_state(walletIndex) == 0x0f &&
-                get_wallet_locked_status(walletIndex) == 0) {
-                wallet_names[walletAdded] = (char *)get_wallet_name(walletIndex);
-                walletAdded++;
-            }
+      for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+        if (get_wallet_state(walletIndex) == VALID_WALLET &&
+            get_wallet_card_state(walletIndex) == 0x0f &&
+            get_wallet_locked_status(walletIndex) == 0) {
+          wallet_names[walletAdded] = (char *)get_wallet_name(walletIndex);
+          walletAdded++;
         }
+      }
 
-        menu_init((const char**) wallet_names, walletAdded, ui_text_choose_wallet, false);
+      menu_init((const char **)wallet_names, walletAdded, ui_text_choose_wallet,
+                false);
     } break;
 
     case EXPORT_WALLET_FINAL_SCREEN:
-        mark_event_over();
-        CY_Reset_Not_Allow(true);
-        break;
-    
+      mark_event_over();
+      CY_Reset_Not_Allow(true);
+      break;
+
     default:
-        break;
-    }
+      break;
+  }
 }

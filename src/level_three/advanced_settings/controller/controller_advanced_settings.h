@@ -16,7 +16,6 @@
 #include "controller_main.h"
 #include "tasks.h"
 
-
 /**
  * @brief Controller for post-event processing of advanced settings tasks.
  * @details This function is used to control the flow of the advanced settings controller and is responsible for

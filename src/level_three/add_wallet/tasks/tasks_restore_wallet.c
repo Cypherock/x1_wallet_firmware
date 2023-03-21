@@ -61,105 +61,95 @@
 #include "stdint.h"
 #include "tasks.h"
 #include "tasks_add_wallet.h"
+#include "tasks_tap_cards.h"
+#include "ui_address.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_input_mnemonics.h"
 #include "ui_input_text.h"
+#include "ui_instruction.h"
 #include "ui_list.h"
 #include "ui_menu.h"
 #include "ui_message.h"
+#include "ui_multi_instruction.h"
 #include "ui_text_slideshow.h"
 #include "wallet.h"
-#include "ui_address.h"
-#include "ui_instruction.h"
-#include "tasks_tap_cards.h"
-#include "ui_multi_instruction.h"
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
 extern Wallet_credential_data wallet_credential_data;
 
-static void restore_wallet_enter_mnemonics_flow()
-{
-    if (flow_level.level_four <= wallet.number_of_mnemonics) {
-        char heading[20];
-        snprintf(heading, sizeof(heading), UI_TEXT_ENTER_WORD, flow_level.level_four);
-        ui_mnem_init(heading);
-    } else {
-        // todo check if mnemonics is correct
-        mark_event_over();
-    }
+static void restore_wallet_enter_mnemonics_flow() {
+  if (flow_level.level_four <= wallet.number_of_mnemonics) {
+    char heading[20];
+    snprintf(heading, sizeof(heading), UI_TEXT_ENTER_WORD,
+             flow_level.level_four);
+    ui_mnem_init(heading);
+  } else {
+    // todo check if mnemonics is correct
+    mark_event_over();
+  }
 }
 
-void tasks_restore_wallet()
-{
-    if (flow_level.show_error_screen) {
-        message_scr_init(flow_level.error_screen_text);
-        return;
-    }
+void tasks_restore_wallet() {
+  if (flow_level.show_error_screen) {
+    message_scr_init(flow_level.error_screen_text);
+    return;
+  }
 
-    switch (flow_level.level_three) {
+  switch (flow_level.level_three) {
     case RESTORE_WALLET_NAME_INPUT: {
-        input_text_init(
-            ALPHABET,
-            ui_text_enter_wallet_name,
-            2,
-            DATA_TYPE_TEXT,
-            15);
+      input_text_init(ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT,
+                      15);
     } break;
 
     case RESTORE_WALLET_NAME_CONFIRM: {
-        char display[65];
-        snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
-        address_scr_init(ui_text_confirm_wallet_name, display, false);
+      char display[65];
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
+      address_scr_init(ui_text_confirm_wallet_name, display, false);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_1: {
       char display[65];
-      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
-        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
+      if (strnlen(flow_level.screen_input.input_text,
+                  sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PIN_INS1,
+                 wallet.wallet_name);
       else
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 
     case RESTORE_WALLET_PIN_INSTRUCTIONS_2: {
-      
-      delay_scr_init(ui_wallet_pin_instruction_2,DELAY_TIME);
-    
+      delay_scr_init(ui_wallet_pin_instruction_2, DELAY_TIME);
+
     } break;
 
     case RESTORE_WALLET_SKIP_PASSWORD: {
-        confirm_scr_init(ui_text_do_you_want_to_set_pin);
-        confirm_scr_focus_cancel();
+      confirm_scr_init(ui_text_do_you_want_to_set_pin);
+      confirm_scr_focus_cancel();
     } break;
 
     case RESTORE_WALLET_PIN_INPUT: {
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RESTORE_WALLET_PIN_CONFIRM: {
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_confirm_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RESTORE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
       char display[65];
-      if(strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)) <= 15)
-        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, wallet.wallet_name);
+      if (strnlen(flow_level.screen_input.input_text,
+                  sizeof(flow_level.screen_input.input_text)) <= 15)
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1,
+                 wallet.wallet_name);
       else
-        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, "this wallet");
+        snprintf(display, sizeof(display), UI_TEXT_PASSPHRASE_INS1,
+                 "this wallet");
       delay_scr_init(display, DELAY_TIME);
     } break;
 
@@ -176,98 +166,95 @@ void tasks_restore_wallet()
     } break;
 
     case RESTORE_WALLET_SKIP_PASSPHRASE: {
-        confirm_scr_init(ui_text_use_passphrase_question);
-        confirm_scr_focus_cancel();
+      confirm_scr_init(ui_text_use_passphrase_question);
+      confirm_scr_focus_cancel();
     } break;
 
     case RESTORE_WALLET_NUMBER_OF_WORDS_INPUT: {
-        menu_init(
-            ui_text_mnemonics_number_options,
-            3,
-            ui_text_number_of_words,
-            true);
+      menu_init(ui_text_mnemonics_number_options, 3, ui_text_number_of_words,
+                true);
     } break;
 
     case RESTORE_WALLET_ENTER_SEED_PHRASE_INSTRUCTION: {
-        message_scr_init(ui_text_now_enter_your_seed_phrase);
+      message_scr_init(ui_text_now_enter_your_seed_phrase);
 
     } break;
 
     case RESTORE_WALLET_ENTER_MNEMONICS: {
 #ifndef SKIP_ENTER_MNEMONICS_DEBUG
-        restore_wallet_enter_mnemonics_flow();
+      restore_wallet_enter_mnemonics_flow();
 #else
-        mark_event_over();
+      mark_event_over();
 #endif
 
     } break;
 
     case RESTORE_WALLET_CREATING_WAIT_SCREEN: {
-        instruction_scr_init(ui_text_processing, NULL);
-        mark_event_over();
+      instruction_scr_init(ui_text_processing, NULL);
+      mark_event_over();
     } break;
 
     case RESTORE_WALLET_CREATE: {
-        instruction_scr_destructor();
-        mark_event_over();
+      instruction_scr_destructor();
+      mark_event_over();
     } break;
 
     case RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION: {
-        delay_scr_init(ui_text_verify_entered_words, DELAY_TIME);
+      delay_scr_init(ui_text_verify_entered_words, DELAY_TIME);
 
     } break;
 
     case RESTORE_WALLET_VERIFY: {
-        set_theme(LIGHT);
-        list_init(
-            wallet_credential_data.mnemonics,
-            wallet.number_of_mnemonics,
-            ui_text_verify_word_hash,
-            true);
-        reset_theme();
+      set_theme(LIGHT);
+      list_init(wallet_credential_data.mnemonics, wallet.number_of_mnemonics,
+                ui_text_verify_word_hash, true);
+      reset_theme();
     } break;
 
     case RESTORE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case RESTORE_WALLET_TAP_CARDS: {
-        tap_cards_for_write_flow();
+      tap_cards_for_write_flow();
     } break;
 
     case RESTORE_WALLET_VERIFY_SHARES:
-        instruction_scr_init(ui_text_processing, "");
-        instruction_scr_change_text(ui_text_processing, true);
-        BSP_DelayMs(DELAY_SHORT);
-        mark_event_over();
-        break;
+      instruction_scr_init(ui_text_processing, "");
+      instruction_scr_change_text(ui_text_processing, true);
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
 
     case RESTORE_WALLET_SUCCESS_MESSAGE: {
-        instruction_scr_destructor();
-        const char *messages[6] = {
-            ui_text_verification_is_now_complete_messages[0], ui_text_verification_is_now_complete_messages[1],
-            ui_text_verification_is_now_complete_messages[2], ui_text_verification_is_now_complete_messages[4],
-            ui_text_verification_is_now_complete_messages[5], NULL};
-        uint8_t count = 5;
+      instruction_scr_destructor();
+      const char *messages[6] = {
+          ui_text_verification_is_now_complete_messages[0],
+          ui_text_verification_is_now_complete_messages[1],
+          ui_text_verification_is_now_complete_messages[2],
+          ui_text_verification_is_now_complete_messages[4],
+          ui_text_verification_is_now_complete_messages[5],
+          NULL};
+      uint8_t count = 5;
 
-        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            messages[3] = ui_text_verification_is_now_complete_messages[3];
-            messages[4] = ui_text_verification_is_now_complete_messages[4];
-            messages[5] = ui_text_verification_is_now_complete_messages[5];
-            count = 6;
-        }
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        messages[3] = ui_text_verification_is_now_complete_messages[3];
+        messages[4] = ui_text_verification_is_now_complete_messages[4];
+        messages[5] = ui_text_verification_is_now_complete_messages[5];
+        count       = 6;
+      }
 
-        multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+      multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
     } break;
 
     case RESTORE_WALLET_FAILED_MESSAGE: {
-        instruction_scr_destructor();
-        message_scr_init(ui_text_creation_failed_delete_wallet);
+      instruction_scr_destructor();
+      message_scr_init(ui_text_creation_failed_delete_wallet);
     } break;
 
     default: {
-        message_scr_init(ui_text_something_went_wrong);
+      message_scr_init(ui_text_something_went_wrong);
     } break;
-    }
-    return;
+  }
+  return;
 }

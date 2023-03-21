@@ -60,17 +60,19 @@
 #ifdef UI_HOR_SCROLL_PAGE_UNIT_TESTS
 
 void Ui_HorScrUnitTests(void) {
-    /* Negative checks: Should immediately return and not crash the board */
-    ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
-    ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
+  /* Negative checks: Should immediately return and not crash the board */
+  ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
+  ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
 
-    /* Positive check: Should see UI and buttons working properly */
-    ui_scrollable_page("ThisIsAHeading.HeadingShouldBeFloatingText!",
-                  "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
-                  "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||", MENU_SCROLL_HORIZONTAL, true);
-    while (1) {
-        lv_task_handler();
-    }
+  /* Positive check: Should see UI and buttons working properly */
+  ui_scrollable_page(
+      "ThisIsAHeading.HeadingShouldBeFloatingText!",
+      "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
+      "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||",
+      MENU_SCROLL_HORIZONTAL, true);
+  while (1) {
+    lv_task_handler();
+  }
 }
 
 #endif /* UI_HOR_SCROLL_PAGE_UNIT_TESTS */

@@ -58,22 +58,17 @@
 #include "controller_level_four.h"
 
 //wallet_locked_controller_b
-void wallet_locked_controller_b()
-{
-
-    switch (flow_level.level_three) {
-
-       case WALLET_LOCKED_MESSAGE:{
-        reset_flow_level();
-        counter.next_event_flag = true;
-        } break;
-       case WALLET_LOCKED_ENTER_PIN: {
-        reset_flow_level();
-        counter.next_event_flag = true;
-       } break;
-       default:
-        break;
-
-    }
-
+void wallet_locked_controller_b() {
+  switch (flow_level.level_three) {
+    case WALLET_LOCKED_MESSAGE: {
+      reset_flow_level();
+      counter.next_event_flag = true;
+    } break;
+    case WALLET_LOCKED_ENTER_PIN: {
+      reset_flow_level();
+      counter.next_event_flag = true;
+    } break;
+    default:
+      break;
+  }
 }

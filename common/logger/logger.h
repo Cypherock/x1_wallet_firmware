@@ -31,19 +31,18 @@
  * @brief Enum used while reading the log
  * 
  */
-typedef enum{
+typedef enum {
   LOG_READ_INIT,
-  LOG_READ_ONGOING,  
+  LOG_READ_ONGOING,
   LOG_READ_END,
   LOG_READ_FINISH,
-}log_read_e_t; 
+} log_read_e_t;
 
 /**
  * @brief Records the details about log data.
  * 
  */
-typedef struct
-{
+typedef struct {
   uint16_t log_count;
   uint32_t next_write_loc;
   uint8_t page_index;
@@ -51,7 +50,7 @@ typedef struct
   uint8_t read_page_index;
   log_read_e_t read_sm_e;
   uint8_t total_page_read;
-}logger_data_s_t;
+} logger_data_s_t;
 
 /**
  * @brief Logs the text passed as param with option params for formatting.
@@ -73,19 +72,19 @@ void logger(char *fmt, ...);
 #endif
 
 #define LOG_CRITICAL logger
-#define LOG_ERROR logger
+#define LOG_ERROR    logger
 
 #else
 
-#define LOG_SWV  printf
-#define LOG_INFO printf
-#define LOG_ERROR printf
+#define LOG_SWV      printf
+#define LOG_INFO     printf
+#define LOG_ERROR    printf
 #define LOG_CRITICAL printf
 
 #endif
 
 /// Increments the passed var within the limits of the passed max
-#define CYCLIC_INCREMENT(var,max) ((var+1)%max)
+#define CYCLIC_INCREMENT(var, max) ((var + 1) % max)
 
 /**
  * @brief Task to handle desktop communication
@@ -176,4 +175,4 @@ log_read_e_t get_log_read_status();
 
 void set_start_log_read();
 
-#endif //_DEVICE_LOGGER_H
+#endif  //_DEVICE_LOGGER_H

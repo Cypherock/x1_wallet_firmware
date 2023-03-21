@@ -59,7 +59,8 @@
 #include "dev_utils.h"
 static ekp_queue *q = NULL;
 
-ekp_queue_node *ekp_new_queue_node(const lv_event_t event, const uint32_t delay) {
+ekp_queue_node *ekp_new_queue_node(const lv_event_t event,
+                                   const uint32_t delay) {
   ekp_queue_node *temp = (ekp_queue_node *)malloc(sizeof(ekp_queue_node));
   temp->event          = event;
   temp->delay          = delay;

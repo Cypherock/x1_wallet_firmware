@@ -58,7 +58,7 @@ void mousewheel_init(void);
  * @param data store the read data here
  * @return false: all ticks and button state are handled
  */
-bool mousewheel_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+bool mousewheel_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
 
 /**
  * It is called periodically from the SDL thread to check a key is pressed/released

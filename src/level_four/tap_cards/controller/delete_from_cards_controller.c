@@ -63,105 +63,106 @@
 #include "nfc.h"
 #include "tasks.h"
 #include "ui_instruction.h"
-#include "controller_tap_cards.h"
 
-
-static void _handle_delete_wallet_success(uint8_t card_number, uint8_t flash_wallet_index);
+static void _handle_delete_wallet_success(uint8_t card_number,
+                                          uint8_t flash_wallet_index);
 static void _tap_card_backend(uint8_t card_number);
 
-void delete_from_cards_controller()
-{
-    if (flow_level.level_four > wallet.total_number_of_shares * 2) {
-        return;
-    }
-    switch (flow_level.level_four) {
+void delete_from_cards_controller() {
+  if (flow_level.level_four > wallet.total_number_of_shares * 2) {
+    return;
+  }
+  switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        tap_card_data.desktop_control = false;
-        tap_card_data.tapped_card = 0;
-        flow_level.level_four = TAP_CARD_ONE_BACKEND;
-        break;
+      tap_card_data.desktop_control = false;
+      tap_card_data.tapped_card     = 0;
+      flow_level.level_four         = TAP_CARD_ONE_BACKEND;
+      break;
 
     case TAP_CARD_ONE_BACKEND:
-        _tap_card_backend(1);
-        break;
+      _tap_card_backend(1);
+      break;
 
     case TAP_CARD_TWO_FRONTEND:
-        flow_level.level_four = TAP_CARD_TWO_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_TWO_BACKEND;
+      break;
 
     case TAP_CARD_TWO_BACKEND:
-        _tap_card_backend(2);
-        break;
+      _tap_card_backend(2);
+      break;
 
     case TAP_CARD_THREE_FRONTEND:
-        flow_level.level_four = TAP_CARD_THREE_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_THREE_BACKEND;
+      break;
 
     case TAP_CARD_THREE_BACKEND:
-        _tap_card_backend(3);
-        break;
+      _tap_card_backend(3);
+      break;
 
     case TAP_CARD_FOUR_FRONTEND:
-        flow_level.level_four = TAP_CARD_FOUR_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_FOUR_BACKEND;
+      break;
 
     case TAP_CARD_FOUR_BACKEND:
-        _tap_card_backend(4);
-        break;
+      _tap_card_backend(4);
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 // Card number is 1,2,3 or 4
-static void _tap_card_backend(uint8_t card_number)
-{
-    uint8_t flash_wallet_index;
+static void _tap_card_backend(uint8_t card_number) {
+  uint8_t flash_wallet_index;
 
-    if (get_index_by_name((const char *)wallet.wallet_name, &flash_wallet_index) != SUCCESS_) return;
-    memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    tap_card_data.retries = 5;
+  if (get_index_by_name((const char *)wallet.wallet_name,
+                        &flash_wallet_index) != SUCCESS_)
+    return;
+  memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+  tap_card_data.retries = 5;
 
-    if (card_already_deleted_flash(flash_wallet_index, card_number)) {
-        if (card_number < 4)
-            flow_level.level_four++;
-        else {
-            flow_level.level_four = 1;
-            flow_level.level_three++;
-        }
-        return;
+  if (card_already_deleted_flash(flash_wallet_index, card_number)) {
+    if (card_number < 4)
+      flow_level.level_four++;
+    else {
+      flow_level.level_four = 1;
+      flow_level.level_three++;
     }
+    return;
+  }
 
-    while (1) {
-        tap_card_data.lvl3_retry_point = flow_level.level_three;
-        tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
-        tap_card_data.acceptable_cards = encode_card_number(card_number);
-        if (card_number == 1) tap_card_data.tapped_card = 0;
-        if (!tap_card_applet_connection())
-            return;
-        tap_card_data.status = nfc_delete_wallet(&wallet);
+  while (1) {
+    tap_card_data.lvl3_retry_point = flow_level.level_three;
+    tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
+    tap_card_data.acceptable_cards = encode_card_number(card_number);
+    if (card_number == 1)
+      tap_card_data.tapped_card = 0;
+    if (!tap_card_applet_connection())
+      return;
+    tap_card_data.status = nfc_delete_wallet(&wallet);
 
-        if (tap_card_data.status == SW_NO_ERROR || tap_card_data.status == SW_RECORD_NOT_FOUND) {
-            buzzer_start(BUZZER_DURATION);
-            instruction_scr_change_text(ui_text_remove_card_prompt, true);
-            if(card_number != 4)
-                nfc_detect_card_removal();
-            _handle_delete_wallet_success(card_number, flash_wallet_index);
-            break;
-        } else if (tap_card_handle_applet_errors()) {
-            break;
-        }
+    if (tap_card_data.status == SW_NO_ERROR ||
+        tap_card_data.status == SW_RECORD_NOT_FOUND) {
+      buzzer_start(BUZZER_DURATION);
+      instruction_scr_change_text(ui_text_remove_card_prompt, true);
+      if (card_number != 4)
+        nfc_detect_card_removal();
+      _handle_delete_wallet_success(card_number, flash_wallet_index);
+      break;
+    } else if (tap_card_handle_applet_errors()) {
+      break;
     }
+  }
 }
 
-static void _handle_delete_wallet_success(uint8_t card_number, uint8_t flash_wallet_index)
-{
-    delete_from_kth_card_flash(flash_wallet_index, card_number);
-    if (card_number < 4)
-        flow_level.level_four++;
-    else {
-        flow_level.level_four = 1;
-        flow_level.level_three++;
-    }
-    instruction_scr_destructor();
+static void _handle_delete_wallet_success(uint8_t card_number,
+                                          uint8_t flash_wallet_index) {
+  delete_from_kth_card_flash(flash_wallet_index, card_number);
+  if (card_number < 4)
+    flow_level.level_four++;
+  else {
+    flow_level.level_four = 1;
+    flow_level.level_three++;
+  }
+  instruction_scr_destructor();
 }

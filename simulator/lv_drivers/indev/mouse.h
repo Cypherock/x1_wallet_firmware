@@ -58,7 +58,7 @@ void mouse_init(void);
  * @param data store the mouse data here
  * @return false: because the points are not buffered, so no more data to be read
  */
-bool mouse_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+bool mouse_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
 
 /**
  * It will be called from the main SDL thread

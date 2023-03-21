@@ -56,52 +56,51 @@
  *
  ******************************************************************************
  */
+#include "card_action_controllers.h"
 #include "controller_main.h"
 #include "controller_tap_cards.h"
-#include "card_action_controllers.h"
 
 extern Wallet_shamir_data wallet_shamir_data;
 
-void tap_cards_for_verification_flow_controller()
-{
-    switch (flow_level.level_four) {
+void tap_cards_for_verification_flow_controller() {
+  switch (flow_level.level_four) {
     case TAP_CARD_ONE_FRONTEND:
-        tap_card_data.desktop_control = false;
-        tap_card_data.tapped_card = 0;
-        flow_level.level_four = TAP_CARD_ONE_BACKEND;
-        break;
+      tap_card_data.desktop_control = false;
+      tap_card_data.tapped_card     = 0;
+      flow_level.level_four         = TAP_CARD_ONE_BACKEND;
+      break;
 
     case TAP_CARD_ONE_BACKEND:
-        readback_share_from_card(0);
-        break;
+      readback_share_from_card(0);
+      break;
 
     case TAP_CARD_TWO_FRONTEND:
-        flow_level.level_four = TAP_CARD_TWO_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_TWO_BACKEND;
+      break;
 
     case TAP_CARD_TWO_BACKEND:
-        readback_share_from_card(1);
-        break;
+      readback_share_from_card(1);
+      break;
 
     case TAP_CARD_THREE_FRONTEND:
-        flow_level.level_four = TAP_CARD_THREE_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_THREE_BACKEND;
+      break;
 
     case TAP_CARD_THREE_BACKEND:
-        readback_share_from_card(2);
-        break;
+      readback_share_from_card(2);
+      break;
 
     case TAP_CARD_FOUR_FRONTEND:
-        flow_level.level_four = TAP_CARD_FOUR_BACKEND;
-        break;
+      flow_level.level_four = TAP_CARD_FOUR_BACKEND;
+      break;
 
     case TAP_CARD_FOUR_BACKEND:
-        readback_share_from_card(3);
-        break;
+      readback_share_from_card(3);
+      break;
 
     default:
-        LOG_CRITICAL("###31");
-        reset_flow_level();
-        break;
-    }
+      LOG_CRITICAL("###31");
+      reset_flow_level();
+      break;
+  }
 }

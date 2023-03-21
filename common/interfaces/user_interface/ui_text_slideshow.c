@@ -57,58 +57,58 @@
  */
 #include "ui_text_slideshow.h"
 
-static struct Text_Slideshow_Data* data;
-static lv_task_t* slideshow_task = NULL;
-static lv_obj_t* text;
+static struct Text_Slideshow_Data *data;
+static lv_task_t *slideshow_task = NULL;
+static lv_obj_t *text;
 
 /**
  * @brief Callback to update slide show text
  * 
  * @param task Task variable passed by callback caller
  */
-void change_text(lv_task_t* task)
-{
-    ASSERT(data != NULL);
+void change_text(lv_task_t *task) {
+  ASSERT(data != NULL);
 
-    data->index_of_current_string = (data->index_of_current_string + 1) % data->total_strings;
-    lv_label_set_static_text(text, data->strings[data->index_of_current_string]);
-    lv_obj_align(text, NULL, LV_ALIGN_CENTER, 0, 0);
+  data->index_of_current_string =
+      (data->index_of_current_string + 1) % data->total_strings;
+  lv_label_set_static_text(text, data->strings[data->index_of_current_string]);
+  lv_obj_align(text, NULL, LV_ALIGN_CENTER, 0, 0);
 
-    if (data->index_of_current_string == (data->total_strings - 1)) {
-        data->one_cycle_completed = true;
-    }
+  if (data->index_of_current_string == (data->total_strings - 1)) {
+    data->one_cycle_completed = true;
+  }
 }
 
-void ui_text_slideshow_change_text(const char* str, const uint8_t str_length, const uint8_t slide_index)
-{
-    ASSERT(data != NULL);
-    ASSERT(str != NULL);
-    ASSERT(strnlen(str, MAX_NUM_OF_CHARS_IN_A_SLIDE) == str_length);
+void ui_text_slideshow_change_text(const char *str,
+                                   const uint8_t str_length,
+                                   const uint8_t slide_index) {
+  ASSERT(data != NULL);
+  ASSERT(str != NULL);
+  ASSERT(strnlen(str, MAX_NUM_OF_CHARS_IN_A_SLIDE) == str_length);
 
-    // If checks, to prevent runtime errors
-    if (data != NULL) {
-        if (slide_index < data->total_strings) {
-            // (str_lenght + 1) adjust length for NULL character
-            snprintf(data->strings[slide_index], str_length + 1, "%s", str);
-        }
+  // If checks, to prevent runtime errors
+  if (data != NULL) {
+    if (slide_index < data->total_strings) {
+      // (str_lenght + 1) adjust length for NULL character
+      snprintf(data->strings[slide_index], str_length + 1, "%s", str);
     }
+  }
 }
 
-void ui_text_slideshow_destructor()
-{
-    if (slideshow_task != NULL) {
-        lv_task_set_prio(slideshow_task, LV_TASK_PRIO_OFF);
-        lv_task_del(slideshow_task);
-        slideshow_task = NULL;
-    }
+void ui_text_slideshow_destructor() {
+  if (slideshow_task != NULL) {
+    lv_task_set_prio(slideshow_task, LV_TASK_PRIO_OFF);
+    lv_task_del(slideshow_task);
+    slideshow_task = NULL;
+  }
 
-    lv_obj_clean(lv_scr_act());
+  lv_obj_clean(lv_scr_act());
 
-    if (data != NULL) {
-        memzero(data, sizeof(struct Text_Slideshow_Data));
-        free(data);
-        data = NULL;
-    }
+  if (data != NULL) {
+    memzero(data, sizeof(struct Text_Slideshow_Data));
+    free(data);
+    data = NULL;
+  }
 }
 
 /**
@@ -126,58 +126,64 @@ void ui_text_slideshow_destructor()
  *
  * @note
  */
-static void event_handler(lv_obj_t* obj, const lv_event_t event)
-{
-    ASSERT(data != NULL);
-    ASSERT(obj != NULL);
+static void event_handler(lv_obj_t *obj, const lv_event_t event) {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_CLICKED:
-        if (data->one_cycle_completed && data->destruct_on_click) {
-            if (ui_mark_event_over) (*ui_mark_event_over)();
-            ui_text_slideshow_destructor();
-        }
-        break;
+      if (data->one_cycle_completed && data->destruct_on_click) {
+        if (ui_mark_event_over)
+          (*ui_mark_event_over)();
+        ui_text_slideshow_destructor();
+      }
+      break;
     case LV_EVENT_DELETE: {
-        if (slideshow_task != NULL) {
-            lv_task_set_prio(slideshow_task, LV_TASK_PRIO_OFF);
-            lv_task_del(slideshow_task);
-            slideshow_task = NULL;
-        }
-        break;
+      if (slideshow_task != NULL) {
+        lv_task_set_prio(slideshow_task, LV_TASK_PRIO_OFF);
+        lv_task_del(slideshow_task);
+        slideshow_task = NULL;
+      }
+      break;
     }
-    default: break;
-    }
+    default:
+      break;
+  }
 }
 
-void ui_text_slideshow_init(const char* arr[MAX_NUM_OF_CHARS_IN_A_SLIDE], const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
-{
-    ASSERT(arr != NULL);
+void ui_text_slideshow_init(const char *arr[MAX_NUM_OF_CHARS_IN_A_SLIDE],
+                            const uint8_t count,
+                            const uint16_t delay_in_ms,
+                            const bool destruct_on_click) {
+  ASSERT(arr != NULL);
 
-    if (count > MAX_NUM_OF_SLIDESHOWS)
-        return;
+  if (count > MAX_NUM_OF_SLIDESHOWS)
+    return;
 
-    data = malloc(sizeof(struct Text_Slideshow_Data));
+  data = malloc(sizeof(struct Text_Slideshow_Data));
 
-    for (uint8_t i = 0; i < count; i++) {
-        snprintf(data->strings[i], sizeof(data->strings[i]), "%s", arr[i]);
-    }
+  for (uint8_t i = 0; i < count; i++) {
+    snprintf(data->strings[i], sizeof(data->strings[i]), "%s", arr[i]);
+  }
 
-    data->index_of_current_string = 0;
-    data->total_strings = count;
-    data->one_cycle_completed = false;
-    data->destruct_on_click = destruct_on_click;
+  data->index_of_current_string = 0;
+  data->total_strings           = count;
+  data->one_cycle_completed     = false;
+  data->destruct_on_click       = destruct_on_click;
 
-    text = lv_label_create(lv_scr_act(), NULL);
-    ui_paragraph(text, data->strings[0], LV_LABEL_ALIGN_CENTER);
-    lv_obj_align(text, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_group_add_obj(ui_get_group(), text);
-    lv_indev_set_group(ui_get_indev(), ui_get_group());
-    lv_obj_set_event_cb(text, event_handler); // The screen will destruct if the button is pressed
+  text = lv_label_create(lv_scr_act(), NULL);
+  ui_paragraph(text, data->strings[0], LV_LABEL_ALIGN_CENTER);
+  lv_obj_align(text, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_group_add_obj(ui_get_group(), text);
+  lv_indev_set_group(ui_get_indev(), ui_get_group());
+  lv_obj_set_event_cb(
+      text,
+      event_handler);  // The screen will destruct if the button is pressed
 
-    if (slideshow_task == NULL) {
-        slideshow_task = lv_task_create(change_text, delay_in_ms, LV_TASK_PRIO_MID, NULL);
-    } else {
-        lv_task_set_prio(slideshow_task, LV_TASK_PRIO_MID);
-    }
+  if (slideshow_task == NULL) {
+    slideshow_task =
+        lv_task_create(change_text, delay_in_ms, LV_TASK_PRIO_MID, NULL);
+  } else {
+    lv_task_set_prio(slideshow_task, LV_TASK_PRIO_MID);
+  }
 }

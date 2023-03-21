@@ -58,56 +58,53 @@
 #include "constant_texts.h"
 #include "controller_main.h"
 #include "flash_api.h"
+#include "nfc.h"
 #include "stdint.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
-#include "tasks_tap_cards.h"
-#include "nfc.h"
 
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-
-
-
-void tap_cards_for_write_flow()
-{
-    switch (flow_level.level_four) {
+void tap_cards_for_write_flow() {
+  switch (flow_level.level_four) {
     case CARD_ONE_FRONTEND:
     case CARD_TWO_FRONTEND:
     case CARD_THREE_FRONTEND:
     case CARD_FOUR_FRONTEND: {
-        char display[40];
-        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, ((flow_level.level_four-1) / 3)+1);
-        instruction_scr_init(ui_text_place_card_below, display);
-        mark_event_over();
+      char display[40];
+      snprintf(display, sizeof(display), UI_TEXT_TAP_CARD,
+               ((flow_level.level_four - 1) / 3) + 1);
+      instruction_scr_init(ui_text_place_card_below, display);
+      mark_event_over();
     } break;
 
     case CARD_ONE_READBACK:
     case CARD_TWO_READBACK:
     case CARD_THREE_READBACK:
-    case CARD_FOUR_READBACK:
-    {
-        char display[40];
-        instruction_scr_destructor();
-        snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, flow_level.level_four / 3);
-        instruction_scr_init(ui_text_place_card_below, display);
-        if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
-            instruction_scr_change_text(ui_text_card_removed_fast, true);
+    case CARD_FOUR_READBACK: {
+      char display[40];
+      instruction_scr_destructor();
+      snprintf(display, sizeof(display), UI_TEXT_TAP_CARD,
+               flow_level.level_four / 3);
+      instruction_scr_init(ui_text_place_card_below, display);
+      if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
+        instruction_scr_change_text(ui_text_card_removed_fast, true);
     }
     case CARD_ONE_WRITE:
     case CARD_TWO_WRITE:
     case CARD_THREE_WRITE:
     case CARD_FOUR_WRITE:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     default:
-        LOG_CRITICAL("xx30");
-        reset_flow_level();
-        message_scr_init(ui_text_something_went_wrong);
-        break;
-    }
+      LOG_CRITICAL("xx30");
+      reset_flow_level();
+      message_scr_init(ui_text_something_went_wrong);
+      break;
+  }
 }

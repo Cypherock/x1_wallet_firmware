@@ -55,47 +55,45 @@
  *
  ******************************************************************************
  */
-#include "nfc.h"
 #include "ui_card_detect.h"
+#include "nfc.h"
 
-static struct Card_Detect_Data* data = NULL;
-static struct Card_Detect_Object* obj = NULL;
+static struct Card_Detect_Data *data  = NULL;
+static struct Card_Detect_Object *obj = NULL;
 static lv_task_t *card_detect;
 static void card_detect_scr_create();
 
-void card_detect_scr_init(const char* text)
-{
-    ASSERT(text != NULL);
+void card_detect_scr_init(const char *text) {
+  ASSERT(text != NULL);
 
-    data = malloc(sizeof(struct Card_Detect_Data));
-    obj = malloc(sizeof(struct Card_Detect_Object));
+  data = malloc(sizeof(struct Card_Detect_Data));
+  obj  = malloc(sizeof(struct Card_Detect_Object));
 
-    if (data != NULL) {
-        data->text = (char*)text;
-    }
-    card_detect = lv_task_create(nfc_card_presence_detect, 100, LV_TASK_PRIO_LOW, NULL);
-    card_detect_scr_create();
+  if (data != NULL) {
+    data->text = (char *)text;
+  }
+  card_detect =
+      lv_task_create(nfc_card_presence_detect, 100, LV_TASK_PRIO_LOW, NULL);
+  card_detect_scr_create();
 }
 
-void card_detect_scr_destructor()
-{
-    lv_obj_clean(lv_scr_act());
-    if(card_detect != NULL)
-        lv_task_del(card_detect);
-    if (data != NULL) {
-        memzero(data, sizeof(struct Card_Detect_Data));
-        free(data);
-        data = NULL;
-    }
-    if (obj != NULL) {
-        free(obj);
-        obj = NULL;
-    }
+void card_detect_scr_destructor() {
+  lv_obj_clean(lv_scr_act());
+  if (card_detect != NULL)
+    lv_task_del(card_detect);
+  if (data != NULL) {
+    memzero(data, sizeof(struct Card_Detect_Data));
+    free(data);
+    data = NULL;
+  }
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
 }
 
-void card_detect_scr_focus_skip()
-{
-    lv_group_focus_obj(obj->skip_btn);
+void card_detect_scr_focus_skip() {
+  lv_group_focus_obj(obj->skip_btn);
 }
 
 /**
@@ -113,40 +111,39 @@ void card_detect_scr_focus_skip()
  *
  * @note
  */
-static void skip_btn_event_handler(lv_obj_t* skip_btn, const lv_event_t event)
-{
-    ASSERT(skip_btn != NULL);
+static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
+  ASSERT(skip_btn != NULL);
 
-    switch (event) {
+  switch (event) {
     case LV_EVENT_KEY:
-        switch (lv_indev_get_key(ui_get_indev())) {
+      switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_HOME:
-            lv_task_del(card_detect);
-            card_detect = NULL;
-            if (ui_mark_event_over) 
-                (*ui_mark_event_over)();
-            break;
+          lv_task_del(card_detect);
+          card_detect = NULL;
+          if (ui_mark_event_over)
+            (*ui_mark_event_over)();
+          break;
         default:
-            break;
-        }
-        break;
+          break;
+      }
+      break;
     case LV_EVENT_CLICKED:
-        if (ui_mark_event_cancel) 
-            (*ui_mark_event_cancel)();
-        card_detect_scr_destructor();
-        break;
+      if (ui_mark_event_cancel)
+        (*ui_mark_event_cancel)();
+      card_detect_scr_destructor();
+      break;
     case LV_EVENT_DEFOCUSED:
-        lv_btn_set_state(skip_btn, LV_BTN_STATE_REL);
-        break;
+      lv_btn_set_state(skip_btn, LV_BTN_STATE_REL);
+      break;
     case LV_EVENT_DELETE:
-        if(card_detect != NULL){
-            lv_task_del(card_detect);
-            card_detect = NULL;
-        }
-        break;
+      if (card_detect != NULL) {
+        lv_task_del(card_detect);
+        card_detect = NULL;
+      }
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 /**
@@ -163,15 +160,14 @@ static void skip_btn_event_handler(lv_obj_t* skip_btn, const lv_event_t event)
  *
  * @note
  */
-void card_detect_scr_create()
-{
-    ASSERT(obj != NULL);
-    ASSERT(data != NULL);
+void card_detect_scr_create() {
+  ASSERT(obj != NULL);
+  ASSERT(data != NULL);
 
-    obj->text = lv_label_create(lv_scr_act(), NULL);
-    obj->skip_btn = lv_btn_create(lv_scr_act(), NULL);
+  obj->text     = lv_label_create(lv_scr_act(), NULL);
+  obj->skip_btn = lv_btn_create(lv_scr_act(), NULL);
 
-    ui_paragraph(obj->text, data->text, LV_LABEL_ALIGN_CENTER);
-    ui_skip_btn(obj->skip_btn, skip_btn_event_handler, false);
-    card_detect_scr_focus_skip();
+  ui_paragraph(obj->text, data->text, LV_LABEL_ALIGN_CENTER);
+  ui_skip_btn(obj->skip_btn, skip_btn_event_handler, false);
+  card_detect_scr_focus_skip();
 }

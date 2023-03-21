@@ -60,21 +60,22 @@
 static lv_obj_t *instruction;
 
 void delay_scr_init(const char message[], const uint32_t delay_in_ms) {
+  ASSERT(message != NULL);
+  ASSERT(delay_in_ms != 0);
 
-    ASSERT(message != NULL);
-    ASSERT(delay_in_ms != 0);
+  instruction = lv_label_create(lv_scr_act(), NULL);
 
-    instruction = lv_label_create(lv_scr_act(), NULL);
-    
-    ui_paragraph(instruction,message, LV_LABEL_ALIGN_CENTER); //Creates task to print text on screen
-    lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(instruction, message);
+  ui_paragraph(instruction, message,
+               LV_LABEL_ALIGN_CENTER);  //Creates task to print text on screen
+  lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_label_set_text(instruction, message);
 
-    lv_task_handler();
+  lv_task_handler();
 
-    //Now text should be shown on screen
+  //Now text should be shown on screen
 
-    BSP_DelayMs(delay_in_ms);
-    lv_obj_clean(lv_scr_act());
-    if (ui_mark_event_over) (*ui_mark_event_over)();
+  BSP_DelayMs(delay_in_ms);
+  lv_obj_clean(lv_scr_act());
+  if (ui_mark_event_over)
+    (*ui_mark_event_over)();
 }

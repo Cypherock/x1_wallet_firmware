@@ -63,42 +63,37 @@
 
 extern Flash_Wallet wallet_for_flash;
 
-
-void generate_wallet_controller_b()
-{
-    switch (flow_level.level_three) {
+void generate_wallet_controller_b() {
+  switch (flow_level.level_three) {
     case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
-        flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
+      flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-        
+      if (is_passphrase_enabled())
+        flow_level.level_three = GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
+      else
+        flow_level.level_three = GENERATE_WALLET_PROCESSING;
 
-		if(is_passphrase_enabled())
-			flow_level.level_three = GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
-		else
-			flow_level.level_three = GENERATE_WALLET_PROCESSING;
-        
-        WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PIN(wallet.wallet_info);
+      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PIN(wallet.wallet_info);
     } break;
     case GENERATE_WALLET_PIN_INPUT: {
-        flow_level.level_three = GENERATE_WALLET_SKIP_PIN;
+      flow_level.level_three = GENERATE_WALLET_SKIP_PIN;
     } break;
     case GENERATE_WALLET_PIN_CONFIRM: {
-        flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
+      flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
     } break;
 
-
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-        flow_level.level_three = GENERATE_WALLET_PROCESSING;
-        WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
+      flow_level.level_three = GENERATE_WALLET_PROCESSING;
+      WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
     } break;
 
     default: {
-        flow_level.level_one = LEVEL_TWO_NEW_WALLET;
-        counter.level = LEVEL_TWO;
+      flow_level.level_one = LEVEL_TWO_NEW_WALLET;
+      counter.level        = LEVEL_TWO;
     }
-    }
+  }
 }

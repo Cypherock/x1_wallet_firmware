@@ -61,56 +61,58 @@
 
 Export_Wallet_Data data;
 
-uint8_t serialize_cmd_export_wallet(uint8_t serialized_data[], Cmd_Export_Wallet_t raw_data);
+uint8_t serialize_cmd_export_wallet(uint8_t serialized_data[],
+                                    Cmd_Export_Wallet_t raw_data);
 
-void export_wallet_controller()
-{
-
-    switch (flow_level.level_three) {
+void export_wallet_controller() {
+  switch (flow_level.level_three) {
     case EXPORT_WALLET_SELECT_WALLET: {
-        data.chosen_wallet_index = flow_level.screen_input.list_choice - 1;
-        if (get_ith_wallet_to_export(flow_level.screen_input.list_choice - 1, &data.chosen_wallet_index) != SUCCESS_) {
-            LOG_ERROR("ERR: xx1");
-            comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
-            reset_flow_level();
-            mark_error_screen(ui_text_something_went_wrong);
-            flow_level.show_error_screen = true;
-            break;
-        }
-        Cmd_Export_Wallet_t out_data;
-        memcpy(out_data.wallet_name, get_wallet_name(data.chosen_wallet_index), NAME_SIZE);
-        out_data.wallet_info = get_wallet_info(data.chosen_wallet_index);
-        memcpy(out_data.wallet_id, get_wallet_id(data.chosen_wallet_index), WALLET_ID_SIZE);
+      data.chosen_wallet_index = flow_level.screen_input.list_choice - 1;
+      if (get_ith_wallet_to_export(flow_level.screen_input.list_choice - 1,
+                                   &data.chosen_wallet_index) != SUCCESS_) {
+        LOG_ERROR("ERR: xx1");
+        comm_reject_request(SEND_WALLET_TO_DESKTOP, 0);
+        reset_flow_level();
+        mark_error_screen(ui_text_something_went_wrong);
+        flow_level.show_error_screen = true;
+        break;
+      }
+      Cmd_Export_Wallet_t out_data;
+      memcpy(out_data.wallet_name, get_wallet_name(data.chosen_wallet_index),
+             NAME_SIZE);
+      out_data.wallet_info = get_wallet_info(data.chosen_wallet_index);
+      memcpy(out_data.wallet_id, get_wallet_id(data.chosen_wallet_index),
+             WALLET_ID_SIZE);
 
-        uint8_t out_arr[sizeof(Cmd_Export_Wallet_t)];
-        serialize_cmd_export_wallet(out_arr, out_data);
-        transmit_data_to_app(SEND_WALLET_TO_DESKTOP, out_arr, sizeof(out_arr));
-        flow_level.level_three = EXPORT_WALLET_FINAL_SCREEN;
+      uint8_t out_arr[sizeof(Cmd_Export_Wallet_t)];
+      serialize_cmd_export_wallet(out_arr, out_data);
+      transmit_data_to_app(SEND_WALLET_TO_DESKTOP, out_arr, sizeof(out_arr));
+      flow_level.level_three = EXPORT_WALLET_FINAL_SCREEN;
     } break;
 
     case EXPORT_WALLET_FINAL_SCREEN:
-        reset_flow_level();
-        break;
+      reset_flow_level();
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 
 /** Format :
  * uint8_t serialize_name_of_struct(...)
  */
-uint8_t serialize_cmd_export_wallet(uint8_t serialized_data[], Cmd_Export_Wallet_t raw_data)
-{
-    uint8_t index = 0;
+uint8_t serialize_cmd_export_wallet(uint8_t serialized_data[],
+                                    Cmd_Export_Wallet_t raw_data) {
+  uint8_t index = 0;
 
-    memcpy(serialized_data + index, raw_data.wallet_name, NAME_SIZE);
-    index += NAME_SIZE;
+  memcpy(serialized_data + index, raw_data.wallet_name, NAME_SIZE);
+  index += NAME_SIZE;
 
-    memcpy(serialized_data + index, &raw_data.wallet_info, 1);
-    index++;
+  memcpy(serialized_data + index, &raw_data.wallet_info, 1);
+  index++;
 
-    memcpy(serialized_data + index, raw_data.wallet_id, WALLET_ID_SIZE);
-    index += WALLET_ID_SIZE;
+  memcpy(serialized_data + index, raw_data.wallet_id, WALLET_ID_SIZE);
+  index += WALLET_ID_SIZE;
 
-    return index;
+  return index;
 }

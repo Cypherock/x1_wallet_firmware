@@ -71,7 +71,8 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
                         uint8_t **dpAbiDataPtr) {
   uint8_t returnCode = ABI_BAD_ARGUMENT;
 
-  if ((NULL == pAbiTypeData) || (NULL == pAbiTypeDataBase) || (NULL == pNumBytesReturned) || (NULL == dpAbiDataPtr)) {
+  if ((NULL == pAbiTypeData) || (NULL == pAbiTypeDataBase) ||
+      (NULL == pNumBytesReturned) || (NULL == dpAbiDataPtr)) {
     return returnCode;
   }
 
@@ -86,13 +87,16 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
     }
     case Abi_bytes_dynamic_e: {
       uint32_t offsetDynamicData;
-      offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      offsetDynamicData =
+          U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
       /* Goto offset of the dynamic input */
       pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
 
       /* Ensure if reading from pAbiTypeData is safe */
-      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)) {
+      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk,
+                                            pAbiTypeData,
+                                            ABI_ELEMENT_SZ_IN_BYTES)) {
         returnCode = ABI_PROCESS_INCOMPLETE;
         break;
       }
@@ -102,13 +106,15 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
              * in the dynamic input
              */
       uint32_t numBytesInData;
-      numBytesInData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      numBytesInData =
+          U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
       /* Increment pAbiTypeData by ABI_ELEMENT_SZ_IN_BYTES so that it points to the bytes */
       pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
       /* Ensure if reading numBytesInData bytes from pAbiTypeData is safe */
-      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, numBytesInData)) {
+      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk,
+                                            pAbiTypeData, numBytesInData)) {
         returnCode = ABI_PROCESS_INCOMPLETE;
         break;
       }
@@ -125,13 +131,16 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
     }
     case Abi_uint256_array_dynamic_e: {
       uint32_t offsetDynamicData;
-      offsetDynamicData = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      offsetDynamicData =
+          U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
       /* Goto offset of the dynamic input */
       pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
 
       /* Ensure if reading from pAbiTypeData is safe */
-      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData, ABI_ELEMENT_SZ_IN_BYTES)) {
+      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk,
+                                            pAbiTypeData,
+                                            ABI_ELEMENT_SZ_IN_BYTES)) {
         returnCode = ABI_PROCESS_INCOMPLETE;
         break;
       }
@@ -141,14 +150,16 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
              * in the uint256[] array
              */
       uint32_t numElementsInDataArr;
-      numElementsInDataArr = U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      numElementsInDataArr =
+          U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
 
       /* Increment pAbiTypeData by ABI_ELEMENT_SZ_IN_BYTES so that it points to the array */
       pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
       /* Ensure if reading numElementsInDataArr uint256 from pAbiTypeData is safe */
-      if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
-                                            (ABI_ELEMENT_SZ_IN_BYTES * numElementsInDataArr))) {
+      if (UTIL_IN_BOUNDS !=
+          UTIL_CheckBound(pAbiTypeDataBase, sizeOfAbiChunk, pAbiTypeData,
+                          (ABI_ELEMENT_SZ_IN_BYTES * numElementsInDataArr))) {
         returnCode = ABI_PROCESS_INCOMPLETE;
         break;
       }
@@ -172,7 +183,9 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
   return returnCode;
 }
 
-ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType, uint8_t *pAbiTypeData, uint32_t additionalData) {
+ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
+                               uint8_t *pAbiTypeData,
+                               uint32_t additionalData) {
   ui_display_node *ui_node = NULL;
 
   switch (inputAbiType) {
@@ -182,18 +195,22 @@ ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType, uint8_t *pAbiTypeData, u
 
       byte_array_to_hex_string(pAbiTypeData, 32, &(staticBufferInUTF8[0]), 65);
 
-      convert_byte_array_to_decimal_string(64, 0, &(staticBufferInUTF8[0]), &(staticBufferInUTF8[100]), 100);
+      convert_byte_array_to_decimal_string(64, 0, &(staticBufferInUTF8[0]),
+                                           &(staticBufferInUTF8[100]), 100);
 
-      ui_node = ui_create_display_node("Datatype:uint256\0", 25, &(staticBufferInUTF8[100]), 100);
+      ui_node = ui_create_display_node("Datatype:uint256\0", 25,
+                                       &(staticBufferInUTF8[100]), 100);
       break;
     }
     case Abi_address_e: {
       char staticBufferInUTF8[41];
       memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
 
-      byte_array_to_hex_string(pAbiTypeData + Abi_address_e_OFFSET_BE, 20, &(staticBufferInUTF8[0]), 41);
+      byte_array_to_hex_string(pAbiTypeData + Abi_address_e_OFFSET_BE, 20,
+                               &(staticBufferInUTF8[0]), 41);
 
-      ui_node = ui_create_display_node("Datatype:address\0", 25, &(staticBufferInUTF8[0]), 41);
+      ui_node = ui_create_display_node("Datatype:address\0", 25,
+                                       &(staticBufferInUTF8[0]), 41);
       break;
     }
     case Abi_bytes_e: {
@@ -205,9 +222,11 @@ ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType, uint8_t *pAbiTypeData, u
       ASSERT(NULL != dynamicBufferInUTF8);
       memzero(dynamicBufferInUTF8, numBytesBuffer);
 
-      byte_array_to_hex_string(pAbiTypeData, additionalData, dynamicBufferInUTF8, numBytesBuffer);
+      byte_array_to_hex_string(pAbiTypeData, additionalData,
+                               dynamicBufferInUTF8, numBytesBuffer);
 
-      ui_node = ui_create_display_node("Datatype:bytes\0", 25, dynamicBufferInUTF8, numBytesBuffer);
+      ui_node = ui_create_display_node("Datatype:bytes\0", 25,
+                                       dynamicBufferInUTF8, numBytesBuffer);
       free(dynamicBufferInUTF8);
     }
     /* Handle all Abi_Type_e to suppress compilation warning */

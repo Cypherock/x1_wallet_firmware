@@ -76,19 +76,22 @@ void sign_message_controller_b_eth() {
     case SIGN_MSG_ENTER_PIN_ETH: {
       comm_reject_request(USER_REJECT_PIN_INPUT, 0);
       reset_flow_level();
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
       counter.next_event_flag = true;
     } break;
 
     case SIGN_MSG_ENTER_PASSPHRASE_ETH: {
       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
       reset_flow_level();
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
       counter.next_event_flag = true;
     } break;
 
     case SIGN_MSG_CONFIRM_PASSPHRASE_ETH: {
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
       flow_level.level_three = SIGN_MSG_ENTER_PASSPHRASE_ETH;
     } break;
 

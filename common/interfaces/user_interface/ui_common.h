@@ -10,29 +10,26 @@
 #ifndef UI_COMMON_H
 #define UI_COMMON_H
 
-#include "lvgl/lvgl.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "lvgl/lvgl.h"
 
-#include "controller_main.h"
 #include "assert_conf.h"
+#include "controller_main.h"
 
 #include "board.h"
-#define OPTIONS_BTN_SIZE 100
-#define SCROLLING_THRESHOLD 28
+#define OPTIONS_BTN_SIZE        100
+#define SCROLLING_THRESHOLD     28
 #define SCROLLING_LEN_THRESHOLD 70
-#define MAX_HEADING_LEN 100
+#define MAX_HEADING_LEN         100
 
 extern void (*ui_mark_event_over)();
 extern void (*ui_mark_event_cancel)();
 extern void (*ui_mark_list_choice)(uint16_t);
 
 /// enum for device theme
-typedef enum THEME {
-    LIGHT,
-    DARK
-} THEME;
+typedef enum THEME { LIGHT, DARK } THEME;
 
 /**
  * @brief struct to store device ui objects and properties
@@ -43,11 +40,11 @@ typedef enum THEME {
  *
  * @note
  */
-struct UI{
-    lv_style_t btn_rel;
-    lv_group_t *g;
-    lv_indev_t *keyboard;
-    enum THEME theme;
+struct UI {
+  lv_style_t btn_rel;
+  lv_group_t *g;
+  lv_indev_t *keyboard;
+  enum THEME theme;
 };
 
 /**
@@ -73,7 +70,10 @@ void ui_rotate();
  *
  * @note
  */
-void ui_heading(lv_obj_t *heading, const char text[], uint8_t width, lv_label_align_t align);
+void ui_heading(lv_obj_t *heading,
+                const char text[],
+                uint8_t width,
+                lv_label_align_t align);
 
 /**
  * @brief Create heading for inout text
@@ -96,7 +96,11 @@ void ui_heading(lv_obj_t *heading, const char text[], uint8_t width, lv_label_al
  *
  * @note
  */
-void ui_input_heading(lv_obj_t* heading, const char text[], lv_event_cb_t heading_event_cb, uint8_t width, lv_label_align_t align);
+void ui_input_heading(lv_obj_t *heading,
+                      const char text[],
+                      lv_event_cb_t heading_event_cb,
+                      uint8_t width,
+                      lv_label_align_t align);
 
 /**
  * @brief Create a UI element for paragraph
@@ -114,7 +118,9 @@ void ui_input_heading(lv_obj_t* heading, const char text[], lv_event_cb_t headin
  *
  * @note
  */
-void ui_paragraph(lv_obj_t *paragraph, const char text[], lv_label_align_t align);
+void ui_paragraph(lv_obj_t *paragraph,
+                  const char text[],
+                  lv_label_align_t align);
 
 /**
  * @brief Create UI for list of options
@@ -134,7 +140,11 @@ void ui_paragraph(lv_obj_t *paragraph, const char text[], lv_label_align_t align
  *
  * @note
  */
-void ui_options(lv_obj_t *options, lv_event_cb_t event_cb, lv_obj_t *right_arrow, lv_obj_t *left_arrow, const char initial_text[]);
+void ui_options(lv_obj_t *options,
+                lv_event_cb_t event_cb,
+                lv_obj_t *right_arrow,
+                lv_obj_t *left_arrow,
+                const char initial_text[]);
 
 /**
  * @brief Create UI for back button
@@ -367,7 +377,7 @@ void reset_theme();
  *
  * @note
  */
-lv_group_t* ui_get_group();
+lv_group_t *ui_get_group();
 
 /**
  * @brief get the keyboard of the device
@@ -383,6 +393,6 @@ lv_group_t* ui_get_group();
  *
  * @note
  */
-lv_indev_t* ui_get_indev();
+lv_indev_t *ui_get_indev();
 
 #endif

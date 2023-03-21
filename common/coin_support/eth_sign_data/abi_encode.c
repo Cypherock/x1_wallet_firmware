@@ -64,7 +64,10 @@
 
 /* Global functions
  *****************************************************************************/
-uint8_t Abi_Encode(Abi_Type_e inputAbiType, uint8_t additionalInput, const uint8_t *pAbiTypeData, uint8_t *pBuffer) {
+uint8_t Abi_Encode(Abi_Type_e inputAbiType,
+                   uint8_t additionalInput,
+                   const uint8_t *pAbiTypeData,
+                   uint8_t *pBuffer) {
   uint8_t returnCode = ABI_BAD_ARGUMENT;
 
   if ((NULL == pAbiTypeData) || (NULL == pBuffer)) {
@@ -107,7 +110,8 @@ uint8_t Abi_Encode(Abi_Type_e inputAbiType, uint8_t additionalInput, const uint8
              */
       memzero(pBuffer, Abi_address_e_OFFSET_BE);
 
-      memcpy((void *)(pBuffer + Abi_address_e_OFFSET_BE), pAbiTypeData, Abi_address_e_SZ_IN_BYTES);
+      memcpy((void *)(pBuffer + Abi_address_e_OFFSET_BE), pAbiTypeData,
+             Abi_address_e_SZ_IN_BYTES);
 
       returnCode = ABI_PROCESS_COMPLETE;
       break;
@@ -196,7 +200,8 @@ uint8_t Abi_Encode(Abi_Type_e inputAbiType, uint8_t additionalInput, const uint8
              */
       memzero(pBuffer, Abi_bool_e_OFFSET_BE);
 
-      memcpy((void *)(pBuffer + Abi_bool_e_OFFSET_BE), pAbiTypeData, Abi_bool_e_SZ_IN_BYTES);
+      memcpy((void *)(pBuffer + Abi_bool_e_OFFSET_BE), pAbiTypeData,
+             Abi_bool_e_SZ_IN_BYTES);
 
       returnCode = ABI_PROCESS_COMPLETE;
       break;

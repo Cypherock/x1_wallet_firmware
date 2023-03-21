@@ -28,28 +28,32 @@
 
 #pragma once
 
+#include <inttypes.h>
+#include <stdbool.h>
+#include "assert_conf.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "flash_api.h"
 #include "logger.h"
 #include "lvgl.h"
-#include "tasks.h"
-#include "utils.h"
-#include "wallet.h"
-#include <inttypes.h>
-#include <stdbool.h>
-#include "assert_conf.h"
 #include "sha2.h"
 #include "sys_state.h"
+#include "tasks.h"
 #include "tasks_level_four.h"
+#include "utils.h"
+#include "wallet.h"
 
 #ifdef DEV_BUILD
 #define SKIP_ENTER_MNEMONICS_DEBUG
 #endif
 
-#define PRINT_FLOW_LVL() LOG_SWV("ar=%d, af=%d, fl1=%d, fl2=%d, fl3=%d, fl4=%d, cr=%d, rst=%d\n", main_app_ready, device_auth_flag, flow_level.level_one, \
-                           flow_level.level_two, flow_level.level_three, flow_level.level_four, counter.level, sys_flow_cntrl_u.bits.reset_not_allowed)
-#define CY_TRIGGER_SOURCE (CY_External_Triggered() ? CY_APP_USB_TASK : CY_APP_DEVICE_TASK)
+#define PRINT_FLOW_LVL()                                                       \
+  LOG_SWV("ar=%d, af=%d, fl1=%d, fl2=%d, fl3=%d, fl4=%d, cr=%d, rst=%d\n",     \
+          main_app_ready, device_auth_flag, flow_level.level_one,              \
+          flow_level.level_two, flow_level.level_three, flow_level.level_four, \
+          counter.level, sys_flow_cntrl_u.bits.reset_not_allowed)
+#define CY_TRIGGER_SOURCE \
+  (CY_External_Triggered() ? CY_APP_USB_TASK : CY_APP_DEVICE_TASK)
 
 /**
  * @brief LEVELs ENUM for Counter struct.
@@ -59,13 +63,14 @@
  * @see Counter
  */
 enum LEVEL {
-    LEVEL_ONE = 1,  ///< At depth level one we have the default view (Main menu in case of main application)
-                    ///< @see Flow_level.level_one, Flow_level.level_two
-    LEVEL_TWO,      ///< At depth level two the submenus are present @see Flow_level.level_three
-    LEVEL_THREE,    ///< At depth level three the actual operations take place @see Flow_level.level_four
-    LEVEL_FOUR,     ///< _Unused_
-    LEVEL_FIVE,     ///< _Unused_
-    LEVEL_SIX       ///< _Unused_
+  LEVEL_ONE =
+      1,  ///< At depth level one we have the default view (Main menu in case of main application)
+          ///< @see Flow_level.level_one, Flow_level.level_two
+  LEVEL_TWO,  ///< At depth level two the submenus are present @see Flow_level.level_three
+  LEVEL_THREE,  ///< At depth level three the actual operations take place @see Flow_level.level_four
+  LEVEL_FOUR,   ///< _Unused_
+  LEVEL_FIVE,   ///< _Unused_
+  LEVEL_SIX     ///< _Unused_
 };
 
 /**
@@ -77,11 +82,15 @@ enum LEVEL {
  * success_task, timeout_task
  */
 enum DESKTOP_STATUS {
-    STATUS_CMD_FAILURE = 0,     ///< Indicates the fail status of the ongoing process
-    STATUS_CMD_SUCCESS = 1,     ///< Indicates the success status of the ongoing process @see \_success_listener()
-    STATUS_CMD_READY = 2,       ///< Indicates the desktop is ready to accept data or process @see READY_STATE_PACKET, mark_device_state(), is_device_ready()
-    STATUS_CMD_NOT_READY = 3,   ///< Indicates the desktop is not ready to process @see READY_STATE_PACKET, mark_device_state(), is_device_ready()
-    STATUS_CMD_ABORT = 4        ///< Indicates an abort/exit request for current flow/process @see \_abort\_()
+  STATUS_CMD_FAILURE = 0,  ///< Indicates the fail status of the ongoing process
+  STATUS_CMD_SUCCESS =
+      1,  ///< Indicates the success status of the ongoing process @see \_success_listener()
+  STATUS_CMD_READY =
+      2,  ///< Indicates the desktop is ready to accept data or process @see READY_STATE_PACKET, mark_device_state(), is_device_ready()
+  STATUS_CMD_NOT_READY =
+      3,  ///< Indicates the desktop is not ready to process @see READY_STATE_PACKET, mark_device_state(), is_device_ready()
+  STATUS_CMD_ABORT =
+      4  ///< Indicates an abort/exit request for current flow/process @see \_abort\_()
 };
 
 /**
@@ -99,10 +108,13 @@ enum DESKTOP_STATUS {
  */
 #pragma pack(push, 1)
 typedef struct screen_input {
-    uint16_t list_choice;           ///< Store the user selection from list of choices (choice list, menu/submenu, back/next)
-    char input_text[250];           ///< Store text/character input from user (name, passphrase, mnemonics, PIN)
-    uint8_t expected_list_choice;   ///< Store any expected choice. Useful for wallet verification step
-    uint8_t desktop_flow_choice;    ///< _Unused_
+  uint16_t
+      list_choice;  ///< Store the user selection from list of choices (choice list, menu/submenu, back/next)
+  char input_text
+      [250];  ///< Store text/character input from user (name, passphrase, mnemonics, PIN)
+  uint8_t
+      expected_list_choice;  ///< Store any expected choice. Useful for wallet verification step
+  uint8_t desktop_flow_choice;  ///< _Unused_
 } Screen_input;
 #pragma pack(pop)
 
@@ -122,7 +134,7 @@ typedef struct screen_input {
  */
 #pragma pack(push, 1)
 typedef struct Flow_level {
-    /**
+  /**
      * Navigates to the default view (Main menu in case of main application) alongside handling error prompts,
      * user confirmation for desktop triggered flows, etc. Refer tasks and controller for complete list.
      * Choices available to user can be among existing wallets and default main menu options under ui_text_options_main_menu.
@@ -130,17 +142,17 @@ typedef struct Flow_level {
      * @see Screen_input, level_one_tasks(), level_one_tasks_initial(), level_one_controller(), level_one_controller_initial(),
      * level_one_controller_b(), Counter.level, ui_text_options_main_menu
      */
-    uint8_t level_one;
+  uint8_t level_one;
 
-    /**
+  /**
      * Navigates to the submenus based on user choice at Flow_level.level_one. The valid states would be
      * accessible will be wallet operations, advanced setting options, new wallet creation choices.
      *
      * @see Screen_input, level_two_tasks(), level_two_controller(), level_two_controller_b(), LEVEL_TWO
      */
-    uint8_t level_two;
+  uint8_t level_two;
 
-    /**
+  /**
      * Mostly targets the actual processing of the operations that are local to the device. For example
      * wallet creation, view seed, delete wallet, advanced setting operations (factory reset, display rotate,
      * etc.)
@@ -150,9 +162,9 @@ typedef struct Flow_level {
      * DELETE_WALLET_TASKS, RESTORE_WALLET_TASKS, ARBITRARY_DATA_TASKS, VIEW_SEED_TASKS, controller_add_wallet.h,
      * tasks_add_wallet.h, controller_old_wallet.h, tasks_old_wallet.h, controller_advanced_settings.h, tasks_advanced_settings.h
      */
-    uint8_t level_three;
+  uint8_t level_three;
 
-    /**
+  /**
      * The level_four has been divided into two modules: one handles the core operations while the other handles card tap flow.
      * The core module at level_four handle the desktop triggered flows such as export wallet, verify card, verify device,
      * add coin, receive funds, send transaction. Some local operations are also meant to be processed at this level such as
@@ -163,15 +175,19 @@ typedef struct Flow_level {
      * VERIFY_CARD_FLOW, PAIR_CARD_FLOW, TAP_CARDS_FLOW, TAP_ONE_CARD_FLOW, controller_level_four.h, tasks_level_four.h,
      * controller_tap_cards.h, tasks_tap_cards.h
      */
-    uint8_t level_four;
-    uint8_t level_five;         ///< _Unused_
+  uint8_t level_four;
+  uint8_t level_five;  ///< _Unused_
 
-    Screen_input screen_input;  ///< Temporary record of user choice/input
+  Screen_input screen_input;  ///< Temporary record of user choice/input
 
-    bool show_error_screen;             ///< Flag for indicating any error in the previous states
-    bool show_desktop_start_screen;     ///< Flag for indicating incoming desktop request
-    char error_screen_text[90];         ///< Error message to be shown to user. This requires that the error flag (#show_error_screen) is set to true.
-    char confirmation_screen_text[90];  ///< Confirmation message to be shown to user. This requires that the flag (#show_desktop_start_screen) is set to true.
+  bool
+      show_error_screen;  ///< Flag for indicating any error in the previous states
+  bool
+      show_desktop_start_screen;  ///< Flag for indicating incoming desktop request
+  char error_screen_text
+      [90];  ///< Error message to be shown to user. This requires that the error flag (#show_error_screen) is set to true.
+  char confirmation_screen_text
+      [90];  ///< Confirmation message to be shown to user. This requires that the flag (#show_desktop_start_screen) is set to true.
 } Flow_level;
 #pragma pack(pop)
 
@@ -187,18 +203,16 @@ typedef struct Flow_level {
  */
 #pragma pack(push, 1)
 typedef struct Counter {
-    uint8_t level; // holds level
-    bool next_event_flag;
-    bool previous_event_flag;
+  uint8_t level;  // holds level
+  bool next_event_flag;
+  bool previous_event_flag;
 } Counter;
 #pragma pack(pop)
-
-
 
 extern Flow_level flow_level;
 extern Counter counter;
 extern Wallet wallet;
-extern lv_task_t* address_timeout_task;
+extern lv_task_t *address_timeout_task;
 extern uint32_t inactivity_counter;
 
 /**
@@ -209,7 +223,7 @@ extern uint32_t inactivity_counter;
  * @see #flow_level
  * @since v1.0.0
  */
-Flow_level* get_flow_level();
+Flow_level *get_flow_level();
 
 /**
  * @brief Get the Global Counter instance.
@@ -219,7 +233,7 @@ Flow_level* get_flow_level();
  * @see #counter
  * @since v1.0.0
  */
-Counter* get_counter();
+Counter *get_counter();
 
 /**
  * @brief Get the Global Wallet instance.
@@ -229,7 +243,7 @@ Counter* get_counter();
  * @see #wallet
  * @since v1.0.0
  */
-Wallet* get_wallet();
+Wallet *get_wallet();
 
 /**
  * @brief Get the Global Flash_Wallet instance.
@@ -239,7 +253,7 @@ Wallet* get_wallet();
  * @see wallet_for_flash
  * @since v1.0.0
  */
-Flash_Wallet* get_flash_wallet();
+Flash_Wallet *get_flash_wallet();
 
 /**
  * @brief This function is called to end particular event.
@@ -322,7 +336,7 @@ void clear_list_choice();
  * @see flow_level
  * @since v1.0.0
  */
-void mark_error_screen(const char* error_msg);
+void mark_error_screen(const char *error_msg);
 
 /**
  * @brief Resets the previous_event_flag property of Counter variable.
@@ -351,8 +365,7 @@ void decrease_level_counter();
  * @see flow_level, Screen_input
  * @since v1.0.0
  */
-void mark_input(char* text);
-
+void mark_input(char *text);
 
 /**
  * @brief Sets the correct answer to the random word questions while creating a new wallet.
@@ -404,7 +417,7 @@ void reset_flow_level_greater_than(enum LEVEL level);
  *
  * @note
  */
-void desktop_listener_task(lv_task_t* data);
+void desktop_listener_task(lv_task_t *data);
 
 /**
  * @brief Callback function called periodically to check for success message from desktop.
@@ -422,7 +435,7 @@ void desktop_listener_task(lv_task_t* data);
  * success_task, timeout_task, mark_error_screen(), mark_event_over(), clear_message_received_data()
  * @since v1.0.0
  */
-void _success_listener(lv_task_t* task);
+void _success_listener(lv_task_t *task);
 
 /**
  * @brief Callback function called by the task after a particular timeout to show an error screen
@@ -435,7 +448,7 @@ void _success_listener(lv_task_t* task);
  * @see ui_text_command_not_received, reset_flow_level(), mark_error_screen()
  * @since v1.0.0
  */
-void _timeout_listener(lv_task_t* task);
+void _timeout_listener(lv_task_t *task);
 
 /**
  * @brief Aborts the events that are currently running and resets the flow of device

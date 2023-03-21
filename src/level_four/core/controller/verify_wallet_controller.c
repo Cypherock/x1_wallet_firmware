@@ -55,50 +55,56 @@
  *
  ******************************************************************************
  */
+#include "card_action_controllers.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
-#include "sha2.h"
 #include "flash_api.h"
-#include "card_action_controllers.h"
+#include "sha2.h"
 
 extern Wallet_credential_data wallet_credential_data;
 
-void verify_wallet_controller()
-{
-    switch (flow_level.level_three) {
+void verify_wallet_controller() {
+  switch (flow_level.level_three) {
     case VERIFY_WALLET_START:
-        if (WALLET_IS_PIN_SET(wallet.wallet_info))
-            flow_level.level_three = VERIFY_WALLET_PIN_INPUT;
-        else
-            flow_level.level_three = VERIFY_WALLET_TAP_CARDS_FLOW;
-        break;
+      if (WALLET_IS_PIN_SET(wallet.wallet_info))
+        flow_level.level_three = VERIFY_WALLET_PIN_INPUT;
+      else
+        flow_level.level_three = VERIFY_WALLET_TAP_CARDS_FLOW;
+      break;
 
     case VERIFY_WALLET_PIN_INPUT:
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet_credential_data.password_single_hash);
-        sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        flow_level.level_three = VERIFY_WALLET_TAP_CARDS_FLOW;
-        break;
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
+                 wallet_credential_data.password_single_hash);
+      sha256_Raw(wallet_credential_data.password_single_hash,
+                 SHA256_DIGEST_LENGTH, wallet.password_double_hash);
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      flow_level.level_three = VERIFY_WALLET_TAP_CARDS_FLOW;
+      break;
 
     case VERIFY_WALLET_TAP_CARDS_FLOW:
-        tap_cards_for_verification_flow_controller();
-        break;
+      tap_cards_for_verification_flow_controller();
+      break;
 
     case VERIFY_WALLET_DATA: {
-        flow_level.level_three = (verify_card_share_data() == 1) ? VERIFY_WALLET_SUCCESS : VERIFY_WALLET_DELETE;
+      flow_level.level_three = (verify_card_share_data() == 1)
+                                   ? VERIFY_WALLET_SUCCESS
+                                   : VERIFY_WALLET_DELETE;
     } break;
 
     case VERIFY_WALLET_SUCCESS:
-        reset_flow_level();
-        break;
+      reset_flow_level();
+      break;
 
     case VERIFY_WALLET_DELETE:
-        mark_error_screen(ui_text_wallet_verification_failed);
-        flow_level.level_three = 1;
-        flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
-        break;
+      mark_error_screen(ui_text_wallet_verification_failed);
+      flow_level.level_three = 1;
+      flow_level.level_two   = LEVEL_THREE_DELETE_WALLET;
+      break;
 
     default:
-        break;
-    }
+      break;
+  }
 }

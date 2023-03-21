@@ -89,12 +89,14 @@ void receive_transaction_tasks_solana() {
         flow_level.level_three = ADD_COINS_VERIFY;
         break;
       }
-      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_SOLANA: {
       char display[65] = {0};
-      snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
@@ -133,7 +135,8 @@ void receive_transaction_tasks_solana() {
     case RECV_TXN_DISPLAY_ADDR_SOLANA: {
       instruction_scr_destructor();
       char display[70] = {0};
-      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, receive_transaction_data.solana_address);
+      snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces,
+               receive_transaction_data.solana_address);
       address_scr_init(ui_text_receive_on, display, true);
     } break;
 

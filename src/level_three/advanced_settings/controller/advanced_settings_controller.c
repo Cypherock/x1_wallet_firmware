@@ -55,112 +55,110 @@
  *
  ******************************************************************************
  */
+#include <stdio.h>
+#include "application_startup.h"
+#include "controller_advanced_settings.h"
 #include "controller_level_four.h"
 #include "controller_main.h"
-#include "tasks.h"
 #include "controller_tap_cards.h"
-#include "controller_advanced_settings.h"
-#include "application_startup.h"
-#include "cy_factory_reset.h"
 #include "cy_card_hc.h"
-#include <stdio.h>
+#include "cy_factory_reset.h"
+#include "tasks.h"
 
-extern lv_task_t* timeout_task;
+extern lv_task_t *timeout_task;
 
-void level_three_advanced_settings_controller()
-{
-    switch (flow_level.level_two) {
+void level_three_advanced_settings_controller() {
+  switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-        flow_level.level_two = LEVEL_THREE_RESET_DEVICE;
+      flow_level.level_two = LEVEL_THREE_RESET_DEVICE;
     } break;
 #if X1WALLET_MAIN
     case LEVEL_THREE_SYNC_CARD_CONFIRM: {
-        flow_level.level_two = LEVEL_THREE_SYNC_CARD;
+      flow_level.level_two = LEVEL_THREE_SYNC_CARD;
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-        
-        flow_level.level_two = LEVEL_THREE_ROTATE_SCREEN ;
+      flow_level.level_two = LEVEL_THREE_ROTATE_SCREEN;
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
-        set_enable_passphrase(is_passphrase_enabled() ? PASSPHRASE_DISABLED : PASSPHRASE_ENABLED, FLASH_SAVE_NOW);
-        flow_level.level_two = 1;
-        counter.level = LEVEL_TWO;
+      set_enable_passphrase(
+          is_passphrase_enabled() ? PASSPHRASE_DISABLED : PASSPHRASE_ENABLED,
+          FLASH_SAVE_NOW);
+      flow_level.level_two = 1;
+      counter.level        = LEVEL_TWO;
     } break;
 
     case LEVEL_THREE_FACTORY_RESET:
-        cyc_factory_reset();
-        break;
+      cyc_factory_reset();
+      break;
 
     case LEVEL_THREE_CARD_HEALTH_CHECK:
-        cyc_card_hc();
-        break;
+      cyc_card_hc();
+      break;
 #endif
 
-    case LEVEL_THREE_VIEW_DEVICE_VERSION:{
-        counter.level = LEVEL_TWO;
-        flow_level.level_two = 1;
+    case LEVEL_THREE_VIEW_DEVICE_VERSION: {
+      counter.level        = LEVEL_TWO;
+      flow_level.level_two = 1;
     } break;
     case LEVEL_THREE_VERIFY_CARD:
 #if X1WALLET_MAIN
-        verify_card_controller();
+      verify_card_controller();
 #elif X1WALLET_INITIAL
-        initial_verify_card_controller();
+      initial_verify_card_controller();
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif
-        break;
+      break;
 
     case LEVEL_THREE_READ_CARD_VERSION: {
-        controller_read_card_id();
+      controller_read_card_id();
     } break;
 #if X1WALLET_MAIN
 #ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
-        controller_update_card_id();
+      controller_update_card_id();
     } break;
 
     case LEVEL_THREE_CARD_UPGRADE:
-        card_upgrade_controller();
-        break;
+      card_upgrade_controller();
+      break;
 
     case LEVEL_THREE_ADJUST_BUZZER: {
 #if USE_SIMULATOR == 0
-        buzzer_disabled = flow_level.screen_input.list_choice == 1;
+      buzzer_disabled = flow_level.screen_input.list_choice == 1;
 #endif
-        counter.level = LEVEL_TWO;
-        flow_level.level_two = 1;
+      counter.level        = LEVEL_TWO;
+      flow_level.level_two = 1;
     } break;
 #endif
 
     case LEVEL_THREE_SYNC_CARD: {
-        tap_a_card_and_sync_controller();
+      tap_a_card_and_sync_controller();
     } break;
 
-    case LEVEL_THREE_SYNC_SELECT_WALLET:{
-        uint8_t index = -1;
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.level_two = LEVEL_THREE_SYNC_WALLET_FLOW;
-        flow_level.level_three = SYNC_CARDS_SUCCESS;
-        if (get_ith_wallet_without_share(0, &index) == SUCCESS_){
-            memcpy(
-                wallet.wallet_name,
-                get_wallet_name(index), NAME_SIZE);
-            wallet.wallet_info = get_wallet_info(index);
-            flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-            flow_level.level_two = LEVEL_THREE_SYNC_WALLET_FLOW;
-            flow_level.level_three = SYNC_CARDS_START;
-            break;
-        }
+    case LEVEL_THREE_SYNC_SELECT_WALLET: {
+      uint8_t index          = -1;
+      flow_level.level_one   = LEVEL_TWO_ADVANCED_SETTINGS;
+      flow_level.level_two   = LEVEL_THREE_SYNC_WALLET_FLOW;
+      flow_level.level_three = SYNC_CARDS_SUCCESS;
+      if (get_ith_wallet_without_share(0, &index) == SUCCESS_) {
+        memcpy(wallet.wallet_name, get_wallet_name(index), NAME_SIZE);
+        wallet.wallet_info     = get_wallet_info(index);
+        flow_level.level_one   = LEVEL_TWO_ADVANCED_SETTINGS;
+        flow_level.level_two   = LEVEL_THREE_SYNC_WALLET_FLOW;
+        flow_level.level_three = SYNC_CARDS_START;
+        break;
+      }
     } break;
-    case LEVEL_THREE_SYNC_WALLET_FLOW:{
-        sync_cards_controller();
+    case LEVEL_THREE_SYNC_WALLET_FLOW: {
+      sync_cards_controller();
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN: {
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        counter.level = LEVEL_TWO;
+      flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
+      counter.level        = LEVEL_TWO;
     } break;
 #endif
     case LEVEL_THREE_RESET_DEVICE: {
@@ -168,57 +166,59 @@ void level_three_advanced_settings_controller()
 
 #ifdef ALLOW_LOG_EXPORT
     case LEVEL_THREE_FETCH_LOGS_INIT: {
-        set_start_log_read();
-        logger_task();
-        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
+      set_start_log_read();
+      logger_task();
+      flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
     } break;
 
     case LEVEL_THREE_FETCH_LOGS_WAIT: {
-        if (get_usb_msg_by_cmd_type(APP_LOG_DATA_SEND, NULL, NULL)) {
-            flow_level.level_two = LEVEL_THREE_FETCH_LOGS;
-            clear_message_received_data();
-        }
+      if (get_usb_msg_by_cmd_type(APP_LOG_DATA_SEND, NULL, NULL)) {
+        flow_level.level_two = LEVEL_THREE_FETCH_LOGS;
+        clear_message_received_data();
+      }
     } break;
 
     case LEVEL_THREE_FETCH_LOGS: {
-        if (get_log_read_status() == LOG_READ_FINISH) {
-            // logs finished, reset any data and proceed
-            flow_level.level_two = LEVEL_THREE_FETCH_LOGS_FINISH;
-        } else {
-            flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
-        }
+      if (get_log_read_status() == LOG_READ_FINISH) {
+        // logs finished, reset any data and proceed
+        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_FINISH;
+      } else {
+        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
+      }
     } break;
 
     case LEVEL_THREE_FETCH_LOGS_FINISH: {
-        reset_flow_level();
+      reset_flow_level();
 #if X1WALLET_INITIAL
-        flow_level.level_one = 6;
+      flow_level.level_one = 6;
 #endif
     } break;
 #endif
 
 #if X1WALLET_INITIAL
     case LEVEL_THREE_START_DEVICE_PROVISION: {
-        device_provision_controller();
+      device_provision_controller();
     } break;
 
     case LEVEL_THREE_START_DEVICE_AUTHENTICATION: {
-        device_authentication_controller();
+      device_authentication_controller();
     } break;
 #elif X1WALLET_MAIN
     case LEVEL_THREE_PAIR_CARD: {
-        tap_card_pair_card_controller();
+      tap_card_pair_card_controller();
     } break;
 
     case LEVEL_THREE_TOGGLE_LOGGING: {
-        set_logging_config(is_logging_enabled() ?  LOGGING_DISABLED : LOGGING_ENABLED, FLASH_SAVE_NOW);
-        counter.level = LEVEL_TWO;
-        flow_level.level_two = 1;
+      set_logging_config(
+          is_logging_enabled() ? LOGGING_DISABLED : LOGGING_ENABLED,
+          FLASH_SAVE_NOW);
+      counter.level = LEVEL_TWO;
+      flow_level.level_two = 1;
     } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif
     default:
-        break;
-    }
+      break;
+  }
 }

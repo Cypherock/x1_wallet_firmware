@@ -13,7 +13,6 @@
 
 #include "controller_main.h"
 
-
 /**
  * @brief Controller to generate new wallet flow
  * @details Generates new wallet from random seed taken from multiple sources of entropy (ref random_generate()). The

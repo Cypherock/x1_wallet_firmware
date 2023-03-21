@@ -63,36 +63,34 @@
 
 extern Flash_Wallet wallet_for_flash;
 
-
-void arbitrary_data_controller_b()
-{
-    switch (flow_level.level_three) {
+void arbitrary_data_controller_b() {
+  switch (flow_level.level_three) {
     case ARBITRARY_DATA_NAME_CONFIRM: {
-        flow_level.level_three = ARBITRARY_DATA_NAME_INPUT;
+      flow_level.level_three = ARBITRARY_DATA_NAME_INPUT;
     } break;
 
     case ARBITRARY_DATA_SKIP_PIN: {
-        flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
-        WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PIN(wallet.wallet_info);
+      flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
+      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PIN(wallet.wallet_info);
     } break;
     case ARBITRARY_DATA_PIN_INPUT: {
-        flow_level.level_three = ARBITRARY_DATA_SKIP_PIN;
+      flow_level.level_three = ARBITRARY_DATA_SKIP_PIN;
     } break;
     case ARBITRARY_DATA_PIN_CONFIRM: {
-        flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
+      flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
     } break;
 
     case ARBITRARY_DATA_ENTER_DATA: {
-        flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
+      flow_level.level_three = ARBITRARY_DATA_PIN_INPUT;
     } break;
 
     case ARBITRARY_DATA_CONFIRM_DATA: {
-        flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
+      flow_level.level_three = ARBITRARY_DATA_ENTER_DATA_INSTRUCTION;
     } break;
 
     default: {
-        reset_flow_level();
+      reset_flow_level();
     }
-    }
+  }
 }

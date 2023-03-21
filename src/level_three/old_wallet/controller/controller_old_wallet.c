@@ -60,75 +60,74 @@
 #include "controller_main.h"
 #include "tasks.h"
 
-void level_three_old_wallet_controller()
-{
+void level_three_old_wallet_controller() {
 #if X1WALLET_MAIN == 1
-    switch (flow_level.level_two) {
+  switch (flow_level.level_two) {
     case LEVEL_THREE_VIEW_SEED: {
-        view_seed_controller();
+      view_seed_controller();
     } break;
 
     case LEVEL_THREE_DELETE_WALLET: {
-        delete_wallet_controller();
+      delete_wallet_controller();
     } break;
 
     case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-        export_wallet_controller();
+      export_wallet_controller();
     } break;
 
     case LEVEL_THREE_ADD_COIN: {
-        add_coin_controller();
+      add_coin_controller();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION: {
-        send_transaction_controller();
+      send_transaction_controller();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
-        send_transaction_controller_eth();
+      send_transaction_controller_eth();
     } break;
 
     case LEVEL_THREE_SIGN_MESSAGE_ETH: {
-        sign_message_controller_eth();
+      sign_message_controller_eth();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
-        send_transaction_controller_near();
+      send_transaction_controller_near();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
-        send_transaction_controller_solana();
+      send_transaction_controller_solana();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {
-        receive_transaction_controller_eth();
+      receive_transaction_controller_eth();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_NEAR: {
-        receive_transaction_controller_near();
+      receive_transaction_controller_near();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
-        receive_transaction_controller_solana();
+      receive_transaction_controller_solana();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION: {
-        receive_transaction_controller();
+      receive_transaction_controller();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED: {
-        wallet_locked_controller();
+      wallet_locked_controller();
     } break;
 
     case LEVEL_THREE_VERIFY_WALLET: {
-        verify_wallet_controller();
+      verify_wallet_controller();
     } break;
-    case LEVEL_THREE_SYNC_WALLET:{
-        sync_cards_controller();
+    case LEVEL_THREE_SYNC_WALLET: {
+      sync_cards_controller();
     } break;
     default:
-        break;
-    }
-    return;
+      break;
+  }
+  return;
 #endif
 }

@@ -55,56 +55,50 @@
  *
  ******************************************************************************
  */
+#include <stdint.h>
+#include <stdio.h>
 #include "constant_texts.h"
 #include "shamir_wrapper.h"
 #include "tasks.h"
+#include "tasks_tap_cards.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
 #include "ui_list.h"
 #include "ui_message.h"
 #include "wallet.h"
-#include "tasks_tap_cards.h"
-#include <stdint.h>
-#include <stdio.h>
 
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
+extern char *ALPHABET;
+extern char *ALPHA_NUMERIC;
+extern char *NUMBERS;
 
-void delete_wallet_task()
-{
-    switch (flow_level.level_three) {
+void delete_wallet_task() {
+  switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-        confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
-        break;
+      confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
+      break;
     case DELETE_WALLET_ENTER_PIN:
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = DELETE_WALLET_DUMMY_TASK;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
+      if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = DELETE_WALLET_DUMMY_TASK;
         break;
+      }
+      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      break;
 
     case DELETE_WALLET_TAP_CARDS:
-        tap_cards_for_delete_flow();
-        break;
+      tap_cards_for_delete_flow();
+      break;
 
     case DELETE_WALLET_FROM_DEVICE:
-        mark_event_over();
-        break;
+      mark_event_over();
+      break;
 
     case DELETE_WALLET_SUCCESS:
-        message_scr_init(ui_text_wallet_deleted_successfully);
-        break;
+      message_scr_init(ui_text_wallet_deleted_successfully);
+      break;
 
     default:
-        reset_flow_level();
-        break;
-    }
+      reset_flow_level();
+      break;
+  }
 }

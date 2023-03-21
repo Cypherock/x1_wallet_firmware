@@ -27,13 +27,14 @@
  *
  * @note
  */
-struct Multi_Instruction_Data
-{
-    char strings[MAX_NUM_OF_INSTRUCTIONS][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION];
-    bool one_cycle_completed; //if all the text has been shown once then this variable will be true else false
-    bool destruct_on_click;   // if destruct_on_click == true the screen will destroy on a button click
-    uint8_t total_strings;
-    uint8_t index_of_current_string;
+struct Multi_Instruction_Data {
+  char strings[MAX_NUM_OF_INSTRUCTIONS][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION];
+  bool
+      one_cycle_completed;  //if all the text has been shown once then this variable will be true else false
+  bool
+      destruct_on_click;  // if destruct_on_click == true the screen will destroy on a button click
+  uint8_t total_strings;
+  uint8_t index_of_current_string;
 };
 
 /**
@@ -45,11 +46,10 @@ struct Multi_Instruction_Data
  *
  * @note
  */
-struct Multi_Instruction_Object
-{
-    lv_obj_t *text;
-    lv_obj_t *left_arrow;
-    lv_obj_t *right_arrow;
+struct Multi_Instruction_Object {
+  lv_obj_t *text;
+  lv_obj_t *left_arrow;
+  lv_obj_t *right_arrow;
 };
 
 /**
@@ -69,6 +69,9 @@ struct Multi_Instruction_Object
  *
  * @note
  */
-void multi_instruction_init(const char **arr, uint8_t count, uint16_t delay_in_ms, bool destruct_on_click);
+void multi_instruction_init(const char **arr,
+                            uint8_t count,
+                            uint16_t delay_in_ms,
+                            bool destruct_on_click);
 
-#endif // UI_MULTI_INSTRUCTION_H
+#endif  // UI_MULTI_INSTRUCTION_H

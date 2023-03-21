@@ -108,7 +108,9 @@ void send_transaction_tasks_solana() {
 
       instruction_scr_destructor();
       size_t address_size = sizeof(address);
-      b58enc(address, &address_size, solana_unsigned_txn_ptr.instruction.program.transfer.recipient_account,
+      b58enc(address, &address_size,
+             solana_unsigned_txn_ptr.instruction.program.transfer
+                 .recipient_account,
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
       snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
@@ -128,20 +130,32 @@ void send_transaction_tasks_solana() {
       uint8_t be_lamports[8] = {0};
       int i                  = 8;
       while (i--)
-        be_lamports[i] = solana_unsigned_txn_ptr.instruction.program.transfer.lamports >> 8 * (7 - i);
-      byte_array_to_hex_string(be_lamports, 8, amount_string, sizeof(amount_string));
-      if (!convert_byte_array_to_decimal_string(16, solana_get_decimal(), amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
+        be_lamports[i] =
+            solana_unsigned_txn_ptr.instruction.program.transfer.lamports >>
+            8 * (7 - i);
+      byte_array_to_hex_string(be_lamports, 8, amount_string,
+                               sizeof(amount_string));
+      if (!convert_byte_array_to_decimal_string(
+              16, solana_get_decimal(), amount_string, amount_decimal_string,
+              sizeof(amount_decimal_string)))
+        break;
       instruction_scr_destructor();
-      snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
-               get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
+      snprintf(
+          display, sizeof(display), UI_TEXT_VERIFY_AMOUNT,
+          amount_decimal_string,
+          get_coin_symbol(
+              BYTE_ARRAY_TO_UINT32(
+                  var_send_transaction_data.transaction_metadata.coin_index),
+              0));
       confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_SOLANA: {
       char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
       char display[110] = {'\0'};
-      byte_array_to_hex_string((const uint8_t *)var_send_transaction_data.transaction_metadata.transaction_fees, 8,
-                               amount_string, sizeof(amount_string));
+      byte_array_to_hex_string((const uint8_t *)var_send_transaction_data
+                                   .transaction_metadata.transaction_fees,
+                               8, amount_string, sizeof(amount_string));
       uint8_t decimal_val_s[32 * 3] = {0};
 
       if (sizeof(decimal_val_s) / sizeof(decimal_val_s[0]) > UINT8_MAX) {
@@ -149,10 +163,18 @@ void send_transaction_tasks_solana() {
         break;
       }
 
-      if (!convert_byte_array_to_decimal_string(16, solana_get_decimal(), amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
+      if (!convert_byte_array_to_decimal_string(
+              16, solana_get_decimal(), amount_string, amount_decimal_string,
+              sizeof(amount_decimal_string)))
+        break;
       instruction_scr_destructor();
-      snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
-               get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
+      snprintf(
+          display, sizeof(display), UI_TEXT_VERIFY_AMOUNT,
+          amount_decimal_string,
+          get_coin_symbol(
+              BYTE_ARRAY_TO_UINT32(
+                  var_send_transaction_data.transaction_metadata.coin_index),
+              0));
       confirm_scr_init(display);
     } break;
 
@@ -162,16 +184,19 @@ void send_transaction_tasks_solana() {
 
     case SEND_TXN_ENTER_PASSPHRASE_SOLANA: {
       if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
-        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_SOLANA;
+        flow_level.level_three =
+            SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_SOLANA;
         break;
       }
-      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE, ui_text_enter_passphrase, 0,
+                      DATA_TYPE_PASSPHRASE, 64);
 
     } break;
 
     case SEND_TXN_CONFIRM_PASSPHRASE_SOLANA: {
       char display[65];
-      snprintf(display, sizeof(display), "%s", flow_level.screen_input.input_text);
+      snprintf(display, sizeof(display), "%s",
+               flow_level.screen_input.input_text);
       address_scr_init(ui_text_confirm_passphrase, display, false);
       memzero(display, sizeof(display));
     } break;
@@ -217,7 +242,8 @@ void send_transaction_tasks_solana() {
     } break;
 
     case SEND_TXN_FINAL_SCREEN_SOLANA:
-      delay_scr_init(ui_text_exported_signed_transaction_to_desktop, DELAY_TIME);
+      delay_scr_init(ui_text_exported_signed_transaction_to_desktop,
+                     DELAY_TIME);
       CY_Reset_Not_Allow(true);
       break;
 

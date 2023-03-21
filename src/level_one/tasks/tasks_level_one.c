@@ -55,104 +55,105 @@
  *
  ******************************************************************************
  */
-#include "application_startup.h"
 #include "tasks_level_one.h"
+#include "apdu.h"
+#include "application_startup.h"
 #include "flash_api.h"
 #include "tasks_level_two.h"
 #include "ui_confirmation.h"
 #include "ui_menu.h"
 #include "ui_message.h"
-#include "apdu.h"
 
-extern lv_task_t* listener_task;
+extern lv_task_t *listener_task;
 
 extern uint8_t device_auth_flag;
 
-void level_one_tasks()
-{
+void level_one_tasks() {
 #if X1WALLET_MAIN
-    if (flow_level.show_error_screen) {
-        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
-        message_scr_init(flow_level.error_screen_text);
-        return;
+  if (flow_level.show_error_screen) {
+    mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
+    message_scr_init(flow_level.error_screen_text);
+    return;
+  }
+
+  if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
+    mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
+    message_scr_init(ui_text_unreliable_cards);
+    return;
+  }
+
+  if (flow_level.show_desktop_start_screen) {
+    mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
+    confirm_scr_init(flow_level.confirmation_screen_text);
+    return;
+  }
+
+  if (device_auth_flag) {
+    mark_event_over();
+    return;
+  }
+
+  if (counter.level > LEVEL_ONE) {
+    level_two_tasks();
+    return;
+  }
+
+  if (device_auth_check() != DEVICE_AUTHENTICATED) {
+    restrict_app();
+    return;
+  }
+
+  uint8_t number_of_options = get_wallet_count();
+  LOG_INFO("wallet count %d", number_of_options);
+
+  // create list for chooses
+  char *choices[MAX_LEN_OF_MENU_OPTIONS];
+
+  uint8_t mainMenuIndex = 0;
+  uint8_t walletIndex   = 0;
+
+  for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+    if (get_wallet_state(walletIndex) == VALID_WALLET ||
+        get_wallet_state(walletIndex) == INVALID_WALLET ||
+        get_wallet_state(walletIndex) == UNVERIFIED_VALID_WALLET ||
+        get_wallet_state(walletIndex) == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
+      choices[mainMenuIndex] = (char *)get_wallet_name(walletIndex);
+      mainMenuIndex++;
     }
+  }
 
-    if (get_card_data_health() == DATA_HEALTH_CORRUPT) {
-        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0xFF);
-        message_scr_init(ui_text_unreliable_cards);
-        return;
-    }
+  if (mainMenuIndex != number_of_options) {
+    number_of_options = mainMenuIndex;
+  }
 
-    if (flow_level.show_desktop_start_screen) {
-        mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
-        confirm_scr_init(flow_level.confirmation_screen_text);
-        return;
-    }
+  number_of_options += NUMBER_OF_OPTIONS_MAIN_MENU;
 
-    if (device_auth_flag) {
-        mark_event_over();
-        return;
-    }
+  uint8_t walletMenuOptionIndex = 0;
 
-    if (counter.level > LEVEL_ONE) {
-        level_two_tasks();
-        return;
-    }
+  //initialise walletMenuOptionIndex to 0 if wallet limit is exceeded
+  if (number_of_options > 5) {
+    walletMenuOptionIndex = 2;
+  } else {
+    walletMenuOptionIndex = 1;
+  }
 
-    if(device_auth_check() != DEVICE_AUTHENTICATED){
-        restrict_app();
-        return;
-    }
-
-
-    uint8_t number_of_options = get_wallet_count();
-    LOG_INFO("wallet count %d", number_of_options);
-
-    // create list for chooses
-    char* choices[MAX_LEN_OF_MENU_OPTIONS];
-
-    uint8_t mainMenuIndex = 0;
-    uint8_t walletIndex = 0;
-
-    for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
-        if (get_wallet_state(walletIndex) == VALID_WALLET
-            || get_wallet_state(walletIndex) == INVALID_WALLET
-            || get_wallet_state(walletIndex) == UNVERIFIED_VALID_WALLET
-            || get_wallet_state(walletIndex) == VALID_WALLET_WITHOUT_DEVICE_SHARE) {
-            choices[mainMenuIndex] = (char*)get_wallet_name(walletIndex);
-            mainMenuIndex++;
-        }
-    }
-
-    if(mainMenuIndex != number_of_options){
-    	number_of_options = mainMenuIndex;
-    }
-
-    number_of_options += NUMBER_OF_OPTIONS_MAIN_MENU;
-
-    uint8_t walletMenuOptionIndex = 0;
-    
-    //initialise walletMenuOptionIndex to 0 if wallet limit is exceeded
-    if(number_of_options > 5){
-        walletMenuOptionIndex = 2;
-    }else{
-        walletMenuOptionIndex = 1;
-    }
-
-    //check if wallet limit is exceeded or not
-    if(number_of_options > 5){
-        number_of_options = 5;
-    }
-    // fill other options
-    for (; walletMenuOptionIndex <= NUMBER_OF_OPTIONS_MAIN_MENU; walletMenuOptionIndex++) {
-        choices[mainMenuIndex] = (char*)ui_text_options_main_menu[walletMenuOptionIndex];
-        mainMenuIndex++;
-    }
-    menu_init((const char **) choices, number_of_options, ui_text_options_main_menu[0], false);
-    lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
-    CY_set_app_restricted(false);
-    CY_Reset_Not_Allow(true);
-    CY_Set_External_Triggered(false);
-    mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
+  //check if wallet limit is exceeded or not
+  if (number_of_options > 5) {
+    number_of_options = 5;
+  }
+  // fill other options
+  for (; walletMenuOptionIndex <= NUMBER_OF_OPTIONS_MAIN_MENU;
+       walletMenuOptionIndex++) {
+    choices[mainMenuIndex] =
+        (char *)ui_text_options_main_menu[walletMenuOptionIndex];
+    mainMenuIndex++;
+  }
+  menu_init((const char **)choices, number_of_options,
+            ui_text_options_main_menu[0], false);
+  lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
+  CY_set_app_restricted(false);
+  CY_Reset_Not_Allow(true);
+  CY_Set_External_Triggered(false);
+  mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0xFF);
 #endif
 }

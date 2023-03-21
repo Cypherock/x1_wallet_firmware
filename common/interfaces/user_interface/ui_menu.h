@@ -13,7 +13,7 @@
 #include "ui_common.h"
 
 #define MENU_MAX_NUMBER_OF_OPTIONS 12
-#define MAX_LEN_OF_MENU_OPTIONS 25
+#define MAX_LEN_OF_MENU_OPTIONS    25
 
 /**
  * @brief struct to store Menu data and meta data
@@ -25,11 +25,11 @@
  * @note
  */
 struct Menu_Data {
-	char *option_list[MAX_LEN_OF_MENU_OPTIONS];
-	int number_of_options;
-	int current_index;
-	char heading[36];
-	bool back_button_allowed;
+  char *option_list[MAX_LEN_OF_MENU_OPTIONS];
+  int number_of_options;
+  int current_index;
+  char heading[36];
+  bool back_button_allowed;
 };
 
 /**
@@ -42,11 +42,11 @@ struct Menu_Data {
  * @note
  */
 struct Menu_Object {
-	lv_obj_t *heading;
-	lv_obj_t *options;
-	lv_obj_t *left_arrow;
-	lv_obj_t *right_arrow;
-	lv_obj_t *back_btn;
+  lv_obj_t *heading;
+  lv_obj_t *options;
+  lv_obj_t *left_arrow;
+  lv_obj_t *right_arrow;
+  lv_obj_t *back_btn;
 };
 
 /**
@@ -67,7 +67,10 @@ struct Menu_Object {
  *
  * @note
  */
-void menu_init(const char *option_list[], int number_of_options, const char heading[], bool back_button_allowed);
+void menu_init(const char *option_list[],
+               int number_of_options,
+               const char heading[],
+               bool back_button_allowed);
 
 /**
  * @brief Create menu UI
@@ -85,4 +88,4 @@ void menu_init(const char *option_list[], int number_of_options, const char head
  */
 void menu_create();
 
-#endif // UI_MENU_H
+#endif  // UI_MENU_H

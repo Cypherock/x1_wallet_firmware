@@ -26,8 +26,6 @@
  *
  * @note
  */
-void ui_mnem_init(
-	const char *heading
-);
+void ui_mnem_init(const char *heading);
 
-#endif //!UI_INPUT_MNEM_H
+#endif  //!UI_INPUT_MNEM_H

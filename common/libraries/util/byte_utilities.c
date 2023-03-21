@@ -58,36 +58,39 @@
 #include "byte_utilities.h"
 
 void increament_byte_array(uint8_t *arr, uint8_t size) {
-    if(size < 1U)
-        return;
+  if (size < 1U)
+    return;
 
-    for(int i = size - 1; i >= 0; i--) {
-        if(++arr[i] != 0)
-            break;
-    }
+  for (int i = size - 1; i >= 0; i--) {
+    if (++arr[i] != 0)
+      break;
+  }
 }
 
-void add_byte_array(uint8_t *dest_arr, const uint8_t *arr1, const uint8_t *arr2, uint8_t size) {
-    if(size < 1U)
-        return;
-
-    uint8_t carry = 0U;
-    uint16_t temp_add;
-
-    for(int i = size - 1; i >= 0; i--) {
-        temp_add = arr1[i] + arr2[i] + carry;
-
-        if(temp_add > 0xFF)
-            carry = 1U;
-        else
-            carry = 0U;
-
-        dest_arr[i] = (uint8_t) temp_add;
-    }
-
-    if(carry == 1U)
-        // OVERFLOW
-        return;
-
+void add_byte_array(uint8_t *dest_arr,
+                    const uint8_t *arr1,
+                    const uint8_t *arr2,
+                    uint8_t size) {
+  if (size < 1U)
     return;
+
+  uint8_t carry = 0U;
+  uint16_t temp_add;
+
+  for (int i = size - 1; i >= 0; i--) {
+    temp_add = arr1[i] + arr2[i] + carry;
+
+    if (temp_add > 0xFF)
+      carry = 1U;
+    else
+      carry = 0U;
+
+    dest_arr[i] = (uint8_t)temp_add;
+  }
+
+  if (carry == 1U)
+    // OVERFLOW
+    return;
+
+  return;
 }

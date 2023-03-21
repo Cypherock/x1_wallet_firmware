@@ -57,46 +57,49 @@
  */
 #include "controller_main.h"
 #include "controller_old_wallet.h"
+#include "controller_tap_cards.h"
 #include "flash_api.h"
+#include "sha2.h"
 #include "shamir_wrapper.h"
 #include "tasks.h"
 #include "wallet.h"
-#include "sha2.h"
-#include "controller_tap_cards.h"
 
-void delete_wallet_controller()
-{
-
-    switch (flow_level.level_three) {
+void delete_wallet_controller() {
+  switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = DELETE_WALLET_ENTER_PIN;
-        } else {
-            flow_level.level_three = DELETE_WALLET_TAP_CARDS;
-        }
-        break;
-    case DELETE_WALLET_ENTER_PIN: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet.password_double_hash);
-        sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = DELETE_WALLET_ENTER_PIN;
+      } else {
         flow_level.level_three = DELETE_WALLET_TAP_CARDS;
+      }
+      break;
+    case DELETE_WALLET_ENTER_PIN: {
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
+                 wallet.password_double_hash);
+      sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH,
+                 wallet.password_double_hash);
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      flow_level.level_three = DELETE_WALLET_TAP_CARDS;
     } break;
     case DELETE_WALLET_TAP_CARDS:
-        delete_from_cards_controller();
-        break;
-    case DELETE_WALLET_FROM_DEVICE:{
-        uint8_t index;
-        get_index_by_name((const char *)wallet.wallet_name, &index);
-        delete_wallet_share_from_sec_flash(index);
-        delete_wallet_from_flash(index);
-        flow_level.level_three = DELETE_WALLET_SUCCESS;
+      delete_from_cards_controller();
+      break;
+    case DELETE_WALLET_FROM_DEVICE: {
+      uint8_t index;
+      get_index_by_name((const char *)wallet.wallet_name, &index);
+      delete_wallet_share_from_sec_flash(index);
+      delete_wallet_from_flash(index);
+      flow_level.level_three = DELETE_WALLET_SUCCESS;
     } break;
 
     case DELETE_WALLET_SUCCESS:
-        reset_flow_level();
-        break;
+      reset_flow_level();
+      break;
 
     default:
-        break;
-    }
+      break;
+  }
 }

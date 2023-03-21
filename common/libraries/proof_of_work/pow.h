@@ -45,13 +45,13 @@
 
 #include "sha2.h"
 
-#include "board.h"
 #include "app_error.h"
+#include "board.h"
 
-#define SHA256_SIZE 32
+#define SHA256_SIZE          32
 #define POW_RAND_NUMBER_SIZE 32
-#define POW_NONCE_SIZE 32
-#define POW_TIMER_MS 180000
+#define POW_NONCE_SIZE       32
+#define POW_TIMER_MS         180000
 
 /**
  * This is in hashes per second adjusted with 5% delay (50ms delay in each event loop)
@@ -83,7 +83,7 @@ void pow_init_hash_rate();
  *
  * @note
  */
-void start_proof_of_work_task(const char* name);
+void start_proof_of_work_task(const char *name);
 
 /**
  * @brief Stops the proof of work task. Called when challenge is completed
@@ -131,6 +131,6 @@ void proof_of_work_task();
  *
  * @note This nonce can directly be sent to the card.
  */
-uint8_t* get_proof_of_work_nonce();
+uint8_t *get_proof_of_work_nonce();
 
 #endif

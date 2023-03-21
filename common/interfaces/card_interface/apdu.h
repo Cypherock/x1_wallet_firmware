@@ -20,133 +20,134 @@
 #ifndef APDU_H
 #define APDU_H
 
-#include "wallet.h"
-#include "aes.h"
 #include <stdint.h>
 #include <string.h>
+#include "aes.h"
+#include "wallet.h"
 
-#define SHA256_SIZE 32
+#define SHA256_SIZE          32
 #define POW_RAND_NUMBER_SIZE 32
-#define POW_NONCE_SIZE 32
+#define POW_NONCE_SIZE       32
 
 /// enum to define health of data on cards
 typedef enum {
-    DATA_HEALTH_OK        = 0x00,
-    DATA_HEALTH_UNKNOWN   = 0x01,
-    DATA_HEALTH_CORRUPT   = 0xFF,
+  DATA_HEALTH_OK      = 0x00,
+  DATA_HEALTH_UNKNOWN = 0x01,
+  DATA_HEALTH_CORRUPT = 0xFF,
 } Card_Data_Health;
 
 /// enum defined with expected lengths for different APDUs
 typedef enum {
-    PAIRING_EXPECTED_MIN_LENGTH = 52,    ///< Minimum length of pairing APDU
-    PAIRING_EXPECTED_MAX_LENGTH = 116,   ///< Maximum length of pairing APDU. Refer https://blog.eternitywall.com/2017/12/12/shortest-transaction/
-    ADD_WALLET_EXPECTED_LENGTH = 2,
-    RETRIEVE_WALLET_EXPECTED_LENGTH = 152,
-    DELETE_WALLET_EXPECTED_LENGTH = 2,
-    LIST_WALLET_EXPECTED_LENGTH = 56,
-    ECDSA_EXPECTED_LENGTH = 68,
-    GET_CHALLENGE_EXPECTED_LENGTH = 70,
-    VERIFY_CHALLENGE_EXPECTED_LENGTH = 2,
+  PAIRING_EXPECTED_MIN_LENGTH = 52,  ///< Minimum length of pairing APDU
+  PAIRING_EXPECTED_MAX_LENGTH =
+      116,  ///< Maximum length of pairing APDU. Refer https://blog.eternitywall.com/2017/12/12/shortest-transaction/
+  ADD_WALLET_EXPECTED_LENGTH       = 2,
+  RETRIEVE_WALLET_EXPECTED_LENGTH  = 152,
+  DELETE_WALLET_EXPECTED_LENGTH    = 2,
+  LIST_WALLET_EXPECTED_LENGTH      = 56,
+  ECDSA_EXPECTED_LENGTH            = 68,
+  GET_CHALLENGE_EXPECTED_LENGTH    = 70,
+  VERIFY_CHALLENGE_EXPECTED_LENGTH = 2,
 } Apdu_expected_length;
 
 /// enum defined with command type for different APDUs
 typedef enum {
-    //Template - APDU_FUNCTION = INS_CODE
-    APDU_PAIR = 0x12,
-    APDU_UNPAIR = 0x13,
-    APDU_EST_SESSION = 0x14,
-    APDU_ADD_WALLET = 0xC1,
-    APDU_RETRIEVE_WALLET = 0xC2,
-    APDU_DELETE_WALLET = 0xC3,
-    APDU_LIST_ALL_WALLET = 0xC4,
-    APDU_SIGN_DATA_ECDSA = 0xC6,
-    APDU_INHERITANCE = 0xC9,
-    APDU_PROOF_OF_WORK = 0xCB
+  //Template - APDU_FUNCTION = INS_CODE
+  APDU_PAIR            = 0x12,
+  APDU_UNPAIR          = 0x13,
+  APDU_EST_SESSION     = 0x14,
+  APDU_ADD_WALLET      = 0xC1,
+  APDU_RETRIEVE_WALLET = 0xC2,
+  APDU_DELETE_WALLET   = 0xC3,
+  APDU_LIST_ALL_WALLET = 0xC4,
+  APDU_SIGN_DATA_ECDSA = 0xC6,
+  APDU_INHERITANCE     = 0xC9,
+  APDU_PROOF_OF_WORK   = 0xCB
 } apdu_command_type;
 
 /// enum for storing command for calling certian function in APDUs
 typedef enum {
-    // Template - P1_FUNCTION_SUBFUNCTION = P1_CODE
-    P1_POW_GET_CHALLENGE = 0x00,
-    P1_POW_VERIFY_CHALLENGE = 0x01,
+  // Template - P1_FUNCTION_SUBFUNCTION = P1_CODE
+  P1_POW_GET_CHALLENGE    = 0x00,
+  P1_POW_VERIFY_CHALLENGE = 0x01,
 
-    P1_INHERITANCE_DECRYPT_DATA = 0x00,
-    P1_INHERITANCE_ENCRYPT_DATA = 0x01,
+  P1_INHERITANCE_DECRYPT_DATA = 0x00,
+  P1_INHERITANCE_ENCRYPT_DATA = 0x01,
 } p1_function_subfunction;
 
 /// enum for tag values in APDUs
 typedef enum {
-    //Tag for Wallet Structure
-    INS_NAME = 0xE0,
-    INS_PASSWORD,
-    INS_xCor,
-    INS_NO_OF_MNEMONICS,
-    INS_TOTAL_NO_OF_SHARE,
-    INS_WALLET_SHARE,
-    INS_STRUCTURE_CHECKSUM,
-    INS_MIN_NO_OF_SHARES,
-    INS_WALLET_INFO,
-    INS_KEY, // Key for storing xPUB
-    INS_BENEFICIARY_KEY,
-    INS_IV_FOR_BENEFICIARY_KEY,
-    INS_WALLET_ID,
-    INS_ARBITRARY_DATA = 0xA0,
-    INS_IS_ARBITRARY_DATA = 0xA1,
+  //Tag for Wallet Structure
+  INS_NAME = 0xE0,
+  INS_PASSWORD,
+  INS_xCor,
+  INS_NO_OF_MNEMONICS,
+  INS_TOTAL_NO_OF_SHARE,
+  INS_WALLET_SHARE,
+  INS_STRUCTURE_CHECKSUM,
+  INS_MIN_NO_OF_SHARES,
+  INS_WALLET_INFO,
+  INS_KEY,  // Key for storing xPUB
+  INS_BENEFICIARY_KEY,
+  INS_IV_FOR_BENEFICIARY_KEY,
+  INS_WALLET_ID,
+  INS_ARBITRARY_DATA    = 0xA0,
+  INS_IS_ARBITRARY_DATA = 0xA1,
 
-    // Tag for Select Applet Command
-    TAG_VERSION = 0xB0,
-    TAG_FAMILY_ID,
-    TAG_CARD_NUMBER,
-    TAG_CARD_KEYID,
-    TAG_CARD_IV,
-    TAG_RECOVERY_MODE,
+  // Tag for Select Applet Command
+  TAG_VERSION = 0xB0,
+  TAG_FAMILY_ID,
+  TAG_CARD_NUMBER,
+  TAG_CARD_KEYID,
+  TAG_CARD_IV,
+  TAG_RECOVERY_MODE,
 
-    TAG_SIGNED_DATA = 0xEB,
+  TAG_SIGNED_DATA = 0xEB,
 
-    // Tag for proof of work
-    TAG_POW_RANDOM_NUM = 0xD1,
-    TAG_POW_TARGET = 0xD2,
-    TAG_POW_NONCE = 0xD3,
+  // Tag for proof of work
+  TAG_POW_RANDOM_NUM = 0xD1,
+  TAG_POW_TARGET     = 0xD2,
+  TAG_POW_NONCE      = 0xD3,
 
-    // Tag for inheritance
-    TAG_INHERITANCE_PLAIN_DATA = 0xD5,
-    TAG_INHERITANCE_ENCRYPTED_DATA = 0xD6,
-    TAG_DATA_DISCREPANCY = 0xD7,
+  // Tag for inheritance
+  TAG_INHERITANCE_PLAIN_DATA     = 0xD5,
+  TAG_INHERITANCE_ENCRYPTED_DATA = 0xD6,
+  TAG_DATA_DISCREPANCY           = 0xD7,
 } Tag_value;
 
 /// ISO7816 values
 typedef enum {
-    CLA_ISO7816 = 0x00,
-    INS_EXTERNAL_AUTHENTICATE = 0x82,
-    INS_SELECT = 0xA4,
-    OFFSET_CDATA = 5,
-    OFFSET_CLA = 0,
-    OFFSET_EXT_CDATA = 7,
-    OFFSET_INS = 1,
-    OFFSET_LC = 4,
-    OFFSET_P1 = 2,
-    OFFSET_P2 = 3,
-    SW_INCOMPATIBLE_APPLET = 0x1000,
-    SW_NO_ERROR = 0x9000,
-    SW_FILE_INVALID = 0x6983,
-    SW_RECORD_NOT_FOUND = 0x6A83,
-    SW_CORRECT_LENGTH_00 = 0x6C00,
-    SW_FILE_FULL = 0x6A84,
-    SW_WRONG_DATA = 0x6A80,
-    SW_NULL_POINTER_EXCEPTION = 0x6281,
-    SW_OUT_OF_BOUNDARY = 0x91BE,
-    SW_TRANSACTION_EXCEPTION = 0x6900,
-    SW_CRYPTO_EXCEPTION = 0x7C00,
-    SW_CONDITIONS_NOT_SATISFIED = 0x6985,
-    SW_SECURITY_CONDITIONS_NOT_SATISFIED = 0x6982,
-    SW_NOT_PAIRED = 0x7985,
-    SW_WARNING_STATE_UNCHANGED = 0x6200,
-    SW_FILE_NOT_FOUND = 0x6A82,
-    SW_INVALID_INS = 0x6D00,
-    POW_SW_WALLET_LOCKED = 0x7D00,
-    SW_INS_BLOCKED = 0x7E00,
-    POW_SW_CHALLENGE_FAILED = 0x6A88,
-    DEFAULT_UINT32_IN_FLASH_ENUM = 0xFFFFFFFFUL
+  CLA_ISO7816                          = 0x00,
+  INS_EXTERNAL_AUTHENTICATE            = 0x82,
+  INS_SELECT                           = 0xA4,
+  OFFSET_CDATA                         = 5,
+  OFFSET_CLA                           = 0,
+  OFFSET_EXT_CDATA                     = 7,
+  OFFSET_INS                           = 1,
+  OFFSET_LC                            = 4,
+  OFFSET_P1                            = 2,
+  OFFSET_P2                            = 3,
+  SW_INCOMPATIBLE_APPLET               = 0x1000,
+  SW_NO_ERROR                          = 0x9000,
+  SW_FILE_INVALID                      = 0x6983,
+  SW_RECORD_NOT_FOUND                  = 0x6A83,
+  SW_CORRECT_LENGTH_00                 = 0x6C00,
+  SW_FILE_FULL                         = 0x6A84,
+  SW_WRONG_DATA                        = 0x6A80,
+  SW_NULL_POINTER_EXCEPTION            = 0x6281,
+  SW_OUT_OF_BOUNDARY                   = 0x91BE,
+  SW_TRANSACTION_EXCEPTION             = 0x6900,
+  SW_CRYPTO_EXCEPTION                  = 0x7C00,
+  SW_CONDITIONS_NOT_SATISFIED          = 0x6985,
+  SW_SECURITY_CONDITIONS_NOT_SATISFIED = 0x6982,
+  SW_NOT_PAIRED                        = 0x7985,
+  SW_WARNING_STATE_UNCHANGED           = 0x6200,
+  SW_FILE_NOT_FOUND                    = 0x6A82,
+  SW_INVALID_INS                       = 0x6D00,
+  POW_SW_WALLET_LOCKED                 = 0x7D00,
+  SW_INS_BLOCKED                       = 0x7E00,
+  POW_SW_CHALLENGE_FAILED              = 0x6A88,
+  DEFAULT_UINT32_IN_FLASH_ENUM         = 0xFFFFFFFFUL
 } ISO7816;
 
 /**
@@ -173,7 +174,11 @@ typedef enum {
  *
  * @note
  */
-void fill_tlv(uint8_t* array, uint16_t* starting_index, Tag_value tag, uint8_t length, const struct Wallet* wallet);
+void fill_tlv(uint8_t *array,
+              uint16_t *starting_index,
+              Tag_value tag,
+              uint8_t length,
+              const struct Wallet *wallet);
 
 /**
  * @brief Create a apdu for add wallet.
@@ -190,7 +195,7 @@ void fill_tlv(uint8_t* array, uint16_t* starting_index, Tag_value tag, uint8_t l
  *
  * @note
  */
-uint16_t create_apdu_add_wallet(const struct Wallet* wallet, uint8_t apdu[]);
+uint16_t create_apdu_add_wallet(const struct Wallet *wallet, uint8_t apdu[]);
 
 /**
  * @brief
@@ -225,7 +230,8 @@ uint16_t create_apdu_pair(const uint8_t *data, uint16_t length, uint8_t *apdu);
  *
  * @note
  */
-uint16_t create_apdu_add_arbitrary_data(const struct Wallet* wallet, uint8_t apdu[]);
+uint16_t create_apdu_add_arbitrary_data(const struct Wallet *wallet,
+                                        uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for retrieve wallet.
@@ -242,7 +248,8 @@ uint16_t create_apdu_add_arbitrary_data(const struct Wallet* wallet, uint8_t apd
  *
  * @note
  */
-uint16_t create_apdu_retrieve_wallet(const struct Wallet* wallet, uint8_t apdu[]);
+uint16_t create_apdu_retrieve_wallet(const struct Wallet *wallet,
+                                     uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for delete wallet.
@@ -259,7 +266,7 @@ uint16_t create_apdu_retrieve_wallet(const struct Wallet* wallet, uint8_t apdu[]
  *
  * @note
  */
-uint16_t create_apdu_delete_wallet(const struct Wallet* wallet, uint8_t apdu[]);
+uint16_t create_apdu_delete_wallet(const struct Wallet *wallet, uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for list all wallets.
@@ -309,7 +316,9 @@ uint8_t create_apdu_select_applet(uint8_t apdu[]);
  *
  * @note
  */
-uint16_t create_apdu_ecdsa(const uint8_t data[], uint16_t length, uint8_t apdu[]);
+uint16_t create_apdu_ecdsa(const uint8_t data[],
+                           uint16_t length,
+                           uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for verify challenge.
@@ -328,7 +337,10 @@ uint16_t create_apdu_ecdsa(const uint8_t data[], uint16_t length, uint8_t apdu[]
  *
  * @note
  */
-uint16_t create_apdu_verify_challenge(const uint8_t name[NAME_SIZE], const uint8_t nonce[POW_NONCE_SIZE], const uint8_t password[BLOCK_SIZE], uint8_t apdu[]);
+uint16_t create_apdu_verify_challenge(const uint8_t name[NAME_SIZE],
+                                      const uint8_t nonce[POW_NONCE_SIZE],
+                                      const uint8_t password[BLOCK_SIZE],
+                                      uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for get challenge.
@@ -345,7 +357,8 @@ uint16_t create_apdu_verify_challenge(const uint8_t name[NAME_SIZE], const uint8
  *
  * @note
  */
-uint16_t create_apdu_get_challenge(const uint8_t name[NAME_SIZE], uint8_t apdu[]);
+uint16_t create_apdu_get_challenge(const uint8_t name[NAME_SIZE],
+                                   uint8_t apdu[]);
 
 /**
  * @brief Create a apdu for inheritance.
@@ -373,7 +386,11 @@ uint16_t create_apdu_get_challenge(const uint8_t name[NAME_SIZE], uint8_t apdu[]
  *
  * @note
  */
-uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE], const uint8_t* data, uint16_t data_size, uint8_t apdu[], uint8_t operation);
+uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE],
+                                 const uint8_t *data,
+                                 uint16_t data_size,
+                                 uint8_t apdu[],
+                                 uint8_t operation);
 
 /**
  * @brief Deserialize challenge from the response apdu
@@ -392,7 +409,10 @@ uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE], const uint8_t* d
  *
  * @note
  */
-void extract_apdu_get_challenge(uint8_t target[SHA256_SIZE], uint8_t random_number[POW_RAND_NUMBER_SIZE], const uint8_t apdu[], uint16_t len);
+void extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
+                                uint8_t random_number[POW_RAND_NUMBER_SIZE],
+                                const uint8_t apdu[],
+                                uint16_t len);
 
 /**
  * @brief Deserialize wallet info from the response apdu
@@ -410,7 +430,9 @@ void extract_apdu_get_challenge(uint8_t target[SHA256_SIZE], uint8_t random_numb
  *
  * @note
  */
-void extract_from_apdu(struct Wallet* wallet, const uint8_t apdu[], uint16_t len);
+void extract_from_apdu(struct Wallet *wallet,
+                       const uint8_t apdu[],
+                       uint16_t len);
 
 /**
  * @brief Deserialize family-id and applet version of the card
@@ -430,7 +452,13 @@ void extract_from_apdu(struct Wallet* wallet, const uint8_t apdu[], uint16_t len
  *
  * @note
  */
-ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], uint8_t len, uint8_t family_id[], uint8_t *version, uint8_t* card_number, uint8_t *card_key_id, uint8_t *recovery_mode);
+ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
+                                      uint8_t len,
+                                      uint8_t family_id[],
+                                      uint8_t *version,
+                                      uint8_t *card_number,
+                                      uint8_t *card_key_id,
+                                      uint8_t *recovery_mode);
 
 /**
  * @brief
@@ -446,7 +474,9 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[], uint8_t len, uint8_t
  *
  * @note
  */
-void init_session_keys(const uint8_t enc_key[32], const uint8_t mac_key[32], const uint8_t iv[16]);
+void init_session_keys(const uint8_t enc_key[32],
+                       const uint8_t mac_key[32],
+                       const uint8_t iv[16]);
 
 /**
  * @brief

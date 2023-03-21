@@ -62,48 +62,45 @@
 
 extern Wallet_credential_data wallet_credential_data;
 
-void receive_transaction_controller_b_eth()
-{
-
-    switch (flow_level.level_three) {
-
+void receive_transaction_controller_b_eth() {
+  switch (flow_level.level_three) {
     case RECV_TXN_FIND_XPUB_ETH: {
-        comm_reject_request(RECV_TXN_USER_VERIFIED_COINS, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(RECV_TXN_USER_VERIFIED_COINS, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
-
     case RECV_TXN_ENTER_PIN_ETH: {
-
-        comm_reject_request(USER_REJECT_PIN_INPUT, 0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-        counter.next_event_flag = true;
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
 
     } break;
 
     case RECV_TXN_ENTER_PASSPHRASE_ETH: {
-       comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
-       reset_flow_level();
-       memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
-       counter.next_event_flag = true;
-   } break;
+      comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      counter.next_event_flag = true;
+    } break;
 
-   case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
-       memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-       flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_ETH;
-   } break;
+    case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
+      flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_ETH;
+    } break;
 
     case RECV_TXN_DISPLAY_ADDR_ETH: {
-        comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS, 0);
-        reset_flow_level();
-        counter.next_event_flag = true;
+      comm_reject_request(RECV_TXN_USER_VERIFIED_ADDRESS, 0);
+      reset_flow_level();
+      counter.next_event_flag = true;
     } break;
 
     default:
-        break;
-    }
-    return;
-
+      break;
+  }
+  return;
 }

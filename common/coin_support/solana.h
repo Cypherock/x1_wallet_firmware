@@ -13,14 +13,13 @@
 #include <stdint.h>
 #include "coin_utils.h"
 
-#define SOL_COIN_VERSION    0x00000000
+#define SOL_COIN_VERSION 0x00000000
 
 // Derivation path reference : https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
 // Taking 3 levels of depth similar to ledger
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX    0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
-
 
 /// Ref: https://docs.solana.com/terminology#lamport
 #define SOLANA_DECIMAL (9U)
@@ -88,13 +87,14 @@ typedef struct solana_unsigned_txn {
 
   uint8_t *blockhash;
 
-  uint16_t instructions_count;  // deserialization only supports single instruction
+  uint16_t
+      instructions_count;  // deserialization only supports single instruction
   solana_instruction instruction;
 
 } solana_unsigned_txn;
 
 typedef enum solana_account_type {
-  UNUSED = 0,
+  UNUSED        = 0,
   SOL_ACC_TYPE1 = 1,
   SOL_ACC_TYPE2 = 2,
   SOL_ACC_TYPE3 = 3,
@@ -117,7 +117,9 @@ size_t sol_get_derivation_depth(uint16_t tag);
  * @param size the size of the compact array 
  * @return uint16_t number of bytes used to store the size
  */
-uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error);
+uint16_t get_compact_array_size(const uint8_t *data,
+                                uint16_t *size,
+                                int *error);
 
 /**
  * @brief Convert byte array representation of unsigned transaction to solana_unsigned_txn.
@@ -136,7 +138,9 @@ uint16_t get_compact_array_size(const uint8_t *data, uint16_t *size, int *error)
  *
  * @note
  */
-int solana_byte_array_to_unsigned_txn(uint8_t *byte_array, uint16_t byte_array_size, solana_unsigned_txn *utxn);
+int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
+                                      uint16_t byte_array_size,
+                                      solana_unsigned_txn *utxn);
 
 /**
  * @brief Validate the deserialized unsigned transaction 
@@ -179,7 +183,8 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
  * @param blockhash     pointer to array of latest blockhash
  * @return int 
  */
-int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *blockhash);
+int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
+                                          const uint8_t *blockhash);
 
 /**
  * @brief Verifies the derivation path for any inconsistent/unsupported values.
@@ -193,7 +198,6 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
  * @since v1.0.0
  */
 bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels);
-
 
 /**
  * @brief Returns the decimal value of solana asset

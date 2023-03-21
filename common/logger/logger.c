@@ -56,16 +56,16 @@
  ******************************************************************************
  */
 
-#include "board.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "board.h"
 
-#include "flash_api.h"
-#include "logger.h"
-#include "flash_struct.h"
 #include "app_error.h"
+#include "flash_api.h"
+#include "flash_struct.h"
+#include "logger.h"
 
 #include "communication.h"
 
@@ -93,7 +93,6 @@ static logger_data_s_t sg_log_data;
 static void logger_switch_page(void);
 
 void logger(char *fmt, ...) {
-
   ASSERT(fmt != NULL);
 
   char temp_str1[LOG_MAX_SIZE];
@@ -109,15 +108,20 @@ void logger(char *fmt, ...) {
     n = vsnprintf(temp_str1, LOG_MAX_SIZE, fmt, args);
     va_end(args);
 
-    n = snprintf(temp_str2, LOG_MAX_SIZE, "%d. %s\n", sg_log_data.log_count, temp_str1);
+    n    = snprintf(temp_str2, LOG_MAX_SIZE, "%d. %s\n", sg_log_data.log_count,
+                    temp_str1);
     cnt2 = n % sizeof(uint64_t);
-    cnt2 = cnt2 == 0 ? 0 : (sizeof(uint64_t) - cnt2); /*Here finding how many bytes needed to U64 alignment*/
+    cnt2 = cnt2 == 0
+               ? 0
+               : (sizeof(uint64_t) -
+                  cnt2); /*Here finding how many bytes needed to U64 alignment*/
     for (uint8_t cnt1 = 0; cnt1 < cnt2; cnt1++) {
       temp_str2[n + cnt1] = ' ';
     }
 
     /*Here check if enough space is available in current page*/
-    if ((sg_log_data.next_write_loc + n + cnt2) >= (((sg_log_data.page_index + 1) * LOG_PAGE_SIZE) + LOG_SECTION_START)) {
+    if ((sg_log_data.next_write_loc + n + cnt2) >=
+        (((sg_log_data.page_index + 1) * LOG_PAGE_SIZE) + LOG_SECTION_START)) {
       logger_switch_page();
     }
 
@@ -128,27 +132,28 @@ void logger(char *fmt, ...) {
     /*Here is the page is completely filled. 
     Putting this check so if at anypoint device reset when current page was full, we should be able to fine
     atleast 1 next page with space to write*/
-    if ((sg_log_data.next_write_loc) >= (((sg_log_data.page_index + 1) * LOG_PAGE_SIZE) + LOG_SECTION_START)) {
+    if ((sg_log_data.next_write_loc) >=
+        (((sg_log_data.page_index + 1) * LOG_PAGE_SIZE) + LOG_SECTION_START)) {
       logger_switch_page();
     }
   }
 }
 
 void logger_reset_flash(void) {
-  erase_cmd(LOG_SECTION_START, LOG_MAX_PAGES*FLASH_PAGE_SIZE);
-  sg_log_data.page_index = 0;
+  erase_cmd(LOG_SECTION_START, LOG_MAX_PAGES * FLASH_PAGE_SIZE);
+  sg_log_data.page_index     = 0;
   sg_log_data.next_write_loc = LOG_SECTION_START;
-  sg_log_data.log_count = 1;
+  sg_log_data.log_count      = 1;
 }
 
 //void logger_init(uint32_t head, uint32_t tail) {
 void logger_init(void) {
 #if USE_SIMULATOR == 0
-  void *addr_loc = NULL;
+  void *addr_loc         = NULL;
   uint8_t next_loc_found = false;
 
   sg_log_data.page_index = -1;
-  sg_log_data.log_count = 1;
+  sg_log_data.log_count  = 1;
 
   for (uint16_t cnt = 0; (cnt < LOG_MAX_PAGES); cnt++) {
     addr_loc = (void *)(LOG_SECTION_START + (cnt * LOG_PAGE_SIZE));
@@ -166,7 +171,7 @@ void logger_init(void) {
       addr_loc -= sizeof(uint64_t);
       if (*(uint64_t *)addr_loc == -1) {
         sg_log_data.next_write_loc = (uint32_t)addr_loc;
-        next_loc_found = true;
+        next_loc_found             = true;
       } else {
         break;
       }
@@ -182,7 +187,7 @@ void logger_init(void) {
   }
 
   sg_log_data.initialized = true;
-  sg_log_data.read_sm_e = LOG_READ_FINISH;
+  sg_log_data.read_sm_e   = LOG_READ_FINISH;
 #endif
 }
 
@@ -201,120 +206,134 @@ void logger_init(void) {
  * @note
  */
 static void logger_switch_page(void) {
-    uint32_t page_addr = 0;
-    uint16_t cnt2;
-    /*Fill Remaining Space in page with ' '*/
-    cnt2 = sg_log_data.next_write_loc % LOG_PAGE_SIZE;
-    cnt2 = LOG_PAGE_SIZE - cnt2;
-    for (uint16_t cnt1 = 0; cnt1 < cnt2; cnt1 += sizeof(uint64_t)) {
-        page_addr = sg_log_data.next_write_loc + cnt1;
-        write_cmd(page_addr, (uint32_t *)"        ", sizeof(uint64_t));
-    }
-
-    page_addr = LOG_SECTION_START + sg_log_data.page_index * LOG_PAGE_SIZE;
+  uint32_t page_addr = 0;
+  uint16_t cnt2;
+  /*Fill Remaining Space in page with ' '*/
+  cnt2 = sg_log_data.next_write_loc % LOG_PAGE_SIZE;
+  cnt2 = LOG_PAGE_SIZE - cnt2;
+  for (uint16_t cnt1 = 0; cnt1 < cnt2; cnt1 += sizeof(uint64_t)) {
+    page_addr = sg_log_data.next_write_loc + cnt1;
     write_cmd(page_addr, (uint32_t *)"        ", sizeof(uint64_t));
+  }
 
-    sg_log_data.page_index = CYCLIC_INCREMENT(sg_log_data.page_index, LOG_MAX_PAGES);
-    page_addr = LOG_SECTION_START + sg_log_data.page_index * LOG_PAGE_SIZE;
-    erase_cmd(page_addr, FLASH_PAGE_SIZE);
-    sg_log_data.next_write_loc = page_addr+sizeof(uint64_t);
+  page_addr = LOG_SECTION_START + sg_log_data.page_index * LOG_PAGE_SIZE;
+  write_cmd(page_addr, (uint32_t *)"        ", sizeof(uint64_t));
+
+  sg_log_data.page_index =
+      CYCLIC_INCREMENT(sg_log_data.page_index, LOG_MAX_PAGES);
+  page_addr = LOG_SECTION_START + sg_log_data.page_index * LOG_PAGE_SIZE;
+  erase_cmd(page_addr, FLASH_PAGE_SIZE);
+  sg_log_data.next_write_loc = page_addr + sizeof(uint64_t);
 }
 
 void logger_task() {
 #if USE_SIMULATOR == 0
-    printf("#GRN#%s: lc=%d, wl=%ld, pi=%d, i=%d, rpi=%d, sm=%d, rc=%d\n", __func__, sg_log_data.log_count,
-            sg_log_data.next_write_loc, sg_log_data.page_index, sg_log_data.initialized,
-            sg_log_data.read_page_index, sg_log_data.read_sm_e, sg_log_data.total_page_read);
-    uint16_t cnt = 0;
-    uint16_t packet_len = 0;
-    void *addr_loc = NULL;
-    uint8_t next_loc_found = false;
-    const char *start_of_log = "startofpacket\r\n";
-    const char *end_of_log = "endofpacket\r\n";
+  printf("#GRN#%s: lc=%d, wl=%ld, pi=%d, i=%d, rpi=%d, sm=%d, rc=%d\n",
+         __func__, sg_log_data.log_count, sg_log_data.next_write_loc,
+         sg_log_data.page_index, sg_log_data.initialized,
+         sg_log_data.read_page_index, sg_log_data.read_sm_e,
+         sg_log_data.total_page_read);
+  uint16_t cnt             = 0;
+  uint16_t packet_len      = 0;
+  void *addr_loc           = NULL;
+  uint8_t next_loc_found   = false;
+  const char *start_of_log = "startofpacket\r\n";
+  const char *end_of_log   = "endofpacket\r\n";
 
-    switch (sg_log_data.read_sm_e) {
-        case LOG_READ_INIT:
-            sg_log_data.read_sm_e = LOG_READ_ONGOING;
+  switch (sg_log_data.read_sm_e) {
+    case LOG_READ_INIT:
+      sg_log_data.read_sm_e = LOG_READ_ONGOING;
 
-            for (cnt = sg_log_data.page_index + 1; cnt != sg_log_data.page_index; cnt = CYCLIC_INCREMENT(cnt, LOG_MAX_PAGES)) {
-                addr_loc = (void *)(LOG_SECTION_START + (cnt * LOG_PAGE_SIZE));
-                if (*(uint64_t*) addr_loc == 0x2020202020202020) {
-                    sg_log_data.read_page_index = cnt;
-                    next_loc_found = true;
-                    break;
-                }
-            }
+      for (cnt = sg_log_data.page_index + 1; cnt != sg_log_data.page_index;
+           cnt = CYCLIC_INCREMENT(cnt, LOG_MAX_PAGES)) {
+        addr_loc = (void *)(LOG_SECTION_START + (cnt * LOG_PAGE_SIZE));
+        if (*(uint64_t *)addr_loc == 0x2020202020202020) {
+          sg_log_data.read_page_index = cnt;
+          next_loc_found              = true;
+          break;
+        }
+      }
 
-            if (next_loc_found == false)
-                sg_log_data.read_page_index = sg_log_data.page_index;
+      if (next_loc_found == false)
+        sg_log_data.read_page_index = sg_log_data.page_index;
 
-            sg_log_data.total_page_read = 0;
-            sg_log_data.initialized = false;
-            char extended_start_of_log[MAXIMUM_DATA_SIZE] = {'\0'};
-            snprintf(extended_start_of_log, MAXIMUM_DATA_SIZE - 1, "\r\n%s%s Bl:%lX\r\n", start_of_log, GIT_REV, FW_get_bootloader_version());
-            transmit_data_to_app(APP_LOG_DATA_SEND, (uint8_t *)extended_start_of_log, MAXIMUM_DATA_SIZE);
-            break;
+      sg_log_data.total_page_read                   = 0;
+      sg_log_data.initialized                       = false;
+      char extended_start_of_log[MAXIMUM_DATA_SIZE] = {'\0'};
+      snprintf(extended_start_of_log, MAXIMUM_DATA_SIZE - 1,
+               "\r\n%s%s Bl:%lX\r\n", start_of_log, GIT_REV,
+               FW_get_bootloader_version());
+      transmit_data_to_app(APP_LOG_DATA_SEND, (uint8_t *)extended_start_of_log,
+                           MAXIMUM_DATA_SIZE);
+      break;
 
-        case LOG_READ_ONGOING:
-            packet_len = LOG_PAGE_SIZE;
-            if (sg_log_data.page_index == sg_log_data.read_page_index) {
-                packet_len = sg_log_data.next_write_loc - (LOG_SECTION_START + sg_log_data.read_page_index * LOG_PAGE_SIZE);
-                sg_log_data.read_sm_e = LOG_READ_END;
-            }
-            if (packet_len == 0 || sg_log_data.total_page_read == LOG_MAX_PAGES) {
-                sg_log_data.read_sm_e = LOG_READ_END;
-                break;
-            }
-            if (packet_len > 0)
-                transmit_data_to_app(APP_LOG_DATA_SEND,
-                                     (const uint8_t *) (LOG_SECTION_START + sg_log_data.read_page_index * LOG_PAGE_SIZE),
-                                     packet_len);
-            sg_log_data.read_page_index = CYCLIC_INCREMENT(sg_log_data.read_page_index, LOG_MAX_PAGES);
-            sg_log_data.total_page_read += 1;
-            break;
+    case LOG_READ_ONGOING:
+      packet_len = LOG_PAGE_SIZE;
+      if (sg_log_data.page_index == sg_log_data.read_page_index) {
+        packet_len =
+            sg_log_data.next_write_loc -
+            (LOG_SECTION_START + sg_log_data.read_page_index * LOG_PAGE_SIZE);
+        sg_log_data.read_sm_e = LOG_READ_END;
+      }
+      if (packet_len == 0 || sg_log_data.total_page_read == LOG_MAX_PAGES) {
+        sg_log_data.read_sm_e = LOG_READ_END;
+        break;
+      }
+      if (packet_len > 0)
+        transmit_data_to_app(
+            APP_LOG_DATA_SEND,
+            (const uint8_t *)(LOG_SECTION_START +
+                              sg_log_data.read_page_index * LOG_PAGE_SIZE),
+            packet_len);
+      sg_log_data.read_page_index =
+          CYCLIC_INCREMENT(sg_log_data.read_page_index, LOG_MAX_PAGES);
+      sg_log_data.total_page_read += 1;
+      break;
 
-        case LOG_READ_END:
-            sg_log_data.read_sm_e = LOG_READ_FINISH;
-            transmit_data_to_app(APP_LOG_DATA_SEND, (uint8_t *)end_of_log, strlen(end_of_log));
-            sg_log_data.initialized = true;
-            break;
+    case LOG_READ_END:
+      sg_log_data.read_sm_e = LOG_READ_FINISH;
+      transmit_data_to_app(APP_LOG_DATA_SEND, (uint8_t *)end_of_log,
+                           strlen(end_of_log));
+      sg_log_data.initialized = true;
+      break;
 
-        default:
-            sg_log_data.read_sm_e = LOG_READ_FINISH;
-            sg_log_data.initialized = true;
-            break;
-    }
+    default:
+      sg_log_data.read_sm_e   = LOG_READ_FINISH;
+      sg_log_data.initialized = true;
+      break;
+  }
 #endif
 }
 
-void log_hex_array(const char text[], const uint8_t* arr, const uint8_t length)
-{
-    if (!is_logging_enabled()) return;
-    if (text == NULL || arr == NULL || length == 0)
-        return;
+void log_hex_array(const char text[],
+                   const uint8_t *arr,
+                   const uint8_t length) {
+  if (!is_logging_enabled())
+    return;
+  if (text == NULL || arr == NULL || length == 0)
+    return;
 
-    char str[131];
-    uint8_t j = 0;
-    LOG_ERROR("%s %d\n", text, length);
+  char str[131];
+  uint8_t j = 0;
+  LOG_ERROR("%s %d\n", text, length);
 
-    str[130] = '\0';
-    for (uint8_t i = 0; i < length; i++) {
-        snprintf(str + j, sizeof(str) - j, "%02X", arr[i]);
-        j += 2;
-        if (j > 121) {
-            LOG_ERROR("%s", str, 122);
-            j = 0;
-        }
+  str[130] = '\0';
+  for (uint8_t i = 0; i < length; i++) {
+    snprintf(str + j, sizeof(str) - j, "%02X", arr[i]);
+    j += 2;
+    if (j > 121) {
+      LOG_ERROR("%s", str, 122);
+      j = 0;
     }
-    str[j] = '\0';
-    LOG_ERROR("%s", str, length * 2);
+  }
+  str[j] = '\0';
+  LOG_ERROR("%s", str, length * 2);
 }
 
 void set_start_log_read() {
-    sg_log_data.read_sm_e = LOG_READ_INIT;
+  sg_log_data.read_sm_e = LOG_READ_INIT;
 }
 
-log_read_e_t get_log_read_status()
-{
-    return sg_log_data.read_sm_e;
+log_read_e_t get_log_read_status() {
+  return sg_log_data.read_sm_e;
 }

@@ -57,16 +57,15 @@
  */
 #include "controller_level_four.h"
 
-void verify_wallet_controller_b()
-{
-    switch (flow_level.level_three) {
+void verify_wallet_controller_b() {
+  switch (flow_level.level_three) {
     case VERIFY_WALLET_DELETE: {
-        reset_flow_level();
-        break;
+      reset_flow_level();
+      break;
     }
 
     default:
-        flow_level.level_three = VERIFY_WALLET_DELETE;
-        break;
-    }
+      flow_level.level_three = VERIFY_WALLET_DELETE;
+      break;
+  }
 }
