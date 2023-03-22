@@ -6,6 +6,37 @@ on:
       - '**'
 
 jobs:
+  cache-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Restore cached dependencies
+      id: cache-build-tools
+      uses: actions/cache@v3
+      with:
+        path: tools
+        key: build-tools
+
+    - name: Install clang-tools
+      if: steps.cache-build-tools.outputs.cache-hit != 'true'
+      run: |
+        curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz --output clang.tar.gz
+        test -f clang.tar.gz
+        tar -xvf clang.tar.gz
+        mv "clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/*clang-*" ./tools/
+
+    - name: Install common dependencies
+      if: steps.cache-build-tools.outputs.cache-hit != 'true'
+      run: |
+        mkdir tools
+        curl -L https://github.com/Kitware/CMake/releases/download/v3.25.3/cmake-3.25.3-linux-x86_64.tar.gz --output cmake.tar.gz
+        test -f cmake.tar.gz
+        tar -xvf cmake.tar.gz
+        mv cmake-3.25.3-linux-x86_64/bin/* ./tools/
+        curl -L https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip --output ninja.zip
+        test -f ninja.zip
+        unzip -o ninja.zip
+        mv ninja ./tools/ninja
+
   check-format:
     runs-on: ubuntu-latest
     steps:
@@ -14,11 +45,23 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
-    - name: Install clang-tools
-      run: |
-        sudo apt install clang-format --no-install-recommends -y
+    - name: Restore cached dependencies
+      id: cache-build-tools
+      uses: actions/cache@v3
+      with:
+        path: tools
+        key: build-tools
+
+#     - name: Install clang-tools
+#       if: steps.cache-build-tools.outputs.cache-hit != 'true'
+#       run: |
+#         curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz --output clang.tar.gz
+#         test -f clang.tar.gz
+#         tar -xvf clang.tar.gz
+#         mv "clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/*clang-*" ./tools/
 
     - name: Check formatting
+      if: steps.cache-build-tools.outputs.cache-hit == 'true'
       env:
         SHA_BASE: ${{ github.event.pull_request.base.sha }}
       run: |
@@ -49,18 +92,48 @@ jobs:
           $GET_KEY && cp privatekeypairs/*.h utilities/script/
         fi
 
+    - name: Restore cached dependencies
+      id: cache-build-tools
+      uses: actions/cache@v3
+      with:
+        path: tools
+        key: build-tools
+
+#     - name: Install common dependencies
+#       if: steps.cache-build-tools.outputs.cache-hit != 'true'
+#       run: |
+#         mkdir tools
+#         curl -L https://github.com/Kitware/CMake/releases/download/v3.25.3/cmake-3.25.3-linux-x86_64.tar.gz --output cmake.tar.gz
+#         test -f cmake.tar.gz
+#         tar -xvf cmake.tar.gz
+#         mv cmake-3.25.3-linux-x86_64/bin/* ./tools/
+#         curl -L https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip --output ninja.zip
+#         test -f ninja.zip
+#         unzip -o ninja.zip
+#         mv ninja ./tools/ninja
+
+#     - name: Create cache
+#       if: steps.cache-build-tools.outputs.cache-hit != 'true'
+#       uses: actions/cache/save@v3
+#       with:
+#         path: tools
+#         key: build-tools
+
     - name: Install dependencies
+      if: steps.cache-build-tools.outputs.cache-hit == 'true'
       env:
         PLATFORM: ${{ matrix.platform }}
       run: |
         if [[ "${PLATFORM}" == "simulator" ]]; then
-          sudo apt install ninja-build cmake libsdl2-dev --no-install-recommends -y
+          sudo apt install libsdl2-dev --no-install-recommends -y
         else
-          sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build cmake python3 pip --no-install-recommends -y
+          sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi --no-install-recommends -y
           pip install -r utilities/script/requirements.txt
         fi
 
     # Todo: run clang-tidy
 
     - name: Build binaries
-      run: ./utilities/build.sh ${{ matrix.firmware }} ${{ matrix.target }} ${{ matrix.platform }}
+      run: |
+        PATH="$PATH:$(pwd)/bin"
+        ./utilities/build.sh ${{ matrix.firmware }} ${{ matrix.target }} ${{ matrix.platform }}
