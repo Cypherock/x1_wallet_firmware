@@ -2,10 +2,12 @@
  * @file    tasks_level_four.h
  * @author  Cypherock X1 Team
  * @brief   Header for level four tasks.
- *          This file contains all the functions prototypes for level four tasks.
+ *          This file contains all the functions prototypes for level four
+ * tasks.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef TASKS_LEVEL_FOUR_H
 #define TASKS_LEVEL_FOUR_H
@@ -53,7 +55,7 @@ void send_transaction_tasks();
 void send_transaction_tasks_near();
 
 /**
- * @brief This task is executed for processing and signing unsigned transaction 
+ * @brief This task is executed for processing and signing unsigned transaction
  *  of Ethereum.
  * @details
  *
@@ -63,7 +65,8 @@ void send_transaction_tasks_near();
 void send_transaction_tasks_eth();
 
 /**
- * @brief This task is executed for processing and signing unsigned transaction  of Ethereum.
+ * @brief This task is executed for processing and signing unsigned transaction
+ * of Ethereum.
  *
  */
 void sign_message_tasks_eth();
@@ -92,7 +95,8 @@ void receive_transaction_tasks();
 void receive_transaction_tasks_eth();
 
 /**
- * @brief This task is executed for handling near registered accounts and generating near implicit account.
+ * @brief This task is executed for handling near registered accounts and
+ * generating near implicit account.
  * @details
  *
  * @see
@@ -101,7 +105,8 @@ void receive_transaction_tasks_eth();
 void receive_transaction_tasks_near();
 
 /**
- * @brief This task is executed for generating solana address using the public key
+ * @brief This task is executed for generating solana address using the public
+ * key
  * @details
  *
  * @see

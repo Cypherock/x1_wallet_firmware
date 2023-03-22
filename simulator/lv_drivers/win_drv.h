@@ -51,7 +51,7 @@ HWND windrv_init(void);
  *      MACROS
  **********************/
 
-#endif  /*USE_WINDOWS*/
+#endif /*USE_WINDOWS*/
 
 #ifdef __cplusplus
 } /* extern "C" */

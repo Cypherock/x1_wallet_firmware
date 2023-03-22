@@ -2,9 +2,11 @@
  * @file    send_transaction_controller_b.c
  * @author  Cypherock X1 Team
  * @brief   Send transaction back controller for NEAR.
- *          Handles post event (only back/cancel events) operations for send transaction flow initiated by desktop app.
+ *          Handles post event (only back/cancel events) operations for send
+ *transaction flow initiated by desktop app.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
@@ -55,60 +57,62 @@
  *
  ******************************************************************************
  */
-#include "controller_level_four.h"
 #include "communication.h"
+#include "controller_level_four.h"
 
 void send_transaction_controller_near_b() {
-    switch (flow_level.level_three) {
-
+  switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN_NEAR: {
-        comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN,0);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_NEAR: {
-        reset_flow_level();
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,0);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,0);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_NEAR: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,2);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 2);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
-        comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS,3);
-        reset_flow_level();
+      comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 3);
+      reset_flow_level();
     } break;
 
     case SEND_TXN_ENTER_PIN_NEAR: {
-        comm_reject_request(USER_REJECT_PIN_INPUT,0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      comm_reject_request(USER_REJECT_PIN_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_NEAR: {
-        comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT,0);
-        reset_flow_level();
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      comm_reject_request(USER_REJECTED_PASSPHRASE_INPUT, 0);
+      reset_flow_level();
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
     } break;
 
     case SEND_TXN_CONFIRM_PASSPHRASE_NEAR: {
-        memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
-        flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
+      flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
     } break;
 
     default:
-        reset_flow_level();
-        break;
-    }
+      reset_flow_level();
+      break;
+  }
 }
