@@ -1,4 +1,4 @@
-name: Build Test CI
+name: CI Tests
 
 on:
   pull_request:
@@ -6,7 +6,27 @@ on:
       - '**'
 
 jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Install clang-tools
+      run: |
+        sudo apt install clang-format --no-install-recommends -y
+
+    - name: Check formatting
+      env:
+        SHA_BASE: ${{ github.event.pull_request.base.sha }}
+      run: |
+        OUTPUT=$(git diff -U0 --no-color ${SHA_BASE} | python3 ./utilities/script/clang-format-diff.py -p1 -sort-includes)
+        if [ ! "${OUTPUT}" = "" ]; then echo "${OUTPUT}"; exit 1; fi
+
   build-firmwares:
+    needs: check-format
     strategy:
       fail-fast: false
       matrix:
@@ -34,13 +54,12 @@ jobs:
         PLATFORM: ${{ matrix.platform }}
       run: |
         if [[ "${PLATFORM}" == "simulator" ]]; then
-          sudo apt install ninja-build cmake bash git libsdl2-dev -y
+          sudo apt install ninja-build cmake libsdl2-dev --no-install-recommends -y
         else
-          sudo apt install gcc-arm-none-eabi ninja-build cmake bash git python3 pip -y
+          sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build cmake python3 pip --no-install-recommends -y
           pip install -r utilities/script/requirements.txt
         fi
 
-    # Todo: run clang-checks
     # Todo: run clang-tidy
 
     - name: Build binaries
