@@ -21,6 +21,10 @@
 #define SOLANA_COIN_INDEX    0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
 
+
+/// Ref: https://docs.solana.com/terminology#lamport
+#define SOLANA_DECIMAL (9U)
+
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH       32
 
@@ -192,5 +196,13 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array, const uint8_t *bl
  * @since v1.0.0
  */
 bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels);
+
+
+/**
+ * @brief Returns the decimal value of solana asset
+ * 
+ * @return uint8_t decimal value
+ */
+uint8_t solana_get_decimal();
 
 #endif  // SOLANA_HEADER

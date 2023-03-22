@@ -47,6 +47,8 @@
 #define ETH_VALUE_SIZE_BYTES (32U)
 #define ETH_NONCE_SIZE_BYTES (32U)
 #define ETH_GWEI_INDEX       (9U)
+/// Ref: https://ethereum.org/en/developers/docs/intro-to-ether/#denominations
+#define ETH_DECIMAL          (18U)
 
 #define ETH_COIN_VERSION     0x00000000
 
@@ -65,7 +67,7 @@ typedef enum { NONE, STRING, LIST } seq_type;
 typedef enum {
   PAYLOAD_ABSENT = 0x0,               // No payload present in the transaction
   PAYLOAD_SIGNATURE_NOT_WHITELISTED,  // Payload function signature is not recognized [Blind Signing]
-  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract]
+  PAYLOAD_CONTRACT_NOT_WHITELISTED,   // [OBSOLETE] Payload function signature is whitelisted but contract is not (for Transfer function) [Unverified Contract] [OBSOLETE]
   PAYLOAD_CONTRACT_INVALID,           // Payload function signature and contract both are whitelisted but doesn't match [Invalid Transaction]
   PAYLOAD_WHITELISTED,                // Payload is completely recognized [Clear Signing]
 } PAYLOAD_STATUS;
@@ -158,9 +160,7 @@ uint64_t hex2dec(const char *source);
  *
  * @note
  */
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        uint8_t *address,
-                        const txn_metadata *metadata_ptr);
+void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr, uint8_t *address);
 
 /**
  * @brief Get amount to be sent set in the eth_unsigned_txn instance
@@ -178,7 +178,7 @@ void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
  *
  * @note
  */
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value, const txn_metadata *metadata_ptr);
+uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr, char *value);
 
 /**
  * @brief Verifies the unsigned transaction.
@@ -217,7 +217,7 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr, txn_metadat
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
                                    size_t byte_array_len,
                                    eth_unsigned_txn *unsigned_txn_ptr,
-                                   const txn_metadata *metadata_ptr);
+                                   txn_metadata *metadata_ptr);
 
 /**
  * @brief Convert byte array representation of message to an object using protobuf.
@@ -312,4 +312,27 @@ void eth_sign_msg_data(const MessageData *msg_data,
  */
 void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr, char *output, const size_t out_len);
 
+/**
+ * @brief Returns the decimal value of ethereum asset from metadata
+ * 
+ * @param txn_metadata_ptr Pointer to transaction metadata
+ * @return uint8_t Decimal value of current asset
+ */
+uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr);
+
+/**
+ * @brief Returns the asset symbol which is currently being used in the flow
+ * 
+ * @param metadata_ptr Pointer to transaction metadata
+ * @return const char* 
+ */
+const char* eth_get_asset_symbol(const txn_metadata *metadata_ptr);
+
+/**
+ * @brief Returns the title for address verification in ethereum send flow
+ *        Contract address is verified when sending data with payload except for whitelisted tokens
+ * @param eth_unsigned_txn_ptr Pointer to the unsigned transaction for ethereum
+ * @return const char* 
+ */
+const char *eth_get_address_title(const eth_unsigned_txn *eth_unsigned_txn_ptr);
 #endif
