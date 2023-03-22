@@ -135,5 +135,5 @@ jobs:
 
     - name: Build binaries
       run: |
-        PATH="$PATH:$(pwd)/bin"
+        PATH="$PATH:$(pwd)/tools"
         ./utilities/build.sh ${{ matrix.firmware }} ${{ matrix.target }} ${{ matrix.platform }}
