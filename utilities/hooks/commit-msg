@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Git COMMIT-MSG hook for validating commit message
+# See https://docs.google.com/document/d/1rk04jEuGfk9kYzfqCuOlPTSJw3hEDZJTBN5E5f1SALo/edit
+
+MESSAGE=`head -n 1 "$1"`
+LINE_COUNT=$(cat "$1" | wc -l)
+LINE2=`head -n 2 "$1" | tail -1`
+
+# An ideal commit message should follow a set of guidelines
+# See https://cbea.ms/git-commit/
+#
+# Limit the subject line to 50 characters (hard-limit of 72)
+# A non-empty and sentence-cased subject
+# Specify the change TYPE in the subject
+# Optionally, specify the MODULE/SCOPE of change in the subject
+# Separate subject from body with a blank line
+# Do not end the subject line with a period
+
+MAX_LENGTH=72
+IDEAL_LENGTH=50
+TYPES="chore demo docs feat fix refactor revert style test"
+SCOPES="git hook ci build ui usb nfc flow app core"
+PATTERN="^([a-z]+) ?(\([a-z_\-]+\))?\: (.*)$"
+
+# Check if subject length is in allowed range
+# Limit subject length to 50 (hard limit of 72)
+if [[ ${#MESSAGE} > $MAX_LENGTH ]]; then
+    echo -e "\033[31mError:\033[0m Commit subject was ${#MESSAGE} characters long, but should be at most $MAX_LENGTH characters"
+    exit 1
+elif [[ ${#MESSAGE} > $IDEAL_LENGTH ]]; then
+    echo -e "\033[33mWARNING:\033[0m Commit subject was ${#MESSAGE} characters long. Ideal length is <=$IDEAL_LENGTH"
+fi
+
+# By default ignore commit formats during 'Work In Progress' stage
+if [[ "$MESSAGE" =~ ^WIP ]]; then
+    exit 0
+fi
+
+if ! [[ "$MESSAGE" =~ $PATTERN ]]; then
+    echo -e "\033[31mError:\033[0m Commit message did not match 'type[ (scope)]: subject'"
+    exit 1
+fi
+
+TYPE=${BASH_REMATCH[1]}
+SCOPE=${BASH_REMATCH[2]}
+SUBJECT=${BASH_REMATCH[3]}
+
+# Check if commit type is valid
+if ! [[ $TYPES =~ (^| )$TYPE($| ) ]]; then
+    echo -e "\033[31mError:\033[0m Commit message's type '$TYPE' must be one of '$TYPES'"
+    exit 1
+fi
+
+# Check if subject is sentence-case and non-empty
+# Anything inside quotation (', ", or `) in subject is excluded from the check.
+#
+# The check operates by first ommiting all quotations from the original subject;
+# call this 'filtered'. Then formats the 'filtered' into sentence-case; call this
+# 'formatted'. If the 'filtered' subject matches the 'formatted' subject, then
+# the checks is pass otherwise failed
+input=$(echo $SUBJECT | perl -pe "s/\".*?\"//g; s/\`.*?\`//g; s/'.*?'//g;")
+formatted=$(lc=${input,,}; echo ${lc^})
+
+# Check if the subject is non-empty and correctly formatted
+if ! [[ ! -z "$SUBJECT" && "$input" == "$formatted" ]]; then
+    echo -e "\033[31mError:\033[0m Commit message's subject '$SUBJECT' must be sentence-case and non-empty"
+    exit 1
+fi
+
+# Check if scope is valid; If not. only display a warning
+if ! [[ $SCOPES =~ (^| )$SCOPE($| ) ]]; then
+    echo -e "\033[33mWARNING:\033[0m Commit message's type '$SCOPE' must be one of '$SCOPES'"
+fi
+
+# Check if Subject line and description are separated by an empty line
+if [[ "$LINE_COUNT" -gt 1 && ! -z "$LINE2" ]]; then
+    echo -e "\033[31mError:\033[0m Missing blank line between subject and body"
+    exit 1
+fi
+
+# Suject ending with period not allowed
+if [[ "${MESSAGE: -1}" == "." ]]; then
+    echo -e "\033[31mError:\033[0m Subject line ends with a period"
+    exit 1
+fi
