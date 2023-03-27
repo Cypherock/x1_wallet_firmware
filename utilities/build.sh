@@ -10,6 +10,7 @@ ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
 BUILD_PLATFORM=Device
+UNIT_TESTS=False
 
 if [ $# -gt 0 ]; then
     case $1 in
@@ -69,6 +70,19 @@ if [ $# -gt 2 ]; then
     esac
 fi
 
+if [ $# -gt 3 ]; then
+    case $4 in
+        unit_tests)
+        UNIT_TESTS=True
+        echo "Building unit tests"
+        ;;
+
+        *)
+        UNIT_TESTS=False
+        ;;
+    esac
+fi
+
 cd "${ACTIVE_ROOT_DIR}" || exit
 mkdir -p "build/${ACTIVE_TYPE}"
 cd "build/${ACTIVE_TYPE}" || exit
@@ -110,7 +124,14 @@ if [ "${BUILD_TOOL}" = "" ]; then
     exit 1;
 fi
 
-"${CMAKE}" -DDEV_SWITCH=${DEV} -DDEBUG_SWITCH=${DEV} -DSIGN_BINARY=ON -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" -DFIRMWARE_TYPE="${ACTIVE_TYPE}" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_BUILD_PLATFORM:STRING="${BUILD_PLATFORM}" -G "${GEN}" ../../
+"${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
+            -DDEBUG_SWITCH=${DEV}                               \
+            -DSIGN_BINARY=ON                                    \
+            -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"           \
+            -DFIRMWARE_TYPE="${ACTIVE_TYPE}"                    \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON             \
+            -DCMAKE_BUILD_PLATFORM:STRING="${BUILD_PLATFORM}"   \
+            -G "${GEN}" ../../
 
 # exit if configuration failed with errors
 if [ ! $? -eq 0 ]; then exit 1; fi
