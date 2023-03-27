@@ -113,7 +113,7 @@ const Abi_Type_e EVM_transferDataType[EVM_transfer_NUM_ARGS] = {Abi_address_e, A
 const char *EVM_transfer_Title     = "Function: transfer";
 const char *EVM_transfer_Signature = "transfer(address,uint256)";
 
-static bool eth_is_token_whitelisted = false;
+bool eth_is_token_whitelisted = false;
 
 /**
  * @brief
