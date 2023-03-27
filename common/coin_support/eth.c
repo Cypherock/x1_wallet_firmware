@@ -432,7 +432,7 @@ static PAYLOAD_STATUS eth_decode_txn_payload(const eth_unsigned_txn *eth_utxn_pt
     eth_is_token_whitelisted = false;
     if (eth_utxn_ptr->payload_size > 0) {
     if ((eth_utxn_ptr->payload_size >= 4) && (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
-        (metadata_ptr->is_token_transfer)) {
+        (metadata_ptr->is_token_transfer) && (metadata_ptr->network_chain_id == ETHEREUM_MAINNET_CHAIN)){
             for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
         if (strncmp(metadata_ptr->token_name, whitelisted_contracts[i].symbol, ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
           metadata_ptr->eth_val_decimal[0] = whitelisted_contracts[i].decimal;
