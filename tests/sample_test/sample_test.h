@@ -16,21 +16,4 @@
 #include "unity_fixture.h"
 #include <stdbool.h>
 
-#if USE_SIMULATOR == 1
-/**
- * @brief Sample testcase 1 provides an example of using the testing framework
- * This test case runs on the simulator 
- */
-bool sample_simulator(void);
-#endif /* USE_SIMULATOR == 1 */
-
-#if USE_SIMULATOR == 0
-/**
- * @brief Sample testcase 2 provides an example of using the testing framework,
- * this test case runs on the target
- * 
- */
-bool sample_target(void);
-#endif /* USE_SIMULATOR == 1 */
-
 #endif /* SAMPLE_TEST_H */

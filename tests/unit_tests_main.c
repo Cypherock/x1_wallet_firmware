@@ -93,7 +93,7 @@ void RunAllTests(void) {
   * This entry point is a parallel entry point to the int main(void) of the actual 
   * firmware.
   */
-void main(void)
+int main(void)
 {
   application_init();
 

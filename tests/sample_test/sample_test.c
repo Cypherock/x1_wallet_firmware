@@ -79,10 +79,6 @@ extern lv_indev_t *indev_keypad;
 
 
 #if USE_SIMULATOR == 1
-bool sample_simulator(void) {
-    return true;
-}
-
 TEST_GROUP(sample_test_simulator);
 
 TEST_SETUP(sample_test_simulator) {
@@ -94,16 +90,12 @@ TEST_TEAR_DOWN(sample_test_simulator) {
 }
 
 TEST(sample_test_simulator, sample_simulator_test_case) {
-    TEST_ASSERT(sample_simulator());
+    TEST_ASSERT(false);
 }
 #endif /* USE_SIMULATOR == 1 */
 
 
 #if USE_SIMULATOR == 0
-bool sample_target(void) {
-    TEST_ASSERT(true);
-}
-
 TEST_GROUP(sample_test_target);
 
 TEST_SETUP(sample_test_target) {
@@ -115,7 +107,7 @@ TEST_TEAR_DOWN(sample_test_target) {
 }
 
 TEST(sample_test_target, sample_target_test_case) {
-    TEST_ASSERT(sample_target());
+    TEST_ASSERT(false);
 }
 #endif /* USE_SIMULATOR == 0 */
 
