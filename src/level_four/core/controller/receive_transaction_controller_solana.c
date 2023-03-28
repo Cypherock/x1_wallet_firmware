@@ -74,7 +74,8 @@ extern Wallet_credential_data wallet_credential_data;
 void receive_transaction_controller_solana() {
   switch (flow_level.level_three) {
     case RECV_TXN_FIND_XPUB_SOLANA: {
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
       if (WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
         flow_level.level_three = RECV_TXN_ENTER_PASSPHRASE_SOLANA;
       } else {
@@ -87,9 +88,12 @@ void receive_transaction_controller_solana() {
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_SOLANA: {
-      snprintf(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase), "%s",
+      snprintf(wallet_credential_data.passphrase,
+               sizeof(wallet_credential_data.passphrase),
+               "%s",
                flow_level.screen_input.input_text);
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
       flow_level.level_three = RECV_TXN_CHECK_PIN_SOLANA;
     } break;
 
@@ -102,10 +106,15 @@ void receive_transaction_controller_solana() {
     } break;
 
     case RECV_TXN_ENTER_PIN_SOLANA: {
-      sha256_Raw((uint8_t *)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)),
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
                  wallet_credential_data.password_single_hash);
-      sha256_Raw(wallet_credential_data.password_single_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-      memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      sha256_Raw(wallet_credential_data.password_single_hash,
+                 SHA256_DIGEST_LENGTH,
+                 wallet.password_double_hash);
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
       flow_level.level_three = RECV_TXN_TAP_CARD_SOLANA;
     } break;
 
@@ -120,8 +129,10 @@ void receive_transaction_controller_solana() {
 
     case RECV_TXN_READ_DEVICE_SHARE_SOLANA:
       wallet_shamir_data.share_x_coords[1] = 5;
-      get_flash_wallet_share_by_name((const char *)wallet.wallet_name, wallet_shamir_data.mnemonic_shares[1]);
-      memcpy(wallet_shamir_data.share_encryption_data[1], wallet_shamir_data.share_encryption_data[0],
+      get_flash_wallet_share_by_name((const char *)wallet.wallet_name,
+                                     wallet_shamir_data.mnemonic_shares[1]);
+      memcpy(wallet_shamir_data.share_encryption_data[1],
+             wallet_shamir_data.share_encryption_data[0],
              NONCE_SIZE + WALLET_MAC_SIZE);
       flow_level.level_three = RECV_TXN_DERIVE_ADD_SCREEN_SOLANA;
       break;
@@ -134,11 +145,16 @@ void receive_transaction_controller_solana() {
       uint8_t secret[BLOCK_SIZE];
       if (WALLET_IS_PIN_SET(wallet.wallet_info))
         decrypt_shares();
-      recover_secret_from_shares(BLOCK_SIZE, MINIMUM_NO_OF_SHARES, wallet_shamir_data.mnemonic_shares,
-                                 wallet_shamir_data.share_x_coords, secret);
-      memzero(wallet_shamir_data.mnemonic_shares, sizeof(wallet_shamir_data.mnemonic_shares));
+      recover_secret_from_shares(BLOCK_SIZE,
+                                 MINIMUM_NO_OF_SHARES,
+                                 wallet_shamir_data.mnemonic_shares,
+                                 wallet_shamir_data.share_x_coords,
+                                 secret);
+      memzero(wallet_shamir_data.mnemonic_shares,
+              sizeof(wallet_shamir_data.mnemonic_shares));
       mnemonic_clear();
-      const char *mnemo = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+      const char *mnemo =
+          mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
       HDNode node;
       uint8_t seed[64] = {0};
 
@@ -146,7 +162,8 @@ void receive_transaction_controller_solana() {
 
       mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
       mnemonic_clear();
-      memzero(wallet_credential_data.passphrase, sizeof(wallet_credential_data.passphrase));
+      memzero(wallet_credential_data.passphrase,
+              sizeof(wallet_credential_data.passphrase));
 
       uint32_t path[] = {
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
@@ -155,11 +172,16 @@ void receive_transaction_controller_solana() {
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.change_index),
           BYTE_ARRAY_TO_UINT32(receive_transaction_data.address_index),
       };
-      size_t depth = sol_get_derivation_depth(receive_transaction_data.address_tag);
+      size_t depth =
+          sol_get_derivation_depth(receive_transaction_data.address_tag);
       derive_hdnode_from_path(path, depth, ED25519_NAME, seed, &node);
       size_t public_key_size = sizeof(receive_transaction_data.solana_address);
-      memzero(receive_transaction_data.solana_address, sizeof(receive_transaction_data.solana_address));
-      b58enc(receive_transaction_data.solana_address, &public_key_size, (char *)(node.public_key + 1), 32);
+      memzero(receive_transaction_data.solana_address,
+              sizeof(receive_transaction_data.solana_address));
+      b58enc(receive_transaction_data.solana_address,
+             &public_key_size,
+             (char *)(node.public_key + 1),
+             32);
       memzero(path, sizeof(path));
 
       flow_level.level_three = RECV_TXN_DISPLAY_ADDR_SOLANA;
@@ -167,8 +189,10 @@ void receive_transaction_controller_solana() {
 
     case RECV_TXN_DISPLAY_ADDR_SOLANA: {
       uint8_t data[1 + sizeof(receive_transaction_data.solana_address)];
-      data[0] = 1;  // confirmation byte
-      memcpy(data + 1, receive_transaction_data.solana_address, sizeof(receive_transaction_data.solana_address));
+      data[0] = 1;    // confirmation byte
+      memcpy(data + 1,
+             receive_transaction_data.solana_address,
+             sizeof(receive_transaction_data.solana_address));
       transmit_data_to_app(RECV_TXN_USER_VERIFIED_ADDRESS, data, sizeof(data));
       reset_flow_level();
     } break;

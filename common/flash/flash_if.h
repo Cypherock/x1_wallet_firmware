@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef __FLASH_IF_H
 #define __FLASH_IF_H
@@ -13,6 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+
 #include "assert_conf.h"
 #include "board.h"
 

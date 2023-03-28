@@ -1,4 +1,4 @@
-name: Build Test CI
+name: CI Tests
 
 on:
   pull_request:
@@ -6,7 +6,33 @@ on:
       - '**'
 
 jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Restore clang-tools
+      id: cache-clang-tools
+      uses: actions/cache@v3
+      with:
+        path: clang-tools
+        key: clang-tools
+
+    - name: Check formatting
+      env:
+        CACHED: ${{ steps.cache-clang-tools.outputs.cache-hit }}
+        SHA_BASE: ${{ github.event.pull_request.base.sha }}
+      run: |
+        if [ ! "${CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-clang-tools.sh;
+        fi
+        PATH="$PATH:$(pwd)/clang-tools"
+        bash ./utilities/ci/format-checker.sh ${SHA_BASE}
+
   build-firmwares:
+    needs: check-format
     strategy:
       fail-fast: false
       matrix:
@@ -21,27 +47,48 @@ jobs:
         submodules: recursive
 
     - shell: bash
+      if: matrix.platform == 'device'
       env:
         GET_KEY: ${{ secrets.GET_KEY }}
-        PLATFORM: ${{ matrix.platform }}
-      run: |
-        if [[ "${PLATFORM}" == "device" ]]; then
-          $GET_KEY && cp privatekeypairs/*.h utilities/script/
-        fi
+      run: $GET_KEY && cp privatekeypairs/*.h utilities/script/
 
-    - name: Install dependencies
+    - name: Restore build-tools
+      id: cache-build-tools
+      uses: actions/cache@v3
+      with:
+        path: build-tools
+        key: build-tools
+
+    - name: Restore arm-gcc
+      if: matrix.platform == 'device'
+      id: cache-arm-gcc
+      uses: actions/cache@v3
+      with:
+        path: arm-gcc
+        key: arm-gcc
+
+    - name: Install target dependencies
+      if: matrix.platform == 'device'
       env:
-        PLATFORM: ${{ matrix.platform }}
+        CACHED: ${{ steps.cache-arm-gcc.outputs.cache-hit }}
       run: |
-        if [[ "${PLATFORM}" == "simulator" ]]; then
-          sudo apt install ninja-build cmake bash git libsdl2-dev -y
-        else
-          sudo apt install gcc-arm-none-eabi ninja-build cmake bash git python3 pip -y
-          pip install -r utilities/script/requirements.txt
+        if [ ! "${CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-arm-gcc.sh;
         fi
+        pip install -r utilities/script/requirements.txt
 
-    # Todo: run clang-checks
+    - name: Install simulator dependencies
+      if: matrix.platform == 'simulator'
+      run: sudo apt install libsdl2-dev --no-install-recommends -y
+
     # Todo: run clang-tidy
 
     - name: Build binaries
-      run: ./utilities/build.sh ${{ matrix.firmware }} ${{ matrix.target }} ${{ matrix.platform }}
+      env:
+        CACHED: ${{ steps.cache-build-tools.outputs.cache-hit }}
+      run: |
+        if [ ! "${CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-build-tools.sh;
+        fi
+        PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin"
+        ./utilities/build.sh ${{ matrix.firmware }} ${{ matrix.target }} ${{ matrix.platform }}
