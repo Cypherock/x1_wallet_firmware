@@ -23,6 +23,12 @@ TYPES="chore demo docs feat fix refactor revert style test"
 SCOPES="git hook ci build ui usb nfc flow app core"
 PATTERN="^([a-z]+) ?(\([a-z_\-]+\))?\: (.*)$"
 
+# By default ignore commit formats during 'Work In Progress' stage
+# Merge commits can have longer subject line and differ in format
+if [[ "$MESSAGE" =~ ^(WIP|wip|Merge) ]]; then
+    exit 0
+fi
+
 # Check if subject length is in allowed range
 # Limit subject length to 50 (hard limit of 72)
 if [[ ${#MESSAGE} > $MAX_LENGTH ]]; then
@@ -30,11 +36,6 @@ if [[ ${#MESSAGE} > $MAX_LENGTH ]]; then
     exit 1
 elif [[ ${#MESSAGE} > $IDEAL_LENGTH ]]; then
     echo -e "\033[33mWARNING:\033[0m Commit subject was ${#MESSAGE} characters long. Ideal length is <=$IDEAL_LENGTH"
-fi
-
-# By default ignore commit formats during 'Work In Progress' stage
-if [[ "$MESSAGE" =~ ^WIP ]]; then
-    exit 0
 fi
 
 if ! [[ "$MESSAGE" =~ $PATTERN ]]; then
@@ -60,7 +61,7 @@ fi
 # 'formatted'. If the 'filtered' subject matches the 'formatted' subject, then
 # the checks is pass otherwise failed
 input=$(echo $SUBJECT | perl -pe "s/\".*?\"//g; s/\`.*?\`//g; s/'.*?'//g;")
-formatted=$(lc=${input,,}; echo ${lc^})
+formatted=$(lc=${input,,}; echo "${lc^}")
 
 # Check if the subject is non-empty and correctly formatted
 if ! [[ ! -z "$SUBJECT" && "$input" == "$formatted" ]]; then
