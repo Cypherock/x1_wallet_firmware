@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef UI_ADDRESS_H
 #define UI_ADDRESS_H
@@ -22,8 +23,8 @@
  * @note
  */
 struct Address_Data {
-	char text[512];
-	char address[512];
+  char text[512];
+  char address[512];
 };
 
 /**
@@ -36,16 +37,16 @@ struct Address_Data {
  * @note
  */
 struct Address_Object {
-	lv_obj_t *heading;
-	lv_obj_t *address;
-	lv_obj_t *cancel_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *heading;
+  lv_obj_t *address;
+  lv_obj_t *cancel_btn;
+  lv_obj_t *next_btn;
 };
 
 /**
  * @brief Initialize and create an address screen
  * @details
- * 
+ *
  * @param text Heading
  * @param address Address
  * @param hide_buttons hide the next and cancel buttons
@@ -58,12 +59,14 @@ struct Address_Object {
  *
  * @note
  */
-void address_scr_init(const char text[], const char address[], bool hide_buttons);
+void address_scr_init(const char text[],
+                      const char address[],
+                      bool hide_buttons);
 
 /**
  * @brief Create address screen
  * @details
- * 
+ *
  * @param hide_buttons hide the next and cancel buttons
  *
  * @return
@@ -108,4 +111,4 @@ void address_scr_focus_cancel();
  */
 void address_scr_focus_next();
 
-#endif // !UI_ADDRESS_H
+#endif    // !UI_ADDRESS_H

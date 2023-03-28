@@ -4,21 +4,21 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef UI_COMMON_H
 #define UI_COMMON_H
 
-#include "lvgl/lvgl.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "controller_main.h"
 #include "assert_conf.h"
-
 #include "board.h"
+#include "controller_main.h"
+#include "lvgl/lvgl.h"
 #define OPTIONS_BTN_SIZE 100
 #define SCROLLING_THRESHOLD 28
 #define SCROLLING_LEN_THRESHOLD 70
@@ -29,10 +29,7 @@ extern void (*ui_mark_event_cancel)();
 extern void (*ui_mark_list_choice)(uint16_t);
 
 /// enum for device theme
-typedef enum THEME {
-    LIGHT,
-    DARK
-} THEME;
+typedef enum THEME { LIGHT, DARK } THEME;
 
 /**
  * @brief struct to store device ui objects and properties
@@ -43,23 +40,23 @@ typedef enum THEME {
  *
  * @note
  */
-struct UI{
-    lv_style_t btn_rel;
-    lv_group_t *g;
-    lv_indev_t *keyboard;
-    enum THEME theme;
+struct UI {
+  lv_style_t btn_rel;
+  lv_group_t *g;
+  lv_indev_t *keyboard;
+  enum THEME theme;
 };
 
 /**
  * @brief Rotate the device UI
- * 
+ *
  */
 void ui_rotate();
 
 /**
  * @brief Create a heading
  * @details
- * 
+ *
  * @param heading Lvgl object for heading
  * @param text heading text
  * @param width heading width
@@ -73,12 +70,15 @@ void ui_rotate();
  *
  * @note
  */
-void ui_heading(lv_obj_t *heading, const char text[], uint8_t width, lv_label_align_t align);
+void ui_heading(lv_obj_t *heading,
+                const char text[],
+                uint8_t width,
+                lv_label_align_t align);
 
 /**
  * @brief Create heading for inout text
  * @details
- * 
+ *
  * @param heading Lvgl object for heading
  * @param text heading text
  * @param right_event_cb Right arrow event handler
@@ -96,12 +96,16 @@ void ui_heading(lv_obj_t *heading, const char text[], uint8_t width, lv_label_al
  *
  * @note
  */
-void ui_input_heading(lv_obj_t* heading, const char text[], lv_event_cb_t heading_event_cb, uint8_t width, lv_label_align_t align);
+void ui_input_heading(lv_obj_t *heading,
+                      const char text[],
+                      lv_event_cb_t heading_event_cb,
+                      uint8_t width,
+                      lv_label_align_t align);
 
 /**
  * @brief Create a UI element for paragraph
  * @details
- * 
+ *
  * @param paragraph Lvgl object for paragraph
  * @param text Paragraph text
  * @param align Paragraph alignment
@@ -114,12 +118,14 @@ void ui_input_heading(lv_obj_t* heading, const char text[], lv_event_cb_t headin
  *
  * @note
  */
-void ui_paragraph(lv_obj_t *paragraph, const char text[], lv_label_align_t align);
+void ui_paragraph(lv_obj_t *paragraph,
+                  const char text[],
+                  lv_label_align_t align);
 
 /**
  * @brief Create UI for list of options
  * @details
- * 
+ *
  * @param options Lvgl object for options
  * @param event_cb Callback on any event
  * @param right_arrow Lvgl right arrow object
@@ -134,12 +140,16 @@ void ui_paragraph(lv_obj_t *paragraph, const char text[], lv_label_align_t align
  *
  * @note
  */
-void ui_options(lv_obj_t *options, lv_event_cb_t event_cb, lv_obj_t *right_arrow, lv_obj_t *left_arrow, const char initial_text[]);
+void ui_options(lv_obj_t *options,
+                lv_event_cb_t event_cb,
+                lv_obj_t *right_arrow,
+                lv_obj_t *left_arrow,
+                const char initial_text[]);
 
 /**
  * @brief Create UI for back button
  * @details
- * 
+ *
  * @param back_btn Lvgl object for back button
  * @param event_cb Event callack for back button
  *
@@ -156,7 +166,7 @@ void ui_back_btn(lv_obj_t *back_btn, lv_event_cb_t event_cb);
 /**
  * @brief Create UI for cancel button
  * @details
- * 
+ *
  * @param cancel_btn Lvgl object for cancel button
  * @param event_cb Event callback for cancel button
  * @param hidden Is the cancel button hidden
@@ -174,7 +184,7 @@ void ui_cancel_btn(lv_obj_t *cancel_btn, lv_event_cb_t event_cb, bool hidden);
 /**
  * @brief Create UI for next button
  * @details
- * 
+ *
  * @param next_btn Lvgl object for next button
  * @param event_cb Event callback fot next button
  * @param hidden Is the next button hidden
@@ -192,7 +202,7 @@ void ui_next_btn(lv_obj_t *next_btn, lv_event_cb_t event_cb, bool hidden);
 /**
  * @brief Create UI for skip button
  * @details
- * 
+ *
  * @param skip_btn Lvgl object for skip button
  * @param event_cb Event callback fot skip button
  * @param hidden Is the skip button hidden
@@ -210,7 +220,7 @@ void ui_skip_btn(lv_obj_t *skip_btn, lv_event_cb_t event_cb, bool hidden);
 /**
  * @brief UI for backspace button
  * @details
- * 
+ *
  * @param backspace Lvgl object for backspace button
  * @param event_cb Event callback for backspace button
  *
@@ -243,7 +253,7 @@ void ui_destructor();
 /**
  * @brief Initialize UI, set default theme, set keypad, ui group and style.
  * @details
- * 
+ *
  * @param kb_indev
  *
  * @return
@@ -259,7 +269,7 @@ void ui_init(lv_indev_t *kb_indev);
 /**
  * @brief Set event over callback
  * @details
- * 
+ *
  * @param event_over_cb event over callback function
  *
  * @return
@@ -275,7 +285,7 @@ void ui_set_event_over_cb(void (*event_over_cb)());
 /**
  * @brief Set event cancel callback
  * @details
- * 
+ *
  * @param event_cancel_cb event cancel callback function
  *
  * @return
@@ -291,8 +301,9 @@ void ui_set_event_cancel_cb(void (*event_cancel_cb)());
 /**
  * @brief Set list choice callback
  * @details
- * 
- * @param list_choice_cb List choice callback function taking uiint16_t as parameter
+ *
+ * @param list_choice_cb List choice callback function taking uiint16_t as
+ * parameter
  *
  * @return
  * @retval
@@ -307,7 +318,7 @@ void ui_set_list_choice_cb(void (*list_choice_cb)(uint16_t));
 /**
  * @brief Set the theme of the device
  * @details
- * 
+ *
  * @param theme THEME enum, LIGHT or DARK
  *
  * @return
@@ -367,7 +378,7 @@ void reset_theme();
  *
  * @note
  */
-lv_group_t* ui_get_group();
+lv_group_t *ui_get_group();
 
 /**
  * @brief get the keyboard of the device
@@ -383,6 +394,6 @@ lv_group_t* ui_get_group();
  *
  * @note
  */
-lv_indev_t* ui_get_indev();
+lv_indev_t *ui_get_indev();
 
 #endif

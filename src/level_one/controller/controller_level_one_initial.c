@@ -5,8 +5,9 @@
  *          Handles post event (only next events) operations for level one
  *          tasks of the initial application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
  ******************************************************************************
  * @attention
  *
@@ -19,10 +20,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -30,17 +31,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -49,7 +50,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -64,8 +65,8 @@
 
 #if USE_SIMULATOR == 0
 #include "controller_tap_cards.h"
-#include "ui_delay.h"
 #include "libusb/libusb.h"
+#include "ui_delay.h"
 
 #endif
 
@@ -108,7 +109,10 @@ void level_one_controller_initial() {
     case 5: {
       controller_read_card_id();
       char msg[32] = {'\0'};
-      snprintf(msg, sizeof(msg), "Card #%d Tapped", decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
+      snprintf(msg,
+               sizeof(msg),
+               "Card #%d Tapped",
+               decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
       delay_scr_init(msg, DELAY_TIME);
       reset_flow_level();
       flow_level.level_one = 6;
