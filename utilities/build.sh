@@ -1,7 +1,7 @@
 #!/bin/sh
 
 usage () {
-    echo -e "\tUSAGE: $0 [main|initial] [dev|debug|release] [device|simulator]"
+    echo -e "\tUSAGE: $0 [main|initial] [dev|debug|release|unit_tests] [device|simulator]"
     echo -e "\tParameters are optional and assumes 'main debug device' if not provided"
     exit 1
 }
@@ -10,7 +10,7 @@ ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
 BUILD_PLATFORM=Device
-UNIT_TESTS=False
+UNIT_TESTS=OFF
 
 if [ $# -gt 0 ]; then
     case $1 in
@@ -46,6 +46,12 @@ if [ $# -gt 1 ]; then
         BUILD_TYPE=Release
         ;;
 
+        unit_tests)
+        DEV=OFF
+        BUILD_TYPE=Debug
+        UNIT_TESTS=ON
+        ;;
+
         *)
         echo "Wrong mode selection"
         usage
@@ -70,18 +76,6 @@ if [ $# -gt 2 ]; then
     esac
 fi
 
-if [ $# -gt 3 ]; then
-    case $4 in
-        unit_tests)
-        UNIT_TESTS=True
-        echo "Building unit tests"
-        ;;
-
-        *)
-        UNIT_TESTS=False
-        ;;
-    esac
-fi
 
 cd "${ACTIVE_ROOT_DIR}" || exit
 mkdir -p "build/${ACTIVE_TYPE}"
@@ -125,7 +119,7 @@ if [ "${BUILD_TOOL}" = "" ]; then
 fi
 
 "${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
-            -DDEBUG_SWITCH=${DEV}                               \
+            -DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}"            \
             -DSIGN_BINARY=ON                                    \
             -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"           \
             -DFIRMWARE_TYPE="${ACTIVE_TYPE}"                    \

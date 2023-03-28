@@ -11,8 +11,6 @@
 #include "unity.h"
 #include "unity_fixture_internals.h"
 
-#define UNITY_FIXTURE_NO_EXTRAS /*fixme*/
-
 #ifndef UNITY_FIXTURE_NO_EXTRAS
 #include "unity_memory.h"
 #endif

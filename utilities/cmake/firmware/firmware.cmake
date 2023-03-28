@@ -8,6 +8,19 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
+
+IF(UNIT_TESTS_SWITCH)
+        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "tests/*.*")
+        #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
+        LIST(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.c")
+        
+        #need these macros to correctly configure unity test framework
+        add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
+        add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)
+ELSE()
+        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
+ENDIF(UNIT_TESTS_SWITCH)
+
 add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
@@ -121,6 +134,15 @@ target_include_directories(${EXECUTABLE} PRIVATE
         stm32-hal/libusb/
         stm32-hal/libusb/inc
         stm32-hal/libusb/src
+
+        #unit test framework
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity/src>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity/extras/fixture/src>
+
+        #unit test modules: this list needs to be updated whenever a test module is being added
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/sample_test>
         )
 
 target_compile_options(${EXECUTABLE} PRIVATE

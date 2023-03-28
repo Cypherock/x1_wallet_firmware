@@ -7,8 +7,6 @@
 #ifndef UNITY_INTERNALS_H
 #define UNITY_INTERNALS_H
 
-#define UNITY_INCLUDE_CONFIG_H /* fixme */
-
 #ifdef UNITY_INCLUDE_CONFIG_H
 #include "unity_config.h"
 #endif
