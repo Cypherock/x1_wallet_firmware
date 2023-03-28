@@ -66,6 +66,8 @@ TEST_GROUP_RUNNER(sample_test_simulator) {
 
 #if USE_SIMULATOR == 0
 TEST_GROUP_RUNNER(sample_test_target) {
-    RUN_TEST_CASE(sample_test_target, sample_target_test_case);
+    RUN_TEST_CASE(sample_test_target, sample_target_test_case1);
+    RUN_TEST_CASE(sample_test_target, sample_target_test_case2);
+    RUN_TEST_CASE(sample_test_target, sample_target_test_case3);
 }
 #endif /* USE_SIMULATOR == 0 */

@@ -55,28 +55,6 @@
  ******************************************************************************
  */
 #include "sample_test.h"
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain" issue*/
-#include "application_startup.h"
-#include "unity_fixture.h"
-
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
-
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
-
 
 #if USE_SIMULATOR == 1
 TEST_GROUP(sample_test_simulator);
@@ -106,8 +84,17 @@ TEST_TEAR_DOWN(sample_test_target) {
     return;
 }
 
-TEST(sample_test_target, sample_target_test_case) {
+TEST(sample_test_target, sample_target_test_case1) {
     TEST_ASSERT(false);
 }
+
+TEST(sample_test_target, sample_target_test_case2) {
+    TEST_ASSERT(true);
+}
+
+TEST(sample_test_target, sample_target_test_case3) {
+    TEST_ASSERT(false);
+}
+
 #endif /* USE_SIMULATOR == 0 */
 
