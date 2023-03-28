@@ -4,7 +4,8 @@
  * @brief   Application error class.
  *          AppError to classify different errors in the application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
  *
  */
 #ifndef APP_ERROR_H
@@ -17,6 +18,7 @@
  * @defgroup app_error Application wide error class
  * @{
  */
+// clang-format off
 #define NFC_ERROR_BASE          0x10000UL
 #define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
 #define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
@@ -100,4 +102,6 @@
  * @}
  */
 
-#endif //APP_ERROR_H
+// clang-format on
+
+#endif    // APP_ERROR_H
