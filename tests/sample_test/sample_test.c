@@ -1,11 +1,13 @@
 /**
  * @file    sample_test.c
  * @author  Cypherock X1 Team
- * @brief   This header file contains header file template for a unit test module
+ * @brief   This header file contains header file template for a unit test
+ *module
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
-  ******************************************************************************
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
+ ******************************************************************************
  * @attention
  *
  * (c) Copyright 2023 by HODL TECH PTE LTD
@@ -60,41 +62,39 @@
 TEST_GROUP(sample_test_simulator);
 
 TEST_SETUP(sample_test_simulator) {
-    return;
+  return;
 }
 
 TEST_TEAR_DOWN(sample_test_simulator) {
-    return;
+  return;
 }
 
 TEST(sample_test_simulator, sample_simulator_test_case) {
-    TEST_ASSERT(false);
+  TEST_ASSERT(false);
 }
 #endif /* USE_SIMULATOR == 1 */
-
 
 #if USE_SIMULATOR == 0
 TEST_GROUP(sample_test_target);
 
 TEST_SETUP(sample_test_target) {
-    return;
+  return;
 }
 
 TEST_TEAR_DOWN(sample_test_target) {
-    return;
+  return;
 }
 
 TEST(sample_test_target, sample_target_test_case1) {
-    TEST_ASSERT(false);
+  TEST_ASSERT(false);
 }
 
 TEST(sample_test_target, sample_target_test_case2) {
-    TEST_ASSERT(true);
+  TEST_ASSERT(true);
 }
 
 TEST(sample_test_target, sample_target_test_case3) {
-    TEST_ASSERT(false);
+  TEST_ASSERT(false);
 }
 
 #endif /* USE_SIMULATOR == 0 */
-

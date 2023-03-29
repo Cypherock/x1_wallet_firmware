@@ -1,11 +1,12 @@
 /**
  * @file    unit_tests_lists.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests 
+ * @brief   MMain file to handle execution of all unit tests
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
-  ******************************************************************************
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
+ ******************************************************************************
  * @attention
  *
  * (c) Copyright 2023 by HODL TECH PTE LTD
@@ -54,20 +55,19 @@
  *
  ******************************************************************************
  */
-#include "unity_fixture.h"
 #include "sample_test.h"
+#include "unity_fixture.h"
 
 #if USE_SIMULATOR == 1
 TEST_GROUP_RUNNER(sample_test_simulator) {
-    RUN_TEST_CASE(sample_test_simulator, sample_simulator_test_case);
+  RUN_TEST_CASE(sample_test_simulator, sample_simulator_test_case);
 }
 #endif /* USE_SIMULATOR == 1 */
 
-
 #if USE_SIMULATOR == 0
 TEST_GROUP_RUNNER(sample_test_target) {
-    RUN_TEST_CASE(sample_test_target, sample_target_test_case1);
-    RUN_TEST_CASE(sample_test_target, sample_target_test_case2);
-    RUN_TEST_CASE(sample_test_target, sample_target_test_case3);
+  RUN_TEST_CASE(sample_test_target, sample_target_test_case1);
+  RUN_TEST_CASE(sample_test_target, sample_target_test_case2);
+  RUN_TEST_CASE(sample_test_target, sample_target_test_case3);
 }
 #endif /* USE_SIMULATOR == 0 */

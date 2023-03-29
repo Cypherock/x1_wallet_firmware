@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef FLASH_STRUCT_PRIV_H
 #define FLASH_STRUCT_PRIV_H
@@ -24,7 +25,7 @@ extern bool is_flash_ram_instance_loaded;
  * functions if they need to modify values.
  *
  * @private
- * 
+ *
  * @return const Flash_Struct*
  * @retval
  *
@@ -33,7 +34,7 @@ extern bool is_flash_ram_instance_loaded;
  *
  * @note
  */
-const Flash_Struct* get_flash_ram_instance();
+const Flash_Struct *get_flash_ram_instance();
 
 /**
  * @brief Save changes made to Flash_struct instance to flash.

@@ -1,11 +1,12 @@
 /**
  * @file    unit_tests_main.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests 
+ * @brief   MMain file to handle execution of all unit tests
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
-  ******************************************************************************
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
+ ******************************************************************************
  * @attention
  *
  * (c) Copyright 2023 by HODL TECH PTE LTD
@@ -58,7 +59,8 @@
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain" issue*/
+#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
+                            issue*/
 #include "application_startup.h"
 #include "unity_fixture.h"
 
@@ -82,19 +84,17 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(sample_test_simulator);
 #endif /* USE_SIMULATOR == 1 */
 
-
 #if USE_SIMULATOR == 0
   RUN_TEST_GROUP(sample_test_target);
 #endif /* USE_SIMULATOR == 0 */
 }
 
 /**
-  * @brief  The entry point to the unit test framework
-  * This entry point is a parallel entry point to the int main(void) of the actual 
-  * firmware.
-  */
-int main(void)
-{
+ * @brief  The entry point to the unit test framework
+ * This entry point is a parallel entry point to the int main(void) of the
+ * actual firmware.
+ */
+int main(void) {
   application_init();
 
   UnityBegin("unit_tests_main.c");
@@ -104,18 +104,16 @@ int main(void)
 
 #if USE_SIMULATOR == 0
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
-    while (1)
-    {
-    }
-    /* USER CODE END Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1) {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
 
 /**
@@ -123,16 +121,16 @@ void Error_Handler(void)
  * @param file unused
  * @param *ptr string pointer for data to send
  * @param len  length of data to send
- * 
+ *
  * @ret len of data transmitted
  */
 int _write(int file, char *ptr, int len) {
 #ifndef NDEBUG    // Disable printf in release mode
-    int DataIdx;
-    for (DataIdx = 0; DataIdx < len; DataIdx++) {
-        ITM_SendChar(*ptr++);
-    }
-    return len;
+  int DataIdx;
+  for (DataIdx = 0; DataIdx < len; DataIdx++) {
+    ITM_SendChar(*ptr++);
+  }
+  return len;
 #endif
 }
 

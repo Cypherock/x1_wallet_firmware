@@ -1,7 +1,15 @@
 ---
 BasedOnStyle: Chromium
+AlignEscapedNewlines: Right
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
+BinPackArguments: false
+IncludeBlocks: Regroup
+IndentCaseLabels: true
+KeepEmptyLinesAtTheStartOfBlocks: false
 PointerAlignment: Right
-ColumnLimit: 120
-AlignConsecutiveAssignments: true
-AlignConsecutiveMacros: true
-ReflowComments: false
+ReflowComments: true
+SpacesBeforeTrailingComments: 4

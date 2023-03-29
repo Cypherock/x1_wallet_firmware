@@ -2,10 +2,12 @@
  * @file    controller_delete_wallet.c
  * @author  Cypherock X1 Team
  * @brief   Delete wallet next controller.
- *          Handles post event (only next events) operations for delete wallet flow.
+ *          Handles post event (only next events) operations for delete wallet
+ *flow.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +20,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +31,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,7 +50,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -57,46 +59,50 @@
  */
 #include "controller_main.h"
 #include "controller_old_wallet.h"
+#include "controller_tap_cards.h"
 #include "flash_api.h"
+#include "sha2.h"
 #include "shamir_wrapper.h"
 #include "tasks.h"
 #include "wallet.h"
-#include "sha2.h"
-#include "controller_tap_cards.h"
 
-void delete_wallet_controller()
-{
-
-    switch (flow_level.level_three) {
+void delete_wallet_controller() {
+  switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-        if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = DELETE_WALLET_ENTER_PIN;
-        } else {
-            flow_level.level_three = DELETE_WALLET_TAP_CARDS;
-        }
-        break;
-    case DELETE_WALLET_ENTER_PIN: {
-        sha256_Raw((uint8_t*)flow_level.screen_input.input_text, strnlen(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text)), wallet.password_double_hash);
-        sha256_Raw(wallet.password_double_hash, SHA256_DIGEST_LENGTH, wallet.password_double_hash);
-        memzero(flow_level.screen_input.input_text, sizeof(flow_level.screen_input.input_text));
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
+        flow_level.level_three = DELETE_WALLET_ENTER_PIN;
+      } else {
         flow_level.level_three = DELETE_WALLET_TAP_CARDS;
+      }
+      break;
+    case DELETE_WALLET_ENTER_PIN: {
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
+                 wallet.password_double_hash);
+      sha256_Raw(wallet.password_double_hash,
+                 SHA256_DIGEST_LENGTH,
+                 wallet.password_double_hash);
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      flow_level.level_three = DELETE_WALLET_TAP_CARDS;
     } break;
     case DELETE_WALLET_TAP_CARDS:
-        delete_from_cards_controller();
-        break;
-    case DELETE_WALLET_FROM_DEVICE:{
-        uint8_t index;
-        get_index_by_name((const char *)wallet.wallet_name, &index);
-        delete_wallet_share_from_sec_flash(index);
-        delete_wallet_from_flash(index);
-        flow_level.level_three = DELETE_WALLET_SUCCESS;
+      delete_from_cards_controller();
+      break;
+    case DELETE_WALLET_FROM_DEVICE: {
+      uint8_t index;
+      get_index_by_name((const char *)wallet.wallet_name, &index);
+      delete_wallet_share_from_sec_flash(index);
+      delete_wallet_from_flash(index);
+      flow_level.level_three = DELETE_WALLET_SUCCESS;
     } break;
 
     case DELETE_WALLET_SUCCESS:
-        reset_flow_level();
-        break;
+      reset_flow_level();
+      break;
 
     default:
-        break;
-    }
+      break;
+  }
 }
