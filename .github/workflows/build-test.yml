@@ -120,7 +120,7 @@ jobs:
 
     - name: Install simulator dependencies
       if: matrix.platform == 'simulator'
-      run: sudo apt install libsdl2-dev --no-install-recommends -y
+      run: sudo apt update && sudo apt install libsdl2-dev --no-install-recommends -y
 
     # Todo: run clang-tidy
 
