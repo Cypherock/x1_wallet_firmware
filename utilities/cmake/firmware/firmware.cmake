@@ -7,8 +7,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
-
 IF(UNIT_TESTS_SWITCH)
         file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "tests/*.*")
         #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
