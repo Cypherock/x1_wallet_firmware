@@ -42,6 +42,36 @@ jobs:
         PATH="$PATH:$(pwd)/clang-tools"
         bash ./utilities/ci/format-checker.sh ${SHA_BASE}
 
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Restore clang-tools
+      id: cache-clang-tools
+      uses: actions/cache@v3
+      with:
+        path: clang-tools
+        key: clang-tools
+
+    - name: Check formatting
+      env:
+        CACHED: ${{ steps.cache-clang-tools.outputs.cache-hit }}
+        SHA_BASE: ${{ github.event.pull_request.base.sha }}
+      run: |
+        if [ ! "${CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-clang-tools.sh;
+        fi
+        PATH="$PATH:$(pwd)/clang-tools"
+        bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
+    - name: Upload result
+      uses: actions/upload-artifact@v3
+      with:
+        name: clang-tidy-result
+        path: anaylysis.results
+
   build-firmwares:
     needs: check-format
     strategy:
@@ -90,7 +120,7 @@ jobs:
 
     - name: Install simulator dependencies
       if: matrix.platform == 'simulator'
-      run: sudo apt install libsdl2-dev --no-install-recommends -y
+      run: sudo apt update && sudo apt install libsdl2-dev --no-install-recommends -y
 
     # Todo: run clang-tidy
 
