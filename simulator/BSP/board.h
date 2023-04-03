@@ -4,7 +4,6 @@
 
 #include <stdint.h>
 
-#include "board.h"
 #include "mem_config.h"
 #include "sdk_config.h"
 #include "time.h"
