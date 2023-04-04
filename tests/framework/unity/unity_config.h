@@ -71,7 +71,7 @@
  * you are going to specify if you don't like the defaults.
  **************************************************************************** */
 
-/* Define this to be the number of bits an `int` takes up on your system. The
+ /* Define this to be the number of bits an `int` takes up on your system. The
  * default, if not auto-detected, is 32 bits.
  *
  * Example:
@@ -104,6 +104,7 @@
  */
 /* #define UNITY_INCLUDE_64 */
 
+
 /* *************************** FLOATING POINT TYPES ****************************
  * In the embedded world, it's not uncommon for targets to have no support for
  * floating point operations at all or to have support that is limited to only
@@ -114,11 +115,11 @@
  * the only option.
  **************************************************************************** */
 
-/* By default, Unity guesses that you will want single precision floating point
- * support, but not double precision. It's easy to change either of these using
- * the include and exclude options here. You may include neither, just float,
- * or both, as suits your needs.
- */
+ /* By default, Unity guesses that you will want single precision floating point
+  * support, but not double precision. It's easy to change either of these using
+  * the include and exclude options here. You may include neither, just float,
+  * or both, as suits your needs.
+  */
 /* #define UNITY_EXCLUDE_FLOAT  */
 /* #define UNITY_INCLUDE_DOUBLE */
 /* #define UNITY_EXCLUDE_DOUBLE */
@@ -174,6 +175,7 @@
 /* #define UNITY_FLOAT_PRECISION 0.001f  */
 /* #define UNITY_DOUBLE_PRECISION 0.001f */
 
+
 /* *************************** MISCELLANEOUS ***********************************
  * Miscellaneous configuration options for Unity
  **************************************************************************** */
@@ -188,6 +190,7 @@
  * "TEST_PRINTF"
  */
 /* #define UNITY_INCLUDE_PRINT_FORMATTED */
+
 
 /* *************************** TOOLSET CUSTOMIZATION ***************************
  * In addition to the options listed above, there are a number of other options
@@ -216,7 +219,7 @@
  */
 #include "logger.h"
 
-#define UNITY_OUTPUT_CHAR(a) (void)LOG_SWV("%c", a)
+#define UNITY_OUTPUT_CHAR(a)                       (void)LOG_SWV("%c", a)
 /* #define UNITY_OUTPUT_CHAR_HEADER_DECLARATION    RS232_putc(int) */
 /* #define UNITY_OUTPUT_FLUSH()                    RS232_flush() */
 /* #define UNITY_OUTPUT_FLUSH_HEADER_DECLARATION   RS232_flush(void) */
