@@ -38,7 +38,7 @@ case $2 in
 esac
 
 echo "Invoking build script"
-echo "./utilities/build.sh "$1" "unit_tests" "$2""
+echo "./utilities/build.sh -c "$1" "unit_tests" "$2""
 ./utilities/build.sh "$1" "unit_tests" "$2"
 
 if [ "$2" == "device" ]; then

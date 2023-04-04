@@ -1,8 +1,9 @@
 #!/bin/sh
 
 usage () {
-    echo -e "\tUSAGE: $0 [main|initial] [dev|debug|release|unit_tests] [device|simulator]"
+    echo -e "\tUSAGE: $0 [-c] [main|initial] [dev|debug|release|unit_tests] [device|simulator]"
     echo -e "\tParameters are optional and assumes 'main debug device' if not provided"
+    echo -e "\n\n\t -c \t Performs a forced clean before invoking build"
     exit 1
 }
 
@@ -11,6 +12,15 @@ ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
 BUILD_PLATFORM=Device
 UNIT_TESTS=OFF
+
+while getopts 'c' flag; do
+  case "${flag}" in
+    c) clean_flag="true" ;;
+    *) usage
+       exit 1 ;;
+  esac
+  shift
+done
 
 if [ $# -gt 0 ]; then
     case $1 in
@@ -129,4 +139,7 @@ fi
 
 # exit if configuration failed with errors
 if [ ! $? -eq 0 ]; then exit 1; fi
+if [[ ${clean_flag} = "true" ]]; then
+  "${BUILD_TOOL}" clean
+fi
 "${BUILD_TOOL}" -j8 all
