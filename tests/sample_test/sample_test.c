@@ -1,8 +1,8 @@
 /**
- * @file    ui_scroll_page_tests.c
+ * @file    sample_test.c
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   This header file contains header file template for a unit test
+ *module
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,25 +56,45 @@
  *
  ******************************************************************************
  */
-#include "ui_scroll_page.h"
+#include "sample_test.h"
 
-#ifdef UI_HOR_SCROLL_PAGE_UNIT_TESTS
+#if USE_SIMULATOR == 1
+TEST_GROUP(sample_test_simulator);
 
-void Ui_HorScrUnitTests(void) {
-  /* Negative checks: Should immediately return and not crash the board */
-  ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
-  ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
-
-  /* Positive check: Should see UI and buttons working properly */
-  ui_scrollable_page(
-      "ThisIsAHeading.HeadingShouldBeFloatingText!",
-      "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
-      "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||",
-      MENU_SCROLL_HORIZONTAL,
-      true);
-  while (1) {
-    lv_task_handler();
-  }
+TEST_SETUP(sample_test_simulator) {
+  return;
 }
 
-#endif /* UI_HOR_SCROLL_PAGE_UNIT_TESTS */
+TEST_TEAR_DOWN(sample_test_simulator) {
+  return;
+}
+
+TEST(sample_test_simulator, sample_simulator_test_case) {
+  TEST_ASSERT(false);
+}
+#endif /* USE_SIMULATOR == 1 */
+
+#if USE_SIMULATOR == 0
+TEST_GROUP(sample_test_target);
+
+TEST_SETUP(sample_test_target) {
+  return;
+}
+
+TEST_TEAR_DOWN(sample_test_target) {
+  return;
+}
+
+TEST(sample_test_target, sample_target_test_case1) {
+  TEST_ASSERT(false);
+}
+
+TEST(sample_test_target, sample_target_test_case2) {
+  TEST_ASSERT(true);
+}
+
+TEST(sample_test_target, sample_target_test_case3) {
+  TEST_ASSERT(false);
+}
+
+#endif /* USE_SIMULATOR == 0 */

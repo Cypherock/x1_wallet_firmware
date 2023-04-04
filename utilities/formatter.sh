@@ -11,7 +11,6 @@ FOLDERS=(common/Firewall
     common/libraries/util
     simulator
     src
-    tests
 )
 
 FILES=(
