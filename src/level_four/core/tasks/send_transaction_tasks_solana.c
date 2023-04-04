@@ -130,9 +130,7 @@ void send_transaction_tasks_solana() {
       while (i--)
         be_lamports[i] = solana_unsigned_txn_ptr.instruction.program.transfer.lamports >> 8 * (7 - i);
       byte_array_to_hex_string(be_lamports, 8, amount_string, sizeof(amount_string));
-      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.eth_val_decimal[0],
-                                                amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
-        break;
+      if (!convert_byte_array_to_decimal_string(16, solana_get_decimal(), amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
       instruction_scr_destructor();
       snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));
@@ -151,9 +149,7 @@ void send_transaction_tasks_solana() {
         break;
       }
 
-      if (!convert_byte_array_to_decimal_string(16, var_send_transaction_data.transaction_metadata.eth_val_decimal[0],
-                                                amount_string, amount_decimal_string, sizeof(amount_decimal_string)))
-        break;
+      if (!convert_byte_array_to_decimal_string(16, solana_get_decimal(), amount_string, amount_decimal_string, sizeof(amount_decimal_string))) break;
       instruction_scr_destructor();
       snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string,
                get_coin_symbol(BYTE_ARRAY_TO_UINT32(var_send_transaction_data.transaction_metadata.coin_index), 0));

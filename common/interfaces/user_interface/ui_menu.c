@@ -132,6 +132,9 @@ static void options_event_handler(lv_obj_t* options, const lv_event_t event)
 
     switch (event) {
     case LV_EVENT_KEY:
+        if (lv_btn_get_state(options) == LV_BTN_STATE_PR) {
+            lv_btn_set_state(options, LV_BTN_STATE_REL);
+        }
         switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_RIGHT:
             data->current_index++;

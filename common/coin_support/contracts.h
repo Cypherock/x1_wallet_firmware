@@ -23,9 +23,6 @@
  */
 #define ETHEREUM_TOKEN_SYMBOL_LENGTH    20
 
-/// Number of entries in whitelisted contracts list
-#define WHITELISTED_CONTRACTS_COUNT     1778
-
 /**
  * @brief Class to maintain a mapping of contract address and its token symbol
  * @details
@@ -42,7 +39,12 @@ typedef struct erc20_contracts {
     const uint8_t address[ETHEREUM_ADDRESS_LENGTH];
     /// Symbol (short alphabetical representation) of the contract token
     const char *symbol;
+    /// Decimal value used to display the amount in token transfer in token units
+    const uint8_t decimal;
 } erc20_contracts_t;
+
+/// Number of entries in whitelisted contracts list
+#define WHITELISTED_CONTRACTS_COUNT     497
 
 /**
  * @brief Whitelisted contracts with respective token symbol

@@ -1,15 +1,15 @@
 /**
- * @file    sync_cards_task.c
- * @author  Cypherock X1 Team
- * @brief   Sync witht X1Cards.
- *          This file contains the implementation of the X1Cards sync task.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @file dev_utils.c
+ * @author Cypherock X1 Team
+ * @brief Utilities for DEV build
+ * 
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
  * 
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -55,82 +55,70 @@
  *
  ******************************************************************************
  */
-/*
- * sync_cards_task.c
- *
- *  Created on: 19-Aug-2021
- *      Author: Aman Agarwal
- */
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+static ekp_queue *q = NULL;
 
-#include "bip39.h"
-#include "shamir_wrapper.h"
-#include "tasks_level_four.h"
-#include "tasks_tap_cards.h"
-#include "ui_input_text.h"
-#include "ui_list.h"
-#include "ui_message.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "controller_main.h"
-#include "flash_api.h"
-
-extern char* ALPHABET;
-extern char* ALPHA_NUMERIC;
-extern char* NUMBERS;
-
-extern uint8_t shamir_data[TOTAL_NUMBER_OF_SHARES][BLOCK_SIZE];
-extern uint8_t arbitrary_data_share[TOTAL_NUMBER_OF_SHARES][MAX_ARBITRARY_DATA_SIZE];
-extern uint8_t shamir_data_x_coords[TOTAL_NUMBER_OF_SHARES];
-extern Wallet wallet;
-extern uint32_t wallets_synced_count;
-
-void sync_cards_task(){
-#if X1WALLET_MAIN == 1
-    switch(flow_level.level_three) {
-    case SYNC_CARDS_START:{
-        mark_event_over();
-    } break;
-
-    case SYNC_CARDS_CURRENT_WALLET_CONFIRM:{
-        address_scr_init("Sync Wallet?", (char *)wallet.wallet_name, false);
-    } break;
-    case SYNC_CARDS_CHECK_WALLET_PIN:{
-        mark_event_over();
-    } break;
-    case SYNC_CARDS_ENTER_PIN_FLOW:{
-        if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-            flow_level.level_three = VIEW_SEED_DUMMY_TASK;
-            break;
-        }
-        input_text_init(
-            ALPHA_NUMERIC,
-            ui_text_enter_pin,
-            4,
-            DATA_TYPE_PIN,
-            8);
-    } break;
-    case SYNC_CARDS_TAP_TWO_CARDS_FLOW:{
-        tap_threshold_cards_for_reconstruction();
-    } break;
-    case SYNC_CARDS_GENERATE_DEVICE_SHARE:{
-        mark_event_over();
-    } break;
-    case SYNC_CARDS_CHECK_NEXT_WALLET: {
-        mark_event_over();
-    } break;
-    case SYNC_CARDS_SUCCESS:{
-        char display[35];
-        if(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS)
-            snprintf(display, sizeof(display), "%ld %s", wallets_synced_count, ui_text_syncing_complete);
-        else{
-            snprintf(display, sizeof(display), "Syncing %s complete", wallet.wallet_name);
-        }
-        delay_scr_init(display, DELAY_TIME);
-    } break;
-    default:{
-
-    } break;
-    }
-#endif
+ekp_queue_node *ekp_new_queue_node(const lv_event_t event, const uint32_t delay) {
+  ekp_queue_node *temp = (ekp_queue_node *)malloc(sizeof(ekp_queue_node));
+  temp->event          = event;
+  temp->delay          = delay;
+  temp->next           = NULL;
+  return temp;
 }
+
+ekp_queue *ekp_create_queue() {
+  ekp_queue *q = (ekp_queue *)malloc(sizeof(ekp_queue));
+  q->front = q->rear = NULL;
+  q->count           = 0;
+  return q;
+}
+
+bool ekp_is_empty() {
+  return (q->count == 0);
+}
+
+void ekp_enqueue(const lv_event_t event, const uint32_t delay) {
+  ekp_queue_node *temp = ekp_new_queue_node(event, delay);
+  q->count++;
+  if (q->rear == NULL) {
+    q->front = q->rear = temp;
+    return;
+  }
+  q->rear->next = temp;
+  q->rear       = temp;
+}
+
+ekp_queue_node *ekp_dequeue() {
+  if (ekp_is_empty(q))
+    return NULL;
+  ekp_queue_node *temp = q->front;
+  q->front             = q->front->next;
+  if (q->front == NULL)
+    q->rear = NULL;
+  q->count--;
+  return temp;
+}
+
+void ekp_queue_init() {
+  q = ekp_create_queue();
+}
+
+void ekp_process_queue(lv_indev_data_t *data) {
+  static bool alternate = false;
+  if (!alternate) {
+    if (!ekp_is_empty()) {
+      ekp_queue_node *qn = ekp_dequeue();
+      data->state        = LV_INDEV_STATE_PR;
+      data->key          = qn->event;
+      BSP_DelayMs(qn->delay);
+      free(qn);
+      alternate = !alternate;
+    }
+  } else {
+    data->state = LV_INDEV_STATE_REL;
+    BSP_DelayMs(RELEASE_DELAY);
+    alternate = !alternate;
+  }
+}
+#endif  //DEV_BUILD

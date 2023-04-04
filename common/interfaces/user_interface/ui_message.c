@@ -59,6 +59,9 @@
  */
 
 #include "ui_message.h"
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 
 static struct Message_Data* data = NULL;
 static struct Message_Object* obj = NULL;
@@ -73,6 +76,10 @@ void message_scr_init(const char* message)
     if (data != NULL) {
         data->message = (char*)message;
     }
+#ifdef DEV_BUILD
+    ekp_enqueue(LV_KEY_UP,DEFAULT_DELAY);
+    ekp_enqueue(LV_KEY_ENTER,DEFAULT_DELAY);
+#endif
     message_scr_create();
 }
 
