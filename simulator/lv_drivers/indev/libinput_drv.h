@@ -51,15 +51,15 @@ void libinput_init(void);
  * @return true: the device file set complete
  *         false: the device file doesn't exist current system
  */
-bool libinput_set_file(char* dev_name);
+bool libinput_set_file(char *dev_name);
 /**
  * Get the current position and state of the libinput
  * @param indev_drv driver object itself
  * @param data store the libinput data here
- * @return false: because the points are not buffered, so no more data to be read
+ * @return false: because the points are not buffered, so no more data to be
+ * read
  */
-bool libinput_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
-
+bool libinput_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
 
 /**********************
  *      MACROS

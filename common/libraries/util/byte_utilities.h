@@ -4,13 +4,14 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 /**
  * @file
  * Utility functions for byte arrays.
- * 
+ *
  * Assumes that the byte array is in big endian form.
  * For example 0x1234 will be stored as
  * uint8_t arr[] = {0x12, 0x34}
@@ -55,6 +56,9 @@ void increament_byte_array(uint8_t *arr, uint8_t size);
  *
  * @note
  */
-void add_byte_array(uint8_t *dest_arr, const uint8_t *arr1, const uint8_t *arr2, uint8_t size);
+void add_byte_array(uint8_t *dest_arr,
+                    const uint8_t *arr1,
+                    const uint8_t *arr2,
+                    uint8_t size);
 
 #endif

@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +19,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +30,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,7 +49,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -60,17 +61,20 @@
 #ifdef UI_HOR_SCROLL_PAGE_UNIT_TESTS
 
 void Ui_HorScrUnitTests(void) {
-    /* Negative checks: Should immediately return and not crash the board */
-    ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
-    ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
+  /* Negative checks: Should immediately return and not crash the board */
+  ui_scrollable_page("Header1", NULL, MENU_SCROLL_HORIZONTAL, false);
+  ui_scrollable_page(NULL, "Body1", MENU_SCROLL_HORIZONTAL, false);
 
-    /* Positive check: Should see UI and buttons working properly */
-    ui_scrollable_page("ThisIsAHeading.HeadingShouldBeFloatingText!",
-                  "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
-                  "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||", MENU_SCROLL_HORIZONTAL, true);
-    while (1) {
-        lv_task_handler();
-    }
+  /* Positive check: Should see UI and buttons working properly */
+  ui_scrollable_page(
+      "ThisIsAHeading.HeadingShouldBeFloatingText!",
+      "abcd\tefghijkl\tmnopqrst\n\n\nuvwxyz12345678\n90!@#$^&*()-=_+"
+      "\n\nabcd\tefgh\b\bijklmnopqrstuvwxyz.,/;'[]{}||",
+      MENU_SCROLL_HORIZONTAL,
+      true);
+  while (1) {
+    lv_task_handler();
+  }
 }
 
 #endif /* UI_HOR_SCROLL_PAGE_UNIT_TESTS */

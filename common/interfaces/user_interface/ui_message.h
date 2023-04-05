@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef UI_MESSAGE_H
 #define UI_MESSAGE_H
@@ -22,7 +23,7 @@
  * @note Add constant
  */
 struct Message_Data {
-    char* message;
+  char *message;
 };
 
 /**
@@ -35,15 +36,15 @@ struct Message_Data {
  * @note
  */
 struct Message_Object {
-    lv_obj_t* message;
-    lv_obj_t* next_btn;
+  lv_obj_t *message;
+  lv_obj_t *next_btn;
 };
 
 /**
  * @brief Initialize and create message UI screen
  * A type of a confirmation screen but without cancel button
  * @details
- * 
+ *
  * @param message message text
  *
  * @return
@@ -54,7 +55,7 @@ struct Message_Object {
  *
  * @note
  */
-void message_scr_init(const char* message);
+void message_scr_init(const char *message);
 
 /**
  * @brief Create message screen
@@ -72,4 +73,4 @@ void message_scr_init(const char* message);
  */
 void message_scr_create();
 
-#endif // !UI_MESSAGE_H
+#endif    // !UI_MESSAGE_H
