@@ -19,8 +19,6 @@ validate_platform () {
     fi
 }
 
-set -e
-
 while getopts 'f:p:' flag; do
   case "${flag}" in
     f) FIRMWARE_TYPE=${OPTARG^} ;;
@@ -47,4 +45,15 @@ if [ "$BUILD_PLATFORM" == "Device" ]; then
 else
     echo "Running unit tests on the simulator"
     ./bin/Cypherock_Simulator
+
+    which gcovr > /dev/null
+    if [ $? == 0 ]; then
+        mkdir -p build/coverage/
+        echo "Generating the coverage report..."
+        gcovr --html-nested build/coverage/report.html -s
+        echo "Report generated at $(find "$(pwd)/build/coverage/" -name report.html)"
+    else
+        echo gcovr not found
+        echo try "pip install gcovr"
+    fi
 fi
