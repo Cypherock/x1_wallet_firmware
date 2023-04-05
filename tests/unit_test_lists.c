@@ -62,6 +62,10 @@
 TEST_GROUP_RUNNER(sample_test_simulator) {
   RUN_TEST_CASE(sample_test_simulator, sample_simulator_test_case);
 }
+
+TEST_GROUP_RUNNER(xpub) {
+  RUN_TEST_CASE(xpub, derivation_path_tests);
+}
 #endif /* USE_SIMULATOR == 1 */
 
 #if USE_SIMULATOR == 0
