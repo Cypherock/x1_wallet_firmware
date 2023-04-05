@@ -4,7 +4,8 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
@@ -60,20 +61,20 @@
 #if USE_SIMULATOR == 0
 
 void assert_handler(uint32_t pc, uint32_t lr) {
-    LOG_CRITICAL("ASSERT FAIL pc:%08x lr:%08x",pc,lr);
-    WRITE_REG(RTC->BKP1R, 0x01);
-    BSP_reset();
+  LOG_CRITICAL("ASSERT FAIL pc:%08x lr:%08x", pc, lr);
+  WRITE_REG(RTC->BKP1R, 0x01);
+  BSP_reset();
 }
 
 #else
 
-void assert_handler(uint8_t *file, uint8_t* function, uint32_t line) {
-    printf("============================");
-    printf("\nERROR: ASSERTION FAILED\n");
-    printf("FILE: %s\n",file);
-    printf("FUNCTION: %s\n",function);
-    printf("LINE: %d\n",line);
-    printf("============================");
+void assert_handler(uint8_t *file, uint8_t *function, uint32_t line) {
+  printf("============================");
+  printf("\nERROR: ASSERTION FAILED\n");
+  printf("FILE: %s\n", file);
+  printf("FUNCTION: %s\n", function);
+  printf("LINE: %d\n", line);
+  printf("============================");
 }
 
 #endif

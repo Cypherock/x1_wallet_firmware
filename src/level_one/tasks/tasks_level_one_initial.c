@@ -2,10 +2,12 @@
  * @file    tasks_level_one_initial.c
  * @author  Cypherock X1 Team
  * @brief   Level one task (initial).
- *          Handles display updates for level one tasks of the initial application.
+ *          Handles display updates for level one tasks of the initial
+ *application.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +20,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +31,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,7 +50,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -72,7 +74,8 @@ void level_one_tasks_initial() {
 #if X1WALLET_INITIAL
   // It is safe to allow reset as all the flows are desktop triggered.
   CY_Reset_Not_Allow(false);
-  // Since all desktop flows are handled via advanced settings, we can safely say that the app is busy.
+  // Since all desktop flows are handled via advanced settings, we can safely
+  // say that the app is busy.
   mark_device_state(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS
                         ? (CY_TRIGGER_SOURCE | CY_APP_IDLE)
                         : (CY_APP_IDLE_TASK | CY_APP_IDLE),
@@ -83,7 +86,7 @@ void level_one_tasks_initial() {
   }
 
   if (flow_level.show_desktop_start_screen) {
-    if(flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
+    if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
       message_scr_init(flow_level.confirmation_screen_text);
     else
       confirm_scr_init(flow_level.confirmation_screen_text);
@@ -103,8 +106,8 @@ void level_one_tasks_initial() {
     } break;
 
     case 2: {
-      multi_instruction_init(ui_text_startup_instruction_screen_2, 5U,
-                             DELAY_LONG_STRING, true);
+      multi_instruction_init(
+          ui_text_startup_instruction_screen_2, 5U, DELAY_LONG_STRING, true);
     } break;
 
     case 3: {
@@ -124,8 +127,8 @@ void level_one_tasks_initial() {
     } break;
 
     case 6: {
-      multi_instruction_init(ui_text_startup_instruction_screen_4, 2U,
-                             DELAY_TIME, false);
+      multi_instruction_init(
+          ui_text_startup_instruction_screen_4, 2U, DELAY_TIME, false);
     } break;
 
     case 7: {

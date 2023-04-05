@@ -4,14 +4,14 @@
  * @brief   Header for level two controllers.
  *          Houses the declarations of controllers for level two tasks.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef CONTROLLER_LEVEL_TWO_H
 #define CONTROLLER_LEVEL_TWO_H
 
 #include "controller_main.h"
-
 
 /**
  * @brief
@@ -28,7 +28,6 @@
  * @note
  */
 void level_two_controller();
-
 
 /**
  * @brief
