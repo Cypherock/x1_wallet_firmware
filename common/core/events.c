@@ -110,11 +110,11 @@ void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
     if (evt_config.evt_selection.bits.ui_events) {
       lv_task_handler();
       BSP_DelayMs(50);
-      // p1_evt_occurred |= ui_get_evt();
+      p1_evt_occurred |= ui_get_and_reset_event(&(p_evt_status->ui_event));
     }
 
     if (evt_config.evt_selection.bits.usb_events) {
-      // p1_evt_occurred |= usb_get_evt();
+      p1_evt_occurred |= usb_get_event(&(p_evt_status->usb_event));
     }
 
     if (evt_config.evt_selection.bits.nfc_events) {
