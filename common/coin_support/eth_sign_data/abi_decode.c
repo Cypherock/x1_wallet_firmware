@@ -213,16 +213,17 @@ ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
       break;
     }
     case Abi_address_e: {
-      char staticBufferInUTF8[41];
-      memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
+      char staticBufferInUTF8[43] = "0x";
 
       byte_array_to_hex_string(pAbiTypeData + Abi_address_e_OFFSET_BE,
                                20,
-                               &(staticBufferInUTF8[0]),
+                               &(staticBufferInUTF8[2]),
                                41);
 
-      ui_node = ui_create_display_node(
-          "Datatype:address\0", 25, &(staticBufferInUTF8[0]), 41);
+      ui_node = ui_create_display_node("Datatype:address\0",
+                                       25,
+                                       &(staticBufferInUTF8[0]),
+                                       sizeof(staticBufferInUTF8));
       break;
     }
     case Abi_bytes_e: {
