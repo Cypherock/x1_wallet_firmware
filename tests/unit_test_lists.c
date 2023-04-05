@@ -57,12 +57,13 @@
  */
 #include "unity_fixture.h"
 
-#if USE_SIMULATOR == 1
-TEST_GROUP_RUNNER(sample_test_simulator) {
+TEST_GROUP_RUNNER(usb_evt_api_test) {
+  RUN_TEST_CASE(usb_evt_api_test, basic);
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
+  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
 }
-#endif /* USE_SIMULATOR == 1 */
-
-#if USE_SIMULATOR == 0
-TEST_GROUP_RUNNER(sample_test_target) {
-}
-#endif /* USE_SIMULATOR == 0 */
