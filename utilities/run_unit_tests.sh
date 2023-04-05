@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 usage () {
     echo -e "\tUSAGE: $0 <main|initial> <device|simulator>"
@@ -38,8 +38,8 @@ case $2 in
 esac
 
 echo "Invoking build script"
-echo "./utilities/build.sh -c "$1" "unit_tests" "$2""
-./utilities/build.sh "$1" "unit_tests" "$2"
+echo "./utilities/build.sh -c -f "$1" -t "unit_tests" -p "$2""
+./utilities/build.sh -c -f "$1" -t "unit_tests" -p "$2"
 
 if [ "$2" == "device" ]; then
     echo "Flashing unit tests on the target"
