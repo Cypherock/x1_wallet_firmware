@@ -86,7 +86,7 @@ void level_one_tasks() {
 
   if (flow_level.show_desktop_start_screen) {
     mark_device_state(CY_TRIGGER_SOURCE | CY_APP_WAIT_USER_INPUT, 0);
-    confirm_scr_init(flow_level.confirmation_screen_text);
+    confirm_scr_render(flow_level.confirmation_screen_text);
     return;
   }
 

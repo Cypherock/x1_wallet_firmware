@@ -104,5 +104,5 @@ void confirm_scr_focus_cancel();
  * @note
  */
 void confirm_scr_focus_next();
-
+void confirm_scr_render(const char *text);
 #endif

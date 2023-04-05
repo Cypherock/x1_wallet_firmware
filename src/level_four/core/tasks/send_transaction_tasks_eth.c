@@ -132,7 +132,7 @@ void send_transaction_tasks_eth() {
                  sizeof(display),
                  "%s Blind Signing\nProceed at your own risk!",
                  LV_SYMBOL_WARNING);
-        confirm_scr_init(display);
+        confirm_scr_render(display);
       } else {
         mark_event_over();
       }
@@ -149,7 +149,7 @@ void send_transaction_tasks_eth() {
             sizeof(path));
         instruction_scr_destructor();
         snprintf(display, sizeof(display), "Verify Derivation Path\n%s", path);
-        confirm_scr_init(display);
+        confirm_scr_render(display);
       } else {
         mark_event_over();
       }
@@ -285,7 +285,7 @@ void send_transaction_tasks_eth() {
                amount_decimal_string,
                eth_get_asset_symbol(
                    &var_send_transaction_data.transaction_metadata));
-      confirm_scr_init(display);
+      confirm_scr_render(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_ETH: {
@@ -302,7 +302,7 @@ void send_transaction_tasks_eth() {
               U32_READ_BE_ARRAY(
                   var_send_transaction_data.transaction_metadata.coin_index),
               var_send_transaction_data.transaction_metadata.network_chain_id));
-      confirm_scr_init(display);
+      confirm_scr_render(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {

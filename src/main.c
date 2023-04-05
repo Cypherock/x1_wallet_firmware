@@ -116,6 +116,7 @@ extern lv_indev_t *indev_keypad;
 #endif
 extern Counter counter;
 extern bool main_app_ready;
+extern void process_ui_events();
 
 #if USE_SIMULATOR == 1
 
@@ -199,8 +200,9 @@ int main(void) {
     /* Periodically call the lv_task handler.
      * It could be done in a timer interrupt or an OS task too.*/
     lv_task_handler();
+    process_ui_events();
     BSP_DelayMs(50);
-
+    process_ui_events();
 #if USE_SIMULATOR == 1
 #ifdef SDL_APPLE
     SDL_Event event;

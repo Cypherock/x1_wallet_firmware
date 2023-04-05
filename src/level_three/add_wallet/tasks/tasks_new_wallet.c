@@ -115,7 +115,7 @@ void tasks_add_new_wallet() {
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-      confirm_scr_init(ui_text_do_you_want_to_set_pin);
+      confirm_scr_render(ui_text_do_you_want_to_set_pin);
       confirm_scr_focus_cancel();
     } break;
 
@@ -154,7 +154,7 @@ void tasks_add_new_wallet() {
     } break;
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-      confirm_scr_init(ui_text_use_passphrase_question);
+      confirm_scr_render(ui_text_use_passphrase_question);
       confirm_scr_focus_cancel();
     } break;
 
