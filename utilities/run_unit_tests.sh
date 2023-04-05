@@ -53,7 +53,7 @@ else
         gcovr --html-nested build/coverage/report.html -s
         echo "Report generated at $(find "$(pwd)/build/coverage/" -name report.html)"
     else
-        echo gcovr not found
-        echo try "pip install gcovr"
+        echo Error: gcovr not found
+        echo try \"pip install gcovr\"
     fi
 fi
