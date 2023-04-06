@@ -120,6 +120,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/p0_events>
         )
 
+IF(UNIT_TESTS_SWITCH)
+        target_compile_options(${EXECUTABLE} PRIVATE --coverage -g -O0)
+        target_link_libraries(${EXECUTABLE} PRIVATE -lgcov )
+ENDIF(UNIT_TESTS_SWITCH)
 target_link_libraries(${EXECUTABLE} PRIVATE ${SDL2_LIBRARIES} -lm)
 target_link_options(${EXECUTABLE} PRIVATE ${inherited})
 add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXECUTABLE})

@@ -25,7 +25,7 @@ jobs:
     - name: Build Docker Image
       run: docker build . --file Dockerfile --tag x1-wallet-app-env && mkdir -p build
     - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }})
-      run: docker run -v $(pwd)/build:/out x1-wallet-app-env /bin/ash -c 'mkdir -p /dist/${{ inputs.target }} && cd /home && utilities/build.sh ${{ inputs.firmware }} ${{ inputs.target }} && cp build/*/Cypherock-*.* /dist/${{ inputs.target }} && cp -a /dist/. /out'
+      run: docker run -v $(pwd)/build:/out x1-wallet-app-env /bin/ash -c 'mkdir -p /dist/${{ inputs.target }} && cd /home && utilities/build.sh -f ${{ inputs.firmware }} -t ${{ inputs.target }} && cp build/*/Cypherock-*.* /dist/${{ inputs.target }} && cp -a /dist/. /out'
     - name: Archive Build Artifacts
       uses: actions/upload-artifact@v3
       with:

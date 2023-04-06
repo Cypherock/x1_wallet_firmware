@@ -11,7 +11,7 @@ IF(UNIT_TESTS_SWITCH)
         file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "tests/*.*")
         #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
         LIST(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.c")
-        
+
         #need these macros to correctly configure unity test framework
         add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
         add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)

@@ -93,6 +93,7 @@ uint8_t *eth_unsigned_txn_byte_array = NULL;
 uint16_t eth_unsigned_txn_len;
 
 extern ui_display_node *current_display_node;
+extern bool eth_is_token_whitelisted;
 
 void send_transaction_controller_eth() {
   switch (flow_level.level_three) {
@@ -159,7 +160,13 @@ void send_transaction_controller_eth() {
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-      flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH;
+      if ((!eth_is_token_whitelisted) &&
+          (eth_unsigned_txn_ptr.payload_status != PAYLOAD_ABSENT) &&
+          (is_zero(eth_unsigned_txn_ptr.value,
+                   eth_unsigned_txn_ptr.value_size[0])))
+        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_FEES_ETH;
+      else
+        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {

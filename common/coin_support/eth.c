@@ -132,7 +132,7 @@ const Abi_Type_e EVM_transferDataType[EVM_transfer_NUM_ARGS] = {Abi_address_e,
 const char *EVM_transfer_Title = "Function: transfer";
 const char *EVM_transfer_Signature = "transfer(address,uint256)";
 
-static bool eth_is_token_whitelisted = false;
+bool eth_is_token_whitelisted = false;
 
 /**
  * @brief
@@ -489,7 +489,8 @@ static PAYLOAD_STATUS eth_decode_txn_payload(
   if (eth_utxn_ptr->payload_size > 0) {
     if ((eth_utxn_ptr->payload_size >= 4) &&
         (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
-        (metadata_ptr->is_token_transfer)) {
+        (metadata_ptr->is_token_transfer) &&
+        (metadata_ptr->network_chain_id == ETHEREUM_MAINNET_CHAIN)) {
       for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
         if (strncmp(metadata_ptr->token_name,
                     whitelisted_contracts[i].symbol,
