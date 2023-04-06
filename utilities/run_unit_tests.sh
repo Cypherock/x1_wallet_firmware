@@ -19,7 +19,7 @@ validate_platform () {
     fi
 }
 
--set e
+set -e
 while getopts 'f:p:' flag; do
   case "${flag}" in
     f) FIRMWARE_TYPE=${OPTARG^} ;;
