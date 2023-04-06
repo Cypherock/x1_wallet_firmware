@@ -144,6 +144,7 @@ static void p0_set_inactivity_timeout(uint32_t inactivity_timeout) {
 static void p0_set_abort_config(bool abort_disabled) {
   p0_evt_ctx.abort_disabled = abort_disabled;
   /* TODO: remove below statement after each flow has been updated */
+  /* TODO: Update after refactor */
   CY_Reset_Not_Allow(abort_disabled);
   return;
 }
@@ -214,6 +215,7 @@ void p0_ctx_destroy(void) {
   p0_set_p0_evt_flag(false);
 
   /* TODO: We need to remove below check once all flows are updated */
+  /* TODO: Update after refactor */
   if (CY_Read_Reset_Flow()) {
     sys_flow_cntrl_u.bits.reset_flow = false;
   }
