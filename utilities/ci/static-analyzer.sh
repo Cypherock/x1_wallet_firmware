@@ -20,7 +20,7 @@ do
   [ -e "$file" ] || continue
   case "$file" in
 
-  common/lvgl/*|common/libraries/atecc/*|common/libraries/crypto/*|common/libraries/nanopb/*) continue ;;
+  common/lvgl/*|common/libraries/atecc/*|common/libraries/crypto/*|common/libraries/nanopb/*|tests/framework/*) continue ;;
 
   *.c|*.h|*.cpp|*.hpp)
     echo "::group::$file"
