@@ -81,8 +81,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static ui_event_status_t event_status;
-static ui_event_t event;
+static ui_event_t ui_event;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -99,51 +98,32 @@ static ui_event_t event;
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void ui_status_mark_ready_for_events() {
-  memzero(&event, sizeof(event));
-  event_status = UI_EVENT_SCR_RENDERED;
+void ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
+  ASSERT(ui_event_os_obj != NULL);
+
+  memcpy(ui_event_os_obj, &ui_event, sizeof(ui_event_t));
+  memzero(&ui_event, sizeof(ui_event));
 }
 
-void ui_get_events(ui_event_t *ui_event_os_obj) {
-  memcpy(ui_event_os_obj, &event, sizeof(ui_event_t));
+void ui_set_confirm_event() {
+  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_type = UI_EVENT_CONFIRM;
 }
 
-void ui_status_reset_event_state() {
-  memzero(&event, sizeof(event));
-  event_status = UI_EVENT_NONE;
+void ui_set_cancel_event() {
+  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_type = UI_EVENT_REJECT;
 }
 
-bool ui_set_confirm_event() {
-  if (event_status != UI_EVENT_SCR_RENDERED)
-    return false;    // Invalid state return
-
-  event.event_occured = SEC_TRUE;
-  event.event_type = UI_EVENT_CONFIRM;
+void ui_set_list_event(uint16_t list_selection) {
+  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_type = UI_EVENT_LIST_CHOICE;
+  ui_event.list_selection = list_selection;
 }
 
-bool ui_set_cancel_event() {
-  if (event_status != UI_EVENT_SCR_RENDERED)
-    return false;    // Invalid state return
-
-  event.event_occured = SEC_TRUE;
-  event.event_type = UI_EVENT_REJECT;
-}
-
-bool ui_set_list_event(uint8_t list_selection) {
-  if (event_status != UI_EVENT_SCR_RENDERED)
-    return false;    // Invalid state return
-
-  event.event_occured = SEC_TRUE;
-  event.event_type = UI_EVENT_LIST_CHOICE;
-  event.list_selection = list_selection;
-}
-
-bool ui_set_text_input_event(char *text_ptr) {
+void ui_set_text_input_event(char *text_ptr) {
   ASSERT(text_ptr != NULL);
-  if (event_status != UI_EVENT_SCR_RENDERED)
-    return false;    // Invalid state return
-
-  event.event_occured = SEC_TRUE;
-  event.event_type = UI_EVENT_TEXT_INPUT;
-  event.text_ptr = text_ptr;
+  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_type = UI_EVENT_TEXT_INPUT;
+  ui_event.text_ptr = text_ptr;
 }

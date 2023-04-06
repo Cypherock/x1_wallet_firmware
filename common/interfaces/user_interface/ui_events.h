@@ -28,13 +28,7 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef enum ui_event_status {
-  UI_EVENT_NONE = 0,
-  UI_EVENT_SCR_RENDERED,
-  UI_EVENT_OCCURED
-} ui_event_status_t;
-
-typedef enum ui_event_types {
+typedef enum {
   UI_EVENT_CONFIRM = 1,
   UI_EVENT_REJECT,
   UI_EVENT_TEXT_INPUT,
@@ -42,11 +36,11 @@ typedef enum ui_event_types {
   UI_EVENT_SKIP_EVENT
 } ui_event_types_t;
 
-typedef struct ui_event {
+typedef struct {
   uint32_t event_occured;
   ui_event_types_t event_type;
   char *text_ptr;
-  uint8_t list_selection;
+  uint16_t list_selection;
 } ui_event_t;
 
 /*****************************************************************************
@@ -58,26 +52,11 @@ typedef struct ui_event {
  *****************************************************************************/
 
 /**
- * @brief   Used to set ui_event_status_t object to UI_EVENT_SCR_RENDERED
- *          marking UI ready to listen for new events. This should be used when
- * new screen is rendered.
- */
-void ui_status_mark_ready_for_events();
-
-/**
  * @brief   Used to get the latest ui event occurance
  * @arg     *ui_event_os_obj   `ui_event_t` object used to get the ui event
  * details
  */
-void ui_get_events(ui_event_t *ui_event_os_obj);
-
-/**
- * @brief   Used to set ui_event_status_t object to UI_EVENT_NONE
- *          reseting past events and marking UI not ready for new events.
- *          This should be used when destructing a screen to reset past events
- *          and wait for new screen to be rendered for new events.
- */
-void ui_status_reset_event_state();
+void ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
 
 /**
  * @brief   Used to pass UI cofirm event to os event getter
@@ -96,7 +75,7 @@ bool ui_set_cancel_event();
 /**
  * @brief   Used to pass UI list event to os event getter
  * @arg     list_selection selection number from passed option,
- *          valid selection from 0-255
+ *          valid selection from 0-65535
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
