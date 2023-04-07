@@ -58,10 +58,9 @@
  */
 #include "ui_events_test.h"
 
-#include "sha2.h"
-#include "string.h"
+#include "memzero.h"
 #include "ui_events.h"
-#include "utils.h"
+#include "ui_events_priv.h"
 
 #if USE_SIMULATOR == 0
 #endif /* USE_SIMULATOR == 0 */
