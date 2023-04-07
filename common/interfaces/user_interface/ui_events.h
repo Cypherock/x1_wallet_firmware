@@ -63,14 +63,14 @@ void ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
-bool ui_set_confirm_event();
+void ui_set_confirm_event();
 
 /**
  * @brief   Used to pass UI cancel event to os event getter
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
-bool ui_set_cancel_event();
+void ui_set_cancel_event();
 
 /**
  * @brief   Used to pass UI list event to os event getter
@@ -79,12 +79,12 @@ bool ui_set_cancel_event();
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
-bool ui_set_list_event(uint8_t list_selection);
+void ui_set_list_event(uint8_t list_selection);
 
 /**
  * @brief   Used to pass UI Text Input event to os event getter
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
-bool ui_set_text_input_event(char *text_ptr);
+void ui_set_text_input_event(char *text_ptr);
 #endif
