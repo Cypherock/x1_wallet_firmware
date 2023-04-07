@@ -79,7 +79,7 @@ void ui_set_cancel_event();
  *
  * @return  returns true if event was set correctly and ui status was updated
  */
-void ui_set_list_event(uint8_t list_selection);
+void ui_set_list_event(uint16_t list_selection);
 
 /**
  * @brief   Used to pass UI Text Input event to os event getter
