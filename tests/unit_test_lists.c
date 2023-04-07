@@ -55,14 +55,13 @@
  *
  ******************************************************************************
  */
+#include "ui_events_test.h"
 #include "unity_fixture.h"
 
-#if USE_SIMULATOR == 1
-TEST_GROUP_RUNNER(sample_test_simulator) {
+TEST_GROUP_RUNNER(ui_events_test) {
+  RUN_TEST_CASE(ui_events_test, set_confirm);
+  RUN_TEST_CASE(ui_events_test, set_cancel);
+  RUN_TEST_CASE(ui_events_test, set_list);
+  RUN_TEST_CASE(ui_events_test, set_text_input);
+  RUN_TEST_CASE(ui_events_test, event_getter);
 }
-#endif /* USE_SIMULATOR == 1 */
-
-#if USE_SIMULATOR == 0
-TEST_GROUP_RUNNER(sample_test_target) {
-}
-#endif /* USE_SIMULATOR == 0 */

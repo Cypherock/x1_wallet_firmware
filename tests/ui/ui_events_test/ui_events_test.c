@@ -1,7 +1,8 @@
 /**
- * @file    unit_tests_main.c
+ * @file    ui_events_test.h
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   This header file contains header file template for a unit test
+ *module
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -55,77 +56,81 @@
  *
  ******************************************************************************
  */
+#include "ui_events_test.h"
 
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
-                            issue*/
-#include "application_startup.h"
-#include "unity_fixture.h"
-
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
-
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
-
-void RunAllTests(void) {
-  RUN_TEST_GROUP(ui_events_test);
-}
-
-/**
- * @brief  The entry point to the unit test framework
- * This entry point is a parallel entry point to the int main(void) of the
- * actual firmware.
- */
-int main(void) {
-  application_init();
-
-  UnityBegin("unit_tests_main.c");
-  RunAllTests();
-  UnityEnd();
-}
+#include "sha2.h"
+#include "string.h"
+#include "ui_events.h"
+#include "utils.h"
 
 #if USE_SIMULATOR == 0
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
-}
-
-/**
- * @brief Function to transmit data in real-time over SWV channel
- * @param file unused
- * @param *ptr string pointer for data to send
- * @param len  length of data to send
- *
- * @ret len of data transmitted
- */
-int _write(int file, char *ptr, int len) {
-#ifndef NDEBUG    // Disable printf in release mode
-  int DataIdx;
-  for (DataIdx = 0; DataIdx < len; DataIdx++) {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
-#endif
-}
-
 #endif /* USE_SIMULATOR == 0 */
+
+TEST_GROUP(ui_events_test);
+
+TEST_SETUP(ui_events_test) {
+  return;
+}
+
+TEST_TEAR_DOWN(ui_events_test) {
+  return;
+}
+
+TEST(ui_events_test, set_confirm) {
+  ui_event_t ui_event = {0};
+  ui_set_confirm_event();
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_CONFIRM);
+}
+
+TEST(ui_events_test, set_cancel) {
+  ui_event_t ui_event = {0};
+  ui_set_cancel_event();
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_REJECT);
+}
+
+TEST(ui_events_test, set_list) {
+  ui_event_t ui_event = {0};
+  uint16_t list_selection = 40000;
+  ui_set_list_event(list_selection);
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_LIST_CHOICE);
+  TEST_ASSERT(ui_event.list_selection == list_selection);
+}
+
+TEST(ui_events_test, set_text_input) {
+  ui_event_t ui_event = {0};
+  char *text_ptr = "DUMMY";
+  ui_set_text_input_event(text_ptr);
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_TEXT_INPUT);
+  TEST_ASSERT(ui_event.text_ptr == text_ptr);
+}
+
+TEST(ui_events_test, event_getter) {
+  ui_event_t ui_event = {0};
+  char *text_ptr = "DUMMY";
+  ui_set_text_input_event(text_ptr);
+
+  // Getter call when event occured
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_TEXT_INPUT);
+  TEST_ASSERT(ui_event.text_ptr == text_ptr);
+
+  // Getter call when waiting for event
+  memzero(&ui_event, sizeof(ui_event));
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == false);
+  TEST_ASSERT(ui_event.event_occured == false);
+  TEST_ASSERT(ui_event.event_type == 0);
+  TEST_ASSERT(ui_event.text_ptr == NULL);
+}
