@@ -98,32 +98,36 @@ static ui_event_t ui_event;
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
+bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
   ASSERT(ui_event_os_obj != NULL);
 
-  memcpy(ui_event_os_obj, &ui_event, sizeof(ui_event_t));
-  memzero(&ui_event, sizeof(ui_event));
+  if (ui_event.event_occured) {
+    memcpy(ui_event_os_obj, &ui_event, sizeof(ui_event_t));
+    memzero(&ui_event, sizeof(ui_event));
+  }
+  return ui_event.event_occured;
 }
 
 void ui_set_confirm_event() {
-  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_CONFIRM;
 }
 
 void ui_set_cancel_event() {
-  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_REJECT;
 }
 
 void ui_set_list_event(uint16_t list_selection) {
-  ui_event.event_occured = SEC_TRUE;
+  ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_LIST_CHOICE;
   ui_event.list_selection = list_selection;
 }
 
 void ui_set_text_input_event(char *text_ptr) {
   ASSERT(text_ptr != NULL);
-  ui_event.event_occured = SEC_TRUE;
+
+  ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_TEXT_INPUT;
   ui_event.text_ptr = text_ptr;
 }

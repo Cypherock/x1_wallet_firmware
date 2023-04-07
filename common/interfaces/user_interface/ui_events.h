@@ -37,7 +37,7 @@ typedef enum {
 } ui_event_types_t;
 
 typedef struct {
-  uint32_t event_occured;
+  bool event_occured;
   ui_event_types_t event_type;
   char *text_ptr;
   uint16_t list_selection;
@@ -56,7 +56,7 @@ typedef struct {
  * @arg     *ui_event_os_obj   `ui_event_t` object used to get the ui event
  * details
  */
-void ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
+bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
 
 /**
  * @brief   Used to pass UI cofirm event to os event getter
