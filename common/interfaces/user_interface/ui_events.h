@@ -3,7 +3,7 @@
  * @author  Cypherock X1 Team
  * @brief   Title of the file.
  *          Short description of the file
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
