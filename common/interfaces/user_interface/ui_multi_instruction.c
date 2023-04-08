@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 #include "ui_multi_instruction.h"
+#include "assert_conf.h"
 
 static struct Multi_Instruction_Data *data;
 static struct Multi_Instruction_Object *obj;
@@ -77,24 +78,20 @@ static lv_style_t arrow_style_rel;
  *
  * @note
  */
-static void change_arrows()
-{
-    if (data->total_strings == 1)
-        return;
+static void change_arrows() {
+  if (data->total_strings == 1)
+    return;
 
-    if (data->index_of_current_string <= 0)
-    {
-        if (data->one_cycle_completed == false)
-            lv_obj_set_hidden(obj->left_arrow, true);
-        else
-            lv_obj_set_hidden(obj->left_arrow, false);
-        lv_obj_set_hidden(obj->right_arrow, false);
-    }
+  if (data->index_of_current_string <= 0) {
+    if (data->one_cycle_completed == false)
+      lv_obj_set_hidden(obj->left_arrow, true);
     else
-    {
-        lv_obj_set_hidden(obj->left_arrow, false);
-        lv_obj_set_hidden(obj->right_arrow, false);
-    }
+      lv_obj_set_hidden(obj->left_arrow, false);
+    lv_obj_set_hidden(obj->right_arrow, false);
+  } else {
+    lv_obj_set_hidden(obj->left_arrow, false);
+    lv_obj_set_hidden(obj->right_arrow, false);
+  }
 }
 
 /**
@@ -111,61 +108,52 @@ static void change_arrows()
  *
  * @note
  */
-static void change_current_index(const lv_key_t PRESSED_KEY)
-{
-    if (data->total_strings == 1)
-        return;
+static void change_current_index(const lv_key_t PRESSED_KEY) {
+  if (data->total_strings == 1)
+    return;
 
-    switch (PRESSED_KEY)
-    {
-    case LV_KEY_RIGHT:
-    {
-        if (data->index_of_current_string < (data->total_strings - 1))
-        {
-            data->index_of_current_string++;
-            if (!data->one_cycle_completed)
-                data->one_cycle_completed = data->index_of_current_string == data->total_strings - 1;
-        }
-        else
-        {
-            data->one_cycle_completed = true;
-            data->index_of_current_string = 0;
-        }
-        break;
+  switch (PRESSED_KEY) {
+    case LV_KEY_RIGHT: {
+      if (data->index_of_current_string < (data->total_strings - 1)) {
+        data->index_of_current_string++;
+        if (!data->one_cycle_completed)
+          data->one_cycle_completed = data->index_of_current_string == data->total_strings - 1;
+      } else {
+        data->one_cycle_completed     = true;
+        data->index_of_current_string = 0;
+      }
+      break;
     }
-    case LV_KEY_LEFT:
-    {
-        if (data->index_of_current_string > 0)
-        {
-            data->index_of_current_string--;
-        }
-        else
-        {
-            if (data->one_cycle_completed == true)
-                data->index_of_current_string = data->total_strings - 1;
-        }
-        break;
+    case LV_KEY_LEFT: {
+      if (data->index_of_current_string > 0) {
+        data->index_of_current_string--;
+      } else {
+        if (data->one_cycle_completed == true)
+          data->index_of_current_string = data->total_strings - 1;
+      }
+      break;
     }
     default:
-        break;
-    }
+      break;
+  }
 }
 
-static void update_text(uint8_t index){
-    lv_label_set_static_text(obj->text, data->instruction_content[index].text);
-    if(data->instruction_content[index].img == NULL){
-        lv_obj_align(obj->text, NULL, LV_ALIGN_CENTER, 0, 0);
-        lv_img_set_src(obj->img, LV_SYMBOL_DUMMY "");
-        lv_obj_set_pos(obj->img, 0, 0);
-        lv_obj_realign(obj->text);
-        lv_obj_realign(obj->left_arrow);
-        lv_obj_realign(obj->right_arrow);
-    }else if(data->instruction_content[index].img != NULL){
-        lv_img_set_src(obj->img, data->instruction_content[index].img);
-        lv_img_set_auto_size(obj->img, true);
-        lv_obj_set_pos(obj->img, data->instruction_content[index].img_x_offset, data->instruction_content[index].img_y_offset);
-        lv_obj_align(obj->text, obj->img, data->instruction_content[index].text_align, 0, 2);
-    }
+static void update_text(uint8_t index) {
+  lv_label_set_static_text(obj->text, data->instruction_content[index].text);
+  if (data->instruction_content[index].img == NULL) {
+    lv_obj_align(obj->text, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_img_set_src(obj->img, LV_SYMBOL_DUMMY "");
+    lv_obj_set_pos(obj->img, 0, 0);
+    lv_obj_realign(obj->text);
+    lv_obj_realign(obj->left_arrow);
+    lv_obj_realign(obj->right_arrow);
+  } else if (data->instruction_content[index].img != NULL) {
+    lv_img_set_src(obj->img, data->instruction_content[index].img);
+    lv_img_set_auto_size(obj->img, true);
+    lv_obj_set_pos(obj->img, data->instruction_content[index].img_x_offset,
+                   data->instruction_content[index].img_y_offset);
+    lv_obj_align(obj->text, obj->img, data->instruction_content[index].text_align, 0, 2);
+  }
 }
 
 /**
@@ -183,11 +171,10 @@ static void update_text(uint8_t index){
  *
  * @note
  */
-static void change_text_cb(lv_task_t *task)
-{
-    change_current_index(LV_KEY_RIGHT);
-    update_text(data->index_of_current_string);
-    change_arrows();
+static void change_text_cb(lv_task_t *task) {
+  change_current_index(LV_KEY_RIGHT);
+  update_text(data->index_of_current_string);
+  change_arrows();
 }
 
 /**
@@ -205,28 +192,25 @@ static void change_text_cb(lv_task_t *task)
  *
  * @note
  */
-static void multi_instructor_destructor()
-{
-    if(next_instruction_task != NULL) {
-        lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_OFF);
-        lv_task_del(next_instruction_task);
-        next_instruction_task = NULL;
-    }
-    
-    lv_obj_clean(lv_scr_act());
+static void multi_instructor_destructor() {
+  if (next_instruction_task != NULL) {
+    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_OFF);
+    lv_task_del(next_instruction_task);
+    next_instruction_task = NULL;
+  }
 
-    if (data != NULL)
-    {
-        memzero(data, sizeof(struct Multi_Instruction_Data));
-        free(data);
-        data = NULL;
-    }
+  lv_obj_clean(lv_scr_act());
 
-    if (obj != NULL)
-    {
-        free(obj);
-        obj = NULL;
-    }
+  if (data != NULL) {
+    memzero(data, sizeof(struct Multi_Instruction_Data));
+    free(data);
+    data = NULL;
+  }
+
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
 }
 
 /**
@@ -244,73 +228,67 @@ static void multi_instructor_destructor()
  *
  * @note
  */
-void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event)
-{
-    // TODO: Add assertions
-    switch (event)
-    {
-    case LV_EVENT_KEY:
-    {
-        switch (lv_indev_get_key(ui_get_indev()))
-        {
-        case LV_KEY_RIGHT:
-        {
-            lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
-            change_current_index(LV_KEY_RIGHT);
-            update_text(data->index_of_current_string);
-            change_arrows();
-            lv_task_reset(next_instruction_task);
-            break;
+void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
+  // TODO: Add assertions
+  switch (event) {
+    case LV_EVENT_KEY: {
+      switch (lv_indev_get_key(ui_get_indev())) {
+        case LV_KEY_RIGHT: {
+          lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
+          change_current_index(LV_KEY_RIGHT);
+          update_text(data->index_of_current_string);
+          change_arrows();
+          lv_task_reset(next_instruction_task);
+          break;
         }
-        case LV_KEY_LEFT:
-        {
-            lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
-            change_current_index(LV_KEY_LEFT);
-            update_text(data->index_of_current_string);
+        case LV_KEY_LEFT: {
+          lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
+          change_current_index(LV_KEY_LEFT);
+          update_text(data->index_of_current_string);
 
-            // This is done to highlight the left arrow when the first screen is rendered for the first time
-            // and user moves to second screen and moves back to first screen.
-            // Otherwise the left arrow would just on click and not highlight
-            if (data->index_of_current_string != 0)
-                change_arrows();
-            lv_task_reset(next_instruction_task);
-            break;
+          // This is done to highlight the left arrow when the first screen is rendered for the first time
+          // and user moves to second screen and moves back to first screen.
+          // Otherwise the left arrow would just on click and not highlight
+          if (data->index_of_current_string != 0)
+            change_arrows();
+          lv_task_reset(next_instruction_task);
+          break;
         }
-        default: break;
-        }
-        break;
+        default:
+          break;
+      }
+      break;
     }
 
-    case LV_EVENT_CLICKED:
-    {
-        if (data->destruct_on_click == true && ((data->index_of_current_string == data->total_strings - 1) || data->one_cycle_completed))
-        {
-            multi_instructor_destructor();
-            if (ui_mark_event_over)
-                (*ui_mark_event_over)();
-        }
-        break;
+    case LV_EVENT_CLICKED: {
+      if (data->destruct_on_click == true &&
+          ((data->index_of_current_string == data->total_strings - 1) || data->one_cycle_completed)) {
+        multi_instructor_destructor();
+        if (ui_mark_event_over)
+          (*ui_mark_event_over)();
+      }
+      break;
     }
 
-    case LV_EVENT_RELEASED:
-    {
-        if (data->index_of_current_string == 0)
-            change_arrows();
-        lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
-        lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
-        break;
+    case LV_EVENT_RELEASED: {
+      if (data->index_of_current_string == 0)
+        change_arrows();
+      lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+      lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+      break;
     }
 
     case LV_EVENT_DELETE: {
-        if(next_instruction_task != NULL) {
-            lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_OFF);
-            lv_task_del(next_instruction_task);
-            next_instruction_task = NULL;
-        }
-        break;
+      if (next_instruction_task != NULL) {
+        lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_OFF);
+        lv_task_del(next_instruction_task);
+        next_instruction_task = NULL;
+      }
+      break;
     }
-    default: break;
-    }
+    default:
+      break;
+  }
 }
 
 /**
@@ -319,124 +297,121 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event)
  * Hides the arrows for initial screen.
  * 
  */
-void multi_instruction_create()
-{
-    // TODO: Add assertions
-    obj->text = lv_label_create(lv_scr_act(), NULL);
-    obj->left_arrow = lv_label_create(lv_scr_act(), NULL);
-    obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
-    obj->img = lv_img_create(lv_scr_act(), NULL);
+void multi_instruction_create() {
+  // TODO: Add assertions
+  obj->text        = lv_label_create(lv_scr_act(), NULL);
+  obj->left_arrow  = lv_label_create(lv_scr_act(), NULL);
+  obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
+  obj->img         = lv_img_create(lv_scr_act(), NULL);
 
-    lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
-    lv_obj_set_width(obj->text, LV_HOR_RES - 22);
-    lv_label_set_align(obj->text, LV_LABEL_ALIGN_CENTER);
-    update_text(0);
-    lv_obj_set_event_cb(obj->text, arrow_event_handler);
+  lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
+  lv_obj_set_width(obj->text, LV_HOR_RES - 22);
+  lv_label_set_align(obj->text, LV_LABEL_ALIGN_CENTER);
+  update_text(0);
+  lv_obj_set_event_cb(obj->text, arrow_event_handler);
 
-    // Style when left or right button is released
-    lv_style_copy(&arrow_style_rel, &lv_style_plain);
-    arrow_style_rel.body.opa = 0;
+  // Style when left or right button is released
+  lv_style_copy(&arrow_style_rel, &lv_style_plain);
+  arrow_style_rel.body.opa = 0;
 
-    // Style when left or right button is pressed (highlights them)
-    lv_style_copy(&arrow_style_pr, &lv_style_plain);
-    arrow_style_pr.body.main_color = LV_COLOR_BLACK;
-    arrow_style_pr.body.grad_color = LV_COLOR_BLACK;
-    arrow_style_pr.body.radius = 100;
-    arrow_style_pr.text.color = LV_COLOR_WHITE;
-    lv_label_set_body_draw(obj->right_arrow, true);
-    lv_label_set_body_draw(obj->left_arrow, true);
+  // Style when left or right button is pressed (highlights them)
+  lv_style_copy(&arrow_style_pr, &lv_style_plain);
+  arrow_style_pr.body.main_color = LV_COLOR_BLACK;
+  arrow_style_pr.body.grad_color = LV_COLOR_BLACK;
+  arrow_style_pr.body.radius     = 100;
+  arrow_style_pr.text.color      = LV_COLOR_WHITE;
+  lv_label_set_body_draw(obj->right_arrow, true);
+  lv_label_set_body_draw(obj->left_arrow, true);
 
-    //Left Arrow
-    lv_label_set_text(obj->left_arrow, LV_SYMBOL_LEFT);
-    lv_obj_align(obj->left_arrow, obj->text, LV_ALIGN_OUT_LEFT_MID, -4, 0);
-    lv_obj_set_event_cb(obj->left_arrow, arrow_event_handler);
+  //Left Arrow
+  lv_label_set_text(obj->left_arrow, LV_SYMBOL_LEFT);
+  lv_obj_align(obj->left_arrow, obj->text, LV_ALIGN_OUT_LEFT_MID, -4, 0);
+  lv_obj_set_event_cb(obj->left_arrow, arrow_event_handler);
 
-    //Right Arrow
-    lv_label_set_text(obj->right_arrow, LV_SYMBOL_RIGHT);
-    lv_obj_align(obj->right_arrow, obj->text, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
-    lv_obj_set_event_cb(obj->right_arrow, arrow_event_handler);
+  //Right Arrow
+  lv_label_set_text(obj->right_arrow, LV_SYMBOL_RIGHT);
+  lv_obj_align(obj->right_arrow, obj->text, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
+  lv_obj_set_event_cb(obj->right_arrow, arrow_event_handler);
 
-    lv_group_add_obj(ui_get_group(), obj->text);
-    lv_group_add_obj(ui_get_group(), obj->left_arrow);
-    lv_group_add_obj(ui_get_group(), obj->right_arrow);
-    if(data->img_object)
-        lv_group_add_obj(ui_get_group(), obj->img);
+  lv_group_add_obj(ui_get_group(), obj->text);
+  lv_group_add_obj(ui_get_group(), obj->left_arrow);
+  lv_group_add_obj(ui_get_group(), obj->right_arrow);
+  lv_group_add_obj(ui_get_group(), obj->img);
 
-    lv_indev_set_group(ui_get_indev(), ui_get_group());
-    lv_obj_set_hidden(obj->left_arrow, true);
-    if (data->total_strings == 1)
-    {
-        lv_obj_set_hidden(obj->right_arrow, true);
-    }
-    if(data->instruction_content[0].img == NULL){
-        lv_obj_realign(obj->text);
-        lv_obj_realign(obj->left_arrow);
-        lv_obj_realign(obj->right_arrow);
-    }else if(data->instruction_content[0].img != NULL){
-        lv_obj_realign(obj->text);
-    }
+  lv_indev_set_group(ui_get_indev(), ui_get_group());
+  lv_obj_set_hidden(obj->left_arrow, true);
+  if (data->total_strings == 1) {
+    lv_obj_set_hidden(obj->right_arrow, true);
+  }
+  if (data->instruction_content[0].img == NULL) {
+    lv_obj_realign(obj->text);
+    lv_obj_realign(obj->left_arrow);
+    lv_obj_realign(obj->right_arrow);
+  } else if (data->instruction_content[0].img != NULL) {
+    lv_obj_realign(obj->text);
+  }
 }
 
-void multi_instruction_init(const char **arr, const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
-{
+void multi_instruction_init(const char **arr,
+                            const uint8_t count,
+                            const uint16_t delay_in_ms,
+                            const bool destruct_on_click) {
+  ASSERT(arr != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
 
-    data = NULL;
-    data = malloc(sizeof(struct Multi_Instruction_Data));
-    obj = NULL;
-    obj = malloc(sizeof(struct Multi_Instruction_Object));
+  data = NULL;
+  data = malloc(sizeof(struct Multi_Instruction_Data));
+  ASSERT(data != NULL);
+  obj = NULL;
+  obj = malloc(sizeof(struct Multi_Instruction_Object));
+  ASSERT(obj != NULL);
 
-    for (uint8_t i = 0; i < count; i++)
-    {
-        snprintf(data->instruction_content[i].text, sizeof(data->instruction_content[i].text), "%s", arr[i]);
-    }
+  memzero(data, sizeof(struct Multi_Instruction_Data));
+  for (uint8_t i = 0; i < count; i++) {
+    snprintf(data->instruction_content[i].text, sizeof(data->instruction_content[i].text), "%s", arr[i]);
+  }
 
-    data->destruct_on_click = destruct_on_click;
-    data->index_of_current_string = 0;
-    data->total_strings = count;
-    data->one_cycle_completed = false;
+  data->destruct_on_click       = destruct_on_click;
+  data->index_of_current_string = 0;
+  data->total_strings           = count;
+  data->one_cycle_completed     = false;
 
-    if (next_instruction_task == NULL)
-    {
-        next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
-    }
-    else
-    {
-        lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
-    }
+  if (next_instruction_task == NULL) {
+    next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
+  } else {
+    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
+  }
 
-    multi_instruction_create();
+  multi_instruction_create();
 }
 
-void multi_instruction_with_image_init(instruction_content_t content[], const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click)
-{
+void multi_instruction_with_image_init(instruction_content_t content[],
+                                       const uint8_t count,
+                                       const uint16_t delay_in_ms,
+                                       const bool destruct_on_click) {
+  ASSERT(content != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
 
-    data = NULL;
-    data = malloc(sizeof(struct Multi_Instruction_Data));
-    obj = NULL;
-    obj = malloc(sizeof(struct Multi_Instruction_Object));
+  data = NULL;
+  data = malloc(sizeof(struct Multi_Instruction_Data));
+  ASSERT(data != NULL);
+  obj = NULL;
+  obj = malloc(sizeof(struct Multi_Instruction_Object));
+  ASSERT(obj != NULL);
 
+  memzero(data, sizeof(struct Multi_Instruction_Data));
+  for (uint8_t i = 0; i < count; i++) {
+    memcpy(&(data->instruction_content[i]), &content[i], sizeof(instruction_content_t));
+  }
 
-    for (uint8_t i = 0; i < count; i++)
-    {
-        memcpy(&(data->instruction_content[i]), &content[i], sizeof(instruction_content_t));
-        if(content[i].img != NULL){
-            data->img_object |= 1;
-        }
-    }
+  data->destruct_on_click       = destruct_on_click;
+  data->index_of_current_string = 0;
+  data->total_strings           = count;
+  data->one_cycle_completed     = false;
 
-    data->destruct_on_click = destruct_on_click;
-    data->index_of_current_string = 0;
-    data->total_strings = count;
-    data->one_cycle_completed = false;
+  if (next_instruction_task == NULL) {
+    next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
+  } else {
+    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
+  }
 
-    if (next_instruction_task == NULL)
-    {
-        next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
-    }
-    else
-    {
-        lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
-    }
-
-    multi_instruction_create();
+  multi_instruction_create();
 }
