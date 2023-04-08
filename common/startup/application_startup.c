@@ -85,6 +85,10 @@
 #include "controller_tap_cards.h"
 #include "ui_multi_instruction.h"
 
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
+
 #if USE_SIMULATOR == 0
 #include "libusb/libusb.h"
 
@@ -223,6 +227,9 @@ static void display_init()
     lv_port_disp_init();
     lv_port_indev_init();
     ui_init(indev_keypad);
+#ifdef DEV_BUILD
+    ekp_register_process_func(ekp_process_queue);
+#endif
 }
 
 #if X1WALLET_MAIN
@@ -386,7 +393,9 @@ void application_init() {
         set_auth_state(get_auth_state());
     }
 #ifdef DEV_BUILD
+#if USE_SIMULATOR == 0
     buzzer_disabled = true;
+#endif
 #endif
 }
 
@@ -395,10 +404,13 @@ void check_invalid_wallets()
 {
     bool fix = false;
     char display[64];
+    uint8_t paired_card_count = get_keystore_used_count();
 
-    if(get_keystore_used_count() == 0){
+    if(paired_card_count < MAX_KEYSTORE_ENTRY){
+        char msg[64] = {0};
+        snprintf(msg, sizeof(msg), "%u card(s) not paired with device", (MAX_KEYSTORE_ENTRY - paired_card_count));
         tap_card_take_to_pairing();
-        mark_error_screen(ui_text_error_no_card_paired);
+        mark_error_screen(paired_card_count == 0 ? ui_text_error_no_card_paired : msg);
         return;
     }
 

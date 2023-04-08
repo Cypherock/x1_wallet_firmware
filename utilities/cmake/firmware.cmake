@@ -69,9 +69,11 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
+        common/libraries/nanopb
         common/startup
         common/logger
         common/coin_support
+        common/coin_support/eth_sign_data
         common/flash
         common/Firewall
 
@@ -125,9 +127,9 @@ target_compile_options(${EXECUTABLE} PRIVATE
         -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
         -fdata-sections -ffunction-sections
         -Wall -Wno-format-truncation -Wno-unused-but-set-variable -Wno-return-type
-        -Werror
         -D_POSIX_C_SOURCE=200809L
         $<$<CONFIG:Debug>:-g3>
+        $<$<CONFIG:Release>:-Werror>
         )
 
 target_link_options(${EXECUTABLE} PRIVATE

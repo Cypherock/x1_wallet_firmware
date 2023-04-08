@@ -316,6 +316,9 @@ static uint32_t serialize_unsigned_txn_to_sign(const unsigned_txn *utxn_ptr, con
 
 int32_t byte_array_to_unsigned_txn(const uint8_t *utxn_byte_array, const uint32_t size, unsigned_txn *utxn_ptr)
 {
+    if(utxn_byte_array == NULL || utxn_ptr == NULL) return -1;
+    memzero(utxn_ptr, sizeof(unsigned_txn));
+
     int64_t offset = 0, len = 0;
 
     s_memcpy(utxn_ptr->network_version, utxn_byte_array,
@@ -668,8 +671,6 @@ bool validate_change_address(const unsigned_txn *utxn_ptr, const txn_metadata *t
         change_address = utxn_ptr->output[index].script_public_key + 3;
     else return false;
 
-    if (U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BITCOIN || U32_READ_BE_ARRAY(txn_metadata_ptr->coin_index) == BTC_TEST)
-        dec_to_hex(0x80000054, (uint8_t *) txn_metadata_ptr->purpose_index, 4);
     get_address_node(txn_metadata_ptr, -1, mnemonic, passphrase, &hdnode);
     memzero(hdnode.chain_code, sizeof(hdnode.chain_code));
     memzero(hdnode.private_key, sizeof(hdnode.private_key));

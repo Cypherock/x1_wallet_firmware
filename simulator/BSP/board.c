@@ -8,6 +8,7 @@
 #include <SDL.h>
 
 uint32_t buzzer_counter=0;
+uint8_t STM32_UID[12] = {0};
 
 /**
   * @brief System Clock Configuration
@@ -167,7 +168,7 @@ BSP_Status_t BSP_FlashSectorErase(uint32_t page_address, uint32_t noOfpages)
 	return status;
 }
 
-BSP_Status_t BSP_FlashSectorWrite(__IO uint32_t *dstAddr, const uint32_t* srcAddr, uint32_t noOfWords)
+BSP_Status_t BSP_FlashSectorWrite(uint32_t *dstAddr, const uint32_t* srcAddr, uint32_t noOfWords)
 {
     BSP_Status_t status = BSP_OK;
     if (!write_file(dstAddr, srcAddr, noOfWords))
@@ -278,3 +279,15 @@ static uint32_t GetBank(uint32_t Addr)
 	  return bank;
 }
 
+
+void BSP_sysClkDisable(void)
+{
+	
+}
+
+uint32_t read_hw_gpio_config()
+{
+
+  return DEVICE_HARDWARE_STM32_2;
+  // return DEVICE_HARDWARE_STM32_3;
+}

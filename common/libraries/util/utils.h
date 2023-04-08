@@ -28,13 +28,13 @@
 /// Convert bit array of size 4 to uint32
 #define BYTE_ARRAY_TO_UINT32(x) ((x)[0] << 24 | (x)[1] << 16 | (x)[2] << 8 | (x)[3])
 /// Read 16-bit value from big-endian serialized byte-array
-#define U16_READ_BE_ARRAY(x) ((x)[0] << 8 | (x)[1])
+#define U16_READ_BE_ARRAY(x) ((uint16_t)(x)[0] << 8 | (x)[1])
 /// Read 16-bit value from little-endian serialized byte-array
-#define U16_READ_LE_ARRAY(x) ((x)[1] << 8 | (x)[0])
+#define U16_READ_LE_ARRAY(x) ((uint16_t)(x)[1] << 8 | (x)[0])
 /// Read 32-bit value from big-endian serialized byte-array
-#define U32_READ_BE_ARRAY(x) (U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
+#define U32_READ_BE_ARRAY(x) ((uint32_t)U16_READ_BE_ARRAY(x) << 16 | U16_READ_BE_ARRAY(x + 2))
 /// Read 32-bit value from little-endian serialized byte-array
-#define U32_READ_LE_ARRAY(x) (U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
+#define U32_READ_LE_ARRAY(x) ((uint32_t)U16_READ_LE_ARRAY(x + 2) << 16 | U16_READ_LE_ARRAY(x))
 /// Read 64-bit value from big-endian serialized byte-array
 #define U64_READ_BE_ARRAY(x) (((uint64_t)U32_READ_BE_ARRAY(x) << 32) | U32_READ_BE_ARRAY(x + 4))
 /// Read 64-bit value from little-endian serialized byte-array
@@ -47,6 +47,42 @@
 #define CY_MAX(a, b) ((a) > (b) ? (a) : (b))
 /// Find minimum of two values
 #define CY_MIN(a, b) ((a) < (b) ? (a) : (b))
+
+#define UTIL_INVALID_ARGUMENTS      (0x11)
+#define UTIL_OUT_OF_BOUNDS          (0x22)
+#define UTIL_IN_BOUNDS              (0xAA)
+
+/**
+ * @brief Generic return codes for functions
+ */
+typedef enum FUNC_RETURN_CODES {
+  /**
+   * Signifies everything went as expected.
+   */
+  FRC_SUCCESS = 0x0,
+  /**
+   * Generic error occurred should ideally be never be used.
+   */
+  FRC_ERROR,
+  /**
+   * Signifies passed arguments was not expected by the function.
+   */
+  FRC_INVALID_ARGUMENTS,
+  /**
+   * Signifies a NULL pointer was found at runtime.
+   */
+  FRC_NULL_POINTER,
+  /**
+   * Signifies some variable size was exceeded during
+   * function execution at runtime.
+   */
+  FRC_SIZE_EXCEEDED,
+  /**
+   * Signifies an unexpected value was encountered
+   * during the execution of the function at runtime.
+   */
+  FRC_UNEXPECTED_VALUE,
+} FUNC_RETURN_CODES;
 
 /**
  * @brief Allocates memory via malloc and makes an entry for each allocation into its global list
@@ -364,4 +400,23 @@ bool convert_byte_array_to_decimal_string(const uint8_t len,
                                           char *amount_string,
                                           char *amount_decimal_string,
                                           const size_t amount_decimal_string_size);
+
+/**
+ * @brief Checks if reading n bytes from a memory chunk of m bytes is safe or not
+ * 
+ * @param pBaseAddr: Base address of the memory chunk
+ * @param totalSizeOfChunk: Total size of memory chunk in bytes
+ * @param pCurrentSrcAddr: Base address of the chunk to read from
+ * @param readSize: Size of data to be read in bytes starting from pCurrentSrcAddr
+ * @return uint8_t: Depicting return value of the operation
+ * UTIL_INVALID_ARGUMENTS: If any argument is invalid
+ * UTIL_OUT_OF_BOUNDS: If the memory access is out of bounds
+ * UTIL_IN_BOUNDS: If the memory access is within bounds
+ */
+uint8_t UTIL_CheckBound(
+                        const uint8_t *pBaseAddr,
+                        const uint32_t totalSizeOfChunk,
+                        const uint8_t *pCurrentSrcAddr,
+                        const uint32_t readSize
+                       );
 #endif

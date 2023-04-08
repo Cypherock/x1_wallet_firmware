@@ -62,6 +62,7 @@
 
 void level_three_old_wallet_controller()
 {
+#if X1WALLET_MAIN == 1
     switch (flow_level.level_two) {
     case LEVEL_THREE_VIEW_SEED: {
         view_seed_controller();
@@ -85,6 +86,10 @@ void level_three_old_wallet_controller()
 
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
         send_transaction_controller_eth();
+    } break;
+
+    case LEVEL_THREE_SIGN_MESSAGE_ETH: {
+        sign_message_controller_eth();
     } break;
 
     case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
@@ -124,6 +129,6 @@ void level_three_old_wallet_controller()
     default:
         break;
     }
-
     return;
+#endif
 }

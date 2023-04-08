@@ -107,6 +107,9 @@
 #endif //USE_SIMULATOR
 
 #if USE_SIMULATOR == 1
+#ifdef _WIN32
+#define main SDL_main
+#endif
 #include "sim_usb.h"
 extern lv_indev_t *indev_keypad;
 #endif
@@ -126,13 +129,19 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 
 #endif
-
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 /**
   * @brief  The entry point to the application.
   * @retval int
   */
 int main(void)
 {
+#ifdef DEV_BUILD
+    ekp_queue_init();
+#endif
+
     application_init();
 
 #if USE_SIMULATOR == 0

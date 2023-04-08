@@ -83,9 +83,10 @@ extern uint8_t shamir_data[TOTAL_NUMBER_OF_SHARES][BLOCK_SIZE];
 extern uint8_t arbitrary_data_share[TOTAL_NUMBER_OF_SHARES][MAX_ARBITRARY_DATA_SIZE];
 extern uint8_t shamir_data_x_coords[TOTAL_NUMBER_OF_SHARES];
 extern Wallet wallet;
-
+extern uint32_t wallets_synced_count;
 
 void sync_cards_task(){
+#if X1WALLET_MAIN == 1
     switch(flow_level.level_three) {
     case SYNC_CARDS_START:{
         mark_event_over();
@@ -121,7 +122,7 @@ void sync_cards_task(){
     case SYNC_CARDS_SUCCESS:{
         char display[35];
         if(flow_level.level_one == LEVEL_TWO_ADVANCED_SETTINGS)
-            snprintf(display, sizeof(display), "%s", ui_text_syncing_complete);
+            snprintf(display, sizeof(display), "%ld %s", wallets_synced_count, ui_text_syncing_complete);
         else{
             snprintf(display, sizeof(display), "Syncing %s complete", wallet.wallet_name);
         }
@@ -131,4 +132,5 @@ void sync_cards_task(){
 
     } break;
     }
+#endif
 }

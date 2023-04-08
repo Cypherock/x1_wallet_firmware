@@ -170,9 +170,11 @@ def addHeader(privateKeyFile, customInput, customOutput, versionFilePath):
     for i in range(128):
         signatureData += '0'
 
+    firmwareHash = hashlib.sha256(filedata).digest()
+    print(firmwareHash.hex())
     crc_int = crc32(filedata)
     crc_value = struct.pack("<I", crc_int)
-    metadata = bytes.fromhex(filesizeHex) + bytes.fromhex(magic_no) + num_versions[0] + num_versions[1] + crc_value
+    metadata = bytes.fromhex(filesizeHex) + bytes.fromhex(magic_no) + num_versions[0] + num_versions[1] + crc_value + firmwareHash
     header[0:] = metadata
     for i in range(64 - len(metadata)):
         header.append(0)

@@ -129,7 +129,9 @@ void level_three_advanced_settings_controller()
         break;
 
     case LEVEL_THREE_ADJUST_BUZZER: {
+#if USE_SIMULATOR == 0
         buzzer_disabled = flow_level.screen_input.list_choice == 1;
+#endif
         counter.level = LEVEL_TWO;
         flow_level.level_two = 1;
     } break;

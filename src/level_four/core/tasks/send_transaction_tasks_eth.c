@@ -71,6 +71,7 @@
 #include "ui_input_text.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
+#include "ui_scroll_page.h"
 #include "utils.h"
 
 extern char* ALPHABET;
@@ -79,6 +80,7 @@ extern char* NUMBERS;
 extern char* PASSPHRASE;
 
 extern lv_task_t* timeout_task;
+extern ui_display_node *current_display_node;
 
 
 void send_transaction_tasks_eth()
@@ -98,7 +100,7 @@ void send_transaction_tasks_eth()
     } break;
 
     case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-        if (!eth_unsigned_txn_ptr.contract_verified){
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_CONTRACT_NOT_WHITELISTED){
             instruction_scr_destructor();
             delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
         } else {
@@ -119,6 +121,30 @@ void send_transaction_tasks_eth()
         snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
+    } break;
+
+    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "%s Blind Signing\nProceed at your own risk!", LV_SYMBOL_WARNING);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
+    } break;
+
+    case SEND_TXN_VERIFY_DERIVATION_PATH:{
+        if (eth_unsigned_txn_ptr.payload_status == PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
+            char display[125] = {0};
+            char path[128] = {0};
+            eth_derivation_path_to_string(&var_send_transaction_data.transaction_metadata,path,sizeof(path));
+            instruction_scr_destructor();
+            snprintf(display, sizeof(display), "Verify Derivation Path\n%s",path);
+            confirm_scr_init(display);
+        } else {
+            mark_event_over();
+        }
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {
@@ -158,7 +184,7 @@ void send_transaction_tasks_eth()
           byte_array_to_hex_string(address_bytes, sizeof(address_bytes), address + 2, sizeof(address) - 2);
         else
           bech32_addr_encode(address, "one", address_bytes, sizeof(address_bytes));
-        snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
+        snprintf(top_heading, sizeof(top_heading), "%s", eth_get_address_title(&eth_unsigned_txn_ptr));
         snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
         address_scr_init(top_heading, display, true);
     } break;
@@ -176,9 +202,6 @@ void send_transaction_tasks_eth()
         memzero(amount_string, sizeof(amount_string));
         uint8_t len = 0, i = 0, j = 0;
 
-        char token[9];
-        snprintf(token, sizeof(token), "%s", var_send_transaction_data.transaction_metadata.token_name);
-        
         len = eth_get_value(&eth_unsigned_txn_ptr, amount_string);
         uint8_t decimal_val_s[ETH_VALUE_SIZE_BYTES * 3] = {0};
         if (sizeof(decimal_val_s)/sizeof(decimal_val_s[0]) > UINT8_MAX){
@@ -190,7 +213,7 @@ void send_transaction_tasks_eth()
         bool pre_dec_digit = false, post_dec_digit = false;
         uint8_t offset = 0;
         log_hex_array("eth value: ", (uint8_t*)amount_string, len);
-        uint8_t point_index = dec_val_len - var_send_transaction_data.transaction_metadata.eth_val_decimal[0];
+        uint8_t point_index = dec_val_len - eth_get_decimal(&var_send_transaction_data.transaction_metadata);
         i = 0;
         j = dec_val_len - 1;
 
@@ -220,11 +243,11 @@ void send_transaction_tasks_eth()
             i++;
         }
         if(!post_dec_digit && !pre_dec_digit){
-            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0.0");
+            snprintf(amount_decimal_string, sizeof(amount_decimal_string) - 1, "0");
         }
 
         instruction_scr_destructor();
-        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, var_send_transaction_data.transaction_metadata.token_name);
+        snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_decimal_string, eth_get_asset_symbol(&var_send_transaction_data.transaction_metadata));
         confirm_scr_init(display);
     } break;
 
@@ -233,7 +256,7 @@ void send_transaction_tasks_eth()
 
         instruction_scr_destructor();
         eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee),
-                           18);
+                           ETH_DECIMAL);
         snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee,
                  get_coin_symbol(U32_READ_BE_ARRAY(var_send_transaction_data.transaction_metadata.coin_index),
                                  var_send_transaction_data.transaction_metadata.network_chain_id));
@@ -242,6 +265,14 @@ void send_transaction_tasks_eth()
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH: {
         mark_event_over();
+    } break;
+
+    case SEND_TXN_DISPLAY_INFO_ETH: {
+        instruction_scr_destructor();
+        if (current_display_node == NULL)
+            mark_event_over();
+        else
+            ui_scrollable_page(current_display_node->title, current_display_node->value, MENU_SCROLL_HORIZONTAL, false);
     } break;
 
     case SEND_TXN_ENTER_PASSPHRASE_ETH: {

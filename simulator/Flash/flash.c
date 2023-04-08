@@ -178,7 +178,7 @@ int erase_file(uint32_t page_address, uint32_t noOfpages)
     return 1;
 }
 
-int write_file(__IO uint32_t *dstAddr, const uint32_t* srcAddr, uint32_t noOfWords)
+int write_file(uint32_t *dstAddr, const uint32_t* srcAddr, uint32_t noOfWords)
 {
     init();
     FILE* file = fopen(GET_FILE_FROM_ADDRESS((size_t) dstAddr), "rb+");

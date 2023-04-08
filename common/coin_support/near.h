@@ -17,8 +17,13 @@
 #define NEAR_PURPOSE_INDEX   0x8000002C
 #define NEAR_COIN_INDEX      0x8000018D
 #define NEAR_ACCOUNT_INDEX   0x80000000
-#define NEAR_CHAIN_INDEX     0x80000000
+#define NEAR_CHANGE_INDEX    0x80000000
 #define NEAR_ADDRESS_INDEX   0x80000001
+
+/// Ref: https://nomicon.io/Economics/Economic
+#define NEAR_DECIMAL      (24U)
+/// Ref: https://docs.near.org/concepts/basics/transactions/gas#the-cost-of-common-actions
+#define NEAR_FEES_DECIMAL (20U)
 
 #define NEAR_COIN_VERSION    0x00000000
 
@@ -235,5 +240,12 @@ size_t near_get_account_ids_count(const uint8_t* data,const uint16_t data_len);
  * @return bool     Returns true if the path values are valid. False otherwise.
  */
 bool near_verify_derivation_path(const uint32_t *path, uint8_t levels);
+
+/**
+ * @brief Returns the decimal value of near asset
+ * 
+ * @return uint8_t decimal value
+ */
+uint8_t near_get_decimal();
 
 #endif //NEAR_HEADER
