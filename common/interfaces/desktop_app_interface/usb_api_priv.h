@@ -54,5 +54,21 @@ bool usb_get_msg(En_command_type_t *command_type,
                  uint8_t **msg_data,
                  uint16_t *msg_len);
 
+/**
+ * @brief Clear message from desktop.
+ * Sets 0 to variable storing message from desktop.
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ */
+void usb_free_msg_buffer();
+
+/**
+ * @brief Resets the internal command processing state of usb exchange
+ *
+ */
+void usb_reset_state();
 #endif
+
 #endif

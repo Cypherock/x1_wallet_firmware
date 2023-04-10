@@ -106,24 +106,24 @@ bool get_usb_msg_by_cmd_type(En_command_type_t command_type,
                              uint8_t **msg_data,
                              uint16_t *msg_len);
 
+#define clear_message_received_data usb_free_msg_buffer
+#define comm_process_complete usb_reset_state
+
 /**
  * @brief Clear message from desktop.
  * Sets 0 to variable storing message from desktop.
  * @details
  *
- * @param
- *
- * @return
- * @retval
- *
  * @see
  * @since v1.0.0
- *
- * @note
  */
-void clear_message_received_data();
+void usb_free_msg_buffer();
 
-void comm_process_complete();
+/**
+ * @brief Resets the internal command processing state of usb exchange
+ *
+ */
+void usb_reset_state();
 
 /**
  * @brief Reject any ongoing flow.

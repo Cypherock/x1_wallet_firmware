@@ -96,8 +96,8 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void usb_clear_event() {
-  clear_message_received_data();
-  comm_process_complete();
+  usb_free_msg_buffer();
+  usb_reset_state();
 }
 
 bool usb_get_event(usb_event_t *evt) {

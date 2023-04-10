@@ -385,7 +385,7 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
 void usb_reject_invalid_request() {
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
-  clear_message_received_data();
+  usb_free_msg_buffer();
   comm_status.curr_cmd_state =
       CMD_STATE_INVALID_REQ;    // Imp: Should be updated after writing to
                                 // buffer
@@ -447,11 +447,11 @@ void usb_send_data(const uint32_t command_type,
   }
 }
 
-void clear_message_received_data() {
+void usb_free_msg_buffer() {
   sys_flow_cntrl_u.bits.usb_buffer_free = true;
 
   // If cmd_state has already transitioned, then the cmd is already completed.
-  // This will make double calls to clear_message_received_data() safe from
+  // This will make double calls to usb_free_msg_buffer() safe from
   // protocol.
   if (comm_status.curr_cmd_state != CMD_STATE_RECEIVED)
     return;
@@ -460,7 +460,7 @@ void clear_message_received_data() {
   LOG_SWV("%s\n", __func__);
 }
 
-void comm_process_complete() {
+void usb_reset_state() {
   comm_status.curr_cmd_state = CMD_STATE_NONE;
 }
 
