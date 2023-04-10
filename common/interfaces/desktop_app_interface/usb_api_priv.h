@@ -6,8 +6,8 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef USB_H
-#define USB_H
+#ifndef USB_API_PRIV_H
+#define USB_API_PRIV_H
 
 /*****************************************************************************
  * INCLUDES
