@@ -385,6 +385,7 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
 void usb_reject_invalid_request() {
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
+  clear_message_received_data();
   comm_status.curr_cmd_state =
       CMD_STATE_INVALID_REQ;    // Imp: Should be updated after writing to
                                 // buffer
