@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 #include "p0_events_test.h"
+#include "ui_events_test.h"
 #include "unity_fixture.h"
 
 TEST_GROUP_RUNNER(p0_events_test) {
@@ -64,4 +65,12 @@ TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, abort_evt_abort_disabled);
   RUN_TEST_CASE(p0_events_test, abort_inactivity_race);
   RUN_TEST_CASE(p0_events_test, inactivity_refresh_on_joystick_movement);
+}
+
+TEST_GROUP_RUNNER(ui_events_test) {
+  RUN_TEST_CASE(ui_events_test, set_confirm);
+  RUN_TEST_CASE(ui_events_test, set_cancel);
+  RUN_TEST_CASE(ui_events_test, set_list);
+  RUN_TEST_CASE(ui_events_test, set_text_input);
+  RUN_TEST_CASE(ui_events_test, event_getter);
 }
