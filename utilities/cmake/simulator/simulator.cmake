@@ -83,6 +83,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/coin_support/eth_sign_data
         common/flash
         common/Firewall
+        common/core
+        common/timers
 
         common
         common/lvgl
@@ -115,8 +117,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
         #unit test modules: this list needs to be updated whenever a test module is being added
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
-        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/p0_events>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/ui/ui_events_test>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
         )
 
 IF(UNIT_TESTS_SWITCH)

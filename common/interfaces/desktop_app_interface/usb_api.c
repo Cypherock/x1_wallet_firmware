@@ -60,6 +60,7 @@
 #include "board.h"
 #include "communication.h"
 #include "logger.h"
+#include "p0_events.h"
 #include "sys_state.h"
 #include "usb_api_priv.h"
 #include "utils.h"
@@ -838,6 +839,7 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
   if (!comm_status.abort_disabled) {
     comm_reset();
     CY_Reset_Flow();
+    p0_set_abort_evt(true);
     comm_status.curr_cmd_seq_no = rx_packet->header.sequence_no;
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
   }

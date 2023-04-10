@@ -80,8 +80,9 @@ extern lv_indev_t *indev_keypad;
 #endif /* USE_SIMULATOR == 1 */
 
 void RunAllTests(void) {
-  RUN_TEST_GROUP(usb_evt_api_test);
+  RUN_TEST_GROUP(p0_events_test);
   RUN_TEST_GROUP(ui_events_test);
+  RUN_TEST_GROUP(usb_evt_api_test);
 }
 
 /**
