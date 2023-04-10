@@ -1,7 +1,9 @@
 /**
- * @file    unit_tests_lists.c
+ * @file    ui_events_test.h
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   UI Events module tests
+ *          Tests the event getter and setter operation used by UI screens and
+ *os
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,25 +58,79 @@
  ******************************************************************************
  */
 #include "ui_events_test.h"
-#include "unity_fixture.h"
 
-TEST_GROUP_RUNNER(usb_evt_api_test) {
-  RUN_TEST_CASE(usb_evt_api_test, basic);
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
-  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
+#include "memzero.h"
+#include "ui_events.h"
+#include "ui_events_priv.h"
+
+#if USE_SIMULATOR == 0
+#endif /* USE_SIMULATOR == 0 */
+
+TEST_GROUP(ui_events_test);
+
+TEST_SETUP(ui_events_test) {
+  return;
 }
 
-TEST_GROUP_RUNNER(ui_events_test) {
-  RUN_TEST_CASE(ui_events_test, set_confirm);
-  RUN_TEST_CASE(ui_events_test, set_cancel);
-  RUN_TEST_CASE(ui_events_test, set_list);
-  RUN_TEST_CASE(ui_events_test, set_text_input);
-  RUN_TEST_CASE(ui_events_test, event_getter);
+TEST_TEAR_DOWN(ui_events_test) {
+  return;
+}
+
+TEST(ui_events_test, set_confirm) {
+  ui_event_t ui_event = {0};
+  ui_set_confirm_event();
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_CONFIRM);
+}
+
+TEST(ui_events_test, set_cancel) {
+  ui_event_t ui_event = {0};
+  ui_set_cancel_event();
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_REJECT);
+}
+
+TEST(ui_events_test, set_list) {
+  ui_event_t ui_event = {0};
+  uint16_t list_selection = 40000;
+  ui_set_list_event(list_selection);
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_LIST_CHOICE);
+  TEST_ASSERT(ui_event.list_selection == list_selection);
+}
+
+TEST(ui_events_test, set_text_input) {
+  ui_event_t ui_event = {0};
+  char *text_ptr = "DUMMY";
+  ui_set_text_input_event(text_ptr);
+
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_TEXT_INPUT);
+  TEST_ASSERT(ui_event.text_ptr == text_ptr);
+}
+
+TEST(ui_events_test, event_getter) {
+  ui_event_t ui_event = {0};
+  char *text_ptr = "DUMMY";
+  ui_set_text_input_event(text_ptr);
+
+  // Getter call when event occured
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_TEXT_INPUT);
+  TEST_ASSERT(ui_event.text_ptr == text_ptr);
+
+  // Getter call when waiting for event
+  memzero(&ui_event, sizeof(ui_event));
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == false);
+  TEST_ASSERT(ui_event.event_occured == false);
+  TEST_ASSERT(ui_event.event_type == 0);
+  TEST_ASSERT(ui_event.text_ptr == NULL);
 }

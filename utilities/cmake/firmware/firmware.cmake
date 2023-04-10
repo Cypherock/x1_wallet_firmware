@@ -141,6 +141,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         #unit test modules: this list needs to be updated whenever a test module is being added
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/ui/ui_events_test>
         )
 
 target_compile_options(${EXECUTABLE} PRIVATE
