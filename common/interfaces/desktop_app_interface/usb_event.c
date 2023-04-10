@@ -1,7 +1,8 @@
 /**
- * @file    unit_tests_lists.c
+ * @file    usb_event.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   USB Event APIs.
+ *          Describes all the logic for interfacing with USB Events.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -55,26 +56,55 @@
  *
  ******************************************************************************
  */
-#include "ui_events_test.h"
-#include "unity_fixture.h"
 
-TEST_GROUP_RUNNER(usb_evt_api_test) {
-  RUN_TEST_CASE(usb_evt_api_test, basic);
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
-  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "memzero.h"
+#include "usb_api.h"
+#include "usb_api_priv.h"
+
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+void usb_clear_event() {
+  usb_free_msg_buffer();
+  usb_reset_state();
 }
 
-TEST_GROUP_RUNNER(ui_events_test) {
-  RUN_TEST_CASE(ui_events_test, set_confirm);
-  RUN_TEST_CASE(ui_events_test, set_cancel);
-  RUN_TEST_CASE(ui_events_test, set_list);
-  RUN_TEST_CASE(ui_events_test, set_text_input);
-  RUN_TEST_CASE(ui_events_test, event_getter);
+bool usb_get_event(usb_event_t *evt) {
+  if (evt == NULL)
+    return false;
+
+  memzero(evt, sizeof(usb_event_t));
+  evt->flag = usb_get_msg(&evt->cmd_id, &evt->p_msg, &evt->msg_size);
+  return evt->flag;
 }
