@@ -8,8 +8,8 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef INCLUDE_GUARD
-#define INCLUDE_GUARD
+#ifndef UI_EVENTS_PRIV
+#define UI_EVENTS_PRIV
 
 /*****************************************************************************
  * INCLUDES
