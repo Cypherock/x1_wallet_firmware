@@ -67,6 +67,19 @@ TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, inactivity_refresh_on_joystick_movement);
 }
 
+TEST_GROUP_RUNNER(usb_evt_api_test) {
+  RUN_TEST_CASE(usb_evt_api_test, basic);
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
+  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
+}
+
 TEST_GROUP_RUNNER(ui_events_test) {
   RUN_TEST_CASE(ui_events_test, set_confirm);
   RUN_TEST_CASE(ui_events_test, set_cancel);
