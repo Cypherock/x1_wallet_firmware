@@ -1,6 +1,5 @@
 /**
  * @file    ui_events_test.h
- *_test.h
  * @author  Cypherock X1 Team
  *
  * @details
