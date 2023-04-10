@@ -352,6 +352,24 @@ void multi_instruction_create() {
   }
 }
 
+/**
+ * @brief   Set configuration for multi-instruction screen.
+ *          Populates Multi_Instruction_Data object and setup
+ *          the next_instruction_task
+*/
+void multi_instruction_set_config(const uint8_t count, const uint16_t delay_in_ms, const bool destruct_on_click) {
+  data->destruct_on_click       = destruct_on_click;
+  data->index_of_current_string = 0;
+  data->total_strings           = count;
+  data->one_cycle_completed     = false;
+
+  if (next_instruction_task == NULL) {
+    next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
+  } else {
+    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
+  }
+}
+
 void multi_instruction_init(const char **arr,
                             const uint8_t count,
                             const uint16_t delay_in_ms,
@@ -370,17 +388,7 @@ void multi_instruction_init(const char **arr,
     snprintf(data->instruction_content[i].text, sizeof(data->instruction_content[i].text), "%s", arr[i]);
   }
 
-  data->destruct_on_click       = destruct_on_click;
-  data->index_of_current_string = 0;
-  data->total_strings           = count;
-  data->one_cycle_completed     = false;
-
-  if (next_instruction_task == NULL) {
-    next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
-  } else {
-    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
-  }
-
+  multi_instruction_set_config(count, delay_in_ms, destruct_on_click);
   multi_instruction_create();
 }
 
@@ -402,16 +410,6 @@ void multi_instruction_with_image_init(instruction_content_t content[],
     memcpy(&(data->instruction_content[i]), &content[i], sizeof(instruction_content_t));
   }
 
-  data->destruct_on_click       = destruct_on_click;
-  data->index_of_current_string = 0;
-  data->total_strings           = count;
-  data->one_cycle_completed     = false;
-
-  if (next_instruction_task == NULL) {
-    next_instruction_task = lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
-  } else {
-    lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
-  }
-
+  multi_instruction_set_config(count, delay_in_ms, destruct_on_click);
   multi_instruction_create();
 }
