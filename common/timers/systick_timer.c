@@ -1,8 +1,8 @@
 /**
  * @file    systick_timer.c
  * @author  Cypherock X1 Team
- * @brief   Main source file.
- *          Entry point to the application.
+ * @brief   System timers based events.
+ *          This handles passage of time and conveys it to application.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -79,9 +79,9 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static timeout_config_t g_timer_ctx = {.timer = 0,
-                                       .timeout = 0,
-                                       .timer_en = false};
+static timeout_config_t timer_ctx = {.timer = 0,
+                                     .timeout = 0,
+                                     .timer_en = false};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -101,9 +101,9 @@ static timeout_config_t g_timer_ctx = {.timer = 0,
 void systick_interrupt_cb(void) {
   lv_tick_inc(POLLING_TIME);
 
-  if (g_timer_ctx.timer_en) {
-    g_timer_ctx.timer += POLLING_TIME;
-    if (g_timer_ctx.timer >= g_timer_ctx.timeout) {
+  if (timer_ctx.timer_en) {
+    timer_ctx.timer += POLLING_TIME;
+    if (timer_ctx.timer >= timer_ctx.timeout) {
       p0_set_inactivity_evt(true);
       systick_set_timeout_config(false);
       systick_reset_timer();
@@ -113,20 +113,20 @@ void systick_interrupt_cb(void) {
 }
 
 void systick_reset_timer(void) {
-  g_timer_ctx.timer = 0;
+  timer_ctx.timer = 0;
   return;
 }
 
 void systick_set_timeout(uint32_t inactivity_timeout) {
-  g_timer_ctx.timeout = inactivity_timeout;
+  timer_ctx.timeout = inactivity_timeout;
   return;
 }
 
 void systick_set_timeout_config(bool enable) {
-  g_timer_ctx.timer_en = enable;
+  timer_ctx.timer_en = enable;
   return;
 }
 
 uint32_t systick_get_timer_value(void) {
-  return g_timer_ctx.timer;
+  return timer_ctx.timer;
 }
