@@ -70,7 +70,7 @@ void cyt_factory_reset() {
       break;
 
     case FACTORY_RESET_CONFIRM:
-      confirm_scr_render(ui_text_confirm_factory_reset);
+      confirm_scr_init(ui_text_confirm_factory_reset);
       break;
 
     case FACTORY_RESET_TAP_CARD1:

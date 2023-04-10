@@ -59,4 +59,19 @@ void ui_set_list_event(uint16_t list_selection);
  * @return  returns true if event was set correctly and ui status was updated
  */
 void ui_set_text_input_event(char *text_ptr);
+
+/**
+ * @brief This API copies the input stored in the internal input buffer to the
+ * buffer which the application can access from their context. It is assumed
+ * that the application has appropriately allocated enough space to accomodate
+ * the maximum input length.
+ *
+ * @param text_src_ptr Pointer to source of internal input buffer
+ * @param input_text_ptr Pointer to application buffer
+ * @param max_text_len Maximum length of input as requested by the application.
+ */
+void ui_fill_text(const char *text_src_ptr,
+                  char *input_text_ptr,
+                  const size_t max_text_len);
+
 #endif

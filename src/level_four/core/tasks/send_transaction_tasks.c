@@ -163,7 +163,7 @@ void send_transaction_tasks() {
               BYTE_ARRAY_TO_UINT32(
                   var_send_transaction_data.transaction_metadata.coin_index),
               var_send_transaction_data.transaction_metadata.network_chain_id));
-      confirm_scr_render(display);
+      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
@@ -172,7 +172,7 @@ void send_transaction_tasks() {
               &var_send_transaction_data.unsigned_transaction,
               BYTE_ARRAY_TO_UINT32(
                   var_send_transaction_data.transaction_metadata.coin_index))) {
-        confirm_scr_render(ui_text_warning_transaction_fee_too_high);
+        confirm_scr_init(ui_text_warning_transaction_fee_too_high);
         confirm_scr_focus_cancel();
       } else {
         mark_event_over();
@@ -196,7 +196,7 @@ void send_transaction_tasks() {
               BYTE_ARRAY_TO_UINT32(
                   var_send_transaction_data.transaction_metadata.coin_index),
               var_send_transaction_data.transaction_metadata.network_chain_id));
-      confirm_scr_render(display);
+      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD: {

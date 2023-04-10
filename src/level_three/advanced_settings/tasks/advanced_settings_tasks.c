@@ -105,18 +105,18 @@ void level_three_advanced_settings_tasks() {
         mark_error_screen(ui_text_error_pair_atleast_2_cards);
         break;
       }
-      confirm_scr_render(ui_text_sync_x1card_confirm);
+      confirm_scr_init(ui_text_sync_x1card_confirm);
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-      confirm_scr_render(ui_text_rotate_display_confirm);
+      confirm_scr_init(ui_text_rotate_display_confirm);
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
       if (is_passphrase_disabled()) {
-        confirm_scr_render(ui_text_enable_passphrase_step);
+        confirm_scr_init(ui_text_enable_passphrase_step);
       } else {
-        confirm_scr_render(ui_text_disable_passphrase_step);
+        confirm_scr_init(ui_text_disable_passphrase_step);
       }
     } break;
 
@@ -255,9 +255,9 @@ void level_three_advanced_settings_tasks() {
 
     case LEVEL_THREE_TOGGLE_LOGGING: {
       if (!is_logging_enabled())
-        confirm_scr_render(ui_text_enable_log_export);
+        confirm_scr_init(ui_text_enable_log_export);
       else
-        confirm_scr_render(ui_text_disable_log_export);
+        confirm_scr_init(ui_text_disable_log_export);
     } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)

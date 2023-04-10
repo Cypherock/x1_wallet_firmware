@@ -133,7 +133,7 @@ void tasks_arbitrary_data() {
     } break;
 
     case ARBITRARY_DATA_SKIP_PIN: {
-      confirm_scr_render(ui_text_do_you_want_to_set_pin);
+      confirm_scr_init(ui_text_do_you_want_to_set_pin);
       confirm_scr_focus_cancel();
     } break;
 

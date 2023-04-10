@@ -77,7 +77,7 @@ extern char *NUMBERS;
 void delete_wallet_task() {
   switch (flow_level.level_three) {
     case DELETE_WALLET_DUMMY_TASK:
-      confirm_scr_render(ui_text_need_all_x1cards_to_delete_wallet_entirely);
+      confirm_scr_init(ui_text_need_all_x1cards_to_delete_wallet_entirely);
       break;
     case DELETE_WALLET_ENTER_PIN:
       if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {

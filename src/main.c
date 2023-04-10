@@ -116,7 +116,6 @@ extern lv_indev_t *indev_keypad;
 #endif
 extern Counter counter;
 extern bool main_app_ready;
-extern void process_ui_events();
 
 #if USE_SIMULATOR == 1
 

@@ -59,6 +59,7 @@
 #include "ui_scroll_page.h"
 
 #include "stdlib.h"
+#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -312,12 +313,8 @@ static void page_cancel_handler(lv_obj_t *pCancelLvglObj,
       break;
     }
     case LV_EVENT_CLICKED: {
+      ui_set_cancel_event();
       ui_scrollable_destructor();
-
-      if (NULL != ui_mark_event_cancel) {
-        ui_mark_event_cancel();
-      }
-
       break;
     }
     case LV_EVENT_DEFOCUSED: {
@@ -352,12 +349,8 @@ static void page_accept_handler(lv_obj_t *pAcceptLvglObj,
       break;
     }
     case LV_EVENT_CLICKED: {
+      ui_set_confirm_event();
       ui_scrollable_destructor();
-
-      if (NULL != ui_mark_event_over) {
-        ui_mark_event_over();
-      }
-
       break;
     }
     case LV_EVENT_DEFOCUSED: {

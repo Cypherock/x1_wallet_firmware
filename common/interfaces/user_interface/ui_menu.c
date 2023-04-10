@@ -58,8 +58,26 @@
  */
 #include "ui_menu.h"
 
+#include "ui_events_priv.h"
+
 static struct Menu_Data *data = NULL;
 static struct Menu_Object *obj = NULL;
+
+/**
+ * @brief Create menu UI
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+void menu_create();
 
 void menu_init(const char *option_list[],
                const int number_of_options,
@@ -100,6 +118,7 @@ void menu_init(const char *option_list[],
  * @note
  */
 static void menu_destructor() {
+  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Menu_Data));
     free(data);
@@ -164,11 +183,7 @@ static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(data->current_index + 1);
-      lv_obj_clean(lv_scr_act());
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
+      ui_set_list_event(data->current_index + 1);
       menu_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
@@ -210,9 +225,7 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      lv_obj_clean(lv_scr_act());
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
+      ui_mark_event_cancel();
       menu_destructor();
       break;
     case LV_EVENT_DEFOCUSED:

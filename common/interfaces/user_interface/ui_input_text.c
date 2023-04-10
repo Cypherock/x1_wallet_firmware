@@ -58,10 +58,27 @@
  */
 #include "ui_input_text.h"
 
+#include "ui_events_priv.h"
 #include "utils.h"
 
 static struct Input_Text_Data *data = NULL;
 static struct Input_Text_Object *obj = NULL;
+
+/**
+ * @brief Create input text UI
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+void input_text_create();
 
 int get_entered_text_px_width() {
   lv_obj_t *label = lv_obj_get_child(obj->text_entered, NULL);
@@ -83,11 +100,12 @@ int get_entered_text_px_width() {
   return size.x;
 }
 
-void input_text_init(const char *input_list,
-                     const char *initial_heading,
-                     const uint8_t min_input_size,
-                     const INPUT_DATA_TYPE data_type,
-                     const uint8_t max_input_size) {
+void ui_input_text(const char *input_list,
+                   char *input_text_ptr,
+                   const char *initial_heading,
+                   const uint8_t min_input_size,
+                   const INPUT_DATA_TYPE data_type,
+                   const uint8_t max_input_size) {
   ASSERT(input_list != NULL);
   ASSERT(initial_heading != NULL);
   ASSERT(max_input_size != 0);
@@ -97,6 +115,18 @@ void input_text_init(const char *input_list,
 
   if (data != NULL) {
     data->input_list = input_list;
+
+    /* TODO: Update after refactor */
+    /* As per current scenario, wherever an input is required, applications use
+     * input_text_init() which fills the input in global buffer
+     * flow_level.screen_input.input_text. This will be fixed after refactor so
+     * we shall remove below check once refactor is complete */
+    if (input_text_ptr == NULL) {
+      data->input_text_ptr = flow_level.screen_input.input_text;
+    } else {
+      data->input_text_ptr = input_text_ptr;
+    }
+
     data->input_list_size = strnlen(input_list, MAX_CHARACTER_INPUT_LIST);
     data->initial_heading = (char *)initial_heading;
     data->min_input_size = min_input_size;
@@ -116,6 +146,21 @@ void input_text_init(const char *input_list,
 
   input_text_create();
   reset_theme();
+}
+
+void input_text_init(const char *input_list,
+                     const char *initial_heading,
+                     const uint8_t min_input_size,
+                     const INPUT_DATA_TYPE data_type,
+                     const uint8_t max_input_size) {
+  /* In order to support current calls to input_text_init, set the argument
+   * `input_text_ptr` as NULL*/
+  ui_input_text(input_list,
+                NULL,
+                initial_heading,
+                min_input_size,
+                data_type,
+                max_input_size);
 }
 
 /**
@@ -286,9 +331,9 @@ static void character_event_handler(lv_obj_t *character,
       if (strnlen(data->entered_text, MAX_ARRAY_SIZE) == 0)
         lv_label_set_text(lv_obj_get_child(obj->text_entered, NULL), "");
 
-      // 10 is added to the current pixel width to change the alignment to RIGHT
-      // incase the last added character overlaps 10 is considered an average
-      // width of a pixel
+      // 10 is added to the current pixel width to change the alignment to
+      // RIGHT incase the last added character overlaps 10 is considered an
+      // average width of a pixel
       char first_char_current_text = data->current_text[0];
       if (get_entered_text_px_width() + 10 <= 98 &&
           strnlen(data->entered_text, MAX_ARRAY_SIZE) <= data->max_input_size) {
@@ -451,7 +496,7 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      mark_event_cancel();
+      ui_set_cancel_event();
       input_text_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
@@ -498,11 +543,13 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      mark_input(data->entered_text);
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(data->current_index + 1);
+      /* As of now, all text is stored in the buffer data->entered_text,
+       * therefore we must copy data from here into the buffer which the
+       * application can access */
+      ui_fill_text(
+          data->entered_text, data->input_text_ptr, data->max_input_size);
+      ui_set_text_input_event(data->input_text_ptr);
       input_text_destructor();
-      mark_event_over();
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(next_btn, LV_BTN_STATE_REL);

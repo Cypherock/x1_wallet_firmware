@@ -204,7 +204,7 @@ void send_transaction_tasks_near() {
               BYTE_ARRAY_TO_UINT32(
                   var_send_transaction_data.transaction_metadata.coin_index),
               0));
-      confirm_scr_render(display);
+      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
@@ -250,7 +250,7 @@ void send_transaction_tasks_near() {
       } else {
         // TODO: add error handling / handling for other actions
       }
-      confirm_scr_render(display);
+      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_NEAR: {

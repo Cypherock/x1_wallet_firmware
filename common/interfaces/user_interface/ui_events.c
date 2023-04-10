@@ -112,17 +112,20 @@ bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
 void ui_set_confirm_event() {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_CONFIRM;
+  return;
 }
 
 void ui_set_cancel_event() {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_REJECT;
+  return;
 }
 
 void ui_set_list_event(uint16_t list_selection) {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_LIST_CHOICE;
   ui_event.list_selection = list_selection;
+  return;
 }
 
 void ui_set_text_input_event(char *text_ptr) {
@@ -131,4 +134,13 @@ void ui_set_text_input_event(char *text_ptr) {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_TEXT_INPUT;
   ui_event.text_ptr = text_ptr;
+  return;
+}
+
+void ui_fill_text(const char *text_src_ptr,
+                  char *input_text_ptr,
+                  const size_t max_text_len) {
+  ASSERT((text_src_ptr != NULL) && (input_text_ptr != NULL));
+  snprintf(input_text_ptr, max_text_len, "%s", text_src_ptr);
+  return;
 }

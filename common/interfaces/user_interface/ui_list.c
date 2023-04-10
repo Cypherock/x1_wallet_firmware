@@ -61,8 +61,16 @@
 
 #include "ui_list.h"
 
+#include "ui_events_priv.h"
+
 static struct List_Data *data = NULL;
 static struct List_Object *obj = NULL;
+
+/**
+ * @brief Create UI for list
+ *
+ */
+void list_create();
 
 void list_init(const char option_list[24][15],
                const int number_of_options,
@@ -312,8 +320,7 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
+      ui_set_cancel_event();
       list_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
@@ -358,8 +365,7 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
+      ui_set_confirm_event();
       list_destructor();
       break;
     case LV_EVENT_DEFOCUSED:

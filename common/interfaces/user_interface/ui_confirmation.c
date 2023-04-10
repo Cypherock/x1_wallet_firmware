@@ -58,7 +58,8 @@
  */
 #include "ui_confirmation.h"
 
-#include "ui_events.h"
+#include "ui_events_priv.h"
+
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -81,25 +82,6 @@ void confirm_scr_init(const char *text) {
   ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
 #endif
   confirm_scr_create();
-}
-
-void confirm_scr_render(const char *text) {
-  ASSERT(text != NULL);
-
-  data = malloc(sizeof(struct Confirm_Data));
-  obj = malloc(sizeof(struct Confirm_Object));
-
-  if (data != NULL) {
-    data->text = (char *)text;
-  }
-
-#ifdef DEV_BUILD
-  ekp_enqueue(LV_KEY_UP, DEFAULT_DELAY);
-  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
-#endif
-  confirm_scr_create();
-  lv_task_handler();
-  ui_status_mark_ready_for_events();
 }
 
 /**
