@@ -1,8 +1,9 @@
 /**
  * @file    ui_events_test.h
  * @author  Cypherock X1 Team
- * @brief   This header file contains header file template for a unit test
- *module
+ * @brief   UI Events module tests
+ *          Tests the event getter and setter operation used by UI screens and
+ *os
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>

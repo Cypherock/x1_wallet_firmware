@@ -2,8 +2,6 @@
  * @file    ui_events_test.h
  *_test.h
  * @author  Cypherock X1 Team
- * @brief   This header file contains header file template for a unit test
- * module
  *
  * @details
  *
