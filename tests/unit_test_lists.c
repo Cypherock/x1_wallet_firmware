@@ -59,6 +59,17 @@
 #include "ui_events_test.h"
 #include "unity_fixture.h"
 
+TEST_GROUP_RUNNER(event_getter_test) {
+  RUN_TEST_CASE(event_getter_test, no_event);
+  RUN_TEST_CASE(event_getter_test, nfc_event);
+  RUN_TEST_CASE(event_getter_test, p0_event);
+  RUN_TEST_CASE(event_getter_test, ui_event);
+  RUN_TEST_CASE(event_getter_test, usb_event);
+  RUN_TEST_CASE(event_getter_test, listening_all_events);
+  RUN_TEST_CASE(event_getter_test, listening_all_available_one);
+  RUN_TEST_CASE(event_getter_test, disabled_events);
+}
+
 TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, inactivity_evt);
   RUN_TEST_CASE(p0_events_test, abort_evt);
