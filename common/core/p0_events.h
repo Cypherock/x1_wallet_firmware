@@ -83,7 +83,7 @@ bool p0_get_evt(p0_evt_t *p_p0_evt);
 /**
  * @brief This function destroys the ctx of the configuration and events that
  * may have occured after the ctx of P0 event getter was initialized.
- * NOTE: Any call to p0_ctx_init must be preceeded with call to
+ * NOTE: Any call to p0_ctx_init must followed with a call to
  * p0_ctx_destroy;
  */
 void p0_ctx_destroy(void);
