@@ -1,5 +1,5 @@
 /**
- * @file    systick_timer.h
+ * @file    systick_timer_priv.h
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -10,16 +10,14 @@
  *
  */
 
-#ifndef SYSTICK_TIMER_H
-#define SYSTICK_TIMER_H
+#ifndef SYSTICK_TIMER_PRIV_H
+#define SYSTICK_TIMER_PRIV_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <stdbool.h>
 #include <stdint.h>
-
-#include "lvgl.h"
-#include "p0_events.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -28,11 +26,6 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  uint32_t timer;
-  uint32_t timeout;
-  bool timer_en;
-} timeout_config_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -42,19 +35,26 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This callback is called upon a systick timer interrupt, which
- * increments time for the LVGL library and maintains inactivity timer for the
- * core system. In case the inactivity timer exceeds the timeout configured, it
- * registers the event in P0 event module.
+ * @brief This API resets the inactivity timer.
  *
  */
-void systick_interrupt_cb(void);
+void systick_reset_timer(void);
 
 /**
- * @brief This API returns the current timer value of the timeout counter
+ * @brief This API sets the timeout of the inactivity timer.
  *
- * @return uint32_t
+ * @param inactivity_timeout The timeout in milliseconds (ms) to be configured.
  */
-uint32_t systick_get_timer_value(void);
+void systick_set_timeout(uint32_t inactivity_timeout);
 
-#endif /* SYSTICK_TIMER_H */
+/**
+ * @brief This API enables or disables the timer increments or timeout
+ * comparisons. These operations must be only enabled when the system is waiting
+ * for any such events.
+ *
+ * @param enable true or false, depicting whether the timer operations needs to
+ * be enabled or not.
+ */
+void systick_set_timeout_config(bool enable);
+
+#endif /* SYSTICK_TIMER_PRIV_H */

@@ -63,6 +63,7 @@
 #include "systick_timer.h"
 
 #include "application_startup.h"
+#include "systick_timer_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
