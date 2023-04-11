@@ -1,8 +1,8 @@
 /**
- * @file    systick_timer.c
+ * @file    nfc_events.c
  * @author  Cypherock X1 Team
- * @brief   System timers based events.
- *          This handles passage of time and conveys it to application.
+ * @brief   NFC Events module
+ *          Provides NFC module setters and getters
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "systick_timer.h"
-
-#include "application_startup.h"
 #include "nfc_events.h"
-#include "systick_timer_priv.h"
+
+#include "string.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -73,6 +71,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define DEFAULT_NFC_TIMEOUT 100
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -81,9 +80,8 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static timeout_config_t timer_ctx = {.timer = 0,
-                                     .timeout = 0,
-                                     .timer_en = false};
+static nfc_ctx_t nfc_ctx;
+static nfc_event_t nfc_event;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -100,36 +98,57 @@ static timeout_config_t timer_ctx = {.timer = 0,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void systick_interrupt_cb(void) {
-  lv_tick_inc(POLLING_TIME);
-  nfc_tick_inc(POLLING_TIME);
+bool nfc_get_event(nfc_event_t *nfc_event_os_obj) {
+  ASSERT(nfc_event_os_obj != NULL);
 
-  if (timer_ctx.timer_en) {
-    timer_ctx.timer += POLLING_TIME;
-    if (timer_ctx.timer >= timer_ctx.timeout) {
-      p0_set_inactivity_evt(true);
-      systick_set_timeout_config(false);
-      systick_reset_timer();
-    }
+  memcpy(nfc_event_os_obj, &nfc_event, sizeof(nfc_event_t));
+  if (nfc_event.event_occured == true) {
+    nfc_event.event_occured = false;
+    return true;
   }
-  return;
+  return false;
 }
 
-void systick_reset_timer(void) {
-  timer_ctx.timer = 0;
-  return;
+void nfc_enable_card_detect_event() {
+  nfc_ctx.card_detect_enabled = true;
 }
 
-void systick_set_timeout(uint32_t inactivity_timeout) {
-  timer_ctx.timeout = inactivity_timeout;
-  return;
+void nfc_disable_card_detect_event() {
+  nfc_ctx.card_detect_enabled = false;
 }
 
-void systick_set_timeout_config(bool enable) {
-  timer_ctx.timer_en = enable;
-  return;
+bool nfc_set_card_detect_event() {
+  if (nfc_ctx.card_detect_enabled) {
+    nfc_event.event_occured = true;
+    nfc_event.event_type = NFC_EVENT_CARD_DETECT;
+    return true;
+  }
+  return false;
 }
 
-uint32_t systick_get_timer_value(void) {
-  return timer_ctx.timer;
+void nfc_tick_inc(uint16_t tick_inc) {
+  if (nfc_ctx.nfc_time < DEFAULT_NFC_TIMEOUT)
+    nfc_ctx.nfc_time += tick_inc;
+}
+
+void nfc_ctx_init() {
+  if (nfc_ctx.card_detect_enabled) {
+    nfc_ctx.nfc_time = 0;
+    nfc_ctx.nfc_field_off = false;
+  }
+}
+
+void nfc_task_handler() {
+  if (nfc_ctx.card_detect_enabled && nfc_ctx.nfc_time >= DEFAULT_NFC_TIMEOUT) {
+    if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS) {
+      nfc_set_card_detect_event();
+    }
+    nfc_ctx.nfc_time = 0;
+  }
+}
+
+void nfc_ctx_destroy() {
+  if (!nfc_ctx.nfc_field_off)
+    nfc_deselect_card();
+  nfc_ctx.nfc_field_off = true;
 }
