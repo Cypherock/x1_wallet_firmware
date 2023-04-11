@@ -12,6 +12,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "communication.h"
 
 /*****************************************************************************
@@ -29,31 +32,14 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-#ifndef OLD_USB_API_H    // TODO: Update after refactor; Remove me
 /**
- * @brief This function allows to fetch any available transaction. The caller
- * should provide storage to get the command-type, any accompanying data and
- * length of byte array.
- * @details
- *
- * @param[out] command_type  En_command_type_t to fetch the type of operation
- * @param[out] msg_data      Pointer to store message array location
- * @param[out] msg_len       Length of message contained in the command received
- *
- * @return true, false
- * @retval false             If exactly one out of msg_data and msg_len is NULL
- * @retval true              If the message is available
- * @retval false             If the message in not available
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @brief Setter for usb_event object
+ * @details When the usb data is completely received in the interrupt, the event
+ * will be registered with the usb_event module.
  */
-bool usb_get_msg(En_command_type_t *command_type,
-                 uint8_t **msg_data,
-                 uint16_t *msg_len);
+void usb_set_event(uint32_t cmd_id, const uint8_t *p_msg, uint16_t msg_size);
 
+#ifndef OLD_USB_API_H    // TODO: Update after refactor; Remove me
 /**
  * @brief Clear message from desktop.
  * Sets 0 to variable storing message from desktop.
@@ -70,5 +56,11 @@ void usb_free_msg_buffer();
  */
 void usb_reset_state();
 #endif
+
+/**
+ * @brief Sets the internal state for a command to executing.
+ * @details
+ */
+void usb_set_state_executing();
 
 #endif

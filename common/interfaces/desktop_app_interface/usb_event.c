@@ -60,6 +60,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <string.h>
+
 #include "memzero.h"
 #include "usb_api.h"
 #include "usb_api_priv.h"
@@ -79,6 +81,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static usb_event_t usb_event;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -91,20 +94,40 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void reset_event_obj(usb_event_t *evt) {
+  evt->flag = false;
+  evt->cmd_id = 0;
+  evt->p_msg = NULL;
+  evt->msg_size = 0;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void usb_clear_event() {
+  reset_event_obj(&usb_event);
   usb_free_msg_buffer();
   usb_reset_state();
 }
 
-bool usb_get_event(usb_event_t *evt) {
-  if (evt == NULL)
-    return false;
+void usb_set_event(const uint32_t cmd_id,
+                   const uint8_t *p_msg,
+                   const uint16_t msg_size) {
+  usb_event.flag = true;
+  usb_event.cmd_id = cmd_id;
+  usb_event.p_msg = p_msg;
+  usb_event.msg_size = msg_size;
+}
 
-  memzero(evt, sizeof(usb_event_t));
-  evt->flag = usb_get_msg(&evt->cmd_id, &evt->p_msg, &evt->msg_size);
+bool usb_get_event(usb_event_t *evt) {
+  if (evt == NULL) {
+    return false;
+  }
+
+  reset_event_obj(evt);
+  if (usb_event.flag) {
+    memcpy(evt, &usb_event, sizeof(usb_event_t));
+    usb_set_state_executing();
+  }
   return evt->flag;
 }
