@@ -177,8 +177,9 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time) {
 }
 
 void nfc_card_presence_detect() {
-  if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS)
+  if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS) {
     nfc_tapped = true;
+  }
 }
 
 ISO7816 nfc_select_applet(uint8_t expected_family_id[],
