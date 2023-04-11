@@ -55,12 +55,10 @@
  *
  ******************************************************************************
  */
-#include "sample_test.h"
 #include "unity_fixture.h"
 
 #if USE_SIMULATOR == 1
 TEST_GROUP_RUNNER(sample_test_simulator) {
-  RUN_TEST_CASE(sample_test_simulator, sample_simulator_test_case);
 }
 
 TEST_GROUP_RUNNER(xpub) {
@@ -70,8 +68,5 @@ TEST_GROUP_RUNNER(xpub) {
 
 #if USE_SIMULATOR == 0
 TEST_GROUP_RUNNER(sample_test_target) {
-  RUN_TEST_CASE(sample_test_target, sample_target_test_case1);
-  RUN_TEST_CASE(sample_test_target, sample_target_test_case2);
-  RUN_TEST_CASE(sample_test_target, sample_target_test_case3);
 }
 #endif /* USE_SIMULATOR == 0 */

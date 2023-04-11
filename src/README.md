@@ -59,7 +59,7 @@ As an example consider the following View Seed flow:
 
 ### View Seed Flow
 
-![View Seed Flow](view_seed_flow.png) 
+![View Seed Flow](../docs/view_seed_flow.png)
 
 *The red arrows in the above diagram denote the path taken for View Seed Flow*
 
