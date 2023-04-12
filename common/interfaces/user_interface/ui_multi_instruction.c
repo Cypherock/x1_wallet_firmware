@@ -147,7 +147,7 @@ static void update_text(uint8_t index) {
     lv_obj_realign(obj->text);
     lv_obj_realign(obj->left_arrow);
     lv_obj_realign(obj->right_arrow);
-  } else if (data->instruction_content[index].img != NULL) {
+  } else {
     lv_img_set_src(obj->img, data->instruction_content[index].img);
     lv_img_set_auto_size(obj->img, true);
     lv_obj_set_pos(obj->img, data->instruction_content[index].img_x_offset,
@@ -232,6 +232,9 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
   // TODO: Add assertions
   switch (event) {
     case LV_EVENT_KEY: {
+      if (lv_btn_get_state(instruction) == LV_BTN_STATE_PR) {
+        lv_btn_set_state(instruction, LV_BTN_STATE_REL);
+      }
       switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_RIGHT: {
           lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
@@ -307,7 +310,6 @@ void multi_instruction_create() {
   lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
   lv_obj_set_width(obj->text, LV_HOR_RES - 22);
   lv_label_set_align(obj->text, LV_LABEL_ALIGN_CENTER);
-  update_text(0);
   lv_obj_set_event_cb(obj->text, arrow_event_handler);
 
   // Style when left or right button is released
@@ -325,12 +327,12 @@ void multi_instruction_create() {
 
   //Left Arrow
   lv_label_set_text(obj->left_arrow, LV_SYMBOL_LEFT);
-  lv_obj_align(obj->left_arrow, obj->text, LV_ALIGN_OUT_LEFT_MID, -4, 0);
+  lv_obj_align(obj->left_arrow, NULL, LV_ALIGN_IN_LEFT_MID, 0, 0);
   lv_obj_set_event_cb(obj->left_arrow, arrow_event_handler);
 
   //Right Arrow
   lv_label_set_text(obj->right_arrow, LV_SYMBOL_RIGHT);
-  lv_obj_align(obj->right_arrow, obj->text, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
+  lv_obj_align(obj->right_arrow, NULL, LV_ALIGN_IN_RIGHT_MID, 0, 0);
   lv_obj_set_event_cb(obj->right_arrow, arrow_event_handler);
 
   lv_group_add_obj(ui_get_group(), obj->text);
@@ -343,13 +345,7 @@ void multi_instruction_create() {
   if (data->total_strings == 1) {
     lv_obj_set_hidden(obj->right_arrow, true);
   }
-  if (data->instruction_content[0].img == NULL) {
-    lv_obj_realign(obj->text);
-    lv_obj_realign(obj->left_arrow);
-    lv_obj_realign(obj->right_arrow);
-  } else if (data->instruction_content[0].img != NULL) {
-    lv_obj_realign(obj->text);
-  }
+  update_text(data->index_of_current_string);
 }
 
 /**
