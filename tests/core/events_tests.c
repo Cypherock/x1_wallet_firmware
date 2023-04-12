@@ -174,8 +174,8 @@ TEST(event_getter_test, listening_all_events) {
 
   get_events(evt_config, &evt_status);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
-  TEST_ASSERT_TRUE(evt_status.ui_event.event_occured);
-  TEST_ASSERT_TRUE(evt_status.usb_event.flag);
+  TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
+  TEST_ASSERT_FALSE(evt_status.usb_event.flag);
   TEST_ASSERT_TRUE(evt_status.p0_event.inactivity_evt);
   TEST_ASSERT_TRUE(evt_status.p0_event.abort_evt);
 }
