@@ -83,7 +83,7 @@ static struct Message_Object *obj = NULL;
  *
  * @note
  */
-void message_scr_create();
+static void message_scr_create();
 
 void message_scr_init(const char *message) {
   ASSERT(message != NULL);

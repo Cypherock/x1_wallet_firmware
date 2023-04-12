@@ -77,7 +77,7 @@ static struct Menu_Object *obj = NULL;
  *
  * @note
  */
-void menu_create();
+static void menu_create();
 
 void menu_init(const char *option_list[],
                const int number_of_options,

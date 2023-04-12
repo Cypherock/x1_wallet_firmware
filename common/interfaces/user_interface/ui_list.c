@@ -70,7 +70,7 @@ static struct List_Object *obj = NULL;
  * @brief Create UI for list
  *
  */
-void list_create();
+static void list_create();
 
 void list_init(const char option_list[24][15],
                const int number_of_options,

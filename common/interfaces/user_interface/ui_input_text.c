@@ -78,7 +78,7 @@ static struct Input_Text_Object *obj = NULL;
  *
  * @note
  */
-void input_text_create();
+static void input_text_create();
 
 int get_entered_text_px_width() {
   lv_obj_t *label = lv_obj_get_child(obj->text_entered, NULL);
