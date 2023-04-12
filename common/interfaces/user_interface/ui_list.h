@@ -13,10 +13,10 @@
 
 #include "ui_common.h"
 
-#define MAX_UI_LIST_WORDS       24
-#define MAX_UI_LIST_CHAR_LEN    16
+#define MAX_UI_LIST_WORDS 24
+#define MAX_UI_LIST_CHAR_LEN 16
 
-//TODO: Update count for higher coin list
+// TODO: Update count for higher coin list
 
 /**
  * @brief struct to store list data
