@@ -56,21 +56,4 @@ struct Message_Object {
  * @note
  */
 void message_scr_init(const char *message);
-
-/**
- * @brief Create message screen
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void message_scr_create();
-
 #endif    // !UI_MESSAGE_H

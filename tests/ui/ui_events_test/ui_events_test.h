@@ -15,6 +15,8 @@
 
 #include <stdbool.h>
 
+#include "ui_events.h"
+#include "ui_events_priv.h"
 #include "unity_fixture.h"
 
 #endif /* UI_EVENTS_TEST_H */

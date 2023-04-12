@@ -60,8 +60,6 @@
 #include "ui_events_test.h"
 
 #include "memzero.h"
-#include "ui_events.h"
-#include "ui_events_priv.h"
 
 #if USE_SIMULATOR == 0
 #endif /* USE_SIMULATOR == 0 */
@@ -133,4 +131,32 @@ TEST(ui_events_test, event_getter) {
   TEST_ASSERT(ui_event.event_occured == false);
   TEST_ASSERT(ui_event.event_type == 0);
   TEST_ASSERT(ui_event.text_ptr == NULL);
+}
+
+TEST(ui_events_test, fill_input_test) {
+  ui_event_t ui_event = {0};
+  char text_ptr[] = "Test String 1";
+  char text_input_test[sizeof(text_ptr)];
+  ui_fill_text(text_ptr, text_input_test, sizeof(text_ptr));
+  ui_set_text_input_event(text_input_test);
+
+  // Getter call when event occured
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == true);
+  TEST_ASSERT(ui_event.event_occured == true);
+  TEST_ASSERT(ui_event.event_type == UI_EVENT_TEXT_INPUT);
+  TEST_ASSERT(ui_event.text_ptr == text_input_test);
+  TEST_ASSERT(memcmp(text_ptr, text_input_test, sizeof(text_ptr)) == 0);
+}
+
+TEST(ui_events_test, input_event_null_ptr) {
+  ui_event_t ui_event = {0};
+  ui_set_text_input_event(NULL);
+
+  // Getter call when event occured
+  TEST_ASSERT(ui_get_and_reset_event(&ui_event) == false);
+  TEST_ASSERT(ui_event.event_occured == false);
+}
+
+TEST(ui_events_test, ui_get_event_null_ptr) {
+  TEST_ASSERT(ui_get_and_reset_event(NULL) == false);
 }

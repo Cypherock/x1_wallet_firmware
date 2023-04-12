@@ -12,7 +12,6 @@
 #define LIST_H
 
 #include "ui_common.h"
-
 // TODO : Add constant
 /**
  * @brief struct to store list data
@@ -71,11 +70,5 @@ void list_init(const char option_list[24][15],
                int number_of_options,
                const char *heading,
                bool dynamic_heading);
-
-/**
- * @brief Create UI for list
- *
- */
-void list_create();
 
 #endif    // !LIST_H

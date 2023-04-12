@@ -201,6 +201,9 @@ int main(void) {
     lv_task_handler();
     BSP_DelayMs(50);
 
+    /* TODO: Update after refactor */
+    /* Remove this function call */
+    process_ui_events();
 #if USE_SIMULATOR == 1
 #ifdef SDL_APPLE
     SDL_Event event;

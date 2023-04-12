@@ -60,12 +60,30 @@
  */
 
 #include "ui_message.h"
+
+#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
 
 static struct Message_Data *data = NULL;
 static struct Message_Object *obj = NULL;
+
+/**
+ * @brief Create message screen
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void message_scr_create();
 
 void message_scr_init(const char *message) {
   ASSERT(message != NULL);
@@ -130,8 +148,7 @@ static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
   ASSERT(obj != NULL);
 
   if (event == LV_EVENT_CLICKED) {
-    if (ui_mark_event_over)
-      (*ui_mark_event_over)();
+    ui_set_confirm_event();
     message_scr_destructor();
   }
 }

@@ -86,4 +86,7 @@ TEST_GROUP_RUNNER(ui_events_test) {
   RUN_TEST_CASE(ui_events_test, set_list);
   RUN_TEST_CASE(ui_events_test, set_text_input);
   RUN_TEST_CASE(ui_events_test, event_getter);
+  RUN_TEST_CASE(ui_events_test, fill_input_test);
+  RUN_TEST_CASE(ui_events_test, input_event_null_ptr);
+  RUN_TEST_CASE(ui_events_test, ui_get_event_null_ptr);
 }

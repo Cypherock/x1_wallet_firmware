@@ -58,6 +58,8 @@
  */
 #include "ui_multi_instruction.h"
 
+#include "ui_events_priv.h"
+
 static struct Multi_Instruction_Data *data;
 static struct Multi_Instruction_Object *obj;
 static lv_task_t *next_instruction_task = NULL;
@@ -260,8 +262,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           ((data->index_of_current_string == data->total_strings - 1) ||
            data->one_cycle_completed)) {
         multi_instructor_destructor();
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
+        ui_set_confirm_event();
       }
       break;
     }

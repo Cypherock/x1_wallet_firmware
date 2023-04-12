@@ -58,6 +58,8 @@
  */
 #include "ui_text_slideshow.h"
 
+#include "ui_events_priv.h"
+
 static struct Text_Slideshow_Data *data;
 static lv_task_t *slideshow_task = NULL;
 static lv_obj_t *text;

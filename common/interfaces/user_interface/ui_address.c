@@ -57,6 +57,8 @@
  ******************************************************************************
  */
 #include "ui_address.h"
+
+#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -65,6 +67,22 @@ static struct Address_Data *data = NULL;
 static struct Address_Object *obj = NULL;
 
 extern lv_task_t *address_timeout_task;
+
+/**
+ * @brief Create address screen
+ * @details
+ *
+ * @param hide_buttons hide the next and cancel buttons
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void address_scr_create(bool hide_buttons);
 
 void address_scr_init(const char text[],
                       const char address[],
@@ -150,10 +168,7 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(0);
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
+      ui_set_cancel_event();
       address_scr_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
@@ -199,10 +214,7 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(1);
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
+      ui_set_confirm_event();
       address_scr_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
