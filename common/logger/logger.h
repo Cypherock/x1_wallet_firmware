@@ -4,8 +4,9 @@
  * @brief   Logger public APIs.
  *          All the logger public APIs are defined here.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 
 #ifndef _DEVICE_LOGGER_H
@@ -13,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
 #include "logger_config.h"
 #include "mem_config.h"
 
@@ -29,21 +31,20 @@
 
 /**
  * @brief Enum used while reading the log
- * 
+ *
  */
-typedef enum{
+typedef enum {
   LOG_READ_INIT,
-  LOG_READ_ONGOING,  
+  LOG_READ_ONGOING,
   LOG_READ_END,
   LOG_READ_FINISH,
-}log_read_e_t; 
+} log_read_e_t;
 
 /**
  * @brief Records the details about log data.
- * 
+ *
  */
-typedef struct
-{
+typedef struct {
   uint16_t log_count;
   uint32_t next_write_loc;
   uint8_t page_index;
@@ -51,11 +52,11 @@ typedef struct
   uint8_t read_page_index;
   log_read_e_t read_sm_e;
   uint8_t total_page_read;
-}logger_data_s_t;
+} logger_data_s_t;
 
 /**
  * @brief Logs the text passed as param with option params for formatting.
- * 
+ *
  * @param fmt Text to log
  * @param ... Optional arguments for formatting
  */
@@ -65,7 +66,7 @@ void logger(char *fmt, ...);
 #if USE_SIMULATOR == 0
 
 #ifndef RELEASE_BUILD
-#define LOG_SWV  printf
+#define LOG_SWV printf
 #define LOG_INFO logger
 #else
 #define LOG_SWV(...)
@@ -77,6 +78,7 @@ void logger(char *fmt, ...);
 
 #else
 
+#define LOG_SWV printf
 #define LOG_INFO printf
 #define LOG_ERROR printf
 #define LOG_CRITICAL printf
@@ -84,7 +86,7 @@ void logger(char *fmt, ...);
 #endif
 
 /// Increments the passed var within the limits of the passed max
-#define CYCLIC_INCREMENT(var,max) ((var+1)%max)
+#define CYCLIC_INCREMENT(var, max) ((var + 1) % max)
 
 /**
  * @brief Task to handle desktop communication
@@ -103,7 +105,8 @@ void logger(char *fmt, ...);
 void logger_task(void);
 
 /**
- * @brief Initialises the logger and resets the properties in the global logger_data_s_t instance.
+ * @brief Initialises the logger and resets the properties in the global
+ * logger_data_s_t instance.
  * @details
  *
  * @param head Start address of logs
@@ -120,7 +123,8 @@ void logger_task(void);
 void logger_init();
 
 /**
- * @brief Erases the logs and sets the next location to the start address of logs.
+ * @brief Erases the logs and sets the next location to the start address of
+ * logs.
  * @details
  *
  * @param
@@ -175,4 +179,4 @@ log_read_e_t get_log_read_status();
 
 void set_start_log_read();
 
-#endif //_DEVICE_LOGGER_H
+#endif    //_DEVICE_LOGGER_H

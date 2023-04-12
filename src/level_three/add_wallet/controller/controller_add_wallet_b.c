@@ -2,10 +2,12 @@
  * @file    controller_add_wallet_b.c
  * @author  Cypherock X1 Team
  * @brief   Add wallet back controller.
- *          Handles post event (only back/cancel events) operations for add wallet flow.
+ *          Handles post event (only back/cancel events) operations for add
+ *wallet flow.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
  ******************************************************************************
  * @attention
  *
@@ -18,10 +20,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,17 +31,17 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *  
- *  
+ *
+ *
  * "Commons Clause" License Condition v1.0
- *  
+ *
  * The Software is provided to you by the Licensor under the License,
  * as defined below, subject to the following condition.
- *  
+ *
  * Without limiting other conditions in the License, the grant of
  * rights under the License will not include, and the License does not
  * grant to you, the right to Sell the Software.
- *  
+ *
  * For purposes of the foregoing, "Sell" means practicing any or all
  * of the rights granted to you under the License to provide to third
  * parties, for a fee or other consideration (including without
@@ -48,7 +50,7 @@
  * or substantially, from the functionality of the Software. Any license
  * notice or attribution required by the License must also include
  * this Commons Clause License Condition notice.
- *  
+ *
  * Software: All X1Wallet associated files.
  * License: MIT
  * Licensor: HODL TECH PTE LTD
@@ -57,64 +59,43 @@
  */
 #include "controller_add_wallet.h"
 #include "controller_main.h"
-//Atul #include "crys_hash.h"
+// Atul #include "crys_hash.h"
 #include "flash_api.h"
 #include "tasks.h"
 
 extern Flash_Wallet wallet_for_flash;
 
-
-void generate_wallet_controller_b()
-{
-    switch (flow_level.level_three) {
+void generate_wallet_controller_b() {
+  switch (flow_level.level_three) {
     case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
-        flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
+      flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
     } break;
 
     case GENERATE_WALLET_SKIP_PIN: {
-        
+      if (is_passphrase_enabled())
+        flow_level.level_three = GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
+      else
+        flow_level.level_three = GENERATE_WALLET_PROCESSING;
 
-		if(is_passphrase_enabled())
-			flow_level.level_three = GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
-		else
-			flow_level.level_three = GENERATE_WALLET_PROCESSING;
-        
-        WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PIN(wallet.wallet_info);
+      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PIN(wallet.wallet_info);
     } break;
     case GENERATE_WALLET_PIN_INPUT: {
-        flow_level.level_three = GENERATE_WALLET_SKIP_PIN;
+      flow_level.level_three = GENERATE_WALLET_SKIP_PIN;
     } break;
     case GENERATE_WALLET_PIN_CONFIRM: {
-        flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
+      flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
     } break;
-
 
     case GENERATE_WALLET_SKIP_PASSPHRASE: {
-        flow_level.level_three = GENERATE_WALLET_PROCESSING;
-        WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
-        WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
-    } break;
-    case GENERATE_WALLET_RANDOM_WORD_VERIFICATION_FAILED: {
-        flow_level.level_three = GENERATE_WALLET_CONFIRM_RANDOM_WORD_1;
-    } break;
-    case GENERATE_WALLET_SHOW_ALL_WORDS: {
-        flow_level.level_three = GENERATE_WALLET_NAME_INPUT;
-    } break;
-
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_1:
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_2:
-    case GENERATE_WALLET_CONFIRM_RANDOM_WORD_3: {
-        generate_wallet_controller(flow_level, counter, wallet);
-    } break;
-
-    case GENERATE_WALLET_VERIFY_SEEDS: {
-        flow_level.level_three = GENERATE_WALLET_VERIFICATION_FAILED_DISPLAY;
+      flow_level.level_three = GENERATE_WALLET_PROCESSING;
+      WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
     } break;
 
     default: {
-        flow_level.level_one = LEVEL_TWO_NEW_WALLET;
-        counter.level = LEVEL_TWO;
+      flow_level.level_one = LEVEL_TWO_NEW_WALLET;
+      counter.level = LEVEL_TWO;
     }
-    }
+  }
 }

@@ -2,14 +2,7 @@
 The X1Wallet ships with a minimal funtionality (allowing for device authentication and [setup process](#device-setup-flow)) and later updates to a fully-functional firmware ([go through feature list](#functionality-of-x1wallet)) via the desktop application which communicates with the secure servers.
 
 ### Responsible disclosure policy
-At cypherock, we believe that coordinated vulnerability disclosure is the right approach to better protect users. When submitting a vulnerability report, you enter a form of coorporation in which you allow cypherock the opportunity to diagnose and remedy the vulnerability before disclosing its details to third parties and/or general public. We will ensure that you get proper credits for all your works
-
-You should use PGP encrypted emails. Please use our [PGP public key](0x70D75D95C3A16AA7.asc), as necessary. Start with a cleartext message with your public key, and we'll reply appropriately.
-
-Please include:
-- Code which reproduces the issue as a proof of concept.
-- Detailed description and potential impact of your bug.
-- Your name and link for attribution (or a comment if you don't want that).
+At Cypherock, we believe that coordinated vulnerability disclosure is the right approach to better protect users. Please go through the [bug bounty](https://www.cypherock.com/bug-bounty) page on the Cypherock website to learn about the process to be followed when submitting a vulnerability report. Please report suspected vulnerabilities in private to bounty@cypherock.com.
 
 ## Device setup flow
 The X1Wallet ships with a firmware to take the user through the device setup flow. The device setup flow includes following steps:
@@ -85,7 +78,7 @@ The operation can be started from CySync and confirm the request on X1Wallet to 
    - git
    - ninja or make
    - cmake
-2. issue the following commands to get the build ready (can use Git bash on windows)
+2. Issue the following commands to get the build ready (can use Git bash on windows)
    - `mkdir -p build/Debug`
    - `cd build/Debug`
    - `cmake -DCMAKE_BUILD_TYPE:STRING="Debug" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=OFF -DCMAKE_BUILD_PLATFORM:STRING=Device -G "Unix Makefiles" ../../`
@@ -108,6 +101,48 @@ This method uses the build script for generating a signed binary of the firmware
    - cmake
 2. Start the build process by calling the build script as `./utilities/build.sh`
 
+### OS Specific Installation Notes
+
+#### MacOS (M1)
+
+##### Installing CMake
+
+1. Visit <https://cmake.org/download/> and download the latest universal dmg. Double click on the dmg to mount it and drag the CMake app to your Applications folder.
+2. Add CMake to your path by adding the following to your `~/.zshrc` or `~/.bashrc` file:
+
+```bash
+export PATH="/Applications/CMake.app/Contents/bin:$PATH"
+```
+
+3. Restart your terminal and run `cmake --version` to verify that it is installed.
+
+##### Installing `arm-none-eabi-gcc`
+
+1. Visit <https://developer.arm.com/downloads/-/gnu-rm> and download the latest version of the GNU Arm Embedded Toolchain for macOS.
+2. Unzip the tarball and move the `gcc-arm-none-eabi-10-2020-q4-major` folder to your home directory.
+
+```bash
+tar -xjf gcc-arm-none-eabi-10.3-2021.10-mac.tar.bz2
+mv gcc-arm-none-eabi-10.3-2021.10 ~/
+```
+
+3. Add the toolchain to your path by adding the following to your `~/.zshrc` or `~/.bashrc` file:
+
+```bash
+export PATH="$HOME/gcc-arm-none-eabi-10.3-2021.10/bin:$PATH"
+```
+
+4. Then run the following commands:
+
+```bash
+cd ~/gcc-arm-none-eabi-10.3-2021.10
+xattr -r -d com.apple.quarantine arm-none-eabi
+xattr -r -d com.apple.quarantine bin
+xattr -r -d com.apple.quarantine lib
+xattr -r -d com.apple.quarantine share
+```
+
+After this you should be able to run the build script `/utilities/build.sh` without any issues.
 # Documents
 ### [Device authentication](docs/device_provision_auth.md)
 ### [Shamir secret sharing](docs/shamir_secret_sharing.md)

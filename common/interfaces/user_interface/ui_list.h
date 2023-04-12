@@ -4,17 +4,19 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef LIST_H
 #define LIST_H
 
 #include "ui_common.h"
 
-//TODO: Update count for higher coin list
 #define MAX_UI_LIST_WORDS       24
 #define MAX_UI_LIST_CHAR_LEN    16
+
+//TODO: Update count for higher coin list
 
 /**
  * @brief struct to store list data
@@ -26,11 +28,11 @@
  * @note
  */
 struct List_Data {
-	char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN];
-	int number_of_options;
-	int current_index;
-	bool dynamic_heading;
-	char *heading;
+  char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN];
+  int number_of_options;
+  int current_index;
+  bool dynamic_heading;
+  char *heading;
 };
 
 /**
@@ -43,12 +45,12 @@ struct List_Data {
  * @note
  */
 struct List_Object {
-	lv_obj_t *heading;
-	lv_obj_t *options;
-	lv_obj_t *left_arrow;
-	lv_obj_t *right_arrow;
-	lv_obj_t *back_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *heading;
+  lv_obj_t *options;
+  lv_obj_t *left_arrow;
+  lv_obj_t *right_arrow;
+  lv_obj_t *back_btn;
+  lv_obj_t *next_btn;
 };
 
 /**
@@ -58,7 +60,8 @@ struct List_Object {
  * @param option_list list options array of char arrays
  * @param number_of_options number of options in the list
  * @param heading heading of the UI
- * @param dynamic_heading if true, the heading will be appended with the current index of the list
+ * @param dynamic_heading if true, the heading will be appended with the current
+ * index of the list
  *
  * @return
  * @retval
@@ -68,12 +71,15 @@ struct List_Object {
  *
  * @note Do not use this if number of options to be displayed in list is 1.
  */
-void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN], int number_of_options, const char *heading, bool dynamic_heading);
+void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN],
+               int number_of_options,
+               const char *heading,
+               bool dynamic_heading);
 
 /**
  * @brief Create UI for list
- * 
+ *
  */
 void list_create();
 
-#endif // !LIST_H
+#endif    // !LIST_H

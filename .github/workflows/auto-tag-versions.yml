@@ -1,0 +1,24 @@
+name: Tag released versions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'version.txt'
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Tag version
+      env:
+        COMMIT: ${{ github.sha }}
+        AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }} # events by GITHUB_TOKEN do not trigger workflows; use PAT for now
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        VERSION=$(cat version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
+        echo $VERSION
+        curl   -X POST   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${AUTH_TOKEN}"  -H "X-GitHub-Api-Version: 2022-11-28"   https://api.github.com/repos/${REPOSITORY}/git/refs   -d '{"ref":"refs/tags/v'${VERSION}'","sha":"'${COMMIT}'"}'

@@ -4,7 +4,8 @@
  * @brief   Factory reset task.
  *          This file contains the implementation of the factory reset task.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
@@ -56,56 +57,62 @@
  ******************************************************************************
  */
 #include "cy_factory_reset.h"
+#include "ui_confirmation.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
 #include "ui_multi_instruction.h"
-#include "ui_confirmation.h"
 
 void cyt_factory_reset() {
-    switch (flow_level.level_three) {
-        case FACTORY_RESET_INFO:
-            multi_instruction_init(ui_text_factory_reset_confirm, 3, DELAY_LONG_STRING, true);
-            break;
+  switch (flow_level.level_three) {
+    case FACTORY_RESET_INFO:
+      multi_instruction_init(
+          ui_text_factory_reset_confirm, 3, DELAY_LONG_STRING, true);
+      break;
 
-        case FACTORY_RESET_CONFIRM:
-            confirm_scr_init(ui_text_confirm_factory_reset);
-            break;
+    case FACTORY_RESET_CONFIRM:
+      confirm_scr_init(ui_text_confirm_factory_reset);
+      break;
 
-        case FACTORY_RESET_TAP_CARD1:
-            instruction_scr_init("Dummy", ui_text_tap_1_2_cards);
-            instruction_scr_change_text(ui_text_place_card_below, true);
-            mark_event_over();
-            break;
+    case FACTORY_RESET_TAP_CARD1:
+      instruction_scr_init("Dummy", ui_text_tap_1_2_cards);
+      instruction_scr_change_text(ui_text_place_card_below, true);
+      mark_event_over();
+      break;
 
-        case FACTORY_RESET_TAP_CARD2:
-            instruction_scr_init("Dummy", ui_text_tap_2_2_cards);
-            instruction_scr_change_text(ui_text_place_card_below, true);
-            mark_event_over();
-            break;
+    case FACTORY_RESET_TAP_CARD2:
+      instruction_scr_init("Dummy", ui_text_tap_2_2_cards);
+      instruction_scr_change_text(ui_text_place_card_below, true);
+      mark_event_over();
+      break;
 
-        case FACTORY_RESET_CHECK:
-            instruction_scr_init(ui_text_performing_checks, NULL);
-            mark_event_over();
-            break;
+    case FACTORY_RESET_CHECK:
+      instruction_scr_init(ui_text_processing, NULL);
+      mark_event_over();
+      break;
 
-        case FACTORY_RESET_ERASING:
-            instruction_scr_destructor();
-            delay_scr_init(ui_text_processing, DELAY_SHORT);
-            break;
+    case FACTORY_RESET_ERASING:
+      BSP_DelayMs(DELAY_SHORT);
+      mark_event_over();
+      break;
 
-        case FACTORY_RESET_DONE:
-            delay_scr_init(ui_text_erasing, DELAY_TIME);
-            break;
+    case FACTORY_RESET_DONE:
+      instruction_scr_destructor();
+      delay_scr_init(ui_text_erasing, DELAY_TIME);
+      break;
 
-        case FACTORY_RESET_CANCEL: {
-            char msg[64] = "\0";
-            const char *msg_list[3] = {msg, ui_text_reset_exit[1], ui_text_reset_exit[2]};
-            instruction_scr_destructor();
-            snprintf(msg, sizeof(msg), ui_text_reset_exit[0], get_wallet_name(factory_reset_mismatch_wallet_index));
-            multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
-        } break;
+    case FACTORY_RESET_CANCEL: {
+      char msg[64] = "\0";
+      const char *msg_list[3] = {
+          msg, ui_text_reset_exit[1], ui_text_reset_exit[2]};
+      instruction_scr_destructor();
+      snprintf(msg,
+               sizeof(msg),
+               "Wallet '%s' not found on card(s)",
+               get_wallet_name(factory_reset_mismatch_wallet_index));
+      multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
+    } break;
 
-        default:
-            mark_event_over();
-    }
+    default:
+      mark_event_over();
+  }
 }

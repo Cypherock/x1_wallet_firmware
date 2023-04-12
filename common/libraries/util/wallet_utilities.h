@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 /**
  * @file wallet_utilities.h
@@ -13,9 +14,9 @@
  * @brief Utils related to a wallet
  * @version 0.1
  * @date 2020-08-19
- * 
+ *
  * @copyright Copyright (c) 2020
- * 
+ *
  */
 
 #ifndef WALLET_UTILITIES_H
@@ -40,7 +41,8 @@
  *
  * @note
  */
-void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonics);
+void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE],
+                         const char *mnemonics);
 
 /**
  * @brief
@@ -56,9 +58,10 @@ void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE], const char* mnemonic
  *
  * @note
  */
-void derive_beneficiary_key(uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
+void derive_beneficiary_key(
+    uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
     uint8_t iv_for_beneficiary_key[IV_FOR_BENEFICIARY_KEY_SIZE],
-    const char* mnemonics);
+    const char *mnemonics);
 
 /**
  * @brief Derive wallet key. It is used to encrypt xPUB using chacha20 polly1305
@@ -71,14 +74,15 @@ void derive_beneficiary_key(uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
  * @return
  * @retval
  *
- * @see https://docs.google.com/document/d/1-tXxQv1e6-QT58-K8dZFDWqKZB64pxRWUHFXk1ryCms/edit?usp=sharing
+ * @see
+ * https://docs.google.com/document/d/1-tXxQv1e6-QT58-K8dZFDWqKZB64pxRWUHFXk1ryCms/edit?usp=sharing
  * @since v1.0.0
  *
  * @note
  * node = m/190'/1' <br/>
  * key = sha256(node.private_key)
  */
-void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics);
+void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics);
 
 /**
  * @brief Validates the contents of Wallet instance. If any check fails,
@@ -87,15 +91,16 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char* mnemonics);
  *
  * @param [in] wallet       Pointer to an instance of Wallet
  *
- * @return true, false
- * @retval true             If all the content of the instance conforms to constraints
- * @retval false            If any of the checks fail.
+ * @return Card_Data_errors_t
+ * @retval VALID_DATA             If all the content of the instance conforms to
+ * constraints
+ * @retval appropriate error code If any of the checks fail.
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-bool validate_wallet(Wallet *wallet);
+Card_Data_errors_t validate_wallet(Wallet *wallet);
 
 #endif

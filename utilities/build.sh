@@ -1,93 +1,100 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ -z ${BIN_FILE_NAME+x} ]; then
-    BIN_FILE_NAME=Cypherock.bin
-fi
+usage () {
+    echo -e "USAGE: $0 [-c] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
+    echo -e "Parameters are optional and assumes 'main debug device' if not provided"
+    echo -e "\n\n -c \t Performs a forced clean before invoking build"
+    echo -e "\n\n -f \t Sets the preferred firmware to build. Can be main or initial"
+    echo -e "\n\n -p \t Provides the preferred platform to build for. Can be simulator or device"
+    echo -e "\n\n -t \t Tells the build type that should be generate. Can be a valid build type."
+    echo -e "\t    \t For example release, debug, dev, unit_tests"
+    exit 1
+}
 
-if [ -z ${DFU_FILE_NAME+x} ]; then
-    DFU_FILE_NAME=app_dfu_package.bin
-fi
+validate_name () {
+    if ! [[ "$ACTIVE_TYPE" =~ ^Main|Initial$ ]]; then
+        echo -e "Incorrect firmware ($ACTIVE_TYPE) selected for build\n"
+        usage
+    fi
+}
+
+validate_platform () {
+    if ! [[ "$BUILD_PLATFORM" =~ ^Device|Simulator$ ]]; then
+        echo -e "Incorrect platform ($BUILD_PLATFORM) selected for build\n"
+        usage
+    fi
+}
+
+validate_type () {
+    if ! [[ "$BUILD_TYPE" =~ ^Debug|Release|Dev|Unit_tests$ ]]; then
+        echo -e "Incorrect type ($BUILD_TYPE) selected for build\n"
+        usage
+    fi
+}
 
 ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
+BUILD_PLATFORM=Device
+UNIT_TESTS=OFF
+DEV=OFF
+
+while getopts 'cf:p:t:' flag; do
+  case "${flag}" in
+    c) clean_flag="true" ;;
+    f) ACTIVE_TYPE=${OPTARG^} ;;
+    p) BUILD_PLATFORM=${OPTARG^} ;;
+    t) BUILD_TYPE=${OPTARG^} ;;
+    *) usage ;;
+  esac
+done
+
+shift "$((OPTIND-1))"
+validate_name
+validate_platform
+validate_type
 
 if [ $# -gt 0 ]; then
-    case $1 in
-        main)
-        ACTIVE_TYPE=Main
-        ;;
-
-        initial)
-        ACTIVE_TYPE=Initial
-        ;;
-
-        *)
-        echo "Wrong type selection"
-        echo "USAGE: $0 [type]"
-        echo "type can 'main' or 'initial'"
-        exit 1
-        ;;
-    esac
+    usage
 fi
 
-if [ $# -gt 1 ]; then
-    case $2 in
-        dev)
-        DEV=ON
-        BUILD_TYPE=Debug
-        ;;
+case $BUILD_TYPE in
+  Dev)
+    DEV=ON
+    BUILD_TYPE=Debug
+    ;;
 
-        debug)
-        DEV=OFF
-        BUILD_TYPE=Debug
-        ;;
-
-        release)
-        DEV=OFF
-        BUILD_TYPE=Release
-        ;;
-
-        *)
-        echo "Wrong mode selection"
-        echo "USAGE: $0 <type> [mode]"
-        echo "mode can be 'dev', 'debug' or 'release'"
-        exit 1
-        ;;
-    esac
-fi
-
-if [ "${ACTIVE_TYPE}" = "" ]; then
-    echo -e "\tCopy $0 into the project root directory and issue the command in following format"
-    echo -e ""
-    echo -e "\tUSAGE: $0 [dev|debug|release]"
-    echo -e "\tParameter is optional and assumes 'debug' if not provided"
-	echo -e ""
-	echo -e "\tFollowing paths/value can be set:"
-	echo -e "\tDFU_FILE_NAME"
-	exit 1
-fi
+  Unit_tests)
+    DEV=OFF
+    BUILD_TYPE=Debug
+    UNIT_TESTS=ON
+    ;;
+esac
 
 cd "${ACTIVE_ROOT_DIR}" || exit
-
 mkdir -p "build/${ACTIVE_TYPE}"
-
 cd "build/${ACTIVE_TYPE}" || exit
 
+# remove previous cmake configuration to ensure we are building with
+# currently requested build configuration; it is important to delete
+# the existing cmake configuration
 if [ -f "CMakeCache.txt" ]; then
     rm "CMakeCache.txt"
 fi
 
+# Detect if any one (cmake or mingw32-cmake) exists
 CMAKE=$(which cmake)
 if [ "${CMAKE}" = "" ]; then
     CMAKE=$(which mingw32-cmake)
 fi
 
+# Check if cmake or mingw32-cmake exists
 if [ "${CMAKE}" = "" ]; then
     echo -e "\tNo cmake installation found. Please install cmake to continue (or check your 'Path' Environment variable";
     exit 1;
 fi
 
+# Detect if any one (ninja, make or mingw32-make) build tool exists
 BUILD_TOOL=$(which ninja)
 GEN="Ninja"
 if [ "${BUILD_TOOL}" = "" ]; then
@@ -99,12 +106,24 @@ if [ "${BUILD_TOOL}" = "" ]; then
     fi
 fi
 
+# throw error & exit if no build tool detected
 if [ "${BUILD_TOOL}" = "" ]; then
     echo -e "\tNo build tool (make/ninja) installation found. Please install one to continue (or check your 'Path' Environment variable";
     exit 1;
 fi
 
-"${CMAKE}" -DDEV_SWITCH=${DEV} -DDEBUG_SWITCH=${DEV} -DSIGN_BINARY=ON -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" -DFIRMWARE_TYPE="${ACTIVE_TYPE}" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_BUILD_PLATFORM:STRING=Device -G "${GEN}" ../../
+"${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
+            -DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}"            \
+            -DSIGN_BINARY=ON                                    \
+            -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"           \
+            -DFIRMWARE_TYPE="${ACTIVE_TYPE}"                    \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON             \
+            -DCMAKE_BUILD_PLATFORM:STRING="${BUILD_PLATFORM}"   \
+            -G "${GEN}" ../../ > /dev/null
 
+# exit if configuration failed with errors
 if [ ! $? -eq 0 ]; then exit 1; fi
+if [[ "${clean_flag}" = "true" ]]; then
+  "${BUILD_TOOL}" clean
+fi
 "${BUILD_TOOL}" -j8 all
