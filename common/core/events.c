@@ -107,6 +107,11 @@ void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
   while (1) {
     p0_evt_occurred = p0_get_evt(&(p_evt_status->p0_event));
 
+    /* As soon as a p0 event is registered, break the loop */
+    if (p0_evt_occurred) {
+      break;
+    }
+
     if (evt_config.evt_selection.bits.ui_events) {
       lv_task_handler();
       BSP_DelayMs(50);
@@ -122,7 +127,7 @@ void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
     }
 
     /* As soon as an event is registered, break the loop */
-    if (p0_evt_occurred || p1_evt_occurred) {
+    if (p1_evt_occurred) {
       break;
     }
   }
