@@ -13,7 +13,6 @@
         "rand.h": "c",
         "atca_helpers.h": "c",
         "atca_crypto_sw_sha2.h": "c",
-        "ui_instruction.h": "c",
-        "assert_conf.h": "c"
+        "ui_instruction.h": "c"
     }
 }

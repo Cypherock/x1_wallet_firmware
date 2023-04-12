@@ -1,7 +1,8 @@
 /**
- * @file    unit_tests_main.c
+ * @file    usb_event.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   USB Event APIs.
+ *          Describes all the logic for interfacing with USB Events.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,78 +57,54 @@
  ******************************************************************************
  */
 
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
-                            issue*/
-#include "application_startup.h"
-#include "unity_fixture.h"
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "memzero.h"
+#include "usb_api.h"
+#include "usb_api_priv.h"
 
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
 
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
 
-void RunAllTests(void) {
-  RUN_TEST_GROUP(p0_events_test);
-  RUN_TEST_GROUP(ui_events_test);
-  RUN_TEST_GROUP(usb_evt_api_test);
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+void usb_clear_event() {
+  usb_free_msg_buffer();
+  usb_reset_state();
 }
 
-/**
- * @brief  The entry point to the unit test framework
- * This entry point is a parallel entry point to the int main(void) of the
- * actual firmware.
- */
-int main(void) {
-  application_init();
+bool usb_get_event(usb_event_t *evt) {
+  if (evt == NULL)
+    return false;
 
-  UnityBegin("unit_tests_main.c");
-  RunAllTests();
-  UnityEnd();
+  memzero(evt, sizeof(usb_event_t));
+  evt->flag = usb_get_msg(&evt->cmd_id, &evt->p_msg, &evt->msg_size);
+  return evt->flag;
 }
-
-#if USE_SIMULATOR == 0
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
-}
-
-/**
- * @brief Function to transmit data in real-time over SWV channel
- * @param file unused
- * @param *ptr string pointer for data to send
- * @param len  length of data to send
- *
- * @ret len of data transmitted
- */
-int _write(int file, char *ptr, int len) {
-#ifndef NDEBUG    // Disable printf in release mode
-  int DataIdx;
-  for (DataIdx = 0; DataIdx < len; DataIdx++) {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
-#endif
-}
-
-#endif /* USE_SIMULATOR == 0 */

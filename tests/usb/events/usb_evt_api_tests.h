@@ -1,6 +1,7 @@
 /**
- * @file    ui_events_test.h
+ * @file    usb_evt_api_tests.h
  * @author  Cypherock X1 Team
+ * @brief
  *
  * @details
  *
@@ -10,13 +11,11 @@
  *
  */
 
-#ifndef UI_EVENTS_TEST_H
-#define UI_EVENTS_TEST_H
+#ifndef USB_EVT_API_TESTS_H
+#define USB_EVT_API_TESTS_H
 
 #include <stdbool.h>
 
-#include "ui_events.h"
-#include "ui_events_priv.h"
 #include "unity_fixture.h"
 
-#endif /* UI_EVENTS_TEST_H */
+#endif /* USB_EVT_API_TESTS_H */
