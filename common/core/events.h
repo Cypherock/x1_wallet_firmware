@@ -18,6 +18,7 @@
 
 #include "board.h"
 #include "lvgl.h"
+#include "nfc_events.h"
 #include "p0_events.h"
 #include "ui_events.h"
 #include "usb_api.h"
@@ -53,7 +54,7 @@ typedef struct {
   p0_evt_t p0_event;
   ui_event_t ui_event;
   usb_event_t usb_event;
-  //   nfc_evt_t nfc_event;
+  nfc_event_t nfc_event;
 } evt_status_t;
 
 /*****************************************************************************
