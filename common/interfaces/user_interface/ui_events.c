@@ -109,6 +109,10 @@ bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
   return false;
 }
 
+void ui_reset_event() {
+  memzero(&ui_event, sizeof(ui_event));
+}
+
 void ui_set_confirm_event() {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_CONFIRM;

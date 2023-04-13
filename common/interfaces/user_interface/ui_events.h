@@ -52,9 +52,14 @@ typedef struct {
  *****************************************************************************/
 
 /**
- * @brief   Used to get the latest ui event occurance
+ * @brief   Used to get the latest ui event occurance and reset it
  * @arg     *ui_event_os_obj   `ui_event_t` object used to get the ui event
  * details
  */
 bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
+
+/**
+ * @brief   Used to reset ui events from static `ui_event_t` object
+ */
+void ui_reset_event();
 #endif

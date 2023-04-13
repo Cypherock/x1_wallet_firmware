@@ -73,6 +73,7 @@ TEST_SETUP(ui_events_test) {
 }
 
 TEST_TEAR_DOWN(ui_events_test) {
+  ui_reset_event();
   return;
 }
 
