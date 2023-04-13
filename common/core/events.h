@@ -1,25 +1,26 @@
 /**
- * @file    ui_event.h
+ * @file    events.h
  * @author  Cypherock X1 Team
- * @brief   UI Event getter module
- *          Provides UI event getter used by os for fetching ui events.
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief
+ * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef UI_EVENTS
-#define UI_EVENTS
+
+#ifndef EVENTS_H
+#define EVENTS_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "assert_conf.h"
 #include "board.h"
+#include "lvgl.h"
+#include "p0_events.h"
+#include "ui_events.h"
+#include "usb_api.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -28,20 +29,32 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  UI_EVENT_CONFIRM = 1,
-  UI_EVENT_REJECT,
-  UI_EVENT_TEXT_INPUT,
-  UI_EVENT_LIST_CHOICE,
-  UI_EVENT_SKIP_EVENT
-} ui_event_types_t;
+typedef union {
+  struct {
+    uint8_t ui_events : 1;
+    uint8_t usb_events : 1;
+    uint8_t nfc_events : 1;
+    uint8_t rfu1 : 1;
+    uint8_t rfu2 : 1;
+    uint8_t rfu3 : 1;
+    uint8_t rfu4 : 1;
+    uint8_t rfu5 : 1;
+  } bits;
+  uint8_t byte;
+} evt_select_t;
 
 typedef struct {
-  bool event_occured;
-  ui_event_types_t event_type;
-  char *text_ptr;
-  uint16_t list_selection;
-} ui_event_t;
+  evt_select_t evt_selection;
+  bool abort_disabled;
+  uint32_t timeout;
+} evt_config_t;
+
+typedef struct {
+  p0_evt_t p0_event;
+  ui_event_t ui_event;
+  usb_event_t usb_event;
+  //   nfc_evt_t nfc_event;
+} evt_status_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -52,14 +65,11 @@ typedef struct {
  *****************************************************************************/
 
 /**
- * @brief   Used to get the latest ui event occurance and reset it
- * @arg     *ui_event_os_obj   `ui_event_t` object used to get the ui event
- * details
+ * @brief Get the events object
+ *
+ * @param evt_config
+ * @param p_evt_status
  */
-bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj);
+void get_events(evt_config_t evt_config, evt_status_t *p_evt_status);
 
-/**
- * @brief   Used to reset ui events from static `ui_event_t` object
- */
-void ui_reset_event();
-#endif
+#endif /* EVENTS_H */

@@ -105,11 +105,15 @@ bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
 
   if (ui_event.event_occured) {
     memcpy(ui_event_os_obj, &ui_event, sizeof(ui_event_t));
-    memzero(&ui_event, sizeof(ui_event));
+    ui_reset_event();
     return true;
   }
 
   return false;
+}
+
+void ui_reset_event() {
+  memzero(&ui_event, sizeof(ui_event));
 }
 
 void ui_set_confirm_event() {

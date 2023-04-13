@@ -1,8 +1,7 @@
 /**
- * @file    usb_event.c
+ * @file    events.c
  * @author  Cypherock X1 Team
- * @brief   USB Event APIs.
- *          Describes all the logic for interfacing with USB Events.
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +59,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <string.h>
-
-#include "memzero.h"
-#include "usb_api.h"
-#include "usb_api_priv.h"
+#include "events.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -81,7 +76,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static usb_event_t usb_event;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -94,40 +88,51 @@ static usb_event_t usb_event;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void reset_event_obj(usb_event_t *evt) {
-  evt->flag = false;
-  evt->cmd_id = 0;
-  evt->p_msg = NULL;
-  evt->msg_size = 0;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void usb_clear_event() {
-  reset_event_obj(&usb_event);
-  usb_free_msg_buffer();
-  usb_reset_state();
-}
-
-void usb_set_event(const uint32_t cmd_id,
-                   const uint8_t *p_msg,
-                   const uint16_t msg_size) {
-  usb_event.flag = true;
-  usb_event.cmd_id = cmd_id;
-  usb_event.p_msg = p_msg;
-  usb_event.msg_size = msg_size;
-}
-
-bool usb_get_event(usb_event_t *evt) {
-  if (evt == NULL) {
-    return false;
+void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
+  if (p_evt_status == NULL) {
+    return;
   }
 
-  reset_event_obj(evt);
-  if (usb_event.flag) {
-    memcpy(evt, &usb_event, sizeof(usb_event_t));
-    usb_set_state_executing();
+  /* Configure event getters if required */
+  p0_ctx_init(evt_config.timeout, evt_config.abort_disabled);
+
+  bool p0_evt_occurred = false;
+  bool p1_evt_occurred = false;
+
+  /* Poll for the selected events, until atleast one event is captured. */
+  while (1) {
+    p0_evt_occurred = p0_get_evt(&(p_evt_status->p0_event));
+
+    /* As soon as a p0 event is registered, break the loop */
+    if (p0_evt_occurred) {
+      break;
+    }
+
+    if (evt_config.evt_selection.bits.ui_events) {
+      lv_task_handler();
+      BSP_DelayMs(50);
+      p1_evt_occurred |= ui_get_and_reset_event(&(p_evt_status->ui_event));
+    }
+
+    if (evt_config.evt_selection.bits.usb_events) {
+      p1_evt_occurred |= usb_get_event(&(p_evt_status->usb_event));
+    }
+
+    if (evt_config.evt_selection.bits.nfc_events) {
+      // p1_evt_occurred |= nfc_get_evt();
+    }
+
+    /* As soon as an event is registered, break the loop */
+    if (p1_evt_occurred) {
+      break;
+    }
   }
-  return evt->flag;
+
+  /* Any post cleanup required */
+  p0_ctx_destroy();
+  return;
 }

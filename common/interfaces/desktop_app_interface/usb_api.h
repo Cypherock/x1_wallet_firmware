@@ -55,7 +55,7 @@ typedef struct {
   uint8_t flag;
   En_command_type_t cmd_id;
   uint16_t msg_size;
-  uint8_t *p_msg;
+  const uint8_t *p_msg;
 } usb_event_t;
 
 /*****************************************************************************
