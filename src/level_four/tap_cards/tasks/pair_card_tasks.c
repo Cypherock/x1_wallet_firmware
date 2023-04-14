@@ -57,11 +57,14 @@
  ******************************************************************************
  */
 #include "controller_main.h"
+#include "events.h"
+#include "nfc_events.h"
 #include "tasks_tap_cards.h"
-#include "ui_card_detect.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
+#include "ui_events.h"
 #include "ui_instruction.h"
+#include "ui_skip_instruction.h"
 
 void tap_card_pair_card_tasks() {
   char display[40];
@@ -81,7 +84,26 @@ void tap_card_pair_card_tasks() {
                  sizeof(display),
                  UI_TEXT_PAIRING_TAP_CARD,
                  ((flow_level.level_four - 1) >> 1) + 1);
-        card_detect_scr_init(display);
+        skip_instruction_scr_init(display);
+
+        nfc_enable_card_detect_event();
+
+        evt_config_t evt_conf = {.abort_disabled = true,
+                                 .evt_selection.bits.ui_events = true,
+                                 .evt_selection.bits.nfc_events = true,
+                                 .evt_selection.bits.usb_events = false,
+                                 .timeout = 30000};
+        evt_status_t evt_status = {0};
+        get_events(evt_conf, &evt_status);
+
+        nfc_disable_card_detect_event();
+        if (evt_status.nfc_event.event_occured) {
+          skip_instruction_scr_destructor();
+          mark_event_over();
+        } else if (evt_status.ui_event.event_occured &&
+                   evt_status.ui_event.event_type == UI_EVENT_REJECT) {
+          mark_event_cancel();
+        }
       }
       break;
 
@@ -89,7 +111,6 @@ void tap_card_pair_card_tasks() {
     case PAIR_CARD_BLUE_BACKEND:
     case PAIR_CARD_GREEN_BACKEND:
     case PAIR_CARD_YELLOW_BACKEND:
-      card_detect_scr_destructor();
       snprintf(display,
                sizeof(display),
                UI_TEXT_PAIRING_TAP_CARD,

@@ -1,5 +1,5 @@
 /**
- * @file    ui_card_detect.c
+ * @file    ui_skip_instruction.c
  * @author  Cypherock X1 Team
  * @brief   Card tap/detect UI.
  *          This file contains UI handlers for card detect and skip screens
@@ -56,16 +56,16 @@
  *
  ******************************************************************************
  */
-#include "ui_card_detect.h"
+#include "ui_skip_instruction.h"
 
 #include "nfc.h"
+#include "ui_events_priv.h"
 
 static struct Card_Detect_Data *data = NULL;
 static struct Card_Detect_Object *obj = NULL;
-static lv_task_t *card_detect;
-static void card_detect_scr_create();
+static void skip_instruction_scr_create();
 
-void card_detect_scr_init(const char *text) {
+void skip_instruction_scr_init(const char *text) {
   ASSERT(text != NULL);
 
   data = malloc(sizeof(struct Card_Detect_Data));
@@ -74,27 +74,25 @@ void card_detect_scr_init(const char *text) {
   if (data != NULL) {
     data->text = (char *)text;
   }
-  card_detect =
-      lv_task_create(nfc_card_presence_detect, 100, LV_TASK_PRIO_LOW, NULL);
-  card_detect_scr_create();
+  skip_instruction_scr_create();
 }
 
-void card_detect_scr_destructor() {
+void skip_instruction_scr_destructor() {
   lv_obj_clean(lv_scr_act());
-  if (card_detect != NULL)
-    lv_task_del(card_detect);
+
   if (data != NULL) {
     memzero(data, sizeof(struct Card_Detect_Data));
     free(data);
     data = NULL;
   }
+
   if (obj != NULL) {
     free(obj);
     obj = NULL;
   }
 }
 
-void card_detect_scr_focus_skip() {
+void skip_instruction_scr_focus_skip() {
   lv_group_focus_obj(obj->skip_btn);
 }
 
@@ -117,31 +115,14 @@ static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
   ASSERT(skip_btn != NULL);
 
   switch (event) {
-    case LV_EVENT_KEY:
-      switch (lv_indev_get_key(ui_get_indev())) {
-        case LV_KEY_HOME:
-          lv_task_del(card_detect);
-          card_detect = NULL;
-          if (ui_mark_event_over)
-            (*ui_mark_event_over)();
-          break;
-        default:
-          break;
-      }
-      break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
-      card_detect_scr_destructor();
+      ui_set_cancel_event();
+      skip_instruction_scr_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(skip_btn, LV_BTN_STATE_REL);
       break;
     case LV_EVENT_DELETE:
-      if (card_detect != NULL) {
-        lv_task_del(card_detect);
-        card_detect = NULL;
-      }
       break;
     default:
       break;
@@ -162,7 +143,7 @@ static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
  *
  * @note
  */
-void card_detect_scr_create() {
+void skip_instruction_scr_create() {
   ASSERT(obj != NULL);
   ASSERT(data != NULL);
 
@@ -171,5 +152,5 @@ void card_detect_scr_create() {
 
   ui_paragraph(obj->text, data->text, LV_LABEL_ALIGN_CENTER);
   ui_skip_btn(obj->skip_btn, skip_btn_event_handler, false);
-  card_detect_scr_focus_skip();
+  skip_instruction_scr_focus_skip();
 }
