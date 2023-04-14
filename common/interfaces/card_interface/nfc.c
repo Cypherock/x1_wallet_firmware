@@ -63,6 +63,7 @@
 #include "app_error.h"
 #include "application_startup.h"
 #include "assert_conf.h"
+#include "nfc_events_priv.h"
 #include "sys_state.h"
 #include "utils.h"
 #include "wallet_utilities.h"
@@ -178,6 +179,7 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time) {
 
 void nfc_card_presence_detect() {
   if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS) {
+    nfc_set_card_detect_event();
     nfc_tapped = true;
   }
 }

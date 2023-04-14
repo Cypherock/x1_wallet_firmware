@@ -1,7 +1,9 @@
 /**
- * @file    unit_tests_lists.c
+ * @file    nfc_events_test.h
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   UI Events module tests
+ *          Tests the event getter and setter operation used by UI screens and
+ *os
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -55,54 +57,45 @@
  *
  ******************************************************************************
  */
-#include "p0_events_test.h"
-#include "ui_events_test.h"
+#include "nfc_events.h"
+
+#include <stdbool.h>
+
+#include "memzero.h"
+#include "nfc_events_priv.h"
 #include "unity_fixture.h"
 
-TEST_GROUP_RUNNER(event_getter_test) {
-  RUN_TEST_CASE(event_getter_test, no_event);
-  RUN_TEST_CASE(event_getter_test, nfc_event);
-  RUN_TEST_CASE(event_getter_test, p0_event);
-  RUN_TEST_CASE(event_getter_test, ui_event);
-  RUN_TEST_CASE(event_getter_test, usb_event);
-  RUN_TEST_CASE(event_getter_test, listening_all_events);
-  RUN_TEST_CASE(event_getter_test, listening_all_available_one);
-  RUN_TEST_CASE(event_getter_test, disabled_events);
+#if USE_SIMULATOR == 0
+#endif /* USE_SIMULATOR == 0 */
+
+TEST_GROUP(nfc_events_test);
+
+TEST_SETUP(nfc_events_test) {
+  nfc_enable_card_detect_event();
+  return;
 }
 
-TEST_GROUP_RUNNER(p0_events_test) {
-  RUN_TEST_CASE(p0_events_test, inactivity_evt);
-  RUN_TEST_CASE(p0_events_test, abort_evt);
-  RUN_TEST_CASE(p0_events_test, abort_evt_abort_disabled);
-  RUN_TEST_CASE(p0_events_test, abort_inactivity_race);
-  RUN_TEST_CASE(p0_events_test, inactivity_refresh_on_joystick_movement);
+TEST_TEAR_DOWN(nfc_events_test) {
+  nfc_reset_event();
+  nfc_disable_card_detect_event();
+  return;
 }
 
-TEST_GROUP_RUNNER(usb_evt_api_test) {
-  RUN_TEST_CASE(usb_evt_api_test, basic);
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
-  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
-  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
+TEST(nfc_events_test, set_card_detect_event) {
+  nfc_event_t nfc_event = {0};
+  nfc_set_card_detect_event();
+
+  TEST_ASSERT_TRUE(nfc_get_event(&nfc_event));
+  TEST_ASSERT_TRUE(nfc_event.event_occured);
+  TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, nfc_event.event_type);
 }
 
-TEST_GROUP_RUNNER(ui_events_test) {
-  RUN_TEST_CASE(ui_events_test, set_confirm);
-  RUN_TEST_CASE(ui_events_test, set_cancel);
-  RUN_TEST_CASE(ui_events_test, set_list);
-  RUN_TEST_CASE(ui_events_test, set_text_input);
-  RUN_TEST_CASE(ui_events_test, event_getter);
-  RUN_TEST_CASE(ui_events_test, fill_input_test);
-  RUN_TEST_CASE(ui_events_test, input_event_null_ptr);
-  RUN_TEST_CASE(ui_events_test, ui_get_event_null_ptr);
-}
+TEST(nfc_events_test, set_card_detect_event_when_disabled) {
+  nfc_event_t nfc_event = {0};
+  nfc_disable_card_detect_event();
+  nfc_set_card_detect_event();
 
-TEST_GROUP_RUNNER(nfc_events_test) {
-  RUN_TEST_CASE(nfc_events_test, set_card_detect_event);
-  RUN_TEST_CASE(nfc_events_test, set_card_detect_event_when_disabled);
+  TEST_ASSERT_FALSE(nfc_get_event(&nfc_event));
+  TEST_ASSERT_FALSE(nfc_event.event_occured);
+  TEST_ASSERT_NOT_EQUAL(NFC_EVENT_CARD_DETECT, nfc_event.event_type);
 }

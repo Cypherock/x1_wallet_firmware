@@ -33,7 +33,6 @@ typedef struct {
   bool card_detect_enabled;
   bool nfc_field_off;
   uint16_t nfc_time;
-  uint16_t card_detect_retry_timeout;
 } nfc_ctx_t;
 
 /*****************************************************************************
@@ -54,6 +53,11 @@ typedef struct {
 bool nfc_get_event(nfc_event_t *nfc_event_os_obj);
 
 /**
+ * @brief   Used to reset the latest NFC events from static `nfc_event_t` object
+ */
+void nfc_reset_event();
+
+/**
  * @brief   Enable NFC Card detect event
  */
 void nfc_enable_card_detect_event();
@@ -62,12 +66,6 @@ void nfc_enable_card_detect_event();
  * @brief   Disable NFC Card detect event
  */
 void nfc_disable_card_detect_event();
-
-/**
- * @brief   Used to update nfc_time in nfc_ctx at ideal polling interval of 10ms
- * @arg     tick_inc: value in ms to update the nfc time with
- */
-void nfc_tick_inc(uint16_t tick_inc);
 
 /**
  * @brief   Performs operations to support NFC tasks
