@@ -36,5 +36,5 @@
  *
  * @return  true if event set correctly, false otherwise
  */
-bool nfc_set_card_detect_event();
+void nfc_set_card_detect_event();
 #endif

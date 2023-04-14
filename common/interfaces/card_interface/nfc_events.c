@@ -62,8 +62,8 @@
  *****************************************************************************/
 #include "nfc_events.h"
 
+#include "memzero.h"
 #include "string.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -101,12 +101,16 @@ static nfc_event_t nfc_event;
 bool nfc_get_event(nfc_event_t *nfc_event_os_obj) {
   ASSERT(nfc_event_os_obj != NULL);
 
-  memcpy(nfc_event_os_obj, &nfc_event, sizeof(nfc_event_t));
   if (nfc_event.event_occured == true) {
-    nfc_event.event_occured = false;
+    memcpy(nfc_event_os_obj, &nfc_event, sizeof(nfc_event_t));
+    nfc_reset_event();
     return true;
   }
   return false;
+}
+
+void nfc_reset_event() {
+  memzero(&nfc_event, sizeof(nfc_event_t));
 }
 
 void nfc_enable_card_detect_event() {
@@ -117,13 +121,11 @@ void nfc_disable_card_detect_event() {
   nfc_ctx.card_detect_enabled = false;
 }
 
-bool nfc_set_card_detect_event() {
+void nfc_set_card_detect_event() {
   if (nfc_ctx.card_detect_enabled) {
     nfc_event.event_occured = true;
     nfc_event.event_type = NFC_EVENT_CARD_DETECT;
-    return true;
   }
-  return false;
 }
 
 void nfc_tick_inc(uint16_t tick_inc) {
@@ -140,9 +142,7 @@ void nfc_ctx_init() {
 
 void nfc_task_handler() {
   if (nfc_ctx.card_detect_enabled && nfc_ctx.nfc_time >= DEFAULT_NFC_TIMEOUT) {
-    if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS) {
-      nfc_set_card_detect_event();
-    }
+    nfc_card_presence_detect();
     nfc_ctx.nfc_time = 0;
   }
 }
