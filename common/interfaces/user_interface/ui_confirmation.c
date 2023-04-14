@@ -57,6 +57,9 @@
  ******************************************************************************
  */
 #include "ui_confirmation.h"
+
+#include "ui_events_priv.h"
+
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -138,10 +141,7 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(1);
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
+      ui_set_confirm_event();
       confirm_scr_destructor();
       break;
     case LV_EVENT_DEFOCUSED:
@@ -184,10 +184,7 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(0);
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
+      ui_set_cancel_event();
       confirm_scr_destructor();
       break;
     case LV_EVENT_DEFOCUSED:

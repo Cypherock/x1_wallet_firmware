@@ -59,6 +59,7 @@
 #include "ui_input_mnemonics.h"
 
 #include "bip39_english.h"
+#include "ui_events_priv.h"
 static void ui_mnem_create();
 static void refresh_screen_texts();
 static void shrink();
@@ -381,10 +382,7 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
         expand();
       } else if (data->state == SHOWING_SUGGESTIONS) {
         data->state = EXIT;
-        if (ui_mark_list_choice)
-          (*ui_mark_list_choice)(data->index);
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
+        ui_set_list_event(data->index);
         mnem_destructor();
         return;
       } else {
@@ -502,8 +500,7 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
+      ui_mark_event_cancel();
       mnem_destructor();
       break;
     case LV_EVENT_DEFOCUSED:

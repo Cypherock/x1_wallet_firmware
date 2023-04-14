@@ -99,36 +99,58 @@ static ui_event_t ui_event;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool ui_get_and_reset_event(ui_event_t *ui_event_os_obj) {
-  ASSERT(ui_event_os_obj != NULL);
+  if (ui_event_os_obj == NULL) {
+    return false;
+  }
 
   if (ui_event.event_occured) {
     memcpy(ui_event_os_obj, &ui_event, sizeof(ui_event_t));
-    memzero(&ui_event, sizeof(ui_event));
+    ui_reset_event();
     return true;
   }
+
   return false;
+}
+
+void ui_reset_event() {
+  memzero(&ui_event, sizeof(ui_event));
 }
 
 void ui_set_confirm_event() {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_CONFIRM;
+  return;
 }
 
 void ui_set_cancel_event() {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_REJECT;
+  return;
 }
 
 void ui_set_list_event(uint16_t list_selection) {
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_LIST_CHOICE;
   ui_event.list_selection = list_selection;
+  return;
 }
 
 void ui_set_text_input_event(char *text_ptr) {
-  ASSERT(text_ptr != NULL);
+  if (text_ptr == NULL) {
+    return;
+  }
 
   ui_event.event_occured = true;
   ui_event.event_type = UI_EVENT_TEXT_INPUT;
   ui_event.text_ptr = text_ptr;
+  return;
+}
+
+void ui_fill_text(const char *text_src_ptr,
+                  char *input_text_ptr,
+                  const size_t max_text_len) {
+  if ((text_src_ptr != NULL) && (input_text_ptr != NULL)) {
+    snprintf(input_text_ptr, max_text_len, "%s", text_src_ptr);
+  }
+  return;
 }
