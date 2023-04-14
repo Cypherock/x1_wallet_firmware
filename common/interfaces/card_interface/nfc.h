@@ -74,7 +74,7 @@
 ret_code_t nfc_init();
 
 /**
- * @brief Detect card presence and set global variable nfc_tapped
+ * @brief Detect card presence and set nfc card detected event
  */
 void nfc_card_presence_detect();
 
