@@ -99,6 +99,9 @@ void tap_card_pair_card_tasks() {
         nfc_disable_card_detect_event();
         if (evt_status.nfc_event.event_occured) {
           skip_instruction_scr_destructor();
+          ui_reset_event();
+          instruction_scr_init("Dummy", display);
+          instruction_scr_change_text("...", true);
           mark_event_over();
         } else if (evt_status.ui_event.event_occured &&
                    evt_status.ui_event.event_type == UI_EVENT_REJECT) {
@@ -115,7 +118,6 @@ void tap_card_pair_card_tasks() {
                sizeof(display),
                UI_TEXT_PAIRING_TAP_CARD,
                flow_level.level_four >> 1);
-      instruction_scr_init("Dummy", display);
       mark_event_over();
       break;
 
