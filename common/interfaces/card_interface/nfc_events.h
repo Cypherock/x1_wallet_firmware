@@ -68,12 +68,6 @@ void nfc_enable_card_detect_event();
 void nfc_disable_card_detect_event();
 
 /**
- * @brief   Used to update nfc_time in nfc_ctx at ideal polling interval of 10ms
- * @arg     tick_inc: value in ms to update the nfc time with
- */
-void nfc_tick_inc(uint16_t tick_inc);
-
-/**
  * @brief   Performs operations to support NFC tasks
  */
 void nfc_ctx_init();

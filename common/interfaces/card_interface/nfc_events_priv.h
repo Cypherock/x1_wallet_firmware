@@ -37,4 +37,10 @@
  * @return  true if event set correctly, false otherwise
  */
 void nfc_set_card_detect_event();
+
+/**
+ * @brief   Used to update nfc_time in nfc_ctx at ideal polling interval of 10ms
+ * @arg     tick_inc: value in ms to update the nfc time with
+ */
+void nfc_tick_inc(uint16_t tick_inc);
 #endif
