@@ -4,6 +4,8 @@
 #include "nfc_events.h"
 #include "ui_instruction.h"
 
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+
 void test_nfc_operation_with_os_getter() {
   evt_config_t evt_config = {.evt_selection.bits.nfc_events = 1,
                              .evt_selection.bits.ui_events = 0,
@@ -30,3 +32,4 @@ void test_nfc_operation_with_os_getter() {
   instruction_scr_destructor();
   lv_task_handler();
 }
+#endif
