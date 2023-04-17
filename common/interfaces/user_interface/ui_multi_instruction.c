@@ -188,8 +188,6 @@ static void multi_instructor_destructor() {
     next_instruction_task = NULL;
   }
 
-  lv_obj_clean(lv_scr_act());
-
   if (data != NULL) {
     memzero(data, sizeof(struct Multi_Instruction_Data));
     free(data);
@@ -219,7 +217,6 @@ static void multi_instructor_destructor() {
  * @note
  */
 void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
-  // TODO: Add assertions
   switch (event) {
     case LV_EVENT_KEY: {
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -261,8 +258,8 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
       if (data->destruct_on_click == true &&
           ((data->index_of_current_string == data->total_strings - 1) ||
            data->one_cycle_completed)) {
-        multi_instructor_destructor();
         ui_set_confirm_event();
+        lv_obj_clean(lv_scr_act());
       }
       break;
     }
@@ -283,6 +280,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
         lv_task_del(next_instruction_task);
         next_instruction_task = NULL;
       }
+      multi_instructor_destructor();
       break;
     }
     default:
@@ -347,6 +345,13 @@ void multi_instruction_init(const char **arr,
                             const uint8_t count,
                             const uint16_t delay_in_ms,
                             const bool destruct_on_click) {
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
   data = NULL;
   data = malloc(sizeof(struct Multi_Instruction_Data));
   obj = NULL;

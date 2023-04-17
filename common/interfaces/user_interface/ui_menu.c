@@ -83,6 +83,13 @@ void menu_init(const char *option_list[],
                const int number_of_options,
                const char heading[],
                const bool back_button_allowed) {
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
   data = NULL;
   data = malloc(sizeof(struct Menu_Data));
   obj = NULL;
@@ -99,6 +106,7 @@ void menu_init(const char *option_list[],
       data->option_list[i] = (char *)option_list[i];
     }
   }
+
   menu_create();
   LOG_INFO("menu %s, %d", heading, number_of_options);
 }
@@ -117,8 +125,7 @@ void menu_init(const char *option_list[],
  *
  * @note
  */
-static void menu_destructor() {
-  lv_obj_clean(lv_scr_act());
+void menu_destructor() {
   if (data != NULL) {
     memzero(data, sizeof(struct Menu_Data));
     free(data);
@@ -146,10 +153,6 @@ static void menu_destructor() {
  * @note
  */
 static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(options != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       if (lv_btn_get_state(options) == LV_BTN_STATE_PR) {
@@ -182,13 +185,20 @@ static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
+    case LV_EVENT_CLICKED: {
       ui_set_list_event(data->current_index + 1);
-      menu_destructor();
+      lv_obj_clean(lv_scr_act());
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(options, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      menu_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -210,10 +220,6 @@ static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
  * @note
  */
 static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(back_btn != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -224,13 +230,21 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      ui_mark_event_cancel();
+    case LV_EVENT_CLICKED: {
+      ui_set_cancel_event();
+      lv_obj_clean(lv_scr_act());
       menu_destructor();
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      menu_destructor();
+      break;
+    }
     default:
       break;
   }

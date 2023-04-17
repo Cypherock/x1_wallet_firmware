@@ -64,6 +64,13 @@ void delay_scr_init(const char message[], const uint32_t delay_in_ms) {
   ASSERT(message != NULL);
   ASSERT(delay_in_ms != 0);
 
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
   instruction = lv_label_create(lv_scr_act(), NULL);
 
   ui_paragraph(
@@ -79,6 +86,8 @@ void delay_scr_init(const char message[], const uint32_t delay_in_ms) {
 
   BSP_DelayMs(delay_in_ms);
   lv_obj_clean(lv_scr_act());
-  if (ui_mark_event_over)
-    (*ui_mark_event_over)();
+
+  /* TODO: Is setting confirm event required? */
+  ui_set_confirm_event();
+  return;
 }
