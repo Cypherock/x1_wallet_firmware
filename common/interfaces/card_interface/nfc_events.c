@@ -80,7 +80,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static nfc_ctx_t nfc_ctx;
+static nfc_task_states_t nfc_state;
 static nfc_event_t nfc_event;
 
 /*****************************************************************************
@@ -113,42 +113,44 @@ void nfc_reset_event() {
   memzero(&nfc_event, sizeof(nfc_event_t));
 }
 
-void nfc_enable_card_detect_event() {
-  nfc_ctx.card_detect_enabled = true;
-}
-
-void nfc_disable_card_detect_event() {
-  nfc_ctx.card_detect_enabled = false;
-}
-
 void nfc_set_card_detect_event() {
-  if (nfc_ctx.card_detect_enabled) {
-    nfc_event.event_occured = true;
-    nfc_event.event_type = NFC_EVENT_CARD_DETECT;
-  }
-}
-
-void nfc_tick_inc(uint16_t tick_inc) {
-  if (nfc_ctx.nfc_time < DEFAULT_NFC_TIMEOUT)
-    nfc_ctx.nfc_time += tick_inc;
+  nfc_event.event_occured = true;
+  nfc_event.event_type = NFC_EVENT_CARD_DETECT;
+  nfc_state = NFC_STATE_CARD_DETECTED;
 }
 
 void nfc_ctx_init() {
-  if (nfc_ctx.card_detect_enabled) {
-    nfc_ctx.nfc_time = 0;
-    nfc_ctx.nfc_field_off = false;
-  }
+  nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
 }
 
 void nfc_task_handler() {
-  if (nfc_ctx.card_detect_enabled && nfc_ctx.nfc_time >= DEFAULT_NFC_TIMEOUT) {
-    nfc_card_presence_detect();
-    nfc_ctx.nfc_time = 0;
+  switch (nfc_state) {
+    case NFC_STATE_SET_SELECT_CARD_CMD:
+      if (pn532_set_nfca_target_init_command() == SUCCESS_)
+        nfc_state = NFC_STATE_WAIT_SELECT_CARD_RESP;
+      break;
+
+    case NFC_STATE_WAIT_SELECT_CARD_RESP: {
+      nfc_a_tag_info nfc_tag_info;
+      uint32_t card_select_status =
+          pn532_read_nfca_target_init_resp(&nfc_tag_info);
+      if (card_select_status == SUCCESS_) {
+        nfc_set_card_detect_event();
+      } else if (card_select_status != NFC_RESP_NOT_READY) {
+        nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+      }
+    } break;
+
+    default:
+      LOG_ERROR("xxx37: %d", nfc_state);
+      nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+      break;
   }
 }
 
 void nfc_ctx_destroy() {
-  if (!nfc_ctx.nfc_field_off)
+  if (nfc_state != NFC_STATE_OFF) {
     nfc_deselect_card();
-  nfc_ctx.nfc_field_off = true;
+    nfc_state = NFC_STATE_OFF;
+  }
 }

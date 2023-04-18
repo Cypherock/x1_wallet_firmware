@@ -29,12 +29,14 @@ typedef struct {
   nfc_event_type_t event_type;
 } nfc_event_t;
 
-typedef struct {
-  bool card_detect_enabled;
-  bool nfc_field_off;
-  uint16_t nfc_time;
-} nfc_ctx_t;
-
+typedef enum {
+  NFC_STATE_OFF = 0,
+  NFC_STATE_SET_SELECT_CARD_CMD,
+  NFC_STATE_WAIT_SELECT_CARD_RESP,
+  NFC_STATE_CARD_DETECTED,
+  NFC_STATE_WAIT_FOR_CARD_REMOVAL,
+  NFC_STATE_CARD_REMOVED
+} nfc_task_states_t;
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -56,16 +58,6 @@ bool nfc_get_event(nfc_event_t *nfc_event_os_obj);
  * @brief   Used to reset the latest NFC events from static `nfc_event_t` object
  */
 void nfc_reset_event();
-
-/**
- * @brief   Enable NFC Card detect event
- */
-void nfc_enable_card_detect_event();
-
-/**
- * @brief   Disable NFC Card detect event
- */
-void nfc_disable_card_detect_event();
 
 /**
  * @brief   Performs operations to support NFC tasks

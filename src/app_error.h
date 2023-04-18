@@ -57,6 +57,7 @@
 #define NFC_SC_DEC_KEY_ERROR    (NFC_APP_ERROR_BASE +  0x17)    ///< NFC Secure Channel AES decryption key initialization error
 #define NFC_SC_DEC_ERROR        (NFC_APP_ERROR_BASE +  0x18)    ///< NFC Secure Channel AES decryption error
 #define NFC_NULL_PTR_ERROR      (NFC_APP_ERROR_BASE +  0x19)    ///< NFC null pointer exception had occured in this card and is in recovery mode
+#define NFC_RESP_NOT_READY      (NFC_APP_ERROR_BASE +  0x1A)    ///< A command has been sent to PN532 and response is not ready
 /** @}
  *
  * @defgroup pn532_error_codes PN532 Error codes

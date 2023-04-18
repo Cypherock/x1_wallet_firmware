@@ -14,7 +14,6 @@ void test_nfc_operation_with_os_getter() {
                              .timeout = 500000};
   evt_status_t evt_status = {0};
 
-  nfc_enable_card_detect_event();
   instruction_scr_init("Place a card", "NFC EVENT TEST");
   lv_task_handler();
 
@@ -28,7 +27,6 @@ void test_nfc_operation_with_os_getter() {
   }
 
   BSP_DelayMs(5000);
-  nfc_disable_card_detect_event();
   instruction_scr_destructor();
   lv_task_handler();
 }
