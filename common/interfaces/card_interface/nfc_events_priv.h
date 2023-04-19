@@ -3,7 +3,7 @@
  * @author  Cypherock X1 Team
  * @brief   NFC Events module
  *          Provides NFC module setter for NFC Module
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
@@ -33,14 +33,11 @@
  *****************************************************************************/
 /**
  * @brief   Set NFC_EVENT_CARD_DETECT type event
- *
- * @return  true if event set correctly, false otherwise
  */
 void nfc_set_card_detect_event();
 
 /**
- * @brief   Used to update nfc_time in nfc_ctx at ideal polling interval of 10ms
- * @arg     tick_inc: value in ms to update the nfc time with
+ * @brief   Set NFC_EVENT_CARD_REMOVED type event
  */
-void nfc_tick_inc(uint16_t tick_inc);
+void nfc_set_card_removed_event();
 #endif

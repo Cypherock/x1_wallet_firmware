@@ -62,7 +62,9 @@
  *****************************************************************************/
 #include "nfc_events.h"
 
+#include "app_error.h"
 #include "memzero.h"
+#include "nfc_events_priv.h"
 #include "string.h"
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -71,7 +73,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define DEFAULT_NFC_TIMEOUT 100
+#define DEFAULT_CARD_REMOVAL_RETRY_COUNT 5
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -80,8 +82,9 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static nfc_ctx_t nfc_ctx;
+static nfc_task_states_t nfc_state;
 static nfc_event_t nfc_event;
+static uint8_t card_removal_retry_counter = 0;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -91,9 +94,49 @@ static nfc_event_t nfc_event;
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief   Checks if card has been removed and returns status
+ * @arg     retry_count:  No. of consecutive retries for card not detected
+ *
+ * @return  true if card is not detected for consecutive retries exceeding
+ * retry_count
+ */
+static bool check_card_removed_status(uint8_t retry_count);
+
+/**
+ * @brief   Handles response from read NFC A target init api
+ *          If card is selected, card select event is set, if an error is
+ * received, other than NFC_RESP_NOT_READY, state is updated to
+ * NFC_STATE_SET_SELECT_CARD_CMD
+ */
+static void nfc_handle_card_select_resp();
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_card_removed_status(uint8_t retry_count) {
+  uint32_t err = adafruit_diagnose_card_presence();
+  if (err != PN532_DIAGNOSE_CARD_DETECTED_RESP) {
+    card_removal_retry_counter++;
+  } else {
+    card_removal_retry_counter = 0;
+  }
+
+  if (card_removal_retry_counter > retry_count) {
+    return true;
+  }
+  return false;
+}
+
+static void nfc_handle_card_select_resp() {
+  nfc_a_tag_info nfc_tag_info;
+  uint32_t card_select_status = pn532_read_nfca_target_init_resp(&nfc_tag_info);
+  if (card_select_status == STM_SUCCESS) {
+    nfc_set_card_detect_event();
+  } else if (card_select_status != NFC_RESP_NOT_READY) {
+    nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+  }
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -113,42 +156,66 @@ void nfc_reset_event() {
   memzero(&nfc_event, sizeof(nfc_event_t));
 }
 
-void nfc_enable_card_detect_event() {
-  nfc_ctx.card_detect_enabled = true;
-}
-
-void nfc_disable_card_detect_event() {
-  nfc_ctx.card_detect_enabled = false;
-}
-
 void nfc_set_card_detect_event() {
-  if (nfc_ctx.card_detect_enabled) {
-    nfc_event.event_occured = true;
-    nfc_event.event_type = NFC_EVENT_CARD_DETECT;
-  }
+  nfc_event.event_occured = true;
+  nfc_event.event_type = NFC_EVENT_CARD_DETECT;
+  nfc_state = NFC_STATE_CARD_DETECTED;
 }
 
-void nfc_tick_inc(uint16_t tick_inc) {
-  if (nfc_ctx.nfc_time < DEFAULT_NFC_TIMEOUT)
-    nfc_ctx.nfc_time += tick_inc;
+void nfc_set_card_removed_event() {
+  nfc_event.event_occured = true;
+  nfc_event.event_type = NFC_EVENT_CARD_REMOVED;
+  nfc_state = NFC_STATE_CARD_REMOVED;
 }
 
-void nfc_ctx_init() {
-  if (nfc_ctx.card_detect_enabled) {
-    nfc_ctx.nfc_time = 0;
-    nfc_ctx.nfc_field_off = false;
+void nfc_en_select_card_task() {
+  nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+}
+
+uint32_t nfc_en_wait_for_card_removal_task() {
+  uint32_t card_presence_state = nfc_diagnose_card_presence();
+  if (card_presence_state == PN532_DIAGNOSE_CARD_DETECTED_RESP) {
+    nfc_state = NFC_STATE_WAIT_FOR_CARD_REMOVAL;
+    card_removal_retry_counter = 0;
   }
+  return card_presence_state;
 }
 
 void nfc_task_handler() {
-  if (nfc_ctx.card_detect_enabled && nfc_ctx.nfc_time >= DEFAULT_NFC_TIMEOUT) {
-    nfc_card_presence_detect();
-    nfc_ctx.nfc_time = 0;
+  switch (nfc_state) {
+    case NFC_STATE_SET_SELECT_CARD_CMD:
+      if (pn532_set_nfca_target_init_command() == STM_SUCCESS)
+        nfc_state = NFC_STATE_WAIT_SELECT_CARD_RESP;
+      break;
+
+    case NFC_STATE_WAIT_SELECT_CARD_RESP: {
+      nfc_handle_card_select_resp();
+    } break;
+
+    case NFC_STATE_CARD_DETECTED: {
+      // Should never reach here.
+    } break;
+
+    case NFC_STATE_WAIT_FOR_CARD_REMOVAL: {
+      if (check_card_removed_status(DEFAULT_CARD_REMOVAL_RETRY_COUNT)) {
+        nfc_set_card_removed_event();
+      }
+    } break;
+
+    case NFC_STATE_CARD_REMOVED: {
+      // Should never reach here.
+    } break;
+
+    default:
+      LOG_ERROR("xxx37: %d", nfc_state);
+      break;
   }
 }
 
 void nfc_ctx_destroy() {
-  if (!nfc_ctx.nfc_field_off)
+  if (nfc_state != NFC_STATE_OFF) {
     nfc_deselect_card();
-  nfc_ctx.nfc_field_off = true;
+    nfc_state = NFC_STATE_OFF;
+  }
+  card_removal_retry_counter = 0;
 }

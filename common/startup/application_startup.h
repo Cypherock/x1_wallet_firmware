@@ -43,7 +43,6 @@
 #include "lv_port_disp.h"
 #include "lv_port_indev.h"
 #include "lvgl.h"
-#include "nfc_events.h"
 #include "sec_flash.h"
 #include "ui_common.h"
 

@@ -46,7 +46,6 @@
 #include "controller_main.h"
 #include "flash_if.h"
 #include "memzero.h"
-#include "nfc_events_priv.h"
 #include "wallet.h"
 
 #define SHA256_SIZE 32

@@ -63,7 +63,6 @@
 #include "systick_timer.h"
 
 #include "application_startup.h"
-#include "nfc_events_priv.h"
 #include "systick_timer_priv.h"
 
 /*****************************************************************************
@@ -102,7 +101,6 @@ static timeout_config_t timer_ctx = {.timer = 0,
  *****************************************************************************/
 void systick_interrupt_cb(void) {
   lv_tick_inc(POLLING_TIME);
-  nfc_tick_inc(POLLING_TIME);
 
   if (timer_ctx.timer_en) {
     timer_ctx.timer += POLLING_TIME;
