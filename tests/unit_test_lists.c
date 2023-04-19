@@ -104,5 +104,5 @@ TEST_GROUP_RUNNER(ui_events_test) {
 
 TEST_GROUP_RUNNER(nfc_events_test) {
   RUN_TEST_CASE(nfc_events_test, set_card_detect_event);
-  RUN_TEST_CASE(nfc_events_test, set_card_detect_event_when_disabled);
+  RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
 }

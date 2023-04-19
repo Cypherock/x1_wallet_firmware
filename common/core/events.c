@@ -99,7 +99,6 @@ void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
 
   /* Configure event getters if required */
   p0_ctx_init(evt_config.timeout, evt_config.abort_disabled);
-  nfc_ctx_init();
 
   bool p0_evt_occurred = false;
   bool p1_evt_occurred = false;
@@ -136,7 +135,10 @@ void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
 
   /* Any post cleanup required */
   p0_ctx_destroy();
-  nfc_ctx_destroy();
+
+  if (evt_config.evt_selection.bits.nfc_events) {
+    nfc_ctx_destroy();
+  }
 
   return;
 }
