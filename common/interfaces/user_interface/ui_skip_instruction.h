@@ -8,8 +8,8 @@
  * target=_blank>https://mitcc.org/</a>
  *
  */
-#ifndef ui_skip_instruction_H
-#define ui_skip_instruction_H
+#ifndef UI_SKIP_INSTRUCTION_H
+#define UI_SKIP_INSTRUCTION_H
 
 #include "ui_common.h"
 

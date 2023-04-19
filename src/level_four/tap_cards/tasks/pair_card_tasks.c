@@ -66,6 +66,37 @@
 #include "ui_instruction.h"
 #include "ui_skip_instruction.h"
 
+void handle_pairing_detect_or_skip_task(char *heading) {
+  skip_instruction_scr_init(heading);
+
+  // Enable task to select NFC card
+  nfc_en_select_card_task();
+
+  // Set configuration for listening to NFC and ui events
+  evt_config_t evt_conf = {.abort_disabled = true,
+                           .evt_selection.bits.ui_events = true,
+                           .evt_selection.bits.nfc_events = true,
+                           .evt_selection.bits.usb_events = false,
+                           .timeout = 30000};
+  evt_status_t evt_status = {0};
+  get_events(evt_conf, &evt_status);
+
+  if (evt_status.nfc_event.event_occured &&
+      (evt_status.nfc_event.event_type == NFC_EVENT_CARD_DETECT)) {
+    skip_instruction_scr_destructor();    // Destruct skip instruction screen if
+                                          // nfc event occured
+    ui_reset_event();    // Reset UI event in case of a race condition
+    instruction_scr_init("Dummy", heading);
+    instruction_scr_change_text(
+        "...",
+        true);    // Add transition screen till the pairing process starts
+    mark_event_over();
+  } else if (evt_status.ui_event.event_occured &&
+             evt_status.ui_event.event_type == UI_EVENT_REJECT) {
+    mark_event_cancel();
+  }
+}
+
 void tap_card_pair_card_tasks() {
   char display[40];
   switch (flow_level.level_four) {
@@ -84,29 +115,7 @@ void tap_card_pair_card_tasks() {
                  sizeof(display),
                  UI_TEXT_PAIRING_TAP_CARD,
                  ((flow_level.level_four - 1) >> 1) + 1);
-        skip_instruction_scr_init(display);
-
-        nfc_enable_card_detect_event();
-
-        evt_config_t evt_conf = {.abort_disabled = true,
-                                 .evt_selection.bits.ui_events = true,
-                                 .evt_selection.bits.nfc_events = true,
-                                 .evt_selection.bits.usb_events = false,
-                                 .timeout = 30000};
-        evt_status_t evt_status = {0};
-        get_events(evt_conf, &evt_status);
-
-        nfc_disable_card_detect_event();
-        if (evt_status.nfc_event.event_occured) {
-          skip_instruction_scr_destructor();
-          ui_reset_event();
-          instruction_scr_init("Dummy", display);
-          instruction_scr_change_text("...", true);
-          mark_event_over();
-        } else if (evt_status.ui_event.event_occured &&
-                   evt_status.ui_event.event_type == UI_EVENT_REJECT) {
-          mark_event_cancel();
-        }
+        handle_pairing_detect_or_skip_task(display);
       }
       break;
 
