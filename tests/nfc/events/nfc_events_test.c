@@ -1,9 +1,10 @@
 /**
  * @file    nfc_events_test.h
  * @author  Cypherock X1 Team
- * @brief   UI Events module tests
- *          Tests the event getter and setter operation used by UI screens and
+ * @brief   NFC Events module tests
+ *          Tests the event getter and setter operation used by NFC Module and
  *os
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -71,13 +72,11 @@
 TEST_GROUP(nfc_events_test);
 
 TEST_SETUP(nfc_events_test) {
-  nfc_enable_card_detect_event();
   return;
 }
 
 TEST_TEAR_DOWN(nfc_events_test) {
   nfc_reset_event();
-  nfc_disable_card_detect_event();
   return;
 }
 

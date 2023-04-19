@@ -116,7 +116,7 @@ static void nfc_handle_card_select_resp();
  *****************************************************************************/
 static bool check_card_removed_status(uint8_t retry_count) {
   uint32_t err = adafruit_diagnose_card_presence();
-  if (err != PN532_DIAGNOSE_CARD_DETECTED) {
+  if (err != PN532_DIAGNOSE_CARD_DETECTED_RESP) {
     card_removal_retry_counter++;
   } else {
     card_removal_retry_counter = 0;
@@ -174,7 +174,7 @@ void nfc_en_select_card_task() {
 
 uint32_t nfc_en_wait_for_card_removal_task() {
   uint32_t card_presence_state = nfc_diagnose_card_presence();
-  if (card_presence_state == PN532_DIAGNOSE_CARD_DETECTED) {
+  if (card_presence_state == PN532_DIAGNOSE_CARD_DETECTED_RESP) {
     nfc_state = NFC_STATE_WAIT_FOR_CARD_REMOVAL;
     card_removal_retry_counter = 0;
   }

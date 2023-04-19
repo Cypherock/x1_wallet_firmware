@@ -63,7 +63,6 @@
 #include "systick_timer.h"
 
 #include "application_startup.h"
-#include "nfc_events_priv.h"
 #include "systick_timer_priv.h"
 
 /*****************************************************************************

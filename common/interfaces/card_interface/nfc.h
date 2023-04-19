@@ -55,7 +55,7 @@
 #define POW_NONCE_SIZE 32
 
 #define DEFAULT_NFC_TG_INIT_TIME 25
-#define PN532_DIAGNOSE_CARD_DETECTED 0
+
 /**
  * @brief Initialize PN532 module
  * @details

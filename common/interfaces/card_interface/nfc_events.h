@@ -3,7 +3,7 @@
  * @author  Cypherock X1 Team
  * @brief   NFC Events module
  *          Provides NFC module setter and getter
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
