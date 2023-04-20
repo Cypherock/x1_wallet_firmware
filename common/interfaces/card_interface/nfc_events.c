@@ -109,7 +109,7 @@ static bool check_card_removed_status(uint8_t retry_count);
  * received, other than NFC_RESP_NOT_READY, state is updated to
  * NFC_STATE_SET_SELECT_CARD_CMD
  */
-static void nfc_handle_card_select_resp();
+static void nfc_handle_card_select_resp(void);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -128,7 +128,7 @@ static bool check_card_removed_status(uint8_t retry_count) {
   return false;
 }
 
-static void nfc_handle_card_select_resp() {
+static void nfc_handle_card_select_resp(void) {
   nfc_a_tag_info nfc_tag_info;
   uint32_t card_select_status = pn532_read_nfca_target_init_resp(&nfc_tag_info);
   if (card_select_status == STM_SUCCESS) {
@@ -152,27 +152,27 @@ bool nfc_get_event(nfc_event_t *nfc_event_os_obj) {
   return false;
 }
 
-void nfc_reset_event() {
+void nfc_reset_event(void) {
   memzero(&nfc_event, sizeof(nfc_event_t));
 }
 
-void nfc_set_card_detect_event() {
+void nfc_set_card_detect_event(void) {
   nfc_event.event_occured = true;
   nfc_event.event_type = NFC_EVENT_CARD_DETECT;
   nfc_state = NFC_STATE_CARD_DETECTED;
 }
 
-void nfc_set_card_removed_event() {
+void nfc_set_card_removed_event(void) {
   nfc_event.event_occured = true;
   nfc_event.event_type = NFC_EVENT_CARD_REMOVED;
   nfc_state = NFC_STATE_CARD_REMOVED;
 }
 
-void nfc_en_select_card_task() {
+void nfc_en_select_card_task(void) {
   nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
 }
 
-uint32_t nfc_en_wait_for_card_removal_task() {
+uint32_t nfc_en_wait_for_card_removal_task(void) {
   uint32_t card_presence_state = nfc_diagnose_card_presence();
   if (card_presence_state == PN532_DIAGNOSE_CARD_DETECTED_RESP) {
     nfc_state = NFC_STATE_WAIT_FOR_CARD_REMOVAL;
@@ -181,11 +181,12 @@ uint32_t nfc_en_wait_for_card_removal_task() {
   return card_presence_state;
 }
 
-void nfc_task_handler() {
+void nfc_task_handler(void) {
   switch (nfc_state) {
     case NFC_STATE_SET_SELECT_CARD_CMD:
-      if (pn532_set_nfca_target_init_command() == STM_SUCCESS)
+      if (pn532_set_nfca_target_init_command() == STM_SUCCESS) {
         nfc_state = NFC_STATE_WAIT_SELECT_CARD_RESP;
+      }
       break;
 
     case NFC_STATE_WAIT_SELECT_CARD_RESP: {
@@ -212,10 +213,8 @@ void nfc_task_handler() {
   }
 }
 
-void nfc_ctx_destroy() {
-  if (nfc_state != NFC_STATE_OFF) {
-    nfc_deselect_card();
-    nfc_state = NFC_STATE_OFF;
-  }
+void nfc_ctx_destroy(void) {
+  nfc_deselect_card();
+  nfc_state = NFC_STATE_OFF;
   card_removal_retry_counter = 0;
 }

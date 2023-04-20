@@ -7,7 +7,7 @@
 
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
 
-void test_nfc_operation_with_os_getter() {
+void test_nfc_operation_with_os_getter(void) {
   evt_config_t evt_config = {.evt_selection.bits.nfc_events = 1,
                              .evt_selection.bits.ui_events = 0,
                              .evt_selection.bits.usb_events = 0,
