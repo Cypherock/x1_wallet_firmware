@@ -83,6 +83,9 @@ void menu_init(const char *option_list[],
                const int number_of_options,
                const char heading[],
                const bool back_button_allowed) {
+  ASSERT(NULL != option_list);
+  ASSERT(NULL != heading);
+
   /* Clear screen before populating any data, this will clear any UI component
    * and it's corresponding objects. Important thing to note here is that the
    * screen will be updated only when lv_task_handler() is called.
