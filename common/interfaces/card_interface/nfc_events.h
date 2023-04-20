@@ -32,14 +32,6 @@ typedef struct {
   nfc_event_type_t event_type;
 } nfc_event_t;
 
-typedef enum {
-  NFC_STATE_OFF = 0,
-  NFC_STATE_SET_SELECT_CARD_CMD,
-  NFC_STATE_WAIT_SELECT_CARD_RESP,
-  NFC_STATE_CARD_DETECTED,
-  NFC_STATE_WAIT_FOR_CARD_REMOVAL,
-  NFC_STATE_CARD_REMOVED
-} nfc_task_states_t;
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/

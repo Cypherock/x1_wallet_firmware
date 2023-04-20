@@ -1,5 +1,5 @@
 /**
- * @file    nfc_events_test.h
+ * @file    nfc_events_test.c
  * @author  Cypherock X1 Team
  * @brief   NFC Events module tests
  *          Tests the event getter and setter operation used by NFC Module and
