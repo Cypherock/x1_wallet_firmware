@@ -106,7 +106,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
    */
   get_events(evt_config, &evt_status);
   TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
-  TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, evt_status.nfc_event.event_occured);
+  TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, evt_status.nfc_event.event_type);
 
   // Indicate nfc select card event occured
   nfc_select_card();
@@ -118,6 +118,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
 
   uint32_t err = nfc_en_wait_for_card_removal_task();
   TEST_ASSERT_EQUAL(PN532_DIAGNOSE_CARD_DETECTED_RESP, err);
+  memzero(&evt_status.nfc_event, sizeof(evt_status.nfc_event));
 
   /**
    * Wait for an event occurance, Card removal is awaited at this point

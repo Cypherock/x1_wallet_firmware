@@ -191,11 +191,11 @@ uint32_t nfc_en_wait_for_card_removal_task(void) {
 
 void nfc_task_handler(void) {
   switch (nfc_state) {
-    case NFC_STATE_SET_SELECT_CARD_CMD:
+    case NFC_STATE_SET_SELECT_CARD_CMD: {
       if (pn532_set_nfca_target_init_command() == STM_SUCCESS) {
         nfc_state = NFC_STATE_WAIT_SELECT_CARD_RESP;
       }
-      break;
+    } break;
 
     case NFC_STATE_WAIT_SELECT_CARD_RESP: {
       nfc_handle_card_select_resp();
@@ -215,9 +215,9 @@ void nfc_task_handler(void) {
       // Should never reach here.
     } break;
 
-    default:
+    default: {
       LOG_ERROR("xxx37: %d", nfc_state);
-      break;
+    } break;
   }
 }
 
