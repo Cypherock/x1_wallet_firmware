@@ -95,6 +95,17 @@ static void change_arrows() {
 }
 
 /**
+ * @brief Helper function to reset arrows style to released
+ *
+ */
+void reset_arrows_styles(void) {
+  if (data->index_of_current_string == 0)
+    change_arrows();
+  lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+  lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+}
+
+/**
  * @brief Helper function to increment current index.
  * @details
  *
@@ -232,9 +243,6 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
   // TODO: Add assertions
   switch (event) {
     case LV_EVENT_KEY: {
-      if (lv_btn_get_state(instruction) == LV_BTN_STATE_PR) {
-        lv_btn_set_state(instruction, LV_BTN_STATE_REL);
-      }
       switch (lv_indev_get_key(ui_get_indev())) {
         case LV_KEY_RIGHT: {
           lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
@@ -257,6 +265,12 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           lv_task_reset(next_instruction_task);
           break;
         }
+        case LV_KEY_UP:
+        case LV_KEY_DOWN:
+        case LV_KEY_ENTER:
+          reset_arrows_styles();
+          break;
+
         default:
           break;
       }
@@ -264,6 +278,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
     }
 
     case LV_EVENT_CLICKED: {
+      reset_arrows_styles();
       if (data->destruct_on_click == true &&
           ((data->index_of_current_string == data->total_strings - 1) || data->one_cycle_completed)) {
         multi_instructor_destructor();
@@ -274,10 +289,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
     }
 
     case LV_EVENT_RELEASED: {
-      if (data->index_of_current_string == 0)
-        change_arrows();
-      lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
-      lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+      reset_arrows_styles();
       break;
     }
 
