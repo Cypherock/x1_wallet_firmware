@@ -167,7 +167,7 @@ void input_text_init(const char *input_list,
  * @brief Clear screen
  *
  */
-void input_text_destructor() {
+void input_text_destructor(void) {
   lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Input_Text_Data));
