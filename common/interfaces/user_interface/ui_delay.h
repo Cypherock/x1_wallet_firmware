@@ -12,7 +12,6 @@
 #define UI_DELAY_H
 
 #include "ui_common.h"
-#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #define DELAY_SHORT 500
 #define DELAY_TIME 500

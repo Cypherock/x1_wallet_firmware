@@ -58,6 +58,8 @@
  */
 #include "ui_delay.h"
 
+#include "ui_events_priv.h"
+
 static lv_obj_t *instruction;
 
 void delay_scr_init(const char message[], const uint32_t delay_in_ms) {

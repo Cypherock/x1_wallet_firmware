@@ -236,7 +236,6 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
     case LV_EVENT_CLICKED: {
       ui_set_cancel_event();
       lv_obj_clean(lv_scr_act());
-      menu_destructor();
       break;
     }
     case LV_EVENT_DEFOCUSED:

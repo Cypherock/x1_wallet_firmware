@@ -193,7 +193,7 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       break;
     case LV_EVENT_CLICKED:
       ui_set_cancel_event();
-      confirm_scr_destructor();
+      lv_obj_clean(lv_scr_act());
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(cancel_btn, LV_BTN_STATE_REL);
