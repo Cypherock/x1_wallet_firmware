@@ -8,22 +8,12 @@
 
 PB_BIND(SimpleMessage, SimpleMessage, AUTO)
 
-
 PB_BIND(LinkedList, LinkedList, AUTO)
-
 
 PB_BIND(KAryTree, KAryTree, AUTO)
 
-
 PB_BIND(TypedDataStruct, TypedDataStruct, AUTO)
-
 
 PB_BIND(TypedDataStruct_TypedDataNode, TypedDataStruct_TypedDataNode, AUTO)
 
-
 PB_BIND(MessageData, MessageData, AUTO)
-
-
-
-
-

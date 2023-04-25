@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef UI_LOGO_H
 #define UI_LOGO_H
@@ -15,7 +16,7 @@
 /**
  * @brief Create logo screen which clears after a delay
  * @details
- * 
+ *
  * @param delay_in_ms Delay between display and clear logo in ms
  *
  * @return
