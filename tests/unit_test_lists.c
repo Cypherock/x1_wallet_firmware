@@ -70,6 +70,10 @@ TEST_GROUP_RUNNER(event_getter_test) {
   RUN_TEST_CASE(event_getter_test, disabled_events);
 }
 
+TEST_GROUP_RUNNER(xpub) {
+  RUN_TEST_CASE(xpub, derivation_path_tests);
+}
+
 TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, inactivity_evt);
   RUN_TEST_CASE(p0_events_test, abort_evt);
