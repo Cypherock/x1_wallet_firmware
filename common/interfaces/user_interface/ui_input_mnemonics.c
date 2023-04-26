@@ -195,6 +195,13 @@ static void second_char_init() {
 void ui_mnem_init(const char *heading) {
   ASSERT(heading != NULL);
 
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
   data = malloc(sizeof(struct Data));
   obj = malloc(sizeof(struct LvObjects));
 
@@ -229,7 +236,6 @@ void ui_mnem_init(const char *heading) {
  */
 static void mnem_destructor() {
   // TODO: assert(data->state == EXIT)
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Data));
     free(data);
@@ -334,10 +340,6 @@ static void decrement_data_index() {
  * @note
  */
 static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
-  ASSERT(center != NULL);
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -383,7 +385,7 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
       } else if (data->state == SHOWING_SUGGESTIONS) {
         data->state = EXIT;
         ui_set_list_event(data->index);
-        mnem_destructor();
+        lv_obj_clean(lv_scr_act());
         return;
       } else {
         // shouldn't come here
@@ -392,7 +394,12 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(center, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -418,10 +425,6 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
  */
 static void backspace_event_handler(lv_obj_t *backspace,
                                     const lv_event_t event) {
-  ASSERT(backspace != NULL);
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -459,7 +462,12 @@ static void backspace_event_handler(lv_obj_t *backspace,
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(backspace, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -485,9 +493,6 @@ static void backspace_event_handler(lv_obj_t *backspace,
  */
 static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
                                      const lv_event_t event) {
-  ASSERT(cancel_btn != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -500,13 +505,18 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      ui_mark_event_cancel();
-      mnem_destructor();
+      ui_set_cancel_event();
+      lv_obj_clean(lv_scr_act());
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(cancel_btn, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }

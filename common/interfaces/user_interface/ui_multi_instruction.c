@@ -58,6 +58,7 @@
  */
 #include "ui_multi_instruction.h"
 
+#include "assert_conf.h"
 #include "ui_events_priv.h"
 
 static struct Multi_Instruction_Data *data;
@@ -95,6 +96,17 @@ static void change_arrows() {
     lv_obj_set_hidden(obj->left_arrow, false);
     lv_obj_set_hidden(obj->right_arrow, false);
   }
+}
+
+/**
+ * @brief Helper function to reset arrows style to released
+ *
+ */
+void reset_arrows_styles(void) {
+  if (data->index_of_current_string == 0)
+    change_arrows();
+  lv_label_set_style(obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+  lv_label_set_style(obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
 }
 
 /**
@@ -142,6 +154,26 @@ static void change_current_index(const lv_key_t PRESSED_KEY) {
   }
 }
 
+static void update_text(uint8_t index) {
+  lv_label_set_static_text(obj->text, data->instruction_content[index].text);
+  if (data->instruction_content[index].img == NULL) {
+    lv_obj_align(obj->text, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_img_set_src(obj->img, LV_SYMBOL_DUMMY "");
+    lv_obj_set_pos(obj->img, 0, 0);
+    lv_obj_realign(obj->text);
+    lv_obj_realign(obj->left_arrow);
+    lv_obj_realign(obj->right_arrow);
+  } else {
+    lv_img_set_src(obj->img, data->instruction_content[index].img);
+    lv_img_set_auto_size(obj->img, true);
+    lv_obj_set_pos(obj->img,
+                   data->instruction_content[index].img_x_offset,
+                   data->instruction_content[index].img_y_offset);
+    lv_obj_align(
+        obj->text, obj->img, data->instruction_content[index].text_align, 0, 2);
+  }
+}
+
 /**
  * @brief Callback passed to the timeout task to update the text on the screen
  * after delay in ms passed while creating the screen.
@@ -157,11 +189,9 @@ static void change_current_index(const lv_key_t PRESSED_KEY) {
  *
  * @note
  */
-static void change_text(lv_task_t *task) {
+static void change_text_cb(lv_task_t *task) {
   change_current_index(LV_KEY_RIGHT);
-  lv_label_set_static_text(obj->text,
-                           data->strings[data->index_of_current_string]);
-  lv_obj_realign(obj->text);
+  update_text(data->index_of_current_string);
   change_arrows();
 }
 
@@ -187,8 +217,6 @@ static void multi_instructor_destructor() {
     lv_task_del(next_instruction_task);
     next_instruction_task = NULL;
   }
-
-  lv_obj_clean(lv_scr_act());
 
   if (data != NULL) {
     memzero(data, sizeof(struct Multi_Instruction_Data));
@@ -219,7 +247,6 @@ static void multi_instructor_destructor() {
  * @note
  */
 void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
-  // TODO: Add assertions
   switch (event) {
     case LV_EVENT_KEY: {
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -227,10 +254,8 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           lv_label_set_style(
               obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
           change_current_index(LV_KEY_RIGHT);
-          lv_label_set_static_text(
-              instruction, data->strings[data->index_of_current_string]);
+          update_text(data->index_of_current_string);
           change_arrows();
-          lv_obj_realign(instruction);
           lv_task_reset(next_instruction_task);
           break;
         }
@@ -238,8 +263,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           lv_label_set_style(
               obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
           change_current_index(LV_KEY_LEFT);
-          lv_label_set_static_text(
-              instruction, data->strings[data->index_of_current_string]);
+          update_text(data->index_of_current_string);
 
           // This is done to highlight the left arrow when the first screen is
           // rendered for the first time and user moves to second screen and
@@ -247,10 +271,15 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           // click and not highlight
           if (data->index_of_current_string != 0)
             change_arrows();
-          lv_obj_realign(instruction);
           lv_task_reset(next_instruction_task);
           break;
         }
+        case LV_KEY_UP:
+        case LV_KEY_DOWN:
+        case LV_KEY_ENTER:
+          reset_arrows_styles();
+          break;
+
         default:
           break;
       }
@@ -258,22 +287,18 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
     }
 
     case LV_EVENT_CLICKED: {
+      reset_arrows_styles();
       if (data->destruct_on_click == true &&
           ((data->index_of_current_string == data->total_strings - 1) ||
            data->one_cycle_completed)) {
-        multi_instructor_destructor();
         ui_set_confirm_event();
+        lv_obj_clean(lv_scr_act());
       }
       break;
     }
 
     case LV_EVENT_RELEASED: {
-      if (data->index_of_current_string == 0)
-        change_arrows();
-      lv_label_set_style(
-          obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
-      lv_label_set_style(
-          obj->right_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_rel);
+      reset_arrows_styles();
       break;
     }
 
@@ -283,6 +308,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
         lv_task_del(next_instruction_task);
         next_instruction_task = NULL;
       }
+      multi_instructor_destructor();
       break;
     }
     default:
@@ -301,17 +327,16 @@ void multi_instruction_create() {
   obj->text = lv_label_create(lv_scr_act(), NULL);
   obj->left_arrow = lv_label_create(lv_scr_act(), NULL);
   obj->right_arrow = lv_label_create(lv_scr_act(), NULL);
+  obj->img = lv_img_create(lv_scr_act(), NULL);
 
   lv_label_set_long_mode(obj->text, LV_LABEL_LONG_BREAK);
-  lv_obj_set_width(obj->text, LV_HOR_RES - 28);
+  lv_obj_set_width(obj->text, LV_HOR_RES - 22);
   lv_label_set_align(obj->text, LV_LABEL_ALIGN_CENTER);
-  lv_label_set_static_text(obj->text, data->strings[0]);
-  lv_obj_align(obj->text, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
-  lv_obj_align(obj->text, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_obj_set_event_cb(obj->text, arrow_event_handler);
 
   // Style when left or right button is released
   lv_style_copy(&arrow_style_rel, &lv_style_plain);
+  arrow_style_rel.body.opa = 0;
 
   // Style when left or right button is pressed (highlights them)
   lv_style_copy(&arrow_style_pr, &lv_style_plain);
@@ -324,38 +349,35 @@ void multi_instruction_create() {
 
   // Left Arrow
   lv_label_set_text(obj->left_arrow, LV_SYMBOL_LEFT);
-  lv_obj_align(obj->left_arrow, obj->text, LV_ALIGN_OUT_LEFT_MID, -6, 0);
+  lv_obj_align(obj->left_arrow, NULL, LV_ALIGN_IN_LEFT_MID, 0, 0);
   lv_obj_set_event_cb(obj->left_arrow, arrow_event_handler);
 
   // Right Arrow
   lv_label_set_text(obj->right_arrow, LV_SYMBOL_RIGHT);
-  lv_obj_align(obj->right_arrow, obj->text, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+  lv_obj_align(obj->right_arrow, NULL, LV_ALIGN_IN_RIGHT_MID, 0, 0);
   lv_obj_set_event_cb(obj->right_arrow, arrow_event_handler);
 
   lv_group_add_obj(ui_get_group(), obj->text);
   lv_group_add_obj(ui_get_group(), obj->left_arrow);
   lv_group_add_obj(ui_get_group(), obj->right_arrow);
+  lv_group_add_obj(ui_get_group(), obj->img);
 
   lv_indev_set_group(ui_get_indev(), ui_get_group());
   lv_obj_set_hidden(obj->left_arrow, true);
   if (data->total_strings == 1) {
     lv_obj_set_hidden(obj->right_arrow, true);
   }
+  update_text(data->index_of_current_string);
 }
 
-void multi_instruction_init(const char **arr,
-                            const uint8_t count,
-                            const uint16_t delay_in_ms,
-                            const bool destruct_on_click) {
-  data = NULL;
-  data = malloc(sizeof(struct Multi_Instruction_Data));
-  obj = NULL;
-  obj = malloc(sizeof(struct Multi_Instruction_Object));
-
-  for (uint8_t i = 0; i < count; i++) {
-    snprintf(data->strings[i], sizeof(data->strings[i]), "%s", arr[i]);
-  }
-
+/**
+ * @brief   Set configuration for multi-instruction screen.
+ *          Populates Multi_Instruction_Data object and setup
+ *          the next_instruction_task
+ */
+void multi_instruction_set_config(const uint8_t count,
+                                  const uint16_t delay_in_ms,
+                                  const bool destruct_on_click) {
   data->destruct_on_click = destruct_on_click;
   data->index_of_current_string = 0;
   data->total_strings = count;
@@ -363,10 +385,71 @@ void multi_instruction_init(const char **arr,
 
   if (next_instruction_task == NULL) {
     next_instruction_task =
-        lv_task_create(change_text, delay_in_ms, LV_TASK_PRIO_MID, NULL);
+        lv_task_create(change_text_cb, delay_in_ms, LV_TASK_PRIO_MID, NULL);
   } else {
     lv_task_set_prio(next_instruction_task, LV_TASK_PRIO_MID);
   }
+}
 
+void multi_instruction_init(const char **arr,
+                            const uint8_t count,
+                            const uint16_t delay_in_ms,
+                            const bool destruct_on_click) {
+  ASSERT(arr != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
+  data = NULL;
+  data = malloc(sizeof(struct Multi_Instruction_Data));
+  ASSERT(data != NULL);
+  obj = NULL;
+  obj = malloc(sizeof(struct Multi_Instruction_Object));
+  ASSERT(obj != NULL);
+
+  memzero(data, sizeof(struct Multi_Instruction_Data));
+  for (uint8_t i = 0; i < count; i++) {
+    snprintf(data->instruction_content[i].text,
+             sizeof(data->instruction_content[i].text),
+             "%s",
+             arr[i]);
+  }
+
+  multi_instruction_set_config(count, delay_in_ms, destruct_on_click);
+  multi_instruction_create();
+}
+
+void multi_instruction_with_image_init(instruction_content_t content[],
+                                       const uint8_t count,
+                                       const uint16_t delay_in_ms,
+                                       const bool destruct_on_click) {
+  ASSERT(content != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
+  data = NULL;
+  data = malloc(sizeof(struct Multi_Instruction_Data));
+  ASSERT(data != NULL);
+  obj = NULL;
+  obj = malloc(sizeof(struct Multi_Instruction_Object));
+  ASSERT(obj != NULL);
+
+  memzero(data, sizeof(struct Multi_Instruction_Data));
+  for (uint8_t i = 0; i < count; i++) {
+    memcpy(&(data->instruction_content[i]),
+           &content[i],
+           sizeof(instruction_content_t));
+  }
+
+  multi_instruction_set_config(count, delay_in_ms, destruct_on_click);
   multi_instruction_create();
 }

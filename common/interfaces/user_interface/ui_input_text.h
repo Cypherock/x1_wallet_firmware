@@ -116,4 +116,16 @@ void input_text_init(const char *input_list,
                      uint8_t min_input_size,
                      INPUT_DATA_TYPE data_type,
                      uint8_t max_input_size);
+
+/**
+ * @brief This API desctructs the objects created when ui_input_text UI
+ * component is used. In most cases, which end gracefully, wherein the user
+ * provides the input from screen or presses cancel button, this desctructor is
+ * called internally. Therefore, this desctructor API is only required if the
+ * application wants to destruct this screen forcefully - which maybe to handle
+ * a P0 event.
+ *
+ */
+void input_text_destructor(void);
+
 #endif    // !UI_INPUT_TEXT_H
