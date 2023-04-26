@@ -81,12 +81,12 @@
 #include "pow.h"
 #include "sec_flash.h"
 #include "sys_state.h"
+#include "systick_timer.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
 #include "ui_logo.h"
 #include "ui_message.h"
 #include "ui_multi_instruction.h"
-
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -147,37 +147,6 @@ static void clock_init(void) {
   SystemClock_Config();
 }
 
-/**
- * @brief this function will be called repeatedly in time interval of
- * POLLING_TIME.
- * @details
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void repeated_timer_handler(void) {
-  lv_tick_inc(POLLING_TIME);
-#if X1WALLET_MAIN == 1
-  if (counter.level > LEVEL_ONE)
-    inactivity_counter += POLLING_TIME;
-  if (inactivity_counter > INACTIVITY_TIME) {
-    inactivity_counter = 0;
-    if (counter.level > LEVEL_ONE) {
-      mark_error_screen(ui_text_process_reset_due_to_inactivity);
-      if (CY_External_Triggered())
-        comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
-      reset_flow_level();
-      lv_obj_clean(lv_scr_act());
-    }
-  }
-#endif
-}
-
 void reset_inactivity_timer() {
   inactivity_counter = 0;
 }
@@ -201,7 +170,7 @@ void reset_inactivity_timer() {
  * @note
  */
 static void create_timers() {
-  BSP_App_Timer_Create(BSP_APPLICATION_TIMER, repeated_timer_handler);
+  BSP_App_Timer_Create(BSP_APPLICATION_TIMER, systick_interrupt_cb);
 }
 
 /**

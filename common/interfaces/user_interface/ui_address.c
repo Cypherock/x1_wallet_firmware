@@ -57,6 +57,8 @@
  ******************************************************************************
  */
 #include "ui_address.h"
+
+#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -66,11 +68,34 @@ static struct Address_Object *obj = NULL;
 
 extern lv_task_t *address_timeout_task;
 
+/**
+ * @brief Create address screen
+ * @details
+ *
+ * @param hide_buttons hide the next and cancel buttons
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void address_scr_create(bool hide_buttons);
+
 void address_scr_init(const char text[],
                       const char address[],
                       const bool hide_buttons) {
   ASSERT(text != NULL);
   ASSERT(address != NULL);
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct Address_Data));
   obj = malloc(sizeof(struct Address_Object));
@@ -104,7 +129,6 @@ void address_scr_init(const char text[],
  * @note
  */
 static void address_scr_destructor() {
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Address_Data));
     free(data);
@@ -133,11 +157,9 @@ static void address_scr_destructor() {
  */
 static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
                                      const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(cancel_btn != NULL);
-  if (lv_obj_get_hidden(cancel_btn))
+  if ((LV_EVENT_DELETE != event) && (lv_obj_get_hidden(cancel_btn))) {
     return;
+  }
 
   switch (event) {
     case LV_EVENT_KEY:
@@ -149,17 +171,20 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(0);
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
-      address_scr_destructor();
+    case LV_EVENT_CLICKED: {
+      ui_set_cancel_event();
+      lv_obj_clean(lv_scr_act());
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(cancel_btn, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      address_scr_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -181,11 +206,9 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
  * @note
  */
 static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(next_btn != NULL);
-  if (lv_obj_get_hidden(next_btn))
+  if ((LV_EVENT_DELETE != event) && (lv_obj_get_hidden(next_btn))) {
     return;
+  }
 
   switch (event) {
     case LV_EVENT_KEY:
@@ -198,16 +221,20 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(1);
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
-      address_scr_destructor();
+    case LV_EVENT_CLICKED: {
+      ui_set_confirm_event();
+      lv_obj_clean(lv_scr_act());
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(next_btn, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      address_scr_destructor();
+      break;
+    }
 
     default:
       break;

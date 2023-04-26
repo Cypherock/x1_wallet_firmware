@@ -80,13 +80,14 @@ extern lv_indev_t *indev_keypad;
 #endif /* USE_SIMULATOR == 1 */
 
 void RunAllTests(void) {
-#if USE_SIMULATOR == 1
-  RUN_TEST_GROUP(sample_test_simulator);
-#endif /* USE_SIMULATOR == 1 */
-
-#if USE_SIMULATOR == 0
-  RUN_TEST_GROUP(sample_test_target);
-#endif /* USE_SIMULATOR == 0 */
+  RUN_TEST_GROUP(event_getter_test);
+  RUN_TEST_GROUP(p0_events_test);
+  RUN_TEST_GROUP(ui_events_test);
+  RUN_TEST_GROUP(usb_evt_api_test);
+  RUN_TEST_GROUP(nfc_events_test);
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+  RUN_TEST_GROUP(nfc_events_manual_test);
+#endif
 }
 
 /**

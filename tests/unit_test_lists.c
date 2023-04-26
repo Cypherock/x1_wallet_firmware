@@ -55,14 +55,60 @@
  *
  ******************************************************************************
  */
+#include "p0_events_test.h"
+#include "ui_events_test.h"
 #include "unity_fixture.h"
 
-#if USE_SIMULATOR == 1
-TEST_GROUP_RUNNER(sample_test_simulator) {
+TEST_GROUP_RUNNER(event_getter_test) {
+  RUN_TEST_CASE(event_getter_test, no_event);
+  RUN_TEST_CASE(event_getter_test, nfc_event);
+  RUN_TEST_CASE(event_getter_test, p0_event);
+  RUN_TEST_CASE(event_getter_test, ui_event);
+  RUN_TEST_CASE(event_getter_test, usb_event);
+  RUN_TEST_CASE(event_getter_test, listening_all_events);
+  RUN_TEST_CASE(event_getter_test, listening_all_available_one);
+  RUN_TEST_CASE(event_getter_test, disabled_events);
 }
-#endif /* USE_SIMULATOR == 1 */
 
-#if USE_SIMULATOR == 0
-TEST_GROUP_RUNNER(sample_test_target) {
+TEST_GROUP_RUNNER(p0_events_test) {
+  RUN_TEST_CASE(p0_events_test, inactivity_evt);
+  RUN_TEST_CASE(p0_events_test, abort_evt);
+  RUN_TEST_CASE(p0_events_test, abort_evt_abort_disabled);
+  RUN_TEST_CASE(p0_events_test, abort_inactivity_race);
+  RUN_TEST_CASE(p0_events_test, inactivity_refresh_on_joystick_movement);
 }
-#endif /* USE_SIMULATOR == 0 */
+
+TEST_GROUP_RUNNER(usb_evt_api_test) {
+  RUN_TEST_CASE(usb_evt_api_test, basic);
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_free)
+  RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
+  RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
+  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
+  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
+}
+
+TEST_GROUP_RUNNER(ui_events_test) {
+  RUN_TEST_CASE(ui_events_test, set_confirm);
+  RUN_TEST_CASE(ui_events_test, set_cancel);
+  RUN_TEST_CASE(ui_events_test, set_list);
+  RUN_TEST_CASE(ui_events_test, set_text_input);
+  RUN_TEST_CASE(ui_events_test, event_getter);
+  RUN_TEST_CASE(ui_events_test, fill_input_test);
+  RUN_TEST_CASE(ui_events_test, input_event_null_ptr);
+  RUN_TEST_CASE(ui_events_test, ui_get_event_null_ptr);
+}
+
+TEST_GROUP_RUNNER(nfc_events_test) {
+  RUN_TEST_CASE(nfc_events_test, set_card_detect_event);
+  RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
+}
+
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+TEST_GROUP_RUNNER(nfc_events_manual_test) {
+  RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
+}
+#endif

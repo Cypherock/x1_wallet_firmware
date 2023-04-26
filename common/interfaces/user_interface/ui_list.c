@@ -61,8 +61,16 @@
 
 #include "ui_list.h"
 
+#include "ui_events_priv.h"
+
 static struct List_Data *data = NULL;
 static struct List_Object *obj = NULL;
+
+/**
+ * @brief Create UI for list
+ *
+ */
+static void list_create();
 
 void list_init(const char option_list[24][15],
                const int number_of_options,
@@ -70,6 +78,13 @@ void list_init(const char option_list[24][15],
                bool dynamic_heading) {
   ASSERT(option_list != NULL);
   ASSERT(heading != NULL);
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct List_Data));
   obj = malloc(sizeof(struct List_Object));
@@ -107,7 +122,6 @@ void list_init(const char option_list[24][15],
  * @note
  */
 static void list_destructor() {
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct List_Data));
     free(data);
@@ -231,10 +245,6 @@ static void change_heading() {
  * @note
  */
 static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(options != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -272,6 +282,12 @@ static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(options, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      list_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -293,10 +309,6 @@ static void options_event_handler(lv_obj_t *options, const lv_event_t event) {
  * @note
  */
 static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(back_btn != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -311,14 +323,20 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
-      list_destructor();
+    case LV_EVENT_CLICKED: {
+      ui_set_cancel_event();
+      lv_obj_clean(lv_scr_act());
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(back_btn, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      list_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -340,10 +358,6 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
  * @note
  */
 static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-  ASSERT(next_btn != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -357,14 +371,20 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
-      list_destructor();
+    case LV_EVENT_CLICKED: {
+      ui_set_confirm_event();
+      lv_obj_clean(lv_scr_act());
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(next_btn, LV_BTN_STATE_REL);
       break;
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      list_destructor();
+      break;
+    }
     default:
       break;
   }

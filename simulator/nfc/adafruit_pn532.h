@@ -174,6 +174,9 @@
 #define MIFARE_CMD_INCREMENT (0xC1)
 #define MIFARE_CMD_STORE (0xC2)
 #define MIFARE_ULTRALIGHT_CMD_WRITE (0xA2)
+
+#define PN532_DIAGNOSE_CARD_DETECTED_RESP                                      \
+  0    // Response for PN532 diagnose card presence command
 /** @} */
 
 /**
@@ -323,6 +326,48 @@ ret_code_t adafruit_pn532_field_off(void);
  * @name Functions for ISO14443A tags
  *
  * @{ */
+
+/**  @brief Function sends command to PN532 for detecting an ISO14443A (NFC-A)
+ * target presence in the RF field.
+ *
+ *   @details This function enables the RF field and scans for ISO14443A (NFC-A)
+ * targets present in the field. The number of scan retries is set by the @ref
+ * adafruit_pn532_passive_activation_retries_set function. By default, the
+ * maximum number of retries is set to unlimited, which means that the PN532
+ * Shield scans for targets until it finds one or the scan is canceled. When the
+ * ISO14443A (NFC-A) target is detected, the PN532 module initializes
+ *   communication and reads the basic initialization information about NFC-A
+ * tag including SENS_RES, SEL_RES and UID. This information is retrieved by NFC
+ * reader during Technology Detection and Collision Resolution Activities. Once
+ * a card has been selected, the PN532 IRQ pin is reset indicating a response is
+ * ready to be received by the HOST, @ref pn532_read_nfca_target_init_resp
+ * should be called to retrieve the response from PN532.
+ *
+ *   @retval        STM_SUCCESS           If the command was sent successfully.
+ * Otherwise, an error code is returned.
+ */
+ret_code_t pn532_set_nfca_target_init_command();
+
+/**  @brief Function reads response from PN532 after detecting an ISO14443A
+ * (NFC-A) target presence in the RF field.
+ *
+ *   @details This function should be called after
+ * @pn532_set_nfca_target_init_command function to set the command for detecting
+ * a ISO14443A (NFC-A) targets presence in the field. When the ISO14443A (NFC-A)
+ * target is detected, the PN532 module initializes communication and reads the
+ * basic initialization information about NFC-A tag including SENS_RES, SEL_RES
+ * and UID. This information is retrieved by NFC reader during Technology
+ * Detection and Collision Resolution Activities. Response is only received when
+ * the PN532 IRQ has been reset indicating a response is ready with PN532
+ *
+ *   @param[in,out] p_tag_info            Pointer to the structure where NFC-A
+ * Tag basic initialization information will be stored.
+ *
+ *   @retval        STM_SUCCESS           If the function completed
+ * successfully. NFC_RESP_NOT_READY    If PN532 is not in reset state indicating
+ * card is not detected. Otherwise, an error code is returned.
+ */
+ret_code_t pn532_read_nfca_target_init_resp(nfc_a_tag_info *p_tag_info);
 
 /**  @brief Function for detecting an ISO14443A (NFC-A) target presence in the
  * RF field.

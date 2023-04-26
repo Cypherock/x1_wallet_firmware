@@ -38,6 +38,7 @@ typedef enum {
  */
 struct Input_Text_Data {
   const char *input_list;
+  char *input_text_ptr;
   uint8_t input_list_size;
   char *initial_heading;
   int current_index;
@@ -72,7 +73,29 @@ struct Input_Text_Object {
 
 /**
  * @brief Initialize and create input text UI
+ *
+ * @param input_list Input list of characters
+ * @param input_text_ptr Pointer to buffer, where the user input will be
+ * populated by this API. Temporarily, if this pointer is NULL, then the global
+ * buffer flow_level.screen_input.input_text is filled up.
+ * @param initial_heading Input heading text
+ * @param min_input_size Mininum input text size
+ * @param data_type data type PASSWORD, PASSPHRASE or TEXT
+ * @param max_input_size Maximum input text size
+ */
+void ui_input_text(const char *input_list,
+                   char *input_text_ptr,
+                   const char *initial_heading,
+                   const uint8_t min_input_size,
+                   const INPUT_DATA_TYPE data_type,
+                   const uint8_t max_input_size);
+
+/**
+ * @brief Initialize and create input text UI
  * @details
+ * TODO: Update after refactor
+ * This API input_text_init will be deprecated after refactor is complete.
+ * Please use ui_input_text instead.
  *
  * @param input_list Input list of characters
  * @param initial_heading Input heading text
@@ -95,19 +118,14 @@ void input_text_init(const char *input_list,
                      uint8_t max_input_size);
 
 /**
- * @brief Create input text UI
- * @details
+ * @brief This API desctructs the objects created when ui_input_text UI
+ * component is used. In most cases, which end gracefully, wherein the user
+ * provides the input from screen or presses cancel button, this desctructor is
+ * called internally. Therefore, this desctructor API is only required if the
+ * application wants to destruct this screen forcefully - which maybe to handle
+ * a P0 event.
  *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
  */
-void input_text_create();
+void input_text_destructor(void);
 
 #endif    // !UI_INPUT_TEXT_H

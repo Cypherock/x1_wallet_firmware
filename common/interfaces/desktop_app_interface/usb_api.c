@@ -1,17 +1,17 @@
 /**
- * @file    communication.c
+ * @file    usb_api.c
  * @author  Cypherock X1 Team
  * @brief   USB communication interface.
  *          Handles all USB communication operations for the application from
  *the ISR context.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @copyright Copyright (c) 2022-2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2022-2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -57,11 +57,12 @@
  *
  ******************************************************************************
  */
-#include "communication.h"
-
 #include "board.h"
+#include "communication.h"
 #include "logger.h"
+#include "p0_events.h"
 #include "sys_state.h"
+#include "usb_api_priv.h"
 #include "utils.h"
 #if USE_SIMULATOR == 0
 #include "controller_main.h"
@@ -236,7 +237,7 @@ typedef enum comm_cmd_state {
   CMD_STATE_EXECUTING = 3,
   CMD_STATE_DONE = 4,
   CMD_STATE_FAILED = 5,
-  CMD_STATE_INVALID_CMD = 6,
+  CMD_STATE_INVALID_REQ = 6,
 } comm_cmd_state_t;
 
 typedef enum comm_parser_states {
@@ -347,21 +348,21 @@ static inline void comm_set_payload_struct(uint16_t proto_len,
                                   : NULL;
 }
 
-void comm_init() {
+void usb_init() {
 #if USE_SIMULATOR == 0
   lusb_register_parserFunction(comm_packet_parser);
 #endif
 }
 
 void mark_device_state(cy_app_status_t state, uint8_t flow_status) {
-  uint8_t usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   if (state != CY_UNUSED_STATE)
     comm_status.app_busy_status = state;
   if (flow_status != 0xFF)
     comm_status.curr_flow_status = flow_status;
   comm_status.abort_disabled = CY_reset_not_allowed();
-  if (usb_irq_enable_on_entry == true)
+  if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
@@ -370,60 +371,58 @@ bool is_device_ready() {
 }
 
 void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
-  uint8_t arr[1] = {byte},
-          usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  uint8_t arr[1] = {byte}, usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
 
   NVIC_DisableIRQ(OTG_FS_IRQn);
   // Make sure to set he curr_cmd_state to CMD_STATE_FAILED
   transmit_data_to_app(command_type, arr, 1);
-  comm_status.curr_cmd_state =
-      CMD_STATE_FAILED;    // Imp: Should be updated after writing to buffer
+  // Imp: Should be updated after writing to buffer
+  comm_status.curr_cmd_state = CMD_STATE_FAILED;
   comm_status.app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
-  if (usb_irq_enable_on_entry == true)
+  if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-void comm_reject_invalid_cmd() {
-  uint8_t usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+void usb_reject_invalid_request() {
+  uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
-  comm_status.curr_cmd_state =
-      CMD_STATE_INVALID_CMD;    // Imp: Should be updated after writing to
-                                // buffer
+  usb_clear_event();
+  // Imp: Should be updated after clearing the buffer
+  comm_status.curr_cmd_state = CMD_STATE_INVALID_REQ;
   comm_status.app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
-  if (usb_irq_enable_on_entry == true)
+  if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-bool is_there_any_msg_from_app() {
+/**
+ * @brief Checks if there is any message received from desktop.
+ * @details
+ *
+ * @return Returns message receive status.
+ * @retval 1 for any message
+ * @retval 0 for no messages.
+ *
+ * @see
+ * @since v1.0.0
+ */
+static bool is_there_any_msg_from_app() {
   return comm_status.curr_cmd_state == CMD_STATE_RECEIVED;
 }
 
-void transmit_one_byte_confirm(const uint32_t command_type) {
-  uint8_t arr[1] = {0x01},
-          usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  NVIC_DisableIRQ(OTG_FS_IRQn);
+void usb_send_byte(const uint32_t command_type, const uint8_t byte) {
+  uint8_t arr[1] = {byte};
   transmit_data_to_app(command_type, arr, 1);
-  if (usb_irq_enable_on_entry == true)
-    NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-void transmit_one_byte(const uint32_t command_type, const uint8_t byte) {
-  uint8_t arr[1] = {byte},
-          usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  NVIC_DisableIRQ(OTG_FS_IRQn);
-  transmit_data_to_app(command_type, arr, 1);
-  if (usb_irq_enable_on_entry == true)
-    NVIC_EnableIRQ(OTG_FS_IRQn);
-}
-
-void transmit_data_to_app(const uint32_t command_type,
-                          const uint8_t *transmit_data,
-                          const uint32_t size) {
+void usb_send_data(const uint32_t command_type,
+                   const uint8_t *transmit_data,
+                   const uint32_t size) {
   uint16_t proto_len = 0;
-  uint8_t offset = 0;
+  uint8_t offset = 0, usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   LOG_SWV("%s: %ld-%ld\n", __func__, command_type, size);
 
-  sys_flow_cntrl_u.bits.usb_buffer_free = true;
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  usb_clear_event();
   comm_status.curr_cmd_state = CMD_STATE_DONE;
   comm_set_payload_struct(proto_len, size + sizeof(uint32_t));
   comm_io_buffer[offset++] = 0;
@@ -444,26 +443,25 @@ void transmit_data_to_app(const uint32_t command_type,
            transmit_data,
            size);
   }
+  if (usb_irq_enable == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-void clear_message_received_data() {
+void usb_free_msg_buffer() {
   sys_flow_cntrl_u.bits.usb_buffer_free = true;
-
-  // If cmd_state has already transitioned, then the cmd is already completed.
-  // This will make double calls to clear_message_received_data() safe from
-  // protocol.
-  if (comm_status.curr_cmd_state != CMD_STATE_RECEIVED)
-    return;
   comm_set_payload_struct(0, 0);
-  comm_status.curr_cmd_state = CMD_STATE_EXECUTING;
   LOG_SWV("%s\n", __func__);
 }
 
-void comm_process_complete() {
+void usb_set_state_executing() {
+  comm_status.curr_cmd_state = CMD_STATE_EXECUTING;
+}
+
+void usb_reset_state() {
   comm_status.curr_cmd_state = CMD_STATE_NONE;
 }
 
-bool get_usb_msg(En_command_type_t *command_type,
+bool usb_get_msg(En_command_type_t *command_type,
                  uint8_t **msg_data,
                  uint16_t *msg_len) {
   if ((msg_len == NULL && msg_data != NULL) ||
@@ -783,8 +781,12 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
       }
     }
   }
-  if (rx_packet->header.chunk_number == rx_packet->header.total_chunks)
+  if (rx_packet->header.chunk_number == rx_packet->header.total_chunks) {
     comm_status.curr_cmd_state = CMD_STATE_RECEIVED;
+    usb_set_event(U32_READ_BE_ARRAY(comm_payload.raw_data),
+                  comm_payload.raw_data + sizeof(uint32_t),
+                  comm_payload.raw_data_length - sizeof(uint32_t));
+  }
   send_cmd_ack_packet(rx_packet);
   LOG_SWV("#ORG#bs=%d, cs=%d, seq=%d, ccn=%d, ccc=%d, rl=%d\n",
           CY_Usb_Buffer_Free(),
@@ -837,6 +839,7 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
   if (!comm_status.abort_disabled) {
     comm_reset();
     CY_Reset_Flow();
+    p0_set_abort_evt(true);
     comm_status.curr_cmd_seq_no = rx_packet->header.sequence_no;
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
   }
