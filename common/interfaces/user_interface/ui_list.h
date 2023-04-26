@@ -13,8 +13,8 @@
 
 #include "ui_common.h"
 
-#define MAX_UI_LIST_WORDS 24
-#define MAX_UI_LIST_CHAR_LEN 16
+#define MAX_UI_LIST_WORDS MAX_NUMBER_OF_MNEMONIC_WORDS
+#define MAX_UI_LIST_CHAR_LEN MAX_MNEMONIC_WORD_LENGTH
 
 // TODO: Update count for higher coin list
 
