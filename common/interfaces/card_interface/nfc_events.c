@@ -1,7 +1,8 @@
 /**
- * @file    events.c
+ * @file    nfc_events.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   NFC Events module
+ *          Provides NFC module setters and getters
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,8 +60,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "events.h"
+#include "nfc_events.h"
 
+#include "app_error.h"
+#include "memzero.h"
+#include "nfc_events_priv.h"
+#include "string.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -68,14 +73,26 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define DEFAULT_CARD_REMOVAL_RETRY_COUNT 5
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef enum {
+  NFC_STATE_OFF = 0,
+  NFC_STATE_SET_SELECT_CARD_CMD,
+  NFC_STATE_WAIT_SELECT_CARD_RESP,
+  NFC_STATE_CARD_DETECTED,
+  NFC_STATE_WAIT_FOR_CARD_REMOVAL,
+  NFC_STATE_CARD_REMOVED
+} nfc_task_states_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static nfc_task_states_t nfc_state;
+static nfc_event_t nfc_event;
+static uint8_t card_removal_retry_counter = 0;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -85,60 +102,127 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief   Checks if card has been removed and returns status
+ * @arg     retry_count:  No. of consecutive retries for card not detected
+ *
+ * @return  true if card is not detected for consecutive retries exceeding
+ * retry_count
+ */
+static bool check_card_removed_status(uint8_t retry_count);
+
+/**
+ * @brief   Handles response from read NFC A target init api
+ *          If card is selected, card select event is set, if an error is
+ * received, other than NFC_RESP_NOT_READY, state is updated to
+ * NFC_STATE_SET_SELECT_CARD_CMD
+ */
+static void nfc_handle_card_select_resp(void);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_card_removed_status(uint8_t retry_count) {
+  uint32_t err = adafruit_diagnose_card_presence();
+  if (err != PN532_DIAGNOSE_CARD_DETECTED_RESP) {
+    card_removal_retry_counter++;
+  } else {
+    card_removal_retry_counter = 0;
+  }
+
+  if (card_removal_retry_counter > retry_count) {
+    return true;
+  }
+  return false;
+}
+
+static void nfc_handle_card_select_resp(void) {
+  nfc_a_tag_info nfc_tag_info;
+  uint32_t card_select_status = pn532_read_nfca_target_init_resp(&nfc_tag_info);
+  if (card_select_status == STM_SUCCESS) {
+    nfc_set_card_detect_event();
+  } else if (card_select_status != NFC_RESP_NOT_READY) {
+    nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+  }
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void get_events(evt_config_t evt_config, evt_status_t *p_evt_status) {
-  if (p_evt_status == NULL) {
-    return;
+bool nfc_get_event(nfc_event_t *nfc_event_os_obj) {
+  ASSERT(nfc_event_os_obj != NULL);
+
+  if (nfc_event.event_occured == true) {
+    memcpy(nfc_event_os_obj, &nfc_event, sizeof(nfc_event_t));
+    nfc_reset_event();
+    return true;
   }
+  return false;
+}
 
-  /* Configure event getters if required */
-  p0_ctx_init(evt_config.timeout, evt_config.abort_disabled);
+void nfc_reset_event(void) {
+  memzero(&nfc_event, sizeof(nfc_event_t));
+}
 
-  bool p0_evt_occurred = false;
-  bool p1_evt_occurred = false;
+void nfc_set_card_detect_event(void) {
+  nfc_event.event_occured = true;
+  nfc_event.event_type = NFC_EVENT_CARD_DETECT;
+  nfc_state = NFC_STATE_CARD_DETECTED;
+}
 
-  /* Poll for the selected events, until atleast one event is captured. */
-  while (1) {
-    p0_evt_occurred = p0_get_evt(&(p_evt_status->p0_event));
+void nfc_set_card_removed_event(void) {
+  nfc_event.event_occured = true;
+  nfc_event.event_type = NFC_EVENT_CARD_REMOVED;
+  nfc_state = NFC_STATE_CARD_REMOVED;
+}
 
-    /* As soon as a p0 event is registered, break the loop */
-    if (p0_evt_occurred) {
-      break;
-    }
+void nfc_en_select_card_task(void) {
+  nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+}
 
-    if (evt_config.evt_selection.bits.ui_events) {
-      lv_task_handler();
-      BSP_DelayMs(50);
-      p1_evt_occurred |= ui_get_and_reset_event(&(p_evt_status->ui_event));
-    }
-
-    if (evt_config.evt_selection.bits.usb_events) {
-      p1_evt_occurred |= usb_get_event(&(p_evt_status->usb_event));
-    }
-
-    if (evt_config.evt_selection.bits.nfc_events) {
-      nfc_task_handler();
-      p1_evt_occurred |= nfc_get_event(&(p_evt_status->nfc_event));
-    }
-
-    /* As soon as an event is registered, break the loop */
-    if (p1_evt_occurred) {
-      break;
-    }
+uint32_t nfc_en_wait_for_card_removal_task(void) {
+  uint32_t card_presence_state = nfc_diagnose_card_presence();
+  if (card_presence_state == PN532_DIAGNOSE_CARD_DETECTED_RESP) {
+    nfc_state = NFC_STATE_WAIT_FOR_CARD_REMOVAL;
+    card_removal_retry_counter = 0;
   }
+  return card_presence_state;
+}
 
-  /* Any post cleanup required */
-  p0_ctx_destroy();
+void nfc_task_handler(void) {
+  switch (nfc_state) {
+    case NFC_STATE_SET_SELECT_CARD_CMD: {
+      if (pn532_set_nfca_target_init_command() == STM_SUCCESS) {
+        nfc_state = NFC_STATE_WAIT_SELECT_CARD_RESP;
+      }
+    } break;
 
-  if (evt_config.evt_selection.bits.nfc_events) {
-    nfc_ctx_destroy();
+    case NFC_STATE_WAIT_SELECT_CARD_RESP: {
+      nfc_handle_card_select_resp();
+    } break;
+
+    case NFC_STATE_CARD_DETECTED: {
+      // Should never reach here.
+    } break;
+
+    case NFC_STATE_WAIT_FOR_CARD_REMOVAL: {
+      if (check_card_removed_status(DEFAULT_CARD_REMOVAL_RETRY_COUNT)) {
+        nfc_set_card_removed_event();
+      }
+    } break;
+
+    case NFC_STATE_CARD_REMOVED: {
+      // Should never reach here.
+    } break;
+
+    default: {
+      LOG_ERROR("xxx37: %d", nfc_state);
+    } break;
   }
+}
 
-  return;
+void nfc_ctx_destroy(void) {
+  nfc_deselect_card();
+  nfc_state = NFC_STATE_OFF;
+  card_removal_retry_counter = 0;
 }

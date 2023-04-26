@@ -1,7 +1,10 @@
 /**
- * @file    unit_tests_main.c
+ * @file    nfc_event_getter.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   NFC Events test for integration with os event getter
+ *          Tests the event getter and setter operation used by NFC Module and
+ * with os event getter
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,83 +59,78 @@
  ******************************************************************************
  */
 
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
-                            issue*/
-#include "application_startup.h"
+#include <stdbool.h>
+
+#include "adafruit_pn532.h"
+#include "board.h"
+#include "buzzer.h"
+#include "events.h"
+#include "memzero.h"
+#include "nfc.h"
+#include "nfc_events.h"
+#include "ui_instruction.h"
 #include "unity_fixture.h"
-
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
-
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
-
-void RunAllTests(void) {
-  RUN_TEST_GROUP(event_getter_test);
-  RUN_TEST_GROUP(p0_events_test);
-  RUN_TEST_GROUP(ui_events_test);
-  RUN_TEST_GROUP(usb_evt_api_test);
-  RUN_TEST_GROUP(nfc_events_test);
-#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
-  RUN_TEST_GROUP(nfc_events_manual_test);
-#endif
-}
-
-/**
- * @brief  The entry point to the unit test framework
- * This entry point is a parallel entry point to the int main(void) of the
- * actual firmware.
- */
-int main(void) {
-  application_init();
-
-  UnityBegin("unit_tests_main.c");
-  RunAllTests();
-  UnityEnd();
-}
-
 #if USE_SIMULATOR == 0
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+
+TEST_GROUP(nfc_events_manual_test);
+
+TEST_SETUP(nfc_events_manual_test) {
+  instruction_scr_init("Dummy", "NFC EVENT TEST");
+  lv_task_handler();
+  return;
 }
 
-/**
- * @brief Function to transmit data in real-time over SWV channel
- * @param file unused
- * @param *ptr string pointer for data to send
- * @param len  length of data to send
- *
- * @ret len of data transmitted
- */
-int _write(int file, char *ptr, int len) {
-#ifndef NDEBUG    // Disable printf in release mode
-  int DataIdx;
-  for (DataIdx = 0; DataIdx < len; DataIdx++) {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
+TEST_TEAR_DOWN(nfc_events_manual_test) {
+  instruction_scr_destructor();
+  lv_task_handler();
+  nfc_reset_event();
+  return;
+}
+
+TEST(nfc_events_manual_test, detect_and_remove_card) {
+  evt_config_t evt_config = {.evt_selection.bits.nfc_events = 1,
+                             .evt_selection.bits.ui_events = 0,
+                             .evt_selection.bits.usb_events = 0,
+                             .abort_disabled = true,
+                             .timeout = 50000};
+  evt_status_t evt_status = {0};
+
+  // Initialize screen to indicate tap card
+  instruction_scr_change_text("Tap Card", true);
+  // Enable select card task
+  nfc_en_select_card_task();
+
+  /**
+   * Wait for an event occurance, Card tap is awaited at this point
+   */
+  get_events(evt_config, &evt_status);
+  TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
+  TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, evt_status.nfc_event.event_type);
+
+  // Indicate nfc select card event occured
+  nfc_select_card();
+  instruction_scr_change_text("Card Detected", true);
+  buzzer_start(500);
+  BSP_DelayMs(500);
+
+  instruction_scr_change_text("Remove card", true);
+
+  uint32_t err = nfc_en_wait_for_card_removal_task();
+  TEST_ASSERT_EQUAL(PN532_DIAGNOSE_CARD_DETECTED_RESP, err);
+  memzero(&evt_status.nfc_event, sizeof(evt_status.nfc_event));
+
+  /**
+   * Wait for an event occurance, Card removal is awaited at this point
+   */
+  get_events(evt_config, &evt_status);
+  TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
+  TEST_ASSERT_EQUAL(NFC_EVENT_CARD_REMOVED, evt_status.nfc_event.event_type);
+
+  instruction_scr_change_text("Card Removed", true);
+  buzzer_start(500);
+  BSP_DelayMs(500);
+}
+
 #endif
-}
-
-#endif /* USE_SIMULATOR == 0 */
+#endif

@@ -101,3 +101,14 @@ TEST_GROUP_RUNNER(ui_events_test) {
   RUN_TEST_CASE(ui_events_test, input_event_null_ptr);
   RUN_TEST_CASE(ui_events_test, ui_get_event_null_ptr);
 }
+
+TEST_GROUP_RUNNER(nfc_events_test) {
+  RUN_TEST_CASE(nfc_events_test, set_card_detect_event);
+  RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
+}
+
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+TEST_GROUP_RUNNER(nfc_events_manual_test) {
+  RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
+}
+#endif
