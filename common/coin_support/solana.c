@@ -287,14 +287,14 @@ bool sol_verify_derivation_path(const uint32_t *path, uint8_t levels) {
     case 3: {    // m/44'/501'/i'
       uint32_t account = path[2];
       status =
-          (purpose == NON_SEGWIT && coin == SOLANA && IS_HARDENED(account));
+          (purpose == NON_SEGWIT && coin == SOLANA && is_hardened(account));
     } break;
 
     case 4: {    // m/44'/501'/i'/0'
       uint32_t change = path[3];
       uint32_t account = path[2];
       status = (purpose == NON_SEGWIT && coin == SOLANA &&
-                IS_HARDENED(account) && change == 0x80000000);
+                is_hardened(account) && change == SOLANA_CHANGE_INDEX);
     } break;
 
     default:

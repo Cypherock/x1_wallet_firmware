@@ -29,10 +29,9 @@
 #include "sha2.h"
 #include "utils.h"
 
-#define IS_HARDENED(x) ((x & 0x80000000) == 0x80000000)
-#define IS_NON_HARDENED(x) ((x & 0x80000000) == 0)
-
+/// EVM chains & Bitcoin forks derive account xpub at depth 3
 #define XPUB_DEFAULT_DEPTH 3
+/// EVM chains & Bitcoin forks derive addresses at depth 5
 #define ADDR_DEFAULT_DEPTH 5
 
 /// Bitcoin coin index
@@ -203,6 +202,26 @@ typedef struct ui_display_node {
   char *value;
   struct ui_display_node *next;
 } ui_display_node;
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB set.
+ *
+ * @return true   If the provided value has MSB set to 1.
+ * @return false  If the provided value has MSB set to 0.
+ */
+static inline bool is_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0x80000000);
+}
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB not set.
+ *
+ * @return true   If the provided value has MSB set to 0.
+ * @return false  If the provided value has MSB set to 1.
+ */
+static inline bool is_non_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0);
+}
 
 /**
  * @brief Copies the byte values from source after offset to destination under

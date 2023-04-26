@@ -23,6 +23,7 @@
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX 0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
+#define SOLANA_CHANGE_INDEX 0x80000000
 
 /// Ref: https://docs.solana.com/terminology#lamport
 #define SOLANA_DECIMAL (9U)
