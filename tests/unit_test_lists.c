@@ -60,6 +60,10 @@
 #if USE_SIMULATOR == 1
 TEST_GROUP_RUNNER(sample_test_simulator) {
 }
+
+TEST_GROUP_RUNNER(xpub) {
+  RUN_TEST_CASE(xpub, derivation_path_tests);
+}
 #endif /* USE_SIMULATOR == 1 */
 
 #if USE_SIMULATOR == 0

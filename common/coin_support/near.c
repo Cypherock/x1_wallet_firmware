@@ -223,11 +223,12 @@ bool near_verify_derivation_path(const uint32_t *path, uint8_t levels) {
     return status;
 
   uint32_t purpose = path[0], coin = path[1], account = path[2],
-           change = path[3];
+           change = path[3], address = path[4];
 
   // m/44'/397'/0'/0'/i'
-  status = (purpose == NON_SEGWIT && coin == NEAR && account == 0x80000000 &&
-            change == 0x80000000);
+  status =
+      (purpose == NON_SEGWIT && coin == NEAR && account == NEAR_ACCOUNT_INDEX &&
+       change == NEAR_CHANGE_INDEX && is_hardened(address));
 
   return status;
 }

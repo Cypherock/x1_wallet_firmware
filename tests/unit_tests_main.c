@@ -81,7 +81,7 @@ extern lv_indev_t *indev_keypad;
 
 void RunAllTests(void) {
 #if USE_SIMULATOR == 1
-  RUN_TEST_GROUP(sample_test_simulator);
+  RUN_TEST_GROUP(xpub);
 #endif /* USE_SIMULATOR == 1 */
 
 #if USE_SIMULATOR == 0

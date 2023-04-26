@@ -659,11 +659,14 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
     case DOGE:
     case DASH:        // m/44'/5'  /i'
     case ETHEREUM:    // m/44'/60' /i'
-      status = (purpose == NON_SEGWIT);
+      status = (purpose == NON_SEGWIT && depth == XPUB_DEFAULT_DEPTH &&
+                is_hardened(path[2]));
+      break;
 
     case BTC_TEST:    // m/44'/1'  /i'
     case BITCOIN:     // m/44'/0'  /i'
-      status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT);
+      status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) &&
+               (depth == XPUB_DEFAULT_DEPTH) && is_hardened(path[2]);
       break;
 
     default:
@@ -693,19 +696,22 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
     case LITCOIN:
     case DOGE:
     case DASH:    // m/44'/5'  /i'/0 /j
-      status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0);
+      status = (depth == ADDR_DEFAULT_DEPTH) && (purpose == NON_SEGWIT) &&
+               is_hardened(path[2]) && (path[3] == 0) &&
+               is_non_hardened(path[4]);
       break;
 
-    case ETHEREUM: {    // m/44'/60' /i'/0 /0
-      status = (depth == 5) && (purpose == NON_SEGWIT) && (path[3] == 0) &&
-               (path[4] == 0);
-    } break;
+    case ETHEREUM:    // m/44'/60' /i'/0 /0
+      status = (depth == ADDR_DEFAULT_DEPTH) && (purpose == NON_SEGWIT) &&
+               is_hardened(path[2]) && (path[3] == 0) && (path[4] == 0);
+      break;
 
     case BTC_TEST:
-    case BITCOIN:    // m/44'/0'  /i /0 /j
-      status = (depth == 5) &&
+    case BITCOIN:    // m/44'/0'  /i'/0 /j
+      status = (depth == ADDR_DEFAULT_DEPTH) &&
                (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) &&
-               (path[3] == 0);
+               is_hardened(path[2]) && (path[3] == 0) &&
+               is_non_hardened(path[4]);
       break;
 
     default:
