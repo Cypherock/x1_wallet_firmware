@@ -182,9 +182,10 @@ uint32_t byte_array_to_hex_string(const uint8_t *bytes,
  *
  * @note
  */
-void __single_to_multi_line(const char *input,
-                            uint16_t input_len,
-                            char output[24][15]);
+void __single_to_multi_line(
+    const char *input,
+    uint16_t input_len,
+    char output[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]);
 
 /**
  * @brief  convert multi-d mnemonics to single-d array for trezor crypto
@@ -203,9 +204,10 @@ void __single_to_multi_line(const char *input,
  *
  * @note
  */
-void __multi_to_single_line(const char input[24][15],
-                            uint8_t number_of_mnemonics,
-                            char *output);
+void __multi_to_single_line(
+    const char input[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH],
+    uint8_t number_of_mnemonics,
+    char *output);
 
 /**
  * @brief Converts a hex string to a byte array.

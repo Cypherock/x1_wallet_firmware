@@ -13,7 +13,11 @@
 
 #include "ui_common.h"
 
-// TODO : Add constant
+#define MAX_UI_LIST_WORDS MAX_NUMBER_OF_MNEMONIC_WORDS
+#define MAX_UI_LIST_CHAR_LEN MAX_MNEMONIC_WORD_LENGTH
+
+// TODO: Update count for higher coin list
+
 /**
  * @brief struct to store list data
  * @details
@@ -24,7 +28,7 @@
  * @note
  */
 struct List_Data {
-  char option_list[24][15];
+  char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN];
   int number_of_options;
   int current_index;
   bool dynamic_heading;
@@ -67,7 +71,7 @@ struct List_Object {
  *
  * @note Do not use this if number of options to be displayed in list is 1.
  */
-void list_init(const char option_list[24][15],
+void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN],
                int number_of_options,
                const char *heading,
                bool dynamic_heading);

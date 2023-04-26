@@ -64,7 +64,7 @@
 static struct List_Data *data = NULL;
 static struct List_Object *obj = NULL;
 
-void list_init(const char option_list[24][15],
+void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN],
                const int number_of_options,
                const char *heading,
                bool dynamic_heading) {
