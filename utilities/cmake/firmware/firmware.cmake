@@ -19,7 +19,7 @@ ELSE()
         file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
 IF (DEV_SWITCH)
@@ -41,6 +41,9 @@ else()
 endif()
 target_include_directories(${EXECUTABLE} PRIVATE
         src/
+
+        ${CMAKE_CURRENT_BINARY_DIR}
+        vendor/nanopb
 
         src/level_one/controller
         src/level_one/tasks

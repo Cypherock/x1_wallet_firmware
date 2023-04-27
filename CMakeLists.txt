@@ -15,6 +15,27 @@ endif()
 
 project(${PROJECT})
 
+# python is needed for compiling proto files using nanopb
+# also for generating & appending firmware signature headers
+find_package( Python3 REQUIRED COMPONENTS Interpreter )
+
+# Integrate nanopb
+file(GLOB_RECURSE PROTO_SRC common/protob/proto/*.proto)
+
+# --generated-include-format specifies the include format. Two viable options
+# are "#include <%s>" and "#include \"proto/%s\"".
+# The default include format "#include \"%s\"" creates problems in cases of
+# duplicate file names residing under different packages (eg. error.proto and
+# btc.error.proto) as it would result into a collision.
+# By using <> format instead of "proto/" helps because in future, relocation
+# of generated files would not require updating this parameter.
+set(NANOPB_OPTIONS ",--generated-include-format=#include <%s>")
+set(NANOPB_SRC_ROOT_FOLDER ${PROJECT_SOURCE_DIR}/vendor/nanopb)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${NANOPB_SRC_ROOT_FOLDER}/extra)
+find_package( Nanopb REQUIRED )
+
+NANOPB_GENERATE_CPP(PROTO_SRCS PROTO_HDRS RELPATH ${PROJECT_SOURCE_DIR}/common/protob/proto ${PROTO_SRC})
+
 # Populate version.c
 include(utilities/cmake/version.cmake)
 
