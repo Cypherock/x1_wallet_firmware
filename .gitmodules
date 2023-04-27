@@ -1,3 +1,6 @@
 [submodule "stm32-hal"]
 	path = stm32-hal
 	url = ../x1_wallet_hal_stm32
+[submodule "protob"]
+	path = common/protob
+	url = ../cypherock-common
