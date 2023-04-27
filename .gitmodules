@@ -4,3 +4,6 @@
 [submodule "protob"]
 	path = common/protob
 	url = ../cypherock-common
+[submodule "nanopb"]
+	path = vendor/nanopb
+	url = ../nanopb
