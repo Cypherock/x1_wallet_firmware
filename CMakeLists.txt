@@ -53,3 +53,7 @@ if("${CMAKE_BUILD_PLATFORM}" STREQUAL "Device")
 else()
     include(utilities/cmake/simulator/simulator.cmake)
 endif()
+
+# Enable support for dynamically allocated fields in nanopb
+# Ref: vendor/nanopb/pb.h
+add_compile_definitions(PB_ENABLE_MALLOC=1)
