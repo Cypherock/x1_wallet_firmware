@@ -116,3 +116,19 @@ TEST_GROUP_RUNNER(nfc_events_manual_test) {
   RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
 }
 #endif
+
+TEST_GROUP_RUNNER(fifo_queue_tests) {
+  RUN_TEST_CASE(fifo_queue_tests, enqueue_dequeue);
+}
+
+TEST_GROUP_RUNNER(lifo_queue_tests) {
+  RUN_TEST_CASE(lifo_queue_tests, push_pop);
+}
+
+TEST_GROUP_RUNNER(flow_engine_tests) {
+  RUN_TEST_CASE(flow_engine_tests, queue_empty_operations);
+  RUN_TEST_CASE(flow_engine_tests, dummy_flows_across_diff_queues);
+  RUN_TEST_CASE(flow_engine_tests, async_init_one_buffer);
+  RUN_TEST_CASE(flow_engine_tests, flow_push_beyond_stack_depth);
+  // RUN_TEST_CASE(flow_engine_tests, engine_test_lifo);
+}
