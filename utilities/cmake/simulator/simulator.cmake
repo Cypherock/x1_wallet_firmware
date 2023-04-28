@@ -38,9 +38,6 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         src/
 
-        ${CMAKE_CURRENT_BINARY_DIR}
-        vendor/nanopb
-
         src/level_one/controller
         src/level_one/tasks
         src/level_two/controller

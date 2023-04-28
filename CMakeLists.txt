@@ -54,6 +54,10 @@ else()
     include(utilities/cmake/simulator/simulator.cmake)
 endif()
 
+# Include nanopb (at ${NANOPB_INCLUDE_DIRS}) and protoc-generated (at
+# ${CMAKE_CURRENT_BINARY_DIR}) headers
+target_include_directories( ${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} )
+
 # Enable support for dynamically allocated fields in nanopb
 # Ref: vendor/nanopb/pb.h
 add_compile_definitions(PB_ENABLE_MALLOC=1)
