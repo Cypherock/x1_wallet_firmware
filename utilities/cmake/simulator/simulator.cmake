@@ -76,7 +76,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
-        common/libraries/nanopb
         common/startup
         common/logger
         common/coin_support
