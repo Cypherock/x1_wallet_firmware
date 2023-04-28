@@ -140,6 +140,6 @@ jobs:
         if [ ! "${CACHED}" = "true" ]; then
           bash ./utilities/ci/setup-build-tools.sh;
         fi
-        pip install protobuf grpcio-tools
+        pip install -r vendor/nanopb/extra/requirements.txt
         PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin:$(pwd)/proto-tools/bin"
         ./utilities/build.sh -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
