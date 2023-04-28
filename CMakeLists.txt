@@ -55,7 +55,7 @@ else()
 endif()
 
 # Include nanopb (at ${NANOPB_INCLUDE_DIRS}) and protoc-generated (at
-# ${CMAKE_CURRENT_BINARY_DIR}) headers
+# ${CMAKE_CURRENT_BINARY_DIR}) headers. Ref: vendor/nanopb/extra/FindNanopb.cmake#63
 target_include_directories( ${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} )
 
 # Enable support for dynamically allocated fields in nanopb
