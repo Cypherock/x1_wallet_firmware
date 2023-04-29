@@ -29,7 +29,7 @@ file(GLOB_RECURSE PROTO_SRC common/cypherock-common/proto/*.proto)
 # btc.error.proto) as it would result into a collision.
 # By using <> format instead of "proto/" helps because in future, relocation
 # of generated files would not require updating this parameter.
-set(NANOPB_OPTIONS ",--generated-include-format=#include <%s>, --c-style")
+set(NANOPB_OPTIONS ",--generated-include-format=#include <%s>,--c-style,")
 set(NANOPB_SRC_ROOT_FOLDER ${PROJECT_SOURCE_DIR}/vendor/nanopb)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${NANOPB_SRC_ROOT_FOLDER}/extra)
 find_package( Nanopb REQUIRED )
