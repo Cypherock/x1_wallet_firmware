@@ -148,10 +148,11 @@ int main(void) {
   // TODO: Update with main menu flow for the first time, using dummy variable
   // as of now
   flow_step_t flow_step = {0};
-  engine_next_flow_step(ENGINE_LIFO_A, &flow_step);
+  engine_add_next_flow_step(ENGINE_BUFFER_0, &flow_step);
+  engine_goto_next_flow_step(ENGINE_BUFFER_0);
 
   while (1) {
-    engine_run(ENGINE_LIFO_A);
+    engine_run(ENGINE_BUFFER_0);
   }
 
   return 0;
