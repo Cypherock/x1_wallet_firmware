@@ -20,7 +20,7 @@ set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
@@ -76,7 +76,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
-        common/libraries/nanopb
         common/startup
         common/logger
         common/coin_support
