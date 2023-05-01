@@ -18,26 +18,13 @@ project(${PROJECT})
 # python is needed for compiling proto files using nanopb
 # also for generating & appending firmware signature headers
 find_package( Python3 REQUIRED COMPONENTS Interpreter )
-
-# Integrate nanopb
-file(GLOB_RECURSE PROTO_SRC common/cypherock-common/proto/*.proto)
-
-# --generated-include-format specifies the include format. Two viable options
-# are "#include <%s>" and "#include \"proto/%s\"".
-# The default include format "#include \"%s\"" creates problems in cases of
-# duplicate file names residing under different packages (eg. error.proto and
-# btc.error.proto) as it would result into a collision.
-# By using <> format instead of "proto/" helps because in future, relocation
-# of generated files would not require updating this parameter.
-set(NANOPB_OPTIONS ",--generated-include-format=#include <%s>,--c-style,")
-set(NANOPB_SRC_ROOT_FOLDER ${PROJECT_SOURCE_DIR}/vendor/nanopb)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${NANOPB_SRC_ROOT_FOLDER}/extra)
-find_package( Nanopb REQUIRED )
-
-NANOPB_GENERATE_CPP(PROTO_SRCS PROTO_HDRS RELPATH ${PROJECT_SOURCE_DIR}/common/cypherock-common/proto ${PROTO_SRC})
+execute_process(COMMAND sh utilities/generate-protob.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND_ERROR_IS_FATAL ANY )
 
 # Populate version.c
 include(utilities/cmake/version.cmake)
+
+file(GLOB_RECURSE PROTO_SRCS "generated/proto/*.*")
+list(APPEND PROTO_SRCS "vendor/nanopb/pb_common.c" "vendor/nanopb/pb_decode.c" "vendor/nanopb/pb_encode.c" "vendor/nanopb/pb_common.h" "vendor/nanopb/pb_decode.h" "vendor/nanopb/pb_encode.h" "vendor/nanopb/pb.h")
 
 OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
@@ -54,9 +41,8 @@ else()
     include(utilities/cmake/simulator/simulator.cmake)
 endif()
 
-# Include nanopb (at ${NANOPB_INCLUDE_DIRS}) and protoc-generated (at
-# ${CMAKE_CURRENT_BINARY_DIR}) headers. Ref: vendor/nanopb/extra/FindNanopb.cmake#63
-target_include_directories( ${EXECUTABLE} PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NANOPB_INCLUDE_DIRS} )
+# Include nanopb source headers
+target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto )
 
 # Enable support for dynamically allocated fields in nanopb
 # Ref: vendor/nanopb/pb.h

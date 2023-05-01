@@ -1,12 +1,12 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 NANOPB_GEN="$(pwd)/vendor/nanopb/generator/nanopb_generator.py"
 
 # Generate protobuf sources using nanopb
 PYTHON_VERSION="$(python --version)" || exit 1
-OUTPUT_DIR="$(pwd)/generated"
+OUTPUT_DIR="$(pwd)/generated/proto"
 PROTO_SRC="$(pwd)/common/cypherock-common/proto"
 
 test -d "${PROTO_SRC}"
