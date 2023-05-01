@@ -185,7 +185,6 @@ void BSP_RNG_End(void);
 uint32_t BSP_App_Timer_Create(uint8_t TimerId, void appTimerHandler(void));
 void BSP_App_Timer_Start(uint8_t TimerId, uint32_t timeOutValue);
 void BSP_App_Timer_Init();
-void BSP_DebugPort_Write(uint8_t *data, uint8_t size);
 void BSP_App_Timer_Run(void);
 void BSP_App_Timer_Stop(uint8_t TimerId);
 

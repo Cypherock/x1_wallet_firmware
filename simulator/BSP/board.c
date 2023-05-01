@@ -228,10 +228,6 @@ void BSP_App_Timer_Stop(uint8_t TimerId) {
 void BSP_App_Timer_Run(void) {
 }
 
-void BSP_DebugPort_Write(uint8_t *data, uint8_t size) {
-  SIM_Transmit_FS(data, size);
-}
-
 /**
  * @brief  Gets the page of a given address
  * @param  Addr: Address of the FLASH Memory
