@@ -89,8 +89,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(nfc_events_manual_test);
 #endif
   RUN_TEST_GROUP(xpub);
-  RUN_TEST_GROUP(fifo_queue_tests);
-  RUN_TEST_GROUP(lifo_queue_tests);
+  RUN_TEST_GROUP(array_lists_tests);
   RUN_TEST_GROUP(flow_engine_tests);
 }
 

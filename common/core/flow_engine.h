@@ -26,8 +26,8 @@
  *****************************************************************************/
 #define ENGINE_STACK_DEPTH 10
 
-#define ENGINE_LIFO_A 0
-#define ENGINE_FIFO_A 1
+#define ENGINE_BUFFER_0 0
+#define ENGINE_BUFFER_1 1
 
 /*****************************************************************************
  * TYPEDEFS
@@ -73,85 +73,117 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This function initializes ALL the LIFO and FIFO queues implemented by
- * the engine. Therefore, this API must only be called if the complete engine
+ * @brief This function initializes ALL the buffers implemented and maintained
+ * by the engine. Therefore, this API must only be called if the complete engine
  * needs to be initialized or reset due to some requirement.
  */
 void engine_initialize(void);
 
 /**
- * @brief This function initializes only a specific LIFO or FIFO queue indicated
- * by the parameters. This API can be useful where-in a flow is using multiple
- * queues to maintain the flow.
+ * @brief This function initializes only a specific buffer out of all the
+ * buffers implemented and maintained by the engine. This API can be useful
+ * where-in a flow is using multiple buffer to maintain the flow.
  *
- * @param engine_stack The ID of the queue to be reset, it can be either the
- * LIFO or FIFO queues (ENGINE_LIFO_A,... or ENGINE_FIFO_A,....)
- * @return true If the queue is successfully reset
+ * @param engine_buffer The ID of the buffer to be reset: (ENGINE_BUFFER_0,
+ * ENGINE_BUFFER_1,....)
+ * @return true If the buffer is successfully reset
  * @return false If the ID of the queue passed as the parameter is incorrect or
- * represents an unimplemented queue
+ * represents an unimplemented buffer
  */
-bool engine_reset_flow(uint8_t engine_stack);
+bool engine_reset_flow(uint8_t engine_buffer);
 
 /**
- * @brief This function enqueues or push (based on ID passed as the paramter), a
- * pointer to the flow_step_t for a particular flow. A very important thing to
- * note here is that the data held by the pointer must be persistent, as the
- * reference to pointer is stored in the queue and not the data. The data
- * (flow_step_t) will be dereferenced at a later point in time using the pointer
- * (flow_step_t *) stored in the queue.
- * This API can be used to reach to the next step of a particular flow.
+ * @brief This function inserts a pointer to the flow_step_t for a particular
+ * flow at the end. A very important thing to note here is that the data held by
+ * the pointer must be persistent, as the reference is stored in the
+ * buffer and not it's data. The data (flow_step_t) will be dereferenced at a
+ * later point in time using the pointer (flow_step_t *) stored in the buffer.
+ * This API can be used to insert a step in the flow. However, note that this
+ * inserts the element in the end of the buffer.
  *
- * @param engine_stack The ID of the queue to be selected, it can be either the
- * LIFO or FIFO queues (ENGINE_LIFO_A,... or ENGINE_FIFO_A,....)
- * @param flow_step_ptr Pointer to the step data which needs to be enqueued or
- * pushed on the the queue. It must be kept in mind that the pointer is being
- * enqueued and not the data held by the pointer. Therefore, the flow must
- * ensure that the data held in this pointer is persistent.
- * @return true If the pointer is successfully enqueued on to the selected queue
- * @return false If the pointer is not enqueued on the queue: It could be due to
- * incorrect paramters: like incorrect ID passed on as engine_stack parameter,
- * or because the queue is FULL!
+ * @param engine_buffer The ID of the buffer to be modified: (ENGINE_BUFFER_0,
+ * ENGINE_BUFFER_1,....)
+ * @param flow_step_ptr Pointer to the step data which needs to be added in the
+ * particular flow. It must be kept in mind that the pointer is being inserted
+ * and not the data held by the pointer. Therefore, the flow must ensure that
+ * the data held in this pointer is persistent.
+ * @return true If the pointer is successfully insterted on to the selected
+ * buffer
+ * @return false If the pointer is not inserted on the buffer: It could be due
+ * to incorrect paramters: like incorrect ID passed on as engine_buffer
+ * parameter, or because the buffer is FULL!
  */
-bool engine_next_flow_step(uint8_t engine_stack,
-                           const flow_step_t *flow_step_ptr);
+bool engine_add_next_flow_step(uint8_t engine_buffer,
+                               const flow_step_t *flow_step_ptr);
 
 /**
- * @brief This function dequeues or pop an element of type flow_step_t *, from
- * the selected queue. An important thing to note here is that this API does not
- * return reference to the element dequeued.
- * This API can be used to reach to a previous step of a flow.
+ * @brief This function can be used to increment the index of the current engine
+ * buffer and move to the next step of a flow.
+ * This API can be useful to reach the next step. Important thing to note here
+ * is that the current step will not be deleted and user may choose to return to
+ * this step at a later point.
  *
- * @param engine_stack The ID of the queue to be selected, it can be either the
- * LIFO or FIFO queues (ENGINE_LIFO_A,... or ENGINE_FIFO_A,....)
- * @return true If the dequeue or pop occurred successfully
- * @return false If the dequeue or pop failed: It could be due to incorrect
- * parameters, or because the queue is EMPTY.
+ * @param engine_buffer The ID of the buffer whose index needs to be
+ * incremented: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @return true If the index is incremented
+ * @return false If the index could not be incremented: It could be due to
+ * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
+ * the flow has already reached the end.
  */
-bool engine_prev_flow_step(uint8_t engine_stack);
+bool engine_goto_next_flow_step(uint8_t engine_buffer);
+
+/**
+ * @brief This function can be used to decrement the index of the current engine
+ * buffer and move to the previous step of a flow.
+ * This API can be useful to reach the previous step. Important thing to note
+ here
+ * is that the current step will not be deleted and user may choose to return to
+ * this step at a later point.
+
+ * @param engine_buffer The ID of the buffer whose index needs to be
+ * decremented: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @return true If the index is decremented
+ * @return false If the index could not be decremented: It could be due to
+ * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
+ * the flow has already reached the starting point.
+ */
+bool engine_goto_prev_flow_step(uint8_t engine_buffer);
 
 /**
  * @brief This function returns the a reference an element of type flow_step_t*,
  * from the selected queue which represents the current step of a flow.
  * This API can be used to get the current step of a flow in progress.
  *
- * @param engine_stack The ID of the queue to be selected, it can be either the
- * LIFO or FIFO queues (ENGINE_LIFO_A,... or ENGINE_FIFO_A,....)
+ * @param engine_buffer The ID of the buffer whose data needs to be read:
+ * (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
  * @param flow_step_dptr A double pointer which will be filled with the element
  * of type flow_step_t*, which can be dereferenced by the caller.
- * @return true If the dequeue or pop occurred successfully
- * @return false If the dequeue or pop failed: It could be due to incorrect
- * parameters, or because the queue is EMPTY.
+ * @return true If the element was returned successfully
+ * @return false If the element was not returned: It could be due to incorrect
+ * parameters, or because the buffer is EMPTY.
  */
-bool engine_current_flow_step(uint8_t engine_stack,
-                              flow_step_t **flow_step_dptr);
+bool engine_get_current_flow_step(uint8_t engine_buffer,
+                                  flow_step_t **flow_step_dptr);
+
+/**
+ * @brief This function deletes the current step held in the buffer, and
+ * internally moves to the previous step in the flow.
+ *
+ * @param engine_buffer The ID of the buffer whose data needs to be modified:
+ * (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @return true If the element was deleted successfully
+ * @return false If the element was not deleted: It could be due to incorrect
+ * parameters, or because the buffer is EMPTY.
+ */
+bool engine_delete_current_flow_step(uint8_t engine_buffer);
 
 /**
  * @brief This API runs the flow represented by a queue until that particular
  * queue is empty.
  *
- * @param engine_stack The ID of the queue to be run, it can be either the
- * LIFO or FIFO queues (ENGINE_LIFO_A,... or ENGINE_FIFO_A,....)*
+ * @param engine_buffer The ID of the buffer for which the flow execution is
+ * required to run: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
  */
-void engine_run(uint8_t engine_stack);
+void engine_run(uint8_t engine_buffer);
 
 #endif /* FLOW_ENGINE_H */

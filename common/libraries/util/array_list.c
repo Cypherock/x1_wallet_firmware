@@ -1,5 +1,5 @@
 /**
- * @file    lifo_queue_tests.c
+ * @file    array_list.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,8 +59,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "cQueue.h"
-#include "unity_fixture.h"
+#include "array_list.h"
+
+#include <string.h>
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -69,7 +70,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define NUM_MAX_RECORDS 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -78,10 +78,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static queue_t stack;
-static uint8_t *stack_buffer[NUM_MAX_RECORDS] = {0};
-static uint8_t data[NUM_MAX_RECORDS] =
-    {0x11, 0x22, 0x33, 0x44, 0x55, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -90,60 +86,159 @@ static uint8_t data[NUM_MAX_RECORDS] =
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief
+ *
+ * @param list
+ * @return true
+ * @return false
+ */
+static bool is_full(array_list_t *list);
+
+/**
+ * @brief
+ *
+ * @param list
+ * @return true
+ * @return false
+ */
+static bool is_empty(array_list_t *list);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool is_full(array_list_t *list) {
+  if (list->num_of_elements == list->max_capacity) {
+    return true;
+  }
+
+  return false;
+}
+
+static bool is_empty(array_list_t *list) {
+  if (0 == list->num_of_elements) {
+    return true;
+  }
+
+  return false;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-TEST_GROUP(lifo_queue_tests);
-
-TEST_SETUP(lifo_queue_tests) {
-  q_init_static(&stack,
-                sizeof(uintptr_t),
-                NUM_MAX_RECORDS,
-                LIFO,
-                &stack_buffer[0],
-                sizeof(stack_buffer));
-}
-
-TEST_TEAR_DOWN(lifo_queue_tests) {
-}
-
-TEST(lifo_queue_tests, push_pop) {
-  /* Push pointer to data[i] into the stack; we can also push the data itself
-   * and check. But currently, the requirement is to store pointer to variables
-   * onto the stack/stack itself  */
-  for (uint8_t i = 0; i < NUM_MAX_RECORDS; i++) {
-    uint8_t *ptr = &data[i];
-    uint8_t **dptr = &ptr;
-    TEST_ASSERT_TRUE(q_push(&stack, (void *)dptr));
-
-    /* Check if we can peek the element we just pushed (as it's a stack),
-     * without popping it from the stack */
-    ptr = NULL;
-    TEST_ASSERT_TRUE(q_peek(&stack, (void *)&ptr));
-    TEST_ASSERT_EQUAL_PTR(&data[i], ptr);
-    TEST_ASSERT_EQUAL_UINT8(data[i], *ptr);
+bool array_list_initialize(array_list_t *const list,
+                           void *array_buffer,
+                           size_t size_of_element,
+                           size_t capacity) {
+  /* Must ensure that the array_buffer is not NULL and the size_of_element is
+   * non-zero */
+  if ((NULL == list) || (NULL == array_buffer) || (0 == size_of_element)) {
+    return false;
   }
 
-  /* Once the stack is full, we will not be able to push into the stack */
-  uint8_t *ptr = &data[0];
-  uint8_t **dptr = &ptr;
-  TEST_ASSERT_FALSE(q_push(&stack, (void *)dptr));
+  memset(list, 0, sizeof(array_list_t));
 
-  /* Verify the pointers and the data after pop */
-  for (uint8_t i = 0; i < NUM_MAX_RECORDS; i++) {
-    uint8_t *ptr;
-    TEST_ASSERT_TRUE(q_pop(&stack, (void *)&ptr));
+  list->array = array_buffer;
+  list->size_of_element = size_of_element;
+  list->current_index = 0;
+  list->num_of_elements = 0;
+  list->max_capacity = capacity / (list->size_of_element);
 
-    /* Since it's a LIFO (stack), we will get the last element first */
-    TEST_ASSERT_EQUAL_PTR(&data[NUM_MAX_RECORDS - i - 1], ptr);
-    TEST_ASSERT_EQUAL_UINT8(data[NUM_MAX_RECORDS - i - 1], *ptr);
+  return;
+}
+
+bool array_list_insert(array_list_t *list, void *const element) {
+  if ((NULL == list) || (NULL == element)) {
+    return false;
   }
 
-  /* Once the stack is empty, we will not be able to pop from the stack */
-  TEST_ASSERT_FALSE(q_pop(&stack, (void *)&ptr));
+  /* If we have fully filled the capacity of the array buffer, we cannot fill
+   * any more datastart */
+  if (true == is_full(list)) {
+    return false;
+  }
+
+  uint8_t *const start_index =
+      list->array + (list->size_of_element * list->num_of_elements);
+
+  memcpy(start_index, element, list->size_of_element);
+
+  list->num_of_elements += 1;
+  return true;
+}
+
+bool array_list_get_element(array_list_t *list, void *const element) {
+  if ((NULL == list) || (NULL == element)) {
+    return false;
+  }
+
+  /* Only return data if the array list is non empty at the moment */
+  if (true == is_empty(list)) {
+    return false;
+  }
+
+  /* Find the starting address of the element: p_start = p_array_start +
+   * (size_of_elements * current_index) and copy size_of_element bytes from it
+   * to the destination element pointer */
+  uint8_t *const start_index =
+      list->array + (list->size_of_element * list->current_index);
+
+  memcpy(element, start_index, list->size_of_element);
+
+  return true;
+}
+
+bool array_list_iterate_next(array_list_t *list) {
+  if ((NULL == list) || (true == is_empty(list))) {
+    return false;
+  }
+
+  /* Check if we are at the end of the array list already. Keep in mind that the
+   * current_index is following 0 indexing */
+  if (list->current_index == (list->num_of_elements - 1)) {
+    return false;
+  }
+
+  list->current_index += 1;
+  return true;
+}
+
+bool array_list_iterate_back(array_list_t *list) {
+  if ((NULL == list) || (true == is_empty(list))) {
+    return false;
+  }
+
+  /* Check if we are at the start of the array list already */
+  if (list->current_index == 0) {
+    return false;
+  }
+
+  list->current_index -= 1;
+  return true;
+}
+
+bool array_list_delete_entry(array_list_t *list) {
+  if ((NULL == list) || (true == is_empty(list))) {
+    return false;
+  }
+
+  /* The elements succeeding the current index needs to be shifted to ensure
+   * that the data held in the array list is contiguos even after the deletion
+   */
+  for (uint8_t ele = list->current_index; ele < list->num_of_elements - 1;
+       ele++) {
+    uint8_t *const src = list->array + (list->size_of_element * (ele + 1));
+    uint8_t *const dest = list->array + (list->size_of_element * ele);
+    memcpy(dest, src, list->size_of_element);
+  }
+
+  /* If the current index is 0, then, we will not be able to decrement the index
+   * further */
+  if (list->current_index > 0) {
+    list->current_index -= 1;
+  }
+
+  /* Finally, decrement the count of elements held in the array list */
+  list->num_of_elements -= 1;
+  return true;
 }

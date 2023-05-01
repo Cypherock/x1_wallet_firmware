@@ -61,7 +61,7 @@
  *****************************************************************************/
 #include "flow_engine.h"
 
-#include "cQueue.h"
+#include "array_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -70,7 +70,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define ENGINE_NUM_STACKS 2
+#define ENGINE_NUM_BUFFERS 2
 
 #define ENGINE_RUN_INITIALIZE_CB(cb, data_ptr)                                 \
   {                                                                            \
@@ -91,21 +91,21 @@
  *****************************************************************************/
 typedef struct {
   flow_step_t **buffer;
-  queue_t *queue_config;
+  array_list_t *array_list_config;
 } engine_ctx_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static flow_step_t *engine_stack_a_buffer[ENGINE_STACK_DEPTH] = {0};
-static queue_t engine_stack_a;
+static flow_step_t *engine_buffer_0[ENGINE_STACK_DEPTH] = {0};
+static array_list_t engine_list_0;
 
-static flow_step_t *engine_queue_a_buffer[ENGINE_STACK_DEPTH] = {0};
-static queue_t engine_queue_a;
+static flow_step_t *engine_buffer_1[ENGINE_STACK_DEPTH] = {0};
+static array_list_t engine_list_1;
 
-static engine_ctx_t engine_ctx[ENGINE_NUM_STACKS] = {
-    {&engine_stack_a_buffer[0], &engine_stack_a},
-    {&engine_queue_a_buffer[0], &engine_queue_a}};
+static engine_ctx_t engine_ctx[ENGINE_NUM_BUFFERS] = {
+    {&engine_buffer_0[0], &engine_list_0},
+    {&engine_buffer_1[0], &engine_list_1}};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -124,52 +124,35 @@ static engine_ctx_t engine_ctx[ENGINE_NUM_STACKS] = {
  *****************************************************************************/
 void engine_initialize(void) {
   /* Initialize all queues support by the engine */
-  for (uint8_t indx = 0; indx < ENGINE_NUM_STACKS; indx++) {
+  for (uint8_t indx = 0; indx < ENGINE_NUM_BUFFERS; indx++) {
     (void)engine_reset_flow(indx);
   }
 }
 
-bool engine_reset_flow(uint8_t engine_stack) {
-  /* Ensure that the stack requested to be reset is implemented. It is important
-   * to handle this case as this API is exposed to the external world and
-   * therefore we must ensure that the argument is valid */
-  if (ENGINE_NUM_STACKS <= engine_stack) {
+bool engine_reset_flow(uint8_t engine_buffer) {
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
     return false;
   }
 
   /* Zero-ise the content of the queue and the queue struct */
-  memzero(engine_ctx[engine_stack].buffer,
+  memzero(engine_ctx[engine_buffer].buffer,
           ENGINE_STACK_DEPTH * (sizeof(flow_step_t *)));
-  memzero(engine_ctx[engine_stack].queue_config, sizeof(queue_t));
+  memzero(engine_ctx[engine_buffer].array_list_config, sizeof(array_list_t));
 
-  /* We need to re-initialize the queue - LIFO or FIFO based on the engine_stack
-   * index */
-  queue_type_e buffer_type = LIFO;
-  if (engine_stack >= ENGINE_FIFO_A) {
-    buffer_type = FIFO;
-  }
-
-  /* Initialize the queue with the appropriate parameters. The return is ignored
-   * here intentionally as this API call is not expected to fail as all
-   * allocations are static */
-  (void)q_init_static(engine_ctx[engine_stack].queue_config,
-                      sizeof(flow_step_t *),
-                      ENGINE_STACK_DEPTH,
-                      buffer_type,
-                      engine_ctx[engine_stack].buffer,
-                      ENGINE_STACK_DEPTH * (sizeof(flow_step_t *)));
+  /* Initialize the array_list with the appropriate parameters */
+  array_list_initialize(engine_ctx[engine_buffer].array_list_config,
+                        engine_ctx[engine_buffer].buffer,
+                        sizeof(flow_step_t *),
+                        ENGINE_STACK_DEPTH * (sizeof(flow_step_t *)));
 
   return true;
 }
 
-bool engine_next_flow_step(uint8_t engine_stack,
-                           const flow_step_t *flow_step_ptr) {
+bool engine_add_next_flow_step(uint8_t engine_buffer,
+                               const flow_step_t *flow_step_ptr) {
   bool result = false;
 
-  /* Ensure that the stack requested to be reset is implemented. It is important
-   * to handle this case as this API is exposed to the external world and
-   * therefore we must ensure that the argument is valid */
-  if (ENGINE_NUM_STACKS <= engine_stack) {
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
     return result;
   }
 
@@ -177,51 +160,59 @@ bool engine_next_flow_step(uint8_t engine_stack,
    * and NOT the actual content, therefore we need to pass the double pointer to
    * the API */
   const flow_step_t **flow_step_dptr = &flow_step_ptr;
-  result = q_push(engine_ctx[engine_stack].queue_config, flow_step_dptr);
+  result = array_list_insert(engine_ctx[engine_buffer].array_list_config,
+                             flow_step_dptr);
   return result;
 }
 
-bool engine_prev_flow_step(uint8_t engine_stack) {
+bool engine_goto_next_flow_step(uint8_t engine_buffer) {
   bool result = false;
 
-  /* Ensure that the stack requested to be reset is implemented. It is important
-   * to handle this case as this API is exposed to the external world and
-   * therefore we must ensure that the argument is valid */
-  if (ENGINE_NUM_STACKS <= engine_stack) {
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
     return result;
   }
 
-  /* The q_pop API will copy the content on the pointer given as the argument.
-   * Since we have only pushed the pointer to the flow_step_t in
-   * engine_next_flow_step, therefore we only need to allocate space for a
-   * pointer, which can be a void *. Also, this API is expected to do internal
-   * pop, so the popped element is not returned in any way to the caller */
-  void *flow_step_ptr;
-  result = q_pop(engine_ctx[engine_stack].queue_config, &flow_step_ptr);
+  result = array_list_iterate_next(engine_ctx[engine_buffer].array_list_config);
   return result;
 }
 
-bool engine_current_flow_step(uint8_t engine_stack,
-                              flow_step_t **flow_step_dptr) {
+bool engine_goto_prev_flow_step(uint8_t engine_buffer) {
   bool result = false;
 
-  /* Ensure that the stack requested to be reset is implemented. It is important
-   * to handle this case as this API is exposed to the external world and
-   * therefore we must ensure that the argument is valid */
-  if (ENGINE_NUM_STACKS <= engine_stack) {
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
     return result;
   }
 
-  /* q_peek fills the content from the queue into the (double) pointer */
-  result = q_peek(engine_ctx[engine_stack].queue_config, flow_step_dptr);
+  result = array_list_iterate_back(engine_ctx[engine_buffer].array_list_config);
   return result;
 }
 
-void engine_run(uint8_t engine_stack) {
-  /* Ensure that the stack requested to be reset is implemented. It is important
-   * to handle this case as this API is exposed to the external world and
-   * therefore we must ensure that the argument is valid */
-  if (ENGINE_NUM_STACKS <= engine_stack) {
+bool engine_get_current_flow_step(uint8_t engine_buffer,
+                                  flow_step_t **flow_step_dptr) {
+  bool result = false;
+
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+    return result;
+  }
+
+  result = array_list_get_element(engine_ctx[engine_buffer].array_list_config,
+                                  flow_step_dptr);
+  return result;
+}
+
+bool engine_delete_current_flow_step(uint8_t engine_buffer) {
+  bool result = false;
+
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+    return result;
+  }
+
+  result = array_list_delete_entry(engine_ctx[engine_buffer].array_list_config);
+  return result;
+}
+
+void engine_run(uint8_t engine_buffer) {
+  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
     return;
   }
 
@@ -229,7 +220,7 @@ void engine_run(uint8_t engine_stack) {
     flow_step_t *current_flow = NULL;
 
     /* Break if the stack or queue reached an empty state */
-    if ((false == engine_current_flow_step(engine_stack, &current_flow)) ||
+    if ((false == engine_get_current_flow_step(engine_buffer, &current_flow)) ||
         (NULL == current_flow)) {
       break;
     }

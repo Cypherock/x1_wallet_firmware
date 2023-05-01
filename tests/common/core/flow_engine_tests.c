@@ -80,7 +80,6 @@ typedef struct {
   bool p0_event;
   bool ui_event;
   bool usb_event;
-  bool nfc_event;
 } event_callback_tester_t;
 
 /*****************************************************************************
@@ -89,12 +88,12 @@ typedef struct {
 flow_step_t engine_test_flow[ENGINE_TEST_NUM_FLOWS + 1];
 
 const evt_config_t engine_test_evt_config = {.abort_disabled = false,
-                                             .evt_selection.byte = 0x7};
+                                             .evt_selection.byte = 0x7,
+                                             .timeout = 1200};
 
-event_callback_tester_t callback_test = {.p0_event = false,
-                                         .ui_event = false,
-                                         .usb_event = false,
-                                         .nfc_event = false};
+event_callback_tester_t callback_test = {.p0_event = true,
+                                         .ui_event = true,
+                                         .usb_event = true};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -107,43 +106,6 @@ event_callback_tester_t callback_test = {.p0_event = false,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-static void init_callback(const void *data_ptr) {
-  callback_test.p0_event = false;
-  callback_test.ui_event = false;
-  callback_test.usb_event = false;
-  callback_test.nfc_event = false;
-  return;
-}
-
-static void p0_callback(p0_evt_t event, const void *data_ptr) {
-  callback_test.p0_event = true;
-  engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[1]);
-  return;
-}
-
-static void ui_callback(ui_event_t event, const void *data_ptr) {
-  callback_test.ui_event = true;
-  engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[2]);
-  return;
-}
-
-static void usb_callback(usb_event_t event, const void *data_ptr) {
-  callback_test.usb_event = true;
-  engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[3]);
-  return;
-}
-
-static void nfc_callback(nfc_event_t event, const void *data_ptr) {
-  callback_test.nfc_event = true;
-
-  /* This is the leaf node - functionality, which can choose to either call
-   * engine_reset or engine_back */
-  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_LIFO_A));
-
-  return;
-}
-
 // Copied from usb_evt_api_tests.c
 static void usb_construct_event(void) {
   uint8_t data[1024] = {0};
@@ -165,6 +127,36 @@ static void usb_construct_event(void) {
   usb_set_event(89, data, length >> 1);
 }
 
+static void init_callback(const void *data_ptr) {
+  callback_test.p0_event = false;
+  callback_test.ui_event = false;
+  callback_test.usb_event = false;
+  return;
+}
+
+static void p0_callback(p0_evt_t event, const void *data_ptr) {
+  callback_test.p0_event = true;
+  ui_set_confirm_event();
+  engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[1]);
+  engine_goto_next_flow_step(ENGINE_BUFFER_0);
+  return;
+}
+
+static void ui_callback(ui_event_t event, const void *data_ptr) {
+  callback_test.ui_event = true;
+  usb_construct_event();
+  engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[2]);
+  engine_goto_next_flow_step(ENGINE_BUFFER_0);
+  return;
+}
+
+static void usb_callback(usb_event_t event, const void *data_ptr) {
+  callback_test.usb_event = true;
+  nfc_set_card_detect_event();
+  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_BUFFER_0));
+  return;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -180,25 +172,27 @@ TEST_TEAR_DOWN(flow_engine_tests) {
 TEST(flow_engine_tests, queue_empty_operations) {
   flow_step_t *flow_step_ptr;
   /* Try to get data from empty queue */
-  TEST_ASSERT_FALSE(engine_current_flow_step(ENGINE_LIFO_A, &flow_step_ptr));
-  TEST_ASSERT_FALSE(engine_current_flow_step(ENGINE_FIFO_A, &flow_step_ptr));
+  TEST_ASSERT_FALSE(
+      engine_get_current_flow_step(ENGINE_BUFFER_0, &flow_step_ptr));
+  TEST_ASSERT_FALSE(
+      engine_get_current_flow_step(ENGINE_BUFFER_1, &flow_step_ptr));
 
   /* Try to pop data from empty queue */
-  TEST_ASSERT_FALSE(engine_prev_flow_step(ENGINE_LIFO_A));
-  TEST_ASSERT_FALSE(engine_prev_flow_step(ENGINE_FIFO_A));
+  TEST_ASSERT_FALSE(engine_goto_prev_flow_step(ENGINE_BUFFER_0));
+  TEST_ASSERT_FALSE(engine_goto_prev_flow_step(ENGINE_BUFFER_1));
 
   /* Try to get data from unimplemented engine queue */
   // Only 1 stack and 1 queue implemented right now, therefore 3 is invalid
   // stack index
-  TEST_ASSERT_FALSE(engine_current_flow_step(3, &flow_step_ptr));
+  TEST_ASSERT_FALSE(engine_get_current_flow_step(3, &flow_step_ptr));
 
   /* Try to pop data from unimplemented engine queue */
   // Only 1 stack and 1 queue implemented right now, therefore 2 is invalid
   // stack index
-  TEST_ASSERT_FALSE(engine_prev_flow_step(2));
+  TEST_ASSERT_FALSE(engine_goto_prev_flow_step(2));
 }
 
-TEST(flow_engine_tests, dummy_flows_across_diff_queues) {
+TEST(flow_engine_tests, flows_across_diff_buffers) {
   for (uint8_t i = 0; i < ENGINE_TEST_NUM_FLOWS; i++) {
     engine_test_flow[i].step_init_cb = NULL;
     engine_test_flow[i].p0_cb = NULL;
@@ -208,24 +202,25 @@ TEST(flow_engine_tests, dummy_flows_across_diff_queues) {
     engine_test_flow[i].flow_data_ptr = NULL;
     engine_test_flow[i].evt_cfg_ptr = &engine_test_evt_config;
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[i]));
 
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_FIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_1, &engine_test_flow[i]));
   }
 
   /* Verify flow engine by dequeuing from both LIFO and FIFO */
   for (uint8_t i = 0; i < ENGINE_TEST_NUM_FLOWS; i++) {
     flow_step_t *flow_cb_popped = NULL;
 
-    TEST_ASSERT_TRUE(engine_current_flow_step(ENGINE_LIFO_A, &flow_cb_popped));
-    TEST_ASSERT_EQUAL_PTR(&engine_test_flow[ENGINE_TEST_NUM_FLOWS - i - 1],
-                          flow_cb_popped);
-    TEST_ASSERT_TRUE(engine_prev_flow_step(ENGINE_LIFO_A));
-
-    TEST_ASSERT_TRUE(engine_current_flow_step(ENGINE_FIFO_A, &flow_cb_popped));
+    TEST_ASSERT_TRUE(
+        engine_get_current_flow_step(ENGINE_BUFFER_0, &flow_cb_popped));
     TEST_ASSERT_EQUAL_PTR(&engine_test_flow[i], flow_cb_popped);
-    TEST_ASSERT_TRUE(engine_prev_flow_step(ENGINE_FIFO_A));
+    engine_goto_next_flow_step(ENGINE_BUFFER_0);
+
+    TEST_ASSERT_TRUE(
+        engine_get_current_flow_step(ENGINE_BUFFER_1, &flow_cb_popped));
+    TEST_ASSERT_EQUAL_PTR(&engine_test_flow[i], flow_cb_popped);
+    engine_goto_next_flow_step(ENGINE_BUFFER_1);
   }
 }
 
@@ -239,29 +234,31 @@ TEST(flow_engine_tests, async_init_one_buffer) {
     engine_test_flow[i].flow_data_ptr = NULL;
     engine_test_flow[i].evt_cfg_ptr = &engine_test_evt_config;
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[i]));
 
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_FIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_1, &engine_test_flow[i]));
   }
 
-  /* Reset ENGINE_LIFO_A */
-  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_LIFO_A));
+  /* Reset ENGINE_BUFFER_0 */
+  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_BUFFER_0));
 
   /* Verify flow engine by dequeuing from FIFO */
   for (uint8_t i = 0; i < ENGINE_TEST_NUM_FLOWS; i++) {
     flow_step_t *flow_cb_popped = NULL;
 
-    TEST_ASSERT_FALSE(engine_current_flow_step(ENGINE_LIFO_A, &flow_cb_popped));
-    TEST_ASSERT_FALSE(engine_prev_flow_step(ENGINE_LIFO_A));
+    TEST_ASSERT_FALSE(
+        engine_get_current_flow_step(ENGINE_BUFFER_0, &flow_cb_popped));
+    TEST_ASSERT_FALSE(engine_goto_next_flow_step(ENGINE_BUFFER_0));
 
-    TEST_ASSERT_TRUE(engine_current_flow_step(ENGINE_FIFO_A, &flow_cb_popped));
+    TEST_ASSERT_TRUE(
+        engine_get_current_flow_step(ENGINE_BUFFER_1, &flow_cb_popped));
     TEST_ASSERT_EQUAL_PTR(&engine_test_flow[i], flow_cb_popped);
-    TEST_ASSERT_TRUE(engine_prev_flow_step(ENGINE_FIFO_A));
+    engine_goto_next_flow_step(ENGINE_BUFFER_1);
   }
 }
 
-TEST(flow_engine_tests, flow_push_beyond_stack_depth) {
+TEST(flow_engine_tests, flow_push_beyond_buffer_depth) {
   for (uint8_t i = 0; i < ENGINE_TEST_NUM_FLOWS; i++) {
     engine_test_flow[i].step_init_cb = NULL;
     engine_test_flow[i].p0_cb = NULL;
@@ -271,16 +268,18 @@ TEST(flow_engine_tests, flow_push_beyond_stack_depth) {
     engine_test_flow[i].flow_data_ptr = NULL;
     engine_test_flow[i].evt_cfg_ptr = &engine_test_evt_config;
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[i]));
 
     TEST_ASSERT_TRUE(
-        engine_next_flow_step(ENGINE_FIFO_A, &engine_test_flow[i]));
+        engine_add_next_flow_step(ENGINE_BUFFER_1, &engine_test_flow[i]));
   }
 
   /* Enqueueing more steps in the buffer should give an error */
-  TEST_ASSERT_FALSE(engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[0]));
+  TEST_ASSERT_FALSE(
+      engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[0]));
 
-  TEST_ASSERT_FALSE(engine_next_flow_step(ENGINE_FIFO_A, &engine_test_flow[0]));
+  TEST_ASSERT_FALSE(
+      engine_add_next_flow_step(ENGINE_BUFFER_1, &engine_test_flow[0]));
 }
 
 TEST(flow_engine_tests, engine_test_lifo) {
@@ -293,7 +292,11 @@ TEST(flow_engine_tests, engine_test_lifo) {
   engine_test_flow[0].evt_cfg_ptr = &engine_test_evt_config;
   engine_test_flow[0].flow_data_ptr = NULL;
 
+#if USE_SIMULATOR == 1
   engine_test_flow[1].step_init_cb = init_callback;
+#else
+  engine_test_flow[1].step_init_cb = NULL;
+#endif
   engine_test_flow[1].p0_cb = NULL;
   engine_test_flow[1].ui_cb = ui_callback;
   engine_test_flow[1].usb_cb = NULL;
@@ -309,24 +312,26 @@ TEST(flow_engine_tests, engine_test_lifo) {
   engine_test_flow[2].evt_cfg_ptr = &engine_test_evt_config;
   engine_test_flow[2].flow_data_ptr = NULL;
 
-  engine_test_flow[3].step_init_cb = NULL;
-  engine_test_flow[3].p0_cb = NULL;
-  engine_test_flow[3].ui_cb = NULL;
-  engine_test_flow[3].usb_cb = NULL;
-  engine_test_flow[3].nfc_cb = nfc_callback;
-  engine_test_flow[3].evt_cfg_ptr = &engine_test_evt_config;
-  engine_test_flow[3].flow_data_ptr = NULL;
+  /* Reset flow stack ENGINE_BUFFER_0 */
+  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_BUFFER_0));
 
-  /* Reset flow stack ENGINE_LIFO_A */
-  TEST_ASSERT_TRUE(engine_reset_flow(ENGINE_LIFO_A));
-
+#if USE_SIMULATOR == 1
   /* Push 1st step, following steps will be pushed via the callbacks */
-  engine_next_flow_step(ENGINE_LIFO_A, &engine_test_flow[0]);
+  engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[1]);
+  ui_set_confirm_event();
+#else
+  /* Push 1st step, following steps will be pushed via the callbacks */
+  engine_add_next_flow_step(ENGINE_BUFFER_0, &engine_test_flow[0]);
+#endif
 
-  engine_run(ENGINE_LIFO_A);
+  engine_run(ENGINE_BUFFER_0);
 
+#if USE_SIMULATOR == 1
+  TEST_ASSERT_FALSE(callback_test.p0_event);
+#else
   TEST_ASSERT_TRUE(callback_test.p0_event);
+#endif
+
   TEST_ASSERT_TRUE(callback_test.ui_event);
   TEST_ASSERT_TRUE(callback_test.usb_event);
-  TEST_ASSERT_TRUE(callback_test.nfc_event);
 }

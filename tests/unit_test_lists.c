@@ -117,18 +117,20 @@ TEST_GROUP_RUNNER(nfc_events_manual_test) {
 }
 #endif
 
-TEST_GROUP_RUNNER(fifo_queue_tests) {
-  RUN_TEST_CASE(fifo_queue_tests, enqueue_dequeue);
+TEST_GROUP_RUNNER(array_lists_tests) {
+  RUN_TEST_CASE(array_list_tests, insert_multiple);
+  RUN_TEST_CASE(array_list_tests, insert_in_full_array);
+  RUN_TEST_CASE(array_list_tests, insert_NULL);
+  RUN_TEST_CASE(array_list_tests, delete_single_element);
+  RUN_TEST_CASE(array_list_tests, delete_first_element);
+  RUN_TEST_CASE(array_list_tests, delete_last_element);
+  RUN_TEST_CASE(array_list_tests, delete_middle_element);
+  RUN_TEST_CASE(array_list_tests, delete_element_when_list_empty);
 }
-
-TEST_GROUP_RUNNER(lifo_queue_tests) {
-  RUN_TEST_CASE(lifo_queue_tests, push_pop);
-}
-
 TEST_GROUP_RUNNER(flow_engine_tests) {
   RUN_TEST_CASE(flow_engine_tests, queue_empty_operations);
-  RUN_TEST_CASE(flow_engine_tests, dummy_flows_across_diff_queues);
+  RUN_TEST_CASE(flow_engine_tests, flows_across_diff_buffers);
   RUN_TEST_CASE(flow_engine_tests, async_init_one_buffer);
-  RUN_TEST_CASE(flow_engine_tests, flow_push_beyond_stack_depth);
-  // RUN_TEST_CASE(flow_engine_tests, engine_test_lifo);
+  RUN_TEST_CASE(flow_engine_tests, flow_push_beyond_buffer_depth);
+  RUN_TEST_CASE(flow_engine_tests, engine_test_lifo);
 }
