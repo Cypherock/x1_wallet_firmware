@@ -133,3 +133,8 @@ jobs:
         fi
         PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin"
         ./utilities/build.sh -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
+        if [ ${{ matrix.platform }} = "simulator" ]; then
+          bash ./utilities/run_unit_tests.sh -f ${{ matrix.firmware }} -p ${{ matrix.platform }} > test_results.txt || true
+          cat test_results.txt
+          if [ ! "$(tail -n 1 test_results.txt)" = "OK" ]; then exit 1; fi
+        fi
