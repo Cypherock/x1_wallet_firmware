@@ -1,6 +1,10 @@
 name: CI Tests
 
 on:
+  push:
+    branches:
+      - main
+      - develop
   pull_request:
     branches:
       - '**'
@@ -40,7 +44,9 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
-        bash ./utilities/ci/format-checker.sh ${SHA_BASE}
+        if [ ${{ github.event_name }} = 'pull_request' ]; then
+          bash ./utilities/ci/format-checker.sh ${SHA_BASE}
+        fi
 
   static-checks:
     runs-on: ubuntu-latest
@@ -65,7 +71,9 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
-        bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
+        if [ ${{ github.event_name }} = 'pull_request' ]; then
+          bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
+        fi
     - name: Upload result
       uses: actions/upload-artifact@v3
       with:
