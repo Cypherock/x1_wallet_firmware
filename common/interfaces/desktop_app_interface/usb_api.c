@@ -72,6 +72,7 @@
 #include <unistd.h>
 
 #include "assert_conf.h"
+#include "sim_usb.h"
 #endif
 #include <stdbool.h>
 #include <stddef.h>
