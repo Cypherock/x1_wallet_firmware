@@ -174,9 +174,10 @@ uint32_t byte_array_to_hex_string(const uint8_t *bytes,
   return (i * 2 + 1);
 }
 
-void __single_to_multi_line(const char *input,
-                            const uint16_t input_len,
-                            char output[24][15]) {
+void __single_to_multi_line(
+    const char *input,
+    const uint16_t input_len,
+    char output[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]) {
   if (input == NULL || output == NULL)
     return;
   uint16_t i = 0U;
@@ -198,9 +199,10 @@ void __single_to_multi_line(const char *input,
   }
 }
 
-void __multi_to_single_line(const char input[24][15],
-                            const uint8_t number_of_mnemonics,
-                            char *output) {
+void __multi_to_single_line(
+    const char input[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH],
+    const uint8_t number_of_mnemonics,
+    char *output) {
   if (input == NULL || output == NULL)
     return;
   uint8_t word_len;

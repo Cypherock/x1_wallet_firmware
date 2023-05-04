@@ -47,9 +47,9 @@ extern const char *ui_text_options_old_wallet[];
 extern const char *ui_text_options_new_wallet[];
 
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 10
 #else
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 8
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
 #endif
 extern const char *ui_text_options_advanced_settings[];
 extern const char *ui_text_options_buzzer_adjust[];

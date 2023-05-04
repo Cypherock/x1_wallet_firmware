@@ -81,6 +81,7 @@ const char *ui_text_options_advanced_settings[] = {
     "Factory Reset",
     "Device Info",
     "View Card Version",
+    "Regulatory Info",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif

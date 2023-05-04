@@ -70,6 +70,10 @@ TEST_GROUP_RUNNER(event_getter_test) {
   RUN_TEST_CASE(event_getter_test, disabled_events);
 }
 
+TEST_GROUP_RUNNER(xpub) {
+  RUN_TEST_CASE(xpub, derivation_path_tests);
+}
+
 TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, inactivity_evt);
   RUN_TEST_CASE(p0_events_test, abort_evt);
@@ -106,3 +110,9 @@ TEST_GROUP_RUNNER(nfc_events_test) {
   RUN_TEST_CASE(nfc_events_test, set_card_detect_event);
   RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
 }
+
+#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
+TEST_GROUP_RUNNER(nfc_events_manual_test) {
+  RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
+}
+#endif

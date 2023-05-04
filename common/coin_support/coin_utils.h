@@ -29,6 +29,11 @@
 #include "sha2.h"
 #include "utils.h"
 
+/// EVM chains & Bitcoin forks derive account xpub at depth 3
+#define XPUB_DEFAULT_DEPTH 3
+/// EVM chains & Bitcoin forks derive addresses at depth 5
+#define ADDR_DEFAULT_DEPTH 5
+
 /// Bitcoin coin index
 #define BITCOIN 0x80000000
 
@@ -197,6 +202,26 @@ typedef struct ui_display_node {
   char *value;
   struct ui_display_node *next;
 } ui_display_node;
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB set.
+ *
+ * @return true   If the provided value has MSB set to 1.
+ * @return false  If the provided value has MSB set to 0.
+ */
+static inline bool is_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0x80000000);
+}
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB not set.
+ *
+ * @return true   If the provided value has MSB set to 0.
+ * @return false  If the provided value has MSB set to 1.
+ */
+static inline bool is_non_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0);
+}
 
 /**
  * @brief Copies the byte values from source after offset to destination under
@@ -451,6 +476,11 @@ void bech32_addr_encode(char *output,
 
 /**
  * @brief Verifies the derivation path for xpub during coin export step
+ * The function verifies all the indices for exact match of purpose_id, coin_id,
+ * and other relevant indices. The hardness of the derivation index in the path
+ * is also checked for validity. If the depth of derivation does not match the
+ * supported derivation paths or any of the above checks do not pass for a given
+ * coin, this function will return false.
  *
  * @param[in] path          The address derivation path to be checked
  * @param[in] depth         The number of levels in the derivation path
@@ -464,6 +494,11 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
 /**
  * @brief Verifies if the specified derivation path is valid based on checks
  * on intermediate values.
+ * The function verifies all the indices for exact match of purpose_id, coin_id,
+ * and other relevant indices. The hardness of the derivation index in the path
+ * is also checked for validity. If the depth of derivation does not match the
+ * supported derivation paths or any of the above checks do not pass for a given
+ * coin, this function will return false.
  *
  * @param[in] path          The address derivation path to be checked
  * @param[in] depth         The number of levels in the derivation path

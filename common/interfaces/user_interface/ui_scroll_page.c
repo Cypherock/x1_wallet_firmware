@@ -267,8 +267,6 @@ static void page_update_icons(void) {
 }
 
 static void ui_scrollable_destructor(void) {
-  lv_obj_clean(lv_scr_act());
-
   if (NULL != gp_scrollabe_page_data) {
     memzero(gp_scrollabe_page_data, sizeof(scrolling_page_data_t));
     free(gp_scrollabe_page_data);
@@ -286,10 +284,7 @@ static void ui_scrollable_destructor(void) {
 
 static void page_cancel_handler(lv_obj_t *pCancelLvglObj,
                                 const lv_event_t lvglEvent) {
-  ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl) &&
-         (NULL != pCancelLvglObj));
-
-  if (lv_obj_get_hidden(pCancelLvglObj)) {
+  if ((LV_EVENT_DELETE != lvglEvent) && (lv_obj_get_hidden(pCancelLvglObj))) {
     return;
   }
 
@@ -314,11 +309,17 @@ static void page_cancel_handler(lv_obj_t *pCancelLvglObj,
     }
     case LV_EVENT_CLICKED: {
       ui_set_cancel_event();
-      ui_scrollable_destructor();
+      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED: {
       lv_btn_set_state(pCancelLvglObj, LV_BTN_STATE_REL);
+      break;
+    }
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      ui_scrollable_destructor();
       break;
     }
     default: {
@@ -331,10 +332,7 @@ static void page_cancel_handler(lv_obj_t *pCancelLvglObj,
 
 static void page_accept_handler(lv_obj_t *pAcceptLvglObj,
                                 const lv_event_t lvglEvent) {
-  ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl) &&
-         (NULL != pAcceptLvglObj));
-
-  if (lv_obj_get_hidden(pAcceptLvglObj)) {
+  if ((LV_EVENT_DELETE != lvglEvent) && (lv_obj_get_hidden(pAcceptLvglObj))) {
     return;
   }
 
@@ -350,11 +348,17 @@ static void page_accept_handler(lv_obj_t *pAcceptLvglObj,
     }
     case LV_EVENT_CLICKED: {
       ui_set_confirm_event();
-      ui_scrollable_destructor();
+      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED: {
       lv_btn_set_state(pAcceptLvglObj, LV_BTN_STATE_REL);
+      break;
+    }
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      ui_scrollable_destructor();
       break;
     }
     default: {
@@ -367,9 +371,6 @@ static void page_accept_handler(lv_obj_t *pAcceptLvglObj,
 
 static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
                                const lv_event_t lvglEvent) {
-  ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl) &&
-         (NULL != pLvglArrowObject));
-
   switch (lvglEvent) {
     case LV_EVENT_KEY: {
       lv_key_t keyPressed = lv_indev_get_key(ui_get_indev());
@@ -430,6 +431,13 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
       lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_left_arrow_lvgl,
                          LV_LABEL_STYLE_MAIN,
                          &(gp_scrollabe_page_lvgl->ui_arrow_released_style));
+      break;
+    }
+
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      ui_scrollable_destructor();
       break;
     }
 
@@ -640,6 +648,13 @@ void ui_scrollable_page(const char *p_page_ui_heading,
   if ((NULL == p_page_ui_heading) || (NULL == p_page_ui_body)) {
     return;
   }
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
 
   gp_scrollabe_page_data =
       (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));

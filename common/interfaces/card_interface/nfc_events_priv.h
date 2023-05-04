@@ -34,10 +34,10 @@
 /**
  * @brief   Set NFC_EVENT_CARD_DETECT type event
  */
-void nfc_set_card_detect_event();
+void nfc_set_card_detect_event(void);
 
 /**
  * @brief   Set NFC_EVENT_CARD_REMOVED type event
  */
-void nfc_set_card_removed_event();
+void nfc_set_card_removed_event(void);
 #endif
