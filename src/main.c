@@ -173,7 +173,7 @@ int main(void) {
     }
 
     if (sys_flow_cntrl_u.bits.nfc_off == false) {
-      // nfc_deselect_card();
+      nfc_deselect_card();
     }
 
     if (counter.next_event_flag != 0) {
