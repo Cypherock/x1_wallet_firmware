@@ -83,8 +83,19 @@
                             issue*/
 #include "application_startup.h"
 #include "board.h"
-#include "flow_engine.h"
+#include "communication.h"
+#include "controller_main.h"
+#include "logger.h"
+#include "lv_port_indev.h"
+#include "lvgl/lvgl.h"
+#include "pow.h"
+#include "stdio.h"
+#include "stdlib.h"
 #include "sys_state.h"
+#include "tasks_level_one.h"
+#include "time.h"
+#include "ui_delay.h"
+#include "ui_instruction.h"
 #include "ui_logo.h"
 
 #if USE_SIMULATOR == 0
@@ -126,35 +137,93 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
-
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
 #endif
 
-  /* Initialize the GPIO, clocks, LVGL library, i2c drivers, communication
-   * layers for USB and NFC based data exchanges and everything related to the
-   * hardware and low level software */
   application_init();
 
-  /* Good place to display the Cypherock logo */
-  logo_scr_init(2000);
-
-  /* Initialize the flow engine which will be useful for navigation on the menu.
-   * Starting point for the device could be different based on different state
-   * of the device */
-  engine_initialize();
-
-  // TODO: Update with main menu flow for the first time, using dummy variable
-  // as of now
-  flow_step_t flow_step = {0};
-  engine_add_next_flow_step(ENGINE_BUFFER_0, &flow_step);
-  engine_goto_next_flow_step(ENGINE_BUFFER_0);
-
-  while (1) {
-    engine_run(ENGINE_BUFFER_0);
+#if USE_SIMULATOR == 0
+  if (fault_in_prev_boot()) {
+    handle_fault_in_prev_boot();
+  } else
+#endif    // USE_SIMULATOR
+  {
+    logo_scr_init(2000);
+    device_provision_check();
+    reset_flow_level();
+#if X1WALLET_MAIN
+    if (device_auth_check() == DEVICE_AUTHENTICATED)
+      check_invalid_wallets();
+#endif
   }
 
+  while (true) {
+    if (keypad_get_key() != 0)
+      reset_inactivity_timer();
+    // Flow
+    main_app_ready = true;
+    if (CY_Read_Reset_Flow()) {
+      if (!CY_reset_not_allowed()) {
+        cy_exit_flow();
+      } else {
+        sys_flow_cntrl_u.bits.reset_flow = false;
+      }
+    }
+
+    if (sys_flow_cntrl_u.bits.nfc_off == false) {
+      // nfc_deselect_card();
+    }
+
+    if (counter.next_event_flag != 0) {
+      PRINT_FLOW_LVL();
+      mark_device_state(
+          CY_UNUSED_STATE,
+          counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
+      reset_next_event_flag();
+#if X1WALLET_MAIN
+      level_one_tasks();
+#elif X1WALLET_INITIAL
+      level_one_tasks_initial();
+#else
+#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
+#endif
+    }
+
+#if USE_SIMULATOR == 1
+    usbsim_continue_loop();
+#endif    // USE_SIMULATOR
+
+    proof_of_work_task();
+    /* Periodically call the lv_task handler.
+     * It could be done in a timer interrupt or an OS task too.*/
+    lv_task_handler();
+    BSP_DelayMs(50);
+
+    /* TODO: Update after refactor */
+    /* Remove this function call */
+    process_ui_events();
+#if USE_SIMULATOR == 1
+#ifdef SDL_APPLE
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+#if USE_MOUSE != 0
+      mouse_handler(&event);
+#endif
+
+#if USE_KEYBOARD
+      keyboard_handler(&event);
+#endif
+
+#if USE_MOUSEWHEEL != 0
+      mousewheel_handler(&event);
+#endif
+    }
+#endif
+#endif    // USE_SIMULATOR
+  }
   return 0;
 }
 

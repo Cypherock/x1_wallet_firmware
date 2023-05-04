@@ -70,42 +70,27 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define ENGINE_NUM_BUFFERS 2
-
-#define ENGINE_RUN_INITIALIZE_CB(cb, data_ptr)                                 \
+#define ENGINE_RUN_INITIALIZE_CB(cb, ctx, data_ptr)                            \
   {                                                                            \
     if (cb) {                                                                  \
-      cb(data_ptr);                                                            \
+      cb(ctx, data_ptr);                                                       \
     }                                                                          \
   }
 
-#define ENGINE_RUN_EVENT_CB(cb, data_ptr, event)                               \
+#define ENGINE_RUN_EVENT_CB(cb, ctx, data_ptr, event)                          \
   {                                                                            \
     if (cb) {                                                                  \
-      cb(event, data_ptr);                                                     \
+      cb(ctx, event, data_ptr);                                                \
     }                                                                          \
   }
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  flow_step_t **buffer;
-  array_list_t *array_list_config;
-} engine_ctx_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static flow_step_t *engine_buffer_0[ENGINE_STACK_DEPTH] = {0};
-static array_list_t engine_list_0;
-
-static flow_step_t *engine_buffer_1[ENGINE_STACK_DEPTH] = {0};
-static array_list_t engine_list_1;
-
-static engine_ctx_t engine_ctx[ENGINE_NUM_BUFFERS] = {
-    {&engine_buffer_0[0], &engine_list_0},
-    {&engine_buffer_1[0], &engine_list_1}};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -118,41 +103,45 @@ static engine_ctx_t engine_ctx[ENGINE_NUM_BUFFERS] = {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-void engine_initialize(void) {
-  /* Initialize all queues support by the engine */
-  for (uint8_t indx = 0; indx < ENGINE_NUM_BUFFERS; indx++) {
-    (void)engine_reset_flow(indx);
-  }
-}
-
-bool engine_reset_flow(uint8_t engine_buffer) {
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+static bool engine_check_ctx(engine_ctx_t *ctx) {
+  if ((NULL == ctx) || (NULL == ctx->array_list_config) ||
+      (NULL == ctx->array_list_config->array)) {
     return false;
   }
-
-  /* Zero-ise the content of the queue and the queue struct */
-  memzero(engine_ctx[engine_buffer].buffer,
-          ENGINE_STACK_DEPTH * (sizeof(flow_step_t *)));
-  memzero(engine_ctx[engine_buffer].array_list_config, sizeof(array_list_t));
-
-  /* Initialize the array_list with the appropriate parameters */
-  array_list_initialize(engine_ctx[engine_buffer].array_list_config,
-                        engine_ctx[engine_buffer].buffer,
-                        sizeof(flow_step_t *),
-                        ENGINE_STACK_DEPTH * (sizeof(flow_step_t *)));
 
   return true;
 }
 
-bool engine_add_next_flow_step(uint8_t engine_buffer,
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+bool engine_reset_flow(engine_ctx_t *ctx) {
+  bool result = false;
+
+  if (false == engine_check_ctx(ctx)) {
+    return result;
+  }
+
+  size_t bytes_to_clear = ctx->array_list_config->max_capacity *
+                          (ctx->array_list_config->size_of_element);
+
+  memzero(ctx->array_list_config->array, bytes_to_clear);
+
+  result = true;
+  return result;
+}
+
+bool engine_add_next_flow_step(engine_ctx_t *ctx,
                                const flow_step_t *flow_step_ptr) {
   bool result = false;
 
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+  /* Ensure that flow_step_ptr is not NULL */
+  if ((false == engine_check_ctx(ctx)) || (NULL == flow_step_ptr)) {
+    return result;
+  }
+
+  /* Ensure that evt_cfg_ptr is not NULL */
+  if (NULL == flow_step_ptr->evt_cfg_ptr) {
     return result;
   }
 
@@ -160,59 +149,57 @@ bool engine_add_next_flow_step(uint8_t engine_buffer,
    * and NOT the actual content, therefore we need to pass the double pointer to
    * the API */
   const flow_step_t **flow_step_dptr = &flow_step_ptr;
-  result = array_list_insert(engine_ctx[engine_buffer].array_list_config,
-                             flow_step_dptr);
+  result = array_list_insert(ctx->array_list_config, flow_step_dptr);
   return result;
 }
 
-bool engine_goto_next_flow_step(uint8_t engine_buffer) {
+bool engine_goto_next_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+  if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_iterate_next(engine_ctx[engine_buffer].array_list_config);
+  result = array_list_iterate_next(ctx->array_list_config);
   return result;
 }
 
-bool engine_goto_prev_flow_step(uint8_t engine_buffer) {
+bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+  if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_iterate_back(engine_ctx[engine_buffer].array_list_config);
+  result = array_list_iterate_back(ctx->array_list_config);
   return result;
 }
 
-bool engine_get_current_flow_step(uint8_t engine_buffer,
+bool engine_get_current_flow_step(engine_ctx_t *ctx,
                                   flow_step_t **flow_step_dptr) {
   bool result = false;
 
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+  if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_get_element(engine_ctx[engine_buffer].array_list_config,
-                                  flow_step_dptr);
+  result = array_list_get_element(ctx->array_list_config, flow_step_dptr);
   return result;
 }
 
-bool engine_delete_current_flow_step(uint8_t engine_buffer) {
+bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+  if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_delete_entry(engine_ctx[engine_buffer].array_list_config);
+  result = array_list_delete_entry(ctx->array_list_config);
   return result;
 }
 
-void engine_run(uint8_t engine_buffer) {
-  if (ENGINE_NUM_BUFFERS <= engine_buffer) {
+void engine_run(engine_ctx_t *ctx) {
+  if (false == engine_check_ctx(ctx)) {
     return;
   }
 
@@ -220,20 +207,20 @@ void engine_run(uint8_t engine_buffer) {
     flow_step_t *current_flow = NULL;
 
     /* Break if the stack or queue reached an empty state */
-    if ((false == engine_get_current_flow_step(engine_buffer, &current_flow)) ||
+    if ((false == engine_get_current_flow_step(ctx, &current_flow)) ||
         (NULL == current_flow)) {
       break;
     }
 
+    /* It is ensured that evt_cfg_ptr is NOT NULL in function
+     * engine_add_next_flow_step() */
     const evt_config_t *evt_config_ptr = current_flow->evt_cfg_ptr;
-    /* We must ensure that the `evt_config_ptr` is not NULL */
-    ASSERT(NULL != evt_config_ptr);
 
     const void *flow_data_ptr = current_flow->flow_data_ptr;
 
     /* If code flow reaches this point, it means that the UX flow is still not
      * complete. */
-    ENGINE_RUN_INITIALIZE_CB(current_flow->step_init_cb, flow_data_ptr);
+    ENGINE_RUN_INITIALIZE_CB(current_flow->step_init_cb, ctx, flow_data_ptr);
 
     evt_status_t evt_status = {0};
     evt_config_t evt_config = *evt_config_ptr;
@@ -246,16 +233,16 @@ void engine_run(uint8_t engine_buffer) {
      * a callback for that event. */
     if (true == evt_status.p0_event.flag) {
       ENGINE_RUN_EVENT_CB(
-          current_flow->p0_cb, flow_data_ptr, evt_status.p0_event);
+          current_flow->p0_cb, ctx, flow_data_ptr, evt_status.p0_event);
     } else if (true == evt_status.ui_event.event_occured) {
       ENGINE_RUN_EVENT_CB(
-          current_flow->ui_cb, flow_data_ptr, evt_status.ui_event);
+          current_flow->ui_cb, ctx, flow_data_ptr, evt_status.ui_event);
     } else if (true == evt_status.usb_event.flag) {
       ENGINE_RUN_EVENT_CB(
-          current_flow->usb_cb, flow_data_ptr, evt_status.usb_event);
+          current_flow->usb_cb, ctx, flow_data_ptr, evt_status.usb_event);
     } else if (true == evt_status.nfc_event.event_occured) {
       ENGINE_RUN_EVENT_CB(
-          current_flow->nfc_cb, flow_data_ptr, evt_status.nfc_event);
+          current_flow->nfc_cb, ctx, flow_data_ptr, evt_status.nfc_event);
     } else {
       /* This case should never arise */
     }

@@ -17,26 +17,28 @@
  * INCLUDES
  *****************************************************************************/
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
+#include "array_list_type.h"
 #include "events.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define ENGINE_STACK_DEPTH 10
-
-#define ENGINE_BUFFER_0 0
-#define ENGINE_BUFFER_1 1
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef void (*step_init_cb_t)(const void *);
-typedef void (*flow_p0_evt_cb_t)(p0_evt_t, const void *);
-typedef void (*step_ui_evt_cb_t)(ui_event_t, const void *);
-typedef void (*step_usb_evt_cb_t)(usb_event_t, const void *);
-typedef void (*step_nfc_evt_cb_t)(nfc_event_t, const void *);
+typedef struct {
+  array_list_t *array_list_config;
+} engine_ctx_t;
+
+typedef void (*step_init_cb_t)(engine_ctx_t *, const void *);
+typedef void (*flow_p0_evt_cb_t)(engine_ctx_t *, p0_evt_t, const void *);
+typedef void (*step_ui_evt_cb_t)(engine_ctx_t *, ui_event_t, const void *);
+typedef void (*step_usb_evt_cb_t)(engine_ctx_t *, usb_event_t, const void *);
+typedef void (*step_nfc_evt_cb_t)(engine_ctx_t *, nfc_event_t, const void *);
 
 /**
  * @brief This structure needs to be filled for each step for a flow.
@@ -73,24 +75,17 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This function initializes ALL the buffers implemented and maintained
- * by the engine. Therefore, this API must only be called if the complete engine
- * needs to be initialized or reset due to some requirement.
- */
-void engine_initialize(void);
-
-/**
  * @brief This function initializes only a specific buffer out of all the
  * buffers implemented and maintained by the engine. This API can be useful
  * where-in a flow is using multiple buffer to maintain the flow.
  *
- * @param engine_buffer The ID of the buffer to be reset: (ENGINE_BUFFER_0,
- * ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @return true If the buffer is successfully reset
  * @return false If the ID of the queue passed as the parameter is incorrect or
  * represents an unimplemented buffer
  */
-bool engine_reset_flow(uint8_t engine_buffer);
+bool engine_reset_flow(engine_ctx_t *ctx);
 
 /**
  * @brief This function inserts a pointer to the flow_step_t for a particular
@@ -101,8 +96,8 @@ bool engine_reset_flow(uint8_t engine_buffer);
  * This API can be used to insert a step in the flow. However, note that this
  * inserts the element in the end of the buffer.
  *
- * @param engine_buffer The ID of the buffer to be modified: (ENGINE_BUFFER_0,
- * ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @param flow_step_ptr Pointer to the step data which needs to be added in the
  * particular flow. It must be kept in mind that the pointer is being inserted
  * and not the data held by the pointer. Therefore, the flow must ensure that
@@ -113,7 +108,7 @@ bool engine_reset_flow(uint8_t engine_buffer);
  * to incorrect paramters: like incorrect ID passed on as engine_buffer
  * parameter, or because the buffer is FULL!
  */
-bool engine_add_next_flow_step(uint8_t engine_buffer,
+bool engine_add_next_flow_step(engine_ctx_t *ctx,
                                const flow_step_t *flow_step_ptr);
 
 /**
@@ -123,14 +118,14 @@ bool engine_add_next_flow_step(uint8_t engine_buffer,
  * is that the current step will not be deleted and user may choose to return to
  * this step at a later point.
  *
- * @param engine_buffer The ID of the buffer whose index needs to be
- * incremented: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @return true If the index is incremented
  * @return false If the index could not be incremented: It could be due to
  * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
  * the flow has already reached the end.
  */
-bool engine_goto_next_flow_step(uint8_t engine_buffer);
+bool engine_goto_next_flow_step(engine_ctx_t *ctx);
 
 /**
  * @brief This function can be used to decrement the index of the current engine
@@ -140,50 +135,50 @@ bool engine_goto_next_flow_step(uint8_t engine_buffer);
  * is that the current step will not be deleted and user may choose to return to
  * this step at a later point.
 
- * @param engine_buffer The ID of the buffer whose index needs to be
- * decremented: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @return true If the index is decremented
  * @return false If the index could not be decremented: It could be due to
  * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
  * the flow has already reached the starting point.
  */
-bool engine_goto_prev_flow_step(uint8_t engine_buffer);
+bool engine_goto_prev_flow_step(engine_ctx_t *ctx);
 
 /**
  * @brief This function returns the a reference an element of type flow_step_t*,
  * from the selected queue which represents the current step of a flow.
  * This API can be used to get the current step of a flow in progress.
  *
- * @param engine_buffer The ID of the buffer whose data needs to be read:
- * (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @param flow_step_dptr A double pointer which will be filled with the element
  * of type flow_step_t*, which can be dereferenced by the caller.
  * @return true If the element was returned successfully
  * @return false If the element was not returned: It could be due to incorrect
  * parameters, or because the buffer is EMPTY.
  */
-bool engine_get_current_flow_step(uint8_t engine_buffer,
+bool engine_get_current_flow_step(engine_ctx_t *ctx,
                                   flow_step_t **flow_step_dptr);
 
 /**
  * @brief This function deletes the current step held in the buffer, and
  * internally moves to the previous step in the flow.
  *
- * @param engine_buffer The ID of the buffer whose data needs to be modified:
- * (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  * @return true If the element was deleted successfully
  * @return false If the element was not deleted: It could be due to incorrect
  * parameters, or because the buffer is EMPTY.
  */
-bool engine_delete_current_flow_step(uint8_t engine_buffer);
+bool engine_delete_current_flow_step(engine_ctx_t *ctx);
 
 /**
  * @brief This API runs the flow represented by a queue until that particular
  * queue is empty.
  *
- * @param engine_buffer The ID of the buffer for which the flow execution is
- * required to run: (ENGINE_BUFFER_0, ENGINE_BUFFER_1,....)
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
  */
-void engine_run(uint8_t engine_buffer);
+void engine_run(engine_ctx_t *ctx);
 
 #endif /* FLOW_ENGINE_H */

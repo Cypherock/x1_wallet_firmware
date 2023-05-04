@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "array_list_type.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -27,19 +29,6 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  void *array; /** <Pointer to start of array buffer */
-  size_t
-      size_of_element;  /** <Size of one record held by the array list, this
-                           field is added to make the implementation generic */
-  uint8_t max_capacity; /** <This is an internal field, which stores the count
-                           of maximum elements which can be stored in the array
-                           buffer */
-  uint8_t num_of_elements; /**<This field counts the number of elements
-                              currently in the array */
-  uint8_t
-      current_index; /**<This field stores the current index of the array list*/
-} array_list_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -48,25 +37,6 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Initialize the array list and it's fields based on input parameters.
- *
- * @param list Pointer to the array list instance
- * @param array_buffer Pointer to the static buffer which needs to be maintained
- * by the array list
- * @param size_of_element Size of each element in bytes which will be stored in
- * the array. This field can NOT be 0 bytes.
- * @param capacity Capacity in bytes of the array buffer, which will be used to
- * calculate the maximum number of elements which can be stored
- * @return true If the initialization was successful
- * @return false If the initialization in not successful, in case of bad
- * arguments.
- */
-bool array_list_initialize(array_list_t *const list,
-                           void *array_buffer,
-                           size_t size_of_element,
-                           size_t capacity);
-
 /**
  * @brief This API inserts element of size size_of_element pointed by the
  * element pointer into the static buffer maintained by the corresponding array

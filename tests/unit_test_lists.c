@@ -128,9 +128,5 @@ TEST_GROUP_RUNNER(array_lists_tests) {
   RUN_TEST_CASE(array_list_tests, delete_element_when_list_empty);
 }
 TEST_GROUP_RUNNER(flow_engine_tests) {
-  RUN_TEST_CASE(flow_engine_tests, queue_empty_operations);
-  RUN_TEST_CASE(flow_engine_tests, flows_across_diff_buffers);
-  RUN_TEST_CASE(flow_engine_tests, async_init_one_buffer);
-  RUN_TEST_CASE(flow_engine_tests, flow_push_beyond_buffer_depth);
-  RUN_TEST_CASE(flow_engine_tests, engine_test_lifo);
+  RUN_TEST_CASE(flow_engine_tests, engine_use_case_test);
 }

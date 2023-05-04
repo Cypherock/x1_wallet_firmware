@@ -108,8 +108,12 @@ static void initialize_array_with_data(void) {
 TEST_GROUP(array_list_tests);
 
 TEST_SETUP(array_list_tests) {
-  (void)array_list_initialize(
-      &array_list, &array_buffer[0], sizeof(uintptr_t), sizeof(array_buffer));
+  array_list.array = &array_buffer[0];
+  array_list.current_index = 0;
+  array_list.num_of_elements = 0;
+  array_list.max_capacity = sizeof(array_buffer) / sizeof(array_buffer[0]);
+  array_list.size_of_element = sizeof(array_buffer[0]);
+  memset(&array_buffer[0], 0, sizeof(array_buffer));
 }
 
 TEST_TEAR_DOWN(array_list_tests) {

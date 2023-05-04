@@ -126,27 +126,6 @@ static bool is_empty(array_list_t *list) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool array_list_initialize(array_list_t *const list,
-                           void *array_buffer,
-                           size_t size_of_element,
-                           size_t capacity) {
-  /* Must ensure that the array_buffer is not NULL and the size_of_element is
-   * non-zero */
-  if ((NULL == list) || (NULL == array_buffer) || (0 == size_of_element)) {
-    return false;
-  }
-
-  memset(list, 0, sizeof(array_list_t));
-
-  list->array = array_buffer;
-  list->size_of_element = size_of_element;
-  list->current_index = 0;
-  list->num_of_elements = 0;
-  list->max_capacity = capacity / (list->size_of_element);
-
-  return;
-}
-
 bool array_list_insert(array_list_t *list, void *const element) {
   if ((NULL == list) || (NULL == element)) {
     return false;
