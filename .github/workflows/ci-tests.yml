@@ -44,6 +44,7 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
+        # Check event type here so ci chaching can take effect
         if [ ${{ github.event_name }} = 'pull_request' ]; then
           bash ./utilities/ci/format-checker.sh ${SHA_BASE}
         fi
@@ -71,6 +72,7 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
+        # Check event type here so ci chaching can take effect
         if [ ${{ github.event_name }} = 'pull_request' ]; then
           bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
         fi
