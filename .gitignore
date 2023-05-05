@@ -14,3 +14,5 @@ cmake-build-*
 html
 .DS_Store
 private_key*.?
+*.pb.*
+generated

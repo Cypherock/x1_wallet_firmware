@@ -1,3 +1,9 @@
 [submodule "stm32-hal"]
 	path = stm32-hal
 	url = ../x1_wallet_hal_stm32
+[submodule "cypherock-common"]
+	path = common/cypherock-common
+	url = ../cypherock-common
+[submodule "nanopb"]
+	path = vendor/nanopb
+	url = ../nanopb

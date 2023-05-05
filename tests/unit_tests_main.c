@@ -88,6 +88,9 @@ void RunAllTests(void) {
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
   RUN_TEST_GROUP(nfc_events_manual_test);
 #endif
+  RUN_TEST_GROUP(xpub);
+  RUN_TEST_GROUP(array_lists_tests);
+  RUN_TEST_GROUP(flow_engine_tests);
 }
 
 /**
