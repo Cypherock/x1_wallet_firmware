@@ -107,7 +107,7 @@
  * @return true If the input is valid
  * @return false If the input is not valid
  */
-static bool engine_check_ctx(engine_ctx_t *ctx);
+static bool engine_check_ctx(const engine_ctx_t *ctx);
 
 /**
  * @brief This function returns the a reference an element of type flow_step_t*,
@@ -122,13 +122,13 @@ static bool engine_check_ctx(engine_ctx_t *ctx);
  * @return false If the element was not returned: It could be due to incorrect
  * parameters, or because the buffer is EMPTY.
  */
-static bool engine_get_current_flow_step(engine_ctx_t *ctx,
+static bool engine_get_current_flow_step(const engine_ctx_t *ctx,
                                          flow_step_t **flow_step_dptr);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static bool engine_check_ctx(engine_ctx_t *ctx) {
+static bool engine_check_ctx(const engine_ctx_t *ctx) {
   if ((NULL == ctx) || (NULL == ctx->array_list_config) ||
       (NULL == ctx->array_list_config->array)) {
     return false;
@@ -137,7 +137,7 @@ static bool engine_check_ctx(engine_ctx_t *ctx) {
   return true;
 }
 
-static bool engine_get_current_flow_step(engine_ctx_t *ctx,
+static bool engine_get_current_flow_step(const engine_ctx_t *ctx,
                                          flow_step_t **flow_step_dptr) {
   bool result = false;
 
@@ -152,7 +152,7 @@ static bool engine_get_current_flow_step(engine_ctx_t *ctx,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool engine_reset_flow(engine_ctx_t *ctx) {
+bool engine_reset_flow(const engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
@@ -168,7 +168,7 @@ bool engine_reset_flow(engine_ctx_t *ctx) {
   return result;
 }
 
-bool engine_add_next_flow_step(engine_ctx_t *ctx,
+bool engine_add_next_flow_step(const engine_ctx_t *ctx,
                                const flow_step_t *flow_step_ptr) {
   bool result = false;
 
@@ -190,7 +190,7 @@ bool engine_add_next_flow_step(engine_ctx_t *ctx,
   return result;
 }
 
-bool engine_goto_next_flow_step(engine_ctx_t *ctx) {
+bool engine_goto_next_flow_step(const engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
@@ -201,7 +201,7 @@ bool engine_goto_next_flow_step(engine_ctx_t *ctx) {
   return result;
 }
 
-bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
+bool engine_goto_prev_flow_step(const engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
@@ -212,7 +212,7 @@ bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
   return result;
 }
 
-bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
+bool engine_delete_current_flow_step(const engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
@@ -223,7 +223,7 @@ bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
   return result;
 }
 
-void engine_run(engine_ctx_t *ctx) {
+void engine_run(const engine_ctx_t *ctx) {
   if (false == engine_check_ctx(ctx)) {
     return;
   }

@@ -34,11 +34,21 @@ typedef struct {
   array_list_t *array_list_config;
 } engine_ctx_t;
 
-typedef void (*step_init_cb_t)(engine_ctx_t *, const void *);
-typedef void (*flow_p0_evt_cb_t)(engine_ctx_t *, p0_evt_t, const void *);
-typedef void (*step_ui_evt_cb_t)(engine_ctx_t *, ui_event_t, const void *);
-typedef void (*step_usb_evt_cb_t)(engine_ctx_t *, usb_event_t, const void *);
-typedef void (*step_nfc_evt_cb_t)(engine_ctx_t *, nfc_event_t, const void *);
+typedef void (*step_init_cb_t)(const engine_ctx_t *, const void *);
+
+typedef void (*flow_p0_evt_cb_t)(const engine_ctx_t *, p0_evt_t, const void *);
+
+typedef void (*step_ui_evt_cb_t)(const engine_ctx_t *,
+                                 ui_event_t,
+                                 const void *);
+
+typedef void (*step_usb_evt_cb_t)(const engine_ctx_t *,
+                                  usb_event_t,
+                                  const void *);
+
+typedef void (*step_nfc_evt_cb_t)(const engine_ctx_t *,
+                                  nfc_event_t,
+                                  const void *);
 
 /**
  * @brief This structure needs to be filled for each step for a flow.
@@ -85,7 +95,7 @@ typedef struct {
  * @return false If the ID of the queue passed as the parameter is incorrect or
  * represents an unimplemented buffer
  */
-bool engine_reset_flow(engine_ctx_t *ctx);
+bool engine_reset_flow(const engine_ctx_t *ctx);
 
 /**
  * @brief This function inserts a pointer to the flow_step_t for a particular
@@ -108,7 +118,7 @@ bool engine_reset_flow(engine_ctx_t *ctx);
  * to incorrect paramters: like incorrect ID passed on as engine_buffer
  * parameter, or because the buffer is FULL!
  */
-bool engine_add_next_flow_step(engine_ctx_t *ctx,
+bool engine_add_next_flow_step(const engine_ctx_t *ctx,
                                const flow_step_t *flow_step_ptr);
 
 /**
@@ -125,7 +135,7 @@ bool engine_add_next_flow_step(engine_ctx_t *ctx,
  * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
  * the flow has already reached the end.
  */
-bool engine_goto_next_flow_step(engine_ctx_t *ctx);
+bool engine_goto_next_flow_step(const engine_ctx_t *ctx);
 
 /**
  * @brief This function can be used to decrement the index of the current engine
@@ -142,7 +152,7 @@ bool engine_goto_next_flow_step(engine_ctx_t *ctx);
  * incorrect parameters: like incorrect ID passed on a engine_buffer, or because
  * the flow has already reached the starting point.
  */
-bool engine_goto_prev_flow_step(engine_ctx_t *ctx);
+bool engine_goto_prev_flow_step(const engine_ctx_t *ctx);
 
 /**
  * @brief This function deletes the current step held in the buffer, and
@@ -154,7 +164,7 @@ bool engine_goto_prev_flow_step(engine_ctx_t *ctx);
  * @return false If the element was not deleted: It could be due to incorrect
  * parameters, or because the buffer is EMPTY.
  */
-bool engine_delete_current_flow_step(engine_ctx_t *ctx);
+bool engine_delete_current_flow_step(const engine_ctx_t *ctx);
 
 /**
  * @brief This API runs the flow represented by a queue until that particular
@@ -163,6 +173,6 @@ bool engine_delete_current_flow_step(engine_ctx_t *ctx);
  * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
  * for the buffer
  */
-void engine_run(engine_ctx_t *ctx);
+void engine_run(const engine_ctx_t *ctx);
 
 #endif /* FLOW_ENGINE_H */

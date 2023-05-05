@@ -24,6 +24,16 @@
    get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
 
 /**
+ * @brief
+ *
+ * @param index
+ * @param state_output
+ * @return true
+ * @return false
+ */
+bool wallet_is_filled(uint8_t index, wallet_state *state_output);
+
+/**
  * Update auth state and first_boot_on_update variables in firewall
  */
 int set_auth_state(device_auth_state);

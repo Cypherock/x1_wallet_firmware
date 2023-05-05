@@ -127,14 +127,14 @@ static void usb_construct_event(void) {
   usb_set_event(89, data, length >> 1);
 }
 
-static void init_callback(engine_ctx_t *ctx, const void *data_ptr) {
+static void init_callback(const engine_ctx_t *ctx, const void *data_ptr) {
   callback_test.p0_event = false;
   callback_test.ui_event = false;
   callback_test.usb_event = false;
   return;
 }
 
-static void p0_callback(engine_ctx_t *ctx,
+static void p0_callback(const engine_ctx_t *ctx,
                         p0_evt_t event,
                         const void *data_ptr) {
   callback_test.p0_event = true;
@@ -146,7 +146,7 @@ static void p0_callback(engine_ctx_t *ctx,
   return;
 }
 
-static void ui_callback(engine_ctx_t *ctx,
+static void ui_callback(const engine_ctx_t *ctx,
                         ui_event_t event,
                         const void *data_ptr) {
   callback_test.ui_event = true;
@@ -158,7 +158,7 @@ static void ui_callback(engine_ctx_t *ctx,
   return;
 }
 
-static void usb_callback(engine_ctx_t *ctx,
+static void usb_callback(const engine_ctx_t *ctx,
                          usb_event_t event,
                          const void *data_ptr) {
   callback_test.usb_event = true;

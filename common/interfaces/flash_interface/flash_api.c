@@ -94,6 +94,26 @@ static bool _wallet_is_filled(uint8_t index) {
   return false;
 }
 
+bool wallet_is_filled(uint8_t index, wallet_state *state_output) {
+  if (MAX_WALLETS_ALLOWED < index) {
+    return false;
+  }
+
+  wallet_state state = flash_ram_instance.wallets[index].state;
+
+  if (NULL != state_output) {
+    *state_output = state;
+  }
+
+  if ((UNVERIFIED_VALID_WALLET == state) || (VALID_WALLET == state) ||
+      (INVALID_WALLET == state) ||
+      (VALID_WALLET_WITHOUT_DEVICE_SHARE == state)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * @brief Save a new wallet on the flash
  *

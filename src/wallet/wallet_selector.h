@@ -1,64 +1,27 @@
 /**
- * @file    events.h
+ * @file    wallet_selector.h
  * @author  Cypherock X1 Team
  * @brief
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-
-#ifndef EVENTS_H
-#define EVENTS_H
+#ifndef WALLET_SELECTOR_H
+#define WALLET_SELECTOR_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <inttypes.h>
 #include <stdbool.h>
-#include <stdint.h>
-
-#include "board.h"
-#include "lvgl.h"
-#include "nfc_events.h"
-#include "p0_events.h"
-#include "ui_events.h"
-#include "usb_api.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define EVT_CONFIG_UI_EVT (1 << 0)
-#define EVT_CONFIG_USB_EVT (1 << 1)
-#define EVT_CONGIG_NFC_EVT (1 << 2)
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef union {
-  struct {
-    uint8_t ui_events : 1;
-    uint8_t usb_events : 1;
-    uint8_t nfc_events : 1;
-    uint8_t rfu1 : 1;
-    uint8_t rfu2 : 1;
-    uint8_t rfu3 : 1;
-    uint8_t rfu4 : 1;
-    uint8_t rfu5 : 1;
-  } bits;
-  uint8_t byte;
-} evt_select_t;
-
-typedef struct {
-  evt_select_t evt_selection;
-  bool abort_disabled;
-  uint32_t timeout;
-} evt_config_t;
-
-typedef struct {
-  p0_evt_t p0_event;
-  ui_event_t ui_event;
-  usb_event_t usb_event;
-  nfc_event_t nfc_event;
-} evt_status_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -67,13 +30,64 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief
+ *
+ * @param index
+ * @return true
+ * @return false
+ */
+bool select_wallet_with_index(uint8_t index);
 
 /**
- * @brief Get the events object
+ * @brief
  *
- * @param evt_config
- * @param p_evt_status
+ * @return const char*
  */
-void get_events(evt_config_t evt_config, evt_status_t *p_evt_status);
+const char *selected_wallet_get_name(void);
 
-#endif /* EVENTS_H */
+/**
+ * @brief
+ *
+ * @return const uint8_t*
+ */
+const uint8_t *selected_wallet_get_wallet_id(void);
+
+/**
+ * @brief
+ *
+ * @return const uint8_t
+ */
+const uint8_t selected_wallet_get_state(void);
+
+/**
+ * @brief
+ *
+ * @return const uint8_t
+ */
+const uint8_t selected_wallet_is_locked(void);
+
+/**
+ * @brief
+ *
+ * @return const uint8_t
+ */
+const uint8_t selected_wallet_is_partial(void);
+
+/**
+ * @brief
+ *
+ * @return true
+ * @return false
+ */
+bool selected_wallet_has_pin(void);
+
+/**
+ * @brief
+ *
+ * @return true
+ * @return false
+ */
+bool selected_wallet_has_passphrase(void);
+
+#endif /* WALLET_SELECTOR_H */
