@@ -215,8 +215,6 @@ typedef struct comm_status {
   // Host sync status (not to be sent to host)
   uint32_t host_sync_time;
   uint8_t host_sync_fails;
-
-  comm_libusb__interface_e active_interface;
 } comm_status_t;
 
 typedef enum comm_error_code {
@@ -529,10 +527,6 @@ static void comm_packet_parser(const uint8_t *data,
 #endif
 
   if (rx_packet.interface == COMM_LIBUSB__UNDEFINED) {
-    // if(interface != comm_status.active_interface){
-    //   LOG_CRITICAL("USB Conflict 1, iface present:%d, iface new:%d",
-    //   rx_packet.interface, interface); return;
-    // }
     rx_packet.interface = interface;
   } else if (interface != rx_packet.interface) {
     LOG_CRITICAL("USB Conflict 2, iface present:%d, iface new:%d",
