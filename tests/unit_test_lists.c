@@ -116,3 +116,17 @@ TEST_GROUP_RUNNER(nfc_events_manual_test) {
   RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
 }
 #endif
+
+TEST_GROUP_RUNNER(array_lists_tests) {
+  RUN_TEST_CASE(array_list_tests, insert_multiple);
+  RUN_TEST_CASE(array_list_tests, insert_in_full_array);
+  RUN_TEST_CASE(array_list_tests, insert_NULL);
+  RUN_TEST_CASE(array_list_tests, delete_single_element);
+  RUN_TEST_CASE(array_list_tests, delete_first_element);
+  RUN_TEST_CASE(array_list_tests, delete_last_element);
+  RUN_TEST_CASE(array_list_tests, delete_middle_element);
+  RUN_TEST_CASE(array_list_tests, delete_element_when_list_empty);
+}
+TEST_GROUP_RUNNER(flow_engine_tests) {
+  RUN_TEST_CASE(flow_engine_tests, engine_use_case_test);
+}
