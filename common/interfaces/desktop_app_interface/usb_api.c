@@ -528,11 +528,6 @@ static void comm_packet_parser(const uint8_t *data,
 
   if (rx_packet.interface == COMM_LIBUSB__UNDEFINED) {
     rx_packet.interface = interface;
-  } else if (interface != rx_packet.interface) {
-    LOG_CRITICAL("USB Conflict 2, iface present:%d, iface new:%d",
-                 rx_packet.interface,
-                 interface);
-    return;
   }
 
   for (int i = 0; i < length; i++) {
