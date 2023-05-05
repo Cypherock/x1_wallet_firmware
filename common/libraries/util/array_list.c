@@ -87,20 +87,22 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief
+ * @brief This function checks if the array_list maintained by the pointer is
+ * full or not
  *
- * @param list
- * @return true
- * @return false
+ * @param list Pointer to the list currently in use
+ * @return true If the array_list is full
+ * @return false If the array_list is NOT full
  */
 static bool is_full(array_list_t *list);
 
 /**
- * @brief
+ * @brief This function checks if the array_list maintained by the pointer is
+ * empty or not
  *
- * @param list
- * @return true
- * @return false
+ * @param list Pointer to the list currently in use
+ * @return true If the array_list is empty
+ * @return false If the array_list is NOT empty
  */
 static bool is_empty(array_list_t *list);
 

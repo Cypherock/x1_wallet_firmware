@@ -145,22 +145,6 @@ bool engine_goto_next_flow_step(engine_ctx_t *ctx);
 bool engine_goto_prev_flow_step(engine_ctx_t *ctx);
 
 /**
- * @brief This function returns the a reference an element of type flow_step_t*,
- * from the selected queue which represents the current step of a flow.
- * This API can be used to get the current step of a flow in progress.
- *
- * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
- * for the buffer
- * @param flow_step_dptr A double pointer which will be filled with the element
- * of type flow_step_t*, which can be dereferenced by the caller.
- * @return true If the element was returned successfully
- * @return false If the element was not returned: It could be due to incorrect
- * parameters, or because the buffer is EMPTY.
- */
-bool engine_get_current_flow_step(engine_ctx_t *ctx,
-                                  flow_step_t **flow_step_dptr);
-
-/**
  * @brief This function deletes the current step held in the buffer, and
  * internally moves to the previous step in the flow.
  *

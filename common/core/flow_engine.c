@@ -99,6 +99,31 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This function validates the pointers inside the struct engine_ctx_t
+ * and returns true if the input is correct
+ *
+ * @param ctx Pointer to data of type engine_ctx_t
+ * @return true If the input is valid
+ * @return false If the input is not valid
+ */
+static bool engine_check_ctx(engine_ctx_t *ctx);
+
+/**
+ * @brief This function returns the a reference an element of type flow_step_t*,
+ * from the selected queue which represents the current step of a flow.
+ * This API can be used to get the current step of a flow in progress.
+ *
+ * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
+ * for the buffer
+ * @param flow_step_dptr A double pointer which will be filled with the element
+ * of type flow_step_t*, which can be dereferenced by the caller.
+ * @return true If the element was returned successfully
+ * @return false If the element was not returned: It could be due to incorrect
+ * parameters, or because the buffer is EMPTY.
+ */
+static bool engine_get_current_flow_step(engine_ctx_t *ctx,
+                                         flow_step_t **flow_step_dptr);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -110,6 +135,18 @@ static bool engine_check_ctx(engine_ctx_t *ctx) {
   }
 
   return true;
+}
+
+static bool engine_get_current_flow_step(engine_ctx_t *ctx,
+                                         flow_step_t **flow_step_dptr) {
+  bool result = false;
+
+  if (false == engine_check_ctx(ctx)) {
+    return result;
+  }
+
+  result = array_list_get_element(ctx->array_list_config, flow_step_dptr);
+  return result;
 }
 
 /*****************************************************************************
@@ -172,18 +209,6 @@ bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
   }
 
   result = array_list_iterate_back(ctx->array_list_config);
-  return result;
-}
-
-bool engine_get_current_flow_step(engine_ctx_t *ctx,
-                                  flow_step_t **flow_step_dptr) {
-  bool result = false;
-
-  if (false == engine_check_ctx(ctx)) {
-    return result;
-  }
-
-  result = array_list_get_element(ctx->array_list_config, flow_step_dptr);
   return result;
 }
 
