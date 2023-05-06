@@ -99,7 +99,7 @@
 #include "ui_logo.h"
 
 #ifdef RUN_ENGINE
-#include "flow_engine.h"
+#include "core_flow_init.h"
 #endif /* RUN_ENGINE */
 
 #if USE_SIMULATOR == 0
@@ -151,7 +151,7 @@ int main(void) {
 
 #ifdef RUN_ENGINE
   while (1) {
-    const engine_ctx_t *main_engine_ctx = bootup_get_ctx();
+    const engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);
   }
 #else /* RUN_ENGINE */
