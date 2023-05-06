@@ -72,6 +72,7 @@
 #include <unistd.h>
 
 #include "assert_conf.h"
+#include "sim_usb.h"
 #endif
 #include <stdbool.h>
 #include <stddef.h>
@@ -162,6 +163,7 @@ typedef struct comm_header {
 typedef struct packet {
   comm_header_t header;
   const uint8_t *payload;
+  comm_libusb__interface_e interface;
 } packet_t;
 
 /**
@@ -262,7 +264,9 @@ typedef enum comm_parser_states {
 } comm_parser_states;
 
 static void comm_process_packet(const packet_t *rx_packet);
-static void comm_packet_parser(const uint8_t *data, uint16_t length);
+static void comm_packet_parser(const uint8_t *data,
+                               uint16_t length,
+                               comm_libusb__interface_e interface);
 static uint16_t update_crc16(uint16_t crc_in, uint8_t byte);
 static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet);
 static comm_error_code_t comm_process_status_packet(const packet_t *rx_packet);
@@ -270,7 +274,7 @@ static comm_error_code_t comm_process_out_req_packet(const packet_t *rx_packet);
 static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet);
 static void send_error_packet(const packet_t *rx_packet,
                               comm_error_code_t error_code);
-static void send_status_packet();
+static void send_status_packet(const packet_t *rx_packet);
 static void send_cmd_ack_packet(const packet_t *rx_packet);
 static void send_cmd_output_packet(const packet_t *rx_packet);
 static void comm_write_packet(uint16_t chunk_number,
@@ -278,7 +282,8 @@ static void comm_write_packet(uint16_t chunk_number,
                               uint16_t seq_no,
                               uint8_t packet_type,
                               uint8_t payload_size,
-                              const uint8_t *payload);
+                              const uint8_t *payload,
+                              comm_libusb__interface_e interface);
 
 static uint8_t comm_io_buffer[COMM_BUFFER_SIZE] = {0};
 static comm_payload_t comm_payload;    // received/ready-to-send cmd can be
@@ -502,10 +507,13 @@ bool get_usb_msg_by_cmd_type(En_command_type_t command_type,
  * @brief Send a packet to the host
  * @details This function aggregates a received packet from the host.
  *
- * @param data
- * @param length
+ * @param data data received from host
+ * @param length length of data received from host
+ * @param interface interface over which host has sent the data
  */
-static void comm_packet_parser(const uint8_t *data, const uint16_t length) {
+static void comm_packet_parser(const uint8_t *data,
+                               const uint16_t length,
+                               comm_libusb__interface_e interface) {
   static comm_parser_states state = WAIT4_SOH1;
   static packet_t rx_packet = {0};
   static uint8_t payload_size = 0;
@@ -515,8 +523,12 @@ static void comm_packet_parser(const uint8_t *data, const uint16_t length) {
 #if USE_SIMULATOR == 1
     return SIM_Transmit_FS(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET));
 #else
-    return lusb_write(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET));
+    return lusb_write(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET), interface);
 #endif
+
+  if (rx_packet.interface == COMM_LIBUSB__UNDEFINED) {
+    rx_packet.interface = interface;
+  }
 
   for (int i = 0; i < length; i++) {
     uint8_t byte = data[i];
@@ -615,8 +627,10 @@ static void comm_packet_parser(const uint8_t *data, const uint16_t length) {
       packet_crc &= 0xFFFF;
       if (packet_crc == rx_packet.header.checksum) {
         comm_process_packet(&rx_packet);
+        memzero(&rx_packet, sizeof(rx_packet));
       } else {
         send_error_packet(&rx_packet, CHECKSUM_ERROR);
+        memzero(&rx_packet, sizeof(rx_packet));
       }
       state = WAIT4_SOH1;
     }
@@ -624,6 +638,7 @@ static void comm_packet_parser(const uint8_t *data, const uint16_t length) {
   if (state != WAIT4_SOH1) {
     state = WAIT4_SOH1;
     send_error_packet(&rx_packet, INCOMPLETE_PACKET);
+    memzero(&rx_packet, sizeof(rx_packet));
   }
 }
 
@@ -728,7 +743,7 @@ static comm_error_code_t comm_process_status_packet(const packet_t *rx_packet) {
   if (rx_packet->header.sequence_no != 0xFFFF)
     return INVALID_SEQUENCE_NO;
 
-  send_status_packet();
+  send_status_packet(rx_packet);
   return NO_ERROR;
 }
 
@@ -818,7 +833,7 @@ static comm_error_code_t comm_process_out_req_packet(
     return INVALID_PAYLOAD_LENGTH;
   if (comm_status.curr_cmd_state != CMD_STATE_DONE &&
       comm_status.curr_cmd_state != CMD_STATE_FAILED) {
-    send_status_packet();
+    send_status_packet(rx_packet);
     return NO_ERROR;
   }
   if ((U16_READ_BE_ARRAY(rx_packet->payload + 4) - 1) * COMM_MAX_PAYLOAD_SIZE >
@@ -844,7 +859,7 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
     sys_flow_cntrl_u.bits.usb_buffer_free = true;
   }
 
-  send_status_packet();
+  send_status_packet(rx_packet);
   return NO_ERROR;
 }
 
@@ -855,7 +870,7 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
  * mechanism over the USB protocol to help the host identify the precise state
  * of the application so that correct actions can be taken.
  */
-static void send_status_packet() {
+static void send_status_packet(const packet_t *rx_packet) {
   uint8_t payload[COMM_MAX_PAYLOAD_SIZE], offset = 0;
   payload[offset++] = 0x00;
   payload[offset++] = 0x00;    // proto length
@@ -873,7 +888,8 @@ static void send_status_packet() {
   payload[2] = ((offset - 4) >> 8) & 0xFF;
   payload[3] = (offset - 4) & 0xFF;    // raw length
   ASSERT(offset <= COMM_MAX_PAYLOAD_SIZE);
-  comm_write_packet(1, 1, 0xFFFF, PKT_TYPE_STATUS_ACK, offset, payload);
+  comm_write_packet(
+      1, 1, 0xFFFF, PKT_TYPE_STATUS_ACK, offset, payload, rx_packet->interface);
 }
 
 static void send_error_packet(const packet_t *rx_packet,
@@ -886,7 +902,8 @@ static void send_error_packet(const packet_t *rx_packet,
   payload[offset++] = 0x02;    // raw length
   payload[offset++] = (error_code >> 8) & 0xFF;
   payload[offset++] = error_code & 0xFF;
-  comm_write_packet(1, 1, 0xFFFF, PKT_TYPE_ERROR, offset, payload);
+  comm_write_packet(
+      1, 1, 0xFFFF, PKT_TYPE_ERROR, offset, payload, rx_packet->interface);
 }
 
 static void send_cmd_ack_packet(const packet_t *rx_packet) {
@@ -897,8 +914,13 @@ static void send_cmd_ack_packet(const packet_t *rx_packet) {
   payload[offset++] = 0x02;    // raw length
   payload[offset++] = (comm_status.curr_cmd_chunk_no >> 8) & 0xFF;
   payload[offset++] = comm_status.curr_cmd_chunk_no & 0xFF;
-  comm_write_packet(
-      1, 1, rx_packet->header.sequence_no, PKT_TYPE_CMD_ACK, offset, payload);
+  comm_write_packet(1,
+                    1,
+                    rx_packet->header.sequence_no,
+                    PKT_TYPE_CMD_ACK,
+                    offset,
+                    payload,
+                    rx_packet->interface);
 }
 
 static void send_cmd_output_packet(const packet_t *rx_packet) {
@@ -917,7 +939,8 @@ static void send_cmd_output_packet(const packet_t *rx_packet) {
       rx_packet->header.sequence_no,
       PKT_TYPE_OUT_RESP,
       payload_size,
-      comm_io_buffer + offset);
+      comm_io_buffer + offset,
+      rx_packet->interface);
 }
 
 static void comm_write_packet(const uint16_t chunk_number,
@@ -925,7 +948,8 @@ static void comm_write_packet(const uint16_t chunk_number,
                               const uint16_t seq_no,
                               const uint8_t packet_type,
                               const uint8_t payload_size,
-                              const uint8_t *payload) {
+                              const uint8_t *payload,
+                              const comm_libusb__interface_e interface) {
   uint8_t buffer[COMM_PKT_MAX_LEN] = {0}, index = 4;
   uint32_t crc = 0;
 
@@ -955,6 +979,6 @@ static void comm_write_packet(const uint16_t chunk_number,
 #if USE_SIMULATOR == 1
   SIM_Transmit_FS(buffer, payload_size + COMM_HEADER_SIZE);
 #else
-  lusb_write(buffer, payload_size + COMM_HEADER_SIZE);
+  lusb_write(buffer, payload_size + COMM_HEADER_SIZE, interface);
 #endif
 }
