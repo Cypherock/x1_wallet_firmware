@@ -56,7 +56,6 @@
  *
  ******************************************************************************
  */
-#include "bip39_english.h"
 #include "constant_texts.h"
 #include "controller_main.h"
 #include "tasks.h"

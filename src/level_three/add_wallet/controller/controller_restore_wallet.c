@@ -58,7 +58,6 @@
  ******************************************************************************
  */
 #include "bip39.h"
-#include "bip39_english.h"
 #include "card_action_controllers.h"
 #include "constant_texts.h"
 #include "controller_add_wallet.h"
@@ -86,7 +85,7 @@ static void restore_wallet_enter_mnemonics_flow_controller() {
         wallet_credential_data.mnemonics[flow_level.level_four - 1],
         sizeof(wallet_credential_data.mnemonics[flow_level.level_four - 1]),
         "%s",
-        wordlist[flow_level.screen_input.list_choice]);
+        mnemonic_get_word(flow_level.screen_input.list_choice));
     flow_level.level_four++;
   } else {
     flow_level.level_three = RESTORE_WALLET_VERIFY_MNEMONICS_INSTRUCTION;

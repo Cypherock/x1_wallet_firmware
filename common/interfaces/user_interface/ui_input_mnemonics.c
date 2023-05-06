@@ -58,7 +58,6 @@
  */
 #include "ui_input_mnemonics.h"
 
-#include "bip39_english.h"
 #include "ui_events_priv.h"
 static void ui_mnem_create();
 static void refresh_screen_texts();
@@ -127,7 +126,8 @@ int get_first_index(const char word[3]) {
   ASSERT(word != NULL);
 
   for (int i = 0; i <= 2047; i++) {
-    if ((word[0] + 32 == wordlist[i][0]) && (word[1] + 32 == wordlist[i][1])) {
+    if ((word[0] + 32 == mnemonic_get_word(i)[0]) &&
+        (word[1] + 32 == mnemonic_get_word(i)[1])) {
       return i;
     }
   }
@@ -145,7 +145,8 @@ int get_last_index(const char word[3]) {
   ASSERT(word != NULL);
 
   for (int i = 2047; i >= 0; --i) {
-    if ((word[0] + 32 == wordlist[i][0]) && (word[1] + 32 == wordlist[i][1])) {
+    if ((word[0] + 32 == mnemonic_get_word(i)[0]) &&
+        (word[1] + 32 == mnemonic_get_word(i)[1])) {
       return i;
     }
   }
@@ -174,11 +175,11 @@ static void second_char_init() {
   int16_t high = 0;
 
   for (int i = 0; i <= 2047; i++) {
-    if (data->text_entered[0] + 32 == wordlist[i][0]) {
+    if (data->text_entered[0] + 32 == mnemonic_get_word(i)[0]) {
       if (low < 0)
-        low = wordlist[i][1] - 'a';
-      data->second_char_ind |= 1 << (wordlist[i][1] - 'a');
-      high = wordlist[i][1] - 'a';
+        low = mnemonic_get_word(i)[1] - 'a';
+      data->second_char_ind |= 1 << (mnemonic_get_word(i)[1] - 'a');
+      high = mnemonic_get_word(i)[1] - 'a';
     }
   }
 
@@ -554,7 +555,7 @@ static void refresh_screen_texts() {
     lv_label_set_text(obj->text_entered, data->text_entered);
   } else if (data->state == SHOWING_SUGGESTIONS) {
     lv_label_set_text(lv_obj_get_child(obj->center_screen, NULL),
-                      wordlist[data->index]);
+                      mnemonic_get_word(data->index));
     lv_label_set_text(obj->text_entered, data->text_entered);
   }
 }
