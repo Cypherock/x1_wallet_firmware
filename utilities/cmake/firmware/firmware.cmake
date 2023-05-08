@@ -21,7 +21,7 @@ ENDIF(UNIT_TESTS_SWITCH)
 
 add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
-add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
+add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
@@ -141,7 +141,8 @@ target_include_directories(${EXECUTABLE} PRIVATE
 
         #unit test modules: this list needs to be updated whenever a test module is being added
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
-        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/core>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/common/core>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/common/util>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/p0_events>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/ui/ui_events_test>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
