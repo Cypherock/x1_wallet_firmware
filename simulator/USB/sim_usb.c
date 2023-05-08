@@ -15,7 +15,7 @@
 
 static FILE *rx_file = NULL;
 static FILE *tx_file = NULL;
-static uint8_t rec_buffer[BYTE_STUFFED_DATA_SIZE - PKT_HEAD_SIZE * 2];
+static uint8_t rec_buffer[80];
 volatile uint8_t rec_counter = 0;
 static pthread_t ptid;
 
