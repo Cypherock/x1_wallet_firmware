@@ -68,6 +68,13 @@ static void skip_instruction_scr_create();
 void skip_instruction_scr_init(const char *text) {
   ASSERT(text != NULL);
 
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+
   data = malloc(sizeof(struct Card_Detect_Data));
   obj = malloc(sizeof(struct Card_Detect_Object));
 
@@ -78,8 +85,6 @@ void skip_instruction_scr_init(const char *text) {
 }
 
 void skip_instruction_scr_destructor() {
-  lv_obj_clean(lv_scr_act());
-
   if (data != NULL) {
     memzero(data, sizeof(struct Card_Detect_Data));
     free(data);
@@ -112,17 +117,18 @@ void skip_instruction_scr_focus_skip() {
  * @note
  */
 static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
-  ASSERT(skip_btn != NULL);
-
   switch (event) {
     case LV_EVENT_CLICKED:
       ui_set_cancel_event();
-      skip_instruction_scr_destructor();
+      lv_obj_clean(lv_scr_act());
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(skip_btn, LV_BTN_STATE_REL);
       break;
     case LV_EVENT_DELETE:
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      skip_instruction_scr_destructor();
       break;
     default:
       break;

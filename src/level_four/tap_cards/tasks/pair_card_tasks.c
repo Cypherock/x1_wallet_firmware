@@ -83,8 +83,6 @@ void handle_pairing_detect_or_skip_task(char *heading) {
 
   if (evt_status.nfc_event.event_occured &&
       (evt_status.nfc_event.event_type == NFC_EVENT_CARD_DETECT)) {
-    skip_instruction_scr_destructor();    // Destruct skip instruction screen if
-                                          // nfc event occured
     ui_reset_event();    // Reset UI event in case of a race condition
     instruction_scr_init("Dummy", heading);
     instruction_scr_change_text(
