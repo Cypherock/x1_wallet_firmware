@@ -102,7 +102,7 @@
 
 /// @details Macro to get the size of the total payload in Cmd Output response.
 #define comm_get_payload_size(payload)                                         \
-  (2 * sizeof(uint16_t) + payload.raw_data_length + payload.proto_data_length)
+  (2 * sizeof(uint16_t) + payload->raw_data_length + payload->proto_data_length)
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -126,6 +126,8 @@ typedef enum comm_packet_type {
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
+
+comm_status_t comm_status;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -178,6 +180,8 @@ static comm_error_code_t comm_process_status_packet(const packet_t *rx_packet) {
  *
  */
 static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
+  uint8_t *comm_io_buffer = get_io_buffer();
+  comm_payload_t *comm_payload = get_comm_payload();
   if (!CY_Usb_Buffer_Free())
     return APP_BUFFER_BLOCKED;
   if (comm_status.curr_cmd_state == CMD_STATE_EXECUTING)
@@ -224,9 +228,9 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
   }
   if (rx_packet->header.chunk_number == rx_packet->header.total_chunks) {
     comm_status.curr_cmd_state = CMD_STATE_RECEIVED;
-    usb_set_event(U32_READ_BE_ARRAY(comm_payload.raw_data),
-                  comm_payload.raw_data + sizeof(uint32_t),
-                  comm_payload.raw_data_length - sizeof(uint32_t));
+    usb_set_event(U32_READ_BE_ARRAY(comm_payload->raw_data),
+                  comm_payload->raw_data + sizeof(uint32_t),
+                  comm_payload->raw_data_length - sizeof(uint32_t));
   }
   send_cmd_ack_packet(rx_packet);
   LOG_SWV("#ORG#bs=%d, cs=%d, seq=%d, ccn=%d, ccc=%d, rl=%d\n",
@@ -249,6 +253,7 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
  */
 static comm_error_code_t comm_process_out_req_packet(
     const packet_t *rx_packet) {
+  comm_payload_t *comm_payload = get_comm_payload();
   if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no)
     return INVALID_SEQUENCE_NO;
   if (rx_packet->header.chunk_number != 1)
@@ -338,7 +343,9 @@ static void send_cmd_ack_packet(const packet_t *rx_packet) {
 }
 
 static void send_cmd_output_packet(const packet_t *rx_packet) {
-  ASSERT(comm_payload.raw_data != NULL || comm_payload.proto_data != NULL);
+  comm_payload_t *comm_payload = get_comm_payload();
+  uint8_t *comm_io_buffer = get_io_buffer();
+  ASSERT(comm_payload->raw_data != NULL || comm_payload->proto_data != NULL);
   uint16_t req_chunk_no = U16_READ_BE_ARRAY(
       rx_packet->payload +
       4);    // payload already verified in the caller function
@@ -400,6 +407,10 @@ static void comm_write_packet(const uint16_t chunk_number,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+
+comm_status_t *get_comm_status() {
+  return &comm_status;
+}
 
 void comm_process_packet(const packet_t *rx_packet) {
   static uint8_t temp_type = 0;

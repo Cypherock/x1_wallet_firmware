@@ -153,25 +153,26 @@ typedef struct comm_status {
  * EXPORTED VARIABLES
  *****************************************************************************/
 
-// received/ready-to-send cmd can be decoded/encoded into this buffer
-extern uint8_t comm_io_buffer[COMM_BUFFER_SIZE];
-extern comm_payload_t comm_payload;
-extern comm_status_t comm_status;
-
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-static inline void comm_set_payload_struct(uint16_t proto_len,
-                                           uint16_t raw_len) {
-  comm_payload.proto_data_length = proto_len;
-  comm_payload.raw_data_length = raw_len;
-  comm_payload.proto_data =
-      proto_len ? comm_io_buffer + sizeof(uint16_t) * 2 : NULL;
-  comm_payload.raw_data = raw_len ? comm_io_buffer + 2 * sizeof(uint16_t) +
-                                        comm_payload.proto_data_length
-                                  : NULL;
-}
+/**
+ * @brief Returns the reference to internal instance of io_buffer
+ */
+uint8_t *get_io_buffer();
+
+/**
+ * @brief Returns the reference to internal instance of comm_payload
+ */
+comm_payload_t *get_comm_payload();
+
+/**
+ * @brief Returns the reference to internal instance of comm_status
+ */
+comm_status_t *get_comm_status();
+
+void comm_set_payload_struct(uint16_t proto_len, uint16_t raw_len);
 
 /**
  * @brief  Update CRC16 for input byte

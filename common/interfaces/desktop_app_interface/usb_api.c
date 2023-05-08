@@ -106,7 +106,6 @@ typedef struct comm_raw_payload {
 
 uint8_t comm_io_buffer[COMM_BUFFER_SIZE] = {0};
 comm_payload_t comm_payload;
-comm_status_t comm_status;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -119,7 +118,7 @@ static bool is_there_any_msg_from_app();
  *****************************************************************************/
 
 static bool is_there_any_msg_from_app() {
-  return comm_status.curr_cmd_state == CMD_STATE_RECEIVED;
+  return get_comm_status()->curr_cmd_state == CMD_STATE_RECEIVED;
 }
 
 /*****************************************************************************
@@ -132,23 +131,33 @@ void usb_init() {
 #endif
 }
 
+uint8_t *get_io_buffer() {
+  return comm_io_buffer;
+}
+
+comm_payload_t *get_comm_payload() {
+  return &comm_payload;
+}
+
 void mark_device_state(cy_app_status_t state, uint8_t flow_status) {
+  comm_status_t *comm_status = get_comm_status();
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   if (state != CY_UNUSED_STATE)
-    comm_status.app_busy_status = state;
+    comm_status->app_busy_status = state;
   if (flow_status != 0xFF)
-    comm_status.curr_flow_status = flow_status;
-  comm_status.abort_disabled = CY_reset_not_allowed();
+    comm_status->curr_flow_status = flow_status;
+  comm_status->abort_disabled = CY_reset_not_allowed();
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
 bool is_device_ready() {
-  return comm_status.app_busy_status & CY_APP_IDLE;
+  return get_comm_status()->app_busy_status & CY_APP_IDLE;
 }
 
 void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
+  comm_status_t *comm_status = get_comm_status();
   uint8_t arr[1] = {byte};
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
 
@@ -156,19 +165,20 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
   // Make sure to set he curr_cmd_state to CMD_STATE_FAILED
   transmit_data_to_app(command_type, arr, 1);
   // Imp: Should be updated after writing to buffer
-  comm_status.curr_cmd_state = CMD_STATE_FAILED;
-  comm_status.app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
+  comm_status->curr_cmd_state = CMD_STATE_FAILED;
+  comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
 void usb_reject_invalid_request() {
+  comm_status_t *comm_status = get_comm_status();
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   usb_clear_event();
   // Imp: Should be updated after clearing the buffer
-  comm_status.curr_cmd_state = CMD_STATE_INVALID_REQ;
-  comm_status.app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
+  comm_status->curr_cmd_state = CMD_STATE_INVALID_REQ;
+  comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
@@ -188,7 +198,7 @@ void usb_send_data(const uint32_t command_type,
 
   NVIC_DisableIRQ(OTG_FS_IRQn);
   usb_clear_event();
-  comm_status.curr_cmd_state = CMD_STATE_DONE;
+  get_comm_status()->curr_cmd_state = CMD_STATE_DONE;
   comm_set_payload_struct(proto_len, size + sizeof(uint32_t));
   comm_io_buffer[offset++] = 0;
   comm_io_buffer[offset++] = 0;
@@ -219,11 +229,11 @@ void usb_free_msg_buffer() {
 }
 
 void usb_set_state_executing() {
-  comm_status.curr_cmd_state = CMD_STATE_EXECUTING;
+  get_comm_status()->curr_cmd_state = CMD_STATE_EXECUTING;
 }
 
 void usb_reset_state() {
-  comm_status.curr_cmd_state = CMD_STATE_NONE;
+  get_comm_status()->curr_cmd_state = CMD_STATE_NONE;
 }
 
 bool usb_get_msg(En_command_type_t *command_type,
@@ -261,4 +271,14 @@ bool get_usb_msg_by_cmd_type(En_command_type_t command_type,
     return true;
   }
   return false;
+}
+
+void comm_set_payload_struct(uint16_t proto_len, uint16_t raw_len) {
+  comm_payload.proto_data_length = proto_len;
+  comm_payload.raw_data_length = raw_len;
+  comm_payload.proto_data =
+      proto_len ? comm_io_buffer + sizeof(uint16_t) * 2 : NULL;
+  comm_payload.raw_data = raw_len ? comm_io_buffer + 2 * sizeof(uint16_t) +
+                                        comm_payload.proto_data_length
+                                  : NULL;
 }
