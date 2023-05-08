@@ -1,5 +1,5 @@
 /**
- * @file    p0_events.c
+ * @file    status_api.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,10 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "p0_events.h"
-
 #include "status_api.h"
-#include "systick_timer_priv.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -78,8 +76,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static p0_evt_ctx_t p0_evt_ctx;
-static p0_evt_t p0_evt_status;
+core_status_t core_status = CORE_STATUS_INIT_ZERO;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -88,157 +85,34 @@ static p0_evt_t p0_evt_status;
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief This function sets the timeout in the systick module
- *
- * @param inactivity_timeout Value of timeout in milliseconds (ms)
- */
-static void p0_set_inactivity_timeout(uint32_t inactivity_timeout);
-
-/**
- * @brief This function configures the ctx to enable or disable  abort events
- *
- * @param abort_disabled If true: it means any abort received will be ignored
- * and nothing will be returned to the application.
- */
-static void p0_set_abort_config(bool abort_disabled);
-
-/**
- * @brief This function sets the p0 event occured flag in the global status ctx
- *
- * @param flag
- * true: indicating a p0 event occured.
- * false: indicating a p0 event did not occur.
- */
-static void p0_set_p0_evt_flag(bool flag);
-
-/**
- * @brief This function sets the p0 event occured flag in the global status ctx
- *
- * @return true: indicating any p0 event occurred
- * @return false: indicated no p0 event occurred
- */
-static bool p0_get_p0_evt_flag(void);
-
-/**
- * @brief This function fills the pointer with the status held in the global
- * status context
- *
- * @param p_p0_evt Pointer to the variable of type p0_evt_t to be filled.
- */
-static void p0_set_evt(p0_evt_t *p_p0_evt);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void p0_set_inactivity_timeout(uint32_t inactivity_timeout) {
-  if ((inactivity_timeout == 0 ||
-       inactivity_timeout >= MAX_INACTIVITY_TIMEOUT)) {
-    inactivity_timeout = MAX_INACTIVITY_TIMEOUT;
-  }
-
-  systick_set_timeout(inactivity_timeout);
-  p0_refresh_timeout();
-
-  return;
-}
-
-static void p0_set_abort_config(bool abort_disabled) {
-  p0_evt_ctx.abort_disabled = abort_disabled;
-  core_status_set_abort_disabled(abort_disabled);
-  return;
-}
-
-static void p0_set_p0_evt_flag(bool flag) {
-  p0_evt_status.flag = flag;
-  return;
-}
-
-static bool p0_get_p0_evt_flag(void) {
-  return p0_evt_status.flag;
-}
-
-static void p0_set_evt(p0_evt_t *p_p0_evt) {
-  if (p_p0_evt != NULL) {
-    memcpy(p_p0_evt, &p0_evt_status, sizeof(p0_evt_status));
-  }
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void p0_ctx_init(uint32_t inactivity_timeout, bool abort_disabled) {
-  /* Disable timer operations in interrupt cb */
-  systick_set_timeout_config(false);
-
-  /* Set inactivity timeout in systick module and abort configuration in global
-   * ctx */
-  p0_set_inactivity_timeout(inactivity_timeout);
-  p0_set_abort_config(abort_disabled);
-
-  /* Enable timer operations in interrupt cb */
-  systick_set_timeout_config(true);
+void core_status_set_idle_state(core_device_idle_state_t idle_state) {
+  core_status.device_idle_state = idle_state;
   return;
 }
 
-bool p0_get_evt(p0_evt_t *p_p0_evt) {
-  if (p_p0_evt == NULL) {
-    return false;
-  }
-
-  /* Initialize event pointer with false flag */
-  p_p0_evt->flag = false;
-  p_p0_evt->inactivity_evt = false;
-  p_p0_evt->abort_evt = false;
-
-  bool p0_evt_occurred = p0_get_p0_evt_flag();
-  if (p0_evt_occurred) {
-    p0_set_evt(p_p0_evt);
-  }
-
-  return p0_evt_occurred;
-}
-
-void p0_ctx_destroy(void) {
-  /* Disable timer operations in interrupt cb */
-  systick_set_timeout_config(false);
-
-  /* Reset timeout in systick module and reset abort configuration in global ctx
-   */
-  p0_set_inactivity_timeout(MAX_INACTIVITY_TIMEOUT);
-  p0_set_abort_config(true);
-
-  /* Reset event status in global context */
-  p0_set_inactivity_evt(false);
-  p0_set_abort_evt(false);
-  p0_set_p0_evt_flag(false);
-
+void core_status_set_flow_status(uint32_t flow_status) {
+  core_status.flow_status = flow_status;
   return;
 }
 
-void p0_set_inactivity_evt(bool status) {
-  p0_set_p0_evt_flag(true);
-  p0_evt_status.inactivity_evt = status;
+void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on) {
+  core_status.device_waiting_on = waiting_on;
   return;
 }
 
-void p0_set_abort_evt(bool status) {
-  /* In case abort is not allowed, then p0_event_occured flag will never be set.
-   */
-  if (true == status) {
-    if (false == p0_evt_ctx.abort_disabled) {
-      p0_set_p0_evt_flag(true);
-      p0_evt_status.abort_evt = status;
-    }
-  } else {
-    p0_evt_status.abort_evt = status;
-  }
-
+void core_status_set_abort_disabled(bool abort_disabled) {
+  core_status.abort_disabled = abort_disabled;
   return;
 }
 
-void p0_refresh_timeout(void) {
-  systick_reset_timer();
-  return;
+core_status_t get_core_status(void) {
+  return core_status;
 }
