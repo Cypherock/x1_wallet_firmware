@@ -73,6 +73,7 @@
 #include "logger.h"
 #include "p0_events.h"
 #include "pb_encode.h"
+#include "status_api.h"
 #include "sys_state.h"
 #include "usb_api_priv.h"
 #include "utils.h"
@@ -303,25 +304,31 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
  */
 static void send_status_packet(const packet_t *rx_packet) {
   uint8_t payload[COMM_MAX_PAYLOAD_SIZE];
-  uint8_t offset = 0;
-  payload[offset++] = 0x00;
-  payload[offset++] = 0x00;    // proto length
-  payload[offset++] = 0x00;
-  payload[offset++] = 0x00;    // dummy raw length
-  payload[offset++] = comm_status.app_busy_status;
-  payload[offset++] = comm_status.abort_disabled;
-  payload[offset++] = (comm_status.curr_cmd_seq_no >> 8) & 0xFF;
-  payload[offset++] = comm_status.curr_cmd_seq_no & 0xFF;
-  payload[offset++] = comm_status.curr_cmd_state;
-  payload[offset++] = (comm_status.curr_flow_status >> 8) & 0xFF;
-  payload[offset++] = comm_status.curr_flow_status & 0xFF;
-  memset(payload + offset, 0x00, 11);
-  offset += 11;
-  payload[2] = ((offset - 4) >> 8) & 0xFF;
-  payload[3] = (offset - 4) & 0xFF;    // raw length
-  ASSERT(offset <= COMM_MAX_PAYLOAD_SIZE);
-  comm_write_packet(
-      1, 1, 0xFFFF, PKT_TYPE_STATUS_ACK, offset, payload, rx_packet->interface);
+  payload[0] = 0x00;
+  payload[1] = 0x00;    // proto length
+  payload[2] = 0x00;
+  payload[3] = 0x00;    // dummy raw length
+
+  // reserve space for length of streams
+  uint8_t len_size = 4;
+  core_status_t status = get_core_status();
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(payload + len_size, sizeof(payload) - len_size);
+
+  status.current_cmd_seq = comm_status.curr_cmd_seq_no;
+  status.cmd_state = comm_status.curr_cmd_state;
+
+  // treat protobuf encoder failure as critical issue
+  ASSERT(pb_encode(&stream, &core_status_t_msg, &status));
+  payload[0] = (stream.bytes_written >> 8) & 0xFF;
+  payload[1] = (stream.bytes_written) & 0xFF;    // proto length
+  comm_write_packet(1,
+                    1,
+                    0xFFFF,
+                    PKT_TYPE_STATUS_ACK,
+                    stream.bytes_written + len_size,
+                    payload,
+                    rx_packet->interface);
 }
 
 static void send_cmd_ack_packet(const packet_t *rx_packet) {
