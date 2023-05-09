@@ -107,7 +107,7 @@
  * @return true If the input is valid
  * @return false If the input is not valid
  */
-static bool engine_check_ctx(const engine_ctx_t *ctx);
+static bool engine_check_ctx(engine_ctx_t *ctx);
 
 /**
  * @brief This function returns the a reference an element of type flow_step_t*,
@@ -122,22 +122,21 @@ static bool engine_check_ctx(const engine_ctx_t *ctx);
  * @return false If the element was not returned: It could be due to incorrect
  * parameters, or because the buffer is EMPTY.
  */
-static bool engine_get_current_flow_step(const engine_ctx_t *ctx,
+static bool engine_get_current_flow_step(engine_ctx_t *ctx,
                                          flow_step_t **flow_step_dptr);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static bool engine_check_ctx(const engine_ctx_t *ctx) {
-  if ((NULL == ctx) || (NULL == ctx->array_list_config) ||
-      (NULL == ctx->array_list_config->array)) {
+static bool engine_check_ctx(engine_ctx_t *ctx) {
+  if ((NULL == ctx) || (NULL == ctx->array)) {
     return false;
   }
 
   return true;
 }
 
-static bool engine_get_current_flow_step(const engine_ctx_t *ctx,
+static bool engine_get_current_flow_step(engine_ctx_t *ctx,
                                          flow_step_t **flow_step_dptr) {
   bool result = false;
 
@@ -145,30 +144,29 @@ static bool engine_get_current_flow_step(const engine_ctx_t *ctx,
     return result;
   }
 
-  result = array_list_get_element(ctx->array_list_config, flow_step_dptr);
+  result = array_list_get_element(ctx, flow_step_dptr);
   return result;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool engine_reset_flow(const engine_ctx_t *ctx) {
+bool engine_reset_flow(engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  size_t bytes_to_clear = ctx->array_list_config->max_capacity *
-                          (ctx->array_list_config->size_of_element);
+  size_t bytes_to_clear = ctx->max_capacity * (ctx->size_of_element);
 
-  memzero(ctx->array_list_config->array, bytes_to_clear);
+  memzero(ctx->array, bytes_to_clear);
 
   result = true;
   return result;
 }
 
-bool engine_add_next_flow_step(const engine_ctx_t *ctx,
+bool engine_add_next_flow_step(engine_ctx_t *ctx,
                                const flow_step_t *flow_step_ptr) {
   bool result = false;
 
@@ -186,44 +184,44 @@ bool engine_add_next_flow_step(const engine_ctx_t *ctx,
    * and NOT the actual content, therefore we need to pass the double pointer to
    * the API */
   const flow_step_t **flow_step_dptr = &flow_step_ptr;
-  result = array_list_insert(ctx->array_list_config, flow_step_dptr);
+  result = array_list_insert(ctx, flow_step_dptr);
   return result;
 }
 
-bool engine_goto_next_flow_step(const engine_ctx_t *ctx) {
+bool engine_goto_next_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_iterate_next(ctx->array_list_config);
+  result = array_list_iterate_next(ctx);
   return result;
 }
 
-bool engine_goto_prev_flow_step(const engine_ctx_t *ctx) {
+bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_iterate_back(ctx->array_list_config);
+  result = array_list_iterate_back(ctx);
   return result;
 }
 
-bool engine_delete_current_flow_step(const engine_ctx_t *ctx) {
+bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
   bool result = false;
 
   if (false == engine_check_ctx(ctx)) {
     return result;
   }
 
-  result = array_list_delete_entry(ctx->array_list_config);
+  result = array_list_delete_entry(ctx);
   return result;
 }
 
-void engine_run(const engine_ctx_t *ctx) {
+void engine_run(engine_ctx_t *ctx) {
   if (false == engine_check_ctx(ctx)) {
     return;
   }

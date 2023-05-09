@@ -62,10 +62,8 @@
 #include "main_menu.h"
 
 #include "constant_texts.h"
-#include "create_wallet_menu.h"
-#include "settings.h"
+#include "status_api.h"
 #include "wallet_list.h"
-#include "wallet_menu.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -111,13 +109,13 @@ static const evt_config_t main_menu_evt_config = {
     .evt_selection.byte = EVT_CONFIG_UI_EVT | EVT_CONFIG_USB_EVT,
     .timeout = MAX_INACTIVITY_TIMEOUT};
 
-const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
-                                    .p0_cb = NULL,
-                                    .ui_cb = main_menu_handler,
-                                    .usb_cb = NULL,
-                                    .nfc_cb = NULL,
-                                    .evt_cfg_ptr = &main_menu_evt_config,
-                                    .flow_data_ptr = NULL};
+static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
+                                           .p0_cb = NULL,
+                                           .ui_cb = main_menu_handler,
+                                           .usb_cb = NULL,
+                                           .nfc_cb = NULL,
+                                           .evt_cfg_ptr = &main_menu_evt_config,
+                                           .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -126,40 +124,44 @@ const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Get the selected wallet index object
- *
- * @return uint8_t
- */
-static uint8_t get_selected_wallet_index(void);
+// /**
+//  * @brief Get the selected wallet index object
+//  *
+//  * @return uint8_t Wallet index selected from the main menu
+//  */
+// static uint8_t get_selected_wallet_index(void);
 
 /**
- * @brief
+ * @brief Get the boolean flag which depicts whether rendering the main menu is
+ * required or not
  *
- * @return true
- * @return false
+ * @return true If the update is required
+ * @return false If the update is NOT required
  */
 static bool main_menu_get_update_req(void);
 
 /**
- * @brief
+ * @brief This function determines which menu option was selected from the main
+ * menu. This selection cannot be static logic as the number of wallets/ number
+ * of options on the main menu are dynamic.
  *
- * @param menu_selectn_idx
- * @return main_menu_options_e
+ * @param menu_selectn_idx The selection index from the main menu
+ * @return main_menu_options_e The option of type main_menu_options_e detected
+ * by the lookup function
  */
 static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx);
 
 /**
- * @brief
+ * @brief This function resets internal values of the main menu module
  *
  */
-static void main_menu_reset(void);
+static void main_menu_reset_context(void);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static uint8_t get_selected_wallet_index(void) {
-  return main_menu_ctx.wallet_selected;
-}
+// static uint8_t get_selected_wallet_index(void) {
+//   return main_menu_ctx.wallet_selected;
+// }
 
 static bool main_menu_get_update_req(void) {
   return main_menu_ctx.update_req;
@@ -189,7 +191,7 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx) {
   return menu_selected;
 }
 
-static void main_menu_reset(void) {
+static void main_menu_reset_context(void) {
   /* Reset wallet count to 0 and set update required to true */
   main_menu_ctx.update_req = true;
   main_menu_ctx.wallet_count = 0;
@@ -201,7 +203,7 @@ static void main_menu_reset(void) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_initialize(const engine_ctx_t *ctx, const void *data_ptr) {
+void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   // TODO: Set status: On the main menu
 
   /* First check if we even require to update the content on the main menu. This
@@ -212,8 +214,12 @@ void main_menu_initialize(const engine_ctx_t *ctx, const void *data_ptr) {
     return;
   }
 
+  /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
+   * are entering back to the main menu */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
+
   /* Clear the context of the options rendered on the main menu */
-  main_menu_reset();
+  main_menu_reset_context();
 
   /* Create an array of pointers holding the string to display on the menu. */
   char *menu_option_ptr_array[MAIN_MENU_MAX_OPTIONS];
@@ -253,7 +259,7 @@ void main_menu_initialize(const engine_ctx_t *ctx, const void *data_ptr) {
   return;
 }
 
-void main_menu_handler(const engine_ctx_t *ctx,
+void main_menu_handler(engine_ctx_t *ctx,
                        ui_event_t ui_event,
                        const void *data_ptr) {
   main_menu_options_e menu_selected = MAIN_MENU_NONE;
@@ -261,33 +267,27 @@ void main_menu_handler(const engine_ctx_t *ctx,
   /* Only consider if ui_event is of type `UI_EVENT_LIST_CHOICE` */
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     menu_selected = main_menu_lookup(ui_event.list_selection);
+
+    /* There is a new screen going to be rendered other than the main menu,
+     * therefore set update required to true */
+    main_menu_set_update_req(true);
+
+    /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_DEVICE as we
+     * are probably entering a device initiated flow */
+    core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_DEVICE);
   }
 
   switch (menu_selected) {
     case MAIN_MENU_OLD_WALLET: {
-      /* Use wallet_idx variable to understand which wallet was selected from
-       * the main menu */
-      uint8_t menu_wallet_index = get_selected_wallet_index();
-      if (MAX_WALLETS_ALLOWED <= menu_wallet_index) {
-        return;
-      }
-
-      // TODO: Set status: Not on the main menu
-
-      engine_add_next_flow_step(ctx, wallet_menu_get_step(menu_wallet_index));
-      engine_goto_next_flow_step(ctx);
+      // TODO: Handle old wallet selection
       break;
     }
     case MAIN_MENU_CREATE_WALLET: {
-      // TODO: Set status: Not on the main menu
-      engine_add_next_flow_step(ctx, create_wallet_menu_get_step());
-      engine_goto_next_flow_step(ctx);
+      // TODO: Handle create wallet selection
       break;
     }
     case MAIN_MENU_SETTINGS: {
-      // TODO: Set status: Not on the main menu
-      engine_add_next_flow_step(ctx, settings_get_step());
-      engine_goto_next_flow_step(ctx);
+      // TODO: Handle settings selection
       break;
     }
     case MAIN_MENU_NONE:
@@ -298,10 +298,6 @@ void main_menu_handler(const engine_ctx_t *ctx,
       break;
     }
   }
-
-  main_menu_set_update_req(true);
-  /* Destroy context for the options rendered on the main menu */
-  main_menu_reset();
 
   return;
 }

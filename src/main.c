@@ -151,7 +151,7 @@ int main(void) {
 
 #ifdef RUN_ENGINE
   while (1) {
-    const engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);
   }
 #else /* RUN_ENGINE */

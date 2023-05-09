@@ -61,8 +61,6 @@
  *****************************************************************************/
 #include "core_flow_init.h"
 
-#include <stdint.h>
-
 #include "main_menu.h"
 
 /*****************************************************************************
@@ -81,9 +79,7 @@
  * STATIC VARIABLES
  *****************************************************************************/
 flow_step_t *core_step_buffer[10] = {0};
-array_list_t core_step_array_list = {0};
-const engine_ctx_t core_step_engine_ctx = {.array_list_config =
-                                               &core_step_array_list};
+engine_ctx_t core_step_engine_ctx = {0};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -93,7 +89,7 @@ const engine_ctx_t core_step_engine_ctx = {.array_list_config =
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief
+ * @brief Reset internal buffers and variables to the correct state
  *
  */
 void reset_buffers(void);
@@ -105,27 +101,29 @@ void reset_buffers(void) {
   /* Zero-ise the buffer */
   memset(&core_step_buffer[0], 0, sizeof(core_step_buffer));
 
-  /* Set array_list core_step_array_list with appropriate values */
-  core_step_array_list.array = &core_step_buffer[0];
-  core_step_array_list.current_index = 0;
-  core_step_array_list.max_capacity =
+  /* Set array_list core_step_engine_ctx with appropriate values */
+  core_step_engine_ctx.array = &core_step_buffer[0];
+  core_step_engine_ctx.current_index = 0;
+  core_step_engine_ctx.max_capacity =
       sizeof(core_step_buffer) / sizeof(core_step_buffer[0]);
-  core_step_array_list.num_of_elements = 0;
-  core_step_array_list.size_of_element = sizeof(core_step_buffer[0]);
+  core_step_engine_ctx.num_of_elements = 0;
+  core_step_engine_ctx.size_of_element = sizeof(core_step_buffer[0]);
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const engine_ctx_t *get_core_flow_ctx(void) {
+engine_ctx_t *get_core_flow_ctx(void) {
   reset_buffers();
 
-  // Check onboarding status
+  // TODO: Check onboarding status
 
-  // Check device authentication status
+  // TODO: Check device authentication status
 
-  // Add correct first step of the flow based on the device auth/onboarding
-  // status
+  // TODO: Add correct first step of the flow based on the device
+  // auth/onboarding status
+
+  // As of now, hard code main menu to be the first flow as of now
   engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
 
   return &core_step_engine_ctx;

@@ -42,6 +42,6 @@
  *
  * @return const engine_ctx_t*
  */
-const engine_ctx_t *get_core_flow_ctx(void);
+engine_ctx_t *get_core_flow_ctx(void);
 
 #endif /* CORE_FLOW_INIT_H */

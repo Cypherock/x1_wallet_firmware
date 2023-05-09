@@ -33,12 +33,12 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Get the wallet list object
+ * @brief This API returns the total number of wallets that exists on the
+ * device. Additionally, it fills the array of char * with the wallet name
  *
- * @param wallet_list
- * @param filter
- * @return uint8_t
+ * @param wallet_list Array of char * which needs to be filled by the API
+ * @return uint8_t Number of wallets which exist on the device
  */
-uint8_t get_wallet_list(char **wallet_list);
+uint8_t get_wallet_list(char *wallet_list[]);
 
 #endif /* WALLET_LIST_H */

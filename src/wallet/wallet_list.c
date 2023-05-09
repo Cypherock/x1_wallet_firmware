@@ -95,7 +95,7 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-uint8_t get_wallet_list(char **wallet_list) {
+uint8_t get_wallet_list(char *wallet_list[]) {
   uint8_t num_wallets = 0;
   if (NULL == wallet_list) {
     return num_wallets;

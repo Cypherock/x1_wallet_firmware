@@ -127,14 +127,14 @@ static void usb_construct_event(void) {
   usb_set_event(89, data, length >> 1);
 }
 
-static void init_callback(const engine_ctx_t *ctx, const void *data_ptr) {
+static void init_callback(engine_ctx_t *ctx, const void *data_ptr) {
   callback_test.p0_event = false;
   callback_test.ui_event = false;
   callback_test.usb_event = false;
   return;
 }
 
-static void p0_callback(const engine_ctx_t *ctx,
+static void p0_callback(engine_ctx_t *ctx,
                         p0_evt_t event,
                         const void *data_ptr) {
   callback_test.p0_event = true;
@@ -146,7 +146,7 @@ static void p0_callback(const engine_ctx_t *ctx,
   return;
 }
 
-static void ui_callback(const engine_ctx_t *ctx,
+static void ui_callback(engine_ctx_t *ctx,
                         ui_event_t event,
                         const void *data_ptr) {
   callback_test.ui_event = true;
@@ -158,7 +158,7 @@ static void ui_callback(const engine_ctx_t *ctx,
   return;
 }
 
-static void usb_callback(const engine_ctx_t *ctx,
+static void usb_callback(engine_ctx_t *ctx,
                          usb_event_t event,
                          const void *data_ptr) {
   callback_test.usb_event = true;
@@ -212,14 +212,12 @@ TEST(flow_engine_tests, engine_use_case_test) {
   // Create flow buffer to hold the flow_step_t for the steps required
   flow_step_t *engine_test_buffer[10];
 
-  array_list_t flow_list_array = {
+  engine_ctx_t flow_list = {
       .array = &engine_test_buffer[0],
       .current_index = 0,
       .max_capacity = sizeof(engine_test_buffer) / sizeof(flow_step_t *),
       .size_of_element = sizeof(flow_step_t *),
       .num_of_elements = 0};
-
-  engine_ctx_t flow_list = {.array_list_config = &flow_list_array};
 
   /* Reset buffer */
   TEST_ASSERT_TRUE(engine_reset_flow(&flow_list));

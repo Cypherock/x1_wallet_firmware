@@ -24,12 +24,15 @@
    get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
 
 /**
- * @brief
+ * @brief This API checks if a wallet exists at a particular index.
+ * Optionally, if a wallet exists in that index, this API can return the status
+ * of the wallet.
  *
- * @param index
- * @param state_output
- * @return true
- * @return false
+ * @param index The index required to be checked for wallet existance
+ * @param state_output The optional pointer of type wallet_state which will be
+ * filled with the wallet_state in case the wallet exists on that index
+ * @return true If the wallet exists at the index
+ * @return false If the wallet does not exist at the index
  */
 bool wallet_is_filled(uint8_t index, wallet_state *state_output);
 
