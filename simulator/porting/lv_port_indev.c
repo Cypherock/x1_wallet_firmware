@@ -59,7 +59,6 @@ lv_indev_t *indev_button;
 static int32_t encoder_diff;
 static lv_indev_state_t encoder_state;
 static uint8_t invert = 0x00;
-bool nfc_tapped = false;
 #ifdef DEV_BUILD
 static ekp_process_queue_fptr process_key_presses_queue = NULL;
 #endif

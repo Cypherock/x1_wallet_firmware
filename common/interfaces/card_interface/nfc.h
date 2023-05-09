@@ -73,11 +73,6 @@
 ret_code_t nfc_init();
 
 /**
- * @brief Detect card presence and set global variable nfc_tapped
- */
-void nfc_card_presence_detect();
-
-/**
  * @brief Diagnose nfc antenna and PN532 module
  */
 uint32_t nfc_diagnose_antenna_hw();

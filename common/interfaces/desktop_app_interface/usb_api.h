@@ -25,12 +25,8 @@
 #define ALLOW_LOG_EXPORT
 
 #define MAXIMUM_DATA_SIZE 40
-#define PKT_HEAD_SIZE 4
-#define BYTE_STUFFED_DATA_SIZE ((MAXIMUM_DATA_SIZE + PKT_HEAD_SIZE) * 2)
 #define COMM_HEADER_SIZE 16
 #define DATA_SIZE_INDEX (COMM_HEADER_SIZE - 1)
-#define COMM_HEADER_SIZE_V0 (sizeof(comm_header_v0_t))
-#define DATA_SIZE_INDEX_V0 (COMM_HEADER_SIZE_V0 - 1)
 
 /*****************************************************************************
  * TYPEDEFS
@@ -143,6 +139,6 @@ void usb_send_data(uint32_t cmd, const uint8_t *data, uint32_t size);
  * @see
  * @since v1.0.0
  */
-void usb_send_byte(const uint32_t command_type, const uint8_t byte);
+void usb_send_byte(uint32_t command_type, uint8_t byte);
 
 #endif
