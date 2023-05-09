@@ -414,6 +414,10 @@ static void comm_write_packet(const uint16_t chunk_number,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+void comm_reset_interface(void) {
+  comm_status.active_interface = COMM_LIBUSB__UNDEFINED;
+  return;
+}
 
 comm_status_t *get_comm_status() {
   return &comm_status;

@@ -61,6 +61,8 @@
  *****************************************************************************/
 #include "status_api.h"
 
+#include "usb_api_priv.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -95,6 +97,17 @@ core_status_t core_status = CORE_STATUS_INIT_ZERO;
  *****************************************************************************/
 void core_status_set_idle_state(core_device_idle_state_t idle_state) {
   core_status.device_idle_state = idle_state;
+
+  /**
+   * If app state is idle, active interface is cleared to allow recieving
+   * commands from any interface. If app state is not idle, it means an
+   * application/flow is already in progress and command from a new interface
+   * shouldn't be allowed before tasks of the app have been completed or app
+   * is closed.
+   */
+  if (core_status.device_idle_state ==
+      CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE)
+    comm_reset_interface();
   return;
 }
 

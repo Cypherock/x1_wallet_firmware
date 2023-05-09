@@ -154,7 +154,7 @@ void mark_device_state(cy_app_status_t state, uint8_t flow_status) {
      * is closed.
      */
     if ((comm_status->app_busy_status & CY_APP_IDLE_TASK) == CY_APP_IDLE_TASK)
-      comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
+      comm_reset_interface();
   }
   if (flow_status != 0xFF)
     comm_status->curr_flow_status = flow_status;
@@ -180,7 +180,7 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
   comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
   // App state is set to idle here, so new command is allowed from any
   // interfaces
-  comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
+  comm_reset_interface();
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
@@ -195,7 +195,7 @@ void usb_reject_invalid_request() {
   comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
   // App state is set to idle here, so new command is allowed from any
   // interfaces
-  comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
+  comm_reset_interface();
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }

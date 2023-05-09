@@ -149,7 +149,7 @@ typedef struct comm_status {
   uint32_t host_sync_time;
   uint8_t host_sync_fails;
 
-  // Host interface while receiving and while an application is in progress
+  // Host interface while receiving data and while an application is in progress
   comm_libusb__interface_e active_interface;
 } comm_status_t;
 
@@ -170,6 +170,14 @@ uint8_t *get_io_buffer();
  * @brief Returns the reference to internal instance of comm_payload
  */
 comm_payload_t *get_comm_payload();
+
+/**
+ * @brief Resets the active interface(to COMM_LIBUSB__UNDEFINED) used to
+ * determine which interface is allowed to send new commands. The interface must
+ * be reset when an application is clsoed to allow any interface to communicate
+ * with device.
+ */
+void comm_reset_interface(void);
 
 /**
  * @brief Returns the reference to internal instance of comm_status
