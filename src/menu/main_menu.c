@@ -124,13 +124,6 @@ static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-// /**
-//  * @brief Get the selected wallet index object
-//  *
-//  * @return uint8_t Wallet index selected from the main menu
-//  */
-// static uint8_t get_selected_wallet_index(void);
-
 /**
  * @brief Get the boolean flag which depicts whether rendering the main menu is
  * required or not
@@ -159,10 +152,6 @@ static void main_menu_reset_context(void);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-// static uint8_t get_selected_wallet_index(void) {
-//   return main_menu_ctx.wallet_selected;
-// }
-
 static bool main_menu_get_update_req(void) {
   return main_menu_ctx.update_req;
 }
@@ -173,15 +162,21 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx) {
   /* Check if the selected index is greater than the wallet count */
   if ((0 == main_menu_ctx.wallet_count) ||
       (main_menu_ctx.wallet_count < menu_selectn_idx)) {
-    /* Normalize the menu selection index by subtracting the wallet count */
-    menu_selectn_idx = menu_selectn_idx - main_menu_ctx.wallet_count;
-
-    /* Order of the main menu: WALLET-x -> MAIN_MENU_CREATE_WALLET ->
-     * MAIN_MENU_SETTINGS */
-    if (1 == menu_selectn_idx) {
-      menu_selected = MAIN_MENU_CREATE_WALLET;
-    } else if (2 == menu_selectn_idx) {
+    /* If there are already MAX_WALLETS_ALLOWED on the device, then
+     * MAIN_MENU_CREATE_WALLET is not a valid option */
+    if (MAX_WALLETS_ALLOWED == main_menu_ctx.wallet_count) {
       menu_selected = MAIN_MENU_SETTINGS;
+    } else {
+      /* Normalize the menu selection index by subtracting the wallet count */
+      menu_selectn_idx = menu_selectn_idx - main_menu_ctx.wallet_count;
+
+      /* Order of the main menu: WALLET-x -> MAIN_MENU_CREATE_WALLET ->
+       * MAIN_MENU_SETTINGS */
+      if (1 == menu_selectn_idx) {
+        menu_selected = MAIN_MENU_CREATE_WALLET;
+      } else if (2 == menu_selectn_idx) {
+        menu_selected = MAIN_MENU_SETTINGS;
+      }
     }
   } else {
     menu_selected = MAIN_MENU_OLD_WALLET;
@@ -220,7 +215,7 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   main_menu_reset_context();
 
   /* Create an array of pointers holding the string to display on the menu. */
-  const char *menu_option_ptr_array[MAIN_MENU_MAX_OPTIONS];
+  const char *menu_option_ptr_array[MAIN_MENU_MAX_OPTIONS] = {0};
 
   uint8_t menu_idx = 0;
 

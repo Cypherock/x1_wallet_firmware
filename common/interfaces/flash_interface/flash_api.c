@@ -95,7 +95,7 @@ static bool _wallet_is_filled(uint8_t index) {
 }
 
 bool wallet_is_filled(uint8_t index, wallet_state *state_output) {
-  if (MAX_WALLETS_ALLOWED < index) {
+  if (MAX_WALLETS_ALLOWED <= index) {
     return false;
   }
 
