@@ -1,5 +1,5 @@
 /**
- * @file    ui_card_detect.h
+ * @file    ui_skip_instruction.h
  * @author  Cypherock X1 Team
  * @brief   Header for Card tap/detect UI.
  *          Headers for card detect and skip screens UI
@@ -8,8 +8,8 @@
  * target=_blank>https://mitcc.org/</a>
  *
  */
-#ifndef UI_CARD_DETECT_H
-#define UI_CARD_DETECT_H
+#ifndef UI_SKIP_INSTRUCTION_H
+#define UI_SKIP_INSTRUCTION_H
 
 #include "ui_common.h"
 
@@ -54,7 +54,7 @@ struct Card_Detect_Object {
  *
  * @note
  */
-void card_detect_scr_init(const char *text);
+void skip_instruction_scr_init(const char *text);
 
 /**
  * @brief Clear card detect screen
@@ -70,7 +70,7 @@ void card_detect_scr_init(const char *text);
  *
  * @note
  */
-void card_detect_scr_destructor();
+void skip_instruction_scr_destructor();
 
 /**
  * @brief Set focus on skip button
@@ -86,6 +86,6 @@ void card_detect_scr_destructor();
  *
  * @note
  */
-void card_detect_scr_focus_skip();
+void skip_instruction_scr_focus_skip();
 
 #endif
