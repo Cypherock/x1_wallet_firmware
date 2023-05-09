@@ -89,7 +89,9 @@ void delay_scr_init(const char message[], const uint32_t delay_in_ms) {
   BSP_DelayMs(delay_in_ms);
   lv_obj_clean(lv_scr_act());
 
-  /* TODO: Is setting confirm event required? */
-  ui_set_confirm_event();
+  /* TODO: Remove callback and refactor api to use time event instead of hard
+   * delay */
+  if (ui_mark_event_over)
+    (*ui_mark_event_over)();
   return;
 }
