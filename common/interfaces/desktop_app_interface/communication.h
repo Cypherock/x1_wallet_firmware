@@ -106,7 +106,7 @@ bool get_usb_msg_by_cmd_type(En_command_type_t command_type,
                              uint8_t **msg_data,
                              uint16_t *msg_len);
 
-#define clear_message_received_data usb_free_msg_buffer
+#define clear_message_received_data()
 #define comm_process_complete usb_reset_state
 
 /**
