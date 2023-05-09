@@ -143,8 +143,19 @@ void mark_device_state(cy_app_status_t state, uint8_t flow_status) {
   comm_status_t *comm_status = get_comm_status();
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
-  if (state != CY_UNUSED_STATE)
+  if (state != CY_UNUSED_STATE) {
     comm_status->app_busy_status = state;
+
+    /**
+     * If app state is idle, active interface is cleared to allow recieving
+     * commands from any interface. If app state is not idle, it means an
+     * application/flow is already in progress and command from a new interface
+     * shouldn't be allowed before tasks of the app have been completed or app
+     * is closed.
+     */
+    if ((comm_status->app_busy_status & CY_APP_IDLE_TASK) == CY_APP_IDLE_TASK)
+      comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
+  }
   if (flow_status != 0xFF)
     comm_status->curr_flow_status = flow_status;
   comm_status->abort_disabled = CY_reset_not_allowed();
@@ -167,6 +178,9 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
   // Imp: Should be updated after writing to buffer
   comm_status->curr_cmd_state = CMD_STATE_FAILED;
   comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
+  // App state is set to idle here, so new command is allowed from any
+  // interfaces
+  comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
@@ -179,6 +193,9 @@ void usb_reject_invalid_request() {
   // Imp: Should be updated after clearing the buffer
   comm_status->curr_cmd_state = CMD_STATE_INVALID_REQ;
   comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
+  // App state is set to idle here, so new command is allowed from any
+  // interfaces
+  comm_status->active_interface = COMM_LIBUSB__UNDEFINED;
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }

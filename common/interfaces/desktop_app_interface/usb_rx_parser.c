@@ -119,34 +119,38 @@ static uint8_t SDK_REQ_PACKET[] = {COMM_V0_START_OF_HEADER,
                                    0x00,
                                    0x45,
                                    0x85};
-static uint8_t SDK_RESP_PACKET[] = {COMM_V0_START_OF_HEADER,
-                                    0x01,
-                                    0x0A,
-                                    0x00,
-                                    0x01,
-                                    0x00,
-                                    0x01,
-                                    0x00,
-                                    0x00,
-                                    0x00,
-                                    0x00,
-                                    0x12,
-                                    0x30,
-                                    COMM_V0_START_OF_HEADER,
-                                    COMM_SDK_VERSION_REQ,
-                                    0x0C,
-                                    0x00,
-                                    0x01,
-                                    0x00,
-                                    0x01,
-                                    0x00,
-                                    0x03,
-                                    0x00,
-                                    0x06,
-                                    0x00,
-                                    0x00,
-                                    0x0F,
-                                    0x30};
+static uint8_t SDK_RESP_PACKET[] = {
+    COMM_V0_START_OF_HEADER,
+    0x01,    // ack packet
+    0x0A,
+    0x00,
+    0x01,
+    0x00,
+    0x01,    // data length (1 byte), current packet (2 bytes), packet count (2
+             // bytes)
+    0x00,
+    0x00,
+    0x00,
+    0x00,    // cmd payload (4 byte)
+    0x12,
+    0x30,    // Checksum
+    COMM_V0_START_OF_HEADER,
+    COMM_SDK_VERSION_REQ,    // SDK response packet
+    0x0C,
+    0x00,
+    0x01,
+    0x00,
+    0x01,    // data length (1 byte), current packet (2 bytes), packet count (2
+             // bytes)
+    0x00,
+    0x02,
+    0x00,
+    0x06,
+    0x00,
+    0x00,    // SDK version 2.6.0 for current working protocol
+    0xA5,
+    0x61    // Checksum
+};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -179,9 +183,7 @@ void comm_packet_parser(const uint8_t *data,
     return lusb_write(SDK_RESP_PACKET, sizeof(SDK_RESP_PACKET), interface);
 #endif
 
-  if (rx_packet.interface == COMM_LIBUSB__UNDEFINED) {
-    rx_packet.interface = interface;
-  }
+  rx_packet.interface = interface;
 
   for (int i = 0; i < length; i++) {
     uint8_t byte = data[i];
