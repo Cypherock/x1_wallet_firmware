@@ -204,8 +204,6 @@ static void main_menu_reset_context(void) {
  *****************************************************************************/
 
 void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  // TODO: Set status: On the main menu
-
   /* First check if we even require to update the content on the main menu. This
    * check is mainly to handle cases where-in a background USB event was served
    * by the device, in which case this function will be called by the callback
@@ -222,7 +220,7 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   main_menu_reset_context();
 
   /* Create an array of pointers holding the string to display on the menu. */
-  char *menu_option_ptr_array[MAIN_MENU_MAX_OPTIONS];
+  const char *menu_option_ptr_array[MAIN_MENU_MAX_OPTIONS];
 
   uint8_t menu_idx = 0;
 
@@ -237,21 +235,18 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
    * do not exceed MAX_WALLETS_ALLOWED */
   if (MAX_WALLETS_ALLOWED != menu_idx) {
     menu_option_ptr_array[menu_idx] =
-        (char *)ui_text_options_main_menu[MAIN_MENU_CREATE_WALLET_INDEX];
+        ui_text_options_main_menu[MAIN_MENU_CREATE_WALLET_INDEX];
     menu_idx += 1;
   }
 
   /* MAIN_MENU_SETTINGS will be always required */
   menu_option_ptr_array[menu_idx] =
-      (char *)ui_text_options_main_menu[MAIN_MENU_SETTINGS_INDEX];
+      ui_text_options_main_menu[MAIN_MENU_SETTINGS_INDEX];
   menu_idx += 1;
 
   /* Initialize the main menu screen here, it will not be rendered on the screen
    * unless get_event() is called by the caller. */
-  menu_init((const char **)menu_option_ptr_array,
-            menu_idx,
-            ui_text_heading_main_menu,
-            false);
+  menu_init(menu_option_ptr_array, menu_idx, ui_text_heading_main_menu, false);
 
   /* Since we have just updated the main menu, we do not need to update it
    * again. */

@@ -39,6 +39,6 @@
  * @param wallet_list Array of char * which needs to be filled by the API
  * @return uint8_t Number of wallets which exist on the device
  */
-uint8_t get_wallet_list(char *wallet_list[]);
+uint8_t get_wallet_list(const char *wallet_list[]);
 
 #endif /* WALLET_LIST_H */

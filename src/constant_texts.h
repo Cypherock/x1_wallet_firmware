@@ -69,7 +69,6 @@ extern const char *ui_text_options_passphrase[];
 extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */
 
-///////////////////////////////////////////////
 extern const char *ui_text_verification_is_now_complete_messages[];
 
 extern const char *ui_text_seed_phrase_will_be_shown_copy_to_verify[];
