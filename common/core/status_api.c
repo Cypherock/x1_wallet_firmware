@@ -105,8 +105,8 @@ void core_status_set_idle_state(core_device_idle_state_t idle_state) {
    * shouldn't be allowed before tasks of the app have been completed or app
    * is closed.
    */
-  if (core_status.device_idle_state ==
-      CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE)
+  if (CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE ==
+      core_status.device_idle_state)
     comm_reset_interface();
   return;
 }

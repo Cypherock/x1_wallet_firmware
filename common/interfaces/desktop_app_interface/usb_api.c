@@ -153,7 +153,7 @@ void mark_device_state(cy_app_status_t state, uint8_t flow_status) {
      * shouldn't be allowed before tasks of the app have been completed or app
      * is closed.
      */
-    if ((comm_status->app_busy_status & CY_APP_IDLE_TASK) == CY_APP_IDLE_TASK)
+    if (CY_APP_IDLE_TASK == (comm_status->app_busy_status & CY_APP_IDLE_TASK))
       comm_reset_interface();
   }
   if (flow_status != 0xFF)
