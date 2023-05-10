@@ -61,8 +61,6 @@
 #include "bip32.h"
 #include "bip39_english.h"
 #include "board.h"
-#include "btc.h"
-#include "communication.h"
 #include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
@@ -71,10 +69,11 @@
 #include "stdint.h"
 #include "string.h"
 #include "ui_delay.h"
-#include "ui_instruction.h"
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
 #endif
+
+#include <manager/auth_device.pb.h>
 
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7
@@ -84,26 +83,7 @@
 #define AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE                                      \
   (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE)
 
-/**
- * @brief
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-typedef struct auth_data_struct {
-  uint8_t postfix1[POSTFIX1_SIZE], postfix2[POSTFIX2_SIZE],
-      signature[SIGNATURE_SIZE], serial[DEVICE_SERIAL_SIZE];
-} auth_data_t;
-
 atecc_data_t atecc_data = {0};
-uint8_t challenge_no[32] = {0};
-extern uint8_t device_auth_flag;
-
-extern lv_task_t *timeout_task;
-extern lv_task_t *listener_task;
 
 #if (FIRMWARE_HASH_CALC == 0)
 static const uint8_t firmware_hash[] = {
@@ -130,259 +110,193 @@ static void helper_get_gendig_hash(atecc_slot_define_t slot,
                                    uint8_t *data,
                                    uint8_t *digest,
                                    uint8_t *postfix);
+void __attribute__((optimize("O0"))) device_authentication_controller(void) {
+  return;
+}
 
-void __attribute__((optimize("O0"))) device_authentication_controller() {
-  ASSERT((atecc_data.cfg_atecc608a_iface) != NULL);
+manager_auth_device_serial_sig_response_t __attribute__((optimize("O0")))
+sign_serial_number(void) {
+  manager_auth_device_serial_sig_response_t response =
+      MANAGER_AUTH_DEVICE_SERIAL_SIG_RESPONSE_INIT_ZERO;
 
-  switch (flow_level.level_three) {
-    case SIGN_SERIAL_NUMBER: {
-      uint8_t nonce[32] = {0};
-      auth_data_t auth_serial_packet = {0};
-      uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
-      uint8_t final_hash[32] = {0};
-      atca_sign_internal_in_out_t sign_internal_param = {0};
+  uint8_t nonce[32] = {0};
+  // auth_data_t auth_serial_packet = {0};
+  uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
+  uint8_t final_hash[32] = {0};
+  atca_sign_internal_in_out_t sign_internal_param = {0};
 
-      atecc_data.retries = DEFAULT_ATECC_RETRIES;
-      bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-      NVIC_DisableIRQ(OTG_FS_IRQn);
-      do {
-        OTG_FS_IRQHandler();
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    OTG_FS_IRQHandler();
 
-        if (atecc_data.status != ATCA_SUCCESS)
-          LOG_CRITICAL("AUTH SN: %04x, count:%d",
-                       atecc_data.status,
-                       DEFAULT_ATECC_RETRIES - atecc_data.retries);
+    if (atecc_data.status != ATCA_SUCCESS)
+      LOG_CRITICAL("AUTH SN: %04x, count:%d",
+                   atecc_data.status,
+                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
 
-        if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
-            ATCA_SUCCESS) {
-          continue;
-        }
+    if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
+        ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_nonce(nonce);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_nonce(nonce);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status =
-            atcab_gendig(ATCA_ZONE_DATA, slot_8_serial, NULL, 0);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_gendig(ATCA_ZONE_DATA, slot_8_serial, NULL, 0);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_sign_internal(
-            slot_2_auth_key, false, false, auth_serial_packet.signature);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status =
+        atcab_sign_internal(slot_2_auth_key, false, false, response.signature);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_read_zone(
-            ATCA_ZONE_DATA, slot_8_serial, 0, 0, auth_serial_packet.serial, 32);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_read_zone(
+        ATCA_ZONE_DATA, slot_8_serial, 0, 0, response.serial, 32);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        helper_get_gendig_hash(slot_8_serial,
-                               auth_serial_packet.serial,
-                               tempkey_hash,
-                               auth_serial_packet.postfix1);
+    helper_get_gendig_hash(
+        slot_8_serial, response.serial, tempkey_hash, response.postfix1);
 
-        sign_internal_param.message = tempkey_hash;
-        sign_internal_param.digest = final_hash;
+    sign_internal_param.message = tempkey_hash;
+    sign_internal_param.digest = final_hash;
 
-        helper_sign_internal_msg(&sign_internal_param,
-                                 SIGN_MODE_INTERNAL,
-                                 slot_2_auth_key,
-                                 slot_8_serial);
-        {
-          uint8_t result = ecdsa_verify_digest(&nist256p1,
-                                               get_auth_public_key(),
-                                               auth_serial_packet.signature,
-                                               sign_internal_param.digest);
-          if (atecc_data.status != ATCA_SUCCESS || result != 0) {
-            LOG_ERROR(
-                "err xxx32 fault %d verify %d", atecc_data.status, result);
-            continue;
-          }
-        }
-      } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
-      if (usb_irq_enable_on_entry == true)
-        NVIC_EnableIRQ(OTG_FS_IRQn);
+    helper_sign_internal_msg(&sign_internal_param,
+                             SIGN_MODE_INTERNAL,
+                             slot_2_auth_key,
+                             slot_8_serial);
+    {
+      uint8_t result = ecdsa_verify_digest(&nist256p1,
+                                           get_auth_public_key(),
+                                           response.signature,
+                                           sign_internal_param.digest);
+      if (atecc_data.status != ATCA_SUCCESS || result != 0) {
+        LOG_ERROR("err xxx32 fault %d verify %d", atecc_data.status, result);
+        continue;
+      }
+    }
+  } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
 
-      memcpy(auth_serial_packet.postfix2,
-             &tempkey_hash[32],
-             POSTFIX2_SIZE);    // postfix 2 (12bytes)
-      transmit_data_to_app(DEVICE_SERAIL_NO_SIGNED,
-                           (uint8_t *)&auth_serial_packet,
-                           AUTH_DATA_SERIAL_SIGN_MSG_SIZE);
+  memcpy(response.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
+  return response;
+}
 
-#if X1WALLET_INITIAL
-      flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
-      lv_task_set_prio(listener_task,
-                       LV_TASK_PRIO_MID);    // explicitly enable task listener
-    } break;
+manager_auth_device_challenge_sig_response_t __attribute__((optimize("O0")))
+sign_random_challenge(uint8_t *challenge) {
+  manager_auth_device_challenge_sig_response_t response =
+      MANAGER_AUTH_DEVICE_CHALLENGE_SIG_RESPONSE_INIT_ZERO;
 
-    case DEVICE_AUTH_INFINITE_WAIT: {
-      // do nothing, just wait
-#endif
-    } break;
-
-    case SIGN_CHALLENGE: {
-      uint8_t nonce[32] = {0};
-      auth_data_t auth_challenge_packet = {0};
-      uint8_t io_protection_key[32] = {0};
-      uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
-      uint8_t final_hash[32] = {0};
-      atca_sign_internal_in_out_t sign_internal_param = {0};
-      get_io_protection_key(io_protection_key);
+  uint8_t nonce[32] = {0};
+  // auth_data_t auth_challenge_packet = {0};
+  uint8_t io_protection_key[32] = {0};
+  uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
+  uint8_t final_hash[32] = {0};
+  atca_sign_internal_in_out_t sign_internal_param = {0};
+  get_io_protection_key(io_protection_key);
 #if (FIRMWARE_HASH_CALC == 1)
-      // generating firmware hash code
-      uint8_t firmware_hash[32];
-      fw_hash_calculate(firmware_hash);
+  // generating firmware hash code
+  uint8_t firmware_hash[32];
+  fw_hash_calculate(firmware_hash);
 #endif
-      for (int i = 0; i < 32; ++i)
-        challenge_no[i] = challenge_no[i] ^ firmware_hash[i];
+  for (int i = 0; i < 32; ++i)
+    challenge[i] = challenge[i] ^ firmware_hash[i];
 
-      atecc_data.retries = DEFAULT_ATECC_RETRIES;
-      bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-      NVIC_DisableIRQ(OTG_FS_IRQn);
-      do {
-        OTG_FS_IRQHandler();
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    OTG_FS_IRQHandler();
 
-        if (atecc_data.status != ATCA_SUCCESS)
-          LOG_CRITICAL("AERR CH: %04x, count:%d",
-                       atecc_data.status,
-                       DEFAULT_ATECC_RETRIES - atecc_data.retries);
+    if (atecc_data.status != ATCA_SUCCESS)
+      LOG_CRITICAL("AERR CH: %04x, count:%d",
+                   atecc_data.status,
+                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
 
-        if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
-            ATCA_SUCCESS) {
-          continue;
-        }
+    if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
+        ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_write_enc(slot_5_challenge,
-                                            0,
-                                            challenge_no,
-                                            io_protection_key,
-                                            slot_6_io_key);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_write_enc(
+        slot_5_challenge, 0, challenge, io_protection_key, slot_6_io_key);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_nonce(nonce);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_nonce(nonce);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status =
-            atcab_gendig(ATCA_ZONE_DATA, slot_5_challenge, NULL, 0);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status = atcab_gendig(ATCA_ZONE_DATA, slot_5_challenge, NULL, 0);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        atecc_data.status = atcab_sign_internal(
-            slot_2_auth_key, false, false, auth_challenge_packet.signature);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    atecc_data.status =
+        atcab_sign_internal(slot_2_auth_key, false, false, response.signature);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        helper_get_gendig_hash(slot_5_challenge,
-                               challenge_no,
-                               tempkey_hash,
-                               auth_challenge_packet.postfix1);
+    helper_get_gendig_hash(
+        slot_5_challenge, challenge, tempkey_hash, response.postfix1);
 
-        sign_internal_param.message = tempkey_hash;
-        sign_internal_param.digest = final_hash;
+    sign_internal_param.message = tempkey_hash;
+    sign_internal_param.digest = final_hash;
 
-        helper_sign_internal_msg(&sign_internal_param,
-                                 SIGN_MODE_INTERNAL,
-                                 slot_2_auth_key,
-                                 slot_5_challenge);
+    helper_sign_internal_msg(&sign_internal_param,
+                             SIGN_MODE_INTERNAL,
+                             slot_2_auth_key,
+                             slot_5_challenge);
 
-        // overwrite challenge slot to signature generation on same challenge
-        memset(challenge_no, 0, sizeof(challenge_no));
-        atecc_data.status = atcab_write_enc(slot_5_challenge,
-                                            0,
-                                            challenge_no,
-                                            io_protection_key,
-                                            slot_6_io_key);
-        if (atecc_data.status != ATCA_SUCCESS) {
-          continue;
-        }
+    // overwrite challenge slot to signature generation on same challenge
+    memset(challenge, 0, 32);
+    atecc_data.status = atcab_write_enc(
+        slot_5_challenge, 0, challenge, io_protection_key, slot_6_io_key);
+    if (atecc_data.status != ATCA_SUCCESS) {
+      continue;
+    }
 
-        {
-          uint8_t result = ecdsa_verify_digest(&nist256p1,
-                                               get_auth_public_key(),
-                                               auth_challenge_packet.signature,
-                                               sign_internal_param.digest);
-          if (atecc_data.status != ATCA_SUCCESS || result != 0)
-            LOG_ERROR(
-                "err xxx33 fault %d verify %d", atecc_data.status, result);
-        }
-      } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
-      if (usb_irq_enable_on_entry == true)
-        NVIC_EnableIRQ(OTG_FS_IRQn);
+    {
+      uint8_t result = ecdsa_verify_digest(&nist256p1,
+                                           get_auth_public_key(),
+                                           response.signature,
+                                           sign_internal_param.digest);
+      if (atecc_data.status != ATCA_SUCCESS || result != 0)
+        LOG_ERROR("err xxx33 fault %d verify %d", atecc_data.status, result);
+    }
+  } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
 
-      memcpy(auth_challenge_packet.postfix2,
-             &tempkey_hash[32],
-             POSTFIX2_SIZE);    // postfix 2 (23 bytes)
-      transmit_data_to_app(DEVICE_CHALLENGE_SIGNED,
-                           (uint8_t *)&auth_challenge_packet,
-                           AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE);
+  memcpy(response.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
 
-#if X1WALLET_INITIAL
-      flow_level.level_three = DEVICE_AUTH_INFINITE_WAIT;
-      lv_task_set_prio(listener_task,
-                       LV_TASK_PRIO_MID);    // explicitly enable task listener
-#endif
-    } break;
+  /* Zeroise IO protection key */
+  memset(&io_protection_key[0], 0, sizeof(io_protection_key));
+  return response;
+}
 
-    case AUTHENTICATION_SUCCESS: {
-      comm_process_complete();
-      reset_flow_level();
-      lv_obj_clean(lv_scr_act());
-#if X1WALLET_MAIN
-      set_auth_state(DEVICE_AUTHENTICATED);
-      device_auth_flag =
-          0;    // resets the flag set via desktop request during boot up
-      delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-#elif X1WALLET_INITIAL
-      flow_level.level_one = 8;
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-    } break;
-
-    case AUTHENTICATION_UNSUCCESSFUL: {
-      comm_process_complete();
-      reset_flow_level();
-      lv_obj_clean(lv_scr_act());
-#if X1WALLET_MAIN
-      /// if verification fails when initiated from settings, next device
-      /// startup will hold the device for another auth
-      set_auth_state(DEVICE_NOT_AUTHENTICATED);
-      device_auth_flag =
-          0;    /// resets the flag set via desktop request during boot up
-      delay_scr_init(ui_text_device_verification_failure, DELAY_TIME);
-      counter.next_event_flag =
-          false;    /// do not allow processing further events
-#elif X1WALLET_INITIAL
-      flow_level.level_one = 9;
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-    } break;
-
-    default:
-      return;    /// exit on Default case so that first boot variable is
-                 /// switched only on hitting a valid case
+void device_auth_handle_response(bool verified) {
+  if (true == verified) {
+    set_auth_state(DEVICE_AUTHENTICATED);
+    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  } else {
+    set_auth_state(DEVICE_NOT_AUTHENTICATED);
+    delay_scr_init(ui_text_device_verification_failure, DELAY_TIME);
   }
 
-  // first boot variable is switched if any of the cases are hit
-  if (get_first_boot_on_update()) {
-    lv_task_del(timeout_task);
-    set_auth_state(
-        get_auth_state());    /// Since we do not have setter for boot_flag,
-                              /// this indirectly disables the first_boot flag
-  }
+  return;
 }
 
 void helper_get_gendig_hash(atecc_slot_define_t slot,
@@ -444,8 +358,8 @@ ATCA_STATUS helper_sign_internal_msg(struct atca_sign_internal_in_out *param,
       (uint8_t)(param->key_config >> 0);    // KeyConfig[TempKeyFlags.keyId]
   msg[39] = (uint8_t)(param->key_config >> 8);
 
-  // TempKeyFlags (b0-3: keyId, b4: sourceFlag, b5: GenDigData, b6: GenKeyData,
-  // b7: NoMacFlag)
+  // TempKeyFlags (b0-3: keyId, b4: sourceFlag, b5: GenDigData, b6:
+  // GenKeyData, b7: NoMacFlag)
   msg[40] |= ((param->temp_key->key_id & 0x0F) << 0);
   msg[40] |= ((param->temp_key->source_flag & 0x01) << 4);
   msg[40] |= ((param->temp_key->gen_dig_data & 0x01) << 5);
