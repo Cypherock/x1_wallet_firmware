@@ -10,10 +10,17 @@ function wrong_dir {
 test -d common/cypherock-common/proto || wrong_dir
 
 # Make sure all directories exist for the proto-options
-test -d common/proto-options/ || mkdir common/proto-options/
-test -d common/proto-options/manager || mkdir common/proto-options/manager
-test -d common/proto-options/btc || mkdir common/proto-options/btc
-test -d common/proto-options/evm || mkdir common/proto-options/evm
+source_dir="common/cypherock-common/proto"
+destination_dir="common/proto-options/"
+
+mkdir -p "$destination_dir"
+
+# Find all directories in the source directory
+find "$source_dir" -type d -print0 | while IFS= read -r -d '' dir; do
+    # Create corresponding directories in the destination directory
+    rel_path="${dir#$source_dir}"
+    mkdir -p "$destination_dir/$rel_path"
+done
 
 FILES=$(find common/cypherock-common/proto -name '*.proto' | cut -f -1 -d "." )
 PWD="$(pwd)"
