@@ -1,0 +1,9 @@
+# Options for file common/cypherock-common/proto/evm/sign_msg.proto
+evm.SignTypedDataNode.name type:FT_POINTER
+evm.SignTypedDataNode.struct_name type:FT_POINTER
+evm.SignTypedDataNode.children type:FT_POINTER
+evm.SignMsgInitiateRequest.walletId type:FT_POINTER
+evm.SignMsgInitiateRequest.derivationPath type:FT_POINTER
+evm.SignMsgSignatureResponse.r type:FT_POINTER
+evm.SignMsgSignatureResponse.s type:FT_POINTER
+evm.SignMsgSignatureResponse.v type:FT_POINTER

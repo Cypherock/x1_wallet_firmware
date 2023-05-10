@@ -9,6 +9,12 @@ function wrong_dir {
 
 test -d common/cypherock-common/proto || wrong_dir
 
+# Make sure all directories exist for the proto-options
+test -d common/proto-options/ || mkdir common/proto-options/
+test -d common/proto-options/manager || mkdir common/proto-options/manager
+test -d common/proto-options/btc || mkdir common/proto-options/btc
+test -d common/proto-options/evm || mkdir common/proto-options/evm
+
 FILES=$(find common/cypherock-common/proto -name '*.proto' | cut -f -1 -d "." )
 PWD="$(pwd)"
 
@@ -44,7 +50,7 @@ function search_line {
 
 for FILE in ${FILES}; do
   PROTO_FILE="${PWD}/${FILE}.proto"
-  OPT_FILE="${PWD}/${FILE}.options"
+  OPT_FILE="${PWD}/"${FILE/"cypherock-common/proto"/proto-options}".options"
   echo "# Options for file ${FILE}.proto" > "${OPT_FILE}"
   while IFS= read -r line; do
     search_line "${line}"

@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/btc/get_public_key.proto
+btc.GetPublicKeyIntiateRequest.wallet_id type:FT_POINTER
+btc.GetPublicKeyIntiateRequest.derivation_path type:FT_POINTER
+btc.GetPublicKeyResultResponse.public_key type:FT_POINTER

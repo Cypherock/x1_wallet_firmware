@@ -1,0 +1,2 @@
+# Options for file common/cypherock-common/proto/core.proto
+core.Command.data type:FT_POINTER

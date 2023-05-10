@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/btc/get_xpubs.proto
+btc.GetXpubDerivationPath.path type:FT_POINTER
+btc.GetXpubsIntiateRequest.wallet_id type:FT_POINTER
+btc.GetXpubsIntiateRequest.derivation_paths type:FT_POINTER
+btc.GetXpubsResultResponse.xpubs type:FT_POINTER

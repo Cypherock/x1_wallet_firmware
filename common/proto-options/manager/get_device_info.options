@@ -1,0 +1,3 @@
+# Options for file common/cypherock-common/proto/manager/get_device_info.proto
+manager.GetDeviceInfoResultResponse.device_serial type:FT_POINTER
+manager.GetDeviceInfoResultResponse.applet_list type:FT_POINTER

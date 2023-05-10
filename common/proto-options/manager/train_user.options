@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/manager/train_user.proto
+manager.ExistingWalletItem.id type:FT_POINTER
+manager.ExistingWalletItem.name type:FT_POINTER
+manager.TrainUserResultResponse.existing_wallet_list type:FT_POINTER

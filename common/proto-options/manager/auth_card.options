@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/manager/auth_card.proto
+manager.AuthCardChallengeRequest.challenge type:FT_POINTER
+manager.AuthCardSerialSigResponse.serial type:FT_POINTER
+manager.AuthCardSerialSigResponse.signature type:FT_POINTER
+manager.AuthCardChallengeSigResponse.signature type:FT_POINTER
