@@ -150,6 +150,7 @@ int main(void) {
   application_init();
 
 #ifdef RUN_ENGINE
+  logo_scr_init(2000);
   while (1) {
     engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);

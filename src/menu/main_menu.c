@@ -62,6 +62,7 @@
 #include "main_menu.h"
 
 #include "constant_texts.h"
+#include "menu_priv.h"
 #include "status_api.h"
 #include "wallet_list.h"
 
@@ -84,7 +85,7 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 typedef struct {
-  bool update_req;
+  bool update_required;
   uint8_t wallet_count;
   uint8_t wallet_selected;
 } main_menu_ctx_t;
@@ -100,7 +101,7 @@ typedef enum {
  * STATIC VARIABLES
  *****************************************************************************/
 static main_menu_ctx_t main_menu_ctx = {
-    .update_req = true,
+    .update_required = true,
     .wallet_count = 0,
     .wallet_selected = MAIN_MENU_INVALID_WALLET_SELECTION};
 
@@ -153,7 +154,7 @@ static void main_menu_reset_context(void);
  * STATIC FUNCTIONS
  *****************************************************************************/
 static bool main_menu_get_update_req(void) {
-  return main_menu_ctx.update_req;
+  return main_menu_ctx.update_required;
 }
 
 static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx) {
@@ -188,7 +189,7 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx) {
 
 static void main_menu_reset_context(void) {
   /* Reset wallet count to 0 and set update required to true */
-  main_menu_ctx.update_req = true;
+  main_menu_ctx.update_required = true;
   main_menu_ctx.wallet_count = 0;
   main_menu_ctx.wallet_selected = MAIN_MENU_INVALID_WALLET_SELECTION;
   return;
@@ -197,7 +198,6 @@ static void main_menu_reset_context(void) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
 void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   /* First check if we even require to update the content on the main menu. This
    * check is mainly to handle cases where-in a background USB event was served
@@ -293,7 +293,7 @@ void main_menu_handler(engine_ctx_t *ctx,
 }
 
 void main_menu_set_update_req(bool update_required) {
-  main_menu_ctx.update_req = update_required;
+  main_menu_ctx.update_required = update_required;
   return;
 }
 

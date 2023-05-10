@@ -99,6 +99,9 @@ bool wallet_is_filled(uint8_t index, wallet_state *state_output) {
     return false;
   }
 
+  /* Make sure that we always work on the latest RAM instance */
+  get_flash_perm_instance();
+
   wallet_state state = flash_ram_instance.wallets[index].state;
 
   if (NULL != state_output) {

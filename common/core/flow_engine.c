@@ -158,9 +158,12 @@ bool engine_reset_flow(engine_ctx_t *ctx) {
     return result;
   }
 
+  /* Clear the buffer and index */
   size_t bytes_to_clear = ctx->max_capacity * (ctx->size_of_element);
-
   memzero(ctx->array, bytes_to_clear);
+
+  ctx->current_index = 0;
+  ctx->num_of_elements = 0;
 
   result = true;
   return result;

@@ -80,7 +80,12 @@
  * STATIC VARIABLES
  *****************************************************************************/
 flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {0};
+engine_ctx_t core_step_engine_ctx = {
+    .array = &core_step_buffer[0],
+    .current_index = 0,
+    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
+    .num_of_elements = 0,
+    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -89,33 +94,16 @@ engine_ctx_t core_step_engine_ctx = {0};
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Reset internal buffers and variables to the correct state
- *
- */
-void reset_buffers(void);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void reset_buffers(void) {
-  /* Zero-ise the buffer */
-  memset(&core_step_buffer[0], 0, sizeof(core_step_buffer));
-
-  /* Set array_list core_step_engine_ctx with appropriate values */
-  core_step_engine_ctx.array = &core_step_buffer[0];
-  core_step_engine_ctx.current_index = 0;
-  core_step_engine_ctx.max_capacity =
-      sizeof(core_step_buffer) / sizeof(core_step_buffer[0]);
-  core_step_engine_ctx.num_of_elements = 0;
-  core_step_engine_ctx.size_of_element = sizeof(core_step_buffer[0]);
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 engine_ctx_t *get_core_flow_ctx(void) {
-  reset_buffers();
+  engine_reset_flow(&core_step_engine_ctx);
 
   // TODO: Check onboarding status
 
