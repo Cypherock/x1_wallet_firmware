@@ -1,0 +1,2 @@
+# Options for file common/cypherock-common/proto/common.proto
+common.ChunkResponse.chunk type:FT_POINTER

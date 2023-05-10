@@ -1,0 +1,7 @@
+# Options for file common/cypherock-common/proto/evm/sign_txn.proto
+evm.SignTxnInitiateRequest.walletId type:FT_POINTER
+evm.SignTxnInitiateRequest.derivationPath type:FT_POINTER
+evm.SignTxnInitiateRequest.chain_id type:FT_POINTER
+evm.SignTxnSignatureResponse.r type:FT_POINTER
+evm.SignTxnSignatureResponse.s type:FT_POINTER
+evm.SignTxnSignatureResponse.v type:FT_POINTER

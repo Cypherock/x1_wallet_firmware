@@ -1,0 +1,6 @@
+# Options for file common/cypherock-common/proto/evm/get_public_keys.proto
+evm.GetPublicKeysDerivationPath.path type:FT_POINTER
+evm.GetPublicKeysIntiateRequest.wallet_id type:FT_POINTER
+evm.GetPublicKeysIntiateRequest.derivation_paths type:FT_POINTER
+evm.GetPublicKeysIntiateRequest.chain_id type:FT_POINTER
+evm.GetPublicKeysResultResponse.public_keys type:FT_POINTER

@@ -8,6 +8,7 @@ NANOPB_GEN="$(pwd)/vendor/nanopb/generator/nanopb_generator.py"
 PYTHON_VERSION="$(python --version)" || exit 1
 OUTPUT_DIR="$(pwd)/generated/proto"
 PROTO_SRC="$(pwd)/common/cypherock-common/proto"
+OPTIONS_DIR="$(pwd)/common/proto-options/"
 
 test -d "${PROTO_SRC}"
 test -f "${NANOPB_GEN}"
@@ -23,4 +24,4 @@ cd "${PROTO_SRC}"
 # btc.error.proto) as it would result into a collision.
 # By using <> format instead of "proto/" helps because in future, relocation
 # of generated files would not require updating this parameter.
-python "${NANOPB_GEN}" -q --generated-include-format "#include <%s>" --proto-path="${PROTO_SRC}" $(find "${PROTO_SRC}" -name "*.proto") --output-dir="${OUTPUT_DIR}" --c-style
+python "${NANOPB_GEN}" -q --generated-include-format "#include <%s>" --proto-path="${PROTO_SRC}" --options-path="${OPTIONS_DIR}"  $(find "${PROTO_SRC}" -name "*.proto") --output-dir="${OUTPUT_DIR}" --c-style

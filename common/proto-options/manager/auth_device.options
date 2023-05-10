@@ -1,0 +1,9 @@
+# Options for file common/cypherock-common/proto/manager/auth_device.proto
+manager.AuthDeviceChallengeRequest.challenge type:FT_POINTER
+manager.AuthDeviceSerialSigResponse.postfix1 type:FT_POINTER
+manager.AuthDeviceSerialSigResponse.postfix2 type:FT_POINTER
+manager.AuthDeviceSerialSigResponse.serial type:FT_POINTER
+manager.AuthDeviceSerialSigResponse.signature type:FT_POINTER
+manager.AuthDeviceChallengeSigResponse.postfix1 type:FT_POINTER
+manager.AuthDeviceChallengeSigResponse.postfix2 type:FT_POINTER
+manager.AuthDeviceChallengeSigResponse.signature type:FT_POINTER
