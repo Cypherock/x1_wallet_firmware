@@ -124,7 +124,7 @@ static void usb_construct_event(void) {
       "697420617320616e206572726f7220636173652e";
   uint16_t length = strlen(hex_str);
   hex_string_to_byte_array(hex_str, length, data);
-  usb_set_event(89, data, length >> 1);
+  usb_set_event(0, data, length >> 1, data);
 }
 
 static void init_callback(engine_ctx_t *ctx, const void *data_ptr) {

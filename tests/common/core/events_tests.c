@@ -129,7 +129,7 @@ TEST(event_getter_test, ui_event) {
   // trigger an ui event
   ui_set_confirm_event();
   // trigger an usb event
-  usb_set_event(89, NULL, 0);
+  usb_set_event(0, NULL, 0, NULL);
 
   get_events(evt_config, &evt_status);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
@@ -147,7 +147,7 @@ TEST(event_getter_test, usb_event) {
   // trigger an ui event
   ui_set_confirm_event();
   // trigger an usb event
-  usb_set_event(89, NULL, 0);
+  usb_set_event(0, NULL, 0, NULL);
 
   get_events(evt_config, &evt_status);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
@@ -171,7 +171,7 @@ TEST(event_getter_test, listening_all_events) {
   // trigger an ui event
   ui_set_confirm_event();
   // trigger an usb event
-  usb_set_event(89, NULL, 0);
+  usb_set_event(0, NULL, 0, NULL);
 
   get_events(evt_config, &evt_status);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
@@ -187,7 +187,7 @@ TEST(event_getter_test, listening_all_available_one) {
   evt_status_t evt_status = {0};
 
   // trigger an usb event
-  usb_set_event(89, NULL, 0);
+  usb_set_event(0, NULL, 0, NULL);
 
   get_events(evt_config, &evt_status);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
@@ -203,7 +203,7 @@ TEST(event_getter_test, disabled_events) {
   evt_status_t evt_status = {0};
 
   // trigger an usb event
-  usb_set_event(89, NULL, 0);
+  usb_set_event(0, NULL, 0, NULL);
 #if USE_SIMULATOR == 1
   p0_set_inactivity_evt(true);
 #endif /* USE_SIMULATOR == 1 */

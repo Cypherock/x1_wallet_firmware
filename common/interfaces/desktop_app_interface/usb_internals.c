@@ -236,9 +236,10 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
   }
   if (rx_packet->header.chunk_number == rx_packet->header.total_chunks) {
     comm_status.curr_cmd_state = CMD_STATE_RECEIVED;
-    usb_set_event(U32_READ_BE_ARRAY(comm_payload->raw_data),
-                  comm_payload->raw_data + sizeof(uint32_t),
-                  comm_payload->raw_data_length - sizeof(uint32_t));
+    usb_set_event(comm_payload->proto_data_length,
+                  comm_payload->proto_data,
+                  comm_payload->raw_data_length,
+                  comm_payload->raw_data);
   }
   send_cmd_ack_packet(rx_packet);
   LOG_SWV("#ORG#bs=%d, cs=%d, seq=%d, ccn=%d, ccc=%d, rl=%d\n",

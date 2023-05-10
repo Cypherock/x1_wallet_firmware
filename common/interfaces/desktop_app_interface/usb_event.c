@@ -82,6 +82,8 @@
  * STATIC VARIABLES
  *****************************************************************************/
 static usb_event_t usb_event;
+static const uint8_t *request_meta;
+static uint16_t request_meta_size;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -91,14 +93,22 @@ static usb_event_t usb_event;
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Reset the members of usb_event_t to decided default state.
+ * @details The instance after reset will represent the absence of any usb
+ * event as well as the members will be invalid/meaningless content.
+ *
+ * @param evt Pass the reference to an instance of usb_event_t to reset
+ */
+void reset_event_obj(usb_event_t *evt);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 void reset_event_obj(usb_event_t *evt) {
   evt->flag = false;
-  evt->cmd_id = 0;
-  evt->p_msg = NULL;
   evt->msg_size = 0;
+  evt->p_msg = NULL;
 }
 
 /*****************************************************************************
@@ -110,13 +120,15 @@ void usb_clear_event() {
   usb_reset_state();
 }
 
-void usb_set_event(const uint32_t cmd_id,
-                   const uint8_t *p_msg,
-                   const uint16_t msg_size) {
+void usb_set_event(const uint16_t proto_msg_size,
+                   const uint8_t *proto_buf,
+                   const uint16_t raw_msg_size,
+                   const uint8_t *raw_msg) {
   usb_event.flag = true;
-  usb_event.cmd_id = cmd_id;
-  usb_event.p_msg = p_msg;
-  usb_event.msg_size = msg_size;
+  usb_event.msg_size = raw_msg_size;
+  usb_event.p_msg = raw_msg;
+  request_meta = proto_buf;
+  request_meta_size = proto_msg_size;
 }
 
 bool usb_get_event(usb_event_t *evt) {
