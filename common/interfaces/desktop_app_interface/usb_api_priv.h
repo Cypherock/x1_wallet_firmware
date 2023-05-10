@@ -49,6 +49,7 @@ typedef enum comm_error_code {
   INVALID_PACKET_TYPE = 9,
   INVALID_CHUNK_NO = 10,
   INCOMPLETE_PACKET = 11,
+  APP_BUSY_WITH_OTHER_INTERFACE = 12,
 } comm_error_code_t;
 
 typedef enum comm_cmd_state {
@@ -147,6 +148,9 @@ typedef struct comm_status {
   // Host sync status (not to be sent to host)
   uint32_t host_sync_time;
   uint8_t host_sync_fails;
+
+  // Host interface while receiving data and while an application is in progress
+  comm_libusb__interface_e active_interface;
 } comm_status_t;
 
 /*****************************************************************************
@@ -166,6 +170,14 @@ uint8_t *get_io_buffer();
  * @brief Returns the reference to internal instance of comm_payload
  */
 comm_payload_t *get_comm_payload();
+
+/**
+ * @brief Resets the active interface(to COMM_LIBUSB__UNDEFINED) used to
+ * determine which interface is allowed to send new commands. The interface must
+ * be reset when an application is clsoed to allow any interface to communicate
+ * with device.
+ */
+void comm_reset_interface(void);
 
 /**
  * @brief Returns the reference to internal instance of comm_status

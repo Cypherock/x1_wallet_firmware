@@ -188,6 +188,13 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
   if (comm_status.curr_cmd_state == CMD_STATE_EXECUTING)
     return BUSY_PREVIOUS_CMD;
 
+  // Set active host interface if not set already
+  if (comm_status.active_interface == COMM_LIBUSB__UNDEFINED) {
+    comm_status.active_interface = rx_packet->interface;
+  } else if (comm_status.active_interface != rx_packet->interface) {
+    return APP_BUSY_WITH_OTHER_INTERFACE;
+  }
+
   comm_status.curr_cmd_state = CMD_STATE_RECEIVING;
   if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no ||
       rx_packet->header.chunk_number == 1)
@@ -415,6 +422,10 @@ static void comm_write_packet(const uint16_t chunk_number,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+void comm_reset_interface(void) {
+  comm_status.active_interface = COMM_LIBUSB__UNDEFINED;
+  return;
+}
 
 comm_status_t *get_comm_status() {
   return &comm_status;
