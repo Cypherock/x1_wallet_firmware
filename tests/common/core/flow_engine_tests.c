@@ -212,14 +212,12 @@ TEST(flow_engine_tests, engine_use_case_test) {
   // Create flow buffer to hold the flow_step_t for the steps required
   flow_step_t *engine_test_buffer[10];
 
-  array_list_t flow_list_array = {
+  engine_ctx_t flow_list = {
       .array = &engine_test_buffer[0],
       .current_index = 0,
       .max_capacity = sizeof(engine_test_buffer) / sizeof(flow_step_t *),
       .size_of_element = sizeof(flow_step_t *),
       .num_of_elements = 0};
-
-  engine_ctx_t flow_list = {.array_list_config = &flow_list_array};
 
   /* Reset buffer */
   TEST_ASSERT_TRUE(engine_reset_flow(&flow_list));

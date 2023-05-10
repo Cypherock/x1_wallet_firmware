@@ -1,64 +1,29 @@
 /**
- * @file    events.h
+ * @file    wallet_list.h
  * @author  Cypherock X1 Team
  * @brief
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-
-#ifndef EVENTS_H
-#define EVENTS_H
+#ifndef WALLET_LIST_H
+#define WALLET_LIST_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <inttypes.h>
 #include <stdbool.h>
-#include <stdint.h>
 
-#include "board.h"
-#include "lvgl.h"
-#include "nfc_events.h"
-#include "p0_events.h"
-#include "ui_events.h"
-#include "usb_api.h"
+#include "flash_api.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define EVT_CONFIG_UI_EVT (1 << 0)
-#define EVT_CONFIG_USB_EVT (1 << 1)
-#define EVT_CONGIG_NFC_EVT (1 << 2)
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef union {
-  struct {
-    uint8_t ui_events : 1;
-    uint8_t usb_events : 1;
-    uint8_t nfc_events : 1;
-    uint8_t rfu1 : 1;
-    uint8_t rfu2 : 1;
-    uint8_t rfu3 : 1;
-    uint8_t rfu4 : 1;
-    uint8_t rfu5 : 1;
-  } bits;
-  uint8_t byte;
-} evt_select_t;
-
-typedef struct {
-  evt_select_t evt_selection;
-  bool abort_disabled;
-  uint32_t timeout;
-} evt_config_t;
-
-typedef struct {
-  p0_evt_t p0_event;
-  ui_event_t ui_event;
-  usb_event_t usb_event;
-  nfc_event_t nfc_event;
-} evt_status_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -67,13 +32,13 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Get the events object
+ * @brief This API returns the total number of wallets that exists on the
+ * device. Additionally, it fills the array of char * with the wallet name
  *
- * @param evt_config
- * @param p_evt_status
+ * @param wallet_list Array of char * which needs to be filled by the API
+ * @return uint8_t Number of wallets which exist on the device
  */
-void get_events(evt_config_t evt_config, evt_status_t *p_evt_status);
+uint8_t get_wallet_list(const char *wallet_list[]);
 
-#endif /* EVENTS_H */
+#endif /* WALLET_LIST_H */

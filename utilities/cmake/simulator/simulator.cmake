@@ -37,6 +37,8 @@ else()
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         src/
+        src/menu
+        src/wallet
 
         src/level_one/controller
         src/level_one/tasks

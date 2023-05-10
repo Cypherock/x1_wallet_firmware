@@ -197,12 +197,12 @@ void level_two_tasks() {
         if (optionsIndex == LEVEL_THREE_TOGGLE_LOGGING)
           options_arr[advancedSettingsIndex] =
               (char *)(is_logging_enabled()
-                           ? ui_text_logging_export_options[0]
-                           : ui_text_logging_export_options[1]);
+                           ? ui_text_options_logging_export[0]
+                           : ui_text_options_logging_export[1]);
         else if (optionsIndex == LEVEL_THREE_TOGGLE_PASSPHRASE)
           options_arr[advancedSettingsIndex] =
-              (char *)(is_passphrase_enabled() ? u_text_passphrase_options[0]
-                                               : u_text_passphrase_options[1]);
+              (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
+                                               : ui_text_options_passphrase[1]);
         else
           options_arr[advancedSettingsIndex] =
               (char *)ui_text_options_advanced_settings[optionsIndex];

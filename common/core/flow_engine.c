@@ -129,8 +129,7 @@ static bool engine_get_current_flow_step(engine_ctx_t *ctx,
  * STATIC FUNCTIONS
  *****************************************************************************/
 static bool engine_check_ctx(engine_ctx_t *ctx) {
-  if ((NULL == ctx) || (NULL == ctx->array_list_config) ||
-      (NULL == ctx->array_list_config->array)) {
+  if ((NULL == ctx) || (NULL == ctx->array)) {
     return false;
   }
 
@@ -145,7 +144,7 @@ static bool engine_get_current_flow_step(engine_ctx_t *ctx,
     return result;
   }
 
-  result = array_list_get_element(ctx->array_list_config, flow_step_dptr);
+  result = array_list_get_element(ctx, flow_step_dptr);
   return result;
 }
 
@@ -159,10 +158,12 @@ bool engine_reset_flow(engine_ctx_t *ctx) {
     return result;
   }
 
-  size_t bytes_to_clear = ctx->array_list_config->max_capacity *
-                          (ctx->array_list_config->size_of_element);
+  /* Clear the buffer and index */
+  size_t bytes_to_clear = ctx->max_capacity * (ctx->size_of_element);
+  memzero(ctx->array, bytes_to_clear);
 
-  memzero(ctx->array_list_config->array, bytes_to_clear);
+  ctx->current_index = 0;
+  ctx->num_of_elements = 0;
 
   result = true;
   return result;
@@ -186,7 +187,7 @@ bool engine_add_next_flow_step(engine_ctx_t *ctx,
    * and NOT the actual content, therefore we need to pass the double pointer to
    * the API */
   const flow_step_t **flow_step_dptr = &flow_step_ptr;
-  result = array_list_insert(ctx->array_list_config, flow_step_dptr);
+  result = array_list_insert(ctx, flow_step_dptr);
   return result;
 }
 
@@ -197,7 +198,7 @@ bool engine_goto_next_flow_step(engine_ctx_t *ctx) {
     return result;
   }
 
-  result = array_list_iterate_next(ctx->array_list_config);
+  result = array_list_iterate_next(ctx);
   return result;
 }
 
@@ -208,7 +209,7 @@ bool engine_goto_prev_flow_step(engine_ctx_t *ctx) {
     return result;
   }
 
-  result = array_list_iterate_back(ctx->array_list_config);
+  result = array_list_iterate_back(ctx);
   return result;
 }
 
@@ -219,7 +220,7 @@ bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
     return result;
   }
 
-  result = array_list_delete_entry(ctx->array_list_config);
+  result = array_list_delete_entry(ctx);
   return result;
 }
 

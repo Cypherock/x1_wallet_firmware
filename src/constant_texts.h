@@ -35,26 +35,39 @@
 // product hash
 extern const char *product_hash;
 
-// level one
+// Main menu text
 #define NUMBER_OF_OPTIONS_MAIN_MENU 2
+
+#define MAIN_MENU_CREATE_WALLET_INDEX 0
+#define MAIN_MENU_SETTINGS_INDEX 1
+extern const char *ui_text_heading_main_menu;
 extern const char *ui_text_options_main_menu[];
 
-// level two
+// Old wallet menu text
 #define NUMBER_OF_OPTIONS_OLD_WALLET 2
 extern const char *ui_text_options_old_wallet[];
 
+// New wallet menu text
 #define NUMBER_OF_OPTIONS_NEW_WALLET 2
+extern const char *ui_text_heading_new_wallet;
 extern const char *ui_text_options_new_wallet[];
 
+// Settings menu text
 #ifdef DEV_BUILD
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 10
 #else
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
-#endif
+#endif /* DEV_BUILD*/
+
+extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_advanced_settings[];
+
+extern const char *ui_text_options_logging_export[];
+extern const char *ui_text_options_passphrase[];
+
+#if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
-extern const char *ui_text_logging_export_options[];
-extern const char *u_text_passphrase_options[];
+#endif /* DEV_BUILD */
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 

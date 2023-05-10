@@ -59,20 +59,23 @@
 #include "ui_menu.h"
 #include "ui_text_slideshow.h"
 
-const char *ui_text_options_main_menu[] = {"Main Menu",
-                                           "Create Wallet",
+// Main menu text
+const char *ui_text_heading_main_menu = "Main menu";
+const char *ui_text_options_main_menu[] = {"Create wallet",
                                            //"Add arbitrary data",
                                            "Settings"};
 
 // level two
 const char *ui_text_options_old_wallet[] = {"View Seed", "Delete Wallet"};
 
-const char *ui_text_options_new_wallet[] = {"Create Wallet",
-                                            "Generate New Wallet",
+// New wallet menu text
+const char *ui_text_heading_new_wallet = "Create wallet";
+const char *ui_text_options_new_wallet[] = {"Generate New Wallet",
                                             "Restore from Seed"};
 
+// Settings menu text
+const char *ui_text_heading_settings = "Settings";
 const char *ui_text_options_advanced_settings[] = {
-    "Settings",
     "Restore wallets from cards",
     "Check Card health",
     "Rotate Display",
@@ -87,21 +90,23 @@ const char *ui_text_options_advanced_settings[] = {
 #endif
 };
 
+const char *ui_text_options_passphrase[] = {
+    "Disable Passphrase Step",
+    "Enable Passphrase Step",
+};
+
+const char *ui_text_options_logging_export[] = {
+    "Disable logs",
+    "Enable logs",
+};
+
+#if DEV_BUILD
 const char *ui_text_options_buzzer_adjust[] = {
     "Toggle buzzer",
     "Disable",
     "Enable",
 };
-
-const char *u_text_passphrase_options[] = {
-    "Disable Passphrase Step",
-    "Enable Passphrase Step",
-};
-
-const char *ui_text_logging_export_options[] = {
-    "Disable logs",
-    "Enable logs",
-};
+#endif /* DEV_BUILD */
 
 // wallet creation
 const char *ui_text_verification_is_now_complete_messages[] = {

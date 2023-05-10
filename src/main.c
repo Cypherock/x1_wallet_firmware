@@ -98,6 +98,10 @@
 #include "ui_instruction.h"
 #include "ui_logo.h"
 
+#ifdef RUN_ENGINE
+#include "core_flow_init.h"
+#endif /* RUN_ENGINE */
+
 #if USE_SIMULATOR == 0
 #include "cmsis_gcc.h"
 #include "main.h"
@@ -137,12 +141,21 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
+
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
 #endif
 
   application_init();
+
+#ifdef RUN_ENGINE
+  logo_scr_init(2000);
+  while (1) {
+    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+    engine_run(main_engine_ctx);
+  }
+#else /* RUN_ENGINE */
 
 #if USE_SIMULATOR == 0
   if (fault_in_prev_boot()) {
@@ -224,6 +237,7 @@ int main(void) {
 #endif
 #endif    // USE_SIMULATOR
   }
+#endif    /* RUN_ENGINE */
   return 0;
 }
 

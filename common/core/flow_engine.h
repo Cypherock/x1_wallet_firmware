@@ -30,9 +30,7 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  array_list_t *array_list_config;
-} engine_ctx_t;
+typedef array_list_t engine_ctx_t;
 
 typedef void (*step_init_cb_t)(engine_ctx_t *, const void *);
 typedef void (*flow_p0_evt_cb_t)(engine_ctx_t *, p0_evt_t, const void *);
