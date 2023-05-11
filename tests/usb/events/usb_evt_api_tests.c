@@ -63,6 +63,9 @@
 #include "usb_api_priv.h"
 #include "utils.h"
 
+const uint8_t core_msg[] = {10, 2, 8, 1};
+static uint8_t data[1024] = {0};
+
 TEST_GROUP(usb_evt_api_test);
 
 /**
@@ -72,7 +75,6 @@ TEST_GROUP(usb_evt_api_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(usb_evt_api_test) {
-  uint8_t data[1024] = {0};
   LOG_SWV("Setting up test...\n");
   const char *hex_str =
       "406272696566205465737420746865206265686176696f7572206f662077726f6e672063"
@@ -88,7 +90,7 @@ TEST_SETUP(usb_evt_api_test) {
       "697420617320616e206572726f7220636173652e";
   uint16_t length = strlen(hex_str);
   hex_string_to_byte_array(hex_str, length, data);
-  usb_set_event(0, data, length >> 1, data);
+  usb_set_event(4, core_msg, length >> 1, data);
 }
 
 /**
@@ -129,7 +131,7 @@ TEST(usb_evt_api_test, consume_and_free) {
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 
   uint8_t msg[1] = {0};
-  usb_set_event(0, msg, 1, msg);
+  usb_set_event(4, core_msg, 1, msg);
 
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
   TEST_ASSERT_TRUE(verify_event(89, 1, &usb_evt));
