@@ -143,7 +143,8 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
 
   // invalid buffer ref, 0 size & decode failure are error situation
   if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
-      NULL == msg.buffer || 0 == msg.size) {
+      NULL == msg.buffer || 0 == msg.size ||
+      CORE_MSG_CMD_TAG != core_msg_p.which_type) {
     return CORE_ERROR_TYPE_INVALID_MSG;
   }
 
