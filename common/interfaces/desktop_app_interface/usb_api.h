@@ -118,13 +118,14 @@ void usb_reject_invalid_request();
  * @brief
  * @details
  *
- * @param cmd   .
  * @param data  .
  * @param size  .
  *
  * @see
  * @since v1.0.0
  */
+void usb_send_msg(const uint8_t *msg, uint32_t size);
+// TODO: Update after refactor; remove the following
 void usb_send_data(uint32_t cmd, const uint8_t *data, uint32_t size);
 
 /**
