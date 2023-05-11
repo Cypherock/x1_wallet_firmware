@@ -1,11 +1,10 @@
 #ifndef BUZZER_H
 #define BUZZER_H
 
+#include "board.h"
 #include "stdint.h"
 
-#include "board.h"
-
-//Pins for Reader are defined here
+// Pins for Reader are defined here
 #define BUZZER_DURATION 100
 
 void buzzer_init(void);

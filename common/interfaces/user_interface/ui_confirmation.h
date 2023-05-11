@@ -4,8 +4,9 @@
  * @brief   Title of the file.
  *          Short description of the file
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
- * 
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ * target=_blank>https://mitcc.org/</a>
+ *
  */
 #ifndef UI_CONFIRMATION_H
 #define UI_CONFIRMATION_H
@@ -22,7 +23,7 @@
  * @note
  */
 struct Confirm_Data {
-	char *text;
+  char *text;
 };
 
 /**
@@ -35,15 +36,15 @@ struct Confirm_Data {
  * @note
  */
 struct Confirm_Object {
-	lv_obj_t *text;
-	lv_obj_t *cancel_btn;
-	lv_obj_t *next_btn;
+  lv_obj_t *text;
+  lv_obj_t *cancel_btn;
+  lv_obj_t *next_btn;
 };
 
 /**
  * @brief Initialize and create confirm screen
  * @details
- * 
+ *
  * @param text Confirm text
  *
  * @return

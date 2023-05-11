@@ -1,4 +1,15 @@
-file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*")
+IF(UNIT_TESTS_SWITCH)
+        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*" "tests/*.*")
+        #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
+        LIST(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.c")
+
+        #need these macros to correctly configure unity test framework
+        add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
+        add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)
+ELSE()
+        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*")
+ENDIF(UNIT_TESTS_SWITCH)
+
 add_compile_definitions(USE_SIMULATOR=1 ATCAPRINTF USE_MONERO=1 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
@@ -96,8 +107,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         simulator/lv_drivers/indev
         simulator/porting
         simulator/USB
+
+        #unit test framework
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity/src>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity/extras/fixture/src>
+
+        #unit test modules: this list needs to be updated whenever a test module is being added
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/utils>
         )
 
+IF(UNIT_TESTS_SWITCH)
+        target_compile_options(${EXECUTABLE} PRIVATE --coverage -g -O0)
+        target_link_libraries(${EXECUTABLE} PRIVATE -lgcov )
+ENDIF(UNIT_TESTS_SWITCH)
 target_link_libraries(${EXECUTABLE} PRIVATE ${SDL2_LIBRARIES} -lm)
 target_link_options(${EXECUTABLE} PRIVATE ${inherited})
 add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXECUTABLE})

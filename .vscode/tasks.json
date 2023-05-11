@@ -7,7 +7,6 @@
             "args": [
                 "..",
                 "-DDEV_SWITCH=OFF",
-                "-DDEBUG_SWITCH=OFF",
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Simulator",
                 "-DFIRMWARE_TYPE=Main",
@@ -39,7 +38,6 @@
             "args": [
                 "..",
                 "-DDEV_SWITCH=OFF",
-                "-DDEBUG_SWITCH=OFF",
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Simulator",
                 "-DFIRMWARE_TYPE=Initial",
@@ -71,7 +69,6 @@
             "args": [
                 "..",
                 "-DDEV_SWITCH=OFF",
-                "-DDEBUG_SWITCH=OFF",
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Device",
                 "-DFIRMWARE_TYPE=Main",
@@ -106,7 +103,6 @@
             "args": [
                 "..",
                 "-DDEV_SWITCH=OFF",
-                "-DDEBUG_SWITCH=OFF",
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_BUILD_PLATFORM=Device",
                 "-DFIRMWARE_TYPE=Initial",

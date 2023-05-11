@@ -4,7 +4,8 @@
  * @brief   Card health check task.
  *          This file contains the implementation of the card health check task.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
- * <br/> You may obtain a copy of license at <a href="https://mitcc.org/" target=_blank>https://mitcc.org/</a>
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
@@ -55,14 +56,14 @@
  *
  ******************************************************************************
  */
-#include "flash_config.h"
+#include "app_error.h"
+#include "controller_tap_cards.h"
 #include "cy_card_hc.h"
-#include "ui_instruction.h"
+#include "flash_config.h"
 #include "ui_delay.h"
+#include "ui_instruction.h"
 #include "ui_list.h"
 #include "ui_message.h"
-#include "controller_tap_cards.h"
-#include "app_error.h"
 #include "ui_multi_instruction.h"
 
 extern uint8_t *wallet_list[MAX_WALLETS_ALLOWED][2];
@@ -70,55 +71,64 @@ extern uint8_t wallet_count;
 extern uint32_t card_fault_status;
 void cyt_card_hc() {
 #if X1WALLET_MAIN
-    switch (flow_level.level_three) {
-        case CARD_HC_START:
-            mark_event_over();
-            break;
+  switch (flow_level.level_three) {
+    case CARD_HC_START:
+      mark_event_over();
+      break;
 
-        case CARD_HC_TAP_CARD:{
-            instruction_scr_init(ui_text_place_card_below, ui_text_tap_a_card);
-            instruction_scr_change_text(ui_text_card_health_check_start, true);
-            mark_event_over();
-        } break;
+    case CARD_HC_TAP_CARD: {
+      instruction_scr_init(ui_text_place_card_below, ui_text_tap_a_card);
+      instruction_scr_change_text(ui_text_card_health_check_start, true);
+      mark_event_over();
+    } break;
 
-        case CARD_HC_DISPLAY_CARD_HEALTH: {
-            char error_scr_list[3][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION]={"","",""};
-            const char *pptr[3] = {error_scr_list[0], error_scr_list[1], error_scr_list[2]};
-            uint8_t str_index=0;
-            if(card_fault_status == 0){
-                pptr[str_index++] = ui_text_card_seems_healthy;
-                pptr[str_index++] = ui_text_click_to_view_wallets;
-            }
-            else{
-                snprintf(error_scr_list[str_index++], MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION, "%s: C%04lx", ui_text_card_health_check_error[0], card_fault_status);
-                pptr[str_index++] = ui_text_card_health_check_error[1];
-                if(wallet_count > MAX_WALLETS_ALLOWED)
-                    pptr[str_index++] = ui_text_no_wallets_fetched;
-                else
-                    pptr[str_index++] = ui_text_click_to_view_wallets;
-            }
-            multi_instruction_init(pptr, str_index, DELAY_TIME, true);
-        } break;
+    case CARD_HC_DISPLAY_CARD_HEALTH: {
+      char error_scr_list[3][MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION] = {"", "", ""};
+      const char *pptr[3] = {
+          error_scr_list[0], error_scr_list[1], error_scr_list[2]};
+      uint8_t str_index = 0;
+      if (card_fault_status == 0) {
+        pptr[str_index++] = ui_text_card_seems_healthy;
+        pptr[str_index++] = ui_text_click_to_view_wallets;
+      } else {
+        snprintf(error_scr_list[str_index++],
+                 MAX_NUM_OF_CHARS_IN_AN_INSTRUCTION,
+                 "%s: C%04lx",
+                 ui_text_card_health_check_error[0],
+                 card_fault_status);
+        pptr[str_index++] = ui_text_card_health_check_error[1];
+        if (wallet_count > MAX_WALLETS_ALLOWED)
+          pptr[str_index++] = ui_text_no_wallets_fetched;
+        else
+          pptr[str_index++] = ui_text_click_to_view_wallets;
+      }
+      multi_instruction_init(pptr, str_index, DELAY_TIME, true);
+    } break;
 
-        case CARD_HC_DISPLAY_WALLETS:{
-            if(wallet_count == 0){
-                message_scr_init(ui_text_no_wallets_present);
-            }
-            else if(wallet_count <= MAX_WALLETS_ALLOWED){
-                char choices[MAX_WALLETS_ALLOWED][15]={"","","",""}, heading[50];
-                for(int i=0; i < wallet_count; i++){
-                    strcpy(choices[i], (char*)wallet_list[i][0]);
-                }
-                snprintf(heading, sizeof(heading), "Wallets in Card #%d", decode_card_number(tap_card_data.tapped_card));
-                list_init(choices, wallet_count, heading, false);
-            }
-            else{
-                mark_event_cancel();
-            }
-        } break;
+    case CARD_HC_DISPLAY_WALLETS: {
+      if (wallet_count == 0) {
+        message_scr_init(ui_text_no_wallets_present);
+      } else if (wallet_count <= MAX_WALLETS_ALLOWED) {
+        char choices[MAX_WALLETS_ALLOWED][MAX_MNEMONIC_WORD_LENGTH] = {"",
+                                                                       "",
+                                                                       "",
+                                                                       ""},
+             heading[50];
+        for (int i = 0; i < wallet_count; i++) {
+          strcpy(choices[i], (char *)wallet_list[i][0]);
+        }
+        snprintf(heading,
+                 sizeof(heading),
+                 "Wallets in Card #%d",
+                 decode_card_number(tap_card_data.tapped_card));
+        list_init(choices, wallet_count, heading, false);
+      } else {
+        mark_event_cancel();
+      }
+    } break;
 
-        default:
-            reset_flow_level();
-    }
+    default:
+      reset_flow_level();
+  }
 #endif
 }
