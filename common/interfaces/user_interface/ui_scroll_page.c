@@ -379,6 +379,9 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
 
   switch (lvglEvent) {
     case LV_EVENT_KEY: {
+      if (LV_BTN_STATE_PR == lv_btn_get_state(pLvglArrowObject)) {
+        lv_btn_set_state(pLvglArrowObject, LV_BTN_STATE_REL);
+      }
       lv_key_t keyPressed = lv_indev_get_key(ui_get_indev());
       if (LV_KEY_RIGHT == keyPressed) {
         if (true == page_increment()) {
