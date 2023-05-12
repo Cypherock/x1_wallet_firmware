@@ -318,10 +318,10 @@ static void send_status_packet(const packet_t *rx_packet) {
   payload[3] = 0x00;    // dummy raw length
 
   // reserve space for length of streams
-  uint8_t len_size = 4;
   core_status_t status = get_core_status();
   pb_ostream_t stream =
-      pb_ostream_from_buffer(payload + len_size, sizeof(payload) - len_size);
+      pb_ostream_from_buffer(payload + COMM_SZ_RESERVED_SPACE,
+                             sizeof(payload) - COMM_SZ_RESERVED_SPACE);
 
   // append the info native to comm module; the app-core cannot provide this
   status.current_cmd_seq = comm_status.curr_cmd_seq_no;
@@ -335,7 +335,7 @@ static void send_status_packet(const packet_t *rx_packet) {
                     1,
                     0xFFFF,
                     PKT_TYPE_STATUS_ACK,
-                    stream.bytes_written + len_size,
+                    stream.bytes_written + COMM_SZ_RESERVED_SPACE,
                     payload,
                     rx_packet->interface);
 }

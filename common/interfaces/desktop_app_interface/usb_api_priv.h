@@ -30,7 +30,8 @@
 #define COMM_PKT_MAX_LEN 64
 #define COMM_MAX_PAYLOAD_SIZE (COMM_PKT_MAX_LEN - COMM_HEADER_SIZE)
 
-#define COMM_BUFFER_SIZE (6 * 1024)
+#define COMM_SZ_RESERVED_SPACE 4
+#define COMM_BUFFER_SIZE ((size_t)6 * 1024)
 
 /*****************************************************************************
  * TYPEDEFS

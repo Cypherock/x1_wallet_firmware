@@ -215,7 +215,10 @@ void usb_send_data(const uint32_t command_type,
 }
 
 void usb_send_msg(const uint8_t *msg, const uint32_t size) {
-  uint8_t len_size = 4;
+  if (NULL == msg || 0 == size) {
+    return;
+  }
+
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   LOG_SWV("%s: %ld\n", __func__, size);
 
@@ -223,24 +226,34 @@ void usb_send_msg(const uint8_t *msg, const uint32_t size) {
   usb_clear_event();
   get_comm_status()->curr_cmd_state = CMD_STATE_DONE;
 
-  // TODO: get context from core
+  // TODO: get core_msg_t from core
   // encode msg-context directly into payload buffer
   core_msg_t core_msg = {.which_type = CORE_MSG_CMD_TAG,
                          .type.cmd.applet_id = 1};
-  pb_ostream_t stream = pb_ostream_from_buffer(comm_io_buffer + len_size,
-                                               COMM_BUFFER_SIZE - len_size);
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(comm_io_buffer + COMM_SZ_RESERVED_SPACE,
+                             COMM_BUFFER_SIZE - COMM_SZ_RESERVED_SPACE);
   ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
+  // catch the buffer overflow situation
+  ASSERT((COMM_SZ_RESERVED_SPACE + stream.bytes_written + size) <=
+         COMM_BUFFER_SIZE);
   comm_set_payload_struct(stream.bytes_written, size);
 
-  // write stream lengths into payload buffer
+  // write stream lengths into payload buffer as follows
+  // core_msg_len (2-bytes) : app_msg_len (2-bytes) : core_msg : app_msg
+  // write core msg length into payload buffer
   comm_io_buffer[0] = (stream.bytes_written >> 8) & 0xFF;
   comm_io_buffer[1] = stream.bytes_written & 0xFF;
-  comm_io_buffer[2] = ((size + sizeof(uint32_t)) >> 8) & 0xFF;
-  comm_io_buffer[3] = (size + sizeof(uint32_t)) & 0xFF;
+  // write app msg length into payload buffer
+  comm_io_buffer[2] = ((size + COMM_SZ_RESERVED_SPACE) >> 8) & 0xFF;
+  comm_io_buffer[3] = (size + COMM_SZ_RESERVED_SPACE) & 0xFF;
 
-  // copy application stream into payload buffer
   if (0 < size) {
-    memcpy(comm_io_buffer + len_size + stream.bytes_written, msg, size);
+    // copy app message into payload buffer after core-msg
+    // COMM_SZ_RESERVED_SPACE + core_msg_len
+    memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE + stream.bytes_written,
+           msg,
+           size);
   }
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
