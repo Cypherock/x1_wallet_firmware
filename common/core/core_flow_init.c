@@ -62,6 +62,7 @@
 #include "core_flow_init.h"
 
 #include "main_menu.h"
+#include "manager.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

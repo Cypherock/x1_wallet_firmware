@@ -31,7 +31,7 @@ typedef struct cy_app_desc {
   const uint32_t id;
   const uint32_t version;
 
-  const char *name;
+  const char name[REGISTRY_APP_NAME_SIZE];
 } cy_app_desc_t;
 
 /*****************************************************************************

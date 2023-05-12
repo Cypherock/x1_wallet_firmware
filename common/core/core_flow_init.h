@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include "flow_engine.h"
-#include "manager.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
