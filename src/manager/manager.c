@@ -101,6 +101,11 @@ static const cy_app_desc_t app_desc = {.id = 1,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
+/**
+ * @brief Gets the app descriptor of manager app
+ *
+ * @return Return a const reference to the manager app descriptor
+ */
 const cy_app_desc_t *manager_get_descriptor() {
   return &app_desc;
 }

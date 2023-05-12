@@ -139,7 +139,7 @@ bool registry_add_app(const cy_app_desc_t *app_desc) {
   // ensure registry storage does not overflow
   ASSERT(app_desc_count < REGISTRY_MAX_APPS);
 
-  descriptors[app_desc_count - 1] = app_desc;
+  descriptors[app_desc_count] = app_desc;
   app_desc_count++;
   status = true;
   return status;
@@ -162,7 +162,7 @@ bool registry_find_app_desc(const cy_app_desc_t *app_desc) {
 const cy_app_desc_t *registry_get_app_desc(uint32_t app_id) {
   const cy_app_desc_t *desc = NULL;
 
-  for (int desc_idx = 0; desc_idx < app_desc_count; desc_idx++) {
+  for (uint16_t desc_idx = 0; desc_idx < app_desc_count; desc_idx++) {
     if (descriptors[desc_idx]->id == app_id) {
       desc = descriptors[desc_idx];
     }

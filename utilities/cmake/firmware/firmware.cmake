@@ -41,6 +41,7 @@ else()
 endif()
 target_include_directories(${EXECUTABLE} PRIVATE
         src/
+        src/manager
         src/menu
         src/wallet
 
