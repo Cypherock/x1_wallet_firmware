@@ -95,6 +95,8 @@ event_callback_tester_t callback_test = {.p0_event = true,
                                          .ui_event = true,
                                          .usb_event = true};
 
+static const uint8_t core_msg[] = {10, 2, 8, 1};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -124,7 +126,7 @@ static void usb_construct_event(void) {
       "697420617320616e206572726f7220636173652e";
   uint16_t length = strlen(hex_str);
   hex_string_to_byte_array(hex_str, length, data);
-  usb_set_event(89, data, length >> 1);
+  usb_set_event(4, core_msg, length >> 1, data);
 }
 
 static void init_callback(engine_ctx_t *ctx, const void *data_ptr) {

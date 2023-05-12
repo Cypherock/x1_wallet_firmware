@@ -217,7 +217,10 @@ void comm_packet_parser(const uint8_t *data,
  * @details When the usb data is completely received in the interrupt, the event
  * will be registered with the usb_event module.
  */
-void usb_set_event(uint32_t cmd_id, const uint8_t *p_msg, uint16_t msg_size);
+void usb_set_event(uint16_t core_msg_size,
+                   const uint8_t *core_msg_buffer,
+                   uint16_t app_msg_size,
+                   const uint8_t *app_msg);
 
 #ifndef OLD_USB_API_H    // TODO: Update after refactor; Remove me
 /**
