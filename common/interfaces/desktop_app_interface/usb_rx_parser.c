@@ -143,13 +143,13 @@ static uint8_t SDK_RESP_PACKET[] = {
     0x01,    // data length (1 byte), current packet (2 bytes), packet count (2
              // bytes)
     0x00,
-    0x02,
+    0x03,
     0x00,
-    0x06,
     0x00,
-    0x00,    // SDK version 2.6.0 for current working protocol
-    0xA5,
-    0x61    // Checksum
+    0x00,
+    0x00,    // SDK version 3.0.0 for current working protocol
+    0xBD,
+    0x90    // Checksum
 };
 
 /*****************************************************************************
