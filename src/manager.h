@@ -1,26 +1,19 @@
 /**
- * @file    core_flow_init.h
+ * @file    manager.h
  * @author  Cypherock X1 Team
- * @brief
- * @details
-
+ * @brief   Manager APIs.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
- *
  */
-
-#ifndef CORE_FLOW_INIT_H
-#define CORE_FLOW_INIT_H
+#ifndef MANAGER_APP_H
+#define MANAGER_APP_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stddef.h>
-#include <stdint.h>
 
-#include "flow_engine.h"
-#include "manager.h"
+#include "app_registry.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -38,16 +31,6 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Get the core flow ctx object
- *
- * @return const engine_ctx_t*
- */
-engine_ctx_t *get_core_flow_ctx(void);
+const cy_app_desc_t *manager_get_descriptor();
 
-/**
- * @brief Initializes the app registry list with all the specified app entries.
- */
-void core_init_app_registry();
-
-#endif /* CORE_FLOW_INIT_H */
+#endif

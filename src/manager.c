@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    manager.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Manager for the core features.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,9 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "main_menu.h"
+#include "manager.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -70,7 +69,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -79,13 +77,13 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
+
+/**
+ * @brief Initializes the descriptors for this manager application
+ */
+static const cy_app_desc_t app_desc = {.id = 1,
+                                       .version = 0,
+                                       .name = "X1Vault manager"};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -102,22 +100,7 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  // TODO: Check onboarding status
-
-  // TODO: Check device authentication status
-
-  // TODO: Add correct first step of the flow based on the device
-  // auth/onboarding status
-
-  // As of now, hard code main menu to be the first flow as of now
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-
-  return &core_step_engine_ctx;
+const cy_app_desc_t *manager_get_descriptor() {
+  return &app_desc;
 }
-
-void core_init_app_registry() {
-  registry_add_app(manager_get_descriptor());
-};
