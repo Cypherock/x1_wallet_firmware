@@ -62,6 +62,7 @@
 #include "main_menu.h"
 
 #include "constant_texts.h"
+#include "host_interface.h"
 #include "menu_priv.h"
 #include "status_api.h"
 #include "wallet_list.h"
@@ -113,7 +114,7 @@ static const evt_config_t main_menu_evt_config = {
 static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
                                            .p0_cb = NULL,
                                            .ui_cb = main_menu_handler,
-                                           .usb_cb = NULL,
+                                           .usb_cb = host_interface,
                                            .nfc_cb = NULL,
                                            .evt_cfg_ptr = &main_menu_evt_config,
                                            .flow_data_ptr = NULL};
