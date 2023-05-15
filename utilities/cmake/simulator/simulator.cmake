@@ -1,5 +1,5 @@
 IF(UNIT_TESTS_SWITCH)
-        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*" "tests/*.*")
+        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*" "apps/*.*" "tests/*.*")
         #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
         LIST(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.c")
 
@@ -7,7 +7,7 @@ IF(UNIT_TESTS_SWITCH)
         add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
         add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)
 ELSE()
-        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*")
+        file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*" "apps/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
 add_compile_definitions(USE_SIMULATOR=1 ATCAPRINTF USE_MONERO=1 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0)
@@ -36,11 +36,12 @@ else()
     message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
+        apps/manager_app
+
         src/
         src/menu
         src/wallet
         src/host_interface
-        src/manager_app
 
         src/level_one/controller
         src/level_one/tasks
@@ -127,6 +128,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/utils>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/nfc/events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/manager_app>
         )
 
 IF(UNIT_TESTS_SWITCH)

@@ -130,3 +130,10 @@ TEST_GROUP_RUNNER(array_lists_tests) {
 TEST_GROUP_RUNNER(flow_engine_tests) {
   RUN_TEST_CASE(flow_engine_tests, engine_use_case_test);
 }
+
+TEST_GROUP_RUNNER(manager_api_test) {
+  RUN_TEST_CASE(manager_api_test, decode_valid_manager_bs);
+  RUN_TEST_CASE(manager_api_test, decode_invalid_manager_bs_incorrect_size);
+  RUN_TEST_CASE(manager_api_test, encode_valid_manager_result);
+  RUN_TEST_CASE(manager_api_test, encode_invalid_size_manager_result);
+}

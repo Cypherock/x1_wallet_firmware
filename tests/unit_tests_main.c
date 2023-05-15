@@ -91,6 +91,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(xpub);
   RUN_TEST_GROUP(array_lists_tests);
   RUN_TEST_GROUP(flow_engine_tests);
+  RUN_TEST_GROUP(manager_api_test);
 }
 
 /**
