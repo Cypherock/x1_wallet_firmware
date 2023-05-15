@@ -245,8 +245,8 @@ void usb_send_msg(const uint8_t *msg, const uint32_t size) {
   comm_io_buffer[0] = (stream.bytes_written >> 8) & 0xFF;
   comm_io_buffer[1] = stream.bytes_written & 0xFF;
   // write app msg length into payload buffer
-  comm_io_buffer[2] = ((size + COMM_SZ_RESERVED_SPACE) >> 8) & 0xFF;
-  comm_io_buffer[3] = (size + COMM_SZ_RESERVED_SPACE) & 0xFF;
+  comm_io_buffer[2] = (size >> 8) & 0xFF;
+  comm_io_buffer[3] = size & 0xFF;
 
   if (0 < size) {
     // copy app message into payload buffer after core-msg
