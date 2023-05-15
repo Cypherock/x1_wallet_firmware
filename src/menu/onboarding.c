@@ -1,5 +1,5 @@
 /**
- * @file    core_flow_init.c
+ * @file    onboarding.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,10 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
-
-#include "main_menu.h"
 #include "onboarding.h"
+
+#include "constant_texts.h"
+#include "host_interface.h"
+#include "menu_priv.h"
+#include "onboarding_priv.h"
+#include "status_api.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -71,22 +75,30 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  bool static_screen;
+  bool update_required;
+} onboarding_ctx_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
+static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
+                                          .update_required = true};
+
+static const flow_step_t onboarding_flow = {
+    .step_init_cb = onboarding_initialize,
+    .p0_cb = NULL,
+    .ui_cb = NULL,
+    .usb_cb =
+        host_interface, /* TODO: Make a seperate USB callback for onboarding */
+    .nfc_cb = NULL,
+    .evt_cfg_ptr = &main_menu_evt_config,
+    .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -103,22 +115,38 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  // TODO: Check onboarding status
-  // As of now, hard code onboarding menu to be the first flow as of now
-  if (1) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
+  if (false == onboarding_ctx.update_required) {
+    return;
   }
 
-  // TODO: Check device authentication status
+  /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
+   * are entering back to the onboarding menu */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
 
-  // TODO: Add correct first step of the flow based on the device
-  // auth/onboarding status
+  if (true == onboarding_ctx.static_screen) {
+    delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
+  } else {
+    /* Since there is now way onboarding_ctx.static_screen be set to false after
+     * first time initialization, therefore welcome screen and slideshow will
+     * only be shown once to the user */
+    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
+    ui_text_slideshow_init(ui_text_onboarding,
+                           NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
+                           DELAY_TIME,
+                           false);
+  }
 
-  // As of now, hard code main menu to be the first flow as of now
-  // engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
+  onboarding_ctx.update_required = false;
+  return;
+}
 
-  return &core_step_engine_ctx;
+void onboarding_set_static_screen(void) {
+  onboarding_ctx.static_screen = true;
+  onboarding_ctx.update_required = true;
+  return;
+}
+
+const flow_step_t *onboarding_get_step(void) {
+  return &onboarding_flow;
 }

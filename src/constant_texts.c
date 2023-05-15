@@ -59,6 +59,13 @@
 #include "ui_menu.h"
 #include "ui_text_slideshow.h"
 
+// Onboarding text
+const char *ui_text_onboarding_welcome = "Welcome";
+const char *ui_text_onboarding[NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING] = {
+    "Visit\ncypherock.com/go",
+    "And download the CySync app to set up the device",
+    "Follow instructions on the CySync app"};
+
 // Main menu text
 const char *ui_text_heading_main_menu = "Main menu";
 const char *ui_text_options_main_menu[] = {"Create wallet",
