@@ -36,6 +36,7 @@
 extern const char *product_hash;
 
 // Onboarding text
+extern const char *ui_text_onboarding_welcome;
 #define NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING 3
 extern const char *ui_text_onboarding[];
 

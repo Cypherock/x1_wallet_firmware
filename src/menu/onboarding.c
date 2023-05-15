@@ -125,6 +125,7 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   if (true == onboarding_ctx.static_screen) {
     delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
   } else {
+    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
     ui_text_slideshow_init(ui_text_onboarding,
                            NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
                            DELAY_TIME,
