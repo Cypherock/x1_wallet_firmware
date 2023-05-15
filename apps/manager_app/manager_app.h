@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "events.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -35,12 +37,13 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
  * @brief Entry point for the manager application of the X1 vault. It is invoked
  * by the X1 vault firmware, as soon as there is a USB request raised for the
  * manager app.
  *
+ * @param usb_evt The USB event which triggered invocation of the manager app
  */
-void manager_app_main(void);
+void manager_app_main(usb_event_t usb_evt);
+
 #endif /* MANAGER_APP_H */

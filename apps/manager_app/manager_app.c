@@ -61,6 +61,8 @@
  *****************************************************************************/
 #include "manager_app.h"
 
+#include "manager_api.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -92,8 +94,38 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(void) {
-  // This is a dummy implementation, which needs to be updated
-  while (1)
-    ;
+void manager_app_main(usb_event_t usb_evt) {
+  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+
+  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  // TODO: Add calls to flows/ functions based on query type decoded from the
+  // protobuf
+  switch ((uint8_t)query.which_request) {
+    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
+      break;
+    }
+    case MANAGER_QUERY_GET_WALLETS_TAG: {
+      break;
+    }
+    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
+      break;
+    }
+    case MANAGER_QUERY_AUTH_CARD_TAG: {
+      break;
+    }
+    case MANAGER_QUERY_GET_LOGS_TAG: {
+      break;
+    }
+    case MANAGER_QUERY_TRAIN_USER_TAG: {
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  return;
 }

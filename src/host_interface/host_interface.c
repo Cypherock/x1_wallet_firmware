@@ -101,7 +101,7 @@ void host_interface(engine_ctx_t *ctx, usb_event_t usb_evt, const void *data) {
 
   // TODO: Get info from core on which application to boot
   // Temporarily hardcode to manager app where we will do the onboarding
-  manager_app_main();
+  manager_app_main(usb_evt);
 
   return;
 }
