@@ -106,11 +106,6 @@ static main_menu_ctx_t main_menu_ctx = {
     .wallet_count = 0,
     .wallet_selected = MAIN_MENU_INVALID_WALLET_SELECTION};
 
-static const evt_config_t main_menu_evt_config = {
-    .abort_disabled = false,
-    .evt_selection.byte = EVT_CONFIG_UI_EVT | EVT_CONFIG_USB_EVT,
-    .timeout = MAX_INACTIVITY_TIMEOUT};
-
 static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
                                            .p0_cb = NULL,
                                            .ui_cb = main_menu_handler,
