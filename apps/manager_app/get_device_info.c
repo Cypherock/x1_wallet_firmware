@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.c
+ * @file    get_device_info.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Populates device info fields at runtime requests.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,10 +59,10 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
 
-#include "manager_api.h"
-#include "onboarding.h"
+#include "controller_level_four.h"
+#include "flash_api.h"
+#include "manager_app.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -88,56 +88,63 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Returns the formatted semantic versioning.
+ *
+ * @param firmware_version
+ * @return bool Status indicating the
+ */
+bool get_firmware_version(common_version_t *firmware_version);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+bool get_firmware_version(common_version_t *firmware_version) {
+  uint32_t version = get_fwVer();
+
+  if (NULL == firmware_version || 0 == version || 0xFFFFFFFF == version) {
+    return false;
+  }
+
+  firmware_version->major = (version >> 24) & 0xFF;
+  firmware_version->minor = (version >> 16) & 0xFF;
+  firmware_version->patch = version & 0xFFFF;
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+manager_get_device_info_response_t get_device_info() {
+  manager_get_device_info_response_t device_info =
+      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
+  uint32_t status = get_device_serial();
+
+  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
+  if (status != ATCA_SUCCESS) {
+    device_info.which_response =
+        MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
+    LOG_CRITICAL("serial %d", status);
   }
 
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      size_t msg_size = 0;
-      uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
-      manager_result_t result = MANAGER_RESULT_INIT_ZERO;
-      result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-      result.response.get_device_info = get_device_info();
-      ASSERT(encode_manager_result(&result,
-                                   response,
-                                   MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
-                                   &msg_size));
-      usb_send_msg(response, msg_size);
-      onboarding_set_static_screen();
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_USER_TAG: {
-      break;
-    }
-    default: {
-      break;
-    }
+  if (device_info.which_response ==
+      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
+    manager_get_device_info_result_response_t *result =
+        &device_info.response.result;
+    result->has_firmware_version =
+        get_firmware_version(&result->firmware_version);
+    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+    result->is_authenticated = (is_device_authenticated() == 1);
+    result->is_initial = true;            // TODO: Get from memory
+    result->has_initial_states = true;    // TODO: Get from memory
+    // TODO: populate applet list (result->applet_list)
+  } else {
+    device_info.response.core_error.which_error =
+        ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
+    device_info.response.core_error.error.unknown_error = status;
   }
 
-  return;
+  return device_info;
 }

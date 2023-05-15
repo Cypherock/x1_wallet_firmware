@@ -17,6 +17,7 @@
  * INCLUDES
  *****************************************************************************/
 #include <manager/core.pb.h>
+#include <manager/get_device_info.pb.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -45,5 +46,10 @@
  * @param usb_evt The USB event which triggered invocation of the manager app
  */
 void manager_app_main(usb_event_t usb_evt);
+
+/**
+ * @brief Return a filled instance of get_device_info_response_t.
+ */
+manager_get_device_info_response_t get_device_info();
 
 #endif /* MANAGER_APP_H */

@@ -121,7 +121,7 @@ bool decode_manager_query(const uint8_t *data,
 bool encode_manager_result(manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
-                           uint32_t *bytes_written_out) {
+                           size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out)
     return false;
 
