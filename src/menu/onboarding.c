@@ -64,6 +64,7 @@
 #include "constant_texts.h"
 #include "host_interface.h"
 #include "menu_priv.h"
+#include "onboarding_priv.h"
 #include "status_api.h"
 #include "ui_delay.h"
 
@@ -93,7 +94,8 @@ static const flow_step_t onboarding_flow = {
     .step_init_cb = onboarding_initialize,
     .p0_cb = NULL,
     .ui_cb = NULL,
-    .usb_cb = host_interface,
+    .usb_cb =
+        host_interface, /* TODO: Make a seperate USB callback for onboarding */
     .nfc_cb = NULL,
     .evt_cfg_ptr = &main_menu_evt_config,
     .flow_data_ptr = NULL};
@@ -119,12 +121,15 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   }
 
   /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
-   * are entering back to the main menu */
+   * are entering back to the onboarding menu */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
 
   if (true == onboarding_ctx.static_screen) {
     delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
   } else {
+    /* Since there is now way onboarding_ctx.static_screen be set to false after
+     * first time initialization, therefore welcome screen and slideshow will
+     * only be shown once to the user */
     delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
     ui_text_slideshow_init(ui_text_onboarding,
                            NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,

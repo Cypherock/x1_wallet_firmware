@@ -1,7 +1,7 @@
 /**
- * @file    menu_priv.c
+ * @file    menu_config.c
  * @author  Cypherock X1 Team
- * @brief   Populate and handle main menu options
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,9 +59,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "menu_priv.h"
-
 #include <stdint.h>
+
+#include "menu_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -87,7 +87,7 @@
  * @brief Event listener configuration for the main menu and the onboarding menu
  */
 const evt_config_t main_menu_evt_config = {
-    .abort_disabled = false,
+    .abort_disabled = true,
     .evt_selection.byte = EVT_CONFIG_UI_EVT | EVT_CONFIG_USB_EVT,
     .timeout = MAX_INACTIVITY_TIMEOUT};
 
