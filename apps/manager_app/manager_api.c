@@ -1,8 +1,7 @@
 /**
  * @file    manager_api.c
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   Defines helpers apis for manager app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -10,7 +9,7 @@
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -62,6 +61,9 @@
  *****************************************************************************/
 #include "manager_api.h"
 
+#include "pb_decode.h"
+#include "pb_encode.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -96,6 +98,9 @@
 bool decode_manager_query(uint8_t *data,
                           uint16_t data_size,
                           manager_query_t *query_out) {
+  if (NULL == data || NULL == query_out || data_size == 0)
+    return false;
+
   /* Initialize manager query */
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
@@ -106,7 +111,7 @@ bool decode_manager_query(uint8_t *data,
   bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, &query);
 
   /* Copy query obj if status is true*/
-  if (status == true) {
+  if (true == status) {
     memcpy(query_out, &query, sizeof(query));
   }
 
@@ -117,13 +122,16 @@ bool encode_manager_result(manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            uint32_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
   /* Create a stream that will write to our buffer. */
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
 
   /* Now we are ready to encode the message! */
   bool status = pb_encode(&stream, MANAGER_RESULT_FIELDS, result);
 
-  if (status == true) {
+  if (true == status) {
     *bytes_written_out = stream.bytes_written;
   }
 
