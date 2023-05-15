@@ -98,7 +98,7 @@
 bool decode_manager_query(uint8_t *data,
                           uint16_t data_size,
                           manager_query_t *query_out) {
-  if (NULL == data || NULL == query_out || data_size == 0)
+  if (NULL == data || NULL == query_out || 0 == data_size)
     return false;
 
   /* Initialize manager query */
