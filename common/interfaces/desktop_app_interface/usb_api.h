@@ -115,16 +115,22 @@ bool usb_get_event(usb_event_t *evt);
 void usb_reject_invalid_request();
 
 /**
- * @brief
- * @details
+ * @brief Sends data stream to the host application over usb.
+ * @details Allows applications to send data to the host. The functions
+ * internally clears any existing usb event. This is due to the common buffer
+ * used by the receive and transmit actions over usb. Hence, the applications
+ * should make sure that any existing usb events are consumed before sending any
+ * data.
  *
- * @param cmd   .
- * @param data  .
- * @param size  .
+ * @param msg  Reference to the buffer of serialized data to be sent to the host
+ * application.
+ * @param size  Size of the message length to be sent to the host application.
  *
  * @see
  * @since v1.0.0
  */
+void usb_send_msg(const uint8_t *msg, uint32_t size);
+// TODO: Update after refactor; remove the following
 void usb_send_data(uint32_t cmd, const uint8_t *data, uint32_t size);
 
 /**

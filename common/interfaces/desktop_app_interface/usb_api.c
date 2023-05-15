@@ -71,7 +71,10 @@
 #if USE_SIMULATOR == 0
 #include "libusb.h"
 #endif
+#include "assert_conf.h"
+#include "core.pb.h"
 #include "logger.h"
+#include "pb_encode.h"
 #include "sys_state.h"
 #include "usb_api_priv.h"
 #include "utils.h"
@@ -208,31 +211,48 @@ void usb_send_byte(const uint32_t command_type, const uint8_t byte) {
 void usb_send_data(const uint32_t command_type,
                    const uint8_t *transmit_data,
                    const uint32_t size) {
-  uint16_t proto_len = 0;
-  uint8_t offset = 0;
+  return;
+}
+
+void usb_send_msg(const uint8_t *msg, const uint32_t size) {
+  if (NULL == msg || 0 == size) {
+    return;
+  }
+
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  LOG_SWV("%s: %ld-%ld\n", __func__, command_type, size);
+  LOG_SWV("%s: %ld\n", __func__, size);
 
   NVIC_DisableIRQ(OTG_FS_IRQn);
   usb_clear_event();
   get_comm_status()->curr_cmd_state = CMD_STATE_DONE;
-  comm_set_payload_struct(proto_len, size + sizeof(uint32_t));
-  comm_io_buffer[offset++] = 0;
-  comm_io_buffer[offset++] = 0;
-  comm_io_buffer[offset++] = ((size + sizeof(uint32_t)) >> 8) & 0xFF;
-  comm_io_buffer[offset++] = (size + sizeof(uint32_t)) & 0xFF;
-  if (comm_payload.proto_data != NULL) {
-    // TODO: Handle protobuf encoding here
-  }
-  offset = 0;
-  if (comm_payload.raw_data != NULL) {
-    comm_payload.raw_data[offset++] = (command_type >> 24) & 0xFF;
-    comm_payload.raw_data[offset++] = (command_type >> 16) & 0xFF;
-    comm_payload.raw_data[offset++] = (command_type >> 8) & 0xFF;
-    comm_payload.raw_data[offset++] = command_type & 0xFF;
-    memcpy(comm_payload.raw_data + comm_payload.proto_data_length +
-               sizeof(uint32_t),
-           transmit_data,
+
+  // TODO: get core_msg_t from core
+  // encode msg-context directly into payload buffer
+  core_msg_t core_msg = {.which_type = CORE_MSG_CMD_TAG,
+                         .type.cmd.applet_id = 1};
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(comm_io_buffer + COMM_SZ_RESERVED_SPACE,
+                             COMM_BUFFER_SIZE - COMM_SZ_RESERVED_SPACE);
+  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
+  // catch the buffer overflow situation
+  ASSERT((COMM_SZ_RESERVED_SPACE + stream.bytes_written + size) <=
+         COMM_BUFFER_SIZE);
+  comm_set_payload_struct(stream.bytes_written, size);
+
+  // write stream lengths into payload buffer as follows
+  // core_msg_len (2-bytes) : app_msg_len (2-bytes) : core_msg : app_msg
+  // write core msg length into payload buffer
+  comm_io_buffer[0] = (stream.bytes_written >> 8) & 0xFF;
+  comm_io_buffer[1] = stream.bytes_written & 0xFF;
+  // write app msg length into payload buffer
+  comm_io_buffer[2] = (size >> 8) & 0xFF;
+  comm_io_buffer[3] = size & 0xFF;
+
+  if (0 < size) {
+    // copy app message into payload buffer after core-msg
+    // COMM_SZ_RESERVED_SPACE + core_msg_len
+    memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE + stream.bytes_written,
+           msg,
            size);
   }
   if (usb_irq_enable == true)
