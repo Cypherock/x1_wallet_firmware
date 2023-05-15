@@ -60,7 +60,7 @@
 #include "ui_text_slideshow.h"
 
 // Onboarding text
-const char *ui_text_onboarding[] = {
+const char *ui_text_onboarding[NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING] = {
     "Visit\ncypherock.com/go",
     "And download the CySync app to set up the device",
     "Follow instructions on the CySync app"};

@@ -64,6 +64,7 @@
 #include "constant_texts.h"
 #include "host_interface.h"
 #include "menu_priv.h"
+#include "status_api.h"
 #include "ui_delay.h"
 
 /*****************************************************************************
@@ -116,6 +117,10 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   if (false == onboarding_ctx.update_required) {
     return;
   }
+
+  /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
+   * are entering back to the main menu */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
 
   if (true == onboarding_ctx.static_screen) {
     delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
