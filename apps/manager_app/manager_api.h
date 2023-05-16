@@ -39,7 +39,7 @@
  * @param[out] query_out: @ref manager_query_t obj to copy the decoded result to
  * @return bool True if decoding was successful, else false
  */
-bool decode_manager_query(uint8_t *data,
+bool decode_manager_query(const uint8_t *data,
                           uint16_t data_size,
                           manager_query_t *query_out);
 
