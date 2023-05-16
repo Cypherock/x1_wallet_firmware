@@ -188,6 +188,7 @@ jobs:
           bash ./utilities/ci/setup-build-tools.sh;
         fi
         PATH="$PATH:$(pwd)/build-tools"
+        pip install -r vendor/nanopb/extra/requirements.txt
         # Ignore any non-zero exits from simulator run using '|| true'
         bash ./utilities/run_unit_tests.sh -f ${{ matrix.firmware }} -p ${{ matrix.platform }} > test_results.txt || true
         cat test_results.txt
