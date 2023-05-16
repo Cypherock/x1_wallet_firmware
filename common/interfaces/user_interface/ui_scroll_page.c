@@ -373,6 +373,14 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
                                const lv_event_t lvglEvent) {
   switch (lvglEvent) {
     case LV_EVENT_KEY: {
+      if (LV_BTN_STATE_PR == lv_btn_get_state(pLvglArrowObject)) {
+        lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_right_arrow_lvgl,
+                           LV_LABEL_STYLE_MAIN,
+                           &(gp_scrollabe_page_lvgl->ui_arrow_released_style));
+        lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_left_arrow_lvgl,
+                           LV_LABEL_STYLE_MAIN,
+                           &(gp_scrollabe_page_lvgl->ui_arrow_released_style));
+      }
       lv_key_t keyPressed = lv_indev_get_key(ui_get_indev());
       if (LV_KEY_RIGHT == keyPressed) {
         if (true == page_increment()) {

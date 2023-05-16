@@ -264,13 +264,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
               obj->left_arrow, LV_LABEL_STYLE_MAIN, &arrow_style_pr);
           change_current_index(LV_KEY_LEFT);
           update_text(data->index_of_current_string);
-
-          // This is done to highlight the left arrow when the first screen is
-          // rendered for the first time and user moves to second screen and
-          // moves back to first screen. Otherwise the left arrow would just on
-          // click and not highlight
-          if (data->index_of_current_string != 0)
-            change_arrows();
+          change_arrows();
           lv_task_reset(next_instruction_task);
           break;
         }

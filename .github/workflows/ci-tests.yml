@@ -1,6 +1,10 @@
 name: CI Tests
 
 on:
+  push:
+    branches:
+      - main
+      - develop
   pull_request:
     branches:
       - '**'
@@ -40,7 +44,10 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
-        bash ./utilities/ci/format-checker.sh ${SHA_BASE}
+        # Check event type here so ci chaching can take effect
+        if [ ${{ github.event_name }} = 'pull_request' ]; then
+          bash ./utilities/ci/format-checker.sh ${SHA_BASE}
+        fi
 
   static-checks:
     runs-on: ubuntu-latest
@@ -65,7 +72,10 @@ jobs:
           bash ./utilities/ci/setup-clang-tools.sh;
         fi
         PATH="$PATH:$(pwd)/clang-tools"
-        bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
+        # Check event type here so ci chaching can take effect
+        if [ ${{ github.event_name }} = 'pull_request' ]; then
+          bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
+        fi
     - name: Upload result
       uses: actions/upload-artifact@v3
       with:
@@ -143,3 +153,43 @@ jobs:
         pip install -r vendor/nanopb/extra/requirements.txt
         PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin:$(pwd)/proto-tools/bin"
         ./utilities/build.sh -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
+
+  run-unit-tests:
+    needs: check-format
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        firmware: [main, initial]
+        target: [release]
+        platform: [simulator]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Restore build-tools
+      id: cache-build-tools
+      uses: actions/cache@v3
+      with:
+        path: build-tools
+        key: build-tools
+
+    - name: Install simulator dependencies
+      run: sudo apt update && sudo apt install libsdl2-dev --no-install-recommends -y
+
+    - name: Run tests
+      env:
+        CACHED: ${{ steps.cache-build-tools.outputs.cache-hit }}
+      run: |
+        if [ ! "${CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-build-tools.sh;
+        fi
+        PATH="$PATH:$(pwd)/build-tools"
+        # Ignore any non-zero exits from simulator run using '|| true'
+        bash ./utilities/run_unit_tests.sh -f ${{ matrix.firmware }} -p ${{ matrix.platform }} > test_results.txt || true
+        cat test_results.txt
+        # Unity prints "OK" if all tests pass, "FAIL" if tests fail; return 1 to indicate failure
+        if [ ! "$(tail -n 1 test_results.txt)" = "OK" ]; then exit 1; fi
