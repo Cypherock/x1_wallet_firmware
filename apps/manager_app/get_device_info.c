@@ -62,7 +62,9 @@
 
 #include "controller_level_four.h"
 #include "flash_api.h"
+#include "manager_api.h"
 #include "manager_app.h"
+#include "onboarding.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -117,7 +119,7 @@ bool get_firmware_version(common_version_t *firmware_version) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-manager_get_device_info_response_t get_device_info() {
+manager_get_device_info_response_t get_device_info(void) {
   manager_get_device_info_response_t device_info =
       MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
   uint32_t status = get_device_serial();
@@ -147,4 +149,37 @@ manager_get_device_info_response_t get_device_info() {
   }
 
   return device_info;
+}
+
+void get_device_info_flow(const manager_query_t *query) {
+  size_t msg_size = 0;
+  uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
+  manager_result_t result = MANAGER_RESULT_INIT_ZERO;
+
+  if (MANAGER_QUERY_GET_DEVICE_INFO_TAG != query->which_request ||
+      MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
+          query->request.get_device_info.which_request) {
+    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+    result.response.get_device_info.which_response =
+        MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
+    result.response.get_device_info.response.core_error.which_error =
+        ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
+    result.response.get_device_info.response.core_error.error.unknown_error = 1;
+    encode_manager_result(&result,
+                          response,
+                          MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
+                          &msg_size);
+    usb_send_msg(response, msg_size);
+    return;
+  }
+
+  result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+  result.response.get_device_info = get_device_info();
+  ASSERT(encode_manager_result(&result,
+                               response,
+                               MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
+                               &msg_size));
+  usb_send_msg(response, msg_size);
+  // TODO: Check if on-boarding default screen is to be rendered
+  onboarding_set_static_screen();
 }

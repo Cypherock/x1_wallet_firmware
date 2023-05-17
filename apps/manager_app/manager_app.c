@@ -106,17 +106,7 @@ void manager_app_main(usb_event_t usb_evt) {
   // protobuf
   switch ((uint8_t)query.which_request) {
     case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      size_t msg_size = 0;
-      uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
-      manager_result_t result = MANAGER_RESULT_INIT_ZERO;
-      result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-      result.response.get_device_info = get_device_info();
-      ASSERT(encode_manager_result(&result,
-                                   response,
-                                   MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
-                                   &msg_size));
-      usb_send_msg(response, msg_size);
-      onboarding_set_static_screen();
+      get_device_info_flow(&query);
       break;
     }
     case MANAGER_QUERY_GET_WALLETS_TAG: {
