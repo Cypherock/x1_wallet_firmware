@@ -96,11 +96,11 @@ void usb_clear_event();
  * gets an usb event following scenarios might occur:
  *
  * <ol><li>
- * Valid data: <br/> With or without a response. See usb_send_data(),
+ * Valid data: <br/> With or without a response. See usb_send_msg(),
  * usb_clear_event() respectively.
  * </li><li>
  * Invalid data: <br/> Respond with error code or Send error packet. See
- * usb_send_data(), usb_reject_invalid_request() respectively.
+ * usb_send_msg(), usb_send_error() respectively.
  * </li></ol>
  */
 bool usb_get_event(usb_event_t *evt);
@@ -112,7 +112,7 @@ bool usb_get_event(usb_event_t *evt);
  * @see
  * @since v1.0.0
  */
-void usb_reject_invalid_request();
+void usb_send_error(const uint8_t *msg, uint32_t size);
 
 /**
  * @brief Sends data stream to the host application over usb.
@@ -144,6 +144,7 @@ void usb_send_data(uint32_t cmd, const uint8_t *data, uint32_t size);
  * @see
  * @since v1.0.0
  */
+// TODO: Update after refactor; remove the following
 void usb_send_byte(uint32_t command_type, uint8_t byte);
 
 #endif

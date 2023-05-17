@@ -137,7 +137,7 @@ void usb_reset_state();
 void comm_reject_request(En_command_type_t command_type, uint8_t byte);
 
 #define transmit_one_byte_confirm(a) usb_send_byte(a, 1)
-#define comm_reject_invalid_cmd usb_reject_invalid_request
+#define comm_reject_invalid_cmd()
 
 #define transmit_data_to_app usb_send_data
 /* END TODO: Update after refactor */

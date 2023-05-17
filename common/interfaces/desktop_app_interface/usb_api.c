@@ -188,11 +188,11 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-void usb_reject_invalid_request() {
+void usb_send_error(const uint8_t *msg, uint32_t size) {
   comm_status_t *comm_status = get_comm_status();
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
-  usb_clear_event();
+  usb_send_msg(msg, size);
   // Imp: Should be updated after clearing the buffer
   comm_status->curr_cmd_state = CMD_STATE_INVALID_REQ;
   comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
