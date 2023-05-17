@@ -103,6 +103,16 @@ static bool get_firmware_version(common_version_t *firmware_version);
  */
 static manager_get_device_info_response_t get_device_info(void);
 
+/**
+ * @brief Sets the necessary field identifiers along with setting the error code
+ *
+ * @param device_info Reference to manager_get_device_info_response_t to fill
+ * @param error_code The error code to be set in error struct
+ */
+static void fill_device_info_unknown_error(
+    manager_get_device_info_response_t *device_info,
+    uint32_t error_code);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -127,8 +137,7 @@ static manager_get_device_info_response_t get_device_info(void) {
 
   device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
   if (status != ATCA_SUCCESS) {
-    device_info.which_response =
-        MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
+    fill_device_info_unknown_error(&device_info, status);
     LOG_CRITICAL("serial %d", status);
   }
 
@@ -143,13 +152,18 @@ static manager_get_device_info_response_t get_device_info(void) {
     result->is_initial = true;            // TODO: Get from memory
     result->has_initial_states = true;    // TODO: Get from memory
     // TODO: populate applet list (result->applet_list)
-  } else {
-    device_info.response.core_error.which_error =
-        ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
-    device_info.response.core_error.error.unknown_error = status;
   }
 
   return device_info;
+}
+
+static void fill_device_info_unknown_error(
+    manager_get_device_info_response_t *device_info,
+    uint32_t error_code) {
+  device_info->which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
+  device_info->response.core_error.which_error =
+      ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
+  device_info->response.core_error.error.unknown_error = error_code;
 }
 
 /*****************************************************************************
@@ -166,11 +180,7 @@ void get_device_info_flow(const manager_query_t *query) {
           query->request.get_device_info.which_request) {
     // set the relevant tags for error
     result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-    result.response.get_device_info.which_response =
-        MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
-    result.response.get_device_info.response.core_error.which_error =
-        ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
-    result.response.get_device_info.response.core_error.error.unknown_error = 1;
+    fill_device_info_unknown_error(&result.response.get_device_info, 1);
   } else {
     result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
     result.response.get_device_info = get_device_info();
