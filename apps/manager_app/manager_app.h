@@ -17,6 +17,7 @@
  * INCLUDES
  *****************************************************************************/
 #include <manager/core.pb.h>
+#include <manager/get_device_info.pb.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -45,5 +46,13 @@
  * @param usb_evt The USB event which triggered invocation of the manager app
  */
 void manager_app_main(usb_event_t usb_evt);
+
+/**
+ * @brief Initiates the get device info flow.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+// TODO: Move to manager_app_priv.h
+void get_device_info_flow(const manager_query_t *query);
 
 #endif /* MANAGER_APP_H */

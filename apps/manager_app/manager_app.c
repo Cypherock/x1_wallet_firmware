@@ -62,6 +62,7 @@
 #include "manager_app.h"
 
 #include "manager_api.h"
+#include "onboarding.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -105,6 +106,7 @@ void manager_app_main(usb_event_t usb_evt) {
   // protobuf
   switch ((uint8_t)query.which_request) {
     case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
+      get_device_info_flow(&query);
       break;
     }
     case MANAGER_QUERY_GET_WALLETS_TAG: {

@@ -1,7 +1,7 @@
 /**
- * @file    manager_api.c
+ * @file    get_device_info.c
  * @author  Cypherock X1 Team
- * @brief   Defines helpers apis for manager app.
+ * @brief   Populates device info fields at runtime requests.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,10 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_api.h"
 
-#include "pb_decode.h"
-#include "pb_encode.h"
+#include "controller_level_four.h"
+#include "flash_api.h"
+#include "manager_api.h"
+#include "manager_app.h"
+#include "onboarding.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -88,52 +90,106 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Returns the formatted semantic versioning.
+ *
+ * @param firmware_version
+ * @return bool Status indicating the
+ */
+static bool get_firmware_version(common_version_t *firmware_version);
+
+/**
+ * @brief Return a filled instance of get_device_info_response_t.
+ */
+static manager_get_device_info_response_t get_device_info(void);
+
+/**
+ * @brief Sets the necessary field identifiers along with setting the error code
+ *
+ * @param device_info Reference to manager_get_device_info_response_t to fill
+ * @param error_code The error code to be set in error struct
+ */
+static void fill_device_info_unknown_error(
+    manager_get_device_info_response_t *device_info,
+    uint32_t error_code);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static bool get_firmware_version(common_version_t *firmware_version) {
+  uint32_t version = get_fwVer();
+
+  if (NULL == firmware_version || 0 == version || 0xFFFFFFFF == version) {
+    return false;
+  }
+
+  firmware_version->major = (version >> 24) & 0xFF;
+  firmware_version->minor = (version >> 16) & 0xFF;
+  firmware_version->patch = version & 0xFFFF;
+  return true;
+}
+
+static manager_get_device_info_response_t get_device_info(void) {
+  manager_get_device_info_response_t device_info =
+      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
+  uint32_t status = get_device_serial();
+
+  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
+  if (status != ATCA_SUCCESS) {
+    fill_device_info_unknown_error(&device_info, status);
+    LOG_CRITICAL("serial %d", status);
+  }
+
+  if (device_info.which_response ==
+      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
+    manager_get_device_info_result_response_t *result =
+        &device_info.response.result;
+    result->has_firmware_version =
+        get_firmware_version(&result->firmware_version);
+    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+    result->is_authenticated = (is_device_authenticated() == 1);
+    result->is_initial = true;            // TODO: Get from memory
+    result->has_initial_states = true;    // TODO: Get from memory
+    // TODO: populate applet list (result->applet_list)
+  }
+
+  return device_info;
+}
+
+static void fill_device_info_unknown_error(
+    manager_get_device_info_response_t *device_info,
+    uint32_t error_code) {
+  device_info->which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
+  device_info->response.core_error.which_error =
+      ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
+  device_info->response.core_error.error.unknown_error = error_code;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool decode_manager_query(const uint8_t *data,
-                          uint16_t data_size,
-                          manager_query_t *query_out) {
-  if (NULL == data || NULL == query_out || 0 == data_size)
-    return false;
 
-  /* Initialize manager query */
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+void get_device_info_flow(const manager_query_t *query) {
+  size_t msg_size = 0;
+  // TODO: replace MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE with relevant
+  // macro/value
+  uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
+  manager_result_t result = MANAGER_RESULT_INIT_ZERO;
 
-  /* Create a stream that reads from the buffer. */
-  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
-
-  /* Now we are ready to decode the message. */
-  bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, &query);
-
-  /* Copy query obj if status is true*/
-  if (true == status) {
-    memcpy(query_out, &query, sizeof(query));
+  if (MANAGER_QUERY_GET_DEVICE_INFO_TAG != query->which_request ||
+      MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
+          query->request.get_device_info.which_request) {
+    // set the relevant tags for error
+    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+    fill_device_info_unknown_error(&result.response.get_device_info, 1);
+  } else {
+    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+    result.response.get_device_info = get_device_info();
   }
 
-  return status;
-}
-
-bool encode_manager_result(manager_result_t *result,
-                           uint8_t *buffer,
-                           uint16_t max_buffer_len,
-                           size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
-    return false;
-
-  /* Create a stream that will write to our buffer. */
-  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
-
-  /* Now we are ready to encode the message! */
-  bool status = pb_encode(&stream, MANAGER_RESULT_FIELDS, result);
-
-  if (true == status) {
-    *bytes_written_out = stream.bytes_written;
-  }
-
-  return status;
+  ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));
+  usb_send_msg(response, msg_size);
+  // TODO: Check if on-boarding default screen is to be rendered
+  onboarding_set_static_screen();
 }
