@@ -115,6 +115,14 @@ const char *ui_text_options_buzzer_adjust[] = {
 };
 #endif /* DEV_BUILD */
 
+// Manager app text
+// Device authentication text
+const char *ui_text_message_device_authenticating = "Device authenticating...";
+const char *ui_text_message_device_auth_success =
+    "Device authenticated successfully";
+const char *ui_text_message_device_auth_failure =
+    "Device authentication failed";
+
 // wallet creation
 const char *ui_text_verification_is_now_complete_messages[] = {
     "Wallet created successfully!",

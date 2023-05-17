@@ -64,6 +64,12 @@ extern const char *ui_text_options_new_wallet[];
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
 #endif /* DEV_BUILD*/
 
+// Manager app text
+// Device authentication text
+extern const char *ui_text_message_device_authenticating;
+extern const char *ui_text_message_device_auth_success;
+extern const char *ui_text_message_device_auth_failure;
+
 extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_advanced_settings[];
 

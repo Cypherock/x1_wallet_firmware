@@ -78,10 +78,7 @@
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7
 #define POSTFIX2_SIZE 23
-#define AUTH_DATA_SERIAL_SIGN_MSG_SIZE                                         \
-  (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE + DEVICE_SERIAL_SIZE)
-#define AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE                                      \
-  (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE)
+#define RANDOM_CHALLENGE_SIZE 32
 
 atecc_data_t atecc_data = {0};
 
@@ -118,10 +115,9 @@ manager_auth_device_response_t __attribute__((optimize("O0")))
 sign_serial_number(void) {
   manager_auth_device_response_t response =
       MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
-  response.which_response = MANAGER_AUTH_DEVICE_SERIAL_SIG_RESPONSE_SERIAL_TAG;
+  response.which_response = MANAGER_AUTH_DEVICE_RESPONSE_SERIAL_SIGNATURE_TAG;
 
   uint8_t nonce[32] = {0};
-  // auth_data_t auth_serial_packet = {0};
   uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
   uint8_t final_hash[32] = {0};
   atca_sign_internal_in_out_t sign_internal_param = {0};
@@ -211,10 +207,9 @@ sign_random_challenge(uint8_t *challenge) {
   manager_auth_device_response_t response =
       MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
   response.which_response =
-      MANAGER_AUTH_DEVICE_SERIAL_SIG_RESPONSE_SIGNATURE_TAG;
+      MANAGER_AUTH_DEVICE_RESPONSE_CHALLENGE_SIGNATURE_TAG;
 
   uint8_t nonce[32] = {0};
-  // auth_data_t auth_challenge_packet = {0};
   uint8_t io_protection_key[32] = {0};
   uint8_t tempkey_hash[DEVICE_SERIAL_SIZE + POSTFIX2_SIZE] = {0};
   uint8_t final_hash[32] = {0};
@@ -283,7 +278,7 @@ sign_random_challenge(uint8_t *challenge) {
                              slot_5_challenge);
 
     // overwrite challenge slot to signature generation on same challenge
-    memset(challenge, 0, 32);
+    memset(challenge, 0, RANDOM_CHALLENGE_SIZE);
     atecc_data.status = atcab_write_enc(
         slot_5_challenge, 0, challenge, io_protection_key, slot_6_io_key);
     if (atecc_data.status != ATCA_SUCCESS) {
@@ -315,11 +310,13 @@ sign_random_challenge(uint8_t *challenge) {
 void device_auth_handle_response(bool verified) {
   if (true == verified) {
     set_auth_state(DEVICE_AUTHENTICATED);
-    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+    delay_scr_init(ui_text_message_device_auth_success, DELAY_TIME);
   } else {
     set_auth_state(DEVICE_NOT_AUTHENTICATED);
-    delay_scr_init(ui_text_device_verification_failure, DELAY_TIME);
+    delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
   }
+
+  usb_clear_event();
 
   return;
 }
