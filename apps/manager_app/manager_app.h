@@ -48,15 +48,11 @@
 void manager_app_main(usb_event_t usb_evt);
 
 /**
- * @brief Return a filled instance of get_device_info_response_t.
- */
-manager_get_device_info_response_t get_device_info(void);
-
-/**
  * @brief Initiates the get device info flow.
  *
  * @param query Reference to the decoded query struct from the host app
  */
+// TODO: Move to manager_app_priv.h
 void get_device_info_flow(const manager_query_t *query);
 
 #endif /* MANAGER_APP_H */

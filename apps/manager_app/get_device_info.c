@@ -96,13 +96,18 @@
  * @param firmware_version
  * @return bool Status indicating the
  */
-bool get_firmware_version(common_version_t *firmware_version);
+static bool get_firmware_version(common_version_t *firmware_version);
+
+/**
+ * @brief Return a filled instance of get_device_info_response_t.
+ */
+static manager_get_device_info_response_t get_device_info(void);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-bool get_firmware_version(common_version_t *firmware_version) {
+static bool get_firmware_version(common_version_t *firmware_version) {
   uint32_t version = get_fwVer();
 
   if (NULL == firmware_version || 0 == version || 0xFFFFFFFF == version) {
@@ -115,11 +120,7 @@ bool get_firmware_version(common_version_t *firmware_version) {
   return true;
 }
 
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-manager_get_device_info_response_t get_device_info(void) {
+static manager_get_device_info_response_t get_device_info(void) {
   manager_get_device_info_response_t device_info =
       MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
   uint32_t status = get_device_serial();
@@ -151,6 +152,10 @@ manager_get_device_info_response_t get_device_info(void) {
   return device_info;
 }
 
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+
 void get_device_info_flow(const manager_query_t *query) {
   size_t msg_size = 0;
   uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
@@ -159,26 +164,19 @@ void get_device_info_flow(const manager_query_t *query) {
   if (MANAGER_QUERY_GET_DEVICE_INFO_TAG != query->which_request ||
       MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
           query->request.get_device_info.which_request) {
+    // set the relevant tags for error
     result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
     result.response.get_device_info.which_response =
         MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
     result.response.get_device_info.response.core_error.which_error =
         ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
     result.response.get_device_info.response.core_error.error.unknown_error = 1;
-    encode_manager_result(&result,
-                          response,
-                          MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
-                          &msg_size);
-    usb_send_msg(response, msg_size);
-    return;
+  } else {
+    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+    result.response.get_device_info = get_device_info();
   }
 
-  result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-  result.response.get_device_info = get_device_info();
-  ASSERT(encode_manager_result(&result,
-                               response,
-                               MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE,
-                               &msg_size));
+  ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));
   usb_send_msg(response, msg_size);
   // TODO: Check if on-boarding default screen is to be rendered
   onboarding_set_static_screen();
