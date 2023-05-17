@@ -102,6 +102,8 @@ void manager_app_main(usb_event_t usb_evt) {
     return;
   }
 
+  LOG_SWV("Query:%d\n", query.which_request);
+
   // TODO: Add calls to flows/ functions based on query type decoded from the
   // protobuf
   switch ((uint8_t)query.which_request) {
@@ -113,6 +115,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_DEVICE_TAG: {
+      device_authentication_flow(&query);
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
@@ -128,6 +131,9 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
   }
+
+  // TODO: Check if on-boarding default screen is to be rendered
+  onboarding_set_static_screen();
 
   return;
 }

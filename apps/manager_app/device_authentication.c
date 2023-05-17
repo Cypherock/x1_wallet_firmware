@@ -1,0 +1,303 @@
+/**
+ * @file    device_authentication.c
+ * @author  Cypherock X1 Team
+ * @brief   This file describes the device authentication flow for the X1 vault
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
+ ******************************************************************************
+ * @attention
+ *
+ * (c) Copyright 2023 by HODL TECH PTE LTD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject
+ * to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ * "Commons Clause" License Condition v1.0
+ *
+ * The Software is provided to you by the Licensor under the License,
+ * as defined below, subject to the following condition.
+ *
+ * Without limiting other conditions in the License, the grant of
+ * rights under the License will not include, and the License does not
+ * grant to you, the right to Sell the Software.
+ *
+ * For purposes of the foregoing, "Sell" means practicing any or all
+ * of the rights granted to you under the License to provide to third
+ * parties, for a fee or other consideration (including without
+ * limitation fees for hosting or consulting/ support services related
+ * to the Software), a product or service whose value derives, entirely
+ * or substantially, from the functionality of the Software. Any license
+ * notice or attribution required by the License must also include
+ * this Commons Clause License Condition notice.
+ *
+ * Software: All X1Wallet associated files.
+ * License: MIT
+ * Licensor: HODL TECH PTE LTD
+ *
+ ******************************************************************************
+ */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "constant_texts.h"
+#include "device_authentication_api.h"
+#include "flow_engine.h"
+#include "manager_api.h"
+#include "manager_app.h"
+#include "ui_delay.h"
+
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+#define DEVICE_AUTH_RESPONSE_SIZE (MANAGER_AUTH_DEVICE_RESPONSE_SIZE + 20)
+/* 1 for actual flow + 1 for user confirmation in forced verification */
+#define DEVICE_AUTH_FLOW_STEPS (2)
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+typedef enum {
+  SIGN_SERIAL_NUM,
+  SIGN_RANDOM_NUM,
+  RESULT,
+} device_auth_flow_states_e;
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief This function returns the which_request tag of request of type
+ * manager_auth_device_request_t
+ *
+ * @param request Reference to query
+ * @return pb_size_t The which_request tag held in the query
+ */
+static pb_size_t get_request_type(const manager_auth_device_request_t *request);
+
+/**
+ * @brief This function is the initializer callback for the device
+ * authentication flow. Since it is called multiple times in the device
+ * authentication flow, it only acts if the state of the flow is
+ * SIGN_SERIAL_NUMBER.
+ *
+ * @param ctx The engine ctx from which this callback was invoked
+ * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
+ * the current state of the flow
+ */
+static void device_auth_init_cb(engine_ctx_t *ctx, const void *data_ptr);
+
+/**
+ * @brief This function is the USB handler callback for the device
+ * authentication flow. It handles the further USB requests from the host to
+ * complete the device authenticaiton flow.
+ *
+ * @param ctx The engine ctx from which this callback was invoked
+ * @param usb_evt The USB event which invoked this callback
+ * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
+ * the current state of the flow
+ */
+static void device_auth_usb_cb(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data_ptr);
+
+/**
+ * @brief This function is the P0 handler callback for the device authentication
+ * flow.
+ *
+ * @param ctx The engine ctx from which this callback was invoked
+ * @param p0_event The P0 event which invoked this callback
+ * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
+ * the current state of the flow
+ */
+void device_auth_p0_handler(engine_ctx_t *ctx,
+                            p0_evt_t p0_event,
+                            const void *data_ptr);
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+static pb_size_t get_request_type(
+    const manager_auth_device_request_t *request) {
+  return request->which_request;
+}
+
+static void device_auth_init_cb(engine_ctx_t *ctx, const void *data_ptr) {
+  device_auth_flow_states_e *state_ptr = (device_auth_flow_states_e *)data_ptr;
+  device_auth_flow_states_e state = *state_ptr;
+
+  /* Initializer callback will be only called if the correct manager request and
+   * device authentication request is received. It is expected to be checked
+   * within device_authentication API, where this callback is set. */
+
+  /* This callback only needs to handle SIGN_SERIAL_NUM state */
+  if (SIGN_SERIAL_NUM == state) {
+    /* Screen to display current process is ongoing */
+    delay_scr_init(ui_text_message_device_authenticating, 100);
+
+    /* Fetch and encode serial signature, send it to the host and wait for
+     * further USB requests. */
+    manager_result_t result = MANAGER_RESULT_INIT_ZERO;
+    result.which_response = MANAGER_RESULT_AUTH_DEVICE_TAG;
+    result.auth_device.which_response =
+        MANAGER_AUTH_DEVICE_SERIAL_SIG_RESPONSE_SERIAL_TAG;
+    result.auth_device = sign_serial_number();
+
+    uint8_t response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
+    size_t bytes_encoded = 0;
+    encode_manager_result(
+        &result, &response[0], sizeof(response), &bytes_encoded);
+    usb_send_msg(&response[0], bytes_encoded);
+
+    /* Set the next state to SIGN_RANDOM_NUM */
+    *state_ptr = SIGN_RANDOM_NUM;
+  }
+
+  return;
+}
+
+static void device_auth_usb_cb(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data_ptr) {
+  device_auth_flow_states_e *state_ptr = (device_auth_flow_states_e *)data_ptr;
+  device_auth_flow_states_e state = *state_ptr;
+
+  /* Decode recieved query using protobuf helpers */
+  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    // TODO: Handle proto decode error code
+    // TODO: Early flow exit
+    return;
+  }
+
+  /* Decode recieved request_type */
+  pb_size_t request_type = get_request_type(
+      (const manager_auth_device_request_t *)&(query.auth_device));
+
+  if (SIGN_RANDOM_NUM == state) {
+    if (MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG == request_type) {
+      /* Fetch and encode random challenge signature, send it to the host and
+       * wait for further USB requests. */
+      manager_result_t result = MANAGER_RESULT_INIT_ZERO;
+      result.which_response = MANAGER_RESULT_AUTH_DEVICE_TAG;
+      result.auth_device.which_response =
+          MANAGER_AUTH_DEVICE_SERIAL_SIG_RESPONSE_SIGNATURE_TAG;
+      result.auth_device =
+          sign_random_challenge(&(query.auth_device.challenge.challenge[0]));
+
+      uint8_t response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
+      size_t bytes_encoded = 0;
+      encode_manager_result(
+          &result, &response[0], sizeof(response), &bytes_encoded);
+      usb_send_msg(&response[0], bytes_encoded);
+      *state_ptr = RESULT;
+    } else if (MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG == request_type) {
+      /* If SIGN_RANDOM_NUM == state, but the request_type received is
+       * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in the
+       * flow. The device will treat it as an attempt to force device
+       * authentication status */
+      device_auth_handle_response(false);
+      // TODO: Early flow exit
+    } else {
+      // TODO: Handle error scenario in which an unexpected request_type was
+      // detected
+      // TODO: Early flow exit
+    }
+  } else if (RESULT == state) {
+    /* Handle verification status */
+    bool verified = query.auth_device.result.verified;
+    device_auth_handle_response(verified);
+    usb_clear_event();
+    /* Exit the engine as the flow has ended */
+    engine_reset_flow(ctx);
+  }
+
+  return;
+}
+
+void device_auth_p0_handler(engine_ctx_t *ctx,
+                            p0_evt_t p0_event,
+                            const void *data_ptr) {
+  if (true == p0_event.abort_evt) {
+    engine_reset_flow(ctx);
+    // TODO: Early flow exit
+  } else if (true == p0_event.inactivity_evt) {
+    // TODO: In case of onboarding, inactivity event does not need to be
+    // handled, but in normal case we need to take care of this case
+  }
+
+  return;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+void device_authentication_flow(const manager_query_t *query) {
+  if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
+    // TODO: Handle bad data error
+    // TODO: Early flow exit
+  }
+
+  flow_step_t *device_auth_flow_buffer[DEVICE_AUTH_FLOW_STEPS] = {0};
+  engine_ctx_t device_auth_engine_ctx = {0};
+  INIT_ENGINE_CTX(device_auth_engine_ctx, device_auth_flow_buffer);
+
+  /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
+  device_auth_flow_states_e state = SIGN_SERIAL_NUM;
+
+  evt_config_t config = {.evt_selection = EVENT_CONFIG_USB,
+                         .timeout = MAX_INACTIVITY_TIMEOUT};
+
+  flow_step_t device_auth_step = {.step_init_cb = device_auth_init_cb,
+                                  .p0_cb = device_auth_p0_handler,
+                                  .ui_cb = NULL,
+                                  .usb_cb = device_auth_usb_cb,
+                                  .nfc_cb = NULL,
+                                  .evt_cfg_ptr = &config,
+                                  .flow_data_ptr = &state};
+
+  pb_size_t request_type = get_request_type(&(query->auth_device));
+  if (MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG != request_type) {
+    // TODO: Handle error scenario in which an unexpected request_type was
+    // detected
+    // TODO: Early flow exit
+  }
+
+  // TODO: Check if it's a forced device authentication, in which case we will
+  // take users permission to perform authentication again
+
+  engine_add_next_flow_step(&device_auth_engine_ctx, &device_auth_step);
+  engine_run(&device_auth_engine_ctx);
+
+  return;
+}

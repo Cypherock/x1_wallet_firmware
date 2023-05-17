@@ -57,4 +57,16 @@ bool encode_manager_result(manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            size_t *bytes_written_out);
+
+/**
+ * @brief This API checks if the `which_request` field of the query of type
+ * `manager_query_t` matches against the expected tag.
+ *
+ * @param query The query of type `manager_query_t` to be checked
+ * @param exp_query_tag The expected tag of the query
+ * @return true If the query tag matches the expected tag
+ * @return false If the query tag does not match the expected tag
+ */
+bool check_manager_request(const manager_query_t *query,
+                           const pb_size_t exp_query_tag);
 #endif

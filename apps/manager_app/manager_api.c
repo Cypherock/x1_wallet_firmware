@@ -137,3 +137,11 @@ bool encode_manager_result(manager_result_t *result,
 
   return status;
 }
+
+bool check_manager_request(const manager_query_t *query,
+                           const pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    return false;
+  }
+  return true;
+}
