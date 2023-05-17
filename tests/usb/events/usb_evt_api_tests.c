@@ -149,7 +149,7 @@ TEST(usb_evt_api_test, consume_and_respond) {
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
 
   // send response over USB
-  usb_send_byte(89, 00);
+  usb_send_msg(data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }
 
@@ -189,7 +189,7 @@ TEST(usb_evt_api_test, api_interference_1) {
   usb_event_t usb_evt;
 
   // 1. responding without getting event
-  usb_send_byte(89, 00);
+  usb_send_msg(data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
   TEST_usb_evt_api_test_SETUP();
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
@@ -201,7 +201,7 @@ TEST(usb_evt_api_test, api_interference_2) {
 
   // 2. reject with usb error
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  usb_reject_invalid_request();
+  usb_send_error(data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
   TEST_usb_evt_api_test_SETUP();
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
@@ -213,7 +213,7 @@ TEST(usb_evt_api_test, api_interference_3) {
 
   // 3. reject with response
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  comm_reject_request(88, 00);
+  usb_send_error(data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
   TEST_usb_evt_api_test_SETUP();
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
@@ -233,7 +233,7 @@ TEST(usb_evt_api_test, wrong_cmd_1) {
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
 
   // send response over USB
-  comm_reject_request(89, 00);    // rename to usb_send_rejection_response()
+  usb_send_error(data, 1);    // rename to usb_send_rejection_response()
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }
 
@@ -251,6 +251,6 @@ TEST(usb_evt_api_test, wrong_cmd_2) {
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
 
   // send response USB error packet
-  usb_reject_invalid_request();
+  usb_send_error(data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }
