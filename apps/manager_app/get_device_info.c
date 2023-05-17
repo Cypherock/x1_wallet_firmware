@@ -172,6 +172,8 @@ static void fill_device_info_unknown_error(
 
 void get_device_info_flow(const manager_query_t *query) {
   size_t msg_size = 0;
+  // TODO: replace MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE with relevant
+  // macro/value
   uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
   manager_result_t result = MANAGER_RESULT_INIT_ZERO;
 
