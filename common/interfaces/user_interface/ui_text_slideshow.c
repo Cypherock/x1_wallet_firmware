@@ -132,7 +132,6 @@ static void event_handler(lv_obj_t *obj, const lv_event_t event) {
     case LV_EVENT_CLICKED: {
       if (data->one_cycle_completed && data->destruct_on_click) {
         ui_set_confirm_event();
-        lv_obj_clean(lv_scr_act());
       }
       break;
     }
