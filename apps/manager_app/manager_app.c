@@ -102,7 +102,7 @@ void manager_app_main(usb_event_t usb_evt) {
     return;
   }
 
-  LOG_SWV("Query:%d\n", query.which_request);
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
 
   // TODO: Add calls to flows/ functions based on query type decoded from the
   // protobuf
