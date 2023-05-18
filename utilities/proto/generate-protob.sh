@@ -24,4 +24,4 @@ cd "${PROTO_SRC}"
 # btc.error.proto) as it would result into a collision.
 # By using <> format instead of "proto/" helps because in future, relocation
 # of generated files would not require updating this parameter.
-python "${NANOPB_GEN}" -q --generated-include-format "#include <%s>" --proto-path="${PROTO_SRC}" --options-path="${OPTIONS_DIR}"  $(find "${PROTO_SRC}" -name "*.proto") --output-dir="${OUTPUT_DIR}" --c-style
+python "${NANOPB_GEN}" -q --generated-include-format "#include <%s>" --proto-path="${PROTO_SRC}" --options-path="${OPTIONS_DIR}"  $(find "${PROTO_SRC}" -name "*.proto") --output-dir="${OUTPUT_DIR}" --c-style -s anonymous_oneof:true -s long_names:false
