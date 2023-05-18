@@ -143,8 +143,7 @@ static manager_get_device_info_response_t get_device_info(void) {
 
   if (device_info.which_response ==
       MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
-    manager_get_device_info_result_response_t *result =
-        &device_info.response.result;
+    manager_get_device_info_result_response_t *result = &device_info.result;
     result->has_firmware_version =
         get_firmware_version(&result->firmware_version);
     memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
@@ -161,9 +160,8 @@ static void fill_device_info_unknown_error(
     manager_get_device_info_response_t *device_info,
     uint32_t error_code) {
   device_info->which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
-  device_info->response.core_error.which_error =
-      ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
-  device_info->response.core_error.error.unknown_error = error_code;
+  device_info->core_error.which_error = ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
+  device_info->core_error.unknown_error = error_code;
 }
 
 /*****************************************************************************
@@ -179,13 +177,13 @@ void get_device_info_flow(const manager_query_t *query) {
 
   if (MANAGER_QUERY_GET_DEVICE_INFO_TAG != query->which_request ||
       MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-          query->request.get_device_info.which_request) {
+          query->get_device_info.which_request) {
     // set the relevant tags for error
     result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-    fill_device_info_unknown_error(&result.response.get_device_info, 1);
+    fill_device_info_unknown_error(&result.get_device_info, 1);
   } else {
     result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-    result.response.get_device_info = get_device_info();
+    result.get_device_info = get_device_info();
   }
 
   ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));

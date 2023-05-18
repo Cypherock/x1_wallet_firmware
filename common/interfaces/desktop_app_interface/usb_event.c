@@ -145,7 +145,7 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
   if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
       NULL == msg.buffer || 0 == msg.size ||
       CORE_MSG_CMD_TAG != core_msg_p.which_type) {
-    return CORE_ERROR_TYPE_INVALID_MSG;
+    return CORE_INVALID_MSG;
   }
 
   // TODO: verify if the core_msg_p.type.cmd.applet_id is valid one ref PR #235
@@ -157,7 +157,7 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
   // }
 
   // TODO: verify with core context, if applet is invokable/active
-  return CORE_ERROR_TYPE_NO_ERROR;
+  return CORE_NO_ERROR;
 }
 
 /*****************************************************************************
@@ -191,7 +191,7 @@ bool usb_get_event(usb_event_t *evt) {
 
   if (usb_event.flag) {
     core_error_type_t status = validate_msg_context(core_msg);
-    if (CORE_ERROR_TYPE_NO_ERROR != status) {
+    if (CORE_NO_ERROR != status) {
       // now clear event as it is not supposed to reach the app
       usb_clear_event();
       // TODO: send an error to host

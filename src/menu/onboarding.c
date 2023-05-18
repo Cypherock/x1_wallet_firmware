@@ -122,7 +122,7 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
 
   /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
    * are entering back to the onboarding menu */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
 
   if (true == onboarding_ctx.static_screen) {
     delay_scr_init(ui_text_onboarding[2], DELAY_TIME);

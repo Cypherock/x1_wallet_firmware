@@ -98,9 +98,9 @@ TEST(manager_api_test, decode_valid_manager_bs) {
   TEST_ASSERT_EQUAL_UINT16(MANAGER_QUERY_AUTH_CARD_TAG,
                            query_out.which_request);
   TEST_ASSERT_EQUAL_UINT16(MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG,
-                           query_out.request.auth_card.which_request);
+                           query_out.auth_card.which_request);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-      challenge, query_out.request.auth_card.request.challenge.challenge, 32);
+      challenge, query_out.auth_card.challenge.challenge, 32);
 }
 
 TEST(manager_api_test, decode_invalid_manager_bs_incorrect_size) {
@@ -115,11 +115,9 @@ TEST(manager_api_test, decode_invalid_manager_bs_incorrect_size) {
 TEST(manager_api_test, encode_valid_manager_result) {
   manager_result_t result = {
       .which_response = MANAGER_RESULT_AUTH_CARD_TAG,
-      .response.auth_card.which_response =
-          MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG,
-      .response.auth_card.response.serial_signature
-          .serial = {0x00, 0x00, 0x00, 0x01, 0x02},
-      .response.auth_card.response.serial_signature.signature = {
+      .auth_card.which_response = MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG,
+      .auth_card.serial_signature.serial = {0x00, 0x00, 0x00, 0x01, 0x02},
+      .auth_card.serial_signature.signature = {
           0x4c, 0xfe, 0x2f, 0x70, 0x43, 0x76, 0x90, 0xc0, 0x16, 0x14, 0x71,
           0xac, 0xab, 0xb1, 0x6c, 0x49, 0x3a, 0xe0, 0xb5, 0xc8, 0x65, 0x5f,
           0x1a, 0x3a, 0xbd, 0x4c, 0x9c, 0x57, 0x93, 0x54, 0xb7, 0x19, 0x09,
@@ -138,11 +136,9 @@ TEST(manager_api_test, encode_valid_manager_result) {
 TEST(manager_api_test, encode_invalid_size_manager_result) {
   manager_result_t result = {
       .which_response = MANAGER_RESULT_AUTH_CARD_TAG,
-      .response.auth_card.which_response =
-          MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG,
-      .response.auth_card.response.serial_signature
-          .serial = {0x00, 0x00, 0x00, 0x01, 0x02},
-      .response.auth_card.response.serial_signature.signature = {
+      .auth_card.which_response = MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG,
+      .auth_card.serial_signature.serial = {0x00, 0x00, 0x00, 0x01, 0x02},
+      .auth_card.serial_signature.signature = {
           0x4c, 0xfe, 0x2f, 0x70, 0x43, 0x76, 0x90, 0xc0, 0x16, 0x14, 0x71,
           0xac, 0xab, 0xb1, 0x6c, 0x49, 0x3a, 0xe0, 0xb5, 0xc8, 0x65, 0x5f,
           0x1a, 0x3a, 0xbd, 0x4c, 0x9c, 0x57, 0x93, 0x54, 0xb7, 0x19, 0x09,

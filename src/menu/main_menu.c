@@ -205,7 +205,7 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
 
   /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE as we
    * are entering back to the main menu */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE);
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
 
   /* Clear the context of the options rendered on the main menu */
   main_menu_reset_context();
@@ -260,7 +260,7 @@ void main_menu_handler(engine_ctx_t *ctx,
 
     /* Set core_status to CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_DEVICE as we
      * are probably entering a device initiated flow */
-    core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_DEVICE);
+    core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
   }
 
   switch (menu_selected) {

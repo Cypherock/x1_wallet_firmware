@@ -148,30 +148,26 @@ sign_serial_number(void) {
       continue;
     }
 
-    atecc_data.status =
-        atcab_sign_internal(slot_2_auth_key,
-                            false,
-                            false,
-                            response.response.serial_signature.signature);
+    atecc_data.status = atcab_sign_internal(
+        slot_2_auth_key, false, false, response.serial_signature.signature);
     if (atecc_data.status != ATCA_SUCCESS) {
       continue;
     }
 
-    atecc_data.status =
-        atcab_read_zone(ATCA_ZONE_DATA,
-                        slot_8_serial,
-                        0,
-                        0,
-                        response.response.serial_signature.serial,
-                        32);
+    atecc_data.status = atcab_read_zone(ATCA_ZONE_DATA,
+                                        slot_8_serial,
+                                        0,
+                                        0,
+                                        response.serial_signature.serial,
+                                        32);
     if (atecc_data.status != ATCA_SUCCESS) {
       continue;
     }
 
     helper_get_gendig_hash(slot_8_serial,
-                           response.response.serial_signature.serial,
+                           response.serial_signature.serial,
                            tempkey_hash,
-                           response.response.serial_signature.postfix1);
+                           response.serial_signature.postfix1);
 
     sign_internal_param.message = tempkey_hash;
     sign_internal_param.digest = final_hash;
@@ -181,11 +177,10 @@ sign_serial_number(void) {
                              slot_2_auth_key,
                              slot_8_serial);
     {
-      uint8_t result =
-          ecdsa_verify_digest(&nist256p1,
-                              get_auth_public_key(),
-                              response.response.serial_signature.signature,
-                              sign_internal_param.digest);
+      uint8_t result = ecdsa_verify_digest(&nist256p1,
+                                           get_auth_public_key(),
+                                           response.serial_signature.signature,
+                                           sign_internal_param.digest);
       if (atecc_data.status != ATCA_SUCCESS || result != 0) {
         LOG_ERROR("err xxx32 fault %d verify %d", atecc_data.status, result);
         continue;
@@ -195,9 +190,7 @@ sign_serial_number(void) {
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
-  memcpy(response.response.serial_signature.postfix2,
-         &tempkey_hash[32],
-         POSTFIX2_SIZE);
+  memcpy(response.serial_signature.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
 
   return response;
 }
@@ -255,11 +248,8 @@ sign_random_challenge(uint8_t *challenge) {
       continue;
     }
 
-    atecc_data.status =
-        atcab_sign_internal(slot_2_auth_key,
-                            false,
-                            false,
-                            response.response.challenge_signature.signature);
+    atecc_data.status = atcab_sign_internal(
+        slot_2_auth_key, false, false, response.challenge_signature.signature);
     if (atecc_data.status != ATCA_SUCCESS) {
       continue;
     }
@@ -267,7 +257,7 @@ sign_random_challenge(uint8_t *challenge) {
     helper_get_gendig_hash(slot_5_challenge,
                            challenge,
                            tempkey_hash,
-                           response.response.challenge_signature.postfix1);
+                           response.challenge_signature.postfix1);
 
     sign_internal_param.message = tempkey_hash;
     sign_internal_param.digest = final_hash;
@@ -289,7 +279,7 @@ sign_random_challenge(uint8_t *challenge) {
       uint8_t result =
           ecdsa_verify_digest(&nist256p1,
                               get_auth_public_key(),
-                              response.response.challenge_signature.signature,
+                              response.challenge_signature.signature,
                               sign_internal_param.digest);
       if (atecc_data.status != ATCA_SUCCESS || result != 0)
         LOG_ERROR("err xxx33 fault %d verify %d", atecc_data.status, result);
@@ -298,9 +288,8 @@ sign_random_challenge(uint8_t *challenge) {
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
-  memcpy(response.response.challenge_signature.postfix2,
-         &tempkey_hash[32],
-         POSTFIX2_SIZE);
+  memcpy(
+      response.challenge_signature.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
 
   /* Zeroise IO protection key */
   memset(&io_protection_key[0], 0, sizeof(io_protection_key));
