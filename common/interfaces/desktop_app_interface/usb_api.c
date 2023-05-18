@@ -228,8 +228,7 @@ void usb_send_msg(const uint8_t *msg, const uint32_t size) {
 
   // TODO: get core_msg_t from core
   // encode msg-context directly into payload buffer
-  core_msg_t core_msg = {.which_type = CORE_MSG_CMD_TAG,
-                         .type.cmd.applet_id = 1};
+  core_msg_t core_msg = {.which_type = CORE_MSG_CMD_TAG, .cmd.applet_id = 1};
   pb_ostream_t stream =
       pb_ostream_from_buffer(comm_io_buffer + COMM_SZ_RESERVED_SPACE,
                              COMM_BUFFER_SIZE - COMM_SZ_RESERVED_SPACE);
