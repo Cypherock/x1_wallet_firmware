@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.c
+ * @file    ui_joystick_training.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   UI component to train user for joystick.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,11 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
 
-#include "manager_api.h"
-#include "onboarding.h"
-#include "status_api.h"
+#include "ui_joystick_training.h"
+
+#include "ui_events_priv.h"
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -77,63 +79,149 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
+/**
+ * @brief struct to store message data
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note Add constant
+ */
+struct Message_Data {
+  char *message;
+};
+
+/**
+ * @brief struct to store message lvgl object
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+struct Message_Object {
+  lv_obj_t *message;
+};
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Create message screen
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ */
+static void joystick_train_create();
+
+/**
+ * @brief Clear screen
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void joystick_train_destructor();
+
+/**
+ * @brief Next button event handler.
+ * @details
+ *
+ * @param next_btn Next button lvgl object.
+ * @param event Type of event.
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+
+static struct Message_Data *data = NULL;
+static struct Message_Object *obj = NULL;
+static joystick_actions_t action = JS_ACTION_CENTER;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static void joystick_train_destructor() {
+  if (data != NULL) {
+    memzero(data, sizeof(struct Message_Data));
+    free(data);
+    data = NULL;
+  }
+  if (obj != NULL) {
+    free(obj);
+    obj = NULL;
+  }
+}
+
+static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
+  if (event == LV_EVENT_KEY && action == lv_indev_get_key(ui_get_indev())) {
+    ui_set_confirm_event();
+  } else if (event == LV_EVENT_DELETE) {
+    /* Destruct object and data variables in case the object is being deleted
+     * directly using lv_obj_clean() */
+    joystick_train_destructor();
+  }
+}
+
+static void joystick_train_create() {
+  ASSERT(data != NULL);
+  ASSERT(obj != NULL);
+
+  obj->message = lv_label_create(lv_scr_act(), NULL);
+  ui_paragraph(obj->message, data->message, LV_LABEL_ALIGN_CENTER);
+  lv_obj_align(obj->message, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_group_add_obj(ui_get_group(), obj->message);
+  lv_obj_set_event_cb(obj->message, next_btn_event_handler);
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+void joystick_train_init(const char *message, joystick_actions_t act) {
+  ASSERT(message != NULL);
+
+  /* Clear screen before populating any data, this will clear any UI component
+   * and it's corresponding objects. Important thing to note here is that the
+   * screen will be updated only when lv_task_handler() is called.
+   * This call will ensure that there is no object present in the currently
+   * active screen in case data from previous screen was not cleared */
+  lv_obj_clean(lv_scr_act());
+  action = act;
+
+  data = malloc(sizeof(struct Message_Data));
+  obj = malloc(sizeof(struct Message_Object));
+
+  if (data != NULL) {
+    data->message = (char *)message;
   }
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_USER_TAG: {
-      manager_user_training(&query);
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
-  core_status_set_flow_status(0);
-
-  return;
+#ifdef DEV_BUILD
+  ekp_enqueue(act, DEFAULT_DELAY);
+#endif
+  joystick_train_create();
 }

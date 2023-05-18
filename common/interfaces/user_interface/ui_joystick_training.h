@@ -1,27 +1,20 @@
 /**
- * @file    manager_app.h
+ * @file    ui_joystick_training.h
  * @author  Cypherock X1 Team
- * @brief
- * @details
-
+ * @brief   UI component to train user for joystick.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  *
  */
-
-#ifndef MANAGER_APP_H
-#define MANAGER_APP_H
+#ifndef UI_JOYSTICK_TRAINING_H
+#define UI_JOYSTICK_TRAINING_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <manager/core.pb.h>
-#include <manager/get_device_info.pb.h>
-#include <stddef.h>
-#include <stdint.h>
 
-#include "events.h"
+#include "ui_common.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -31,6 +24,14 @@
  * TYPEDEFS
  *****************************************************************************/
 
+typedef enum joystick_actions {
+  JS_ACTION_UP = LV_KEY_UP,
+  JS_ACTION_DOWN = LV_KEY_DOWN,
+  JS_ACTION_LEFT = LV_KEY_LEFT,
+  JS_ACTION_RIGHT = LV_KEY_RIGHT,
+  JS_ACTION_CENTER = LV_KEY_ENTER,
+} joystick_actions_t;
+
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -38,27 +39,19 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+
 /**
- * @brief Entry point for the manager application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * manager app.
+ * @brief Initialize and create message UI screen
+ * @details The component translates various user actions into UI_EVENT_CONFIRM.
+ * The application can provide which action (joystick_actions_t) to map to the
+ * UI_EVENT_CONFIRM event.
  *
- * @param usb_evt The USB event which triggered invocation of the manager app
- */
-void manager_app_main(usb_event_t usb_evt);
-
-/**
- * @brief Initiates the get device info flow.
+ * @param message message text
+ * @param act indicates which action will raise an UI-event
  *
- * @param query Reference to the decoded query struct from the host app
+ * @see
+ * @since v1.0.0
  */
-// TODO: Move to manager_app_priv.h
-void get_device_info_flow(const manager_query_t *query);
+void joystick_train_init(const char *message, joystick_actions_t act);
 
-/**
- * @brief Guided user training during the user on-boarding
- */
-// TODO: Move to manager_app_priv.h
-void manager_user_training(manager_query_t *query);
-
-#endif /* MANAGER_APP_H */
+#endif
