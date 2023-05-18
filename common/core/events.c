@@ -109,16 +109,16 @@ evt_status_t get_events(uint8_t event_config, uint32_t timeout) {
       break;
     }
 
-    if (EVT_CONFIG_UI == (event_config & EVT_CONFIG_UI)) {
+    if (EVENT_CONFIG_UI == (event_config & EVENT_CONFIG_UI)) {
       lv_task_handler();
       p1_evt_occurred |= ui_get_and_reset_event(&(status.ui_event));
     }
 
-    if (EVT_CONFIG_USB == (event_config & EVT_CONFIG_USB)) {
+    if (EVENT_CONFIG_USB == (event_config & EVENT_CONFIG_USB)) {
       p1_evt_occurred |= usb_get_event(&(status.usb_event));
     }
 
-    if (EVT_CONFIG_NFC == (event_config & EVT_CONFIG_NFC)) {
+    if (EVENT_CONFIG_NFC == (event_config & EVENT_CONFIG_NFC)) {
       nfc_task_handler();
       p1_evt_occurred |= nfc_get_event(&(status.nfc_event));
     }
@@ -136,7 +136,7 @@ evt_status_t get_events(uint8_t event_config, uint32_t timeout) {
   /* Any post cleanup required */
   p0_ctx_destroy();
 
-  if (EVT_CONFIG_NFC == (event_config & EVT_CONFIG_NFC)) {
+  if (EVENT_CONFIG_NFC == (event_config & EVENT_CONFIG_NFC)) {
     nfc_ctx_destroy();
   }
 

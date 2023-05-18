@@ -87,7 +87,7 @@
  * @brief Event listener configuration for the main menu and the onboarding menu
  */
 const evt_config_t main_menu_evt_config = {
-    .evt_selection = EVT_CONFIG_UI | EVT_CONFIG_USB,
+    .evt_selection = EVENT_CONFIG_UI | EVENT_CONFIG_USB,
     .timeout = MAX_INACTIVITY_TIMEOUT};
 
 /*****************************************************************************

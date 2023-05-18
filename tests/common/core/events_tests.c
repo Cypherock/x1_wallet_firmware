@@ -112,7 +112,7 @@ TEST(event_getter_test, ui_event) {
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  evt_status_t evt_status = get_events(EVT_CONFIG_UI, 5000);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_UI, 5000);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
   TEST_ASSERT_TRUE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);
@@ -126,7 +126,7 @@ TEST(event_getter_test, usb_event) {
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  evt_status_t evt_status = get_events(EVT_CONFIG_USB, 5000);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_USB, 5000);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_TRUE(evt_status.usb_event.flag);

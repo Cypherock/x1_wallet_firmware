@@ -97,7 +97,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
   /**
    * Wait for an event occurance, Card tap is awaited at this point
    */
-  evt_status_t evt_status = get_events(EVT_CONFIG_NFC, 50000);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_NFC, 50000);
   TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
   TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, evt_status.nfc_event.event_type);
 
@@ -116,7 +116,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
   /**
    * Wait for an event occurance, Card removal is awaited at this point
    */
-  evt_status_t evt_status = get_events(EVT_CONFIG_NFC, 50000);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_NFC, 50000);
   TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
   TEST_ASSERT_EQUAL(NFC_EVENT_CARD_REMOVED, evt_status.nfc_event.event_type);
 

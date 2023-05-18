@@ -26,9 +26,9 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define EVT_CONFIG_UI (1 << 0)
-#define EVT_CONFIG_USB (1 << 1)
-#define EVT_CONFIG_NFC (1 << 2)
+#define EVENT_CONFIG_UI (1 << 0)
+#define EVENT_CONFIG_USB (1 << 1)
+#define EVENT_CONFIG_NFC (1 << 2)
 
 /*****************************************************************************
  * TYPEDEFS
