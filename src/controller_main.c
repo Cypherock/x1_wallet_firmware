@@ -822,7 +822,6 @@ void desktop_listener_task(lv_task_t *data) {
         }
 
         if (data_array[0] == 2) {
-          memcpy(&challenge_no, &data_array[1], 32);
           flow_level.level_three = SIGN_CHALLENGE;
           clear_message_received_data();
         }
@@ -921,8 +920,7 @@ void desktop_listener_task(lv_task_t *data) {
             cy_exit_flow();
         }
         if (data_array[0] == 2)
-          memcpy(&challenge_no, &data_array[1], 32);
-        clear_message_received_data();
+          clear_message_received_data();
       } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
