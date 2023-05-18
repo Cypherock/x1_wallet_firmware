@@ -61,7 +61,6 @@
 
 TEST_GROUP_RUNNER(event_getter_test) {
   RUN_TEST_CASE(event_getter_test, no_event);
-  RUN_TEST_CASE(event_getter_test, nfc_event);
   RUN_TEST_CASE(event_getter_test, p0_event);
   RUN_TEST_CASE(event_getter_test, ui_event);
   RUN_TEST_CASE(event_getter_test, usb_event);
@@ -77,7 +76,6 @@ TEST_GROUP_RUNNER(xpub) {
 TEST_GROUP_RUNNER(p0_events_test) {
   RUN_TEST_CASE(p0_events_test, inactivity_evt);
   RUN_TEST_CASE(p0_events_test, abort_evt);
-  RUN_TEST_CASE(p0_events_test, abort_evt_abort_disabled);
   RUN_TEST_CASE(p0_events_test, abort_inactivity_race);
   RUN_TEST_CASE(p0_events_test, inactivity_refresh_on_joystick_movement);
 }

@@ -128,7 +128,7 @@ TEST(manager_api_test, encode_valid_manager_result) {
           0xcd, 0xbb, 0xc3, 0xb3, 0x86, 0x10, 0x33, 0x47, 0x72,
       }};
   uint8_t byte_stream[MANAGER_AUTH_CARD_RESPONSE_SIZE + 10];
-  uint32_t bytes_written = 0;
+  size_t bytes_written = 0;
   TEST_ASSERT_TRUE(encode_manager_result(
       &result, byte_stream, sizeof(byte_stream), &bytes_written));
   TEST_ASSERT_NOT_EQUAL_UINT32(0, bytes_written);
@@ -151,7 +151,7 @@ TEST(manager_api_test, encode_invalid_size_manager_result) {
           0xcd, 0xbb, 0xc3, 0xb3, 0x86, 0x10, 0x33, 0x47, 0x72,
       }};
   uint8_t byte_stream[10];
-  uint32_t bytes_written = 0;
+  size_t bytes_written = 0;
   TEST_ASSERT_FALSE(encode_manager_result(
       &result, byte_stream, sizeof(byte_stream), &bytes_written));
   TEST_ASSERT_EQUAL_UINT32(0, bytes_written);

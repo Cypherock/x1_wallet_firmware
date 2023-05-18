@@ -73,13 +73,13 @@ void handle_pairing_detect_or_skip_task(char *heading) {
   nfc_en_select_card_task();
 
   // Set configuration for listening to NFC and ui events
-  evt_config_t evt_conf = {.abort_disabled = true,
-                           .evt_selection.bits.ui_events = true,
-                           .evt_selection.bits.nfc_events = true,
-                           .evt_selection.bits.usb_events = false,
-                           .timeout = 30000};
+  // evt_config_t evt_conf = {.abort_disabled = true,
+  //                          .evt_selection.bits.ui_events = true,
+  //                          .evt_selection.bits.nfc_events = true,
+  //                          .evt_selection.bits.usb_events = false,
+  //                          .timeout = 30000};
   evt_status_t evt_status = {0};
-  get_events(evt_conf, &evt_status);
+  // get_events(evt_conf, &evt_status);
 
   if (evt_status.nfc_event.event_occured &&
       (evt_status.nfc_event.event_type == NFC_EVENT_CARD_DETECT)) {

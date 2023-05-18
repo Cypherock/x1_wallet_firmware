@@ -291,7 +291,7 @@ static comm_error_code_t comm_process_abort_packet(const packet_t *rx_packet) {
     return INVALID_CHUNK_COUNT;
   if (rx_packet->header.payload_length != 0)
     return INVALID_PAYLOAD_LENGTH;
-  if (!comm_status.abort_disabled) {
+  if (true == core_status_get_abort_disabled()) {
     comm_reset();
     CY_Reset_Flow();
     p0_set_abort_evt(true);

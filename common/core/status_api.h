@@ -59,13 +59,12 @@ void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on);
 void core_status_set_flow_status(uint32_t flow_status);
 
 /**
- * @brief This API sets the abort_disabled field of the core_status_t status
- * packet. This API must be called only by the P0 event module.
+ * @brief This API checks if aborts are enabled in the current flow.
  *
- * @param abort_disabled True or false signifying if aborts are disabled during
- * the current flow
+ * @return true If aborts are enabled in the current flow
+ * @return false If aborts are not enabled
  */
-void core_status_set_abort_disabled(bool abort_disabled);
+bool core_status_get_abort_disabled(void);
 
 /**
  * @brief This API returns the core status of type core_status_t, which depicts
