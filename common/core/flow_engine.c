@@ -224,53 +224,60 @@ bool engine_delete_current_flow_step(engine_ctx_t *ctx) {
   return result;
 }
 
-void engine_run(engine_ctx_t *ctx) {
+void engine_run_flow(engine_ctx_t *ctx) {
   if (false == engine_check_ctx(ctx)) {
     return;
   }
 
   while (1) {
-    flow_step_t *current_flow = NULL;
+    flow_step_t *current_step = NULL;
 
     /* Break if the stack or queue reached an empty state */
-    if ((false == engine_get_current_flow_step(ctx, &current_flow)) ||
-        (NULL == current_flow)) {
+    if ((false == engine_get_current_flow_step(ctx, &current_step)) ||
+        (NULL == current_step)) {
       break;
     }
 
-    /* It is ensured that evt_cfg_ptr is NOT NULL in function
-     * engine_add_next_flow_step() */
-    const evt_config_t *evt_config_ptr = current_flow->evt_cfg_ptr;
+    engine_run_step(ctx, current_step);
+  }
 
-    const void *flow_data_ptr = current_flow->flow_data_ptr;
+  return;
+}
 
-    /* If code flow reaches this point, it means that the UX flow is still not
-     * complete. */
-    ENGINE_RUN_INITIALIZE_CB(current_flow->step_init_cb, ctx, flow_data_ptr);
+void engine_run_step(engine_ctx_t *ctx, flow_step_t *step) {
+  /* Step pointer should not be NULL, ctx can be NULL */
+  if (NULL == step) {
+    return;
+  }
 
-    evt_config_t evt_config = *evt_config_ptr;
-    evt_status_t evt_status =
-        get_events(evt_config.evt_selection, evt_config.timeout);
+  /* It is ensured that evt_cfg_ptr is NOT NULL in function
+   * engine_add_next_flow_step() */
+  const evt_config_t *evt_config_ptr = step->evt_cfg_ptr;
 
-    /* Callbacks are called based on the event status returned by the get_events
-     * API. It is expected that the evt_config and the callbacks match, meaning
-     * that if any flow has requested to listen about x events, it must register
-     * a callback for that event. */
-    if (true == evt_status.p0_event.flag) {
-      ENGINE_RUN_EVENT_CB(
-          current_flow->p0_cb, ctx, flow_data_ptr, evt_status.p0_event);
-    } else if (true == evt_status.ui_event.event_occured) {
-      ENGINE_RUN_EVENT_CB(
-          current_flow->ui_cb, ctx, flow_data_ptr, evt_status.ui_event);
-    } else if (true == evt_status.usb_event.flag) {
-      ENGINE_RUN_EVENT_CB(
-          current_flow->usb_cb, ctx, flow_data_ptr, evt_status.usb_event);
-    } else if (true == evt_status.nfc_event.event_occured) {
-      ENGINE_RUN_EVENT_CB(
-          current_flow->nfc_cb, ctx, flow_data_ptr, evt_status.nfc_event);
-    } else {
-      /* This case should never arise */
-    }
+  const void *flow_data_ptr = step->flow_data_ptr;
+
+  /* If code flow reaches this point, it means that the UX flow is still not
+   * complete. */
+  ENGINE_RUN_INITIALIZE_CB(step->step_init_cb, ctx, flow_data_ptr);
+
+  evt_config_t evt_config = *evt_config_ptr;
+  evt_status_t evt_status =
+      get_events(evt_config.evt_selection, evt_config.timeout);
+
+  /* Callbacks are called based on the event status returned by the get_events
+   * API. It is expected that the evt_config and the callbacks match, meaning
+   * that if any flow has requested to listen about x events, it must register
+   * a callback for that event. */
+  if (true == evt_status.p0_event.flag) {
+    ENGINE_RUN_EVENT_CB(step->p0_cb, ctx, flow_data_ptr, evt_status.p0_event);
+  } else if (true == evt_status.ui_event.event_occured) {
+    ENGINE_RUN_EVENT_CB(step->ui_cb, ctx, flow_data_ptr, evt_status.ui_event);
+  } else if (true == evt_status.usb_event.flag) {
+    ENGINE_RUN_EVENT_CB(step->usb_cb, ctx, flow_data_ptr, evt_status.usb_event);
+  } else if (true == evt_status.nfc_event.event_occured) {
+    ENGINE_RUN_EVENT_CB(step->nfc_cb, ctx, flow_data_ptr, evt_status.nfc_event);
+  } else {
+    /* This case should never arise */
   }
 
   return;

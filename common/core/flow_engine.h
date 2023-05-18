@@ -161,6 +161,16 @@ bool engine_delete_current_flow_step(engine_ctx_t *ctx);
  * @param ctx Pointer to data of type engine_ctx_t which holds the correct data
  * for the buffer
  */
-void engine_run(engine_ctx_t *ctx);
+void engine_run_flow(engine_ctx_t *ctx);
+
+/**
+ * @brief This API runs a particular step of the flow. This flow may or may not
+ * be initiated from an engine context.
+ *
+ * @param ctx The engine context from which it was invoked. It can be NULL in
+ * case it's a single step flow.
+ * @param step Flow step pointer depicting the step that needs to be executed.
+ */
+void engine_run_step(engine_ctx_t *ctx, flow_step_t *step);
 
 #endif /* FLOW_ENGINE_H */

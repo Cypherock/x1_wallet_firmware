@@ -234,7 +234,7 @@ TEST(flow_engine_tests, engine_use_case_test) {
 #endif
 
   // Run the engine until it reaches the last step
-  engine_run(&flow_list);
+  engine_run_flow(&flow_list);
 
 #if USE_SIMULATOR == 1
   TEST_ASSERT_FALSE(callback_test.p0_event);
