@@ -248,10 +248,9 @@ void engine_run(engine_ctx_t *ctx) {
      * complete. */
     ENGINE_RUN_INITIALIZE_CB(current_flow->step_init_cb, ctx, flow_data_ptr);
 
-    evt_status_t evt_status = {0};
     evt_config_t evt_config = *evt_config_ptr;
-
-    get_events(evt_config, &evt_status);
+    evt_status_t evt_status =
+        get_events(evt_config.evt_selection, evt_config.timeout);
 
     /* Callbacks are called based on the event status returned by the get_events
      * API. It is expected that the evt_config and the callbacks match, meaning

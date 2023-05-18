@@ -1,8 +1,8 @@
 /**
  * @file    events.h
  * @author  Cypherock X1 Team
- * @brief
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @brief   Header file for the event getter module
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
@@ -26,30 +26,15 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define EVT_CONFIG_UI_EVT (1 << 0)
-#define EVT_CONFIG_USB_EVT (1 << 1)
-#define EVT_CONGIG_NFC_EVT (1 << 2)
+#define EVENT_CONFIG_UI (1 << 0)
+#define EVENT_CONFIG_USB (1 << 1)
+#define EVENT_CONFIG_NFC (1 << 2)
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef union {
-  struct {
-    uint8_t ui_events : 1;
-    uint8_t usb_events : 1;
-    uint8_t nfc_events : 1;
-    uint8_t rfu1 : 1;
-    uint8_t rfu2 : 1;
-    uint8_t rfu3 : 1;
-    uint8_t rfu4 : 1;
-    uint8_t rfu5 : 1;
-  } bits;
-  uint8_t byte;
-} evt_select_t;
-
 typedef struct {
-  evt_select_t evt_selection;
-  bool abort_disabled;
+  uint8_t evt_selection;
   uint32_t timeout;
 } evt_config_t;
 
@@ -67,13 +52,13 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
  * @brief Get the events object
  *
- * @param evt_config
- * @param p_evt_status
+ * @param event_config
+ * @param timeout
+ * @return evt_status_t
  */
-void get_events(evt_config_t evt_config, evt_status_t *p_evt_status);
+evt_status_t get_events(uint8_t event_config, uint32_t timeout);
 
 #endif /* EVENTS_H */

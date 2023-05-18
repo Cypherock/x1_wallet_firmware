@@ -78,16 +78,11 @@ TEST_TEAR_DOWN(event_getter_test) {
 }
 
 TEST(event_getter_test, no_event) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
 #if USE_SIMULATOR == 1
   p0_set_inactivity_evt(true);
 #endif /* USE_SIMULATOR == 1 */
 
-  get_events(evt_config, NULL);
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(0, 5000);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);
@@ -95,27 +90,15 @@ TEST(event_getter_test, no_event) {
   TEST_ASSERT_FALSE(evt_status.p0_event.abort_evt);
 }
 
-TEST(event_getter_test, nfc_event) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x04, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
-  // TODO
-}
-
 TEST(event_getter_test, p0_event) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // explicitly initialize p0; this is to enable aborts so that we can raise
   // an abort event from here itself
-  p0_ctx_init(1000, false);
+  p0_ctx_init(1000);
   // trigger a p0 event
   p0_set_abort_evt(true);
   ui_set_confirm_event();
 
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(0, 5000);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);
@@ -124,16 +107,12 @@ TEST(event_getter_test, p0_event) {
 }
 
 TEST(event_getter_test, ui_event) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x01, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // trigger an ui event
   ui_set_confirm_event();
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_UI, 5000);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
   TEST_ASSERT_TRUE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);
@@ -142,16 +121,12 @@ TEST(event_getter_test, ui_event) {
 }
 
 TEST(event_getter_test, usb_event) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x02, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // trigger an ui event
   ui_set_confirm_event();
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_USB, 5000);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_TRUE(evt_status.usb_event.flag);
@@ -160,13 +135,9 @@ TEST(event_getter_test, usb_event) {
 }
 
 TEST(event_getter_test, listening_all_events) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x07, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // explicitly initialize p0; this is to enable aborts so that we can raise
   // an abort event from here itself
-  p0_ctx_init(1000, false);
+  p0_ctx_init(1000);
   // trigger a p0 event
   p0_set_abort_evt(true);
   p0_set_inactivity_evt(true);
@@ -175,7 +146,7 @@ TEST(event_getter_test, listening_all_events) {
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(0x7, 5000);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);
@@ -184,14 +155,10 @@ TEST(event_getter_test, listening_all_events) {
 }
 
 TEST(event_getter_test, listening_all_available_one) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x07, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(0x7, 5000);
   TEST_ASSERT_FALSE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_TRUE(evt_status.usb_event.flag);
@@ -200,17 +167,12 @@ TEST(event_getter_test, listening_all_available_one) {
 }
 
 TEST(event_getter_test, disabled_events) {
-  evt_config_t evt_config = {
-      .evt_selection.byte = 0x01, .abort_disabled = false, .timeout = 5000};
-  evt_status_t evt_status = {0};
-
   // trigger an usb event
   usb_set_event(4, core_msg, 0, NULL);
 #if USE_SIMULATOR == 1
   p0_set_inactivity_evt(true);
 #endif /* USE_SIMULATOR == 1 */
-
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(0x0, 5000);
   TEST_ASSERT_TRUE(evt_status.p0_event.flag);
   TEST_ASSERT_FALSE(evt_status.ui_event.event_occured);
   TEST_ASSERT_FALSE(evt_status.usb_event.flag);

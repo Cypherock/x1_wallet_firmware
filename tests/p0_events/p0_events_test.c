@@ -106,7 +106,7 @@ TEST_TEAR_DOWN(p0_events_test) {
 TEST(p0_events_test, inactivity_evt) {
   p0_evt_t p0_evt;
 
-  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S, true);
+  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S);
 #if USE_SIMULATOR == 1
   p0_set_inactivity_evt(true);
 #endif /* USE_SIMULATOR == 1 */
@@ -139,7 +139,7 @@ TEST(p0_events_test, inactivity_evt) {
 TEST(p0_events_test, abort_evt) {
   p0_evt_t p0_evt;
 
-  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S, false);
+  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S);
 
   /* Set abort manually - it will be set by communication module */
   p0_set_abort_evt(true);
@@ -169,34 +169,10 @@ TEST(p0_events_test, abort_evt) {
   return;
 }
 
-TEST(p0_events_test, abort_evt_abort_disabled) {
-  p0_evt_t p0_evt;
-
-  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S, true);
-
-  /* Set abort manually - it will be set by communication module */
-  p0_set_abort_evt(true);
-#if USE_SIMULATOR == 1
-  p0_set_inactivity_evt(true);
-#endif /* USE_SIMULATOR == 1 */
-
-  while (p0_get_evt(&p0_evt) != true)
-    ;
-
-  /* In this case abort will NOT be set as it is disabled, therefore, we will
-   * observe an inactivity event */
-  TEST_ASSERT(p0_evt.flag == true);
-  TEST_ASSERT(p0_evt.inactivity_evt == true);
-  TEST_ASSERT(p0_evt.abort_evt == false);
-
-  p0_ctx_destroy();
-  return;
-}
-
 TEST(p0_events_test, abort_inactivity_race) {
   p0_evt_t p0_evt;
 
-  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S, false);
+  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S);
 
   /* Manually disable systick module as we want to emulate race scenario here */
   systick_set_timeout_config(false);
@@ -222,7 +198,7 @@ TEST(p0_events_test, abort_inactivity_race) {
 TEST(p0_events_test, inactivity_refresh_on_joystick_movement) {
   p0_evt_t p0_evt;
 
-  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S, false);
+  p0_ctx_init(P0_UNIT_TESTS_TIMEOUT_5S);
 
   uint32_t return_status = false;
   uint16_t refresh_count = 0;

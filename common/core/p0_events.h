@@ -34,12 +34,6 @@
  * TYPEDEFS
  *****************************************************************************/
 typedef struct {
-  bool abort_disabled; /* If true: then abort requests from the desktop
-                          application will not be considered, and P0 event will
-                          not occur */
-} p0_evt_ctx_t;
-
-typedef struct {
   bool flag;           /* If true, then represents if a p0 event occurred */
   bool inactivity_evt; /* If true: then an inactivity event occurred
                               after the ctx was initialized, else no */
@@ -57,17 +51,12 @@ typedef struct {
 /**
  * @brief This function initializes the context of P0 event getter. It sets the
  * configuration based on the application use case.
- * NOTE:
- * 1. Inactivity timer is always enabled, whereas aborts can be configured.
- * 2. This function MUST be called before calling p0_get_evt;
  *
  * @param inactivity_timeout Inactivity timeout to be setup for the application.
  * It can range from 1 to MAX_INACTIVITY_TIMEOUT, any invalid value will
  * represent MAX_INACTIVITY_TIMEOUT. Timeout value is in milliseconds (ms)
- * @param abort_disabled Boolean flag to indicate if abort from the desktop
- * companion should be accepted or not.
  */
-void p0_ctx_init(uint32_t inactivity_timeout, bool abort_disabled);
+void p0_ctx_init(uint32_t inactivity_timeout);
 
 /**
  * @brief This function checks if any P0 event was encountered.

@@ -108,6 +108,9 @@ void core_status_set_idle_state(core_device_idle_state_t idle_state) {
   if (CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_IDLE ==
       core_status.device_idle_state)
     comm_reset_interface();
+
+  core_status.abort_disabled = (CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_USB ==
+                                core_status.device_idle_state);
   return;
 }
 
@@ -121,9 +124,12 @@ void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on) {
   return;
 }
 
-void core_status_set_abort_disabled(bool abort_disabled) {
-  core_status.abort_disabled = abort_disabled;
-  return;
+bool core_status_get_abort_disabled(void) {
+  if (CORE_DEVICE_IDLE_STATE_DEVICE_IDLE_STATE_USB ==
+      core_status.device_idle_state) {
+    return true;
+  }
+  return false;
 }
 
 core_status_t get_core_status(void) {

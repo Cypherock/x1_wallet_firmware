@@ -87,8 +87,7 @@ typedef struct {
  *****************************************************************************/
 flow_step_t engine_test_flow[10];
 
-const evt_config_t engine_test_evt_config = {.abort_disabled = false,
-                                             .evt_selection.byte = 0x7,
+const evt_config_t engine_test_evt_config = {.evt_selection = 0x7,
                                              .timeout = 1200};
 
 event_callback_tester_t callback_test = {.p0_event = true,

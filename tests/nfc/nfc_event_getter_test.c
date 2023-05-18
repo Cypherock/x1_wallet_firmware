@@ -89,13 +89,6 @@ TEST_TEAR_DOWN(nfc_events_manual_test) {
 }
 
 TEST(nfc_events_manual_test, detect_and_remove_card) {
-  evt_config_t evt_config = {.evt_selection.bits.nfc_events = 1,
-                             .evt_selection.bits.ui_events = 0,
-                             .evt_selection.bits.usb_events = 0,
-                             .abort_disabled = true,
-                             .timeout = 50000};
-  evt_status_t evt_status = {0};
-
   // Initialize screen to indicate tap card
   instruction_scr_change_text("Tap Card", true);
   // Enable select card task
@@ -104,7 +97,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
   /**
    * Wait for an event occurance, Card tap is awaited at this point
    */
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_NFC, 50000);
   TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
   TEST_ASSERT_EQUAL(NFC_EVENT_CARD_DETECT, evt_status.nfc_event.event_type);
 
@@ -123,7 +116,7 @@ TEST(nfc_events_manual_test, detect_and_remove_card) {
   /**
    * Wait for an event occurance, Card removal is awaited at this point
    */
-  get_events(evt_config, &evt_status);
+  evt_status_t evt_status = get_events(EVENT_CONFIG_NFC, 50000);
   TEST_ASSERT_TRUE(evt_status.nfc_event.event_occured);
   TEST_ASSERT_EQUAL(NFC_EVENT_CARD_REMOVED, evt_status.nfc_event.event_type);
 
