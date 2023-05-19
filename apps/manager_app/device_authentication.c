@@ -187,9 +187,16 @@ static void device_auth_usb_cb(usb_event_t usb_evt,
 
   /* Decode recieved query using protobuf helpers */
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+
   if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     // TODO: Handle proto decode error code
     usb_clear_event();
+    return;
+  }
+
+  if (false == check_manager_request(&query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
+    // TODO: Handle bad data error
+    // TODO: Early flow exit
     return;
   }
 
@@ -264,7 +271,12 @@ void device_authentication_flow(const manager_query_t *query) {
   while (FLOW_COMPLETE != state) {
     evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
     if (true == event.p0_event.flag) {
-      // TODO
+      if (true == event.p0_event.inactivity_evt) {
+        // TODO: Handle if not onboarding
+      } else if (true == event.p0_event.abort_evt) {
+        usb_clear_event();
+        return;
+      }
     } else {
       device_auth_usb_cb(event.usb_event, &state);
     }
