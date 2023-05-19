@@ -26,20 +26,6 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-/**
- * @brief MACRO to initialize the variable of type engine_ctx_t. This can help
- * to reduce the LOC.
- * @note ctx must be a declared variable of type engine_ctx_t
- * @note buf must be pointer to an array
- */
-#define INIT_ENGINE_CTX(ctx, buf)                                              \
-  do {                                                                         \
-    ctx.array = buf;                                                           \
-    ctx.current_index = 0;                                                     \
-    ctx.max_capacity = sizeof(buf) / sizeof(buf[0]);                           \
-    ctx.num_of_elements = 0;                                                   \
-    ctx.size_of_element = sizeof(buf[0]);                                      \
-  } while (0);
 
 /*****************************************************************************
  * TYPEDEFS

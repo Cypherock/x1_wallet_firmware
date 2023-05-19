@@ -64,6 +64,7 @@
 #include "events.h"
 #include "manager_api.h"
 #include "manager_app.h"
+#include "status_api.h"
 #include "ui_delay.h"
 
 /*****************************************************************************
@@ -237,6 +238,9 @@ void device_authentication_flow(const manager_query_t *query) {
 
   // TODO: Check if it's a forced device authentication, in which case we
   // will take users permission to perform authentication again
+
+  /* Set flow status: Dummy for now! */
+  core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
 
   delay_scr_init(ui_text_message_device_authenticating, 100);
 

@@ -63,6 +63,7 @@
 
 #include "manager_api.h"
 #include "onboarding.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -102,6 +103,10 @@ void manager_app_main(usb_event_t usb_evt) {
     return;
   }
 
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
 
   // TODO: Add calls to flows/ functions based on query type decoded from the
@@ -128,6 +133,9 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     default: {
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
       break;
     }
   }
