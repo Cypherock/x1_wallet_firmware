@@ -61,7 +61,7 @@
  *****************************************************************************/
 #include "constant_texts.h"
 #include "device_authentication_api.h"
-#include "flow_engine.h"
+#include "events.h"
 #include "manager_api.h"
 #include "manager_app.h"
 #include "ui_delay.h"
@@ -74,8 +74,6 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 #define DEVICE_AUTH_RESPONSE_SIZE (MANAGER_AUTH_DEVICE_RESPONSE_SIZE + 20)
-/* 1 for actual flow + 1 for user confirmation in forced verification */
-#define DEVICE_AUTH_FLOW_STEPS (2)
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -84,6 +82,7 @@ typedef enum {
   SIGN_SERIAL_NUM,
   SIGN_RANDOM_NUM,
   RESULT,
+  FLOW_COMPLETE,
 } device_auth_flow_states_e;
 
 /*****************************************************************************
@@ -107,43 +106,24 @@ typedef enum {
 static pb_size_t get_request_type(const manager_auth_device_request_t *request);
 
 /**
- * @brief This function is the initializer callback for the device
- * authentication flow. Since it is called multiple times in the device
- * authentication flow, it only acts if the state of the flow is
- * SIGN_SERIAL_NUMBER.
+ * @brief Helper function to send serial signature to the host.
  *
- * @param ctx The engine ctx from which this callback was invoked
- * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
+ * @param state_ptr Pointer to state of type device_auth_flow_states_e depicting
  * the current state of the flow
  */
-static void device_auth_init_cb(engine_ctx_t *ctx, const void *data_ptr);
+static void send_serial_signature(device_auth_flow_states_e *state_ptr);
 
 /**
  * @brief This function is the USB handler callback for the device
  * authentication flow. It handles the further USB requests from the host to
  * complete the device authenticaiton flow.
  *
- * @param ctx The engine ctx from which this callback was invoked
  * @param usb_evt The USB event which invoked this callback
  * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
  * the current state of the flow
  */
-static void device_auth_usb_cb(engine_ctx_t *ctx,
-                               usb_event_t usb_evt,
-                               const void *data_ptr);
-
-/**
- * @brief This function is the P0 handler callback for the device authentication
- * flow.
- *
- * @param ctx The engine ctx from which this callback was invoked
- * @param p0_event The P0 event which invoked this callback
- * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
- * the current state of the flow
- */
-void device_auth_p0_handler(engine_ctx_t *ctx,
-                            p0_evt_t p0_event,
-                            const void *data_ptr);
+static void device_auth_usb_cb(usb_event_t usb_evt,
+                               device_auth_flow_states_e *state_ptr);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -152,19 +132,14 @@ static pb_size_t get_request_type(
   return request->which_request;
 }
 
-static void device_auth_init_cb(engine_ctx_t *ctx, const void *data_ptr) {
-  device_auth_flow_states_e *state_ptr = (device_auth_flow_states_e *)data_ptr;
+static void send_serial_signature(device_auth_flow_states_e *state_ptr) {
   device_auth_flow_states_e state = *state_ptr;
 
-  /* Initializer callback will be only called if the correct manager request and
+  /* This will be only called if the correct manager request and
    * device authentication request is received. It is expected to be checked
-   * within device_authentication API, where this callback is set. */
+   * within device_authentication API */
 
-  /* This callback only needs to handle SIGN_SERIAL_NUM state */
   if (SIGN_SERIAL_NUM == state) {
-    /* Screen to display current process is ongoing */
-    delay_scr_init(ui_text_message_device_authenticating, 100);
-
     /* Fetch and encode serial signature, send it to the host and wait for
      * further USB requests. */
     manager_result_t result = MANAGER_RESULT_INIT_ZERO;
@@ -186,10 +161,8 @@ static void device_auth_init_cb(engine_ctx_t *ctx, const void *data_ptr) {
   return;
 }
 
-static void device_auth_usb_cb(engine_ctx_t *ctx,
-                               usb_event_t usb_evt,
-                               const void *data_ptr) {
-  device_auth_flow_states_e *state_ptr = (device_auth_flow_states_e *)data_ptr;
+static void device_auth_usb_cb(usb_event_t usb_evt,
+                               device_auth_flow_states_e *state_ptr) {
   device_auth_flow_states_e state = *state_ptr;
 
   /* Decode recieved query using protobuf helpers */
@@ -223,10 +196,12 @@ static void device_auth_usb_cb(engine_ctx_t *ctx,
       *state_ptr = RESULT;
     } else if (MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG == request_type) {
       /* If SIGN_RANDOM_NUM == state, but the request_type received is
-       * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in the
-       * flow. The device will treat it as an attempt to force device
+       * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in
+       * the flow. The device will treat it as an attempt to force device
        * authentication status */
       device_auth_handle_response(false);
+      *state_ptr = FLOW_COMPLETE;
+      usb_clear_event();
       // TODO: Early flow exit
     } else {
       // TODO: Handle error scenario in which an unexpected request_type was
@@ -238,22 +213,7 @@ static void device_auth_usb_cb(engine_ctx_t *ctx,
     bool verified = query.auth_device.result.verified;
     device_auth_handle_response(verified);
     usb_clear_event();
-    /* Exit the engine as the flow has ended */
-    engine_reset_flow(ctx);
-  }
-
-  return;
-}
-
-void device_auth_p0_handler(engine_ctx_t *ctx,
-                            p0_evt_t p0_event,
-                            const void *data_ptr) {
-  if (true == p0_event.abort_evt) {
-    engine_reset_flow(ctx);
-    // TODO: Early flow exit
-  } else if (true == p0_event.inactivity_evt) {
-    // TODO: In case of onboarding, inactivity event does not need to be
-    // handled, but in normal case we need to take care of this case
+    *state_ptr = FLOW_COMPLETE;
   }
 
   return;
@@ -268,24 +228,6 @@ void device_authentication_flow(const manager_query_t *query) {
     // TODO: Early flow exit
   }
 
-  flow_step_t *device_auth_flow_buffer[DEVICE_AUTH_FLOW_STEPS] = {0};
-  engine_ctx_t device_auth_engine_ctx = {0};
-  INIT_ENGINE_CTX(device_auth_engine_ctx, device_auth_flow_buffer);
-
-  /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
-  device_auth_flow_states_e state = SIGN_SERIAL_NUM;
-
-  evt_config_t config = {.evt_selection = EVENT_CONFIG_USB,
-                         .timeout = MAX_INACTIVITY_TIMEOUT};
-
-  flow_step_t device_auth_step = {.step_init_cb = device_auth_init_cb,
-                                  .p0_cb = device_auth_p0_handler,
-                                  .ui_cb = NULL,
-                                  .usb_cb = device_auth_usb_cb,
-                                  .nfc_cb = NULL,
-                                  .evt_cfg_ptr = &config,
-                                  .flow_data_ptr = &state};
-
   pb_size_t request_type = get_request_type(&(query->auth_device));
   if (MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG != request_type) {
     // TODO: Handle error scenario in which an unexpected request_type was
@@ -293,11 +235,23 @@ void device_authentication_flow(const manager_query_t *query) {
     // TODO: Early flow exit
   }
 
-  // TODO: Check if it's a forced device authentication, in which case we will
-  // take users permission to perform authentication again
+  // TODO: Check if it's a forced device authentication, in which case we
+  // will take users permission to perform authentication again
 
-  engine_add_next_flow_step(&device_auth_engine_ctx, &device_auth_step);
-  engine_run(&device_auth_engine_ctx);
+  delay_scr_init(ui_text_message_device_authenticating, 100);
+
+  /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
+  device_auth_flow_states_e state = SIGN_SERIAL_NUM;
+  send_serial_signature(&state);
+
+  while (FLOW_COMPLETE != state) {
+    evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+    if (true == event.p0_event.flag) {
+      // TODO
+    } else {
+      device_auth_usb_cb(event.usb_event, &state);
+    }
+  }
 
   return;
 }

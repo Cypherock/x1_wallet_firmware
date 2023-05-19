@@ -117,7 +117,7 @@ const char *ui_text_options_buzzer_adjust[] = {
 
 // Manager app text
 // Device authentication text
-const char *ui_text_message_device_authenticating = "Device authenticating...";
+const char *ui_text_message_device_authenticating = "Device\nauthenticating...";
 const char *ui_text_message_device_auth_success =
     "Device authenticated successfully";
 const char *ui_text_message_device_auth_failure =
