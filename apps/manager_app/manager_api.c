@@ -63,6 +63,7 @@
 
 #include "pb_decode.h"
 #include "pb_encode.h"
+#include "usb_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -144,4 +145,22 @@ bool check_manager_request(const manager_query_t *query,
     return false;
   }
   return true;
+}
+
+manager_result_t get_manager_result_template(const pb_size_t result_tag) {
+  manager_result_t result = MANAGER_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+bool encode_and_send_manager_result(manager_result_t *result,
+                                    uint8_t *out_buffer,
+                                    const size_t size_of_buffer) {
+  size_t bytes_encoded = 0;
+  if (true == encode_manager_result(
+                  result, &out_buffer[0], size_of_buffer, &bytes_encoded)) {
+    usb_send_msg(&out_buffer[0], bytes_encoded);
+    return true;
+  }
+  return false;
 }
