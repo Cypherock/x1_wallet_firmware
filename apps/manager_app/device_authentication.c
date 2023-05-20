@@ -86,7 +86,7 @@ typedef enum {
   SIGN_RANDOM_NUM,
   RESULT,
   FLOW_COMPLETE,
-} device_auth_flow_states_e;
+} device_auth_state_e;
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -109,31 +109,59 @@ typedef enum {
 static pb_size_t get_request_type(const manager_auth_device_request_t *request);
 
 /**
- * @brief Helper function to send serial signature to the host.
- *
- * @param state_ptr Pointer to state of type device_auth_flow_states_e depicting
- * the current state of the flow
- */
-static void send_serial_signature(device_auth_flow_states_e *state_ptr);
-
-/**
- * @brief This function is the USB handler callback for the device
- * authentication flow. It handles the further USB requests from the host to
- * complete the device authenticaiton flow.
- *
- * @param usb_evt The USB event which invoked this callback
- * @param data_ptr Pointer to state of type device_auth_flow_states_e depicting
- * the current state of the flow
- */
-static void device_auth_usb_cb(usb_event_t usb_evt,
-                               device_auth_flow_states_e *state_ptr);
-
-/**
  * @brief This API sends the response for device authentication flow completion
  * to the host.
  *
  */
-static void send_flow_complete(void);
+static manager_auth_device_response_t send_flow_complete(void);
+
+/**
+ * @brief This function is the request handler for the SIGN_SERIAL_NUM state of
+ * the device authentication flow
+ *
+ * @param query Reference to query of type manager_query_t as received from the
+ * host
+ * @param result Reference to the result of type manager_result_t, which will be
+ * populated by the API. This API will only fill the auth_device field of the
+ * manager_result_t.
+ * @param result_valid If the result returned from the API is valid.
+ * @return device_auth_state_e The next state of the flow
+ */
+static device_auth_state_e sign_serial_handler(const manager_query_t *query,
+                                               manager_result_t *result,
+                                               bool *result_valid);
+
+/**
+ * @brief This function is the request handler for the SIGN_RANDOM_NUM state of
+ * the device authentication flow
+ *
+ * @param query Reference to query of type manager_query_t as received from the
+ * host
+ * @param result Reference to the result of type manager_result_t, which will be
+ * populated by the API. This API will only fill the auth_device field of the
+ * manager_result_t.
+ * @param result_valid If the result returned from the API is valid.
+ * @return device_auth_state_e The next state of the flow
+ */
+static device_auth_state_e sign_random_handler(const manager_query_t *query,
+                                               manager_result_t *result,
+                                               bool *result_valid);
+
+/**
+ * @brief This function is the request handler for the RESULT state of
+ * the device authentication flow
+ *
+ * @param query Reference to query of type manager_query_t as received from the
+ * host
+ * @param result Reference to the result of type manager_result_t, which will be
+ * populated by the API. This API will only fill the auth_device field of the
+ * manager_result_t.
+ * @param result_valid If the result returned from the API is valid.
+ * @return device_auth_state_e The next state of the flow
+ */
+static device_auth_state_e result_handler(const manager_query_t *query,
+                                          manager_result_t *result,
+                                          bool *result_valid);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -142,102 +170,104 @@ static pb_size_t get_request_type(
   return request->which_request;
 }
 
-static void send_flow_complete(void) {
-  manager_result_t result =
-      get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-
-  result.auth_device.which_response =
-      MANAGER_AUTH_DEVICE_RESPONSE_FLOW_COMPLETE_TAG;
-  result.auth_device.flow_complete.dummy_field = '\0';
-
-  uint8_t response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
-  ASSERT(
-      encode_and_send_manager_result(&result, &response[0], sizeof(response)));
-  return;
+static manager_auth_device_response_t send_flow_complete(void) {
+  manager_auth_device_response_t response =
+      MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
+  response.which_response = MANAGER_AUTH_DEVICE_RESPONSE_FLOW_COMPLETE_TAG;
+  response.flow_complete.dummy_field = '\0';
+  return response;
 }
 
-static void send_serial_signature(device_auth_flow_states_e *state_ptr) {
-  device_auth_flow_states_e state = *state_ptr;
+static device_auth_state_e sign_serial_handler(const manager_query_t *query,
+                                               manager_result_t *result,
+                                               bool *result_valid) {
+  pb_size_t request_type = get_request_type(&query->auth_device);
+  device_auth_state_e next_state = SIGN_SERIAL_NUM;
 
-  /* This will be only called if the correct manager request and
-   * device authentication request is received. It is expected to be checked
-   * within device_authentication API */
-
-  if (SIGN_SERIAL_NUM == state) {
-    /* Fetch and encode serial signature, send it to the host and wait for
-     * further USB requests. */
-    manager_result_t result =
-        get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-    result.auth_device = sign_serial_number();
-
-    uint8_t response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
-    ASSERT(encode_and_send_manager_result(
-        &result, &response[0], sizeof(response)));
-
-    /* Set the next state to SIGN_RANDOM_NUM */
-    *state_ptr = SIGN_RANDOM_NUM;
+  switch (request_type) {
+    case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
+      result->auth_device = sign_serial_number();
+      *result_valid = true;
+      next_state = SIGN_RANDOM_NUM;
+      break;
+    }
+    case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG:
+    case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG:
+    default: {
+      usb_clear_event();
+      break;
+    }
   }
 
-  return;
+  return next_state;
 }
 
-static void device_auth_usb_cb(usb_event_t usb_evt,
-                               device_auth_flow_states_e *state_ptr) {
-  device_auth_flow_states_e state = *state_ptr;
+static device_auth_state_e sign_random_handler(const manager_query_t *query,
+                                               manager_result_t *result,
+                                               bool *result_valid) {
+  pb_size_t request_type = get_request_type(&query->auth_device);
+  device_auth_state_e next_state = SIGN_RANDOM_NUM;
 
-  /* Decode recieved query using protobuf helpers */
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
-
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    // TODO: Handle proto decode error code
-    usb_clear_event();
-    return;
-  }
-
-  if (false == check_manager_request(&query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
-    // TODO: Handle bad data error
-    // TODO: Early flow exit
-    return;
-  }
-
-  /* Decode recieved request_type */
-  pb_size_t request_type = get_request_type(
-      (const manager_auth_device_request_t *)&(query.auth_device));
-
-  if (SIGN_RANDOM_NUM == state) {
-    if (MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG == request_type) {
-      /* Fetch and encode random challenge signature, send it to the host and
-       * wait for further USB requests. */
-      manager_result_t result =
-          get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-      result.auth_device =
-          sign_random_challenge(&(query.auth_device.challenge.challenge[0]));
-
-      uint8_t response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
-      ASSERT(encode_and_send_manager_result(
-          &result, &response[0], sizeof(response)));
-      *state_ptr = RESULT;
-    } else if (MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG == request_type) {
+  switch (request_type) {
+    case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
+      usb_clear_event();
+      break;
+    }
+    case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
+      uint8_t *challenge =
+          (uint8_t *)&(query->auth_device.challenge.challenge[0]);
+      result->auth_device = sign_random_challenge(challenge);
+      *result_valid = true;
+      next_state = RESULT;
+      break;
+    }
+    case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
       /* If SIGN_RANDOM_NUM == state, but the request_type received is
        * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in
        * the flow. The device will treat it as an attempt to force device
        * authentication status */
       device_auth_handle_response(false);
-      send_flow_complete();
-      *state_ptr = FLOW_COMPLETE;
-    } else {
-      // TODO: Handle error scenario in which an unexpected request_type was
-      // detected
-      usb_clear_event();
+      result->auth_device = send_flow_complete();
+      *result_valid = true;
+      next_state = FLOW_COMPLETE;
+      break;
     }
-  } else if (RESULT == state) {
-    bool verified = query.auth_device.result.verified;
-    device_auth_handle_response(verified);
-    send_flow_complete();
-    *state_ptr = FLOW_COMPLETE;
+    default: {
+      usb_clear_event();
+      break;
+    }
   }
 
-  return;
+  return next_state;
+}
+
+static device_auth_state_e result_handler(const manager_query_t *query,
+                                          manager_result_t *result,
+                                          bool *result_valid) {
+  pb_size_t request_type = get_request_type(&query->auth_device);
+  device_auth_state_e next_state = FLOW_COMPLETE;
+
+  switch (request_type) {
+    case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG:
+    case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
+      usb_clear_event();
+      break;
+    }
+    case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
+      bool verified = query->auth_device.result.verified;
+      device_auth_handle_response(verified);
+      result->auth_device = send_flow_complete();
+      *result_valid = true;
+      next_state = FLOW_COMPLETE;
+      break;
+    }
+    default: {
+      usb_clear_event();
+      break;
+    }
+  }
+
+  return next_state;
 }
 
 /*****************************************************************************
@@ -259,26 +289,77 @@ void device_authentication_flow(const manager_query_t *query) {
   // TODO: Check if it's a forced device authentication, in which case we
   // will take users permission to perform authentication again
 
-  /* Set flow status: Dummy for now! */
+  /* Set flow status */
   core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
-
   delay_scr_init(ui_text_message_device_authenticating, 100);
 
   /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
-  device_auth_flow_states_e state = SIGN_SERIAL_NUM;
-  send_serial_signature(&state);
+  device_auth_state_e state = SIGN_SERIAL_NUM;
+  evt_status_t event = {0};
+
+  /* Query to be decoded on USB event reception */
+  manager_query_t decoded_query = MANAGER_QUERY_INIT_ZERO;
 
   while (FLOW_COMPLETE != state) {
-    evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
-    if (true == event.p0_event.flag) {
-      if (true == event.p0_event.inactivity_evt) {
-        // TODO: Handle if not onboarding
-      } else if (true == event.p0_event.abort_evt) {
-        usb_clear_event();
-        return;
+    manager_result_t result =
+        get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
+
+    bool result_valid = false;
+
+    switch (state) {
+      case SIGN_SERIAL_NUM: {
+        state = sign_serial_handler(query, &result, &result_valid);
+        break;
       }
-    } else {
-      device_auth_usb_cb(event.usb_event, &state);
+      case SIGN_RANDOM_NUM: {
+        state = sign_random_handler(query, &result, &result_valid);
+        break;
+      }
+      case RESULT: {
+        state = result_handler(query, &result, &result_valid);
+        break;
+      }
+      default: {
+        usb_clear_event();
+        break;
+      }
+    }
+
+    if (true == result_valid) {
+      uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
+      ASSERT(encode_and_send_manager_result(
+          &result, &encoded_response[0], sizeof(encoded_response)));
+    }
+
+    if (FLOW_COMPLETE == state) {
+      /* We don't want any events if state == FLOW_COMPLETE */
+      /* While loop will end automatically */
+      continue;
+    }
+
+    event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+    if (true == event.p0_event.flag) {
+      if (true == event.p0_event.abort_evt) {
+        break;
+      }
+    }
+
+    /* Zeroize decoded_query structure */
+    memzero(&decoded_query, sizeof(decoded_query));
+    query = &decoded_query;
+
+    if (false == decode_manager_query(event.usb_event.p_msg,
+                                      event.usb_event.msg_size,
+                                      &decoded_query)) {
+      // TODO: Handle bad data error
+      // TODO: Early flow exit
+      return;
+    }
+
+    if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
+      // TODO: Handle bad data error
+      // TODO: Early flow exit
     }
   }
 
