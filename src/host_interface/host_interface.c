@@ -62,6 +62,7 @@
 #include "host_interface.h"
 
 #include "manager_app.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -101,6 +102,7 @@ void host_interface(engine_ctx_t *ctx, usb_event_t usb_evt, const void *data) {
 
   // TODO: Get info from core on which application to boot
   // Temporarily hardcode to manager app where we will do the onboarding
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
   manager_app_main(usb_evt);
 
   return;

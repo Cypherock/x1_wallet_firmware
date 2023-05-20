@@ -62,7 +62,9 @@
 #include "manager_app.h"
 
 #include "manager_api.h"
+#include "manager_app_priv.h"
 #include "onboarding.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -116,6 +118,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
+      card_auth_handler(&usb_evt);
       break;
     }
     case MANAGER_QUERY_GET_LOGS_TAG: {
@@ -128,6 +131,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
   }
-
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
+  onboarding_set_static_screen();
   return;
 }
