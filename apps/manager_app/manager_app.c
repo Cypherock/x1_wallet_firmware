@@ -118,7 +118,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&usb_evt);
+      card_auth_handler(&query);
       break;
     }
     case MANAGER_QUERY_GET_LOGS_TAG: {

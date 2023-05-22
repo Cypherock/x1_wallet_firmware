@@ -38,8 +38,8 @@
  * MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG as initial query, otherwise the flow
  * is aborted
  *
- * @param usb_evt object for usb event with card auth query
+ * @param query object for card auth query
  */
-void card_auth_handler(usb_event_t *usb_evt);
+void card_auth_handler(manager_query_t *query);
 
 #endif
