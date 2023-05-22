@@ -78,6 +78,14 @@
 // MANAGER_RESULT_SIZE when all option files for manager app are complete
 #define DEVICE_AUTH_RESPONSE_SIZE (MANAGER_AUTH_DEVICE_RESPONSE_SIZE + 20)
 
+// TODO: Make common handler
+#define P0_HANDLER(event)                                                      \
+  do {                                                                         \
+    if (true == event.p0_event.flag) {                                         \
+      return;                                                                  \
+    }                                                                          \
+  } while (0);
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -124,12 +132,10 @@ static manager_auth_device_response_t send_flow_complete(void);
  * @param result Reference to the result of type manager_result_t, which will be
  * populated by the API. This API will only fill the auth_device field of the
  * manager_result_t.
- * @param result_valid If the result returned from the API is valid.
  * @return device_auth_state_e The next state of the flow
  */
 static device_auth_state_e sign_serial_handler(const manager_query_t *query,
-                                               manager_result_t *result,
-                                               bool *result_valid);
+                                               manager_result_t *result);
 
 /**
  * @brief This function is the request handler for the SIGN_RANDOM_NUM state of
@@ -140,12 +146,10 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
  * @param result Reference to the result of type manager_result_t, which will be
  * populated by the API. This API will only fill the auth_device field of the
  * manager_result_t.
- * @param result_valid If the result returned from the API is valid.
  * @return device_auth_state_e The next state of the flow
  */
 static device_auth_state_e sign_random_handler(const manager_query_t *query,
-                                               manager_result_t *result,
-                                               bool *result_valid);
+                                               manager_result_t *result);
 
 /**
  * @brief This function is the request handler for the RESULT state of
@@ -156,12 +160,10 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
  * @param result Reference to the result of type manager_result_t, which will be
  * populated by the API. This API will only fill the auth_device field of the
  * manager_result_t.
- * @param result_valid If the result returned from the API is valid.
  * @return device_auth_state_e The next state of the flow
  */
 static device_auth_state_e result_handler(const manager_query_t *query,
-                                          manager_result_t *result,
-                                          bool *result_valid);
+                                          manager_result_t *result);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -179,15 +181,20 @@ static manager_auth_device_response_t send_flow_complete(void) {
 }
 
 static device_auth_state_e sign_serial_handler(const manager_query_t *query,
-                                               manager_result_t *result,
-                                               bool *result_valid) {
+                                               manager_result_t *result) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = SIGN_SERIAL_NUM;
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
+      // TODO: Check if it's a forced device authentication, in which case we
+      // will take users permission to perform authentication again
+
+      /* Set flow status */
+      core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
+      delay_scr_init(ui_text_message_device_authenticating, 100);
+
       result->auth_device = sign_serial_number();
-      *result_valid = true;
       next_state = SIGN_RANDOM_NUM;
       break;
     }
@@ -203,8 +210,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
 }
 
 static device_auth_state_e sign_random_handler(const manager_query_t *query,
-                                               manager_result_t *result,
-                                               bool *result_valid) {
+                                               manager_result_t *result) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = SIGN_RANDOM_NUM;
 
@@ -217,7 +223,6 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
       uint8_t *challenge =
           (uint8_t *)&(query->auth_device.challenge.challenge[0]);
       result->auth_device = sign_random_challenge(challenge);
-      *result_valid = true;
       next_state = RESULT;
       break;
     }
@@ -228,7 +233,6 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
        * authentication status */
       device_auth_handle_response(false);
       result->auth_device = send_flow_complete();
-      *result_valid = true;
       next_state = FLOW_COMPLETE;
       break;
     }
@@ -242,10 +246,9 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
 }
 
 static device_auth_state_e result_handler(const manager_query_t *query,
-                                          manager_result_t *result,
-                                          bool *result_valid) {
+                                          manager_result_t *result) {
   pb_size_t request_type = get_request_type(&query->auth_device);
-  device_auth_state_e next_state = FLOW_COMPLETE;
+  device_auth_state_e next_state = RESULT;
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG:
@@ -257,7 +260,6 @@ static device_auth_state_e result_handler(const manager_query_t *query,
       bool verified = query->auth_device.result.verified;
       device_auth_handle_response(verified);
       result->auth_device = send_flow_complete();
-      *result_valid = true;
       next_state = FLOW_COMPLETE;
       break;
     }
@@ -274,25 +276,6 @@ static device_auth_state_e result_handler(const manager_query_t *query,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void device_authentication_flow(const manager_query_t *query) {
-  if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
-    // TODO: Handle bad data error
-    // TODO: Early flow exit
-  }
-
-  pb_size_t request_type = get_request_type(&(query->auth_device));
-  if (MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG != request_type) {
-    // TODO: Handle error scenario in which an unexpected request_type was
-    // detected
-    // TODO: Early flow exit
-  }
-
-  // TODO: Check if it's a forced device authentication, in which case we
-  // will take users permission to perform authentication again
-
-  /* Set flow status */
-  core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
-  delay_scr_init(ui_text_message_device_authenticating, 100);
-
   /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
   device_auth_state_e state = SIGN_SERIAL_NUM;
   evt_status_t event = {0};
@@ -300,23 +283,41 @@ void device_authentication_flow(const manager_query_t *query) {
   /* Query to be decoded on USB event reception */
   manager_query_t decoded_query = MANAGER_QUERY_INIT_ZERO;
 
+  bool valid_query = true;
+
   while (FLOW_COMPLETE != state) {
     manager_result_t result =
         get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
 
-    bool result_valid = false;
+    /* When this loop runs for the first time, this check will pass as qeury is
+     * already checked before user confirmation. */
+    if (false == valid_query) {
+      event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+      P0_HANDLER(event);
+
+      decode_manager_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, &decoded_query);
+      query = &decoded_query;
+    }
+
+    if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
+      valid_query = false;
+      continue;
+    } else {
+      valid_query = true;
+    }
 
     switch (state) {
       case SIGN_SERIAL_NUM: {
-        state = sign_serial_handler(query, &result, &result_valid);
+        state = sign_serial_handler(query, &result);
         break;
       }
       case SIGN_RANDOM_NUM: {
-        state = sign_random_handler(query, &result, &result_valid);
+        state = sign_random_handler(query, &result);
         break;
       }
       case RESULT: {
-        state = result_handler(query, &result, &result_valid);
+        state = result_handler(query, &result);
         break;
       }
       default: {
@@ -325,42 +326,17 @@ void device_authentication_flow(const manager_query_t *query) {
       }
     }
 
-    if (true == result_valid) {
+    /* Only respond to host if which_response field is valid */
+    if (0 != result.auth_device.which_response) {
       uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
       ASSERT(encode_and_send_manager_result(
           &result, &encoded_response[0], sizeof(encoded_response)));
     }
 
-    if (FLOW_COMPLETE == state) {
-      /* We don't want any events if state == FLOW_COMPLETE */
-      /* While loop will end automatically */
-      continue;
-    }
-
-    event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
-
-    if (true == event.p0_event.flag) {
-      if (true == event.p0_event.abort_evt) {
-        break;
-      }
-    }
-
     /* Zeroize decoded_query structure */
     memzero(&decoded_query, sizeof(decoded_query));
-    query = &decoded_query;
-
-    if (false == decode_manager_query(event.usb_event.p_msg,
-                                      event.usb_event.msg_size,
-                                      &decoded_query)) {
-      // TODO: Handle bad data error
-      // TODO: Early flow exit
-      return;
-    }
-
-    if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
-      // TODO: Handle bad data error
-      // TODO: Early flow exit
-    }
+    /* Invalidate the query as it has been processed */
+    valid_query = false;
   }
 
   return;
