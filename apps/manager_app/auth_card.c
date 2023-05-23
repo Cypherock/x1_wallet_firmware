@@ -191,7 +191,8 @@ manager_error_code_t handle_auth_card_challenge_query(
  * code
  */
 manager_error_code_t handle_auth_card_result_query(
-    manager_auth_card_result_t *result_query);
+    manager_auth_card_result_t *result_query,
+    manager_auth_card_response_t *resp);
 
 /**
  * @brief Helper to parse handle queries for auth card.
@@ -416,7 +417,8 @@ manager_error_code_t handle_auth_card_challenge_query(
 }
 
 manager_error_code_t handle_auth_card_result_query(
-    manager_auth_card_result_t *result_query) {
+    manager_auth_card_result_t *result_query,
+    manager_auth_card_response_t *resp) {
   if (NULL == result_query) {
     return MANAGER_TASK_INVALID_ARGS;
   }
@@ -426,8 +428,10 @@ manager_error_code_t handle_auth_card_result_query(
   switch (auth_card_ctx.flow_status) {
     case MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED:
       if (false == result) {
+        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
+        resp->flow_complete.dummy_field = 0;
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_FAILED;
+        return MANAGER_TASK_SUCCESS;
       } else {
         return MANAGER_TASK_INVALID_STATE;
       }
@@ -435,8 +439,10 @@ manager_error_code_t handle_auth_card_result_query(
 
     case MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED:
       if (false == result) {
+        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
+        resp->flow_complete.dummy_field = 0;
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_FAILED;
+        return MANAGER_TASK_SUCCESS;
       } else {
         if (true == auth_card_ctx.pair_card_required) {
           /* TODO: Handle this card pairing task*/
@@ -446,6 +452,8 @@ manager_error_code_t handle_auth_card_result_query(
         }
 
         UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
+        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
+        resp->flow_complete.dummy_field = 0;
         delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
 
         return MANAGER_TASK_SUCCESS;
@@ -478,7 +486,7 @@ manager_error_code_t handle_auth_card_query(
       break;
 
     case MANAGER_AUTH_CARD_REQUEST_RESULT_TAG:
-      return handle_auth_card_result_query(&(auth_card_req->result));
+      return handle_auth_card_result_query(&(auth_card_req->result), resp);
       break;
 
     default:
@@ -523,11 +531,11 @@ void card_auth_handler(manager_query_t *query) {
 
     if (resp.which_response != 0) {
       send_auth_card_response(&resp);
-      resp.which_response = 0;
+      memzero(&resp, sizeof(resp));
     }
 
+    usb_clear_event();
     if (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == auth_card_ctx.flow_status) {
-      usb_clear_event();
       return;
     }
 
