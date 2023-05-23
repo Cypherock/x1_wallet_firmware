@@ -57,4 +57,41 @@ bool encode_manager_result(manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            size_t *bytes_written_out);
+
+/**
+ * @brief This API checks if the `which_request` field of the query of type
+ * `manager_query_t` matches against the expected tag.
+ *
+ * @param query The query of type `manager_query_t` to be checked
+ * @param exp_query_tag The expected tag of the query
+ * @return true If the query tag matches the expected tag
+ * @return false If the query tag does not match the expected tag
+ */
+bool check_manager_request(const manager_query_t *query,
+                           const pb_size_t exp_query_tag);
+
+/**
+ * @brief Returns zero initialized object of type
+ * manager_result_t result_tag set in result.which_response field
+ *
+ * @param result_tag Result tag to be set in the manager_result_t result
+ * @return manager_result_t Result object of type manager_result_t
+ */
+manager_result_t get_manager_result_template(const pb_size_t result_tag);
+
+/**
+ * @brief This API encodes manager_result_t in protobuf structure. If the
+ * encoding is successful, then it sends the corresponding result to the host.
+ *
+ * @param result The result which needs to be sent to the host.
+ * @param out_buffer Pointer to the buffer where protobuf encoder can output
+ * it's result
+ * @param size_of_buffer Size of output buffer
+ * @return true If protobuf encoding was done and message was sent to the host
+ * @return false If protobuf encoding failed.
+ */
+bool encode_and_send_manager_result(manager_result_t *result,
+                                    uint8_t *out_buffer,
+                                    const size_t size_of_buffer);
+
 #endif

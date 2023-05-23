@@ -108,8 +108,11 @@ void core_status_set_idle_state(core_device_idle_state_t idle_state) {
   if (CORE_DEVICE_IDLE_STATE_IDLE == core_status.device_idle_state)
     comm_reset_interface();
 
-  core_status.abort_disabled =
-      (CORE_DEVICE_IDLE_STATE_USB == core_status.device_idle_state);
+  if (CORE_DEVICE_IDLE_STATE_USB == core_status.device_idle_state) {
+    core_status.abort_disabled = false;
+  } else {
+    core_status.abort_disabled = true;
+  }
   return;
 }
 

@@ -103,6 +103,12 @@ void manager_app_main(usb_event_t usb_evt) {
     return;
   }
 
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+
   // TODO: Add calls to flows/ functions based on query type decoded from the
   // protobuf
   switch ((uint8_t)query.which_request) {
@@ -114,6 +120,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_DEVICE_TAG: {
+      device_authentication_flow(&query);
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
@@ -127,13 +134,15 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     default: {
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
       break;
     }
   }
 
   // TODO: Check if on-boarding default screen is to be rendered
   onboarding_set_static_screen();
-  core_status_set_flow_status(0);
 
   return;
 }

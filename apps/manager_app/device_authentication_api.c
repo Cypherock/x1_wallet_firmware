@@ -1,9 +1,7 @@
 /**
- * @file    device_authentication_controller.c
+ * @file    device_authentication_api.c
  * @author  Cypherock X1 Team
- * @brief   Device authentication next controller.
- *          Handles post event (only next events) operations for device
- *authentication flow initiated by desktop app.
+ * @brief   Source file APIs to support X1 vault device authentication
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -58,22 +56,19 @@
  ******************************************************************************
  */
 #include "atca_host.h"
-#include "bip32.h"
-#include "bip39_english.h"
 #include "board.h"
 #include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
 #include "nist256p1.h"
 #include "sec_flash.h"
-#include "stdint.h"
 #include "string.h"
 #include "ui_delay.h"
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
 #endif
 
-#include <manager/auth_device.pb.h>
+#include "device_authentication_api.h"
 
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7
@@ -304,8 +299,6 @@ void device_auth_handle_response(bool verified) {
     set_auth_state(DEVICE_NOT_AUTHENTICATED);
     delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
   }
-
-  usb_clear_event();
 
   return;
 }
