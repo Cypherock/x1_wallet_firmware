@@ -278,8 +278,6 @@ static manager_error_code_t send_auth_card_response(
 
 static void prepare_card_auth_context(
     manager_auth_card_initiate_request_t *initiate_request) {
-  ASSERT(NULL != initiate_request);
-
   auth_card_ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
   if (initiate_request->has_card_index) {
