@@ -201,6 +201,8 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG:
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG:
     default: {
+      /* In case any other request is received, then we exit the flow early */
+      next_state = FLOW_COMPLETE;
       usb_clear_event();
       break;
     }
