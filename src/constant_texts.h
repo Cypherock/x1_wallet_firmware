@@ -75,6 +75,7 @@ extern const char *ui_text_joystick_right;
 extern const char *ui_text_joystick_down;
 extern const char *ui_text_joystick_left;
 extern const char *ui_text_joystick_center;
+extern const char *ui_text_joystick_checkup_complete;
 
 extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_advanced_settings[];

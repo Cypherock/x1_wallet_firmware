@@ -276,7 +276,7 @@ void manager_user_training(manager_query_t *query) {
     training_step(&ctx, step_index);
   }
 
-  // TODO: perform card test and update ctx.training_resp
+  delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);
   ctx.training_resp.which_response = MANAGER_TRAIN_USER_RESPONSE_JOYSTICK_TAG;
   ctx.training_resp.joystick.is_success = true;
   send_msg_to_host(&ctx.training_resp);

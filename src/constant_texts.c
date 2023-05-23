@@ -128,6 +128,7 @@ const char *ui_text_joystick_right = "Toggle right your joystick";
 const char *ui_text_joystick_down = "Toggle down your joystick";
 const char *ui_text_joystick_left = "Toggle left your joystick";
 const char *ui_text_joystick_center = "Center click your joystick";
+const char *ui_text_joystick_checkup_complete = "Joystick checkup complete";
 
 // wallet creation
 const char *ui_text_verification_is_now_complete_messages[] = {
