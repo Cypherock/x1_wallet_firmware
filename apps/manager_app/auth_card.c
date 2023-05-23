@@ -125,14 +125,6 @@ static void prepare_card_auth_context(
     manager_auth_card_initiate_request_t *initiate_request);
 
 /**
- * @brief Wait for user's confirmation to proceed with card authentication
- *
- * @return true if confirmed
- * @return false if rejected
- */
-bool wait_for_user_confirmation();
-
-/**
  * @brief Helper to return signature of card serial number.
  * Handles serial signing task and populates resp object with appropriate
  * response
@@ -311,19 +303,6 @@ static void prepare_card_auth_context(
            sizeof(auth_card_ctx.message),
            UI_TEXT_PLACE_CARD_TILL_BEEP,
            SIGN_SERIAL_BEEP_COUNT(auth_card_ctx.pair_card_required));
-}
-
-bool wait_for_user_confirmation() {
-  confirm_scr_init(ui_text_start_verification_of_card);
-
-  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-
-  if (status.ui_event.event_occured) {
-    return status.ui_event.event_type == UI_EVENT_CONFIRM;
-  } else {
-    HANDLE_P0_EVENTS();
-  }
-  return false;
 }
 
 manager_error_code_t handle_sign_card_serial(
