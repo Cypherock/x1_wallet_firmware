@@ -88,7 +88,7 @@ typedef struct joystick_step {
       *instruction; /**< Message shown on display for the training step */
   joystick_actions_t user_action; /**< The expected user action to wait for in
                                      the current joystick step */
-  manager_joystick_train_status_t
+  manager_train_joystick_status_t
       status; /**< The flow status to be set into the core state */
 } joystick_step_t;
 
@@ -150,7 +150,7 @@ static void send_msg_to_host(manager_train_joystick_response_t *training);
  * @param step_index The current index of joystick training to be fetched from
  * the provided context
  *
- * @return Rturns if the step completed successfully.
+ * @return Returns if the step completed successfully.
  * @retval true If the joystick training step succeeds.
  * @retval false If any abort event is received
  */
@@ -164,7 +164,7 @@ static bool validate_training_request(manager_query_t *query) {
   // verify host query data is correct
   manager_train_joystick_request_t *req = &query->train_joystick;
   if (MANAGER_QUERY_TRAIN_JOYSTICK_TAG != query->which_request ||
-      MANAGER_TRAIN_JOYSTICK_REQUEST_JOYSTICK_TAG != req->which_request) {
+      MANAGER_TRAIN_JOYSTICK_REQUEST_INITIATE_TAG != req->which_request) {
     send_training_error(1);    // TODO: use correct data-error code
     return false;
   }
@@ -218,19 +218,19 @@ void manager_joystick_training(manager_query_t *query) {
   const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
       {.instruction = ui_text_joystick_up,
        .user_action = JS_ACTION_UP,
-       .status = MANAGER_USER_TRAINING_UP},
+       .status = MANAGER_TRAIN_JOYSTICK_UP},
       {.instruction = ui_text_joystick_right,
        .user_action = JS_ACTION_RIGHT,
-       .status = MANAGER_USER_TRAINING_RIGHT},
+       .status = MANAGER_TRAIN_JOYSTICK_RIGHT},
       {.instruction = ui_text_joystick_down,
        .user_action = JS_ACTION_DOWN,
-       .status = MANAGER_USER_TRAINING_DOWN},
+       .status = MANAGER_TRAIN_JOYSTICK_DOWN},
       {.instruction = ui_text_joystick_left,
        .user_action = JS_ACTION_LEFT,
-       .status = MANAGER_USER_TRAINING_LEFT},
+       .status = MANAGER_TRAIN_JOYSTICK_LEFT},
       {.instruction = ui_text_joystick_center,
        .user_action = JS_ACTION_CENTER,
-       .status = MANAGER_USER_TRAINING_CENTER}};
+       .status = MANAGER_TRAIN_JOYSTICK_CENTER}};
 
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);
 
