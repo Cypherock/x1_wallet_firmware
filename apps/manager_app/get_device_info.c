@@ -189,6 +189,4 @@ void get_device_info_flow(const manager_query_t *query) {
 
   ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));
   usb_send_msg(response, msg_size);
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
 }
