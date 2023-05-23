@@ -296,7 +296,7 @@ static void prepare_card_auth_context(
     snprintf(auth_card_ctx.heading,
              sizeof(auth_card_ctx.heading),
              UI_TEXT_TAP_CARD,
-             tap_card_data.acceptable_cards);
+             initiate_request->card_index);
   } else {
     snprintf(auth_card_ctx.heading,
              sizeof(auth_card_ctx.heading),
