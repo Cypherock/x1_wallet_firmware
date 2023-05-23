@@ -288,7 +288,7 @@ static void prepare_card_auth_context(
     snprintf(auth_card_ctx.heading,
              sizeof(auth_card_ctx.heading),
              UI_TEXT_TAP_CARD,
-             initiate_request->card_index);
+             (uint8_t)initiate_request->card_index);
   } else {
     snprintf(auth_card_ctx.heading,
              sizeof(auth_card_ctx.heading),
