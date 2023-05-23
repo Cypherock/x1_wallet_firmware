@@ -159,9 +159,10 @@ static manager_get_device_info_response_t get_device_info(void) {
 static void fill_device_info_unknown_error(
     manager_get_device_info_response_t *device_info,
     uint32_t error_code) {
-  device_info->which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_CORE_ERROR_TAG;
-  device_info->core_error.which_error = ERROR_CORE_ERROR_UNKNOWN_ERROR_TAG;
-  device_info->core_error.unknown_error = error_code;
+  device_info->which_response =
+      MANAGER_GET_DEVICE_INFO_RESPONSE_COMMON_ERROR_TAG;
+  device_info->common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
+  device_info->common_error.unknown_error = error_code;
 }
 
 /*****************************************************************************
@@ -188,6 +189,4 @@ void get_device_info_flow(const manager_query_t *query) {
 
   ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));
   usb_send_msg(response, msg_size);
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
 }
