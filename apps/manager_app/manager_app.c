@@ -130,7 +130,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_user_training(&query);
+      manager_joystick_training(&query);
       break;
     }
     case MANAGER_QUERY_TRAIN_CARD_TAG: {

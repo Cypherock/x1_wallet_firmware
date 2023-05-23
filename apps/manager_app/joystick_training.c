@@ -1,5 +1,5 @@
 /**
- * @file    user_training.c
+ * @file    joystick_training.c
  * @author  Cypherock X1 Team
  * @brief   Joystick training flow for user on-boarding.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -60,11 +60,11 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "constant_texts.h"
 #include "events.h"
 #include "manager/get_device_info.pb.h"
-#include "manager/train_user.pb.h"
+#include "manager/train_joystick.pb.h"
 #include "manager_api.h"
-#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 #include "ui_joystick_training.h"
@@ -79,13 +79,6 @@
 
 #define JOYSTICK_TRAIN_STEPS 5
 
-#undef SEND_ERROR
-#define SEND_ERROR(a, b)                                                       \
-  do {                                                                         \
-    fill_training_error(a, b);                                                 \
-    send_msg_to_host(a);                                                       \
-  } while (0);
-
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -98,17 +91,6 @@ typedef struct joystick_step {
   manager_joystick_train_status_t
       status; /**< The flow status to be set into the core state */
 } joystick_step_t;
-
-typedef struct training_context {
-  manager_train_joystick_response_t training_resp;
-  manager_query_t *training_req;
-
-  evt_config_t evt_config;
-  evt_status_t events;
-  joystick_step_t step[JOYSTICK_TRAIN_STEPS];
-
-  // TODO: add fields for training data if needed
-} training_context_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -123,17 +105,6 @@ typedef struct training_context {
  *****************************************************************************/
 
 /**
- * @brief Initializes a new training context.
- * @details The function populates the necessary information into the struct
- * members necessary for the training flow.
- *
- * @param query A reference to the query from host for flow initiation
- *
- * @return An initialized context with events, config, etc for the user training
- */
-static training_context_t init_context(manager_query_t *query);
-
-/**
  * @brief Checks validity of the entry-point training context data.
  * @details The function will ensure the following requirements:
  * <ol>
@@ -146,14 +117,13 @@ static training_context_t init_context(manager_query_t *query);
  *
  * @return Whether the check is pass or fail.
  */
-static bool validate_training_request(training_context_t *ctx);
+static bool validate_training_request(manager_query_t *query);
 
 /**
  * @brief Fill the error in the structure generated via protobuf.
  * @details The function sets the necessary fields for the data related errors.
  */
-static void fill_training_error(manager_train_joystick_response_t *training,
-                                uint32_t error_code);
+static void send_training_error(uint32_t error_code);
 
 /**
  * @brief Sends the encoded message via usb api to the host.
@@ -179,44 +149,23 @@ static void send_msg_to_host(manager_train_joystick_response_t *training);
  * @param ctx Reference to the initialized instance of training_context_t
  * @param step_index The current index of joystick training to be fetched from
  * the provided context
+ *
+ * @return Rturns if the step completed successfully.
+ * @retval true If the joystick training step succeeds.
+ * @retval false If any abort event is received
  */
-static void training_step(training_context_t *ctx, uint32_t step_index);
+static bool training_step(const joystick_step_t *step);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static training_context_t init_context(manager_query_t *query) {
-  training_context_t context = {
-      .training_resp = MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO,
-      .training_req = query,
-      .evt_config = {.timeout = 3000, .evt_selection = EVENT_CONFIG_USB},
-      .events = {{0}, {0}, {0}, {0}},
-      .step = {{.instruction = ui_text_joystick_up,
-                .user_action = JS_ACTION_UP,
-                .status = MANAGER_USER_TRAINING_UP},
-               {.instruction = ui_text_joystick_right,
-                .user_action = JS_ACTION_RIGHT,
-                .status = MANAGER_USER_TRAINING_RIGHT},
-               {.instruction = ui_text_joystick_down,
-                .user_action = JS_ACTION_DOWN,
-                .status = MANAGER_USER_TRAINING_DOWN},
-               {.instruction = ui_text_joystick_left,
-                .user_action = JS_ACTION_LEFT,
-                .status = MANAGER_USER_TRAINING_LEFT},
-               {.instruction = ui_text_joystick_center,
-                .user_action = JS_ACTION_CENTER,
-                .status = MANAGER_USER_TRAINING_CENTER}}};
-
-  return context;
-}
-
-static bool validate_training_request(training_context_t *ctx) {
+static bool validate_training_request(manager_query_t *query) {
   // verify host query data is correct
-  manager_train_joystick_request_t *req = &ctx->training_req->train_joystick;
-  if (MANAGER_QUERY_TRAIN_JOYSTICK_TAG != ctx->training_req->which_request ||
+  manager_train_joystick_request_t *req = &query->train_joystick;
+  if (MANAGER_QUERY_TRAIN_JOYSTICK_TAG != query->which_request ||
       MANAGER_TRAIN_JOYSTICK_REQUEST_JOYSTICK_TAG != req->which_request) {
-    SEND_ERROR(&ctx->training_resp, 1);    // TODO: use correct data-error code
+    send_training_error(1);    // TODO: use correct data-error code
     return false;
   }
 
@@ -224,12 +173,14 @@ static bool validate_training_request(training_context_t *ctx) {
   return true;
 }
 
-static void fill_training_error(manager_train_joystick_response_t *training,
-                                uint32_t error_code) {
-  training->which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_COMMON_ERROR_TAG;
-  training->common_error.which_error =
+static void send_training_error(uint32_t error_code) {
+  manager_train_joystick_response_t training =
+      MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
+  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_COMMON_ERROR_TAG;
+  training.common_error.which_error =
       ERROR_COMMON_ERROR_DEVICE_SETUP_REQUIRED_TAG;
-  training->common_error.device_setup_required = error_code;
+  training.common_error.device_setup_required = error_code;
+  send_msg_to_host(&training);
 }
 
 static void send_msg_to_host(manager_train_joystick_response_t *training) {
@@ -245,18 +196,18 @@ static void send_msg_to_host(manager_train_joystick_response_t *training) {
   usb_send_msg(payload, msg_size);
 }
 
-static void training_step(training_context_t *ctx, uint32_t step_index) {
-  joystick_step_t *step = &ctx->step[step_index];
+static bool training_step(const joystick_step_t *step) {
+  evt_status_t events;
   joystick_train_init(step->instruction, step->user_action);
   do {
-    ctx->events =
-        get_events(ctx->evt_config.evt_selection, ctx->evt_config.timeout);
-    if (ctx->events.p0_event.abort_evt) {
+    events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+    if (events.p0_event.abort_evt) {
       usb_clear_event();
-      return;
+      return false;
     }
-  } while (!ctx->events.ui_event.event_occured);
+  } while (!events.ui_event.event_occured);
   core_status_set_flow_status(step->status);
+  return true;
 }
 
 /*****************************************************************************
@@ -264,22 +215,41 @@ static void training_step(training_context_t *ctx, uint32_t step_index) {
  *****************************************************************************/
 
 void manager_joystick_training(manager_query_t *query) {
-  training_context_t ctx = init_context(query);
+  const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
+      {.instruction = ui_text_joystick_up,
+       .user_action = JS_ACTION_UP,
+       .status = MANAGER_USER_TRAINING_UP},
+      {.instruction = ui_text_joystick_right,
+       .user_action = JS_ACTION_RIGHT,
+       .status = MANAGER_USER_TRAINING_RIGHT},
+      {.instruction = ui_text_joystick_down,
+       .user_action = JS_ACTION_DOWN,
+       .status = MANAGER_USER_TRAINING_DOWN},
+      {.instruction = ui_text_joystick_left,
+       .user_action = JS_ACTION_LEFT,
+       .status = MANAGER_USER_TRAINING_LEFT},
+      {.instruction = ui_text_joystick_center,
+       .user_action = JS_ACTION_CENTER,
+       .status = MANAGER_USER_TRAINING_CENTER}};
+
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);
 
-  if (false == validate_training_request(&ctx)) {
+  if (false == validate_training_request(query)) {
     return;
   }
 
-  ctx.evt_config.evt_selection = EVENT_CONFIG_UI;
   uint8_t step_index = 0;
   for (step_index = 0; step_index < JOYSTICK_TRAIN_STEPS; step_index++) {
-    training_step(&ctx, step_index);
+    const joystick_step_t *step = &steps[step_index];
+    if (false == training_step(step)) {
+      return;
+    }
   }
 
+  manager_train_joystick_response_t training =
+      MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
   delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);
-  ctx.training_resp.which_response =
-      MANAGER_TRAIN_JOYSTICK_RESPONSE_JOYSTICK_TAG;
-  ctx.training_resp.joystick.is_success = true;
-  send_msg_to_host(&ctx.training_resp);
+  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_JOYSTICK_TAG;
+  training.joystick.is_success = true;
+  send_msg_to_host(&training);
 }
