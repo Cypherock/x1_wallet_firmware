@@ -81,28 +81,9 @@
 
 #undef SEND_ERROR
 #define SEND_ERROR(a, b)                                                       \
-  fill_training_error(a, b);                                                   \
-  send_msg_to_host(a);
-
-/**
- * @details The TRAINING_STEP macro takes message (m - string), user action (a -
- * joystick_actions_t), context (c - training_context) and flow status update
- * value (f). The macro **ignores timeout events** since currently, there is not
- * way to disable it. Also, in case of abort, it will clear usb event
- * (usb_clear_event) and silently return.
- */
-#define TRAINING_STEP(m, a, c, f)                                              \
   do {                                                                         \
-    joystick_train_init(m, a);                                                 \
-    do {                                                                       \
-      (c).events =                                                             \
-          get_events((c).evt_config.evt_selection, (c).evt_config.timeout);    \
-      if ((c).events.p0_event.abort_evt) {                                     \
-        usb_clear_event();                                                     \
-        return;                                                                \
-      }                                                                        \
-    } while (!(c).events.ui_event.event_occured);                              \
-    core_status_set_flow_status(f);                                            \
+    fill_training_error(a, b);                                                 \
+    send_msg_to_host(a);                                                       \
   } while (0);
 
 /*****************************************************************************
@@ -110,9 +91,12 @@
  *****************************************************************************/
 
 typedef struct joystick_step {
-  char *instruction;
-  joystick_actions_t user_action;
-  manager_train_user_status_t status;
+  const char
+      *instruction; /**< Message shown on display for the training step */
+  joystick_actions_t user_action; /**< The expected user action to wait for in
+                                     the current joystick step */
+  manager_joystick_train_status_t
+      status; /**< The flow status to be set into the core state */
 } joystick_step_t;
 
 typedef struct training_context {
@@ -166,6 +150,7 @@ static bool validate_training_request(training_context_t *ctx);
 
 /**
  * @brief Fill the error in the structure generated via protobuf.
+ * @details The function sets the necessary fields for the data related errors.
  */
 static void fill_training_error(manager_train_user_response_t *training,
                                 uint32_t error_code);
@@ -181,6 +166,22 @@ static void fill_training_error(manager_train_user_response_t *training,
  */
 static void send_msg_to_host(manager_train_user_response_t *training);
 
+/**
+ * @brief Used to handle each joystick training
+ * @details The function will render display with received message and then
+ * listen for UI event for the expected user action on joystick.
+ * The function **ignores timeout events** since currently, there is not
+ * way to disable it. Also, in case of abort, it will clear usb event
+ * (usb_clear_event) and silently return.
+ * Upon receiving the UI event, the function will then update the core flow
+ * status.
+ *
+ * @param ctx Reference to the initialized instance of training_context_t
+ * @param step_index The current index of joystick training to be fetched from
+ * the provided context
+ */
+static void training_step(training_context_t *ctx, uint32_t step_index);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -191,44 +192,31 @@ static training_context_t init_context(manager_query_t *query) {
       .training_req = query,
       .evt_config = {.timeout = 3000, .evt_selection = EVENT_CONFIG_USB},
       .events = {{0}, {0}, {0}, {0}},
-      .step = {{.instruction = "Toggle up your joystick",
+      .step = {{.instruction = ui_text_joystick_up,
                 .user_action = JS_ACTION_UP,
                 .status = MANAGER_USER_TRAINING_UP},
-               {.instruction = "Toggle right your joystick",
+               {.instruction = ui_text_joystick_right,
                 .user_action = JS_ACTION_RIGHT,
                 .status = MANAGER_USER_TRAINING_RIGHT},
-               {.instruction = "Toggle down your joystick",
+               {.instruction = ui_text_joystick_down,
                 .user_action = JS_ACTION_DOWN,
                 .status = MANAGER_USER_TRAINING_DOWN},
-               {.instruction = "Toggle left your joystick",
+               {.instruction = ui_text_joystick_left,
                 .user_action = JS_ACTION_LEFT,
                 .status = MANAGER_USER_TRAINING_LEFT},
-               {.instruction = "Center click your joystick",
+               {.instruction = ui_text_joystick_center,
                 .user_action = JS_ACTION_CENTER,
                 .status = MANAGER_USER_TRAINING_CENTER}}};
-  evt_config_t *e_config = &context.evt_config;
-  context.events = get_events(e_config->evt_selection, e_config->timeout);
 
   return context;
 }
 
 static bool validate_training_request(training_context_t *ctx) {
-  if (true == ctx->events.p0_event.flag) {
-    // timeout cannot happen during flow entry, or host aborted. Both are
-    // unexpected p0 event, do not proceed in flow
-    if (!ctx->events.p0_event.abort_evt) {
-      SEND_ERROR(&ctx->training_resp, 1);    // TODO: use correct error code
-    } else {
-      usb_clear_event();
-    }
-    return false;
-  }
-
   // verify host query data is correct
   manager_train_user_request_t *req = &ctx->training_req->train_user;
   if (MANAGER_QUERY_TRAIN_USER_TAG != ctx->training_req->which_request ||
-      MANAGER_TRAIN_USER_REQUEST_INITIATE_TAG != req->which_request) {
-    SEND_ERROR(&ctx->training_resp, 1);    // TODO: use correct error code
+      MANAGER_TRAIN_USER_REQUEST_JOYSTICK_TAG != req->which_request) {
+    SEND_ERROR(&ctx->training_resp, 1);    // TODO: use correct data-error code
     return false;
   }
 
@@ -238,9 +226,10 @@ static bool validate_training_request(training_context_t *ctx) {
 
 static void fill_training_error(manager_train_user_response_t *training,
                                 uint32_t error_code) {
-  training->which_response = MANAGER_TRAIN_USER_RESPONSE_CORE_ERROR_TAG;
-  training->core_error.which_error = ERROR_CORE_ERROR_DEVICE_SETUP_REQUIRED_TAG;
-  training->core_error.device_setup_required = error_code;
+  training->which_response = MANAGER_TRAIN_USER_RESPONSE_COMMON_ERROR_TAG;
+  training->common_error.which_error =
+      ERROR_COMMON_ERROR_DEVICE_SETUP_REQUIRED_TAG;
+  training->common_error.device_setup_required = error_code;
 }
 
 static void send_msg_to_host(manager_train_user_response_t *training) {
@@ -255,13 +244,26 @@ static void send_msg_to_host(manager_train_user_response_t *training) {
   usb_send_msg(payload, msg_size);
 }
 
+static void training_step(training_context_t *ctx, uint32_t step_index) {
+  joystick_step_t *step = &ctx->step[step_index];
+  joystick_train_init(step->instruction, step->user_action);
+  do {
+    ctx->events =
+        get_events(ctx->evt_config.evt_selection, ctx->evt_config.timeout);
+    if (ctx->events.p0_event.abort_evt) {
+      usb_clear_event();
+      return;
+    }
+  } while (!ctx->events.ui_event.event_occured);
+  core_status_set_flow_status(step->status);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void manager_user_training(manager_query_t *query) {
   training_context_t ctx = init_context(query);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);
 
   if (false == validate_training_request(&ctx)) {
@@ -269,17 +271,13 @@ void manager_user_training(manager_query_t *query) {
   }
 
   ctx.evt_config.evt_selection = EVENT_CONFIG_UI;
-  // start training from requested step by host
-  int step_index =
-      CY_MAX(ctx.training_req->train_user.initiate.jump_to_state - 1, 0);
-  for (; step_index < JOYSTICK_TRAIN_STEPS; step_index++) {
-    joystick_step_t *step = &ctx.step[step_index];
-    TRAINING_STEP(step->instruction, step->user_action, ctx, step->status)
+  uint8_t step_index = 0;
+  for (step_index = 0; step_index < JOYSTICK_TRAIN_STEPS; step_index++) {
+    training_step(&ctx, step_index);
   }
 
   // TODO: perform card test and update ctx.training_resp
-  core_status_set_flow_status(MANAGER_USER_TRAINING_CARD_TAP);
-  ctx.training_resp.which_response = MANAGER_TRAIN_USER_RESPONSE_RESULT_TAG;
-  ctx.training_resp.result.is_success = true;
+  ctx.training_resp.which_response = MANAGER_TRAIN_USER_RESPONSE_JOYSTICK_TAG;
+  ctx.training_resp.joystick.is_success = true;
   send_msg_to_host(&ctx.training_resp);
 }
