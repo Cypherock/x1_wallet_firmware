@@ -215,10 +215,6 @@ void usb_send_data(const uint32_t command_type,
 }
 
 void usb_send_msg(const uint8_t *msg, const uint32_t size) {
-  if (NULL == msg || 0 == size) {
-    return;
-  }
-
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   LOG_SWV("%s: %ld\n", __func__, size);
 
@@ -247,7 +243,7 @@ void usb_send_msg(const uint8_t *msg, const uint32_t size) {
   comm_io_buffer[2] = (size >> 8) & 0xFF;
   comm_io_buffer[3] = size & 0xFF;
 
-  if (0 < size) {
+  if (0 < size && NULL != msg) {
     // copy app message into payload buffer after core-msg
     // COMM_SZ_RESERVED_SPACE + core_msg_len
     memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE + stream.bytes_written,
