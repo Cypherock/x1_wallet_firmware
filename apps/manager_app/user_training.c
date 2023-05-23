@@ -100,7 +100,7 @@ typedef struct joystick_step {
 } joystick_step_t;
 
 typedef struct training_context {
-  manager_train_user_response_t training_resp;
+  manager_train_joystick_response_t training_resp;
   manager_query_t *training_req;
 
   evt_config_t evt_config;
@@ -152,7 +152,7 @@ static bool validate_training_request(training_context_t *ctx);
  * @brief Fill the error in the structure generated via protobuf.
  * @details The function sets the necessary fields for the data related errors.
  */
-static void fill_training_error(manager_train_user_response_t *training,
+static void fill_training_error(manager_train_joystick_response_t *training,
                                 uint32_t error_code);
 
 /**
@@ -162,9 +162,9 @@ static void fill_training_error(manager_train_user_response_t *training,
  * to send data in appropriate format to the host app.
  *
  * @param training Reference to a filled structure instance of
- * manager_train_user_response_t
+ * manager_train_joystick_response_t
  */
-static void send_msg_to_host(manager_train_user_response_t *training);
+static void send_msg_to_host(manager_train_joystick_response_t *training);
 
 /**
  * @brief Used to handle each joystick training
@@ -188,7 +188,7 @@ static void training_step(training_context_t *ctx, uint32_t step_index);
 
 static training_context_t init_context(manager_query_t *query) {
   training_context_t context = {
-      .training_resp = MANAGER_TRAIN_USER_RESPONSE_INIT_ZERO,
+      .training_resp = MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO,
       .training_req = query,
       .evt_config = {.timeout = 3000, .evt_selection = EVENT_CONFIG_USB},
       .events = {{0}, {0}, {0}, {0}},
@@ -213,9 +213,9 @@ static training_context_t init_context(manager_query_t *query) {
 
 static bool validate_training_request(training_context_t *ctx) {
   // verify host query data is correct
-  manager_train_user_request_t *req = &ctx->training_req->train_user;
-  if (MANAGER_QUERY_TRAIN_USER_TAG != ctx->training_req->which_request ||
-      MANAGER_TRAIN_USER_REQUEST_JOYSTICK_TAG != req->which_request) {
+  manager_train_joystick_request_t *req = &ctx->training_req->train_joystick;
+  if (MANAGER_QUERY_TRAIN_JOYSTICK_TAG != ctx->training_req->which_request ||
+      MANAGER_TRAIN_JOYSTICK_REQUEST_JOYSTICK_TAG != req->which_request) {
     SEND_ERROR(&ctx->training_resp, 1);    // TODO: use correct data-error code
     return false;
   }
@@ -224,21 +224,22 @@ static bool validate_training_request(training_context_t *ctx) {
   return true;
 }
 
-static void fill_training_error(manager_train_user_response_t *training,
+static void fill_training_error(manager_train_joystick_response_t *training,
                                 uint32_t error_code) {
-  training->which_response = MANAGER_TRAIN_USER_RESPONSE_COMMON_ERROR_TAG;
+  training->which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_COMMON_ERROR_TAG;
   training->common_error.which_error =
       ERROR_COMMON_ERROR_DEVICE_SETUP_REQUIRED_TAG;
   training->common_error.device_setup_required = error_code;
 }
 
-static void send_msg_to_host(manager_train_user_response_t *training) {
+static void send_msg_to_host(manager_train_joystick_response_t *training) {
   uint8_t payload[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
   manager_result_t msg = MANAGER_RESULT_INIT_ZERO;
   size_t msg_size = 0;
-  msg.which_response = MANAGER_RESULT_TRAIN_USER_TAG;
+  msg.which_response = MANAGER_RESULT_TRAIN_JOYSTICK_TAG;
 
-  memcpy(&msg.train_user, training, sizeof(manager_train_user_response_t));
+  memcpy(
+      &msg.train_joystick, training, sizeof(manager_train_joystick_response_t));
   encode_manager_result(
       &msg, payload, MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE, &msg_size);
   usb_send_msg(payload, msg_size);
@@ -262,7 +263,7 @@ static void training_step(training_context_t *ctx, uint32_t step_index) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void manager_user_training(manager_query_t *query) {
+void manager_joystick_training(manager_query_t *query) {
   training_context_t ctx = init_context(query);
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);
 
@@ -277,7 +278,8 @@ void manager_user_training(manager_query_t *query) {
   }
 
   delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);
-  ctx.training_resp.which_response = MANAGER_TRAIN_USER_RESPONSE_JOYSTICK_TAG;
+  ctx.training_resp.which_response =
+      MANAGER_TRAIN_JOYSTICK_RESPONSE_JOYSTICK_TAG;
   ctx.training_resp.joystick.is_success = true;
   send_msg_to_host(&ctx.training_resp);
 }

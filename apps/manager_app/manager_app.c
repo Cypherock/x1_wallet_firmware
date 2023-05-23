@@ -129,8 +129,11 @@ void manager_app_main(usb_event_t usb_evt) {
     case MANAGER_QUERY_GET_LOGS_TAG: {
       break;
     }
-    case MANAGER_QUERY_TRAIN_USER_TAG: {
+    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
       manager_user_training(&query);
+      break;
+    }
+    case MANAGER_QUERY_TRAIN_CARD_TAG: {
       break;
     }
     default: {
