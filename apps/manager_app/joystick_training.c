@@ -242,6 +242,7 @@ void manager_joystick_training(manager_query_t *query) {
   for (step_index = 0; step_index < JOYSTICK_TRAIN_STEPS; step_index++) {
     const joystick_step_t *step = &steps[step_index];
     if (false == training_step(step)) {
+      // training step was aborted; exit flow
       return;
     }
   }
