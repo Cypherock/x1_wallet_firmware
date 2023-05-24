@@ -25,12 +25,12 @@
  *****************************************************************************/
 
 typedef enum joystick_actions {
-  JS_ACTION_UP = LV_KEY_UP,
-  JS_ACTION_DOWN = LV_KEY_DOWN,
-  JS_ACTION_LEFT = LV_KEY_LEFT,
-  JS_ACTION_RIGHT = LV_KEY_RIGHT,
-  JS_ACTION_CENTER = LV_KEY_ENTER,
-} joystick_actions_t;
+  JOYSTICK_ACTION_UP = LV_KEY_UP,
+  JOYSTICK_ACTION_DOWN = LV_KEY_DOWN,
+  JOYSTICK_ACTION_LEFT = LV_KEY_LEFT,
+  JOYSTICK_ACTION_RIGHT = LV_KEY_RIGHT,
+  JOYSTICK_ACTION_CENTER = LV_KEY_ENTER,
+} joystick_actions_e;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -43,7 +43,7 @@ typedef enum joystick_actions {
 /**
  * @brief Initialize and create message UI screen
  * @details The component translates various user actions into UI_EVENT_CONFIRM.
- * The application can provide which action (joystick_actions_t) to map to the
+ * The application can provide which action (joystick_actions_e) to map to the
  * UI_EVENT_CONFIRM event.
  *
  * @param message message text
@@ -52,6 +52,6 @@ typedef enum joystick_actions {
  * @see
  * @since v1.0.0
  */
-void joystick_train_init(const char *message, joystick_actions_t act);
+void joystick_train_init(const char *message, joystick_actions_e act);
 
 #endif

@@ -84,7 +84,7 @@
 typedef struct joystick_step {
   const char
       *instruction; /**< Message shown on display for the training step */
-  joystick_actions_t user_action; /**< The expected user action to wait for in
+  joystick_actions_e user_action; /**< The expected user action to wait for in
                                      the current joystick step */
   manager_train_joystick_status_t
       status; /**< The flow status to be set into the core state */
@@ -182,6 +182,8 @@ static void send_training_error(uint32_t error_code) {
 }
 
 static void send_msg_to_host(manager_train_joystick_response_t *training) {
+  // TODO: Eventually MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE will be
+  // replaced by MANAGER_RESULT_SIZE when option files for manager are complete
   uint8_t payload[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
   manager_result_t msg = MANAGER_RESULT_INIT_ZERO;
   size_t msg_size = 0;
@@ -215,19 +217,19 @@ static bool training_step(const joystick_step_t *step) {
 void manager_joystick_training(manager_query_t *query) {
   const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
       {.instruction = ui_text_joystick_up,
-       .user_action = JS_ACTION_UP,
+       .user_action = JOYSTICK_ACTION_UP,
        .status = MANAGER_TRAIN_JOYSTICK_UP},
       {.instruction = ui_text_joystick_right,
-       .user_action = JS_ACTION_RIGHT,
+       .user_action = JOYSTICK_ACTION_RIGHT,
        .status = MANAGER_TRAIN_JOYSTICK_RIGHT},
       {.instruction = ui_text_joystick_down,
-       .user_action = JS_ACTION_DOWN,
+       .user_action = JOYSTICK_ACTION_DOWN,
        .status = MANAGER_TRAIN_JOYSTICK_DOWN},
       {.instruction = ui_text_joystick_left,
-       .user_action = JS_ACTION_LEFT,
+       .user_action = JOYSTICK_ACTION_LEFT,
        .status = MANAGER_TRAIN_JOYSTICK_LEFT},
       {.instruction = ui_text_joystick_center,
-       .user_action = JS_ACTION_CENTER,
+       .user_action = JOYSTICK_ACTION_CENTER,
        .status = MANAGER_TRAIN_JOYSTICK_CENTER}};
 
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);

@@ -157,7 +157,7 @@ static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event);
 
 static struct Message_Data *data = NULL;
 static struct Message_Object *obj = NULL;
-static joystick_actions_t action = JS_ACTION_CENTER;
+static joystick_actions_e action = JOYSTICK_ACTION_CENTER;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -203,7 +203,7 @@ static void joystick_train_create() {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void joystick_train_init(const char *message, joystick_actions_t act) {
+void joystick_train_init(const char *message, joystick_actions_e act) {
   ASSERT(message != NULL);
 
   /* Clear screen before populating any data, this will clear any UI component
