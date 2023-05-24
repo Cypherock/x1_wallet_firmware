@@ -325,21 +325,25 @@ manager_error_code_t handle_sign_card_serial(
 
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
-  nfc_en_select_card_task();
 
-  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+  /* TODO: Move snippet to sign serial flow*/
+  {
+    nfc_en_select_card_task();
 
-  if (true == status.p0_event.flag) {
-    HANDLE_P0_EVENTS();
-    return MANAGER_TASK_P0_ABORT_OCCURED;
+    evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+
+    if (true == status.p0_event.flag) {
+      HANDLE_P0_EVENTS();
+      return MANAGER_TASK_P0_ABORT_OCCURED;
+    }
+
+    // NFC event occured
+
+    /* TODO: Add sign serial card action*/
+
+    /* TODO: Check if card operation failed*/
+    // return MANAGER_TASK_FAILED;
   }
-
-  // NFC event occured
-
-  /* TODO: Add sign serial card action*/
-
-  /* TODO: Check if card operation failed*/
-  // return MANAGER_TASK_FAILED;
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
 
@@ -361,21 +365,24 @@ manager_error_code_t handle_sign_challenge(auth_card_data_t *auth_card_data,
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  nfc_en_select_card_task();
+  /* TODO: Move snippet to sign serial flow*/
+  {
+    nfc_en_select_card_task();
 
-  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+    evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
 
-  if (true == status.p0_event.flag) {
-    HANDLE_P0_EVENTS();
-    return MANAGER_TASK_P0_ABORT_OCCURED;
+    if (true == status.p0_event.flag) {
+      HANDLE_P0_EVENTS();
+      return MANAGER_TASK_P0_ABORT_OCCURED;
+    }
+
+    // NFC event occured
+
+    /* TODO: Add sign challenge card action*/
+
+    /* TODO: Check if card operation failed*/
+    // return MANAGER_TASK_FAILED;
   }
-
-  // NFC event occured
-
-  /* TODO: Add sign challenge card action*/
-
-  /* TODO: Check if card operation failed*/
-  // return MANAGER_TASK_FAILED;
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
 
