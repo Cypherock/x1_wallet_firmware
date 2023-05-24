@@ -82,14 +82,10 @@
  *****************************************************************************/
 #define HANDLE_P0_EVENTS()
 #define CHALLENGE_SIZE 32
-#define UPDATE_AUTH_CARD_FLOW_STATUS(status)                                   \
-  auth_card_ctx.flow_status = status;                                          \
-  core_status_set_flow_status(status)
 
-#define SIGN_SERIAL_BEEP_COUNT(pair_card_required)                             \
-  (false == pair_card_required) ? 3 : 2
+#define SIGN_SERIAL_BEEP_COUNT(pair_card_required) (pair_card_required) ? 3 : 2
 #define SIGN_CHALLENGE_BEEP_COUNT(pair_card_required)                          \
-  (false == pair_card_required) ? 2 : 1
+  (pair_card_required) ? 2 : 1
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -98,11 +94,27 @@ typedef struct {
   char message[100];
   uint8_t acceptable_cards;
   bool pair_card_required;
-  manager_auth_card_status_t flow_status;
 } auth_card_screen_ctx_t;
+
+typedef struct {
+  manager_query_t query;
+  auth_card_screen_ctx_t ctx;
+} auth_card_data_t;
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+
+/**
+ * @brief If usb event is present, parses and verifies the query and appends to
+ * query_out object
+ *
+ * @param usb_evt usb event object
+ * @param query_out query object for caller
+ * @return manager_error_code_t MANAGER_TASK_SUCCESS
+ */
+static manager_error_code_t decode_and_verify_auth_card_query_if_usb_evt(
+    usb_event_t *usb_evt,
+    manager_query_t *query_out);
 
 /**
  * @brief Helper function to send byte stream encoded auth card responses to
@@ -119,23 +131,22 @@ static manager_error_code_t send_auth_card_response(
  * @brief Read data from initiate request and prepare context for card
  * authentication
  *
- * @param initiate_request pointer to query object
+ * @param auth_card_data object of auth card data
  */
-static void prepare_card_auth_context(
-    manager_auth_card_initiate_request_t *initiate_request);
+static void prepare_card_auth_context(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of card serial number.
  * Handles serial signing task and populates resp object with appropriate
  * response
  *
- * @param initiate_request object pointer with initiate query for card auth
+ * @param auth_card_data object of auth card data
  * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
 manager_error_code_t handle_sign_card_serial(
-    manager_auth_card_initiate_request_t *initiate_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp);
 
 /**
@@ -143,14 +154,13 @@ manager_error_code_t handle_sign_card_serial(
  * Handles challenge signing task and populates resp object with appropriate
  * response
  *
- * @param challenge_request object pointer with challenge query for card auth
+ * @param auth_card_data object of auth card data
  * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
-manager_error_code_t handle_sign_challenge(
-    manager_auth_card_challenge_request_t *challenge_request,
-    manager_auth_card_response_t *resp);
+manager_error_code_t handle_sign_challenge(auth_card_data_t *auth_card_data,
+                                           manager_auth_card_response_t *resp);
 
 /**
  * @brief Helper to handle initiate query for auth card.
@@ -159,13 +169,13 @@ manager_error_code_t handle_sign_challenge(
  * - Prepare context for auth card flow
  * - returns sign serial response
  *
- * @param initiate_request object pointer with initiate query for card auth
+ * @param auth_card_data object of auth card data
  * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
 manager_error_code_t handle_auth_card_initiate_query(
-    manager_auth_card_initiate_request_t *initiate_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp);
 
 /**
@@ -173,25 +183,26 @@ manager_error_code_t handle_auth_card_initiate_query(
  * Handles challenge signing task and populates resp object with appropriate
  * response
  *
- * @param challenge_request object pointer with challenge query for card auth
+ * @param auth_card_data object of auth card data
  * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
 manager_error_code_t handle_auth_card_challenge_query(
-    manager_auth_card_challenge_request_t *challenge_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp);
 
 /**
  * @brief Helper to handle result of auth card.
  * Handles pairing of card based on result, flow state and card pair requirement
  *
- * @param result_query object pointer with result for card auth
+ * @param auth_card_data object of auth card data
+ * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
 manager_error_code_t handle_auth_card_result_query(
-    manager_auth_card_result_t *result_query,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp);
 
 /**
@@ -201,18 +212,16 @@ manager_error_code_t handle_auth_card_result_query(
  * - Verify query is for card auth and type of query
  * - Call relevant handler for queries
  *
- * @param usb_evt object to usb_evt with host query
+ * @param auth_card_data object of auth card data
  * @param resp object pointer card auth response
  * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
  * code
  */
-manager_error_code_t handle_auth_card_query(
-    manager_auth_card_request_t *auth_card_req,
-    manager_auth_card_response_t *resp);
+manager_error_code_t handle_auth_card_query(auth_card_data_t *auth_card_data,
+                                            manager_auth_card_response_t *resp);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-auth_card_screen_ctx_t auth_card_ctx = {0};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -221,29 +230,32 @@ auth_card_screen_ctx_t auth_card_ctx = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void decode_and_verify_auth_card_query_if_usb_evt(
+static manager_error_code_t decode_and_verify_auth_card_query_if_usb_evt(
     usb_event_t *usb_evt,
     manager_query_t *query_out) {
   if (NULL == usb_evt || 0 == query_out) {
-    return;
+    return MANAGER_TASK_INVALID_ARGS;
   }
 
   if (false == usb_evt->flag) {
-    return;
+    // No USB event so don't throw error, if P0 occured, will be handled by
+    // caller
+    return MANAGER_TASK_SUCCESS;
   }
 
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
   if (false ==
       decode_manager_query(usb_evt->p_msg, usb_evt->msg_size, &query)) {
-    return;
+    return MANAGER_TASK_DECODING_FAILED;
   }
 
   if ((query.which_request != MANAGER_QUERY_AUTH_CARD_TAG)) {
-    return;
+    return MANAGER_TASK_UNKNOWN_QUERY_REQUEST;
   }
 
   memcpy(query_out, &query, sizeof(query));
+  return MANAGER_TASK_SUCCESS;
 }
 
 static manager_error_code_t send_auth_card_response(
@@ -277,41 +289,42 @@ static manager_error_code_t send_auth_card_response(
   return MANAGER_TASK_SUCCESS;
 }
 
-static void prepare_card_auth_context(
-    manager_auth_card_initiate_request_t *initiate_request) {
-  auth_card_ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
+  auth_card_data->ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
-  if (initiate_request->has_card_index) {
-    auth_card_ctx.acceptable_cards =
-        encode_card_number(initiate_request->card_index);
-    snprintf(auth_card_ctx.heading,
-             sizeof(auth_card_ctx.heading),
+  if (auth_card_data->query.auth_card.initiate.has_card_index) {
+    auth_card_data->ctx.acceptable_cards =
+        encode_card_number(auth_card_data->query.auth_card.initiate.card_index);
+    snprintf(auth_card_data->ctx.heading,
+             sizeof(auth_card_data->ctx.heading),
              UI_TEXT_TAP_CARD,
-             (uint8_t)initiate_request->card_index);
+             (uint8_t)auth_card_data->query.auth_card.initiate.card_index);
   } else {
-    snprintf(auth_card_ctx.heading,
-             sizeof(auth_card_ctx.heading),
+    snprintf(auth_card_data->ctx.heading,
+             sizeof(auth_card_data->ctx.heading),
              ui_text_tap_a_card);
   }
 
-  auth_card_ctx.pair_card_required = false;
-  if (initiate_request->has_pair_card) {
-    auth_card_ctx.pair_card_required = initiate_request->pair_card;
+  auth_card_data->ctx.pair_card_required = false;
+  if (auth_card_data->query.auth_card.initiate.has_pair_card) {
+    auth_card_data->ctx.pair_card_required =
+        auth_card_data->query.auth_card.initiate.pair_card;
   }
-  snprintf(auth_card_ctx.message,
-           sizeof(auth_card_ctx.message),
+  snprintf(auth_card_data->ctx.message,
+           sizeof(auth_card_data->ctx.message),
            UI_TEXT_PLACE_CARD_TILL_BEEP,
-           SIGN_SERIAL_BEEP_COUNT(auth_card_ctx.pair_card_required));
+           SIGN_SERIAL_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
 }
 
 manager_error_code_t handle_sign_card_serial(
-    manager_auth_card_initiate_request_t *initiate_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  if (NULL == initiate_request || NULL == resp) {
+  if (NULL == auth_card_data || NULL == resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  instruction_scr_init(auth_card_ctx.message, auth_card_ctx.heading);
+  instruction_scr_init(auth_card_data->ctx.message,
+                       auth_card_data->ctx.heading);
   nfc_en_select_card_task();
 
   evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
@@ -328,23 +341,23 @@ manager_error_code_t handle_sign_card_serial(
   /* TODO: Check if card operation failed*/
   // return MANAGER_TASK_FAILED;
 
-  UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
 
   // Display text for challenge sign screen
-  snprintf(auth_card_ctx.message,
-           sizeof(auth_card_ctx.message),
+  snprintf(auth_card_data->ctx.message,
+           sizeof(auth_card_data->ctx.message),
            UI_TEXT_PLACE_CARD_TILL_BEEP,
-           SIGN_CHALLENGE_BEEP_COUNT(auth_card_ctx.pair_card_required));
-  instruction_scr_init(auth_card_ctx.message, auth_card_ctx.heading);
+           SIGN_CHALLENGE_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
+  instruction_scr_init(auth_card_data->ctx.message,
+                       auth_card_data->ctx.heading);
 
   resp->which_response = MANAGER_AUTH_CARD_RESPONSE_SERIAL_SIGNATURE_TAG;
   return MANAGER_TASK_SUCCESS;
 }
 
-manager_error_code_t handle_sign_challenge(
-    manager_auth_card_challenge_request_t *challenge_request,
-    manager_auth_card_response_t *resp) {
-  if (NULL == challenge_request || NULL == resp) {
+manager_error_code_t handle_sign_challenge(auth_card_data_t *auth_card_data,
+                                           manager_auth_card_response_t *resp) {
+  if (NULL == auth_card_data || NULL == resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
@@ -364,30 +377,33 @@ manager_error_code_t handle_sign_challenge(
   /* TODO: Check if card operation failed*/
   // return MANAGER_TASK_FAILED;
 
-  UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
 
-  if (auth_card_ctx.pair_card_required) {
-    snprintf(auth_card_ctx.message,
-             sizeof(auth_card_ctx.message),
+  if (auth_card_data->ctx.pair_card_required) {
+    snprintf(auth_card_data->ctx.message,
+             sizeof(auth_card_data->ctx.message),
              UI_TEXT_PLACE_CARD_TILL_BEEP,
              1);
   } else {
-    snprintf(auth_card_ctx.message, sizeof(auth_card_ctx.message), "...");
+    snprintf(auth_card_data->ctx.message,
+             sizeof(auth_card_data->ctx.message),
+             "...");
   }
 
-  instruction_scr_init(auth_card_ctx.message, auth_card_ctx.heading);
+  instruction_scr_init(auth_card_data->ctx.message,
+                       auth_card_data->ctx.heading);
   resp->which_response = MANAGER_AUTH_CARD_RESPONSE_CHALLENGE_SIGNATURE_TAG;
   return MANAGER_TASK_SUCCESS;
 }
 
 manager_error_code_t handle_auth_card_initiate_query(
-    manager_auth_card_initiate_request_t *initiate_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  if (NULL == initiate_request || NULL == resp) {
+  if (NULL == auth_card_data || NULL == resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  if (auth_card_ctx.flow_status != MANAGER_AUTH_CARD_STATUS_INIT) {
+  if (MANAGER_AUTH_CARD_STATUS_INIT != core_status_get_flow_status()) {
     return MANAGER_TASK_INVALID_STATE;
   }
 
@@ -397,35 +413,35 @@ manager_error_code_t handle_auth_card_initiate_query(
   //    return MANAGER_TASK_REJECTED;
   // }
 
-  UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
-  prepare_card_auth_context(initiate_request);
-  return handle_sign_card_serial(initiate_request, resp);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
+  prepare_card_auth_context(auth_card_data);
+  return handle_sign_card_serial(auth_card_data, resp);
 }
 
 manager_error_code_t handle_auth_card_challenge_query(
-    manager_auth_card_challenge_request_t *challenge_request,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  if (NULL == challenge_request || NULL == resp) {
+  if (NULL == auth_card_data || NULL == resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  if (auth_card_ctx.flow_status != MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED) {
+  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != core_status_get_flow_status()) {
     return MANAGER_TASK_INVALID_STATE;
   }
 
-  return handle_sign_challenge(challenge_request, resp);
+  return handle_sign_challenge(auth_card_data, resp);
 }
 
 manager_error_code_t handle_auth_card_result_query(
-    manager_auth_card_result_t *result_query,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  if (NULL == result_query) {
+  if (NULL == auth_card_data && NULL != resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  bool result = result_query->verified;
+  bool result = auth_card_data->query.auth_card.result.verified;
 
-  switch (auth_card_ctx.flow_status) {
+  switch (core_status_get_flow_status()) {
     case MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED:
       if (false == result) {
         resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
@@ -444,14 +460,14 @@ manager_error_code_t handle_auth_card_result_query(
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
         return MANAGER_TASK_SUCCESS;
       } else {
-        if (true == auth_card_ctx.pair_card_required) {
+        if (true == auth_card_data->ctx.pair_card_required) {
           /* TODO: Handle this card pairing task*/
 
           /* TODO: Check if card operation failed*/
           // return MANAGER_TASK_FAILED;
         }
 
-        UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
+        core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
         resp->flow_complete.dummy_field = 0;
         delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
@@ -469,24 +485,23 @@ manager_error_code_t handle_auth_card_result_query(
 }
 
 manager_error_code_t handle_auth_card_query(
-    manager_auth_card_request_t *auth_card_req,
+    auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  if (NULL == auth_card_req || NULL == resp) {
+  if (NULL == auth_card_data || NULL == resp) {
     return MANAGER_TASK_INVALID_ARGS;
   }
 
-  switch (auth_card_req->which_request) {
+  switch (auth_card_data->query.auth_card.which_request) {
     case MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG:
-      return handle_auth_card_initiate_query(&(auth_card_req->initiate), resp);
+      return handle_auth_card_initiate_query(auth_card_data, resp);
       break;
 
     case MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG:
-      return handle_auth_card_challenge_query(&(auth_card_req->challenge),
-                                              resp);
+      return handle_auth_card_challenge_query(auth_card_data, resp);
       break;
 
     case MANAGER_AUTH_CARD_REQUEST_RESULT_TAG:
-      return handle_auth_card_result_query(&(auth_card_req->result), resp);
+      return handle_auth_card_result_query(auth_card_data, resp);
       break;
 
     default:
@@ -510,22 +525,24 @@ void card_auth_handler(manager_query_t *query) {
   }
 
   evt_status_t evt_status = {0};
-  manager_error_code_t query_handler_status = MANAGER_TASK_INVALID_DEFAULT;
   manager_auth_card_response_t resp = MANAGER_AUTH_CARD_RESPONSE_INIT_ZERO;
-  manager_query_t auth_card_query = *query;
-  memzero(&auth_card_ctx, sizeof(auth_card_ctx));
-  UPDATE_AUTH_CARD_FLOW_STATUS(MANAGER_AUTH_CARD_STATUS_INIT);
+  auth_card_data_t auth_card_data = {
+      .ctx =
+          {
+              .acceptable_cards = ACCEPTABLE_CARDS_ALL,
+              .heading = "",
+              .message = "",
+              .pair_card_required = false,
+          },
+      .query = *query};
 
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_INIT);
   do {
-    // Handle auth card auth_card_query received from USB host
-    query_handler_status =
-        handle_auth_card_query(&(auth_card_query.auth_card), &resp);
-
     /* TODO: Create a handler to resolve specific returns and either send error
      * response or abort flow accordingly*/
-    if (MANAGER_TASK_SUCCESS != query_handler_status &&
-        MANAGER_TASK_UNKNOWN_QUERY_REQUEST != query_handler_status &&
-        MANAGER_TASK_INVALID_STATE != query_handler_status) {
+    if (MANAGER_TASK_SUCCESS !=
+        handle_auth_card_query(&auth_card_data, &resp)) {
+      usb_clear_event();
       return;
     }
 
@@ -534,17 +551,23 @@ void card_auth_handler(manager_query_t *query) {
       memzero(&resp, sizeof(resp));
     }
 
-    usb_clear_event();
-    if (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == auth_card_ctx.flow_status) {
+    if (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE ==
+        core_status_get_flow_status()) {
       return;
     }
 
     evt_status = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
 
-    decode_and_verify_auth_card_query_if_usb_evt(&(evt_status.usb_event),
-                                                 &auth_card_query);
+    if (MANAGER_TASK_SUCCESS !=
+        decode_and_verify_auth_card_query_if_usb_evt(&(evt_status.usb_event),
+                                                     &(auth_card_data.query))) {
+      usb_clear_event();
+      return;
+    }
+
   } while (false == evt_status.p0_event.flag ||
-           MANAGER_AUTH_CARD_STATUS_PAIRING_DONE != auth_card_ctx.flow_status);
+           MANAGER_AUTH_CARD_STATUS_PAIRING_DONE !=
+               core_status_get_flow_status());
 
   HANDLE_P0_EVENTS();
 }
