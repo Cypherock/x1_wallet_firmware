@@ -233,8 +233,8 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
        * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in
        * the flow. The device will treat it as an attempt to force device
        * authentication status */
-      device_auth_handle_response(false);
       result->auth_device = send_flow_complete();
+      device_auth_handle_response(false);
       next_state = FLOW_COMPLETE;
       break;
     }
@@ -260,8 +260,8 @@ static device_auth_state_e result_handler(const manager_query_t *query,
     }
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
       bool verified = query->auth_device.result.verified;
-      device_auth_handle_response(verified);
       result->auth_device = send_flow_complete();
+      device_auth_handle_response(verified);
       next_state = FLOW_COMPLETE;
       break;
     }
