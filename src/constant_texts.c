@@ -123,7 +123,7 @@ const char *ui_text_message_device_auth_success =
 const char *ui_text_message_device_auth_failure =
     "Device authentication failed";
 
-const char *const ui_text_joystick_up = "Toggle up your joystick";
+const char *ui_text_joystick_up = "Toggle up your joystick";
 const char *ui_text_joystick_right = "Toggle right your joystick";
 const char *ui_text_joystick_down = "Toggle down your joystick";
 const char *ui_text_joystick_left = "Toggle left your joystick";

@@ -70,7 +70,7 @@ extern const char *ui_text_message_device_authenticating;
 extern const char *ui_text_message_device_auth_success;
 extern const char *ui_text_message_device_auth_failure;
 
-extern const char *const ui_text_joystick_up;
+extern const char *ui_text_joystick_up;
 extern const char *ui_text_joystick_right;
 extern const char *ui_text_joystick_down;
 extern const char *ui_text_joystick_left;

@@ -62,8 +62,6 @@
 
 #include "constant_texts.h"
 #include "events.h"
-#include "manager/get_device_info.pb.h"
-#include "manager/train_joystick.pb.h"
 #include "manager_api.h"
 #include "status_api.h"
 #include "ui_delay.h"
