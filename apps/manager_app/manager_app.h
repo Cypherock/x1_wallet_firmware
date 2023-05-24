@@ -56,6 +56,12 @@ void manager_app_main(usb_event_t usb_evt);
 void get_device_info_flow(const manager_query_t *query);
 
 /**
+ * @brief Guided user training during the user on-boarding
+ */
+// TODO: Move to manager_app_priv.h
+void manager_joystick_training(manager_query_t *query);
+
+/**
  * @brief Initiates the device authentication flow. Exits in case the flow is
  * completed or a P0 event occurs.
  *
