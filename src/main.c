@@ -98,6 +98,7 @@
 #include "ui_instruction.h"
 #include "ui_logo.h"
 
+#define RUN_ENGINE
 #ifdef RUN_ENGINE
 #include "core_flow_init.h"
 #endif /* RUN_ENGINE */
