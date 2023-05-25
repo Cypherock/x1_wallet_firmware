@@ -26,6 +26,8 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+#define INIFINITE_WAIT_TIMEOUT 0xFFFFFFFF
+
 #define MAX_INACTIVITY_TIMEOUT                                                 \
   (300 * 1000) /* As of now, there exists a maximum of 5 minutes of inactivity \
                   timeout */
