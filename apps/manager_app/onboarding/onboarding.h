@@ -24,6 +24,14 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef enum {
+  ONBOARDING_VIRGIN_DEVICE,
+  ONBOARDING_DEVICE_AUTH,
+  ONBOARDING_JOYSTICK_TRAINING,
+  ONBOARDING_CARD_CHECKUP,
+  ONBOARDING_CARD_AUTHENTICATION,
+  ONBOARDING_COMPLETE,
+} onboarding_steps_e;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -46,5 +54,34 @@ void onboarding_set_static_screen(void);
  * @return const flow_step_t* Pointer to the step for the onboarding menu
  */
 const flow_step_t *onboarding_get_step(void);
+
+/**
+ * @brief This API returns the last completed step of the onboarding flow
+ *
+ * @return onboarding_steps_e Enum depicting last recorded step
+ */
+onboarding_steps_e onboarding_get_last_step(void);
+
+/**
+ * @brief This API updates the progress of the onboarding flow. An important
+ * thing to note here is that it only sets the step if the last_step is not
+ * ONBOARDING_COMPLETE (depicting onboarding is already complete) and the
+ * next_step is actually a new step of the onboarding flow (revocation is not
+ * allowed).
+ *
+ * @param next_step The step that needs to be recorded
+ */
+void onboarding_set_step_done(const onboarding_steps_e next_step);
+
+/**
+ * @brief This API checks if a particular step of the onboarding flow is allowed
+ * or not. It is to ensure that the flow occurs sequentially only. In case the
+ * last_step already depicts ONBOARDING_COMPLETE, this API returns true.
+ *
+ * @param step The step that needs to be queried for allowance
+ * @return true If the step is allowed to be executed
+ * @return false If the step is not allowed to be executed
+ */
+bool onboarding_step_allowed(const onboarding_steps_e step);
 
 #endif /* ONBOARDING_H */

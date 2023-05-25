@@ -69,6 +69,7 @@
 #endif
 
 #include "device_authentication_api.h"
+#include "onboarding.h"
 
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7
@@ -293,6 +294,8 @@ sign_random_challenge(uint8_t *challenge) {
 
 void device_auth_handle_response(bool verified) {
   if (true == verified) {
+    /* Update onboarding status to save progress */
+    onboarding_set_step_done(ONBOARDING_DEVICE_AUTH);
     set_auth_state(DEVICE_AUTHENTICATED);
   } else {
     set_auth_state(DEVICE_NOT_AUTHENTICATED);

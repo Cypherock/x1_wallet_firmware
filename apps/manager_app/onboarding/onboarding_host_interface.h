@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.h
+ * @file    onboarding_host_interface.h
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Header file for the host interface for the onboarding flow
  * @details
 
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD

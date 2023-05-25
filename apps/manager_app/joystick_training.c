@@ -63,6 +63,7 @@
 #include "constant_texts.h"
 #include "events.h"
 #include "manager_api.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 #include "ui_joystick_training.h"
@@ -246,6 +247,9 @@ void manager_joystick_training(manager_query_t *query) {
       return;
     }
   }
+
+  /* Update onboarding status to save progress */
+  onboarding_set_step_done(ONBOARDING_JOYSTICK_TRAINING);
 
   manager_train_joystick_response_t training =
       MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
