@@ -83,12 +83,14 @@
   (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == core_status_get_flow_status())
 
 #define HANDLE_P0_EVENTS(p0_event)                                             \
-  if (true == p0_event.inactivity_evt) {                                       \
-    /* TODO: Add handler to inform host*/                                      \
-    return MANAGER_TASK_P0_TIMEOUT_OCCURED;                                    \
-  } else if (true == p0_event.abort_evt) {                                     \
-    return MANAGER_TASK_P0_ABORT_OCCURED;                                      \
-  }
+  do {                                                                         \
+    if (true == p0_event.inactivity_evt) {                                     \
+      /* TODO: Add handler to inform host*/                                    \
+      return MANAGER_TASK_P0_TIMEOUT_OCCURED;                                  \
+    } else if (true == p0_event.abort_evt) {                                   \
+      return MANAGER_TASK_P0_ABORT_OCCURED;                                    \
+    }                                                                          \
+  } while (0)
 
 /* TODO: Update condition for onboarding done*/
 #define ONBAORDING_DONE false
@@ -248,7 +250,7 @@ static manager_error_code_t get_and_decode_valid_query_from_host(
     manager_query_t *query_out) {
   evt_status_t evt_status = get_events(EVENT_CONFIG_USB, TIMEOUT_SELECTION);
 
-  HANDLE_P0_EVENTS(evt_status.p0_event)
+  HANDLE_P0_EVENTS(evt_status.p0_event);
 
   if (false == evt_status.usb_event.flag) {
     /* We don't expect this to happen, either P0 or USB event must occur to
