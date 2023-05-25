@@ -17,6 +17,8 @@
 #include "nfc.h"
 #include "sha2.h"
 
+#define ACCEPTABLE_CARDS_ALL 15
+
 /**
  * @brief
  * @details

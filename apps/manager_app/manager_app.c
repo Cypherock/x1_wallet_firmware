@@ -62,6 +62,7 @@
 #include "manager_app.h"
 
 #include "manager_api.h"
+#include "manager_app_priv.h"
 #include "onboarding.h"
 #include "status_api.h"
 
@@ -124,6 +125,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
+      card_auth_handler(&query);
       break;
     }
     case MANAGER_QUERY_GET_LOGS_TAG: {

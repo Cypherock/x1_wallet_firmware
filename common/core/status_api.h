@@ -59,6 +59,14 @@ void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on);
 void core_status_set_flow_status(uint32_t flow_status);
 
 /**
+ * @brief This API returns the flow_status field of the core_status_t status
+ * packet
+ *
+ * @return uint32_t flow_status
+ */
+uint32_t core_status_get_flow_status();
+
+/**
  * @brief This API checks if aborts are enabled in the current flow.
  *
  * @return true If aborts are enabled in the current flow

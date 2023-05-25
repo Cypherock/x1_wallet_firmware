@@ -101,6 +101,8 @@ void instruction_scr_init(const char *message, const char *heading_text) {
   else
     lv_obj_align(
         instruction, NULL, LV_ALIGN_CENTER, 0, lv_obj_get_height(heading) >> 1);
+
+  lv_task_handler();
 }
 
 void instruction_scr_change_text(const char *new_message, bool immediate) {
