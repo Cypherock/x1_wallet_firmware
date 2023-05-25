@@ -120,9 +120,9 @@ static pb_size_t get_request_type(const manager_auth_device_request_t *request);
  * @brief Sends response of type manager_auth_device_response_t to the host. It
  * internally encodes the response to type manager_result_t
  *
- * @param resp The response to be send to the host.
+ * @param resp Reference to the response to be send to the host.
  */
-static void send_auth_device_response(manager_auth_device_response_t resp);
+static void send_auth_device_response(manager_auth_device_response_t *resp);
 
 /**
  * @brief This API sends the response for device authentication flow completion
@@ -168,10 +168,10 @@ static pb_size_t get_request_type(
   return request->which_request;
 }
 
-static void send_auth_device_response(manager_auth_device_response_t resp) {
+static void send_auth_device_response(manager_auth_device_response_t *resp) {
   manager_result_t result =
       get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-  result.auth_device = resp;
+  memcpy(&(result.auth_card), resp, sizeof(manager_auth_device_response_t));
   uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
   ASSERT(encode_and_send_manager_result(
       &result, &encoded_response[0], sizeof(encoded_response)));
@@ -183,7 +183,7 @@ static void send_flow_complete(void) {
       MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
   response.which_response = MANAGER_AUTH_DEVICE_RESPONSE_FLOW_COMPLETE_TAG;
   response.flow_complete.dummy_field = '\0';
-  send_auth_device_response(response);
+  send_auth_device_response(&response);
   return;
 }
 
@@ -200,7 +200,8 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
       core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
       delay_scr_init(ui_text_message_device_authenticating, 100);
 
-      send_auth_device_response(sign_serial_number());
+      manager_auth_device_response_t resp = sign_serial_number();
+      send_auth_device_response(&resp);
       next_state = SIGN_RANDOM_NUM;
       break;
     }
@@ -229,7 +230,9 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
       uint8_t *challenge =
           (uint8_t *)&(query->auth_device.challenge.challenge[0]);
-      send_auth_device_response(sign_random_challenge(challenge));
+
+      manager_auth_device_response_t resp = sign_random_challenge(challenge);
+      send_auth_device_response(&resp);
       next_state = RESULT;
       break;
     }
