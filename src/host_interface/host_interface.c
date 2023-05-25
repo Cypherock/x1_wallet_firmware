@@ -62,7 +62,6 @@
 #include "host_interface.h"
 
 #include "manager_app.h"
-#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

@@ -532,10 +532,8 @@ void card_auth_handler(manager_query_t *query) {
       return;
     }
 
-    if (0 != resp.which_response) {
-      send_auth_card_response(&resp);
-      memzero(&resp, sizeof(resp));
-    }
+    send_auth_card_response(&resp);
+    memzero(&resp, sizeof(resp));
 
     if (FLOW_COMPLETE_STATE) {
       return;
