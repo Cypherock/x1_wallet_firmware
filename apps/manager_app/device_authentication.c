@@ -133,7 +133,17 @@ static void send_flow_complete(void);
 
 /**
  * @brief This function is the request handler for the SIGN_SERIAL_NUM state of
- * the device authentication flow
+ * the device authentication flow. It is made sure that the USB event is
+ * consumed in all cases.
+ *
+ * In SIGN_SERIAL_NUM state: A query of type
+ * MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG is expected. If this is recieved,
+ * then the request handler calls sign_serial_number() API which performs serial
+ * number signing from the ATECC and sends the response to the host. It then
+ * advances the next_state to SIGN_RANDOM_NUM.
+ *
+ * In the case any other query is received, then an early exit is triggered by
+ * setting the next_state to FLOW_COMPLETE.
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
@@ -143,7 +153,22 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query);
 
 /**
  * @brief This function is the request handler for the SIGN_RANDOM_NUM state of
- * the device authentication flow
+ * the device authentication flow. It is made sure that the USB event is
+ * consumed in all cases.
+ *
+ * In SIGN_RANDOM_NUM state:
+ * A query of type MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG is expected. If
+ * this is recieved, then the request handler calls sign_random_challenge() API
+ * which performs random number signing from the ATECC and sends the response to
+ * the host.
+ *
+ * In case a query of type MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG is received,
+ * then the request handler assumes that it the serial number signature was NOT
+ * verified and sets the device in un-authenticated state and exits the flow by
+ * setting next_state = FLOW_COMPLETE.
+ *
+ * In case a query of type MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG is received,
+ * then it advances the next_state to FLOW_COMPLETE.
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
@@ -153,7 +178,18 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query);
 
 /**
  * @brief This function is the request handler for the RESULT state of
- * the device authentication flow
+ * the device authentication flow. It is made sure that the USB event is
+ * consumed in all cases.
+ *
+ * In RESULT state:
+ * A query of type MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG is expected.
+ * It handles the result returned by the host by setting the authentication
+ * result on the flash and sends flow completion message to the host and
+ * advances the next_state to FLOW_COMPLETE.
+ *
+ * In case a query of type MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG or
+ * MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG is received, then the next_state is
+ * advanced to FLOW_COMPLETE.
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
@@ -171,7 +207,7 @@ static pb_size_t get_request_type(
 static void send_auth_device_response(manager_auth_device_response_t *resp) {
   manager_result_t result =
       get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-  memcpy(&(result.auth_card), resp, sizeof(manager_auth_device_response_t));
+  memcpy(&(result.auth_device), resp, sizeof(manager_auth_device_response_t));
   uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
   ASSERT(encode_and_send_manager_result(
       &result, &encoded_response[0], sizeof(encoded_response)));
@@ -189,7 +225,7 @@ static void send_flow_complete(void) {
 
 static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
-  device_auth_state_e next_state = SIGN_SERIAL_NUM;
+  device_auth_state_e next_state = FLOW_COMPLETE;
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
@@ -209,7 +245,6 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG:
     default: {
       /* In case any other request is received, then we exit the flow early */
-      next_state = FLOW_COMPLETE;
       usb_clear_event();
       break;
     }
@@ -220,7 +255,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
 
 static device_auth_state_e sign_random_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
-  device_auth_state_e next_state = SIGN_RANDOM_NUM;
+  device_auth_state_e next_state = FLOW_COMPLETE;
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
@@ -259,7 +294,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
 
 static device_auth_state_e result_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
-  device_auth_state_e next_state = RESULT;
+  device_auth_state_e next_state = FLOW_COMPLETE;
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG:
