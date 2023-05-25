@@ -26,6 +26,7 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+// 0xFFFFFFFF ms = 4294967295 / (1000 * 3600 * 24) days ~ 49 days
 #define INIFINITE_WAIT_TIMEOUT 0xFFFFFFFF
 
 #define MAX_INACTIVITY_TIMEOUT                                                 \
