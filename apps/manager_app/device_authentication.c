@@ -117,11 +117,19 @@ typedef enum {
 static pb_size_t get_request_type(const manager_auth_device_request_t *request);
 
 /**
+ * @brief Sends response of type manager_auth_device_response_t to the host. It
+ * internally encodes the response to type manager_result_t
+ *
+ * @param resp The response to be send to the host.
+ */
+static void send_auth_device_response(manager_auth_device_response_t resp);
+
+/**
  * @brief This API sends the response for device authentication flow completion
  * to the host.
  *
  */
-static manager_auth_device_response_t send_flow_complete(void);
+static void send_flow_complete(void);
 
 /**
  * @brief This function is the request handler for the SIGN_SERIAL_NUM state of
@@ -129,13 +137,9 @@ static manager_auth_device_response_t send_flow_complete(void);
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
- * @param result Reference to the result of type manager_result_t, which will be
- * populated by the API. This API will only fill the auth_device field of the
- * manager_result_t.
  * @return device_auth_state_e The next state of the flow
  */
-static device_auth_state_e sign_serial_handler(const manager_query_t *query,
-                                               manager_result_t *result);
+static device_auth_state_e sign_serial_handler(const manager_query_t *query);
 
 /**
  * @brief This function is the request handler for the SIGN_RANDOM_NUM state of
@@ -143,13 +147,9 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
- * @param result Reference to the result of type manager_result_t, which will be
- * populated by the API. This API will only fill the auth_device field of the
- * manager_result_t.
  * @return device_auth_state_e The next state of the flow
  */
-static device_auth_state_e sign_random_handler(const manager_query_t *query,
-                                               manager_result_t *result);
+static device_auth_state_e sign_random_handler(const manager_query_t *query);
 
 /**
  * @brief This function is the request handler for the RESULT state of
@@ -157,13 +157,9 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
  *
  * @param query Reference to query of type manager_query_t as received from the
  * host
- * @param result Reference to the result of type manager_result_t, which will be
- * populated by the API. This API will only fill the auth_device field of the
- * manager_result_t.
  * @return device_auth_state_e The next state of the flow
  */
-static device_auth_state_e result_handler(const manager_query_t *query,
-                                          manager_result_t *result);
+static device_auth_state_e result_handler(const manager_query_t *query);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -172,16 +168,26 @@ static pb_size_t get_request_type(
   return request->which_request;
 }
 
-static manager_auth_device_response_t send_flow_complete(void) {
+static void send_auth_device_response(manager_auth_device_response_t resp) {
+  manager_result_t result =
+      get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
+  result.auth_device = resp;
+  uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
+  ASSERT(encode_and_send_manager_result(
+      &result, &encoded_response[0], sizeof(encoded_response)));
+  return;
+}
+
+static void send_flow_complete(void) {
   manager_auth_device_response_t response =
       MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
   response.which_response = MANAGER_AUTH_DEVICE_RESPONSE_FLOW_COMPLETE_TAG;
   response.flow_complete.dummy_field = '\0';
-  return response;
+  send_auth_device_response(response);
+  return;
 }
 
-static device_auth_state_e sign_serial_handler(const manager_query_t *query,
-                                               manager_result_t *result) {
+static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = SIGN_SERIAL_NUM;
 
@@ -194,7 +200,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
       core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
       delay_scr_init(ui_text_message_device_authenticating, 100);
 
-      result->auth_device = sign_serial_number();
+      send_auth_device_response(sign_serial_number());
       next_state = SIGN_RANDOM_NUM;
       break;
     }
@@ -211,8 +217,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query,
   return next_state;
 }
 
-static device_auth_state_e sign_random_handler(const manager_query_t *query,
-                                               manager_result_t *result) {
+static device_auth_state_e sign_random_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = SIGN_RANDOM_NUM;
 
@@ -224,7 +229,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
       uint8_t *challenge =
           (uint8_t *)&(query->auth_device.challenge.challenge[0]);
-      result->auth_device = sign_random_challenge(challenge);
+      send_auth_device_response(sign_random_challenge(challenge));
       next_state = RESULT;
       break;
     }
@@ -234,7 +239,9 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
        * the flow. The device will treat it as an attempt to force device
        * authentication status */
       device_auth_handle_response(false);
-      result->auth_device = send_flow_complete();
+      send_flow_complete();
+
+      delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
       next_state = FLOW_COMPLETE;
       break;
     }
@@ -247,8 +254,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query,
   return next_state;
 }
 
-static device_auth_state_e result_handler(const manager_query_t *query,
-                                          manager_result_t *result) {
+static device_auth_state_e result_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = RESULT;
 
@@ -261,7 +267,14 @@ static device_auth_state_e result_handler(const manager_query_t *query,
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
       bool verified = query->auth_device.result.verified;
       device_auth_handle_response(verified);
-      result->auth_device = send_flow_complete();
+      send_flow_complete();
+
+      if (true == verified) {
+        delay_scr_init(ui_text_message_device_auth_success, DELAY_TIME);
+      } else {
+        delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
+      }
+
       next_state = FLOW_COMPLETE;
       break;
     }
@@ -288,9 +301,6 @@ void device_authentication_flow(const manager_query_t *query) {
   bool valid_query = true;
 
   while (FLOW_COMPLETE != state) {
-    manager_result_t result =
-        get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
-
     /* When this loop runs for the first time, this check will pass as qeury is
      * already checked before user confirmation. */
     if (false == valid_query) {
@@ -311,28 +321,21 @@ void device_authentication_flow(const manager_query_t *query) {
 
     switch (state) {
       case SIGN_SERIAL_NUM: {
-        state = sign_serial_handler(query, &result);
+        state = sign_serial_handler(query);
         break;
       }
       case SIGN_RANDOM_NUM: {
-        state = sign_random_handler(query, &result);
+        state = sign_random_handler(query);
         break;
       }
       case RESULT: {
-        state = result_handler(query, &result);
+        state = result_handler(query);
         break;
       }
       default: {
         usb_clear_event();
         break;
       }
-    }
-
-    /* Only respond to host if which_response field is valid */
-    if (0 != result.auth_device.which_response) {
-      uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
-      ASSERT(encode_and_send_manager_result(
-          &result, &encoded_response[0], sizeof(encoded_response)));
     }
 
     /* Zeroize decoded_query structure */
