@@ -294,10 +294,8 @@ sign_random_challenge(uint8_t *challenge) {
 void device_auth_handle_response(bool verified) {
   if (true == verified) {
     set_auth_state(DEVICE_AUTHENTICATED);
-    delay_scr_init(ui_text_message_device_auth_success, DELAY_TIME);
   } else {
     set_auth_state(DEVICE_NOT_AUTHENTICATED);
-    delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
   }
 
   return;
