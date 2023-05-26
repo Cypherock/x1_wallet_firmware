@@ -67,6 +67,7 @@
 #include "manager_app.h"
 #include "manager_app_priv.h"
 #include "nfc.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
@@ -504,6 +505,11 @@ static manager_error_code_t handle_auth_card_query(
  *****************************************************************************/
 void card_auth_handler(manager_query_t *query) {
   ASSERT(NULL != query);
+
+  /* Validate if this flow is allowed */
+  if (false == onboarding_step_allowed(ONBOARDING_CARD_AUTHENTICATION)) {
+    // TODO: Reject query
+  }
 
   if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG !=
       query->auth_card.which_request) {

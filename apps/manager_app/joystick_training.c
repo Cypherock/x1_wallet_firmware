@@ -216,6 +216,11 @@ static bool training_step(const joystick_step_t *step) {
  *****************************************************************************/
 
 void manager_joystick_training(manager_query_t *query) {
+  /* Validate if this flow is allowed */
+  if (false == onboarding_step_allowed(ONBOARDING_JOYSTICK_TRAINING)) {
+    // TODO: Reject query
+  }
+
   const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
       {.instruction = ui_text_joystick_up,
        .user_action = JOYSTICK_ACTION_UP,
@@ -248,7 +253,6 @@ void manager_joystick_training(manager_query_t *query) {
     }
   }
 
-  /* Update onboarding status to save progress */
   onboarding_set_step_done(ONBOARDING_JOYSTICK_TRAINING);
 
   manager_train_joystick_response_t training =

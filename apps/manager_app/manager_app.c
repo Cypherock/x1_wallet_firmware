@@ -125,36 +125,17 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_AUTH_CARD_TAG: {
-      if (true == onboarding_step_allowed(ONBOARDING_CARD_AUTHENTICATION)) {
-        card_auth_handler(&query);
-      } else {
-        usb_clear_event();
-        // TODO: Reject query
-      }
-
+      card_auth_handler(&query);
       break;
     }
     case MANAGER_QUERY_GET_LOGS_TAG: {
       break;
     }
     case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      if (true == onboarding_step_allowed(ONBOARDING_JOYSTICK_TRAINING)) {
-        manager_joystick_training(&query);
-      } else {
-        usb_clear_event();
-        // TODO: Reject query
-      }
-
+      manager_joystick_training(&query);
       break;
     }
     case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      if (true == onboarding_step_allowed(ONBOARDING_CARD_CHECKUP)) {
-        // TODO: Call train card handler
-      } else {
-        usb_clear_event();
-        // TODO: Reject query
-      }
-
       break;
     }
     default: {

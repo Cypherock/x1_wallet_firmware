@@ -64,6 +64,7 @@
 #include "events.h"
 #include "manager_api.h"
 #include "manager_app.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 
@@ -329,6 +330,11 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void device_authentication_flow(const manager_query_t *query) {
+  /* Validate if this flow is allowed */
+  if (false == onboarding_step_allowed(ONBOARDING_DEVICE_AUTH)) {
+    // TODO: Reject query
+  }
+
   /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
   device_auth_state_e state = SIGN_SERIAL_NUM;
   evt_status_t event = {0};
