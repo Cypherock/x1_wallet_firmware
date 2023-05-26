@@ -38,7 +38,7 @@ typedef enum card_errors_type {
 
 typedef struct card_operation_data {
   NFC_connection_data nfc_data;
-  char *error_message;
+  const char *error_message;
   card_error_type_e error_type;
 } card_operation_data_t;
 /*****************************************************************************
