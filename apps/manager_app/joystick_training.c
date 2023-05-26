@@ -250,8 +250,7 @@ void manager_joystick_training(manager_query_t *query) {
   manager_train_joystick_response_t training =
       MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
 
-  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_JOYSTICK_TAG;
-  training.joystick.is_success = true;
+  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_RESULT_TAG;
   send_msg_to_host(&training);
 
   delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);
