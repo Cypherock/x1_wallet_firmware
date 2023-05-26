@@ -1,8 +1,8 @@
 /**
- * @file    card_operations.h
+ * @file    card_basic.h
  * @author  Cypherock X1 Team
- * @brief   Card operations module
- *          Exports all card APIs to application
+ * @brief   Card internal operations
+ * Exports all card APIs that enable card initialization and error handling
  * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>

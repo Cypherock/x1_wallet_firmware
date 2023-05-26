@@ -1,8 +1,8 @@
 /**
- * @file    ${file_name}
+ * @file    card_basic.c
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   Card internal operations
+ * Exports all card APIs that enable card initialization and error handling
  * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
