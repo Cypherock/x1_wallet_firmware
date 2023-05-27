@@ -94,13 +94,14 @@ static const flow_step_t onboarding_flow = {
     .step_init_cb = onboarding_initialize,
     .p0_cb = NULL,
     .ui_cb = NULL,
-    .usb_cb =
-        host_interface, /* TODO: Make a seperate USB callback for onboarding */
+    .usb_cb = onboarding_host_interface,
     .nfc_cb = NULL,
     .evt_cfg_ptr = &main_menu_evt_config,
     .flow_data_ptr = NULL};
 
+// TODO: This variable should be written on the flash
 onboarding_steps_e last_step = ONBOARDING_VIRGIN_DEVICE;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -156,11 +157,17 @@ const flow_step_t *onboarding_get_step(void) {
 }
 
 onboarding_steps_e onboarding_get_last_step(void) {
-  // TODO: Set value in flash
+  // TODO: Get last_step from flash
   return last_step;
 }
 
 void onboarding_set_step_done(const onboarding_steps_e next_step) {
+  /* Validate next_step */
+  if (next_step > ONBOARDING_COMPLETE) {
+    return;
+  }
+
+  // TODO: Get last_step from flash and update next_step in flash
   /* Ensure we never go back a step */
   if ((ONBOARDING_COMPLETE != last_step) && (last_step < next_step)) {
     last_step = next_step;
@@ -170,10 +177,15 @@ void onboarding_set_step_done(const onboarding_steps_e next_step) {
 }
 
 bool onboarding_step_allowed(const onboarding_steps_e step) {
+  /* Validate step */
+  if (step > ONBOARDING_COMPLETE) {
+    return false;
+  }
+
+  // TODO: Get last_step from flash
   /* Only allow steps that are already completed, or the new step is just the
    * next step */
-  if ((ONBOARDING_COMPLETE == last_step) || (step <= last_step) ||
-      (step == last_step + 1)) {
+  if ((ONBOARDING_COMPLETE == last_step) || (step <= last_step + 1)) {
     return true;
   }
 

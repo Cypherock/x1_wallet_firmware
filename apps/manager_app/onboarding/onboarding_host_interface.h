@@ -42,6 +42,8 @@
  * @param usb_evt The USB event object which triggered the callback
  * @param data_ptr Currently unused pointer set by the engine
  */
-void host_interface(engine_ctx_t *ctx, usb_event_t usb_evt, const void *data);
+void onboarding_host_interface(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data);
 
 #endif /* HOST_INTERFACE_H */

@@ -20,18 +20,19 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+/* MACROS defining the steps for device onboarding. The integer value is in
+ * increasing order based on the flow requirements. */
+#define ONBOARDING_VIRGIN_DEVICE 0
+#define ONBOARDING_DEVICE_AUTH 1
+#define ONBOARDING_JOYSTICK_TRAINING 2
+#define ONBOARDING_CARD_CHECKUP 3
+#define ONBOARDING_CARD_AUTHENTICATION 4
+#define ONBOARDING_COMPLETE 5
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  ONBOARDING_VIRGIN_DEVICE,
-  ONBOARDING_DEVICE_AUTH,
-  ONBOARDING_JOYSTICK_TRAINING,
-  ONBOARDING_CARD_CHECKUP,
-  ONBOARDING_CARD_AUTHENTICATION,
-  ONBOARDING_COMPLETE,
-} onboarding_steps_e;
+typedef uint8_t onboarding_steps_e;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
