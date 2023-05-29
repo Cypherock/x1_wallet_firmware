@@ -64,7 +64,9 @@
 #include "app_error.h"
 #include "buzzer.h"
 #include "card_operations.h"
+#include "events.h"
 #include "nfc.h"
+#include "nfc_events.h"
 #include "ui_instruction.h"
 
 /*****************************************************************************
@@ -74,6 +76,15 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define HANDLE_P0_EVENTS(p0_event)                                             \
+  do {                                                                         \
+    if (true == p0_event.inactivity_evt) {                                     \
+      return CARD_OPERATION_P0_TIMEOUT_OCCURED;                                \
+    } else if (true == p0_event.abort_evt) {                                   \
+      return CARD_OPERATION_P0_ABORT_OCCURED;                                  \
+    }                                                                          \
+  } while (0)
+
 #define NFC_SET_ERROR_MSG(card_data, msg)                                      \
   (card_data->error_message =                                                  \
        (card_data)->error_message ? (card_data)->error_message : (msg))
@@ -92,6 +103,8 @@
 #define NFC_RETURN_RETAP_ERROR(card_data, msg)                                 \
   NFC_RETURN_ERROR_WITH_MSG(                                                   \
       card_data, CARD_OPERATION_RETAP_BY_USER_REQUIRED, msg)
+#define NFC_RETURN_P0_EVENT(card_data, evt)
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -144,6 +157,17 @@ static void select_applet_and_update_tapped_card(NFC_connection_data *nfc_data);
  * interaction.
  */
 static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data);
+
+/**
+ * @brief Wait for card tap, then select card
+ *
+ * @param card_data Pointer to the data structure containing information about
+ * the card operation.
+ * @return card_error_type_e Type of error encountered during the NFC
+ * interaction.
+ */
+card_error_type_e handle_wait_for_card_selection(
+    card_operation_data_t *card_data);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -205,6 +229,25 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
   // silently retry to connect; can't connect here, cards_state is important
   NFC_RETURN_SUCCESS(card_data);
 }
+
+card_error_type_e handle_wait_for_card_selection(
+    card_operation_data_t *card_data) {
+  evt_status_t evt_status = {0};
+
+  while (1) {
+    nfc_en_select_card_task();
+
+    evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+
+    HANDLE_P0_EVENTS(evt_status.p0_event);
+
+    if (true == evt_status.nfc_event.event_occured) {
+      if (STM_SUCCESS == nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME))
+        NFC_RETURN_SUCCESS(card_data);
+    }
+  }
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -217,10 +260,8 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
   }
 
   while (1) {
-    // Can replace with NFC events
-    // Stuck here until card is detected
-    if (nfc_select_card() != STM_SUCCESS) {
-      NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_P0_ABORT_OCCURED);
+    if (CARD_OPERATION_SUCCESS != handle_wait_for_card_selection(card_data)) {
+      return card_data->error_type;
     }
 
     instruction_scr_change_text(ui_text_card_detected, true);
@@ -304,17 +345,24 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       NFC_RETURN_ABORT_ERROR(card_data, ui_critical_card_health_migrate_data);
       break;
     default:
-      if ((card_data->nfc_data.status & 0xFF00) == POW_SW_WALLET_LOCKED) {
-        NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
-      } else if ((card_data->nfc_data.status & 0xFF00) ==
-                 SW_CORRECT_LENGTH_00) {
-        NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_INCORRECT_PIN_ENTERED);
-      } else if ((card_data->nfc_data.status & 0xFF00) == SW_CRYPTO_EXCEPTION) {
-        NFC_RETURN_ABORT_ERROR(card_data, ui_text_card_crypto_exception);
-      } else {
-        return handle_nfc_errors(card_data);
+      switch (card_data->nfc_data.status & 0xFF00) {
+        case POW_SW_WALLET_LOCKED:
+          NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
+          break;
+
+        case SW_CORRECT_LENGTH_00:
+          NFC_RETURN_ERROR_TYPE(card_data,
+                                CARD_OPERATION_INCORRECT_PIN_ENTERED);
+          break;
+
+        case SW_CRYPTO_EXCEPTION:
+          NFC_RETURN_ABORT_ERROR(card_data, ui_text_card_crypto_exception);
+          break;
+
+        default:
+          return handle_nfc_errors(card_data);
+          break;
       }
-      break;
   }
 
   // Shouldn't reach here
