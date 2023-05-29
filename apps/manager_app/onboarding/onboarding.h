@@ -69,15 +69,6 @@ onboarding_steps_e onboarding_get_last_step(void);
  * ONBOARDING_COMPLETE (depicting onboarding is already complete) and the
  * next_step is actually a new step of the onboarding flow (revocation is not
  * allowed).
- * Important point to note here is that this API can be called without checking
- * ONBOARDING_COMPLETE status as the onboarding state is only updated if
- * onboarding is not completed previously. Additionally, it is to be noted that
- * this API does not check if the next_step is a sequential step, just to
- * satisfy 2 requirements
- * 1. We need to set onboarding step directly to ONBOARDING_COMPLETE in
- * case of in-field device.
- * 2. We need to skip ONBOARDING_CARD_AUTHENTICATION in case old cards are
- * tapped and ONBOARDING takes a different route.
  *
  * @param next_step The step that needs to be recorded
  */
