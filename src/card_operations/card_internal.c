@@ -191,9 +191,7 @@ static card_error_type_e load_session_key_if_pairing_required(
 
 static void select_applet_and_update_tapped_card(
     NFC_connection_data *nfc_data) {
-  uint8_t temp = 0;
-
-  temp = nfc_data->acceptable_cards;
+  uint8_t temp = nfc_data->acceptable_cards;
   nfc_data->status = nfc_select_applet(nfc_data->family_id,
                                        &nfc_data->acceptable_cards,
                                        NULL,
