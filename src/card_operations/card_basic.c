@@ -166,7 +166,7 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data);
  * @return card_error_type_e Type of error encountered during the NFC
  * interaction.
  */
-card_error_type_e handle_wait_for_card_selection(
+static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data);
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -230,7 +230,7 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
   NFC_RETURN_SUCCESS(card_data);
 }
 
-card_error_type_e handle_wait_for_card_selection(
+static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data) {
   evt_status_t evt_status = {0};
 
