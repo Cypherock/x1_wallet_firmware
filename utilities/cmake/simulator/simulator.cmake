@@ -42,6 +42,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         src/menu
         src/wallet
         src/host_interface
+        src/card_operations
 
         src/level_one/controller
         src/level_one/tasks
