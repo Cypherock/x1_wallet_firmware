@@ -1,8 +1,7 @@
 /**
- * @file    usb_event.c
+ * @file    manager_api.c
  * @author  Cypherock X1 Team
- * @brief   USB Event APIs.
- *          Describes all the logic for interfacing with USB Events.
+ * @brief   Defines helpers apis for manager app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,13 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <string.h>
+#include "btc_api.h"
 
-#include "core.pb.h"
-#include "memzero.h"
 #include "pb_decode.h"
+#include "pb_encode.h"
 #include "usb_api.h"
-#include "usb_api_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -80,17 +77,9 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
-typedef struct usb_core_msg {
-  const uint8_t *buffer;
-  uint16_t size;
-} usb_core_msg_t;
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
-static usb_event_t usb_event;
-static usb_core_msg_t core_msg;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -100,114 +89,32 @@ static usb_core_msg_t core_msg;
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Validates that the received usb event is valid in the current context
- * of the application/OS.
- *
- * @param evt The captured usb event usb_event_t
- * @param msg The received encoded context buffer
- */
-static core_error_type_t validate_msg_context(usb_core_msg_t msg);
-
-/**
- * @brief Clear the fields of core_msg by setting default values
- */
-static void clear_msg_context();
-
-/**
- * @brief Reset the members of usb_event_t to decided default state.
- * @details The instance after reset will represent the absence of any usb
- * event as well as the members will be invalid/meaningless content.
- *
- * @param evt Pass the reference to an instance of usb_event_t to reset
- */
-static void reset_event_obj(usb_event_t *evt);
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void reset_event_obj(usb_event_t *evt) {
-  evt->flag = false;
-  evt->msg_size = 0;
-  evt->p_msg = NULL;
-}
-
-static void clear_msg_context() {
-  core_msg.size = 0;
-  core_msg.buffer = NULL;
-}
-
-uint32_t applet_id = 0;
-
-static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
-  core_msg_t core_msg_p = CORE_MSG_INIT_ZERO;
-  pb_istream_t stream = pb_istream_from_buffer(msg.buffer, msg.size);
-
-  // invalid buffer ref, 0 size & decode failure are error situation
-  if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
-      NULL == msg.buffer || 0 == msg.size ||
-      CORE_MSG_CMD_TAG != core_msg_p.which_type) {
-    return CORE_INVALID_MSG;
-  }
-
-  // store applet id
-  applet_id = core_msg_p.cmd.applet_id;
-
-  // TODO: verify if the core_msg_p.type.cmd.applet_id is valid one ref PR #235
-  // const cy_app_desc_t *app_desc =
-  // registry_get_app_desc(core_msg_p.type.cmd.applet_id);
-
-  // if (NULL == app_desc) {
-  //   return CORE_ERROR_TYPE_UNKNOWN_APP;
-  // }
-
-  // TODO: verify with core context, if applet is invokable/active
-  return CORE_NO_ERROR;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-uint32_t get_applet_id(void) {
-  return applet_id;
-}
-
-void usb_clear_event() {
-  reset_event_obj(&usb_event);
-  clear_msg_context();
-  usb_free_msg_buffer();
-  usb_reset_state();
-}
-
-void usb_set_event(const uint16_t core_msg_size,
-                   const uint8_t *core_msg_buffer,
-                   const uint16_t app_msg_size,
-                   const uint8_t *app_msg) {
-  usb_event.flag = true;
-  usb_event.msg_size = app_msg_size;
-  usb_event.p_msg = app_msg;
-
-  core_msg.buffer = core_msg_buffer;
-  core_msg.size = core_msg_size;
-}
-
-bool usb_get_event(usb_event_t *evt) {
-  if (evt == NULL) {
+bool decode_btc_query(const uint8_t *data,
+                      uint16_t data_size,
+                      btc_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size)
     return false;
+
+  /* Initialize manager query */
+  btc_query_t query = BTC_QUERY_INIT_DEFAULT;
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, BTC_QUERY_FIELDS, &query);
+
+  /* Copy query obj if status is true*/
+  if (true == status) {
+    memcpy(query_out, &query, sizeof(query));
   }
 
-  reset_event_obj(evt);
-
-  if (usb_event.flag) {
-    core_error_type_t status = validate_msg_context(core_msg);
-    if (CORE_NO_ERROR != status) {
-      // now clear event as it is not supposed to reach the app
-      usb_clear_event();
-      // TODO: send an error to host
-    } else {
-      memcpy(evt, &usb_event, sizeof(usb_event_t));
-      usb_set_state_executing();
-    }
-  }
-  return evt->flag;
+  return status;
 }
