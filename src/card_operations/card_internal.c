@@ -1,16 +1,16 @@
 /**
- * @file    card_basic.c
+ * @file    card_internal.c
  * @author  Cypherock X1 Team
  * @brief   Card internal operations
  * Exports all card APIs that enable card initialization and error handling
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -110,14 +110,6 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
@@ -168,6 +160,14 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data);
  */
 static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data);
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/

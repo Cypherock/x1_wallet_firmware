@@ -1,14 +1,14 @@
 /**
- * @file    card_basic.h
+ * @file    card_internal.h
  * @author  Cypherock X1 Team
  * @brief   Card internal operations
  * Exports all card APIs that enable card initialization and error handling
- * @copyright Copyright (c) ${YEAR} HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_BASIC_H
-#define CARD_BASIC_H
+#ifndef CARD_INTERNAL_H
+#define CARD_INTERNAL_H
 
 /*****************************************************************************
  * INCLUDES
