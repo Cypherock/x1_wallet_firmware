@@ -209,7 +209,7 @@ static void select_applet_and_update_tapped_card(
 static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
   card_data->nfc_data.tapped_card = 0;
 
-  if ((card_data->nfc_data.status == NFC_CARD_ABSENT) ||
+  if ((NFC_CARD_ABSENT == card_data->nfc_data.status) ||
       (nfc_diagnose_card_presence() != 0)) {
     instruction_scr_change_text(ui_text_card_removed_fast, true);
     if ((!--card_data->nfc_data.card_absent_retries)) {
@@ -218,7 +218,7 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
     }
   } else if (!(--card_data->nfc_data.retries)) {
     NFC_RETURN_ABORT_ERROR(card_data, ui_text_unknown_error_contact_support);
-  } else if ((card_data->nfc_data.status & NFC_ERROR_BASE) == NFC_ERROR_BASE) {
+  } else if (NFC_ERROR_BASE == (card_data->nfc_data.status & NFC_ERROR_BASE)) {
     instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
     nfc_deselect_card();
   }
@@ -271,7 +271,7 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
      * attempts. NOTE: Errors such as invalid card & invalid family id have
      * higher priority than this.
      */
-    if (card_data->nfc_data.recovery_mode == 1) {
+    if (1 == card_data->nfc_data.recovery_mode) {
       NFC_RETURN_ABORT_ERROR(card_data, ui_critical_card_health_migrate_data);
     }
 
@@ -301,6 +301,9 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
         break;
     }
   }
+
+  // Shouldn't reach here
+  NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_DEFAULT_INVALID);
 }
 
 card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
@@ -308,12 +311,14 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
   switch (card_data->nfc_data.status) {
     case SW_NO_ERROR:
       NFC_RETURN_SUCCESS(card_data);
+      break;
     case SW_SECURITY_CONDITIONS_NOT_SATISFIED:
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_security_conditions_not_met);
       break;
     case SW_NOT_PAIRED:
       invalidate_keystore();
       NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
+      break;
     case SW_CONDITIONS_NOT_SATISFIED:
       break;
     case SW_WRONG_DATA:
