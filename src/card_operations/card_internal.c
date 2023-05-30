@@ -135,20 +135,17 @@ static card_error_type_e load_session_key_if_pairing_required(
 static void select_applet_and_update_tapped_card(NFC_connection_data *nfc_data);
 
 /**
- * @brief Handles the NFC errors encountered during a card operation.
- *
- * This function handles the NFC errors encountered during a card operation. The
- * function performs the following actions:
- * 1. Determines the type of error encountered based on the NFC data status.
- * 2. Returns the appropriate card error type so that the card operation can be
- * properly handled.
+ * @brief Handles the default NFC errors encountered during a card operation.
+ * Expected to be called in default case of error handlers, so all known errors
+ * are handled before calling this.
  *
  * @param card_data Pointer to the data structure containing information about
  * the card operation.
  * @return card_error_type_e Type of error encountered during the NFC
  * interaction.
  */
-static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data);
+static card_error_type_e default_nfc_errors_handler(
+    card_operation_data_t *card_data);
 
 /**
  * @brief Wait for card tap, then select card
@@ -206,7 +203,8 @@ static void select_applet_and_update_tapped_card(
   nfc_data->tapped_card = (temp ^ nfc_data->acceptable_cards);
 }
 
-static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
+static card_error_type_e default_nfc_errors_handler(
+    card_operation_data_t *card_data) {
   card_data->nfc_data.tapped_card = 0;
 
   if ((NFC_CARD_ABSENT == card_data->nfc_data.status) ||
@@ -214,36 +212,37 @@ static card_error_type_e handle_nfc_errors(card_operation_data_t *card_data) {
     instruction_scr_change_text(ui_text_card_removed_fast, true);
     if ((!--card_data->nfc_data.card_absent_retries)) {
       card_data->nfc_data.status = NFC_CARD_ABSENT;
-      NFC_RETURN_RETAP_ERROR(card_data, ui_text_card_freq_discon_fault);
+
+      // TOO many frequent disconnections detected, prompt user to contact
+      // support.
+      NFC_RETURN_ABORT_ERROR(card_data, ui_text_card_freq_discon_fault);
     }
   } else if (!(--card_data->nfc_data.retries)) {
+    // Unknown error detected, after retries, return abort error and prompt user
+    // to contact support.
     NFC_RETURN_ABORT_ERROR(card_data, ui_text_unknown_error_contact_support);
   } else if (NFC_ERROR_BASE == (card_data->nfc_data.status & NFC_ERROR_BASE)) {
     instruction_scr_change_text(ui_text_card_align_with_device_screen, true);
     nfc_deselect_card();
   }
 
-  // probably comm failure; guess is NFC teardown; reconnect with applet
-  // silently retry to connect; can't connect here, cards_state is important
-  NFC_RETURN_SUCCESS(card_data);
+  // NFC teardown occured, card was moved leading to errors in PN532 operations
+  NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_CARD_REMOVED);
 }
 
 static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data) {
   evt_status_t evt_status = {0};
 
-  while (1) {
-    nfc_en_select_card_task();
+  nfc_en_select_card_task();
+  evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
 
-    evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+  HANDLE_P0_EVENTS(evt_status.p0_event);
 
-    HANDLE_P0_EVENTS(evt_status.p0_event);
-
-    if (true == evt_status.nfc_event.event_occured) {
-      if (STM_SUCCESS == nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME))
-        NFC_RETURN_SUCCESS(card_data);
-    }
-  }
+  /* This API call is required to select the detected card as `get_events` calls
+   * the deselect function on exit */
+  nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME);
+  NFC_RETURN_SUCCESS(card_data);
 }
 
 /*****************************************************************************
@@ -266,18 +265,18 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
 
     select_applet_and_update_tapped_card(&(card_data->nfc_data));
 
-    /* Card is in recovery mode. This is a critical situation. Instruct user to
-     * safely recover/export wallets to different set of cards in limited
-     * attempts. NOTE: Errors such as invalid card & invalid family id have
-     * higher priority than this.
-     */
-    if (1 == card_data->nfc_data.recovery_mode) {
-      NFC_RETURN_ABORT_ERROR(card_data, ui_critical_card_health_migrate_data);
-    }
-
     LOG_ERROR("Applet selection err (0x%04X)\n", card_data->nfc_data.status);
     switch (card_data->nfc_data.status) {
       case SW_NO_ERROR:
+        /* Card is in recovery mode. This is a critical situation. Instruct user
+         * to safely recover/export wallets to different set of cards in limited
+         * attempts.
+         */
+        if (1 == card_data->nfc_data.recovery_mode) {
+          NFC_RETURN_ABORT_ERROR(card_data,
+                                 ui_critical_card_health_migrate_data);
+        }
+
         return load_session_key_if_pairing_required(card_data);
         break;
       case SW_CONDITIONS_NOT_SATISFIED:
@@ -295,7 +294,8 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
         break;
       default:
         card_data->nfc_data.acceptable_cards |= card_data->nfc_data.tapped_card;
-        if (CARD_OPERATION_SUCCESS != handle_nfc_errors(card_data)) {
+        if (CARD_OPERATION_CARD_REMOVED !=
+            default_nfc_errors_handler(card_data)) {
           return card_data->error_type;
         }
         break;
@@ -363,7 +363,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
           break;
 
         default:
-          return handle_nfc_errors(card_data);
+          return default_nfc_errors_handler(card_data);
           break;
       }
   }
