@@ -1,7 +1,7 @@
 /**
- * @file    get_device_info.c
+ * @file    common_error.c
  * @author  Cypherock X1 Team
- * @brief   Populates device info fields at runtime requests.
+ * @brief   Helpers to initialize an instance of common error.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "controller_level_four.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "manager_app.h"
-#include "onboarding.h"
+#include "common_error.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +75,10 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,79 +87,20 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/**
- * @brief Returns the formatted semantic versioning.
- *
- * @param firmware_version
- * @return bool Status indicating the
- */
-static bool get_firmware_version(common_version_t *firmware_version);
-
-/**
- * @brief Return a filled instance of get_device_info_response_t.
- */
-static manager_get_device_info_response_t get_device_info(void);
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-static bool get_firmware_version(common_version_t *firmware_version) {
-  uint32_t version = get_fwVer();
-
-  if (NULL == firmware_version || 0 == version || 0xFFFFFFFF == version) {
-    return false;
-  }
-
-  firmware_version->major = (version >> 24) & 0xFF;
-  firmware_version->minor = (version >> 16) & 0xFF;
-  firmware_version->patch = version & 0xFFFF;
-  return true;
-}
-
-static manager_get_device_info_response_t get_device_info(void) {
-  manager_get_device_info_response_t device_info =
-      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
-  uint32_t status = get_device_serial();
-
-  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
-  if (status != ATCA_SUCCESS) {
-    // TODO: Add specialized error codes in get_device_info response
-    ASSERT(false);
-  }
-
-  if (device_info.which_response ==
-      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
-    manager_get_device_info_result_response_t *result = &device_info.result;
-    result->has_firmware_version =
-        get_firmware_version(&result->firmware_version);
-    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    result->is_authenticated = is_device_authenticated();
-    result->is_initial = true;    // TODO: Get from memory
-    result->onboarding_step =
-        MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;    // TODO: Get from memory
-    // TODO: populate applet list (result->applet_list)
-  }
-
-  return device_info;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void get_device_info_flow(const manager_query_t *query) {
-  if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-      query->get_device_info.which_request) {
-    // set the relevant tags for error
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
-  } else {
-    manager_result_t result =
-        init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
-    result.get_device_info = get_device_info();
-    encode_and_send_manager_result(&result);
-  }
+error_common_error_t init_common_error(pb_size_t which_error,
+                                       uint32_t error_code) {
+  error_common_error_t error = ERROR_COMMON_ERROR_INIT_ZERO;
+  error.which_error = which_error;
+
+  // unrestricted initialization; pick and fill any one union member
+  // NOTE: this works because size of union is uint32_t
+  error.unknown_error = error_code;
+  return error;
 }

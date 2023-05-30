@@ -214,12 +214,9 @@ static pb_size_t get_request_type(
 }
 
 static void send_auth_device_response(manager_auth_device_response_t *resp) {
-  manager_result_t result =
-      get_manager_result_template(MANAGER_RESULT_AUTH_DEVICE_TAG);
+  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_DEVICE_TAG);
   memcpy(&(result.auth_device), resp, sizeof(manager_auth_device_response_t));
-  uint8_t encoded_response[DEVICE_AUTH_RESPONSE_SIZE] = {0};
-  ASSERT(encode_and_send_manager_result(
-      &result, &encoded_response[0], sizeof(encoded_response)));
+  encode_and_send_manager_result(&result);
   return;
 }
 
@@ -376,8 +373,8 @@ void device_authentication_flow(const manager_query_t *query) {
       query = &decoded_query;
     }
 
-    if (false == check_manager_request(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
-      valid_query = false;
+    if (false == check_manager_query(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {
+      state = FLOW_COMPLETE;
       continue;
     } else {
       valid_query = true;
