@@ -113,21 +113,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Loads the session key onto the card if pairing is required.
- *
- * This function checks if pairing is required and loads the session key onto
- * card_data. If pairing is not required, the function returns without modifying
- * the card data structure.
- *
- * @param card_data Pointer to the data structure containing information about
- * the card operation.
- * @return card_error_type_e Type of error encountered during the session key
- * loading process.
- */
-static card_error_type_e load_session_key_if_pairing_required(
-    card_operation_data_t *card_data);
-
-/**
  * @brief Selects an applet and updates the tapped card information.
  *
  * @param nfc_data Pointer to the NFC connection data structure.
@@ -168,24 +153,6 @@ static card_error_type_e handle_wait_for_card_selection(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static card_error_type_e load_session_key_if_pairing_required(
-    card_operation_data_t *card_data) {
-  if (false == card_data->nfc_data.pairing_required)
-    NFC_RETURN_SUCCESS(card_data);
-
-  card_data->nfc_data.keystore_index =
-      is_paired(card_data->nfc_data.card_key_id);
-
-  if (-1 == card_data->nfc_data.keystore_index) {
-    NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
-  }
-
-  const uint8_t *pairing_key =
-      get_keystore_pairing_key(card_data->nfc_data.keystore_index);
-  init_session_keys(pairing_key, pairing_key + 32, NULL);
-  NFC_RETURN_SUCCESS(card_data);
-}
-
 static void select_applet_and_update_tapped_card(
     NFC_connection_data *nfc_data) {
   uint8_t temp = nfc_data->acceptable_cards;
@@ -276,8 +243,7 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
           NFC_RETURN_ABORT_ERROR(card_data,
                                  ui_critical_card_health_migrate_data);
         }
-
-        return load_session_key_if_pairing_required(card_data);
+        NFC_RETURN_SUCCESS(card_data);
         break;
       case SW_CONDITIONS_NOT_SATISFIED:
         NFC_RETURN_RETAP_ERROR(card_data, ui_text_wrong_card_sequence);
@@ -370,4 +336,16 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
 
   // Shouldn't reach here
   NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_DEFAULT_INVALID);
+}
+
+bool load_card_session_key(uint8_t *card_key_id) {
+  int8_t keystore_index = is_paired(card_key_id);
+
+  if (-1 == keystore_index) {
+    return false;
+  }
+
+  const uint8_t *session_key = get_keystore_pairing_key(keystore_index);
+  init_session_keys(session_key, session_key + 32, NULL);
+  return true;
 }

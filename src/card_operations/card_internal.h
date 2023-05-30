@@ -62,4 +62,15 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data);
  * operation.
  */
 card_error_type_e card_handle_errors(card_operation_data_t *card_data);
+
+/**
+ * @brief Loads the session key for the specified card key ID.
+ * This function should be called after the applet init and before card
+ * operations with encrypted data exchange A false return indicates the card is
+ * not paired as the corresponding key id is not found.
+ *
+ * @param card_key_id Pointer to the buffer containing the card key ID.
+ * @return True if the session key was successfully loaded, false otherwise.
+ */
+bool load_card_session_key(uint8_t *card_key_id);
 #endif

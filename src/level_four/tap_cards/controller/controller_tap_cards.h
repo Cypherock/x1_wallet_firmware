@@ -44,8 +44,6 @@ typedef struct NFC_connection_data {
   uint8_t card_key_id[4];
   uint8_t recovery_mode;
   uint8_t card_absent_retries;
-  bool pairing_required;    /// Input config set before card initialization to
-                            /// indicate session keys loading is required.
   ISO7816 status;
 } NFC_connection_data;
 
