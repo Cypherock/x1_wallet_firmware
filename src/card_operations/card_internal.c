@@ -88,21 +88,25 @@
 #define NFC_SET_ERROR_MSG(card_data, msg)                                      \
   (card_data->error_message =                                                  \
        (card_data)->error_message ? (card_data)->error_message : (msg))
-#define NFC_GET_ERROR_MSG(card_data)                                           \
-  ((card_data)->error_message ? (card_data)->error_message : "(none)")
 
 #define NFC_RETURN_SUCCESS(card_data)                                          \
-  return card_data->error_type = CARD_OPERATION_SUCCESS
+  card_data->error_type = CARD_OPERATION_SUCCESS;                              \
+  return card_data->error_type
+
 #define NFC_RETURN_ERROR_TYPE(card_data, error)                                \
   return card_data->error_type = error
+
 #define NFC_RETURN_ERROR_WITH_MSG(card_data, error, msg)                       \
   NFC_SET_ERROR_MSG(card_data, msg);                                           \
   NFC_RETURN_ERROR_TYPE(card_data, error)
+
 #define NFC_RETURN_ABORT_ERROR(card_data, msg)                                 \
   NFC_RETURN_ERROR_WITH_MSG(card_data, CARD_OPERATION_ABORT_OPERATION, msg)
+
 #define NFC_RETURN_RETAP_ERROR(card_data, msg)                                 \
   NFC_RETURN_ERROR_WITH_MSG(                                                   \
       card_data, CARD_OPERATION_RETAP_BY_USER_REQUIRED, msg)
+
 #define NFC_RETURN_P0_EVENT(card_data, evt)
 
 /*****************************************************************************
