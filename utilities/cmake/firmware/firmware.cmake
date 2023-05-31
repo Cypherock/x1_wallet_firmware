@@ -46,6 +46,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         src/
         src/menu
         src/wallet
+        src/card_operations
 
         src/level_one/controller
         src/level_one/tasks
