@@ -60,10 +60,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_internal.h"
+
 #include "apdu.h"
 #include "app_error.h"
 #include "buzzer.h"
-#include "card_operations.h"
 #include "events.h"
 #include "nfc.h"
 #include "nfc_events.h"

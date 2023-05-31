@@ -15,6 +15,8 @@
  *****************************************************************************/
 #include "card_operations.h"
 
+/* TODO: Remove the include and move required struct with cleanup*/
+#include "controller_tap_cards.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -22,6 +24,12 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct card_operation_data {
+  NFC_connection_data nfc_data;
+  const char *error_message; /** Error message to be displayed for user action
+                                or error specification */
+  card_error_type_e error_type;
+} card_operation_data_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
