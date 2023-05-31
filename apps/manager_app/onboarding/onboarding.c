@@ -62,6 +62,7 @@
 #include "onboarding.h"
 
 #include "constant_texts.h"
+#include "flash_api.h"
 #include "menu_priv.h"
 #include "onboarding_host_interface.h"
 #include "onboarding_priv.h"
@@ -98,9 +99,6 @@ static const flow_step_t onboarding_flow = {
     .nfc_cb = NULL,
     .evt_cfg_ptr = &main_menu_evt_config,
     .flow_data_ptr = NULL};
-
-// TODO: This variable should be written on the flash
-onboarding_steps_e last_step = ONBOARDING_VIRGIN_DEVICE;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -157,20 +155,22 @@ const flow_step_t *onboarding_get_step(void) {
 }
 
 onboarding_steps_e onboarding_get_last_step(void) {
-  // TODO: Get last_step from flash
-  return last_step;
+  return get_onboarding_step();
 }
 
 void onboarding_set_step_done(const onboarding_steps_e next_step) {
   /* Validate next_step */
-  if (next_step > ONBOARDING_COMPLETE) {
+  if (ONBOARDING_COMPLETE < next_step) {
     return;
   }
 
-  // TODO: Get last_step from flash and update next_step in flash
-  /* Ensure we never go back a step */
-  if ((ONBOARDING_COMPLETE != last_step) && (last_step < next_step)) {
-    last_step = next_step;
+  onboarding_steps_e last_step = onboarding_get_last_step();
+
+  /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
+   * ensure we never go back a step */
+  if ((DEFAULT_VALUE_IN_FLASH == last_step) ||
+      ((ONBOARDING_COMPLETE != last_step) && (last_step < next_step))) {
+    save_onboarding_step(next_step);
   }
 
   return;
@@ -178,11 +178,12 @@ void onboarding_set_step_done(const onboarding_steps_e next_step) {
 
 bool onboarding_step_allowed(const onboarding_steps_e step) {
   /* Validate step */
-  if (step > ONBOARDING_COMPLETE) {
+  if (ONBOARDING_COMPLETE < step) {
     return false;
   }
 
-  // TODO: Get last_step from flash
+  onboarding_steps_e last_step = onboarding_get_last_step();
+
   /* Only allow steps that are already completed, or the new step is just the
    * next step */
   if ((ONBOARDING_COMPLETE == last_step) || (step <= last_step + 1)) {

@@ -118,6 +118,7 @@ typedef struct Flash_Struct {
   uint8_t displayRotation;
   uint8_t enable_passphrase;
   uint8_t enable_log;
+  uint8_t onboarding_step;
 } Flash_Struct;
 #pragma pack(pop)
 

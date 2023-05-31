@@ -954,4 +954,26 @@ uint8_t set_keystore_used_status(uint8_t keystore_index,
  */
 void flash_delete_all_wallets();
 
+/**
+ * @brief It saves the onboarding step on the flash memory
+ *
+ * @param onboarding_step The value of step that needs to be stored
+ */
+void save_onboarding_step(const uint8_t onboarding_step);
+
+/**
+ * @brief Get the onboarding step value from the flash
+ *
+ * @return uint8_t The onboarding step
+ */
+uint8_t get_onboarding_step(void);
+
+/**
+ * @brief This API clears the user data - for example: pairing data, wallets,
+ * settings, but preserves some data onto the flash memory
+ * For now, the only thing preserved is the onboarding_step
+ *
+ */
+void clear_user_data(void);
+
 #endif
