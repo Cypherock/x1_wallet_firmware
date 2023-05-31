@@ -168,8 +168,7 @@ void onboarding_set_step_done(const onboarding_steps_e next_step) {
 
   /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
    * ensure we never go back a step */
-  if ((DEFAULT_VALUE_IN_FLASH == last_step) ||
-      ((ONBOARDING_COMPLETE != last_step) && (last_step < next_step))) {
+  if ((DEFAULT_VALUE_IN_FLASH == last_step) || (last_step < next_step)) {
     save_onboarding_step(next_step);
   }
 
