@@ -1,5 +1,5 @@
 /**
- * @file    host_interface.c
+ * @file    onboarding.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,9 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "host_interface.h"
+#include "onboarding.h"
 
-#include "manager_app.h"
+#include "constant_texts.h"
+#include "menu_priv.h"
+#include "onboarding_host_interface.h"
+#include "onboarding_priv.h"
+#include "status_api.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -74,10 +79,28 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  bool static_screen;
+  bool update_required;
+} onboarding_ctx_t;
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
+                                          .update_required = true};
+
+static const flow_step_t onboarding_flow = {
+    .step_init_cb = onboarding_initialize,
+    .p0_cb = NULL,
+    .ui_cb = NULL,
+    .usb_cb = onboarding_host_interface,
+    .nfc_cb = NULL,
+    .evt_cfg_ptr = &main_menu_evt_config,
+    .flow_data_ptr = NULL};
+
+// TODO: This variable should be written on the flash
+onboarding_steps_e last_step = ONBOARDING_VIRGIN_DEVICE;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -94,14 +117,77 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void host_interface(engine_ctx_t *ctx, usb_event_t usb_evt, const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
+void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
+  if (false == onboarding_ctx.update_required) {
+    return;
+  }
 
-  // TODO: Get info from core on which application to boot
-  // Temporarily hardcode to manager app where we will do the onboarding
-  manager_app_main(usb_evt);
+  /* Set core_status to CORE_DEVICE_IDLE_STATE_IDLE as we are entering back to
+   * the onboarding menu */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
+
+  /* Reset flow status back to zero */
+  core_status_set_flow_status(0);
+
+  if (true == onboarding_ctx.static_screen) {
+    delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
+  } else {
+    /* Since there is now way onboarding_ctx.static_screen be set to false after
+     * first time initialization, therefore welcome screen and slideshow will
+     * only be shown once to the user */
+    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
+    ui_text_slideshow_init(ui_text_onboarding,
+                           NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
+                           DELAY_TIME,
+                           false);
+  }
+
+  onboarding_ctx.update_required = false;
+  return;
+}
+
+void onboarding_set_static_screen(void) {
+  onboarding_ctx.static_screen = true;
+  onboarding_ctx.update_required = true;
+  return;
+}
+
+const flow_step_t *onboarding_get_step(void) {
+  return &onboarding_flow;
+}
+
+onboarding_steps_e onboarding_get_last_step(void) {
+  // TODO: Get last_step from flash
+  return last_step;
+}
+
+void onboarding_set_step_done(const onboarding_steps_e next_step) {
+  /* Validate next_step */
+  if (next_step > ONBOARDING_COMPLETE) {
+    return;
+  }
+
+  // TODO: Get last_step from flash and update next_step in flash
+  /* Ensure we never go back a step */
+  if ((ONBOARDING_COMPLETE != last_step) && (last_step < next_step)) {
+    last_step = next_step;
+  }
 
   return;
+}
+
+bool onboarding_step_allowed(const onboarding_steps_e step) {
+  /* Validate step */
+  if (step > ONBOARDING_COMPLETE) {
+    return false;
+  }
+
+  // TODO: Get last_step from flash
+  /* Only allow steps that are already completed, or the new step is just the
+   * next step */
+  if ((ONBOARDING_COMPLETE == last_step) || (step <= last_step + 1)) {
+    return true;
+  }
+
+  return false;
 }

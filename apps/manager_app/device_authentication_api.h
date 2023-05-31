@@ -56,12 +56,4 @@ manager_auth_device_response_t sign_serial_number(void);
  */
 manager_auth_device_response_t sign_random_challenge(uint8_t *challenge);
 
-/**
- * @brief This function handles the verification result of the device
- * authentication process
- *
- * @param verified true or false, based on boolean result sent by the host.
- */
-void device_auth_handle_response(bool verified);
-
 #endif /* DEVICE_AUTHENTICATION_API_H */

@@ -1,20 +1,20 @@
 /**
- * @file    onboarding.h
+ * @file    onboarding_host_interface.h
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Header file for the host interface for the onboarding flow
+ * @details
+
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
+ *
  */
-#ifndef ONBOARDING_H
-#define ONBOARDING_H
+#ifndef HOST_INTERFACE_H
+#define HOST_INTERFACE_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-
 #include "flow_engine.h"
 
 /*****************************************************************************
@@ -33,18 +33,17 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This API sets the internal flag, which informs the onboarding menu
- * initializer that the static screen is required to be rendered on the screen.
- * This is to satisfy the requirement where-in the onboarding flow needs to show
- * a static screen on host connection.
- */
-void onboarding_set_static_screen(void);
-
-/**
- * @brief This API returns the flow_step_t* for the onboarding menu.
+ * @brief This is the USB callback called when the device core detects a valid
+ * USB event when no application is booted. This function passes control to the
+ * application, which can further communicate with the host. Control is passed
+ * back to the callback once the flow is complete in the application.
  *
- * @return const flow_step_t* Pointer to the step for the onboarding menu
+ * @param ctx The engine context* from which the flow is invoked
+ * @param usb_evt The USB event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
  */
-const flow_step_t *onboarding_get_step(void);
+void onboarding_host_interface(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data);
 
-#endif /* ONBOARDING_H */
+#endif /* HOST_INTERFACE_H */

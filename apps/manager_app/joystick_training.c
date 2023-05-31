@@ -63,6 +63,7 @@
 #include "constant_texts.h"
 #include "events.h"
 #include "manager_api.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 #include "ui_joystick_training.h"
@@ -215,6 +216,11 @@ static bool training_step(const joystick_step_t *step) {
  *****************************************************************************/
 
 void manager_joystick_training(manager_query_t *query) {
+  /* Validate if this flow is allowed */
+  if (false == onboarding_step_allowed(ONBOARDING_JOYSTICK_TRAINING)) {
+    // TODO: Reject query
+  }
+
   const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
       {.instruction = ui_text_joystick_up,
        .user_action = JOYSTICK_ACTION_UP,
@@ -247,11 +253,12 @@ void manager_joystick_training(manager_query_t *query) {
     }
   }
 
+  onboarding_set_step_done(ONBOARDING_JOYSTICK_TRAINING);
+
   manager_train_joystick_response_t training =
       MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
 
-  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_JOYSTICK_TAG;
-  training.joystick.is_success = true;
+  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_RESULT_TAG;
   send_msg_to_host(&training);
 
   delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);

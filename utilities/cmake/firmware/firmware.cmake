@@ -41,11 +41,11 @@ else()
 endif()
 target_include_directories(${EXECUTABLE} PRIVATE
         apps/manager_app
+        apps/manager_app/onboarding
 
         src/
         src/menu
         src/wallet
-        src/host_interface
         src/card_operations
 
         src/level_one/controller

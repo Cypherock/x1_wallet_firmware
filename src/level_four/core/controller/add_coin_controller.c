@@ -59,7 +59,6 @@
  */
 #include "bip32.h"
 #include "bip39.h"
-#include "bip39_english.h"
 #include "board.h"
 #include "btc.h"
 #include "communication.h"

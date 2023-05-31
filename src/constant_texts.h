@@ -35,11 +35,6 @@
 // product hash
 extern const char *product_hash;
 
-// Onboarding text
-extern const char *ui_text_onboarding_welcome;
-#define NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING 3
-extern const char *ui_text_onboarding[];
-
 // Main menu text
 #define NUMBER_OF_OPTIONS_MAIN_MENU 2
 
@@ -76,6 +71,12 @@ extern const char *ui_text_joystick_down;
 extern const char *ui_text_joystick_left;
 extern const char *ui_text_joystick_center;
 extern const char *ui_text_joystick_checkup_complete;
+
+// Onboarding text
+extern const char *ui_text_onboarding_welcome;
+#define NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING 3
+extern const char *ui_text_onboarding[];
+extern const char *ui_text_onboarding_complete;
 
 extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_advanced_settings[];

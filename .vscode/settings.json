@@ -4,7 +4,8 @@
 
 {
     "cmake.configureSettings": {
-        "CMAKE_BUILD_PLATFORM":"Device"
+        "CMAKE_BUILD_PLATFORM":"Device",
+        "FIRMWARE_TYPE":"Main",
     },
     "files.associations": {
         "*.html": "html",
