@@ -78,9 +78,9 @@
  *****************************************************************************/
 #define HANDLE_P0_EVENTS(p0_event)                                             \
   do {                                                                         \
-    if (true == p0_event.inactivity_evt) {                                     \
+    if (true == (p0_event).inactivity_evt) {                                   \
       return CARD_OPERATION_P0_TIMEOUT_OCCURED;                                \
-    } else if (true == p0_event.abort_evt) {                                   \
+    } else if (true == (p0_event).abort_evt) {                                 \
       return CARD_OPERATION_P0_ABORT_OCCURED;                                  \
     }                                                                          \
   } while (0)
@@ -221,7 +221,10 @@ static card_error_type_e handle_wait_for_card_selection(
  *****************************************************************************/
 
 card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
+  ASSERT(NULL != card_data);
+
   card_data->error_type = CARD_OPERATION_DEFAULT_INVALID;
+  card_data->error_message = NULL;
   card_data->nfc_data.recovery_mode = 0;
   if (!card_data->nfc_data.card_absent_retries) {
     card_data->nfc_data.card_absent_retries = 100;
@@ -277,6 +280,11 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
 }
 
 card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
+  ASSERT(NULL != card_data);
+
+  card_data->error_type = CARD_OPERATION_DEFAULT_INVALID;
+  card_data->error_message = NULL;
+
   LOG_ERROR("nfc error occured (0x%04X)\n", card_data->nfc_data.status);
   switch (card_data->nfc_data.status) {
     case SW_NO_ERROR:
@@ -343,6 +351,8 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
 }
 
 bool load_card_session_key(uint8_t *card_key_id) {
+  ASSERT(NULL != card_key_id);
+
   int8_t keystore_index = is_paired(card_key_id);
 
   if (-1 == keystore_index) {
