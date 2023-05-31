@@ -102,27 +102,15 @@ typedef struct joystick_step {
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Checks validity of the entry-point training context data.
- * @details The function will ensure the following requirements:
- * <ol>
- * <li> stale p0 events do not exist at entry. </li>
- * <li> ensure data validity- received query if & is correctly decoded <li>
- * </ol>
- * In case of failure, the function will convey appropriate error to host. The
- * caller function need not handle the usb event as this function does that for
- * all the early exit cases.
+ * @brief This function returns the which_request tag of request of type
+ * manager_train_joystick_request_t
  *
- * @return Whether the check is pass or fail.
+ * @param request Reference to query
+ * @return pb_size_t The which_request tag held in the query
  */
-static bool validate_training_request(manager_query_t *query);
-
-/**
- * @brief Fill the error in the structure generated via protobuf.
- * @details The function sets the necessary fields for the data related errors.
- */
-static void send_training_error(uint32_t error_code);
+static pb_size_t get_which_request(
+    const manager_train_joystick_request_t *request);
 
 /**
  * @brief Sends the encoded message via usb api to the host.
@@ -133,7 +121,7 @@ static void send_training_error(uint32_t error_code);
  * @param training Reference to a filled structure instance of
  * manager_train_joystick_response_t
  */
-static void send_msg_to_host(manager_train_joystick_response_t *training);
+static void send_training_response(manager_train_joystick_response_t *resp);
 
 /**
  * @brief Used to handle each joystick training
@@ -158,43 +146,18 @@ static bool training_step(const joystick_step_t *step);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-static bool validate_training_request(manager_query_t *query) {
-  // verify host query data is correct
-  manager_train_joystick_request_t *req = &query->train_joystick;
-  if (MANAGER_QUERY_TRAIN_JOYSTICK_TAG != query->which_request ||
-      MANAGER_TRAIN_JOYSTICK_REQUEST_INITIATE_TAG != req->which_request) {
-    send_training_error(1);    // TODO: use correct data-error code
-    return false;
-  }
-
-  // TODO: check the request with what device knows
-  return true;
+static pb_size_t get_which_request(
+    const manager_train_joystick_request_t *request) {
+  return request->which_request;
 }
 
-static void send_training_error(uint32_t error_code) {
-  manager_train_joystick_response_t training =
-      MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
-  training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_COMMON_ERROR_TAG;
-  training.common_error.which_error =
-      ERROR_COMMON_ERROR_DEVICE_SETUP_REQUIRED_TAG;
-  training.common_error.device_setup_required = error_code;
-  send_msg_to_host(&training);
-}
-
-static void send_msg_to_host(manager_train_joystick_response_t *training) {
-  // TODO: Eventually MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE will be
-  // replaced by MANAGER_RESULT_SIZE when option files for manager are complete
-  uint8_t payload[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
-  manager_result_t msg = MANAGER_RESULT_INIT_ZERO;
-  size_t msg_size = 0;
-  msg.which_response = MANAGER_RESULT_TRAIN_JOYSTICK_TAG;
-
-  memcpy(
-      &msg.train_joystick, training, sizeof(manager_train_joystick_response_t));
-  encode_manager_result(
-      &msg, payload, MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE, &msg_size);
-  usb_send_msg(payload, msg_size);
+static void send_training_response(manager_train_joystick_response_t *resp) {
+  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
+  memcpy(&(result.train_joystick),
+         resp,
+         sizeof(manager_train_joystick_response_t));
+  manager_send_result(&result);
+  return;
 }
 
 static bool training_step(const joystick_step_t *step) {
@@ -218,7 +181,15 @@ static bool training_step(const joystick_step_t *step) {
 void manager_joystick_training(manager_query_t *query) {
   /* Validate if this flow is allowed */
   if (false == onboarding_step_allowed(ONBOARDING_JOYSTICK_TRAINING)) {
-    // TODO: Reject query
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    return;
+  }
+
+  /* Validate request */
+  if (MANAGER_TRAIN_JOYSTICK_REQUEST_INITIATE_TAG ==
+      get_which_request(&query->train_joystick)) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    return;
   }
 
   const joystick_step_t steps[JOYSTICK_TRAIN_STEPS] = {
@@ -240,10 +211,6 @@ void manager_joystick_training(manager_query_t *query) {
 
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_IDLE);
 
-  if (false == validate_training_request(query)) {
-    return;
-  }
-
   uint8_t step_index = 0;
   for (step_index = 0; step_index < JOYSTICK_TRAIN_STEPS; step_index++) {
     const joystick_step_t *step = &steps[step_index];
@@ -259,7 +226,7 @@ void manager_joystick_training(manager_query_t *query) {
       MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
 
   training.which_response = MANAGER_TRAIN_JOYSTICK_RESPONSE_RESULT_TAG;
-  send_msg_to_host(&training);
+  send_training_response(&training);
 
   delay_scr_init(ui_text_joystick_checkup_complete, DELAY_TIME);
 }

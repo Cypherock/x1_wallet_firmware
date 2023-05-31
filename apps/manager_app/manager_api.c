@@ -63,6 +63,7 @@
 
 #include "assert_conf.h"
 #include "common_error.h"
+#include "events.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 #include "usb_api.h"
@@ -74,6 +75,12 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define P0_HANDLER(event)                                                      \
+  do {                                                                         \
+    if (true == event.p0_event.flag) {                                         \
+      return false;                                                            \
+    }                                                                          \
+  } while (0)
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -101,8 +108,10 @@
 bool decode_manager_query(const uint8_t *data,
                           uint16_t data_size,
                           manager_query_t *query_out) {
-  if (NULL == data || NULL == query_out || 0 == data_size)
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
+  }
 
   /* Initialize manager query */
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
@@ -163,16 +172,32 @@ void manager_send_data_flow_error(error_data_flow_t error_code) {
       init_manager_result(MANAGER_RESULT_COMMON_ERROR_TAG);
   result.common_error =
       init_common_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, error_code);
-  encode_and_send_manager_result(&result);
+  manager_send_result(&result);
 }
 
-void encode_and_send_manager_result(manager_result_t *result) {
+void manager_send_result(manager_result_t *result) {
   // TODO: Eventually 1024 will be replaced by MANAGER_RESULT_SIZE when all
   // option files for manager app are complete
-  uint8_t result_buffer[1024] = {0};
-
+  uint8_t buffer[1024] = {0};
   size_t bytes_encoded = 0;
-  ASSERT(encode_manager_result(
-      result, &result_buffer[0], sizeof(result_buffer), &bytes_encoded));
-  usb_send_msg(&result_buffer[0], bytes_encoded);
+  ASSERT(encode_manager_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  usb_send_msg(&buffer[0], bytes_encoded);
+}
+
+bool manager_get_query(manager_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  /* Return false in case P0 event occurs */
+  P0_HANDLER(event);
+
+  if (!decode_manager_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
+
+  if (!check_manager_query(query, exp_query_tag)) {
+    return false;
+  }
+
+  return true;
 }

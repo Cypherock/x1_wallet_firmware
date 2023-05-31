@@ -160,6 +160,6 @@ void get_device_info_flow(const manager_query_t *query) {
     manager_result_t result =
         init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
     result.get_device_info = get_device_info();
-    encode_and_send_manager_result(&result);
+    manager_send_result(&result);
   }
 }

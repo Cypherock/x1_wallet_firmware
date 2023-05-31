@@ -94,6 +94,17 @@ void manager_send_data_flow_error(error_data_flow_t error_code);
  *
  * @param result The result which needs to be sent to the host.
  */
-void encode_and_send_manager_result(manager_result_t *result);
+void manager_send_result(manager_result_t *result);
 
+/**
+ * @brief This API receives request of type manager_query_t of type
+ * exp_query_tag from the host.
+ *
+ * @param query The reference to which the query needs to be populated
+ * @param exp_query_tag The expected tag of the query
+ * @return true If the query was recieved from the host matching the tag
+ * @return false If the request timed out or the recieved request did not match
+ * the tag
+ */
+bool manager_get_query(manager_query_t *query, pb_size_t exp_query_tag);
 #endif
