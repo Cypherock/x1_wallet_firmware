@@ -64,6 +64,7 @@
 #include "events.h"
 #include "manager_api.h"
 #include "manager_app.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 
@@ -130,6 +131,14 @@ static void send_auth_device_response(manager_auth_device_response_t *resp);
  *
  */
 static void send_flow_complete(void);
+
+/**
+ * @brief This function handles the verification result of the device
+ * authentication process
+ *
+ * @param verified true or false, based on boolean result sent by the host.
+ */
+static void auth_device_handle_response(bool verified);
 
 /**
  * @brief This function is the request handler for the SIGN_SERIAL_NUM state of
@@ -223,6 +232,18 @@ static void send_flow_complete(void) {
   return;
 }
 
+static void auth_device_handle_response(bool verified) {
+  if (true == verified) {
+    /* Update onboarding status to save progress */
+    onboarding_set_step_done(ONBOARDING_DEVICE_AUTH);
+    set_auth_state(DEVICE_AUTHENTICATED);
+  } else {
+    set_auth_state(DEVICE_NOT_AUTHENTICATED);
+  }
+
+  return;
+}
+
 static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
   pb_size_t request_type = get_request_type(&query->auth_device);
   device_auth_state_e next_state = FLOW_COMPLETE;
@@ -276,7 +297,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
        * MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG, it's an unexpected step in
        * the flow. The device will treat it as an attempt to force device
        * authentication status */
-      device_auth_handle_response(false);
+      auth_device_handle_response(false);
       send_flow_complete();
 
       delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
@@ -304,7 +325,7 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
     }
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
       bool verified = query->auth_device.result.verified;
-      device_auth_handle_response(verified);
+      auth_device_handle_response(verified);
       send_flow_complete();
 
       if (true == verified) {
@@ -329,6 +350,11 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void device_authentication_flow(const manager_query_t *query) {
+  /* Validate if this flow is allowed */
+  if (false == onboarding_step_allowed(ONBOARDING_DEVICE_AUTH)) {
+    // TODO: Reject query
+  }
+
   /* First state of the device authentication would be SIGN_SERIAL_NUMBER */
   device_auth_state_e state = SIGN_SERIAL_NUM;
   evt_status_t event = {0};

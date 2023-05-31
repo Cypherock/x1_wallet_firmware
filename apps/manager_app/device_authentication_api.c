@@ -63,7 +63,6 @@
 #include "nist256p1.h"
 #include "sec_flash.h"
 #include "string.h"
-#include "ui_delay.h"
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
 #endif
@@ -289,16 +288,6 @@ sign_random_challenge(uint8_t *challenge) {
   /* Zeroise IO protection key */
   memset(&io_protection_key[0], 0, sizeof(io_protection_key));
   return response;
-}
-
-void device_auth_handle_response(bool verified) {
-  if (true == verified) {
-    set_auth_state(DEVICE_AUTHENTICATED);
-  } else {
-    set_auth_state(DEVICE_NOT_AUTHENTICATED);
-  }
-
-  return;
 }
 
 void helper_get_gendig_hash(atecc_slot_define_t slot,
