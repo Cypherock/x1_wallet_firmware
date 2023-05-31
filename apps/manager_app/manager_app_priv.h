@@ -62,4 +62,11 @@ void manager_joystick_training(manager_query_t *query);
  */
 void device_authentication_flow(const manager_query_t *query);
 
+/**
+ * @brief Guided card training during the user on-boarding
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void manager_card_training(manager_query_t *query);
+
 #endif
