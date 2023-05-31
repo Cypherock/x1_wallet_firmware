@@ -139,4 +139,12 @@ typedef struct Flash_Struct {
  */
 void flash_erase();
 
+/**
+ * @brief This API clears the user data - for example: pairing data, wallets,
+ * settings, but preserves some data onto the flash memory
+ * For now, the only thing preserved is the onboarding_step
+ *
+ */
+void clear_user_data(void);
+
 #endif
