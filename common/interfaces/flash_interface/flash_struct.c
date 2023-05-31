@@ -83,7 +83,8 @@
 #define FLASH_STRUCT_TLV_SIZE                                                  \
   (6 + 3 + FAMILY_ID_SIZE + 3 + sizeof(uint32_t) + 3 +                         \
    (MAX_WALLETS_ALLOWED * ((15 * 3) + sizeof(Flash_Wallet))) + 3 +             \
-   sizeof(uint8_t) + 3 + sizeof(uint8_t))
+   sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 +           \
+   sizeof(uint8_t))
 
 /// The size of tlv that will be read and written to flash. Since we read/write
 /// in multiples of 4 hence it is essential to make the size divisible by 4.

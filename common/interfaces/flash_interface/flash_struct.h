@@ -107,7 +107,8 @@ typedef struct Flash_Wallet {
  * @see
  * @since v1.0.0
  *
- * @note
+ * @note Need to manually update FLASH_STRUCT_TLV_SIZE in case any change is
+ * done in Flash_struct
  */
 #pragma pack(push, 1)
 // TODO: Refactor flash storage, reduce erase cycles
