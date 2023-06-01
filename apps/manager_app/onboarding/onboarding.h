@@ -22,6 +22,7 @@
  *****************************************************************************/
 /* MACROS defining the steps for device onboarding. The integer value is in
  * increasing order based on the flow requirements. */
+/* These macros must match protobuf enum manager_onboarding_step_t */
 #define ONBOARDING_VIRGIN_DEVICE 0
 #define ONBOARDING_DEVICE_AUTH 1
 #define ONBOARDING_JOYSTICK_TRAINING 2
