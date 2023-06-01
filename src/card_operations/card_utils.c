@@ -1,8 +1,8 @@
 /**
- * @file    ${file_name}
+ * @file    card_utils.c
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   Card operations common utilities
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,13 +60,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "buzzer.h"
+#include "card_utils.h"
+
 #include "card_internal.h"
 #include "constant_texts.h"
 #include "controller_tap_cards.h"
 #include "events.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -98,8 +100,10 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-NFC_connection_data get_default_nfc_data(uint8_t *family_id,
-                                         uint8_t acceptable_cards) {
+NFC_connection_data init_nfc_connection_data(uint8_t *family_id,
+                                             uint8_t acceptable_cards) {
+  ASSERT(NULL != family_id);
+
   NFC_connection_data nfc_data = {0};
 
   nfc_data.acceptable_cards = acceptable_cards;
@@ -108,7 +112,9 @@ NFC_connection_data get_default_nfc_data(uint8_t *family_id,
   return nfc_data;
 }
 
-card_error_type_e wait_for_user_confirm(const char *error_message) {
+card_error_type_e display_error_message(const char *error_message) {
+  ASSERT(NULL != error_message);
+
   message_scr_init(error_message);
 
   evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
@@ -126,6 +132,7 @@ card_error_type_e wait_for_user_confirm(const char *error_message) {
 }
 
 void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
+  ASSERT(NULL != nfc_data && NULL != serial);
   uint8_t card_number = 0xFF;
 
   memcpy(serial, nfc_data->family_id, FAMILY_ID_SIZE);

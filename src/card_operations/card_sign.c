@@ -2,6 +2,7 @@
  * @file    card_sign.c
  * @author  Cypherock X1 Team
  * @brief   Source file for card sign data operation
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -154,8 +155,8 @@ static ISO7816 get_card_auth_signature(uint8_t *sign_data,
 static void handle_card_init_and_sign_data_operation(
     card_operation_data_t *card_data,
     card_sign_data_config_t *sign_data) {
-  card_data->nfc_data =
-      get_default_nfc_data(sign_data->family_id, sign_data->acceptable_cards);
+  card_data->nfc_data = init_nfc_connection_data(sign_data->family_id,
+                                                 sign_data->acceptable_cards);
   nfc_deselect_card();
 
   card_initialize_applet(card_data);
@@ -191,7 +192,7 @@ static card_error_type_e handle_sign_data_operation_response(
       break;
 
     case CARD_OPERATION_RETAP_BY_USER_REQUIRED:
-      temp_error = wait_for_user_confirm(card_data->error_message);
+      temp_error = display_error_message(card_data->error_message);
 
       if (CARD_OPERATION_SUCCESS != temp_error) {
         return temp_error;
@@ -201,7 +202,7 @@ static card_error_type_e handle_sign_data_operation_response(
       break;
 
     case CARD_OPERATION_ABORT_OPERATION:
-      wait_for_user_confirm(card_data->error_message);
+      display_error_message(card_data->error_message);
       break;
 
     default:
