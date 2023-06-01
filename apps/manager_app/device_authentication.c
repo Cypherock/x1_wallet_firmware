@@ -235,7 +235,7 @@ static void send_flow_complete(void) {
 static void auth_device_handle_response(bool verified) {
   if (true == verified) {
     /* Update onboarding status to save progress */
-    onboarding_set_step_done(ONBOARDING_DEVICE_AUTH);
+    onboarding_set_step_done(MANAGER_ONBOARDING_STEP_DEVICE_AUTH);
     set_auth_state(DEVICE_AUTHENTICATED);
   } else {
     set_auth_state(DEVICE_NOT_AUTHENTICATED);
@@ -351,7 +351,7 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
  *****************************************************************************/
 void device_authentication_flow(const manager_query_t *query) {
   /* Validate if this flow is allowed */
-  if (false == onboarding_step_allowed(ONBOARDING_DEVICE_AUTH)) {
+  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_DEVICE_AUTH)) {
     // TODO: Reject query
   }
 

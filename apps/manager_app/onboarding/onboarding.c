@@ -154,38 +154,39 @@ const flow_step_t *onboarding_get_step(void) {
   return &onboarding_flow;
 }
 
-onboarding_steps_e onboarding_get_last_step(void) {
-  return get_onboarding_step();
+manager_onboarding_step_t onboarding_get_last_step(void) {
+  return (manager_onboarding_step_t)get_onboarding_step();
 }
 
-void onboarding_set_step_done(const onboarding_steps_e next_step) {
+void onboarding_set_step_done(const manager_onboarding_step_t next_step) {
   /* Validate next_step */
-  if (ONBOARDING_COMPLETE < next_step) {
+  if (MANAGER_ONBOARDING_STEP_COMPLETE < next_step) {
     return;
   }
 
-  onboarding_steps_e last_step = onboarding_get_last_step();
+  manager_onboarding_step_t last_step = onboarding_get_last_step();
 
   /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
    * ensure we never go back a step */
   if ((DEFAULT_VALUE_IN_FLASH == last_step) || (last_step < next_step)) {
-    save_onboarding_step(next_step);
+    save_onboarding_step((uint8_t)next_step);
   }
 
   return;
 }
 
-bool onboarding_step_allowed(const onboarding_steps_e step) {
+bool onboarding_step_allowed(const manager_onboarding_step_t step) {
   /* Validate step */
-  if (ONBOARDING_COMPLETE < step) {
+  if (MANAGER_ONBOARDING_STEP_COMPLETE < step) {
     return false;
   }
 
-  onboarding_steps_e last_step = onboarding_get_last_step();
+  manager_onboarding_step_t last_step = onboarding_get_last_step();
 
   /* Only allow steps that are already completed, or the new step is just the
    * next step */
-  if ((ONBOARDING_COMPLETE == last_step) || (step <= last_step + 1)) {
+  if ((MANAGER_ONBOARDING_STEP_COMPLETE == last_step) ||
+      (step <= last_step + 1)) {
     return true;
   }
 

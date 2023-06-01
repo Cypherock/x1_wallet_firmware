@@ -217,7 +217,7 @@ static bool training_step(const joystick_step_t *step) {
 
 void manager_joystick_training(manager_query_t *query) {
   /* Validate if this flow is allowed */
-  if (false == onboarding_step_allowed(ONBOARDING_JOYSTICK_TRAINING)) {
+  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_JOYSTICK_TRAINING)) {
     // TODO: Reject query
   }
 
@@ -253,7 +253,7 @@ void manager_joystick_training(manager_query_t *query) {
     }
   }
 
-  onboarding_set_step_done(ONBOARDING_JOYSTICK_TRAINING);
+  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_JOYSTICK_TRAINING);
 
   manager_train_joystick_response_t training =
       MANAGER_TRAIN_JOYSTICK_RESPONSE_INIT_ZERO;
