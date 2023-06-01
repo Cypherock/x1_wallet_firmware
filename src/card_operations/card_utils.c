@@ -100,7 +100,7 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-NFC_connection_data init_nfc_connection_data(uint8_t *family_id,
+NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
                                              uint8_t acceptable_cards) {
   ASSERT(NULL != family_id);
 

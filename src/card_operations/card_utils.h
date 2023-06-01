@@ -13,6 +13,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_operations.h"
+#include "controller_tap_cards.h"
 #include "stdbool.h"
 
 /*****************************************************************************
@@ -40,7 +42,7 @@
  *
  * @return The initialized NFC connection data.
  */
-NFC_connection_data init_nfc_connection_data(uint8_t *family_id,
+NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
                                              uint8_t acceptable_cards);
 
 /**
