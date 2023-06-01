@@ -954,4 +954,18 @@ uint8_t set_keystore_used_status(uint8_t keystore_index,
  */
 void flash_delete_all_wallets();
 
+/**
+ * @brief It saves the onboarding step on the flash memory
+ *
+ * @param onboarding_step The value of step that needs to be stored
+ */
+void save_onboarding_step(const uint8_t onboarding_step);
+
+/**
+ * @brief Get the onboarding step value from the flash
+ *
+ * @return uint8_t The onboarding step
+ */
+uint8_t get_onboarding_step(void);
+
 #endif
