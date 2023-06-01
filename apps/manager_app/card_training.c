@@ -142,8 +142,7 @@ void manager_card_training(manager_query_t *query) {
   // TODO: verify on-boarding state for safety
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
 
-  instruction_scr_init("Place any card below the device to test card tapping",
-                       NULL);
+  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
 
   check_pairing_result_t pair_result = {false, 0};
   manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
@@ -165,7 +164,7 @@ void manager_card_training(manager_query_t *query) {
   send_message_to_host(&result);
 
   char msg[64] = "";
-  snprintf(msg, sizeof(msg), "Card #%d Tapped", pair_result.card_number);
+  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
   delay_scr_init(msg, DELAY_TIME);
   // TODO: Show wallets if exist and wait for user acceptance on via app
 }

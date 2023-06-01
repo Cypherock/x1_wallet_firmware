@@ -63,7 +63,8 @@
 #include "check_pairing.h"
 
 #include "card_internal.h"
-#include "ui_delay.h"
+#include "events.h"
+#include "ui_message.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -122,9 +123,11 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
 
   memset(result, 0, sizeof(check_pairing_result_t));
   result->card_number = 0;
-  card_operation_data_t operation_data = {tap_card_data, NULL, 0};
+  card_operation_data_t operation_data = {{0}, NULL, 0};
   init_tap_card_data(&operation_data.nfc_data);
   status = card_initialize_applet(&operation_data);
+  buzzer_start(100);
+  nfc_deselect_card();
 
   if (CARD_OPERATION_SUCCESS == status) {
     result->card_number =
@@ -136,12 +139,12 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
       result->is_paired = true;
     }
   } else {
-    if (NULL != operation_data.error_message) {
-      delay_scr_init(operation_data.error_message, DELAY_TIME);
-    }
     LOG_SWV("%s (%d):", __func__, __LINE__);
     LOG_CRITICAL("COCP %04X\n", operation_data.nfc_data.status);
+    if (NULL != operation_data.error_message) {
+      message_scr_init(operation_data.error_message);
+      get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+    }
   }
-  buzzer_start(100);
   return status;
 }
