@@ -177,37 +177,38 @@ static void handle_card_init_and_sign_data_operation(
 static card_error_type_e handle_sign_data_operation_response(
     card_operation_data_t *card_data,
     card_sign_data_config_t *sign_data) {
+  card_error_type_e temp_error = CARD_OPERATION_DEFAULT_INVALID;
+
   switch (card_data->error_type) {
     case CARD_OPERATION_SUCCESS:
       if (false == sign_data->skip_card_removal) {
-        card_data->error_type = wait_for_card_removal();
+        temp_error = wait_for_card_removal();
 
-        if (CARD_OPERATION_SUCCESS != card_data->error_type) {
-          return card_data->error_type;
+        if (CARD_OPERATION_SUCCESS != temp_error) {
+          return temp_error;
         }
       }
-
-      return CARD_OPERATION_SUCCESS;
       break;
 
     case CARD_OPERATION_RETAP_BY_USER_REQUIRED:
-      card_data->error_type = wait_for_user_confirm(card_data->error_message);
-      if (CARD_OPERATION_SUCCESS == card_data->error_type) {
-        instruction_scr_init(sign_data->message, sign_data->heading);
+      temp_error = wait_for_user_confirm(card_data->error_message);
+
+      if (CARD_OPERATION_SUCCESS != temp_error) {
+        return temp_error;
       }
 
-      return card_data->error_type;
+      instruction_scr_init(sign_data->message, sign_data->heading);
       break;
 
     case CARD_OPERATION_ABORT_OPERATION:
-      card_data->error_type = wait_for_user_confirm(card_data->error_message);
-      return CARD_OPERATION_ABORT_OPERATION;
+      wait_for_user_confirm(card_data->error_message);
       break;
 
     default:
-      return card_data->error_type;
       break;
   }
+
+  return card_data->error_type;
 }
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -229,8 +230,10 @@ card_error_type_e card_sign_auth_data(card_sign_data_config_t *sign_data) {
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       continue;
     } else {
-      return card_data.error_type;
+      break;
     }
   }
+
+  nfc_deselect_card();
   return card_data.error_type;
 }
