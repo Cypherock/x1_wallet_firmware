@@ -1,7 +1,8 @@
 /**
- * @file    manager_app.c
+ * @file    card_utils.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Card operations common utilities
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +60,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
+#include "card_utils.h"
 
-#include "manager_api.h"
-#include "manager_app_priv.h"
-#include "onboarding.h"
-#include "status_api.h"
+#include "card_internal.h"
+#include "constant_texts.h"
+#include "controller_tap_cards.h"
+#include "events.h"
+#include "ui_instruction.h"
+#include "ui_message.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,15 +82,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -97,58 +100,64 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
+                                             uint8_t acceptable_cards) {
+  NFC_connection_data nfc_data = {0};
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+  nfc_data.acceptable_cards = acceptable_cards;
+  if (NULL != family_id) {
+    memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  return nfc_data;
+}
 
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+card_error_type_e display_error_message(const char *error_message) {
+  ASSERT(NULL != error_message);
 
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      device_authentication_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_joystick_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      manager_card_training(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
-    }
+  message_scr_init(error_message);
+
+  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == status.p0_event.flag) {
+    return CARD_OPERATION_P0_OCCURED;
   }
 
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
+  if (true == status.ui_event.event_occured &&
+      UI_EVENT_CONFIRM == status.ui_event.event_type) {
+    return CARD_OPERATION_SUCCESS;
+  }
 
-  return;
+  return CARD_OPERATION_DEFAULT_INVALID;
+}
+
+void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
+  ASSERT(NULL != nfc_data && NULL != serial);
+  uint8_t card_number = 0xFF;
+
+  memcpy(serial, nfc_data->family_id, FAMILY_ID_SIZE);
+  card_number = decode_card_number(nfc_data->tapped_card);
+  serial[CARD_ID_SIZE - 1] = card_number;
+}
+
+card_error_type_e wait_for_card_removal(void) {
+  if (0 != nfc_en_wait_for_card_removal_task()) {
+    // Card not selected or removed
+    return CARD_OPERATION_SUCCESS;
+  }
+
+  instruction_scr_change_text(ui_text_remove_card_prompt, true);
+
+  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
+  if (true == status.p0_event.flag) {
+    return CARD_OPERATION_P0_OCCURED;
+  }
+
+  if (true == status.nfc_event.event_occured &&
+      NFC_EVENT_CARD_REMOVED == status.nfc_event.event_type) {
+    return CARD_OPERATION_SUCCESS;
+  }
+
+  // Shouldn't reach here
+  return CARD_OPERATION_DEFAULT_INVALID;
 }

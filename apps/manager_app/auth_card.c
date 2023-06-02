@@ -316,9 +316,9 @@ static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   }
 
   auth_card_data->ctx.pair_card_required = false;
-  if (auth_card_data->query->auth_card.initiate.has_pair_card) {
+  if (auth_card_data->query->auth_card.initiate.has_is_pair_required) {
     auth_card_data->ctx.pair_card_required =
-        auth_card_data->query->auth_card.initiate.pair_card;
+        auth_card_data->query->auth_card.initiate.is_pair_required;
   }
   snprintf(auth_card_data->ctx.message,
            sizeof(auth_card_data->ctx.message),

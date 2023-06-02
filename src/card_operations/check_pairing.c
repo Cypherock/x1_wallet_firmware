@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.c
+ * @file    check_pairing.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Fetches applet information and detects pairing status.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
 
-#include "manager_api.h"
-#include "manager_app_priv.h"
-#include "onboarding.h"
-#include "status_api.h"
+#include "check_pairing.h"
+
+#include "card_internal.h"
+#include "events.h"
+#include "ui_message.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +79,17 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * TODO: add description when this api gets concrete definition
+ *
+ * @param connection_data
+ */
+static void init_tap_card_data(NFC_connection_data *connection_data);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,68 +98,55 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static void init_tap_card_data(NFC_connection_data *connection_data) {
+  memset(connection_data, 0, sizeof(NFC_connection_data));
+  connection_data->retries = 5;
+  connection_data->desktop_control = false;
+  connection_data->acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  memset(connection_data->family_id, 0xff, sizeof(connection_data->family_id));
+  memset(connection_data->card_key_id, 0, sizeof(connection_data->card_key_id));
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+card_error_type_e card_check_pairing(check_pairing_result_t *result) {
+  LOG_SWV("%s (%d): %p\n", __func__, __LINE__, result);
+  card_error_type_e status = CARD_OPERATION_DEFAULT_INVALID;
+  if (NULL == result) {
+    return status;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  memset(result, 0, sizeof(check_pairing_result_t));
+  result->card_number = 0;
+  card_operation_data_t operation_data = {{0}, NULL, 0};
+  init_tap_card_data(&operation_data.nfc_data);
+  status = card_initialize_applet(&operation_data);
+  buzzer_start(100);
+  nfc_deselect_card();
 
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
+  if (CARD_OPERATION_SUCCESS == status) {
+    result->card_number =
+        decode_card_number(operation_data.nfc_data.tapped_card);
+    memcpy(
+        result->family_id, operation_data.nfc_data.family_id, FAMILY_ID_SIZE);
+    if (-1 == is_paired(operation_data.nfc_data.card_key_id)) {
+      // keystore index is -1; the keystore does not have key-id
+      result->is_paired = false;
+    } else {
+      result->is_paired = true;
     }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      device_authentication_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_joystick_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      manager_card_training(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
+  } else {
+    LOG_SWV("%s (%d):", __func__, __LINE__);
+    LOG_CRITICAL("COCP %04X\n", operation_data.nfc_data.status);
+    if (NULL != operation_data.error_message) {
+      message_scr_init(operation_data.error_message);
+      get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
     }
   }
-
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
-
-  return;
+  return status;
 }

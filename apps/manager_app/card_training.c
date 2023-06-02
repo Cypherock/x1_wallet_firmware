@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.c
+ * @file    card_training.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Card training flow for user on-boarding.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
 
+#include "check_pairing.h"
+#include "flash_api.h"
 #include "manager_api.h"
-#include "manager_app_priv.h"
-#include "onboarding.h"
 #include "status_api.h"
+#include "ui_delay.h"
+#include "ui_instruction.h"
+#include "wallet.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +81,24 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * TODO: Replace with api provided by manager app
+ *
+ * @param training
+ */
+static void send_message_to_host(manager_train_card_response_t *training);
+
+/**
+ * TODO: Replace with api provided by manager app
+ *
+ * @param error_code
+ */
+static void send_training_error(uint32_t error_code);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,68 +107,67 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static void send_message_to_host(manager_train_card_response_t *training) {
+  manager_result_t result =
+      get_manager_result_template(MANAGER_RESULT_TRAIN_CARD_TAG);
+  uint8_t result_buffer[1024] = {0};
+
+  memcpy(&result.train_card, training, sizeof(manager_train_card_response_t));
+  ASSERT(encode_and_send_manager_result(
+      &result, result_buffer, sizeof(result_buffer)));
+}
+
+static void send_training_error(uint32_t error_code) {
+  manager_train_card_response_t training =
+      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
+  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
+  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
+  training.common_error.unknown_error = error_code;
+  send_message_to_host(&training);
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+void manager_card_training(manager_query_t *query) {
+  LOG_SWV("%s (%d)\n", __func__, __LINE__);
+  if (NULL == query) {
+    // TODO: verify card training query tag for completeness
     return;
   }
+  // TODO: verify on-boarding state for safety
+  core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
 
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      device_authentication_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_joystick_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      manager_card_training(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
-    }
+  check_pairing_result_t pair_result = {false, 0, {0}};
+  manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
+  result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
+  card_error_type_e status = card_check_pairing(&pair_result);
+  if (CARD_OPERATION_SUCCESS != status) {
+    LOG_SWV("%s (%d)\n", __func__, __LINE__);
+    send_training_error(1);
+    return;
+  }
+  result.result.card_paired = pair_result.is_paired;
+  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+    set_family_id_flash(pair_result.family_id);
   }
 
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
+  // always pair the card
+  // TODO: Update the pairing flow to support flexible storage of shared key
 
-  return;
+  // TODO: Fetch wallet list; send dummy data
+  result.result.card_paired = false;
+  result.result.wallet_list_count = 0;
+  send_message_to_host(&result);
+
+  char msg[64] = "";
+  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
+  delay_scr_init(msg, DELAY_TIME);
+  // TODO: Show wallets if exist and wait for user acceptance on via app
 }
