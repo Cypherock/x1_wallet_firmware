@@ -106,9 +106,8 @@ static ISO7816 get_card_auth_signature(uint8_t *sign_data,
  * @param card_data Pointer to the smart card operation data.
  * @param sign_data Pointer to the data to be signed.
  */
-static void handle_card_init_and_sign_data_operation(
-    card_operation_data_t *card_data,
-    card_sign_data_config_t *sign_data);
+static void handle_card_sign_data_operation(card_operation_data_t *card_data,
+                                            card_sign_data_config_t *sign_data);
 
 /**
  * @brief Handles the response of a smart card sign operation.
@@ -153,15 +152,16 @@ static ISO7816 get_card_auth_signature(uint8_t *sign_data,
   return status;
 }
 
-static void handle_card_init_and_sign_data_operation(
+static void handle_card_sign_data_operation(
     card_operation_data_t *card_data,
     card_sign_data_config_t *sign_data) {
+  /* TODO: Keep retries and card_removed_retries when intializing nfc_data */
   card_data->nfc_data = init_nfc_connection_data(sign_data->family_id,
                                                  sign_data->acceptable_cards);
   card_initialize_applet(card_data);
 
   if (CARD_OPERATION_SUCCESS == card_data->error_type) {
-    if (DEFAULT_UINT32_IN_FLASH == *(uint32_t *)(sign_data->family_id)) {
+    if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(sign_data->family_id)) {
       memcpy(
           sign_data->family_id, card_data->nfc_data.family_id, FAMILY_ID_SIZE);
     }
@@ -223,7 +223,7 @@ card_error_type_e card_sign_auth_data(card_sign_data_config_t *sign_data) {
   instruction_scr_init(sign_data->message, sign_data->heading);
 
   while (1) {
-    handle_card_init_and_sign_data_operation(&card_data, sign_data);
+    handle_card_sign_data_operation(&card_data, sign_data);
 
     card_data.error_type =
         handle_sign_data_operation_response(&card_data, sign_data);

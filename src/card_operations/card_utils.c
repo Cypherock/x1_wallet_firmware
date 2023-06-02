@@ -102,12 +102,12 @@
  *****************************************************************************/
 NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
                                              uint8_t acceptable_cards) {
-  ASSERT(NULL != family_id);
-
   NFC_connection_data nfc_data = {0};
 
   nfc_data.acceptable_cards = acceptable_cards;
-  memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
+  if (NULL != family_id) {
+    memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
+  }
 
   return nfc_data;
 }
@@ -141,11 +141,12 @@ void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
 }
 
 card_error_type_e wait_for_card_removal(void) {
-  instruction_scr_change_text(ui_text_remove_card_prompt, true);
   if (0 != nfc_en_wait_for_card_removal_task()) {
     // Card not selected or removed
     return CARD_OPERATION_SUCCESS;
   }
+
+  instruction_scr_change_text(ui_text_remove_card_prompt, true);
 
   evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
   if (true == status.p0_event.flag) {
