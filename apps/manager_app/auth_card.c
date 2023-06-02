@@ -112,6 +112,7 @@ typedef struct {
   char heading[30];
   char message[100];
   uint8_t acceptable_cards;
+  uint8_t family_id[FAMILY_ID_SIZE];
   bool pair_card_required;
 } auth_card_screen_ctx_t;
 
@@ -148,8 +149,11 @@ static manager_error_code_t send_auth_card_response(
  * authentication
  *
  * @param auth_card_data object of auth card data
+ * @return manager_error_code_t MANAGER_TASK_SUCCESS sent encoded data
+ * successfully, else error return
  */
-static void prepare_card_auth_context(auth_card_data_t *auth_card_data);
+static manager_error_code_t prepare_card_auth_context(
+    auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of card serial number.
@@ -300,10 +304,16 @@ static manager_error_code_t send_auth_card_response(
   return MANAGER_TASK_SUCCESS;
 }
 
-static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
+static manager_error_code_t prepare_card_auth_context(
+    auth_card_data_t *auth_card_data) {
   auth_card_data->ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
   if (auth_card_data->query->auth_card.initiate.has_card_index) {
+    if (4 < auth_card_data->query->auth_card.initiate.card_index ||
+        0 == auth_card_data->query->auth_card.initiate.card_index) {
+      /* TODO: Return invalid query error code to host*/
+      return MANAGER_TASK_DECODING_FAILED;
+    }
     auth_card_data->ctx.acceptable_cards = encode_card_number(
         auth_card_data->query->auth_card.initiate.card_index);
     snprintf(auth_card_data->ctx.heading,
@@ -317,14 +327,16 @@ static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   }
 
   auth_card_data->ctx.pair_card_required = false;
-  if (auth_card_data->query->auth_card.initiate.has_pair_card) {
+  if (auth_card_data->query->auth_card.initiate.has_is_pair_required) {
     auth_card_data->ctx.pair_card_required =
-        auth_card_data->query->auth_card.initiate.pair_card;
+        auth_card_data->query->auth_card.initiate.is_pair_required;
   }
   snprintf(auth_card_data->ctx.message,
            sizeof(auth_card_data->ctx.message),
            UI_TEXT_PLACE_CARD_TILL_BEEP,
            SIGN_SERIAL_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
+
+  memcpy(auth_card_data->ctx.family_id, get_family_id(), FAMILY_ID_SIZE);
 }
 
 static manager_error_code_t handle_sign_card_serial(
@@ -333,10 +345,9 @@ static manager_error_code_t handle_sign_card_serial(
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
 
-  uint8_t family_id[FAMILY_ID_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF};
   card_sign_data_config_t sign_serial_config =
       INIT_SIGN_SERIAL_CONFIG(auth_card_data->ctx.acceptable_cards,
-                              family_id,
+                              auth_card_data->ctx.family_id,
                               true,
                               auth_card_data->ctx.heading,
                               auth_card_data->ctx.message,
@@ -348,6 +359,9 @@ static manager_error_code_t handle_sign_card_serial(
       memcpy(resp->serial_signature.signature,
              sign_serial_config.signature,
              sizeof(resp->serial_signature.signature));
+      if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+        set_family_id_flash(auth_card_data->ctx.family_id);
+      }
       break;
 
     case CARD_OPERATION_P0_OCCURED:
@@ -377,10 +391,9 @@ static manager_error_code_t handle_sign_card_serial(
 static manager_error_code_t handle_sign_challenge(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  uint8_t family_id[FAMILY_ID_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF};
   card_sign_data_config_t sign_challenge_config = INIT_SIGN_CUSTOM_CONFIG(
       auth_card_data->ctx.acceptable_cards,
-      family_id,
+      auth_card_data->ctx.family_id,
       false,
       auth_card_data->ctx.heading,
       auth_card_data->ctx.message,
@@ -438,7 +451,12 @@ static manager_error_code_t handle_auth_card_initiate_query(
   // }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
-  prepare_card_auth_context(auth_card_data);
+
+  manager_error_code_t status = prepare_card_auth_context(auth_card_data);
+  if (MANAGER_TASK_SUCCESS != status) {
+    return status;
+  }
+
   return handle_sign_card_serial(auth_card_data, resp);
 }
 
@@ -486,7 +504,6 @@ static manager_error_code_t handle_auth_card_result_query(
         core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
         resp->flow_complete.dummy_field = 0;
-        delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
 
         return MANAGER_TASK_SUCCESS;
       }
@@ -563,6 +580,9 @@ void card_auth_handler(manager_query_t *query) {
     }
 
     send_auth_card_response(&resp);
+    if (MANAGER_AUTH_CARD_RESPONSE_COMMON_ERROR_TAG == resp.which_response) {
+      return;
+    }
     memzero(&resp, sizeof(resp));
 
     if (FLOW_COMPLETE_STATE) {
