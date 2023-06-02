@@ -178,6 +178,10 @@ void nfc_set_card_removed_event(void) {
 
 void nfc_en_select_card_task(void) {
   nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+
+  // Deselect card before selection, to avoid unexpected issues.
+  // Without deselection failure experienced on second time detection of the
+  // same card.
   nfc_deselect_card();
 }
 
