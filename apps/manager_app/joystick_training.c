@@ -109,14 +109,12 @@ typedef struct joystick_step {
  * @param request Reference to query
  * @return pb_size_t The which_request tag held in the query
  */
-static pb_size_t get_which_request(
-    const manager_train_joystick_request_t *request);
+static pb_size_t get_which_request(const manager_train_joystick_request_t *req);
 
 /**
- * @brief Sends the encoded message via usb api to the host.
- * @details The functions takes the value of fields from the provided reference
- * to structure instance and encodes into a buffer before using the usb_send_msg
- * to send data in appropriate format to the host app.
+ * @brief Sends the received message to host app.
+ * @details The function internally calls manager_send_result to send the
+ * message to host.
  *
  * @param training Reference to a filled structure instance of
  * manager_train_joystick_response_t
@@ -152,7 +150,8 @@ static pb_size_t get_which_request(
 }
 
 static void send_training_response(manager_train_joystick_response_t *resp) {
-  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
+  manager_result_t result =
+      init_manager_result(MANAGER_RESULT_TRAIN_JOYSTICK_TAG);
   memcpy(&(result.train_joystick),
          resp,
          sizeof(manager_train_joystick_response_t));
