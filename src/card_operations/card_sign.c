@@ -175,18 +175,20 @@ static void handle_card_init_and_sign_data_operation(
         sign_data->data, sign_data->data_size, sign_data->signature);
     card_handle_errors(card_data);
   }
-
-  if (CARD_OPERATION_CARD_REMOVED != card_data->error_type)
-    buzzer_start(BUZZER_DURATION);
 }
 
 static card_error_type_e handle_sign_data_operation_response(
     card_operation_data_t *card_data,
     card_sign_data_config_t *sign_data) {
   card_error_type_e temp_error = CARD_OPERATION_DEFAULT_INVALID;
+  if (NULL != card_data->error_message) {
+    buzzer_start(BUZZER_DURATION);
+    temp_error = display_error_message(card_data->error_message);
+  }
 
   switch (card_data->error_type) {
     case CARD_OPERATION_SUCCESS:
+      buzzer_start(BUZZER_DURATION);
       if (false == sign_data->skip_card_removal) {
         temp_error = wait_for_card_removal();
 
@@ -197,17 +199,11 @@ static card_error_type_e handle_sign_data_operation_response(
       break;
 
     case CARD_OPERATION_RETAP_BY_USER_REQUIRED:
-      temp_error = display_error_message(card_data->error_message);
-
       if (CARD_OPERATION_SUCCESS != temp_error) {
         return temp_error;
       }
 
       instruction_scr_init(sign_data->message, sign_data->heading);
-      break;
-
-    case CARD_OPERATION_ABORT_OPERATION:
-      display_error_message(card_data->error_message);
       break;
 
     default:
