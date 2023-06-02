@@ -136,6 +136,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_TRAIN_CARD_TAG: {
+      manager_card_training(&query);
       break;
     }
     default: {

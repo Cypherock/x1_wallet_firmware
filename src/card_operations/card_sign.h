@@ -54,22 +54,25 @@
  * TYPEDEFS
  *****************************************************************************/
 typedef enum card_sign_type {
-  CARD_SIGN_SERIAL = 1,
-  CARD_SIGN_CUSTOM,
+  CARD_SIGN_SERIAL =
+      1,    /// Card's serial to be signed is copied to data member of
+            /// card_sign_data_config_t object after applet initializatoin
+  CARD_SIGN_CUSTOM,    /// Custom data to be signed is provided through data
+                       /// member of card_sign_data_config_t pointer object
 } card_sign_type_e;
 
 typedef struct card_sign_data_config {
   uint8_t acceptable_cards;
-  const uint8_t *family_id;
+  uint8_t *family_id;
   card_sign_type_e sign_type;
   bool skip_card_removal;    /// If true, handler will not wait for card removal
                              /// in success case
   const char *heading;
   const char *message;
 
-  uint8_t
-      *data;    /// Buffer pointer for serial or custom data, CARD_SIGN_SERIAL
-                /// the tapped card's serial is copied to this buffer
+  uint8_t *
+      data;    /// Buffer pointer for serial or custom data, in CARD_SIGN_SERIAL
+               /// the tapped card's serial is copied to this buffer
   uint16_t data_size;
   uint8_t signature[64];
 } card_sign_data_config_t;

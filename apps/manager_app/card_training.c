@@ -1,8 +1,7 @@
 /**
- * @file    card_utils.c
+ * @file    card_training.c
  * @author  Cypherock X1 Team
- * @brief   Card operations common utilities
- *
+ * @brief   Card training flow for user on-boarding.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_utils.h"
 
-#include "card_internal.h"
-#include "constant_texts.h"
-#include "controller_tap_cards.h"
-#include "events.h"
+#include "check_pairing.h"
+#include "flash_api.h"
+#include "manager_api.h"
+#include "status_api.h"
+#include "ui_delay.h"
 #include "ui_instruction.h"
-#include "ui_message.h"
+#include "wallet.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,6 +84,20 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * TODO: Replace with api provided by manager app
+ *
+ * @param training
+ */
+static void send_message_to_host(manager_train_card_response_t *training);
+
+/**
+ * TODO: Replace with api provided by manager app
+ *
+ * @param error_code
+ */
+static void send_training_error(uint32_t error_code);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -97,67 +110,64 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static void send_message_to_host(manager_train_card_response_t *training) {
+  manager_result_t result =
+      get_manager_result_template(MANAGER_RESULT_TRAIN_CARD_TAG);
+  uint8_t result_buffer[1024] = {0};
+
+  memcpy(&result.train_card, training, sizeof(manager_train_card_response_t));
+  ASSERT(encode_and_send_manager_result(
+      &result, result_buffer, sizeof(result_buffer)));
+}
+
+static void send_training_error(uint32_t error_code) {
+  manager_train_card_response_t training =
+      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
+  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
+  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
+  training.common_error.unknown_error = error_code;
+  send_message_to_host(&training);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
-                                             uint8_t acceptable_cards) {
-  NFC_connection_data nfc_data = {0};
 
-  nfc_data.acceptable_cards = acceptable_cards;
-  if (NULL != family_id) {
-    memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
+void manager_card_training(manager_query_t *query) {
+  LOG_SWV("%s (%d)\n", __func__, __LINE__);
+  if (NULL == query) {
+    // TODO: verify card training query tag for completeness
+    return;
+  }
+  // TODO: verify on-boarding state for safety
+  core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
+
+  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
+
+  check_pairing_result_t pair_result = {false, 0, {0}};
+  manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
+  result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
+  card_error_type_e status = card_check_pairing(&pair_result);
+  if (CARD_OPERATION_SUCCESS != status) {
+    LOG_SWV("%s (%d)\n", __func__, __LINE__);
+    send_training_error(1);
+    return;
+  }
+  result.result.card_paired = pair_result.is_paired;
+  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+    set_family_id_flash(pair_result.family_id);
   }
 
-  return nfc_data;
-}
+  // always pair the card
+  // TODO: Update the pairing flow to support flexible storage of shared key
 
-card_error_type_e display_error_message(const char *error_message) {
-  ASSERT(NULL != error_message);
+  // TODO: Fetch wallet list; send dummy data
+  result.result.card_paired = false;
+  result.result.wallet_list_count = 0;
+  send_message_to_host(&result);
 
-  message_scr_init(error_message);
-
-  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
-  }
-
-  if (true == status.ui_event.event_occured &&
-      UI_EVENT_CONFIRM == status.ui_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  return CARD_OPERATION_DEFAULT_INVALID;
-}
-
-void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
-  ASSERT(NULL != nfc_data && NULL != serial);
-  uint8_t card_number = 0xFF;
-
-  memcpy(serial, nfc_data->family_id, FAMILY_ID_SIZE);
-  card_number = decode_card_number(nfc_data->tapped_card);
-  serial[CARD_ID_SIZE - 1] = card_number;
-}
-
-card_error_type_e wait_for_card_removal(void) {
-  if (0 != nfc_en_wait_for_card_removal_task()) {
-    // Card not selected or removed
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  instruction_scr_change_text(ui_text_remove_card_prompt, true);
-
-  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
-  }
-
-  if (true == status.nfc_event.event_occured &&
-      NFC_EVENT_CARD_REMOVED == status.nfc_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  // Shouldn't reach here
-  return CARD_OPERATION_DEFAULT_INVALID;
+  char msg[64] = "";
+  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
+  delay_scr_init(msg, DELAY_TIME);
+  // TODO: Show wallets if exist and wait for user acceptance on via app
 }

@@ -1,8 +1,7 @@
 /**
- * @file    card_utils.c
+ * @file    check_pairing.c
  * @author  Cypherock X1 Team
- * @brief   Card operations common utilities
- *
+ * @brief   Fetches applet information and detects pairing status.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,13 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_utils.h"
+
+#include "check_pairing.h"
 
 #include "card_internal.h"
-#include "constant_texts.h"
-#include "controller_tap_cards.h"
 #include "events.h"
-#include "ui_instruction.h"
 #include "ui_message.h"
 
 /*****************************************************************************
@@ -85,6 +82,13 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * TODO: add description when this api gets concrete definition
+ *
+ * @param connection_data
+ */
+static void init_tap_card_data(NFC_connection_data *connection_data);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -97,67 +101,52 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static void init_tap_card_data(NFC_connection_data *connection_data) {
+  memset(connection_data, 0, sizeof(NFC_connection_data));
+  connection_data->retries = 5;
+  connection_data->desktop_control = false;
+  connection_data->acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  memset(connection_data->family_id, 0xff, sizeof(connection_data->family_id));
+  memset(connection_data->card_key_id, 0, sizeof(connection_data->card_key_id));
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
-                                             uint8_t acceptable_cards) {
-  NFC_connection_data nfc_data = {0};
 
-  nfc_data.acceptable_cards = acceptable_cards;
-  if (NULL != family_id) {
-    memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
+card_error_type_e card_check_pairing(check_pairing_result_t *result) {
+  LOG_SWV("%s (%d): %p\n", __func__, __LINE__, result);
+  card_error_type_e status = CARD_OPERATION_DEFAULT_INVALID;
+  if (NULL == result) {
+    return status;
   }
 
-  return nfc_data;
-}
+  memset(result, 0, sizeof(check_pairing_result_t));
+  result->card_number = 0;
+  card_operation_data_t operation_data = {{0}, NULL, 0};
+  init_tap_card_data(&operation_data.nfc_data);
+  status = card_initialize_applet(&operation_data);
+  buzzer_start(100);
+  nfc_deselect_card();
 
-card_error_type_e display_error_message(const char *error_message) {
-  ASSERT(NULL != error_message);
-
-  message_scr_init(error_message);
-
-  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
+  if (CARD_OPERATION_SUCCESS == status) {
+    result->card_number =
+        decode_card_number(operation_data.nfc_data.tapped_card);
+    memcpy(
+        result->family_id, operation_data.nfc_data.family_id, FAMILY_ID_SIZE);
+    if (-1 == is_paired(operation_data.nfc_data.card_key_id)) {
+      // keystore index is -1; the keystore does not have key-id
+      result->is_paired = false;
+    } else {
+      result->is_paired = true;
+    }
+  } else {
+    LOG_SWV("%s (%d):", __func__, __LINE__);
+    LOG_CRITICAL("COCP %04X\n", operation_data.nfc_data.status);
+    if (NULL != operation_data.error_message) {
+      message_scr_init(operation_data.error_message);
+      get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+    }
   }
-
-  if (true == status.ui_event.event_occured &&
-      UI_EVENT_CONFIRM == status.ui_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  return CARD_OPERATION_DEFAULT_INVALID;
-}
-
-void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
-  ASSERT(NULL != nfc_data && NULL != serial);
-  uint8_t card_number = 0xFF;
-
-  memcpy(serial, nfc_data->family_id, FAMILY_ID_SIZE);
-  card_number = decode_card_number(nfc_data->tapped_card);
-  serial[CARD_ID_SIZE - 1] = card_number;
-}
-
-card_error_type_e wait_for_card_removal(void) {
-  if (0 != nfc_en_wait_for_card_removal_task()) {
-    // Card not selected or removed
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  instruction_scr_change_text(ui_text_remove_card_prompt, true);
-
-  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
-  }
-
-  if (true == status.nfc_event.event_occured &&
-      NFC_EVENT_CARD_REMOVED == status.nfc_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  // Shouldn't reach here
-  return CARD_OPERATION_DEFAULT_INVALID;
+  return status;
 }
