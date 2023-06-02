@@ -178,6 +178,7 @@ void nfc_set_card_removed_event(void) {
 
 void nfc_en_select_card_task(void) {
   nfc_state = NFC_STATE_SET_SELECT_CARD_CMD;
+  nfc_deselect_card();
 }
 
 uint32_t nfc_en_wait_for_card_removal_task(void) {
