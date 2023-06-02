@@ -60,6 +60,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_sign.h"
 #include "controller_tap_cards.h"
 #include "events.h"
 #include "lv_task.h"
@@ -332,20 +333,31 @@ static manager_error_code_t handle_sign_card_serial(
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
 
-  /* TODO: Move snippet to sign serial flow*/
-  {
-    nfc_en_select_card_task();
+  uint8_t family_id[FAMILY_ID_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF};
+  card_sign_data_config_t sign_serial_config =
+      INIT_SIGN_SERIAL_CONFIG(auth_card_data->ctx.acceptable_cards,
+                              family_id,
+                              true,
+                              auth_card_data->ctx.heading,
+                              auth_card_data->ctx.message,
+                              resp->serial_signature.serial);
+  card_error_type_e status = card_sign_auth_data(&sign_serial_config);
 
-    evt_status_t status = get_events(EVENT_CONFIG_NFC, TIMEOUT_SELECTION);
+  switch (status) {
+    case CARD_OPERATION_SUCCESS:
+      memcpy(resp->serial_signature.signature,
+             sign_serial_config.signature,
+             sizeof(resp->serial_signature.signature));
+      break;
 
-    HANDLE_P0_EVENTS(status.p0_event);
+    case CARD_OPERATION_P0_OCCURED:
+      return MANAGER_TASK_P0_ABORT_OCCURED;
+      break;
 
-    // NFC event occurred
-
-    /* TODO: Add sign serial card action*/
-
-    /* TODO: Check if card operation failed*/
-    // return MANAGER_TASK_FAILED;
+    default:
+      /* TODO: Send error response to host */
+      return MANAGER_TASK_FAILED;
+      break;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
@@ -365,20 +377,32 @@ static manager_error_code_t handle_sign_card_serial(
 static manager_error_code_t handle_sign_challenge(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  /* TODO: Move snippet to challenge serial flow*/
-  {
-    nfc_en_select_card_task();
+  uint8_t family_id[FAMILY_ID_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF};
+  card_sign_data_config_t sign_challenge_config = INIT_SIGN_CUSTOM_CONFIG(
+      auth_card_data->ctx.acceptable_cards,
+      family_id,
+      false,
+      auth_card_data->ctx.heading,
+      auth_card_data->ctx.message,
+      auth_card_data->query->auth_card.challenge.challenge,
+      CHALLENGE_SIZE);
+  card_error_type_e status = card_sign_auth_data(&sign_challenge_config);
 
-    evt_status_t status = get_events(EVENT_CONFIG_NFC, TIMEOUT_SELECTION);
+  switch (status) {
+    case CARD_OPERATION_SUCCESS:
+      memcpy(resp->challenge_signature.signature,
+             sign_challenge_config.signature,
+             sizeof(resp->challenge_signature.signature));
+      break;
 
-    HANDLE_P0_EVENTS(status.p0_event);
+    case CARD_OPERATION_P0_OCCURED:
+      return MANAGER_TASK_P0_ABORT_OCCURED;
+      break;
 
-    // NFC event occurred
-
-    /* TODO: Add sign challenge card action*/
-
-    /* TODO: Check if card operation failed*/
-    // return MANAGER_TASK_FAILED;
+    default:
+      /* TODO: Send error response to host */
+      return MANAGER_TASK_FAILED;
+      break;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
