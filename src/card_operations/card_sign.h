@@ -60,7 +60,7 @@ typedef enum card_sign_type {
 
 typedef struct card_sign_data_config {
   uint8_t acceptable_cards;
-  const uint8_t *family_id;
+  uint8_t *family_id;
   card_sign_type_e sign_type;
   bool skip_card_removal;    /// If true, handler will not wait for card removal
                              /// in success case

@@ -68,6 +68,7 @@
 #include "constant_texts.h"
 #include "events.h"
 #include "nfc.h"
+#include "string.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
 
@@ -157,11 +158,14 @@ static void handle_card_init_and_sign_data_operation(
     card_sign_data_config_t *sign_data) {
   card_data->nfc_data = init_nfc_connection_data(sign_data->family_id,
                                                  sign_data->acceptable_cards);
-  nfc_deselect_card();
-
   card_initialize_applet(card_data);
 
   if (CARD_OPERATION_SUCCESS == card_data->error_type) {
+    if (DEFAULT_UINT32_IN_FLASH == *(uint32_t *)(sign_data->family_id)) {
+      memcpy(
+          sign_data->family_id, card_data->nfc_data.family_id, FAMILY_ID_SIZE);
+    }
+
     if (CARD_SIGN_SERIAL == sign_data->sign_type) {
       get_card_serial(&(card_data->nfc_data), sign_data->data);
       sign_data->data_size = CARD_ID_SIZE;
@@ -172,7 +176,8 @@ static void handle_card_init_and_sign_data_operation(
     card_handle_errors(card_data);
   }
 
-  buzzer_start(BUZZER_DURATION);
+  if (CARD_OPERATION_CARD_REMOVED != card_data->error_type)
+    buzzer_start(BUZZER_DURATION);
 }
 
 static card_error_type_e handle_sign_data_operation_response(
