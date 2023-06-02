@@ -30,6 +30,7 @@
 typedef struct check_pairing_result {
   bool is_paired;
   uint8_t card_number;
+  uint8_t family_id[FAMILY_ID_SIZE];
 } check_pairing_result_t;
 
 /*****************************************************************************

@@ -144,7 +144,7 @@ void manager_card_training(manager_query_t *query) {
 
   instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
 
-  check_pairing_result_t pair_result = {false, 0};
+  check_pairing_result_t pair_result = {false, 0, {0}};
   manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
   result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
   card_error_type_e status = card_check_pairing(&pair_result);
@@ -154,6 +154,9 @@ void manager_card_training(manager_query_t *query) {
     return;
   }
   result.result.card_paired = pair_result.is_paired;
+  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+    set_family_id_flash(pair_result.family_id);
+  }
 
   // always pair the card
   // TODO: Update the pairing flow to support flexible storage of shared key
