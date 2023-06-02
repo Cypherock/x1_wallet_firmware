@@ -17,6 +17,12 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+#define CARD_HANDLE_P0_EVENTS(p0_event)                                        \
+  do {                                                                         \
+    if (true == (p0_event).flag) {                                             \
+      return CARD_OPERATION_P0_OCCURED;                                        \
+    }                                                                          \
+  } while (0)
 
 /*****************************************************************************
  * TYPEDEFS
@@ -29,8 +35,7 @@ typedef enum card_errors_type {
   CARD_OPERATION_LOCKED_WALLET,    /** Locked wallet detected during wallet
                                       operation */
   CARD_OPERATION_INCORRECT_PIN_ENTERED, /** Incorrect pin entered */
-  CARD_OPERATION_P0_ABORT_OCCURED,      /** Abort command received from host */
-  CARD_OPERATION_P0_TIMEOUT_OCCURED,    /** Timeout occured */
+  CARD_OPERATION_P0_OCCURED,            /** P0 event occured */
 
   /** The API setting error using below enums is required to also set an error
      message for corresponding user action or error specification */

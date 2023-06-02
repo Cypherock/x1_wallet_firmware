@@ -77,15 +77,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define HANDLE_P0_EVENTS(p0_event)                                             \
-  do {                                                                         \
-    if (true == (p0_event).inactivity_evt) {                                   \
-      return CARD_OPERATION_P0_TIMEOUT_OCCURED;                                \
-    } else if (true == (p0_event).abort_evt) {                                 \
-      return CARD_OPERATION_P0_ABORT_OCCURED;                                  \
-    }                                                                          \
-  } while (0)
-
 #define NFC_SET_ERROR_MSG(card_data, msg)                                      \
   (card_data->error_message =                                                  \
        (card_data)->error_message ? (card_data)->error_message : (msg))
@@ -215,7 +206,7 @@ static card_error_type_e handle_wait_for_card_selection(
   nfc_en_select_card_task();
   evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
 
-  HANDLE_P0_EVENTS(evt_status.p0_event);
+  CARD_HANDLE_P0_EVENTS(evt_status.p0_event);
 
   /* This API call is required to select the detected card as `get_events` calls
    * the deselect function on exit */
