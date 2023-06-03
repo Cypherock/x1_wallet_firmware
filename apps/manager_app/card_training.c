@@ -63,6 +63,7 @@
 #include "check_pairing.h"
 #include "flash_api.h"
 #include "manager_api.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
@@ -134,11 +135,17 @@ static void send_training_error(uint32_t error_code) {
  *****************************************************************************/
 
 void manager_card_training(manager_query_t *query) {
-  LOG_SWV("%s (%d)\n", __func__, __LINE__);
-  if (NULL == query) {
-    // TODO: verify card training query tag for completeness
+  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
     return;
   }
+
+  if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
+      query->train_card.which_request) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    return;
+  }
+
   // TODO: verify on-boarding state for safety
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
 

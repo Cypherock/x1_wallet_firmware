@@ -125,7 +125,7 @@ static void send_auth_device_response(manager_auth_device_response_t *resp);
  * to the host.
  *
  */
-static void send_flow_complete(void);
+static void send_auth_device_flow_complete(void);
 
 /**
  * @brief This function handles the verification result of the device
@@ -215,7 +215,7 @@ static void send_auth_device_response(manager_auth_device_response_t *resp) {
   return;
 }
 
-static void send_flow_complete(void) {
+static void send_auth_device_flow_complete(void) {
   manager_auth_device_response_t response =
       MANAGER_AUTH_DEVICE_RESPONSE_INIT_ZERO;
   response.which_response = MANAGER_AUTH_DEVICE_RESPONSE_FLOW_COMPLETE_TAG;
@@ -258,7 +258,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG:
     default: {
       /* In case any other request is received, then we exit the flow early */
-      usb_clear_event();
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -272,7 +272,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
-      usb_clear_event();
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
@@ -290,14 +290,14 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
        * the flow. The device will treat it as an attempt to force device
        * authentication status */
       auth_device_handle_response(false);
-      send_flow_complete();
+      send_auth_device_flow_complete();
 
       delay_scr_init(ui_text_message_device_auth_failure, DELAY_TIME);
       next_state = FLOW_COMPLETE;
       break;
     }
     default: {
-      usb_clear_event();
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -312,13 +312,13 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG:
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
-      usb_clear_event();
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
       bool verified = query->auth_device.result.verified;
       auth_device_handle_response(verified);
-      send_flow_complete();
+      send_auth_device_flow_complete();
 
       if (true == verified) {
         delay_scr_init(ui_text_message_device_auth_success, DELAY_TIME);
@@ -330,7 +330,7 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
       break;
     }
     default: {
-      usb_clear_event();
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -344,7 +344,7 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
 void device_authentication_flow(manager_query_t *query) {
   /* Validate if this flow is allowed */
   if (false == onboarding_step_allowed(ONBOARDING_DEVICE_AUTH)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
     return;
   }
 
