@@ -166,8 +166,11 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
   /// Sign pairing data and append signature
   sha256_Raw(card_pairing_data, pairing_data_len, digest);
   uint8_t status = atecc_nfc_sign_hash(digest, sig);
-  if (status)
+  if (ATCA_SUCCESS != status) {
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
+    return false;
+  }
+
   pairing_data_len +=
       ecdsa_sig_to_der(sig, card_pairing_data + pairing_data_len);
   card_data.nfc_data.retries = 5;
@@ -189,8 +192,11 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
         if (card_data.nfc_data.status == SW_NO_ERROR) {
           if (*(uint32_t *)get_family_id() == DEFAULT_UINT32_IN_FLASH)
             set_family_id_flash(card_data.nfc_data.family_id);
-          handle_pair_card_success(
-              card_number, session_nonce, card_pairing_data);
+          if (false == handle_pair_card_success(
+                           card_number, session_nonce, card_pairing_data)) {
+            result = false;
+            break;
+          }
         } else {
           card_handle_errors(&card_data);
         }
@@ -235,7 +241,7 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
   return result;
 }
 
-void handle_pair_card_success(uint8_t card_number,
+bool handle_pair_card_success(uint8_t card_number,
                               uint8_t *session_nonce,
                               uint8_t *card_pairing_data) {
   HDNode guest_card_node;
@@ -268,15 +274,15 @@ void handle_pair_card_success(uint8_t card_number,
     log_hex_array("resp", card_pairing_data, 128);
     log_hex_array("sig", buffer, sizeof(buffer));
     display_error_message(ui_text_cannot_verify_card_contact_support);
-    return;
+    return false;
   }
   keystore_index = card_number - 1;
   ecdsa_uncompress_pubkey(
       &nist256p1, guest_card_node.public_key, public_key_uncompressed);
   status = atecc_nfc_ecdh(&public_key_uncompressed[1], card_pairing_data + 45);
-  if (status) {
+  if (ATCA_SUCCESS != status) {
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
-    return;
+    return false;
   }
   sha512_Init(&ctx);
   sha512_Update(&ctx, card_pairing_data + 45, 32);
@@ -288,5 +294,5 @@ void handle_pair_card_success(uint8_t card_number,
   set_keystore_key_id(keystore_index, card_pairing_data, 4, FLASH_SAVE_LATER);
   set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);
 
-  return;
+  return true;
 }
