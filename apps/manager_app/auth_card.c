@@ -340,26 +340,52 @@ static manager_error_code_t prepare_card_auth_context(
   return MANAGER_TASK_SUCCESS;
 }
 
-static manager_error_code_t handle_sign_card_serial(
+static manager_error_code_t handle_sign_data(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  instruction_scr_init(auth_card_data->ctx.message,
-                       auth_card_data->ctx.heading);
+  card_sign_data_config_t sign_config = {0};
 
-  card_sign_data_config_t sign_serial_config =
-      INIT_SIGN_SERIAL_CONFIG(auth_card_data->ctx.acceptable_cards,
-                              auth_card_data->ctx.family_id,
-                              true,
-                              auth_card_data->ctx.heading,
-                              auth_card_data->ctx.message,
-                              resp->serial_signature.serial);
-  card_error_type_e status = card_sign_auth_data(&sign_serial_config);
+  sign_config.acceptable_cards = auth_card_data->ctx.acceptable_cards;
+  sign_config.heading = auth_card_data->ctx.heading;
+  sign_config.message = auth_card_data->ctx.message;
+  sign_config.family_id = auth_card_data->ctx.family_id;
+
+  if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG ==
+      auth_card_data->query->auth_card.which_request) {
+    sign_config.data = resp->serial_signature.serial;
+    sign_config.sign_type = CARD_SIGN_SERIAL;
+  } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
+             auth_card_data->query->auth_card.which_request) {
+    sign_config.data = auth_card_data->query->auth_card.challenge.challenge;
+    sign_config.data_size = CHALLENGE_SIZE;
+    sign_config.sign_type = CARD_SIGN_CUSTOM;
+  } else {
+    // This function shouldn't be called in other states
+    return MANAGER_TASK_INVALID_STATE;
+  }
+
+  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != core_status_get_flow_status() &&
+      false == auth_card_data->ctx.pair_card_required)
+    sign_config.skip_card_removal = false;
+  else
+    sign_config.skip_card_removal = true;
+
+  card_error_type_e status = card_sign_auth_data(&sign_config);
 
   switch (status) {
     case CARD_OPERATION_SUCCESS:
-      memcpy(resp->serial_signature.signature,
-             sign_serial_config.signature,
-             sizeof(resp->serial_signature.signature));
+      if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG ==
+          auth_card_data->query->auth_card.which_request) {
+        memcpy(resp->serial_signature.signature,
+               sign_config.signature,
+               sizeof(resp->serial_signature.signature));
+      } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
+                 auth_card_data->query->auth_card.which_request) {
+        memcpy(resp->challenge_signature.signature,
+               sign_config.signature,
+               sizeof(resp->challenge_signature.signature));
+      }
+      return MANAGER_TASK_SUCCESS;
       break;
 
     case CARD_OPERATION_P0_OCCURED:
@@ -370,6 +396,15 @@ static manager_error_code_t handle_sign_card_serial(
       /* TODO: Send error response to host */
       return MANAGER_TASK_FAILED;
       break;
+  }
+}
+
+static manager_error_code_t handle_sign_card_serial(
+    auth_card_data_t *auth_card_data,
+    manager_auth_card_response_t *resp) {
+  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
+  if (MANAGER_TASK_SUCCESS != manager_error) {
+    return manager_error;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
@@ -389,31 +424,9 @@ static manager_error_code_t handle_sign_card_serial(
 static manager_error_code_t handle_sign_challenge(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  card_sign_data_config_t sign_challenge_config = INIT_SIGN_CUSTOM_CONFIG(
-      auth_card_data->ctx.acceptable_cards,
-      auth_card_data->ctx.family_id,
-      false,
-      auth_card_data->ctx.heading,
-      auth_card_data->ctx.message,
-      auth_card_data->query->auth_card.challenge.challenge,
-      CHALLENGE_SIZE);
-  card_error_type_e status = card_sign_auth_data(&sign_challenge_config);
-
-  switch (status) {
-    case CARD_OPERATION_SUCCESS:
-      memcpy(resp->challenge_signature.signature,
-             sign_challenge_config.signature,
-             sizeof(resp->challenge_signature.signature));
-      break;
-
-    case CARD_OPERATION_P0_OCCURED:
-      return MANAGER_TASK_P0_ABORT_OCCURED;
-      break;
-
-    default:
-      /* TODO: Send error response to host */
-      return MANAGER_TASK_FAILED;
-      break;
+  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
+  if (MANAGER_TASK_SUCCESS != manager_error) {
+    return manager_error;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
