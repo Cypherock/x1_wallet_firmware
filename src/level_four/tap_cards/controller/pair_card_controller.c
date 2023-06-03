@@ -58,6 +58,9 @@
  */
 #include "base58.h"
 #include "bip32.h"
+#include "card_internal.h"
+#include "card_operations.h"
+#include "card_utils.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
 #include "curves.h"
@@ -121,6 +124,9 @@ void tap_card_pair_card_controller() {
 }
 
 static void _tap_card_backend(uint8_t card_number) {
+}
+
+bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
   uint8_t card_pairing_data[128] = {0}, pairing_data_len = 44;
   uint8_t digest[64] = {0}, sig[65] = {0}, session_nonce[32] = {0};
   uint8_t invalid_self_keypath[8] = {DEFAULT_VALUE_IN_FLASH,
@@ -131,6 +137,11 @@ static void _tap_card_backend(uint8_t card_number) {
                                      DEFAULT_VALUE_IN_FLASH,
                                      DEFAULT_VALUE_IN_FLASH,
                                      DEFAULT_VALUE_IN_FLASH};
+  card_operation_data_t card_data = {
+      .error_message = NULL,
+      .error_type = CARD_OPERATION_DEFAULT_INVALID,
+      .nfc_data = {0}};
+  bool result = false;
 
   random_generate(session_nonce, sizeof(session_nonce));
   memcpy(card_pairing_data, get_perm_self_key_id(), 4);
@@ -140,10 +151,9 @@ static void _tap_card_backend(uint8_t card_number) {
              invalid_self_keypath,
              sizeof(invalid_self_keypath)) == 0) {
     /* Device is not provisioned */
-    reset_flow_level();
-    instruction_scr_destructor();
-    mark_error_screen(ui_text_device_compromised);
-    return;
+
+    display_error_message(ui_text_device_compromised);
+    return false;
   }
 
   sha256_Raw(card_pairing_data, pairing_data_len, digest);
@@ -152,36 +162,68 @@ static void _tap_card_backend(uint8_t card_number) {
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
   pairing_data_len +=
       ecdsa_sig_to_der(sig, card_pairing_data + pairing_data_len);
-  tap_card_data.retries = 5;
+  card_data.nfc_data.retries = 5;
 
   while (1) {
-    tap_card_data.acceptable_cards = (1 << (card_number - 1));
-    tap_card_data.lvl3_retry_point = flow_level.level_three - 1;
-    memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards = (1 << (card_number - 1));
+    card_data.nfc_data.lvl3_retry_point = flow_level.level_three - 1;
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
       instruction_scr_change_text(ui_text_card_removed_fast, true);
-    if (!tap_card_applet_connection())
-      return;
-    if (is_paired(tap_card_data.card_key_id) > -1) {
-      instruction_scr_destructor();
-      flow_level.level_four++;
-      return;
-    }
-    tap_card_data.status = nfc_pair(card_pairing_data, &pairing_data_len);
+    card_initialize_applet(&card_data);
 
-    if (tap_card_data.status == SW_NO_ERROR) {
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      if (-1 == is_paired(card_data.nfc_data.card_key_id)) {
+        card_data.nfc_data.status =
+            nfc_pair(card_pairing_data, &pairing_data_len);
+
+        if (card_data.nfc_data.status == SW_NO_ERROR) {
+          if (*(uint32_t *)get_family_id() == DEFAULT_UINT32_IN_FLASH)
+            set_family_id_flash(card_data.nfc_data.family_id);
+          instruction_scr_change_text(ui_text_remove_card_prompt, true);
+          handle_pair_card_success(
+              card_number, session_nonce, card_pairing_data);
+        } else {
+          card_handle_errors(&card_data);
+          result = false;
+          break;
+        }
+      }
+    }
+
+    if (NULL != card_data.error_message) {
+      if (CARD_OPERATION_SUCCESS !=
+          display_error_message(card_data.error_message)) {
+        buzzer_start(BUZZER_DURATION);
+        result = false;
+        break;
+      }
+
+      if (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+        instruction_scr_init(heading, message);
+      }
+    }
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       buzzer_start(BUZZER_DURATION);
-      if (*(uint32_t *)get_family_id() == DEFAULT_UINT32_IN_FLASH)
-        set_family_id_flash(tap_card_data.family_id);
-      instruction_scr_change_text(ui_text_remove_card_prompt, true);
-      handle_pair_card_success(card_number, session_nonce, card_pairing_data);
-      nfc_detect_card_removal();
-      instruction_scr_destructor();
+      if (CARD_OPERATION_SUCCESS != wait_for_card_removal()) {
+        result = false;
+      } else {
+        result = true;
+      }
       break;
-    } else if (tap_card_handle_applet_errors()) {
+    }
+
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      continue;
+    } else {
       break;
     }
   }
+
+  nfc_deselect_card();
+  return result;
 }
 
 void handle_pair_card_success(uint8_t card_number,
@@ -216,16 +258,17 @@ void handle_pair_card_success(uint8_t card_number,
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
     log_hex_array("resp", card_pairing_data, 128);
     log_hex_array("sig", buffer, sizeof(buffer));
-    reset_flow_level();
-    mark_error_screen(ui_text_cannot_verify_card_contact_support);
+    display_error_message(ui_text_cannot_verify_card_contact_support);
     return;
   }
   keystore_index = card_number - 1;
   ecdsa_uncompress_pubkey(
       &nist256p1, guest_card_node.public_key, public_key_uncompressed);
   status = atecc_nfc_ecdh(&public_key_uncompressed[1], card_pairing_data + 45);
-  if (status)
+  if (status) {
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
+    return;
+  }
   sha512_Init(&ctx);
   sha512_Update(&ctx, card_pairing_data + 45, 32);
   sha512_Update(&ctx, card_pairing_data + 4, 32);
@@ -236,9 +279,5 @@ void handle_pair_card_success(uint8_t card_number,
   set_keystore_key_id(keystore_index, card_pairing_data, 4, FLASH_SAVE_LATER);
   set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);
 
-#if X1WALLET_MAIN == 1
-  flow_level.level_four++;
-#elif X1WALLET_INITIAL == 1
-  flow_level.level_three++;
-#endif
+  return;
 }

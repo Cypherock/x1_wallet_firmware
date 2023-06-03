@@ -60,6 +60,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_pair.h"
 #include "card_sign.h"
 #include "controller_tap_cards.h"
 #include "events.h"
@@ -395,7 +396,10 @@ static manager_error_code_t handle_sign_challenge(
   card_sign_data_config_t sign_challenge_config = INIT_SIGN_CUSTOM_CONFIG(
       auth_card_data->ctx.acceptable_cards,
       auth_card_data->ctx.family_id,
-      false,
+      (true ==
+       auth_card_data->ctx
+           .pair_card_required), /* If pairing required, then on second beep
+                                    wait for card removal should be skipped */
       auth_card_data->ctx.heading,
       auth_card_data->ctx.message,
       auth_card_data->query->auth_card.challenge.challenge,
@@ -496,10 +500,16 @@ static manager_error_code_t handle_auth_card_result_query(
         return MANAGER_TASK_SUCCESS;
       } else {
         if (true == auth_card_data->ctx.pair_card_required) {
-          /* TODO: Handle this card pairing task*/
+          uint8_t card_number =
+              decode_card_number(auth_card_data->ctx.acceptable_cards);
+          bool result = pair_card_operation(card_number,
+                                            auth_card_data->ctx.heading,
+                                            auth_card_data->ctx.message);
 
-          /* TODO: Check if card operation failed*/
-          // return MANAGER_TASK_FAILED;
+          if (true != result) {
+            delay_scr_init("Pairing operation failed", DELAY_TIME);
+            return MANAGER_TASK_FAILED;
+          }
         }
 
         core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
