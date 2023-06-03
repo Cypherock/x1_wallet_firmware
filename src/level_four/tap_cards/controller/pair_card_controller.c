@@ -143,6 +143,7 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
       .nfc_data = {0}};
   bool result = false;
 
+  /// Pair operation pre-processing
   random_generate(session_nonce, sizeof(session_nonce));
   memcpy(card_pairing_data, get_perm_self_key_id(), 4);
   memcpy(card_pairing_data + 4, session_nonce, sizeof(session_nonce));
@@ -156,6 +157,7 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
     return false;
   }
 
+  /// Sign pairing data and append signature
   sha256_Raw(card_pairing_data, pairing_data_len, digest);
   uint8_t status = atecc_nfc_sign_hash(digest, sig);
   if (status)
@@ -165,14 +167,16 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
   card_data.nfc_data.retries = 5;
 
   while (1) {
+    // Initialize card tap config
     card_data.nfc_data.acceptable_cards = (1 << (card_number - 1));
     card_data.nfc_data.lvl3_retry_point = flow_level.level_three - 1;
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) != STM_SUCCESS)
-      instruction_scr_change_text(ui_text_card_removed_fast, true);
+
+    // Initialize card applet
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      // if card tapped is not paired, proceed with pairing
       if (-1 == is_paired(card_data.nfc_data.card_key_id)) {
         card_data.nfc_data.status =
             nfc_pair(card_pairing_data, &pairing_data_len);
@@ -180,27 +184,27 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
         if (card_data.nfc_data.status == SW_NO_ERROR) {
           if (*(uint32_t *)get_family_id() == DEFAULT_UINT32_IN_FLASH)
             set_family_id_flash(card_data.nfc_data.family_id);
-          instruction_scr_change_text(ui_text_remove_card_prompt, true);
           handle_pair_card_success(
               card_number, session_nonce, card_pairing_data);
         } else {
           card_handle_errors(&card_data);
-          result = false;
-          break;
         }
       }
     }
 
+    // Display error message if set during card initialization or operation
+    // error handling
     if (NULL != card_data.error_message) {
+      buzzer_start(BUZZER_DURATION);
       if (CARD_OPERATION_SUCCESS !=
           display_error_message(card_data.error_message)) {
-        buzzer_start(BUZZER_DURATION);
         result = false;
         break;
       }
 
+      // Reset instruction screen if retap required
       if (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
-        instruction_scr_init(heading, message);
+        instruction_scr_init(message, heading);
       }
     }
 
