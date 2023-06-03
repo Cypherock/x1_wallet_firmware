@@ -360,9 +360,6 @@ static manager_error_code_t handle_sign_card_serial(
       memcpy(resp->serial_signature.signature,
              sign_serial_config.signature,
              sizeof(resp->serial_signature.signature));
-      if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
-        set_family_id_flash(auth_card_data->ctx.family_id);
-      }
       break;
 
     case CARD_OPERATION_P0_OCCURED:
