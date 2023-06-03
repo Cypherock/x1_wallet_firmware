@@ -78,7 +78,9 @@
 #define P0_SESSION_HANDLER(event)                                              \
   do {                                                                         \
     if (true == event.p0_event.flag) {                                         \
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INACTIVITY_TIMEOUT);        \
+      if (true == event.p0_event.inactivity_evt) {                             \
+        manager_send_data_flow_error(ERROR_DATA_FLOW_INACTIVITY_TIMEOUT);      \
+      }                                                                        \
       return false;                                                            \
     }                                                                          \
   } while (0)
