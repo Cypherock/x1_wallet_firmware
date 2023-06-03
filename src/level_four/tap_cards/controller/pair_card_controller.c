@@ -123,6 +123,10 @@ void tap_card_pair_card_controller() {
   }
 }
 
+/**
+ * Obsolete function, alternate function( @ref pair_card_operation) provided in
+ * @ref card_pair.h
+ */
 static void _tap_card_backend(uint8_t card_number) {
 }
 
@@ -142,6 +146,8 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
       .error_type = CARD_OPERATION_DEFAULT_INVALID,
       .nfc_data = {0}};
   bool result = false;
+
+  instruction_scr_init(message, heading);
 
   /// Pair operation pre-processing
   random_generate(session_nonce, sizeof(session_nonce));
@@ -169,7 +175,6 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
   while (1) {
     // Initialize card tap config
     card_data.nfc_data.acceptable_cards = (1 << (card_number - 1));
-    card_data.nfc_data.lvl3_retry_point = flow_level.level_three - 1;
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
 
     // Initialize card applet
