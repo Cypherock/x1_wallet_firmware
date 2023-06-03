@@ -578,6 +578,18 @@ void card_auth_handler(manager_query_t *query) {
     }
 
     send_auth_card_response(&resp);
+    /**
+     * TODO: Sending errors and response at this point is not ideal as host gets
+     * indicated of the issue after the error dispaly completes
+     * - Each handler should send their own response to host for success case
+     * - Send error response to host in errors cases before showing error
+     * display.
+     * - The parent should only be concerned with correct exit condition i.e.
+     * flow complete or error occurred
+     * - Flow complete should be indicated by flow status.
+     * - For early exits, say auth failed after the serial sign, handler can
+     * return MANAGER_TASK_FAILED to exit.
+     */
     if (MANAGER_AUTH_CARD_RESPONSE_COMMON_ERROR_TAG == resp.which_response) {
       return;
     }
