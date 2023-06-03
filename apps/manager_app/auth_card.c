@@ -549,9 +549,9 @@ void card_auth_handler(manager_query_t *query) {
   ASSERT(NULL != query);
 
   /* Validate if this flow is allowed */
-  // if (false == onboarding_step_allowed(ONBOARDING_CARD_AUTHENTICATION)) {
-  //   // TODO: Reject query
-  // }
+  if (false == onboarding_step_allowed(ONBOARDING_CARD_AUTHENTICATION)) {
+    // TODO: Reject query
+  }
 
   if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG !=
       query->auth_card.which_request) {
