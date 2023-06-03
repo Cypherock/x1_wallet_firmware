@@ -75,9 +75,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define P0_HANDLER(event)                                                      \
+#define P0_SESSION_HANDLER(event)                                              \
   do {                                                                         \
     if (true == event.p0_event.flag) {                                         \
+      manager_send_data_flow_error(ERROR_DATA_FLOW_INACTIVITY_TIMEOUT);        \
       return false;                                                            \
     }                                                                          \
   } while (0)
@@ -187,8 +188,8 @@ void manager_send_result(manager_result_t *result) {
 bool manager_get_query(manager_query_t *query, pb_size_t exp_query_tag) {
   evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
 
-  /* Return false in case P0 event occurs */
-  P0_HANDLER(event);
+  /* Send data flow timeout to host and return false in case P0 event occurs */
+  P0_SESSION_HANDLER(event);
 
   if (!decode_manager_query(
           event.usb_event.p_msg, event.usb_event.msg_size, query)) {
