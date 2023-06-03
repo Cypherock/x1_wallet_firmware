@@ -155,7 +155,15 @@ const flow_step_t *onboarding_get_step(void) {
 }
 
 manager_onboarding_step_t onboarding_get_last_step(void) {
-  return (manager_onboarding_step_t)get_onboarding_step();
+  uint8_t step = get_onboarding_step();
+
+  /* First read on virgin device will fetch 0xFF, so manually enforce it to
+   * MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE */
+  if (DEFAULT_VALUE_IN_FLASH == step) {
+    return MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;
+  }
+
+  return (manager_onboarding_step_t)step;
 }
 
 void onboarding_set_step_done(const manager_onboarding_step_t next_step) {
