@@ -103,16 +103,6 @@ static bool get_firmware_version(common_version_t *firmware_version);
  */
 static manager_get_device_info_response_t get_device_info(void);
 
-/**
- * @brief Sets the necessary field identifiers along with setting the error code
- *
- * @param device_info Reference to manager_get_device_info_response_t to fill
- * @param error_code The error code to be set in error struct
- */
-static void fill_device_info_unknown_error(
-    manager_get_device_info_response_t *device_info,
-    uint32_t error_code);
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -137,8 +127,8 @@ static manager_get_device_info_response_t get_device_info(void) {
 
   device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
   if (status != ATCA_SUCCESS) {
-    fill_device_info_unknown_error(&device_info, status);
-    LOG_CRITICAL("serial %d", status);
+    // TODO: Add specialized error codes in get_device_info response
+    ASSERT(false);
   }
 
   if (device_info.which_response ==
@@ -147,7 +137,7 @@ static manager_get_device_info_response_t get_device_info(void) {
     result->has_firmware_version =
         get_firmware_version(&result->firmware_version);
     memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    result->is_authenticated = (is_device_authenticated() == 1);
+    result->is_authenticated = is_device_authenticated();
     result->is_initial =
         (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
     result->onboarding_step = onboarding_get_last_step();
@@ -157,37 +147,19 @@ static manager_get_device_info_response_t get_device_info(void) {
   return device_info;
 }
 
-static void fill_device_info_unknown_error(
-    manager_get_device_info_response_t *device_info,
-    uint32_t error_code) {
-  device_info->which_response =
-      MANAGER_GET_DEVICE_INFO_RESPONSE_COMMON_ERROR_TAG;
-  device_info->common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
-  device_info->common_error.unknown_error = error_code;
-}
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void get_device_info_flow(const manager_query_t *query) {
-  size_t msg_size = 0;
-  // TODO: replace MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE with relevant
-  // macro/value
-  uint8_t response[MANAGER_GET_DEVICE_INFO_RESULT_RESPONSE_SIZE] = {0};
-  manager_result_t result = MANAGER_RESULT_INIT_ZERO;
-
-  if (MANAGER_QUERY_GET_DEVICE_INFO_TAG != query->which_request ||
-      MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-          query->get_device_info.which_request) {
+  if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
+      query->get_device_info.which_request) {
     // set the relevant tags for error
-    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
-    fill_device_info_unknown_error(&result.get_device_info, 1);
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
   } else {
-    result.which_response = MANAGER_RESULT_GET_DEVICE_INFO_TAG;
+    manager_result_t result =
+        init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
     result.get_device_info = get_device_info();
+    manager_send_result(&result);
   }
-
-  ASSERT(encode_manager_result(&result, response, sizeof(response), &msg_size));
-  usb_send_msg(response, msg_size);
 }
