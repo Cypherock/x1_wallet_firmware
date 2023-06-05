@@ -63,6 +63,7 @@
 #include "check_pairing.h"
 #include "flash_api.h"
 #include "manager_api.h"
+#include "onboarding.h"
 #include "status_api.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
@@ -85,11 +86,14 @@
  *****************************************************************************/
 
 /**
- * TODO: Replace with api provided by manager app
+ * @brief Sends the received message to host app.
+ * @details The function internally calls manager_send_result to send the
+ * message to host.
  *
- * @param training
+ * @param resp Reference to a filled structure instance of
+ * manager_train_card_response_t
  */
-static void send_message_to_host(manager_train_card_response_t *training);
+static void send_training_response(manager_train_card_response_t *resp);
 
 /**
  * TODO: Replace with api provided by manager app
@@ -110,14 +114,11 @@ static void send_training_error(uint32_t error_code);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static void send_message_to_host(manager_train_card_response_t *training) {
-  manager_result_t result =
-      get_manager_result_template(MANAGER_RESULT_TRAIN_CARD_TAG);
-  uint8_t result_buffer[1024] = {0};
-
-  memcpy(&result.train_card, training, sizeof(manager_train_card_response_t));
-  ASSERT(encode_and_send_manager_result(
-      &result, result_buffer, sizeof(result_buffer)));
+static void send_training_response(manager_train_card_response_t *resp) {
+  manager_result_t result = init_manager_result(MANAGER_RESULT_TRAIN_CARD_TAG);
+  memcpy(&(result.train_card), resp, sizeof(manager_train_card_response_t));
+  manager_send_result(&result);
+  return;
 }
 
 static void send_training_error(uint32_t error_code) {
@@ -126,7 +127,7 @@ static void send_training_error(uint32_t error_code) {
   training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
   training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
   training.common_error.unknown_error = error_code;
-  send_message_to_host(&training);
+  send_training_response(&training);
 }
 
 /*****************************************************************************
@@ -134,11 +135,17 @@ static void send_training_error(uint32_t error_code) {
  *****************************************************************************/
 
 void manager_card_training(manager_query_t *query) {
-  LOG_SWV("%s (%d)\n", __func__, __LINE__);
-  if (NULL == query) {
-    // TODO: verify card training query tag for completeness
+  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
     return;
   }
+
+  if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
+      query->train_card.which_request) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    return;
+  }
+
   // TODO: verify on-boarding state for safety
   core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
 
@@ -164,7 +171,7 @@ void manager_card_training(manager_query_t *query) {
   // TODO: Fetch wallet list; send dummy data
   result.result.card_paired = false;
   result.result.wallet_list_count = 0;
-  send_message_to_host(&result);
+  send_training_response(&result);
 
   char msg[64] = "";
   snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
