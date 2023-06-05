@@ -221,11 +221,8 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       buzzer_start(BUZZER_DURATION);
-      if (CARD_OPERATION_SUCCESS != wait_for_card_removal()) {
-        result = false;
-      } else {
-        result = true;
-      }
+      wait_for_card_removal();
+      result = true;
       break;
     }
 
