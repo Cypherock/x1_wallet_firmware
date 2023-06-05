@@ -60,6 +60,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_sign.h"
 #include "controller_tap_cards.h"
 #include "events.h"
 #include "lv_task.h"
@@ -111,6 +112,7 @@ typedef struct {
   char heading[30];
   char message[100];
   uint8_t acceptable_cards;
+  uint8_t family_id[FAMILY_ID_SIZE];
   bool pair_card_required;
 } auth_card_screen_ctx_t;
 
@@ -147,8 +149,31 @@ static manager_error_code_t send_auth_card_response(
  * authentication
  *
  * @param auth_card_data object of auth card data
+ * @return manager_error_code_t MANAGER_TASK_SUCCESS sent encoded data
+ * successfully, else error return
  */
-static void prepare_card_auth_context(auth_card_data_t *auth_card_data);
+static manager_error_code_t prepare_card_auth_context(
+    auth_card_data_t *auth_card_data);
+
+/**
+ * @brief Handles signing of authentication data.
+ * This function handles the signing of authentication data based on the type of
+ * request received.
+ *
+ * @details This function initializes sign configuration parameters, sets data
+ * and sign type based on request type, and returns success or failure based on
+ * the status of card_sign_auth_data function.
+ *
+ * @param auth_card_data Pointer to authentication card data.
+ * @param resp Pointer to manager authentication card response.
+ *
+ * @return manager_error_code_t Returns MANAGER_TASK_SUCCESS on success,
+ * MANAGER_TASK_P0_ABORT_OCCURED if P0 abort occurred, and MANAGER_TASK_FAILED
+ * on failure.
+ */
+static manager_error_code_t handle_sign_data(
+    auth_card_data_t *auth_card_data,
+    manager_auth_card_response_t *resp);
 
 /**
  * @brief Helper to return signature of card serial number.
@@ -299,10 +324,16 @@ static manager_error_code_t send_auth_card_response(
   return MANAGER_TASK_SUCCESS;
 }
 
-static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
+static manager_error_code_t prepare_card_auth_context(
+    auth_card_data_t *auth_card_data) {
   auth_card_data->ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
   if (auth_card_data->query->auth_card.initiate.has_card_index) {
+    if (4 < auth_card_data->query->auth_card.initiate.card_index ||
+        0 == auth_card_data->query->auth_card.initiate.card_index) {
+      /* TODO: Return invalid query error code to host*/
+      return MANAGER_TASK_DECODING_FAILED;
+    }
     auth_card_data->ctx.acceptable_cards = encode_card_number(
         auth_card_data->query->auth_card.initiate.card_index);
     snprintf(auth_card_data->ctx.heading,
@@ -324,28 +355,76 @@ static void prepare_card_auth_context(auth_card_data_t *auth_card_data) {
            sizeof(auth_card_data->ctx.message),
            UI_TEXT_PLACE_CARD_TILL_BEEP,
            SIGN_SERIAL_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
+
+  memcpy(auth_card_data->ctx.family_id, get_family_id(), FAMILY_ID_SIZE);
+  return MANAGER_TASK_SUCCESS;
+}
+
+static manager_error_code_t handle_sign_data(
+    auth_card_data_t *auth_card_data,
+    manager_auth_card_response_t *resp) {
+  card_sign_data_config_t sign_config = {0};
+
+  sign_config.acceptable_cards = auth_card_data->ctx.acceptable_cards;
+  sign_config.heading = auth_card_data->ctx.heading;
+  sign_config.message = auth_card_data->ctx.message;
+  sign_config.family_id = auth_card_data->ctx.family_id;
+
+  if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG ==
+      auth_card_data->query->auth_card.which_request) {
+    sign_config.data = resp->serial_signature.serial;
+    sign_config.sign_type = CARD_SIGN_SERIAL;
+  } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
+             auth_card_data->query->auth_card.which_request) {
+    sign_config.data = auth_card_data->query->auth_card.challenge.challenge;
+    sign_config.data_size = CHALLENGE_SIZE;
+    sign_config.sign_type = CARD_SIGN_CUSTOM;
+  } else {
+    // This function shouldn't be called in other states
+    return MANAGER_TASK_INVALID_STATE;
+  }
+
+  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != core_status_get_flow_status() &&
+      false == auth_card_data->ctx.pair_card_required)
+    sign_config.skip_card_removal = false;
+  else
+    sign_config.skip_card_removal = true;
+
+  card_error_type_e status = card_sign_auth_data(&sign_config);
+
+  switch (status) {
+    case CARD_OPERATION_SUCCESS:
+      if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG ==
+          auth_card_data->query->auth_card.which_request) {
+        memcpy(resp->serial_signature.signature,
+               sign_config.signature,
+               sizeof(resp->serial_signature.signature));
+      } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
+                 auth_card_data->query->auth_card.which_request) {
+        memcpy(resp->challenge_signature.signature,
+               sign_config.signature,
+               sizeof(resp->challenge_signature.signature));
+      }
+      return MANAGER_TASK_SUCCESS;
+      break;
+
+    case CARD_OPERATION_P0_OCCURED:
+      return MANAGER_TASK_P0_ABORT_OCCURED;
+      break;
+
+    default:
+      /* TODO: Send error response to host */
+      return MANAGER_TASK_FAILED;
+      break;
+  }
 }
 
 static manager_error_code_t handle_sign_card_serial(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  instruction_scr_init(auth_card_data->ctx.message,
-                       auth_card_data->ctx.heading);
-
-  /* TODO: Move snippet to sign serial flow*/
-  {
-    nfc_en_select_card_task();
-
-    evt_status_t status = get_events(EVENT_CONFIG_NFC, TIMEOUT_SELECTION);
-
-    HANDLE_P0_EVENTS(status.p0_event);
-
-    // NFC event occurred
-
-    /* TODO: Add sign serial card action*/
-
-    /* TODO: Check if card operation failed*/
-    // return MANAGER_TASK_FAILED;
+  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
+  if (MANAGER_TASK_SUCCESS != manager_error) {
+    return manager_error;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
@@ -365,20 +444,9 @@ static manager_error_code_t handle_sign_card_serial(
 static manager_error_code_t handle_sign_challenge(
     auth_card_data_t *auth_card_data,
     manager_auth_card_response_t *resp) {
-  /* TODO: Move snippet to challenge serial flow*/
-  {
-    nfc_en_select_card_task();
-
-    evt_status_t status = get_events(EVENT_CONFIG_NFC, TIMEOUT_SELECTION);
-
-    HANDLE_P0_EVENTS(status.p0_event);
-
-    // NFC event occurred
-
-    /* TODO: Add sign challenge card action*/
-
-    /* TODO: Check if card operation failed*/
-    // return MANAGER_TASK_FAILED;
+  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
+  if (MANAGER_TASK_SUCCESS != manager_error) {
+    return manager_error;
   }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
@@ -414,7 +482,12 @@ static manager_error_code_t handle_auth_card_initiate_query(
   // }
 
   core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
-  prepare_card_auth_context(auth_card_data);
+
+  manager_error_code_t status = prepare_card_auth_context(auth_card_data);
+  if (MANAGER_TASK_SUCCESS != status) {
+    return status;
+  }
+
   return handle_sign_card_serial(auth_card_data, resp);
 }
 
@@ -462,7 +535,6 @@ static manager_error_code_t handle_auth_card_result_query(
         core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
         resp->flow_complete.dummy_field = 0;
-        delay_scr_init(ui_text_card_authentication_success, DELAY_TIME);
 
         return MANAGER_TASK_SUCCESS;
       }
@@ -539,6 +611,21 @@ void card_auth_handler(manager_query_t *query) {
     }
 
     send_auth_card_response(&resp);
+    /**
+     * TODO: Sending errors and response at this point is not ideal as host gets
+     * indicated of the issue after the error dispaly completes
+     * - Each handler should send their own response to host for success case
+     * - Send error response to host in errors cases before showing error
+     * display.
+     * - The parent should only be concerned with correct exit condition i.e.
+     * flow complete or error occurred
+     * - Flow complete should be indicated by flow status.
+     * - For early exits, say auth failed after the serial sign, handler can
+     * return MANAGER_TASK_FAILED to exit.
+     */
+    if (MANAGER_AUTH_CARD_RESPONSE_COMMON_ERROR_TAG == resp.which_response) {
+      return;
+    }
     memzero(&resp, sizeof(resp));
 
     if (FLOW_COMPLETE_STATE) {
