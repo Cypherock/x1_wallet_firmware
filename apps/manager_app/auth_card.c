@@ -156,6 +156,26 @@ static manager_error_code_t prepare_card_auth_context(
     auth_card_data_t *auth_card_data);
 
 /**
+ * @brief Handles signing of authentication data.
+ * This function handles the signing of authentication data based on the type of
+ * request received.
+ *
+ * @details This function initializes sign configuration parameters, sets data
+ * and sign type based on request type, and returns success or failure based on
+ * the status of card_sign_auth_data function.
+ *
+ * @param auth_card_data Pointer to authentication card data.
+ * @param resp Pointer to manager authentication card response.
+ *
+ * @return manager_error_code_t Returns MANAGER_TASK_SUCCESS on success,
+ * MANAGER_TASK_P0_ABORT_OCCURED if P0 abort occurred, and MANAGER_TASK_FAILED
+ * on failure.
+ */
+static manager_error_code_t handle_sign_data(
+    auth_card_data_t *auth_card_data,
+    manager_auth_card_response_t *resp);
+
+/**
  * @brief Helper to return signature of card serial number.
  * Handles serial signing task and populates resp object with appropriate
  * response
