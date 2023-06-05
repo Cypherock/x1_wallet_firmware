@@ -69,4 +69,11 @@ void device_authentication_flow(manager_query_t *query);
  */
 void manager_card_training(manager_query_t *query);
 
+/**
+ * @brief Transfer ascii encoded logs from the device to the host
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void manager_get_logs(manager_query_t *query);
+
 #endif

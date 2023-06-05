@@ -170,9 +170,9 @@ void manager_send_data_flow_error(error_data_flow_t error_code) {
 }
 
 void manager_send_result(manager_result_t *result) {
-  // TODO: Eventually 1024 will be replaced by MANAGER_RESULT_SIZE when all
+  // TODO: Eventually 2059 will be replaced by MANAGER_RESULT_SIZE when all
   // option files for manager app are complete
-  uint8_t buffer[1024] = {0};
+  uint8_t buffer[2059] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_manager_result(result, buffer, sizeof(buffer), &bytes_encoded));
   usb_send_msg(&buffer[0], bytes_encoded);
