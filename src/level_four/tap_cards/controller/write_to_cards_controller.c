@@ -58,7 +58,8 @@
  ******************************************************************************
  */
 #include "card_action_controllers.h"
-#include "constant_texts.h"
+#include "card_internal.h"
+#include "card_utils.h"
 #include "controller_main.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"
@@ -67,8 +68,8 @@
 #include "stdint.h"
 #include "tasks.h"
 #include "ui_instruction.h"
-#include "ui_message.h"
 #include "wallet.h"
+#include "write_card_share.h"
 
 extern Wallet_shamir_data wallet_shamir_data;
 
@@ -131,81 +132,120 @@ void tap_cards_for_write_and_verify_flow_controller() {
 
     default:
       reset_flow_level();
-      message_scr_init(ui_text_something_went_wrong);
+      // message_scr_init(ui_text_something_went_wrong);
       break;
   }
 }
 
-static void write_share_to_card(uint8_t card_number) {
-  Flash_Wallet *wallet_for_flash = get_flash_wallet();
-  wallet.xcor = card_number;
-  tap_card_data.retries = 5;
-  tap_card_data.lvl3_retry_point = flow_level.level_three;
-  tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
-  memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+/**
+ * @brief Handles pre-processing required during the wallet share write
+ * operation on the X1 card.
+ *
+ * @param card_num The card number to which the share is written
+ */
+static void write_card_pre_process(uint8_t card_num);
 
+/**
+ * @brief Handles post-processing required during the wallet share write
+ * operation on the X1 card.
+ *
+ * @param card_num The card number to which the share is written
+ */
+static void write_card_share_post_process(uint8_t card_num);
+
+static void write_card_pre_process(uint8_t card_num) {
   if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
     memcpy(wallet.arbitrary_data_share,
            ((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
-               (card_number - 1) * wallet.arbitrary_data_size,
+               (card_num - 1) * wallet.arbitrary_data_size,
            wallet.arbitrary_data_size);
   else
     memcpy(wallet.wallet_share_with_mac_and_nonce,
-           wallet_shamir_data.mnemonic_shares[card_number - 1],
+           wallet_shamir_data.mnemonic_shares[card_num - 1],
            BLOCK_SIZE);
   memcpy(wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
-         wallet_shamir_data.share_encryption_data[card_number - 1],
+         wallet_shamir_data.share_encryption_data[card_num - 1],
          NONCE_SIZE + WALLET_MAC_SIZE);
+  return;
+}
+
+static void write_card_share_post_process(uint8_t card_num) {
+  Flash_Wallet *wallet_for_flash = get_flash_wallet();
+  wallet_for_flash->cards_states = (1 << card_num) - 1;
+
+  if (card_num == 1) {
+    wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
+    add_wallet_to_flash(wallet_for_flash, &wallet_index);
+  } else {
+    put_wallet_flash(wallet_index, wallet_for_flash);
+  }
+
+  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
+    memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
+               (card_num - 1) * wallet.arbitrary_data_size,
+           0,
+           wallet.arbitrary_data_size);
+  else
+    memset(wallet_shamir_data.mnemonic_shares[card_num - 1], 0, BLOCK_SIZE);
+  memset(wallet_shamir_data.share_encryption_data[card_num - 1],
+         0,
+         sizeof(wallet_shamir_data.share_encryption_data[card_num - 1]));
+  memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
+             (card_num - 1) * wallet.arbitrary_data_size,
+         0,
+         wallet.arbitrary_data_size);
+}
+
+// TODO: This API is deprecated
+static void write_share_to_card(uint8_t card_number) {
+}
+
+bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
+  bool result = false;
+  wallet.xcor = card_num;
+
+  // Render the instruction screen
+  instruction_scr_init(msg, heading);
+
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+
+  write_card_pre_process(card_num);
 
   while (1) {
-    tap_card_data.acceptable_cards = 1 << (card_number - 1);
-    if (card_number == 1)
-      tap_card_data.tapped_card = 0;
-    if (!tap_card_applet_connection())
-      return;
-    tap_card_data.status = nfc_add_wallet(&wallet);
+    card_data.nfc_data.acceptable_cards = 1 << (card_num - 1);
+    if (card_num == 1)
+      card_data.nfc_data.tapped_card = 0;
 
-    if (tap_card_data.status == SW_NO_ERROR) {    // wallet added
-      wallet_for_flash->cards_states = (1 << card_number) - 1;
-      flow_level.level_four++;
-      if (card_number == 1) {
-        wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
-        add_wallet_to_flash(wallet_for_flash, &wallet_index);
+    card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status = nfc_add_wallet(&wallet);
+
+      if (card_data.nfc_data.status == SW_NO_ERROR) {
+        write_card_share_post_process(card_num);
+        result = true;
+        break;
       } else {
-        put_wallet_flash(wallet_index, wallet_for_flash);
+        card_handle_errors(&card_data);
       }
-      if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-        memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
-                   (card_number - 1) * wallet.arbitrary_data_size,
-               0,
-               wallet.arbitrary_data_size);
-      else
-        memset(
-            wallet_shamir_data.mnemonic_shares[card_number - 1], 0, BLOCK_SIZE);
-      memset(wallet_shamir_data.share_encryption_data[card_number - 1],
-             0,
-             sizeof(wallet_shamir_data.share_encryption_data[card_number - 1]));
-      memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
-                 (card_number - 1) * wallet.arbitrary_data_size,
-             0,
-             wallet.arbitrary_data_size);
-      break;
-    } else if (tap_card_handle_applet_errors()) {
-      break;
     }
+
+    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
+        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == display_error_message(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(msg, heading);
+        continue;
+      }
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = false;
+    break;
   }
 
-  if (flow_level.show_error_screen && counter.level == LEVEL_ONE) {
-    // if the error terminates the operation, clear any sensitive data
-    memzero(wallet_shamir_data.share_encryption_data,
-            sizeof(wallet_shamir_data.share_encryption_data));
-    memzero(wallet_shamir_data.arbitrary_data_shares,
-            sizeof(wallet_shamir_data.arbitrary_data_shares));
-    if (card_number > 1) {
-      flow_level.level_three = GENERATE_WALLET_FAILED_MESSAGE;
-      flow_level.level_two = LEVEL_THREE_GENERATE_WALLET;
-      flow_level.level_one = LEVEL_TWO_NEW_WALLET;
-      counter.level = LEVEL_THREE;
-    }
-  }
+  return result;
 }
