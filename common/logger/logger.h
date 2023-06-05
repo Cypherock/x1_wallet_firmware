@@ -102,7 +102,7 @@ void logger(char *fmt, ...);
  *
  * @note
  */
-void logger_task(void);
+void logger_task(uint8_t *data, size_t *size);
 
 /**
  * @brief Initialises the logger and resets the properties in the global
