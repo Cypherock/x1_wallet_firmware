@@ -56,6 +56,8 @@
  *
  ******************************************************************************
  */
+#include "card_internal.h"
+#include "card_utils.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"
 #include "nfc.h"
@@ -66,37 +68,72 @@
 #include "wallet.h"
 #include "wallet_utilities.h"
 
-static void handle_retrieve_wallet_success(uint8_t xcor);
+/**
+ * @brief Handles post-processing required during the wallet share read
+ * operation on the X1 card.
+ *
+ * @param xcor The x-coordinate of the share contained in the X1 card
+ */
+static void read_card_share_post_process(uint8_t xcor);
 
+// TODO: This API is deprecated
 void readback_share_from_card(uint8_t xcor) {
-  tap_card_data.retries = 5;
-  while (1) {
-    tap_card_data.acceptable_cards = encode_card_number(xcor + 1);
-    memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    tap_card_data.lvl3_retry_point = flow_level.level_three;
-    tap_card_data.lvl4_retry_point = flow_level.level_four;
-    if (xcor == 0)
-      tap_card_data.tapped_card = 0;
-    if (!tap_card_applet_connection())
-      return;
-    tap_card_data.status = nfc_retrieve_wallet(&wallet);
-
-    if (tap_card_data.status == SW_NO_ERROR) {
-      buzzer_start(BUZZER_DURATION);
-      instruction_scr_change_text(ui_text_remove_card_prompt, true);
-      if (xcor != 3) {
-        nfc_detect_card_removal();
-      }
-      handle_retrieve_wallet_success(xcor);
-      instruction_scr_destructor();
-      break;
-    } else if (tap_card_handle_applet_errors()) {
-      break;
-    }
-  }
 }
 
-static void handle_retrieve_wallet_success(uint8_t xcor) {
+bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
+  bool result = false;
+
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+
+  while (1) {
+    card_data.nfc_data.acceptable_cards = encode_card_number(xcor + 1);
+    if (xcor == 0)
+      card_data.nfc_data.tapped_card = 0;
+
+    card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      load_card_session_key(card_data.nfc_data.card_key_id);
+      card_data.nfc_data.status = nfc_retrieve_wallet(&wallet);
+
+      if (card_data.nfc_data.status == SW_NO_ERROR) {
+        buzzer_start(BUZZER_DURATION);
+        instruction_scr_change_text(ui_text_remove_card_prompt, true);
+
+        if (xcor != 3) {
+          wait_for_card_removal();
+        }
+
+        read_card_share_post_process(xcor);
+        instruction_scr_destructor();
+        result = true;
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
+    }
+
+    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
+        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == display_error_message(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(msg, heading);
+        continue;
+      }
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = false;
+    break;
+  }
+
+  return result;
+}
+
+static void read_card_share_post_process(uint8_t xcor) {
   if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
     memcpy(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
                xcor * wallet.arbitrary_data_size,
@@ -114,12 +151,7 @@ static void handle_retrieve_wallet_success(uint8_t xcor) {
           sizeof(wallet.wallet_share_with_mac_and_nonce));
 
   wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
-  if (xcor < 3) {
-    flow_level.level_four++;
-  } else {
-    flow_level.level_three++;
-    flow_level.level_four = 1;
-  }
+  return;
 }
 
 int verify_card_share_data() {
