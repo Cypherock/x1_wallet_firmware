@@ -138,9 +138,9 @@ static manager_get_device_info_response_t get_device_info(void) {
         get_firmware_version(&result->firmware_version);
     memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
     result->is_authenticated = is_device_authenticated();
-    result->is_initial = true;    // TODO: Get from memory
-    result->onboarding_step =
-        MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;    // TODO: Get from memory
+    result->is_initial =
+        (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
+    result->onboarding_step = onboarding_get_last_step();
     // TODO: populate applet list (result->applet_list)
   }
 

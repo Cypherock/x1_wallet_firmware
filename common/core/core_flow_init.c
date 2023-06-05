@@ -108,12 +108,12 @@ engine_ctx_t *get_core_flow_ctx(void) {
 
   // TODO: Set onboarding status for in-field devices
   // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(ONBOARDING_COMPLETE);
+  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
   // }
 
   /* If onboarding is not complete, invoke onboarding flow from the manager app
    */
-  if (ONBOARDING_COMPLETE != onboarding_get_last_step()) {
+  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
     engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
   }
 

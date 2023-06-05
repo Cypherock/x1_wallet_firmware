@@ -108,7 +108,7 @@ void onboarding_host_interface(engine_ctx_t *ctx,
 
   /* If onboarding is complete, reset the flow as the core will now need to
    * render the main menu */
-  if (ONBOARDING_COMPLETE == onboarding_get_last_step()) {
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
     engine_reset_flow(ctx);
   }
 

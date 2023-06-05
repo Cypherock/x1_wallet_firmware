@@ -83,7 +83,8 @@
 #define FLASH_STRUCT_TLV_SIZE                                                  \
   (6 + 3 + FAMILY_ID_SIZE + 3 + sizeof(uint32_t) + 3 +                         \
    (MAX_WALLETS_ALLOWED * ((15 * 3) + sizeof(Flash_Wallet))) + 3 +             \
-   sizeof(uint8_t) + 3 + sizeof(uint8_t))
+   sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 +           \
+   sizeof(uint8_t))
 
 /// The size of tlv that will be read and written to flash. Since we read/write
 /// in multiples of 4 hence it is essential to make the size divisible by 4.
@@ -104,6 +105,7 @@ typedef enum Flash_tlv_tags {
   TAG_FLASH_DISPLAY_ROTATION = 0x06,
   TAG_FLASH_TOGGLE_PASSPHRASE = 0x07,
   TAG_FLASH_TOGGLE_LOGS = 0x08,
+  TAG_FLASH_ONBOARDING_STEP = 0x09,
 
   TAG_FLASH_WALLET = 0x20,
   TAG_FLASH_WALLET_STATE = 0x21,
@@ -222,6 +224,19 @@ void flash_erase() {
     flash_ram_instance.wallet_count = 0;
   }
   is_flash_ram_instance_loaded = false;
+}
+
+void clear_user_data(void) {
+  /* Copy data to be preserved on the flash memory */
+  get_flash_ram_instance();
+  uint8_t last_onboarding_step = flash_ram_instance.onboarding_step;
+
+  /* Erase the flash page to get a clean slate */
+  flash_erase();
+
+  /* Restore data on to the flash */
+  save_onboarding_step(last_onboarding_step);
+  return;
 }
 
 /**
@@ -405,7 +420,11 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
                  TAG_FLASH_TOGGLE_LOGS,
                  sizeof(flash_struct->enable_log),
                  &(flash_struct->enable_log));
-
+  fill_flash_tlv(tlv,
+                 &index,
+                 TAG_FLASH_ONBOARDING_STEP,
+                 sizeof(flash_struct->onboarding_step),
+                 &(flash_struct->onboarding_step));
   tlv[4] = index - 6;
   tlv[5] = (index - 6) >> 8;
 
@@ -578,6 +597,11 @@ static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
 
       case TAG_FLASH_TOGGLE_LOGS: {
         memcpy(&(flash_struct->enable_log), tlv + index + 2, size);
+        break;
+      }
+
+      case TAG_FLASH_ONBOARDING_STEP: {
+        memcpy(&(flash_struct->onboarding_step), tlv + index + 2, size);
         break;
       }
 

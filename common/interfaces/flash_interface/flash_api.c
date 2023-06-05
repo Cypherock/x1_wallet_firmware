@@ -948,6 +948,17 @@ int set_logging_config(log_config state, flash_save_mode save_mode) {
   return STM_SUCCESS;
 }
 
+void save_onboarding_step(const uint8_t onboarding_step) {
+  get_flash_ram_instance();
+  flash_ram_instance.onboarding_step = onboarding_step;
+  flash_struct_save();
+}
+
+uint8_t get_onboarding_step(void) {
+  get_flash_ram_instance();
+  return flash_ram_instance.onboarding_step;
+}
+
 const uint8_t *get_perm_self_key_id() {
   get_flash_perm_instance();
   return flash_perm_instance.permKeyData.ext_keys.self_key_id;
