@@ -67,7 +67,6 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-extern uint32_t get_applet_id(void);
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -103,21 +102,9 @@ void onboarding_host_interface(engine_ctx_t *ctx,
    * this request came in, therefore, we will pass control to the required
    * application here */
 
-  // add a switch case here to determine which app to boot.
-
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      // bitcoin_app_main(usb_evt);
-      // invoke the bitcoin app
-      bitcoin_app_main(usb_evt);
-      break;
-    }
-  }
+  // TODO: Get info from core on which application to boot
+  // Temporarily hardcode to manager app where we will do the onboarding
+  manager_app_main(usb_evt);
 
   /* If onboarding is complete, reset the flow as the core will now need to
    * render the main menu */

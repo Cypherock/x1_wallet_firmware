@@ -1,5 +1,5 @@
 /**
- * @file    manager_app.c
+ * @file    btc_app.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -96,7 +96,8 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void bitcoin_app_main(usb_event_t usb_evt) {
+
+void btc_app_main(usb_event_t usb_evt) {
   btc_query_t query = BTC_QUERY_INIT_DEFAULT;
 
   if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -108,34 +109,18 @@ void bitcoin_app_main(usb_event_t usb_evt) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
   switch ((uint8_t)query.which_request) {
-    // add a case statement to handle bitcoin app query/
-    // This case statment is to handle the getWalletPublickey from the SDK.
     case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
-      btc_get_wallet_public_key(&query);
+      // btc_get_wallet_public_key(&query);
       break;
     }
-      // case BTC_QUERY_SIGN_TX_TAG : {
-      //   btc_sign_tx(&query);
-      //   break;
-      // }
-      // case BTC_QUERY_GET_ADDR_TAG : {
-      //   btc_get_address(&query);
-      //   break;
+    default: {
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
+      break;
+    }
   }
-  default: {
-    /* In case we ever encounter invalid query, the USB event should be
-     * cleared manually */
-    usb_clear_event();
-    break;
-  }
-}
 
-// TODO: Check if on-boarding default screen is to be rendered
-onboarding_set_static_screen();
-
-return;
+  return;
 }

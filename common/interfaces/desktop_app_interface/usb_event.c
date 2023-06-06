@@ -91,6 +91,8 @@ typedef struct usb_core_msg {
 
 static usb_event_t usb_event;
 static usb_core_msg_t core_msg;
+// TODO: Following will be replaced when core starts maintaining it
+static uint32_t applet_id = 0;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -137,8 +139,6 @@ static void clear_msg_context() {
   core_msg.buffer = NULL;
 }
 
-uint32_t applet_id = 0;
-
 static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
   core_msg_t core_msg_p = CORE_MSG_INIT_ZERO;
   pb_istream_t stream = pb_istream_from_buffer(msg.buffer, msg.size);
@@ -168,6 +168,7 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+
 uint32_t get_applet_id(void) {
   return applet_id;
 }
