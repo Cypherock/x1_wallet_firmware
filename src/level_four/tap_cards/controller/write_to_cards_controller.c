@@ -221,6 +221,7 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      load_card_session_key(card_data.nfc_data.card_key_id);
       card_data.nfc_data.status = nfc_add_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
