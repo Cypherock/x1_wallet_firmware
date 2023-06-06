@@ -89,18 +89,19 @@ void logger(char *fmt, ...);
 #define CYCLIC_INCREMENT(var, max) ((var + 1) % max)
 
 /**
- * @brief Task to handle desktop communication
- * @details
+ * @brief Task to read logs from flash to provided buffer in RAM.
+ * @details The function internally maintains states to manage transferring logs
+ * in chunks of 2kB. The function sends a 'start of log' packet when export
+ * starts and 'end of log' packet when all the logs have been sent. The
+ * application should handle usb events after each chunk transfer is complete
+ * so that next chunk request from host is served by calling this function
+ * repeatedly on every usb event.
  *
- * @param
- *
- * @return
- * @retval
+ * @param data Pointer to a buffer for storing the log data (minimum of 2kB)
+ * @param size Reference to size storage variable
  *
  * @see
  * @since v1.0.0
- *
- * @note
  */
 void logger_task(uint8_t *data, size_t *size);
 
