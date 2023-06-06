@@ -173,7 +173,6 @@ void level_three_advanced_settings_controller() {
 #ifdef ALLOW_LOG_EXPORT
     case LEVEL_THREE_FETCH_LOGS_INIT: {
       set_start_log_read();
-      logger_task();
       flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
     } break;
 

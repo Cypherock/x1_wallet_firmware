@@ -129,6 +129,7 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     case MANAGER_QUERY_GET_LOGS_TAG: {
+      manager_get_logs(&query);
       break;
     }
     case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {

@@ -265,7 +265,6 @@ void level_three_advanced_settings_tasks() {
     } break;
 
     case LEVEL_THREE_FETCH_LOGS: {
-      logger_task();
       mark_event_over();
     } break;
 
