@@ -91,6 +91,8 @@ typedef struct usb_core_msg {
 
 static usb_event_t usb_event;
 static usb_core_msg_t core_msg;
+// TODO: Following will be replaced when core starts maintaining it
+static uint32_t applet_id = 0;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -148,6 +150,9 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
     return CORE_INVALID_MSG;
   }
 
+  // store applet id
+  applet_id = core_msg_p.cmd.applet_id;
+
   // TODO: verify if the core_msg_p.type.cmd.applet_id is valid one ref PR #235
   // const cy_app_desc_t *app_desc =
   // registry_get_app_desc(core_msg_p.type.cmd.applet_id);
@@ -163,6 +168,11 @@ static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+
+uint32_t get_applet_id(void) {
+  return applet_id;
+}
+
 void usb_clear_event() {
   reset_event_obj(&usb_event);
   clear_msg_context();

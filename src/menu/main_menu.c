@@ -62,6 +62,7 @@
 #include "main_menu.h"
 
 #include "constant_texts.h"
+#include "host_interface.h"
 #include "menu_priv.h"
 #include "status_api.h"
 #include "wallet_list.h"
@@ -108,7 +109,7 @@ static main_menu_ctx_t main_menu_ctx = {
 static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
                                            .p0_cb = NULL,
                                            .ui_cb = main_menu_handler,
-                                           .usb_cb = NULL, /* TODO: Update */
+                                           .usb_cb = main_menu_host_interface,
                                            .nfc_cb = NULL,
                                            .evt_cfg_ptr = &main_menu_evt_config,
                                            .flow_data_ptr = NULL};
