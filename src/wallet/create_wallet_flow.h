@@ -1,20 +1,17 @@
 /**
- * @file    card_write_share.h
+ * @file    create_wallet_flow.h
  * @author  Cypherock X1 Team
- * @brief   Header file exporting APIs to support wallet share write to X1
- *          cards.
+ * @brief   Header file for the create wallet flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef WRITE_CARD_SHARE_H
-#define WRITE_CARD_SHARE_H
+#ifndef CREATE_WALLET_FLOW_H
+#define CREATE_WALLET_FLOW_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -33,15 +30,14 @@
  *****************************************************************************/
 
 /**
- * @brief This API provides writes the wallet share to an X1 card
- * @details
+ * @brief This API executes the wallet creation flow on the device
+ * @details This function creates mnemonics, takes user inputs for wallet
+ * configuration, writes the wallet shares on the X1 vault flash and X1 cards
+ * and verifies each share
  *
- * @param card_num The X1 card number to write the share
- * @param heading The heading of the instruction to be shown on the screen
- * @param msg The message to be shown on the screen
- * @return true If the process was completed successfully
- * @return false If the process could not be completed
+ * @param new_wallet true if a new wallet needs to be created, false if the user
+ * wants to recover the wallet from a seed phrase
  */
-bool write_card_share(uint8_t card_num, const char *heading, const char *msg);
+void create_wallet(bool new_wallet);
 
-#endif /* WRITE_CARD_SHARE_H */
+#endif /* CREATE_WALLET_FLOW_H */

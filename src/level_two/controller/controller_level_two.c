@@ -93,7 +93,7 @@ void level_two_controller() {
     case LEVEL_TWO_NEW_WALLET: {
       if (counter.level > LEVEL_TWO) {
         if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
-          generate_wallet_controller();
+          return;
         } else {
           restore_wallet_controller();
         }
