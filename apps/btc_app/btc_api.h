@@ -45,9 +45,9 @@ bool decode_btc_query(const uint8_t *data,
                       btc_query_t *query_out);
 
 /**
- * @brief Encodes the manager result with `MANAGER_RESULT_FIELDS` to byte-stream
+ * @brief Encodes the bitcoin result with `BTC_RESULT_FIELDS` to byte-stream
  *
- * @param[in] result: object of populated @ref manager_result_t to be encoded
+ * @param[in] result: object of populated @ref btc_result_t to be encoded
  * @param[out] buffer: buffer to fill byte-stream into
  * @param[in] max_buffer_len: Max length allowed for writing bytestream to
  * buffer
