@@ -1,7 +1,7 @@
 /**
- * @file    onboarding.c
+ * @file    core_error.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Display and return core errors.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,16 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "onboarding.h"
+
+#include "core_error.h"
 
 #include "constant_texts.h"
-#include "core_error_priv.h"
-#include "flash_api.h"
-#include "menu_priv.h"
-#include "onboarding_host_interface.h"
-#include "onboarding_priv.h"
-#include "status_api.h"
-#include "ui_delay.h"
+#include "events.h"
+#include "p0_events.h"
+#include "ui_message.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -81,125 +78,66 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  bool static_screen;
-  bool update_required;
-} onboarding_ctx_t;
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Display error message to user set by core operations.
+ *
+ * @details When a core operation faces a fatal error, it can set an error
+ * message using using @ref mark_core_error_screen before exiting the flow. This
+ * API displays that error message. NOTE: P0 events are ignored in this API, as
+ * this could also be used to display P0 errors
+ */
+void display_core_error();
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
-                                          .update_required = true};
-
-static const flow_step_t onboarding_flow = {
-    .step_init_cb = onboarding_initialize,
-    .p0_cb = NULL,
-    .ui_cb = NULL,
-    .usb_cb = onboarding_host_interface,
-    .nfc_cb = NULL,
-    .evt_cfg_ptr = &main_menu_evt_config,
-    .flow_data_ptr = NULL};
-
+static char error_message[60] = {0};
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void display_core_error() {
+  if ('\0' == error_message[0])
+    return;
+
+  evt_status_t status = {0};
+  message_scr_init(error_message);
+
+  do {
+    status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
+  } while (true != status.ui_event.event_occured);
+
+  memzero(error_message, sizeof(error_message));
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  handle_core_errors();
 
-  if (false == onboarding_ctx.update_required) {
+void mark_core_error_screen(const char *error_msg) {
+  if (NULL == error_msg) {
     return;
   }
 
-  /* Set core_status to CORE_DEVICE_IDLE_STATE_IDLE as we are entering back to
-   * the onboarding menu */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
-
-  /* Reset flow status back to zero */
-  core_status_set_flow_status(0);
-
-  if (true == onboarding_ctx.static_screen) {
-    delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
-  } else {
-    /* Since there is now way onboarding_ctx.static_screen be set to false after
-     * first time initialization, therefore welcome screen and slideshow will
-     * only be shown once to the user */
-    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
-    ui_text_slideshow_init(ui_text_onboarding,
-                           NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
-                           DELAY_TIME,
-                           false);
-  }
-
-  onboarding_ctx.update_required = false;
-  return;
+  snprintf(error_message, sizeof(error_message), "%s", error_msg);
 }
 
-void onboarding_set_static_screen(void) {
-  onboarding_ctx.static_screen = true;
-  onboarding_ctx.update_required = true;
-  return;
-}
+void handle_core_errors() {
+  /* Check P0 events */
+  p0_evt_t evt = {0};
+  p0_get_evt(&evt);
 
-const flow_step_t *onboarding_get_step(void) {
-  return &onboarding_flow;
-}
-
-manager_onboarding_step_t onboarding_get_last_step(void) {
-  uint8_t step = get_onboarding_step();
-
-  /* First read on virgin device will fetch 0xFF, so manually enforce it to
-   * MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE */
-  if (DEFAULT_VALUE_IN_FLASH == step) {
-    return MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;
+  if (true == evt.inactivity_evt) {
+    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
+    /* Send message to host if P0 occured */
   }
 
-  return (manager_onboarding_step_t)step;
-}
-
-void onboarding_set_step_done(const manager_onboarding_step_t next_step) {
-  /* Validate next_step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < next_step) {
-    return;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
-   * ensure we never go back a step */
-  if ((DEFAULT_VALUE_IN_FLASH == last_step) || (last_step < next_step)) {
-    save_onboarding_step((uint8_t)next_step);
-  }
-
-  return;
-}
-
-bool onboarding_step_allowed(const manager_onboarding_step_t step) {
-  /* Validate step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < step) {
-    return false;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Only allow steps that are already completed, or the new step is just the
-   * next step */
-  if ((MANAGER_ONBOARDING_STEP_COMPLETE == last_step) ||
-      (step <= last_step + 1)) {
-    return true;
-  }
-
-  return false;
+  display_core_error();
 }

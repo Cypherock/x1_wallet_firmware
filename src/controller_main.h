@@ -371,11 +371,14 @@ void increase_level_counter();
 void clear_list_choice();
 
 /**
- * @brief Shows error message passed as param on device screen.
+ * @brief [Obsolete] Shows error message passed as param on device screen.
  * @details Sets the Flow_level.show_error_screen to true and sets error message
  * string to Flow_level.error_screen_text. This is error message is shown to the
  * user in the next event loop iteration.
  *
+ * Note: Obsolete function, new function @ref mark_core_error_screen in
+ * core_error.h
+ * TODO: Remove function after refactor complete
  * @param error_msg     The error description message to be shown to user
  *
  * @see flow_level

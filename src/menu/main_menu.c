@@ -62,6 +62,7 @@
 #include "main_menu.h"
 
 #include "constant_texts.h"
+#include "core_error_priv.h"
 #include "menu_priv.h"
 #include "status_api.h"
 #include "wallet_list.h"
@@ -194,6 +195,8 @@ static void main_menu_reset_context(void) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
+  handle_core_errors();
+
   /* First check if we even require to update the content on the main menu. This
    * check is mainly to handle cases where-in a background USB event was served
    * by the device, in which case this function will be called by the callback
