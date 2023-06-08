@@ -159,7 +159,7 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
              sizeof(invalid_self_keypath)) == 0) {
     /* Device is not provisioned */
 
-    display_error_message(ui_text_device_compromised);
+    indicate_card_error(ui_text_device_compromised);
     return false;
   }
 
@@ -208,7 +208,7 @@ bool pair_card_operation(uint8_t card_number, char *heading, char *message) {
     if (NULL != card_data.error_message) {
       buzzer_start(BUZZER_DURATION);
       if (CARD_OPERATION_SUCCESS !=
-          display_error_message(card_data.error_message)) {
+          indicate_card_error(card_data.error_message)) {
         result = false;
         break;
       }
@@ -270,7 +270,7 @@ bool handle_pair_card_success(uint8_t card_number,
     LOG_CRITICAL("xxec %d:%d", status, __LINE__);
     log_hex_array("resp", card_pairing_data, 128);
     log_hex_array("sig", buffer, sizeof(buffer));
-    display_error_message(ui_text_cannot_verify_card_contact_support);
+    indicate_card_error(ui_text_cannot_verify_card_contact_support);
     return false;
   }
   keystore_index = card_number - 1;

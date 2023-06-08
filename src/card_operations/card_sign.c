@@ -182,8 +182,7 @@ static card_error_type_e handle_sign_data_operation_response(
     card_sign_data_config_t *sign_data) {
   card_error_type_e temp_error = CARD_OPERATION_DEFAULT_INVALID;
   if (NULL != card_data->error_message) {
-    buzzer_start(BUZZER_DURATION);
-    temp_error = display_error_message(card_data->error_message);
+    temp_error = indicate_card_error(card_data->error_message);
   }
 
   switch (card_data->error_type) {

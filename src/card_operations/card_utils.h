@@ -46,19 +46,18 @@ NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
                                              uint8_t acceptable_cards);
 
 /**
- * @brief Displays an error message to the user and wait till user preses
- * tickmark or P0 occurs.
+ * @brief Indicates an error during the card tap operation to the user and wait
+ * till user acknowledges the error or P0 occurs.
+ * @details This function displays the provided error message to the user and
+ * beeps the buzzer. If an error occurs during display, the function returns the
+ * type of error encountered.
  *
  * @param error_message The error message to display.
  *
- * @return The type of error encountered during display, or CARD_ERROR_NONE if
- * successful.
- *
- * @details This function displays the provided error message to the user. If an
- * error occurs during display, the function returns the type of error
- * encountered.
+ * @return The type of error encountered during display, or
+ * CARD_OPERATION_SUCCESS if successful.
  */
-card_error_type_e display_error_message(const char *error_message);
+card_error_type_e indicate_card_error(const char *error_message);
 
 /**
  * @brief Gets the serial number of an NFC card.
