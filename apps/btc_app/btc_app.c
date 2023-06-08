@@ -1,5 +1,5 @@
 /**
- * @file    core_flow_init.c
+ * @file    btc_app.c
  * @author  Cypherock X1 Team
  * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,10 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
+#include "btc_app.h"
 
-#include "main_menu.h"
-#include "onboarding.h"
+#include "btc_api.h"
+#include "btc_app_priv.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -71,7 +72,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -80,13 +80,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -103,23 +96,31 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  // TODO: Set onboarding status for in-field devices
-  // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  // }
+void btc_app_main(usb_event_t usb_evt) {
+  btc_query_t query = BTC_QUERY_INIT_DEFAULT;
 
-  /* If onboarding is not complete, invoke onboarding flow from the manager app
-   */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+  if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
   }
 
-  // TODO: Check device authentication status
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+  switch ((uint8_t)query.which_request) {
+    case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
+      // btc_get_wallet_public_key(&query);
+      break;
+    }
+    default: {
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
+      break;
+    }
+  }
 
-  return &core_step_engine_ctx;
+  return;
 }

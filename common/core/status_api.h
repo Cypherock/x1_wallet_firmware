@@ -87,4 +87,11 @@ bool core_status_get_abort_disabled(void);
  */
 core_status_t get_core_status(void);
 
+/**
+ * @brief Returns the current active app's applet-id
+ *
+ * @return uint32_t Applet id that is currently active
+ */
+uint32_t get_applet_id(void);
+
 #endif /* STATUS_API_H */
