@@ -90,7 +90,7 @@
  * API displays that error message. NOTE: P0 events are ignored in this API, as
  * this could also be used to display P0 errors
  */
-void display_core_error();
+static void display_core_error();
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -103,7 +103,7 @@ static char core_error_msg[60] = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void display_core_error() {
+static void display_core_error() {
   if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
     return;
 
@@ -115,6 +115,7 @@ void display_core_error() {
   } while (true != status.ui_event.event_occured);
 
   memzero(core_error_msg, sizeof(core_error_msg));
+  return;
 }
 
 /*****************************************************************************
@@ -127,10 +128,11 @@ void mark_core_error_screen(const char *error_msg) {
   }
 
   // Return if an error message is already set
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
+  if (0 != strnlen(core_error_msg, sizeof(core_error_msg)))
     return;
 
   snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
+  return;
 }
 
 void handle_core_errors() {
@@ -140,8 +142,9 @@ void handle_core_errors() {
 
   if (true == evt.inactivity_evt) {
     mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    /* Send message to host if P0 occured */
+    /* TODO: Send message to host if P0 occured */
   }
 
   display_core_error();
+  return;
 }
