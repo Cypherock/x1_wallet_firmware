@@ -85,9 +85,9 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
 
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
-  memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
 
   while (1) {
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     card_data.nfc_data.acceptable_cards = encode_card_number(xcor + 1);
     if (xcor == 0)
       card_data.nfc_data.tapped_card = 0;
@@ -107,7 +107,6 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
         }
 
         read_card_share_post_process(xcor);
-        instruction_scr_destructor();
         result = true;
         break;
       } else {
