@@ -127,6 +127,7 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
     break;
   }
 
+  nfc_deselect_card();
   return result;
 }
 

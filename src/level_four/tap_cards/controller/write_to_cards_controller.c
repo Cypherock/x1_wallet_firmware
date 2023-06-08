@@ -248,5 +248,6 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     break;
   }
 
+  nfc_deselect_card();
   return result;
 }
