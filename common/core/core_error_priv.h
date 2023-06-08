@@ -40,4 +40,11 @@
  * or onboarding.
  */
 void handle_core_errors();
+
+/**
+ * @brief This function clears the p0 event. Should be called in engine p0
+ * callbacks to ignore repeated p0 events.
+ *
+ */
+void ignore_p0_event();
 #endif

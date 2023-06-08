@@ -87,6 +87,25 @@ typedef struct {
 } onboarding_ctx_t;
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief This p0 event callback function handles clearing p0 events occured
+ * while engine is waiting for other events.
+ *
+ * @details After onboarding initalization, we don't expect p0 events as no
+ * operation or flow has been started yet.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param p0_evt The p0 event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
@@ -94,7 +113,7 @@ static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
 
 static const flow_step_t onboarding_flow = {
     .step_init_cb = onboarding_initialize,
-    .p0_cb = NULL,
+    .p0_cb = ignore_p0_handler,
     .ui_cb = NULL,
     .usb_cb = onboarding_host_interface,
     .nfc_cb = NULL,
@@ -106,12 +125,13 @@ static const flow_step_t onboarding_flow = {
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr) {
+  ignore_p0_event();
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS

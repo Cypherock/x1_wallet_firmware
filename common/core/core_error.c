@@ -112,6 +112,7 @@ void display_core_error() {
 
   do {
     status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
+    p0_reset_evt();
   } while (true != status.ui_event.event_occured);
 
   memzero(error_message, sizeof(error_message));
@@ -136,8 +137,13 @@ void handle_core_errors() {
 
   if (true == evt.inactivity_evt) {
     mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
+    p0_reset_evt();
     /* Send message to host if P0 occured */
   }
 
   display_core_error();
+}
+
+void ignore_p0_event() {
+  p0_reset_evt();
 }

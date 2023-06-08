@@ -73,10 +73,17 @@ void p0_ctx_init(uint32_t inactivity_timeout);
 bool p0_get_evt(p0_evt_t *p_p0_evt);
 
 /**
- * @brief This function destroys the ctx of the configuration and events that
- * may have occured after the ctx of P0 event getter was initialized.
- * NOTE: Any call to p0_ctx_init must followed with a call to
- * p0_ctx_destroy;
+ * @brief This function resets the p0 events. Whenever a p0 event occurs, it
+ * needs to be cleared manually by calling this function.
+ *
+ * NOTE: This function should be called with handling of p0 occurances.
+ */
+void p0_reset_evt();
+
+/**
+ * @brief This function reset timeout in systick module and disables timer
+ * operations in interrupt cb NOTE: Any call to p0_ctx_init must followed with a
+ * call to p0_ctx_destroy;
  */
 void p0_ctx_destroy(void);
 
