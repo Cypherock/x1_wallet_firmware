@@ -65,8 +65,8 @@
 #include "constant_texts.h"
 #include "events.h"
 #include "p0_events.h"
+#include "status_api.h"
 #include "ui_message.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -87,8 +87,11 @@
  *
  * @details When a core operation faces a fatal error, it can set an error
  * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message. NOTE: P0 events are ignored in this API, as
- * this could also be used to display P0 errors
+ * API displays that error message and sets the core device idle status to
+ * CORE_DEVICE_IDLE_STATE_DEVICE.
+ *
+ * NOTE: P0 events are ignored in this API, as this could also be used to
+ * display P0 errors
  */
 static void display_core_error();
 
@@ -109,6 +112,7 @@ static void display_core_error() {
 
   evt_status_t status = {0};
   message_scr_init(core_error_msg);
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
 
   do {
     status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
@@ -128,8 +132,9 @@ void mark_core_error_screen(const char *error_msg) {
   }
 
   // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg)))
+  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
     return;
+  }
 
   snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
   return;
@@ -142,7 +147,7 @@ void handle_core_errors() {
 
   if (true == evt.inactivity_evt) {
     mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    /* TODO: Send message to host if P0 occured */
+    /* TODO: Send message to host if P0 occured if core status is set to usb */
   }
 
   display_core_error();

@@ -36,8 +36,11 @@
  * error is sent to host. After P0 handling, if a core error message was set,
  * that message is displayed.
  *
- * NOTE: Should be called on initialization of a core flow like main menu
- * or onboarding.
+ * NOTE:
+ * 1. Should be called on initialization of a core flow like main menu or
+ * onboarding.
+ * 2. Core device idle status is set to CORE_DEVICE_IDLE_STATE_DEVICE when error
+ * messsage is displayed
  */
 void handle_core_errors();
 #endif
