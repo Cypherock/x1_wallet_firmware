@@ -1,16 +1,16 @@
 /**
- * @file    card_action_controllers.c
+ * @file    card_read_verify_shares.c
  * @author  Cypherock X1 Team
- * @brief   Handle reading logic of wallets from card.
- *          This file contains the functions to retrieve wallet from cards.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Source file supporting reading of wallet share from the X1 card for
+ *          wallet verification
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -56,19 +56,36 @@
  *
  ******************************************************************************
  */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
 #include "card_internal.h"
 #include "card_read_verify_share.h"
+#include "card_return_codes.h"
 #include "card_utils.h"
-#include "controller_tap_cards.h"
 #include "flash_api.h"
 #include "nfc.h"
 #include "shamir_wrapper.h"
-#include "tasks.h"
 #include "ui_instruction.h"
-#include "ui_message.h"
 #include "wallet.h"
 #include "wallet_utilities.h"
 
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
 /**
  * @brief Handles post-processing required during the wallet share read
  * operation on the X1 card.
@@ -77,10 +94,41 @@
  */
 static void read_card_share_post_process(uint8_t xcor);
 
-// TODO: This API is deprecated
-void readback_share_from_card(uint8_t xcor) {
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+static void read_card_share_post_process(uint8_t xcor) {
+  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
+    memcpy(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
+               xcor * wallet.arbitrary_data_size,
+           wallet.arbitrary_data_share,
+           wallet.arbitrary_data_size);
+  else
+    memcpy(wallet_shamir_data.mnemonic_shares[xcor],
+           wallet.wallet_share_with_mac_and_nonce,
+           BLOCK_SIZE);
+  memcpy(wallet_shamir_data.share_encryption_data[xcor],
+         wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
+         NONCE_SIZE + WALLET_MAC_SIZE);
+  memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
+  memzero(wallet.wallet_share_with_mac_and_nonce,
+          sizeof(wallet.wallet_share_with_mac_and_nonce));
+
+  wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
+  return;
 }
 
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
   bool result = false;
 
@@ -130,27 +178,6 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
 
   nfc_deselect_card();
   return result;
-}
-
-static void read_card_share_post_process(uint8_t xcor) {
-  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-    memcpy(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
-               xcor * wallet.arbitrary_data_size,
-           wallet.arbitrary_data_share,
-           wallet.arbitrary_data_size);
-  else
-    memcpy(wallet_shamir_data.mnemonic_shares[xcor],
-           wallet.wallet_share_with_mac_and_nonce,
-           BLOCK_SIZE);
-  memcpy(wallet_shamir_data.share_encryption_data[xcor],
-         wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
-         NONCE_SIZE + WALLET_MAC_SIZE);
-  memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
-  memzero(wallet.wallet_share_with_mac_and_nonce,
-          sizeof(wallet.wallet_share_with_mac_and_nonce));
-
-  wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
-  return;
 }
 
 int verify_card_share_data() {

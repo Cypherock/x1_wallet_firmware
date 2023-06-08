@@ -1,17 +1,15 @@
 /**
- * @file    write_to_cards_controller.c
+ * @file    write_card_share.c
  * @author  Cypherock X1 Team
- * @brief   Write to cards controller.
- *          This file contains the functions to write wallet to cards
- *sequentially.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Source file supporting writing of wallet share on the X1 card
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -57,87 +55,34 @@
  *
  ******************************************************************************
  */
-#include "card_write_share.h"
 
-#include "card_action_controllers.h"
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
 #include "card_internal.h"
+#include "card_return_codes.h"
 #include "card_utils.h"
-#include "controller_main.h"
-#include "controller_tap_cards.h"
 #include "flash_api.h"
 #include "nfc.h"
-#include "shamir_wrapper.h"
-#include "stdint.h"
-#include "tasks.h"
 #include "ui_instruction.h"
 #include "wallet.h"
 
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
 extern Wallet_shamir_data wallet_shamir_data;
 
-static uint32_t wallet_index;    // What's the index of the wallet in flash to
-                                 // which we are talking to
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
 
-static void write_share_to_card(uint8_t card_number);
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
 
-void tap_cards_for_write_and_verify_flow_controller() {
-  switch (flow_level.level_four) {
-    case CARD_ONE_FRONTEND:
-      tap_card_data.tapped_card = 0;
-      tap_card_data.desktop_control = false;
-      flow_level.level_four = CARD_ONE_WRITE;
-      break;
-
-    case CARD_ONE_WRITE:
-      write_share_to_card(1);
-      break;
-
-    case CARD_ONE_READBACK:
-      readback_share_from_card(0);
-      break;
-
-    case CARD_TWO_FRONTEND:
-      flow_level.level_four = CARD_TWO_WRITE;
-      break;
-
-    case CARD_TWO_WRITE:
-      write_share_to_card(2);
-      break;
-
-    case CARD_TWO_READBACK:
-      readback_share_from_card(1);
-      break;
-
-    case CARD_THREE_FRONTEND:
-      flow_level.level_four = CARD_THREE_WRITE;
-      break;
-
-    case CARD_THREE_WRITE:
-      write_share_to_card(3);
-      break;
-
-    case CARD_THREE_READBACK:
-      readback_share_from_card(2);
-      break;
-
-    case CARD_FOUR_FRONTEND:
-      flow_level.level_four = CARD_FOUR_WRITE;
-      break;
-
-    case CARD_FOUR_WRITE:
-      write_share_to_card(4);
-      break;
-
-    case CARD_FOUR_READBACK:
-      readback_share_from_card(3);
-      break;
-
-    default:
-      reset_flow_level();
-      // message_scr_init(ui_text_something_went_wrong);
-      break;
-  }
-}
-
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
 /**
  * @brief Handles pre-processing required during the wallet share write
  * operation on the X1 card.
@@ -154,6 +99,19 @@ static void write_card_pre_process(uint8_t card_num);
  */
 static void write_card_share_post_process(uint8_t card_num);
 
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static uint32_t wallet_index;    // What's the index of the wallet in flash to
+                                 // which we are talking to
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
 static void write_card_pre_process(uint8_t card_num) {
   if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
     memcpy(wallet.arbitrary_data_share,
@@ -197,10 +155,9 @@ static void write_card_share_post_process(uint8_t card_num) {
          wallet.arbitrary_data_size);
 }
 
-// TODO: This API is deprecated
-static void write_share_to_card(uint8_t card_number) {
-}
-
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
   bool result = false;
   wallet.xcor = card_num;
