@@ -95,7 +95,7 @@ void display_core_error();
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char error_message[60] = {0};
+static char core_error_msg[60] = {0};
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -104,17 +104,17 @@ static char error_message[60] = {0};
  * STATIC FUNCTIONS
  *****************************************************************************/
 void display_core_error() {
-  if ('\0' == error_message[0])
+  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
     return;
 
   evt_status_t status = {0};
-  message_scr_init(error_message);
+  message_scr_init(core_error_msg);
 
   do {
     status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
   } while (true != status.ui_event.event_occured);
 
-  memzero(error_message, sizeof(error_message));
+  memzero(core_error_msg, sizeof(core_error_msg));
 }
 
 /*****************************************************************************
@@ -126,7 +126,11 @@ void mark_core_error_screen(const char *error_msg) {
     return;
   }
 
-  snprintf(error_message, sizeof(error_message), "%s", error_msg);
+  // Return if an error message is already set
+  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
+    return;
+
+  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
 }
 
 void handle_core_errors() {
