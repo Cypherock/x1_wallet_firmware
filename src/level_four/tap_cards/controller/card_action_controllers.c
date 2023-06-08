@@ -100,8 +100,6 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
         buzzer_start(BUZZER_DURATION);
-        instruction_scr_change_text(ui_text_remove_card_prompt, true);
-
         if (xcor != 3) {
           wait_for_card_removal();
         }
