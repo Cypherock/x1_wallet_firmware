@@ -57,6 +57,7 @@
  ******************************************************************************
  */
 #include "card_internal.h"
+#include "card_read_verify_share.h"
 #include "card_utils.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"

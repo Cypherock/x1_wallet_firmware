@@ -57,6 +57,8 @@
  *
  ******************************************************************************
  */
+#include "card_write_share.h"
+
 #include "card_action_controllers.h"
 #include "card_internal.h"
 #include "card_utils.h"
@@ -69,7 +71,6 @@
 #include "tasks.h"
 #include "ui_instruction.h"
 #include "wallet.h"
-#include "write_card_share.h"
 
 extern Wallet_shamir_data wallet_shamir_data;
 
