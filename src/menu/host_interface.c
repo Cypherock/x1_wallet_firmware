@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    host_interface.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Source file for the main-menu host interface
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,10 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "main_menu.h"
-#include "onboarding.h"
+#include "host_interface.h"
+
+#include "btc_app.h"
+#include "manager_app.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -71,29 +73,21 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -103,23 +97,31 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  // TODO: Set onboarding status for in-field devices
-  // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  // }
+void main_menu_host_interface(engine_ctx_t *ctx,
+                              usb_event_t usb_evt,
+                              const void *data) {
+  /* TODO: A USB request was detected by the core, but it was the first time
+   * this request came in, therefore, we will pass control to the required
+   * application here */
 
-  /* If onboarding is not complete, invoke onboarding flow from the manager app
-   */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+  // add a switch case here to determine which app to boot.
+
+  uint32_t applet_id = get_applet_id();
+  switch (applet_id) {
+    case 1: {
+      manager_app_main(usb_evt);
+      break;
+    }
+    case 2: {
+      btc_app_main(usb_evt);
+      break;
+    }
+    default: {
+      // TODO: send core error about invalid applet id
+      break;
+    }
   }
 
-  // TODO: Check device authentication status
-
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-
-  return &core_step_engine_ctx;
+  return;
 }

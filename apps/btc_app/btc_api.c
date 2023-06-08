@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    btc_api.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Defines helpers apis for bitcoin app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,10 +59,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "main_menu.h"
-#include "onboarding.h"
+#include "btc_api.h"
+
+#include "assert_conf.h"
+#include "common_error.h"
+#include "events.h"
+#include "pb_decode.h"
+#include "pb_encode.h"
+#include "usb_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -71,7 +76,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -80,13 +84,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -103,23 +100,98 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  // TODO: Set onboarding status for in-field devices
-  // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  // }
-
-  /* If onboarding is not complete, invoke onboarding flow from the manager app
-   */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+bool decode_btc_query(const uint8_t *data,
+                      uint16_t data_size,
+                      btc_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    btc_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
 
-  // TODO: Check device authentication status
+  /* Initialize bitcoin query */
+  btc_query_t query = BTC_QUERY_INIT_ZERO;
 
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
 
-  return &core_step_engine_ctx;
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, BTC_QUERY_FIELDS, &query);
+
+  /* Copy query obj if status is true*/
+  if (true == status) {
+    memcpy(query_out, &query, sizeof(query));
+  } else {
+    btc_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+  }
+
+  return status;
+}
+
+bool encode_btc_result(btc_result_t *result,
+                       uint8_t *buffer,
+                       uint16_t max_buffer_len,
+                       size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, BTC_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
+  }
+
+  return status;
+}
+
+bool check_btc_query(const btc_query_t *query, pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    btc_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+btc_result_t init_btc_result(pb_size_t result_tag) {
+  btc_result_t result = BTC_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void btc_send_data_flow_error(error_data_flow_t error_code) {
+  btc_result_t result = init_btc_result(BTC_RESULT_COMMON_ERROR_TAG);
+  result.common_error =
+      init_common_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, error_code);
+  btc_send_result(&result);
+}
+
+void btc_send_result(btc_result_t *result) {
+  // TODO: Eventually 2059 will be replaced by BTC_RESULT_SIZE when all
+  // option files for bitcoin app are complete
+  uint8_t buffer[2059] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_btc_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  usb_send_msg(&buffer[0], bytes_encoded);
+}
+
+bool btc_get_query(btc_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
+  }
+
+  if (!decode_btc_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
+
+  if (!check_btc_query(query, exp_query_tag)) {
+    return false;
+  }
+
+  return true;
 }

@@ -38,6 +38,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         apps/manager_app
         apps/manager_app/onboarding
+        apps/btc_app
 
         src/
         src/menu
