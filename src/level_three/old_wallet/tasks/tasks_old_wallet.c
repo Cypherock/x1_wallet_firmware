@@ -86,14 +86,6 @@ void level_three_old_wallet_tasks() {
     } break;
 
     case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-      if (get_wallet_count() == 0) {
-        mark_error_screen(ui_text_no_wallet_found);
-        reset_flow_level();
-      } else {
-        // Check for abort command here
-        // if aborted mark_error_screen and reset_flow_level
-        export_wallet_task();
-      }
     } break;
 
     case LEVEL_THREE_ADD_COIN: {

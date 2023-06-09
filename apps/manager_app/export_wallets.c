@@ -1,7 +1,7 @@
 /**
  * @file    export_wallets.c
  * @author  Cypherock X1 Team
- * @brief   Dumps device logs from flash to the host in ascii
+ * @brief   Exports list of existing wallets to the host
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -142,7 +142,8 @@ static void fill_wallet_list(manager_get_wallets_result_response_t *resp) {
 
     uint8_t wallet_info = get_wallet_info(flash_index);
     list[index].has_passphrase = WALLET_IS_PASSPHRASE_SET(wallet_info);
-    list[index].has_passphrase = WALLET_IS_PIN_SET(wallet_info);
+    list[index].has_pin = WALLET_IS_PIN_SET(wallet_info);
+    list[index].is_valid = (VALID_WALLET == get_wallet_state(flash_index));
   }
 
   return;
