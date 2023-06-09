@@ -58,6 +58,7 @@
  ******************************************************************************
  */
 #include "card_action_controllers.h"
+#include "card_flow_verify_wallet.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"
@@ -88,7 +89,7 @@ void verify_wallet_controller() {
       break;
 
     case VERIFY_WALLET_TAP_CARDS_FLOW:
-      tap_cards_for_verification_flow_controller();
+      card_flow_verify_wallet();
       break;
 
     case VERIFY_WALLET_DATA: {

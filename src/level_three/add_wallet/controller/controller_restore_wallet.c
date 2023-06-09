@@ -59,6 +59,7 @@
  */
 #include "bip39.h"
 #include "card_action_controllers.h"
+#include "card_flow_create_wallet.h"
 #include "constant_texts.h"
 #include "controller_add_wallet.h"
 #include "controller_main.h"
@@ -314,7 +315,7 @@ void restore_wallet_controller() {
     } break;
 
     case RESTORE_WALLET_TAP_CARDS:
-      tap_cards_for_write_and_verify_flow_controller();
+      card_flow_create_wallet();
       break;
 
     case RESTORE_WALLET_VERIFY_SHARES:

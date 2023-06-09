@@ -1,17 +1,15 @@
 /**
- * @file    reconstruct_from_four_cards_to_verify_controller.c
+ * @file    card_flow_verify_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Reconstruct from all cards.
- *          This file contains the implementation of the function that
- *          reconstructs from all cards for the verification of the wallet.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Source file containing card flow to verify wallet on the X1 cards
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -57,51 +55,62 @@
  *
  ******************************************************************************
  */
-#include "card_action_controllers.h"
-#include "controller_main.h"
-#include "controller_tap_cards.h"
 
-extern Wallet_shamir_data wallet_shamir_data;
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "card_operations.h"
+#include "constant_texts.h"
+#include "ui_instruction.h"
 
-void tap_cards_for_verification_flow_controller() {
-  switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-      tap_card_data.desktop_control = false;
-      tap_card_data.tapped_card = 0;
-      flow_level.level_four = TAP_CARD_ONE_BACKEND;
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+bool card_flow_verify_wallet(void) {
+  uint8_t card_number = 0;
+  bool card_write_read_status = false;
+
+  for (card_number = 1; card_number <= 4; card_number++) {
+    char display[40];
+    snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, card_number);
+
+    instruction_scr_init(ui_text_place_card_below, display);
+
+    if (!read_card_share(card_number - 1, display, ui_text_place_card_below)) {
+      card_write_read_status = false;
       break;
+    }
 
-    case TAP_CARD_ONE_BACKEND:
-      readback_share_from_card(0);
-      break;
-
-    case TAP_CARD_TWO_FRONTEND:
-      flow_level.level_four = TAP_CARD_TWO_BACKEND;
-      break;
-
-    case TAP_CARD_TWO_BACKEND:
-      readback_share_from_card(1);
-      break;
-
-    case TAP_CARD_THREE_FRONTEND:
-      flow_level.level_four = TAP_CARD_THREE_BACKEND;
-      break;
-
-    case TAP_CARD_THREE_BACKEND:
-      readback_share_from_card(2);
-      break;
-
-    case TAP_CARD_FOUR_FRONTEND:
-      flow_level.level_four = TAP_CARD_FOUR_BACKEND;
-      break;
-
-    case TAP_CARD_FOUR_BACKEND:
-      readback_share_from_card(3);
-      break;
-
-    default:
-      LOG_CRITICAL("###31");
-      reset_flow_level();
-      break;
+    card_write_read_status = true;
   }
+
+  return card_write_read_status;
 }

@@ -61,6 +61,8 @@
  *****************************************************************************/
 #include "card_operations.h"
 #include "constant_texts.h"
+#include "nfc.h"
+#include "ui_instruction.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -93,7 +95,7 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool card_flow_read_write_wallet_share(void) {
+bool card_flow_create_wallet(void) {
   uint8_t card_number = 0;
   bool card_write_read_status = false;
 
@@ -104,6 +106,10 @@ bool card_flow_read_write_wallet_share(void) {
     if (!write_card_share(card_number, display, ui_text_place_card_below)) {
       card_write_read_status = false;
       break;
+    }
+
+    if (STM_SUCCESS != nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME)) {
+      instruction_scr_change_text(ui_text_card_removed_fast, true);
     }
 
     if (!read_card_share(card_number - 1, display, ui_text_place_card_below)) {
