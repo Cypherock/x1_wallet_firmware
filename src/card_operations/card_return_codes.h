@@ -31,13 +31,13 @@ typedef enum card_errors_type {
   CARD_OPERATION_INCORRECT_PIN_ENTERED, /** Incorrect pin entered */
   CARD_OPERATION_P0_OCCURED,            /** P0 event occured */
 
-  /** The API setting error using below enums is required to also set an error
-     message for corresponding user action or error specification */
-  CARD_OPERATION_RETAP_BY_USER_REQUIRED, /** Error that can be resolved with a
-                                            user action involving retapping of a
-                                            card. */
-  CARD_OPERATION_ABORT_OPERATION, /** Error that cannot be resolved by user
-                                     action and operation should be aborted. */
+  CARD_OPERATION_RETAP_BY_USER_REQUIRED, /** Errors that occur due to user
+                                            mistakes, like wrong card number or
+                                            card of wrong family tapped */
+  CARD_OPERATION_ABORT_OPERATION, /** Error occurring due to internal handling
+                                     of NFC or card communication. These errors
+                                     can be associated to @ref ISO7816 errors or
+                                     PN532 errors */
 
   CARD_OPERATION_DEFAULT_INVALID = 0xFF, /** Default invalid value */
 } card_error_type_e;

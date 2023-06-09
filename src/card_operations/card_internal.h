@@ -41,13 +41,21 @@ typedef struct card_operation_data {
 /**
  * @brief Initializes the applet on the card and performs necessary operations
  * for selecting the applet.
- * @details This API returns success if there is no error in applet
- * initialization and pairing requirements are ment. When an error is detected,
- * the API copies the corresponding error type to @ref error_type member of @ref
- * card_data object and returns it. Member of @ref card_data object @ref
- * error_message is also set with correspondig string in cases where error_type
- * is either @ref CARD_OPERATION_RETAP_BY_USER_REQUIRED or @ref
- * CARD_OPERATION_ABORT_OPERATION.
+ * @details This API handles card applet initialization and populates card_data
+ * object. Wheather in success or failure, the API populates
+ * card_data.error_type to indicate result. If applet initialization
+ * requirements are met, success is returned, else either @ref
+ * CARD_OPERATION_RETAP_BY_USER_REQUIRED or
+ * @ref CARD_OPERATION_ABORT_OPERATION error is returned. For retap errors a
+ * message is populated to @ref card_data.error_message, while in abort error
+ * cases, error message is set to core error using @ref mark_core_error_screen.
+ * In case a P0 event occurs, @ref CARD_OPERATION_P0_OCCURED is returned.
+ *
+ * NOTE:
+ * - Pre-requisite: An instruction screen should always be initialized before
+ * calling this API
+ * - Retap error is returned in only two cases, Wrong card number tapped or
+ * wrong family of card tapped
  *
  * @param card_data Pointer to the data structure containing information about
  * the card operation.
@@ -58,11 +66,19 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data);
 
 /**
  * @brief Handles the errors encountered during a card operation.
- * @details If an error is detected,  the API copies the corresponding error
- * type to @ref error_type member of @ref card_data object and returns it.
- * Member of @ref card_data object @ref error_message is also set with
- * correspondig string in cases where error_type is either
- * CARD_OPERATION_RETAP_BY_USER_REQUIRED or CARD_OPERATION_ABORT_OPERATION.
+ * @details This API handles response from last card
+ * action(card_data.nfc_data.status). Wheather success or failure, the API
+ * populates and returns card_data.error_type to indicate result. The errors
+ * returned by this handler are defined in @ref card_error_type_e. For retap
+ * errors a message is populated to card_data.error_message, while in abort
+ * error cases, error message is set to core error using @ref
+ * mark_core_error_screen.
+ *
+ * NOTE:
+ * - Pre-requisite: An instruction screen should always be initialized before
+ * calling this API
+ * - In case of CARD_OPERATION_CARD_REMOVED, appropriate text is set to the
+ * instruction screen body.
  *
  * @param card_data Pointer to the data structure containing information about
  * the card operation.
