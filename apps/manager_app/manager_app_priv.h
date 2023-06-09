@@ -76,4 +76,10 @@ void manager_card_training(manager_query_t *query);
  */
 void manager_get_logs(manager_query_t *query);
 
+/**
+ * @brief Export wallet list from the device to the host
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void manager_export_wallets(manager_query_t *query);
 #endif

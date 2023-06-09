@@ -72,9 +72,6 @@ void level_three_old_wallet_controller_b() {
       reset_flow_level();
       counter.next_event_flag = true;
     } break;
-    case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-      export_wallet_controller_b();
-    } break;
 
     case LEVEL_THREE_ADD_COIN: {
       add_coin_controller_b();

@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.c
+ * @file    export_wallets.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Dumps device logs from flash to the host in ascii
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
-
+#include "flash_api.h"
 #include "manager_api.h"
-#include "manager_app_priv.h"
-#include "onboarding.h"
-#include "status_api.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +76,33 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host manager app and return false.
+ *
+ * @param query Reference to an instance of manager_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
+ *
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
+ */
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request);
+
+/**
+ * @brief Fills wallet list in structure type
+ * manager_get_wallets_result_response_t
+ *
+ * @param resp The reference to the structure which needs to be populated
+ */
+static void fill_wallet_list(manager_get_wallets_result_response_t *resp);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,70 +111,55 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->get_wallets.which_request) {
+    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  return true;
+}
+
+static void fill_wallet_list(manager_get_wallets_result_response_t *resp) {
+  const char *wallet_list[MAX_WALLETS_ALLOWED] = {0};
+
+  resp->wallet_list_count = get_wallet_list(&wallet_list[0]);
+
+  manager_wallet_item_t *list = &resp->wallet_list[0];
+
+  uint8_t index = 0;
+  for (index = 0; index < resp->wallet_list_count; index++) {
+    uint8_t flash_index;
+    get_index_by_name(wallet_list[index], &flash_index);
+
+    snprintf(
+        list[index].name, sizeof(list[index].name), "%s", wallet_list[index]);
+
+    memcpy(list[index].id, get_wallet_id(flash_index), WALLET_ID_SIZE);
+
+    uint8_t wallet_info = get_wallet_info(flash_index);
+    list[index].has_passphrase = WALLET_IS_PASSPHRASE_SET(wallet_info);
+    list[index].has_passphrase = WALLET_IS_PIN_SET(wallet_info);
+  }
+
+  return;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
-
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+void manager_export_wallets(manager_query_t *query) {
+  if (!check_which_request(query, MANAGER_GET_WALLETS_REQUEST_INITIATE_TAG)) {
     return;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  manager_result_t result = init_manager_result(MANAGER_RESULT_GET_WALLETS_TAG);
+  result.get_wallets.which_response = MANAGER_GET_WALLETS_RESPONSE_RESULT_TAG;
+  fill_wallet_list(&result.get_wallets.result);
 
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      manager_export_wallets(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      device_authentication_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      manager_get_logs(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_joystick_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      manager_card_training(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
-    }
-  }
-
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
-
+  manager_send_result(&result);
   return;
 }

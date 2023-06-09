@@ -74,10 +74,6 @@ void level_three_old_wallet_controller() {
       delete_wallet_controller();
     } break;
 
-    case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-      export_wallet_controller();
-    } break;
-
     case LEVEL_THREE_ADD_COIN: {
       add_coin_controller();
     } break;
