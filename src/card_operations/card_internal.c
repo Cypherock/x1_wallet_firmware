@@ -65,6 +65,7 @@
 #include "apdu.h"
 #include "app_error.h"
 #include "buzzer.h"
+#include "core_error.h"
 #include "events.h"
 #include "nfc.h"
 #include "nfc_events.h"
@@ -101,7 +102,11 @@
   } while (0)
 
 #define NFC_RETURN_ABORT_ERROR(card_data, msg)                                 \
-  NFC_RETURN_ERROR_WITH_MSG(card_data, CARD_OPERATION_ABORT_OPERATION, msg)
+  do {                                                                         \
+    mark_core_error_screen(msg);                                               \
+    (card_data)->error_type = CARD_OPERATION_ABORT_OPERATION;                  \
+    return (card_data)->error_type;                                            \
+  } while (0)
 
 #define NFC_RETURN_RETAP_ERROR(card_data, msg)                                 \
   NFC_RETURN_ERROR_WITH_MSG(                                                   \
@@ -163,6 +168,10 @@ static void select_applet_and_update_tapped_card(
                                        NULL,
                                        nfc_data->card_key_id,
                                        &nfc_data->recovery_mode);
+
+  if (SW_NO_ERROR != nfc_data->status) {
+    LOG_ERROR("Applet selection err (0x%04X)\n", nfc_data->status);
+  }
 
   /* The tapped_card information should be persistent, as it is used at later
    * stage in the flow For example, in the second half of card-verification,
@@ -237,7 +246,6 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
 
     select_applet_and_update_tapped_card(&(card_data->nfc_data));
 
-    LOG_ERROR("Applet selection err (0x%04X)\n", card_data->nfc_data.status);
     switch (card_data->nfc_data.status) {
       case SW_NO_ERROR:
         /* Card is in recovery mode. This is a critical situation. Instruct user
@@ -283,7 +291,10 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
   card_data->error_type = CARD_OPERATION_DEFAULT_INVALID;
   card_data->error_message = NULL;
 
-  LOG_ERROR("nfc error occured (0x%04X)\n", card_data->nfc_data.status);
+  if (SW_NO_ERROR != card_data->nfc_data.status) {
+    LOG_ERROR("nfc error occured (0x%04X)\n", card_data->nfc_data.status);
+  }
+
   switch (card_data->nfc_data.status) {
     case SW_NO_ERROR:
       NFC_RETURN_SUCCESS(card_data);

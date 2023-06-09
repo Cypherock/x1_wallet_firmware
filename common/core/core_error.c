@@ -62,6 +62,7 @@
 
 #include "core_error.h"
 
+#include "buzzer.h"
 #include "constant_texts.h"
 #include "events.h"
 #include "p0_events.h"
@@ -112,6 +113,7 @@ static void display_core_error() {
 
   evt_status_t status = {0};
   message_scr_init(core_error_msg);
+  buzzer_start(BUZZER_DURATION);
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
 
   do {
