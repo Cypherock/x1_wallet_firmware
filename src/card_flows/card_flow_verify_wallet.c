@@ -104,6 +104,7 @@ bool card_flow_verify_wallet(void) {
 
     instruction_scr_init(ui_text_place_card_below, display);
 
+    // TODO: Handle wrong pin/ wallet locked cases
     if (!read_card_share(card_number - 1, display, ui_text_place_card_below)) {
       card_write_read_status = false;
       break;
