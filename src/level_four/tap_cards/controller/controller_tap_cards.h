@@ -148,22 +148,6 @@ void tap_cards_for_write_and_verify_flow_controller();
  *
  * @note
  */
-void tap_cards_for_verification_flow_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold);
 
 /**

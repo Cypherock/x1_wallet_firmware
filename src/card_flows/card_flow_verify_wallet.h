@@ -1,34 +1,22 @@
 /**
- * @file    card_operations.h
+ * @file    card_flow_verify_wallet.h
  * @author  Cypherock X1 Team
- * @brief   Header file exporting card operations
- *
+ * @brief   Header file exporting card flow to verify wallet on the X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_OPERATIONS_H
-#define CARD_OPERATIONS_H
+#ifndef CARD_FLOW_VERIFY_WALLET_H
+#define CARD_FLOW_VERIFY_WALLET_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_pair.h"
-#include "card_read_verify_share.h"
-#include "card_return_codes.h"
-#include "card_sign.h"
-#include "card_write_share.h"
-#include "check_pairing.h"
+#include <stdbool.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define CARD_HANDLE_P0_EVENTS(p0_event)                                        \
-  do {                                                                         \
-    if (true == (p0_event).flag) {                                             \
-      return CARD_OPERATION_P0_OCCURED;                                        \
-    }                                                                          \
-  } while (0)
 
 /*****************************************************************************
  * TYPEDEFS
@@ -41,5 +29,14 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This functions executes a sequential card flow to read wallet on
+ * each of the 4 X1 cards
+ *
+ * @return true If the flow completed successfully and wallet share was written
+ * and read back from all 4 cards
+ * @return false If the flow did not complete
+ */
+bool card_flow_verify_wallet(void);
 
-#endif /* CARD_OPERATIONS_H */
+#endif /* CARD_FLOW_VERIFY_WALLET_H */
