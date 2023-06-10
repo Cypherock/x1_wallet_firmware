@@ -1,18 +1,29 @@
 /**
- * @file    create_wallet_flow.h
+ * @file    ui_screens.h
  * @author  Cypherock X1 Team
- * @brief   Header file for the create wallet flow
+ * @brief   Header file exporting all UI screen apis
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CREATE_WALLET_FLOW_H
-#define CREATE_WALLET_FLOW_H
+#ifndef UI_SCREENS_H
+#define UI_SCREENS_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
+#include "ui_address.h"
+#include "ui_confirmation.h"
+#include "ui_delay.h"
+#include "ui_input_text.h"
+#include "ui_instruction.h"
+#include "ui_list.h"
+#include "ui_menu.h"
+#include "ui_message.h"
+#include "ui_multi_instruction.h"
+#include "ui_scroll_page.h"
+#include "ui_skip_instruction.h"
+#include "ui_text_slideshow.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -30,15 +41,4 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief This API executes the wallet creation flow on the device
- * @details This function generate random mnemonics or inputs seed phrase from
- * user, takes user inputs for wallet configuration, writes the wallet shares on
- * the X1 vault flash and X1 cards and verifies each share
- *
- * @param new_wallet true if a new wallet needs to be created, false if the user
- * wants to recover the wallet from a seed phrase
- */
-void create_wallet(bool new_wallet);
-
-#endif /* CREATE_WALLET_FLOW_H */
+#endif /* UI_SCREENS_H */

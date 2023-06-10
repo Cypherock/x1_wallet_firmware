@@ -57,33 +57,17 @@
  *
  ******************************************************************************
  */
-#include <inttypes.h>
-#include <stdlib.h>
-
-#include "bip39.h"
-#include "card_action_controllers.h"
-#include "card_flow_create_wallet.h"
 #include "constant_texts.h"
-#include "controller_add_wallet.h"
-#include "controller_main.h"
-#include "controller_tap_cards.h"
+#include "create_wallet_flow.h"
 #include "crypto_random.h"
 #include "flash_api.h"
 #include "flash_if.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
-#include "tasks.h"
-#include "tasks_add_wallet.h"
-#include "tasks_tap_cards.h"
-#include "ui_address.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_input_text.h"
-#include "ui_instruction.h"
-#include "ui_list.h"
-#include "ui_message.h"
-#include "ui_multi_instruction.h"
+#include "ui_screens.h"
+#include "ui_state_machine.h"
 #include "wallet_utilities.h"
+
 extern Flash_Wallet wallet_for_flash;
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
@@ -92,42 +76,53 @@ extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 
-extern Wallet_credential_data wallet_credential_data;
-#include "events.h"
+#define NAME_INPUT 0
+#define NAME_INPUT_CONFIRM 1
+#define PIN_INSTRUCTIONS 2
+#define PIN_SELECT 3
+#define PIN_INPUT 4
+#define PIN_CONFIRM 5
+#define PASSPHRASE_INSTRUCTIONS 6
+#define PASSPHRASE_ENABLE 7
+#define SEED_GENERATE 8
+#define SEED_GENERATED 9
+#define SAVE_WALLET_SHARE_TO_DEVICE 10
+#define TAP_CARD_FLOW 11
+#define VERIFY_SHARES 12
+#define COMPLETED_WITHOUT_ERRORS 13
+#define COMPLETED_WITH_ERRORS 14
+#define TIMED_OUT 15
+#define EARLY_EXIT 16
+#define EXIT 17
 
-uint32_t next_state(uint32_t next, uint32_t prev) {
-  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-
-  if (true == status.p0_event.flag) {
-    return GENERATE_WALLET_FAILED_MESSAGE;
-  } else {
-    if (UI_EVENT_REJECT == status.ui_event.event_type) {
-      return prev;
-    } else {
-      return next;
-    }
-  }
-  return GENERATE_WALLET_FAILED_MESSAGE;
-}
-
-uint32_t generate_wallet_controller_new(uint32_t current_state) {
-  uint32_t state;
+/**
+ * @brief State handler for the create wallet flow on the X1 vault
+ *
+ * @param current_state The current state of the flow which needs to be executed
+ * @return uint32_t The next state of the flow, based on processing the current
+ * state handler
+ */
+uint32_t create_wallet_state_handler(uint32_t current_state) {
+  uint32_t next_state;
 
   switch (current_state) {
-    case GENERATE_WALLET_NAME_INPUT: {
+    case NAME_INPUT: {
       input_text_init(
           ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
-      state = next_state(GENERATE_WALLET_NAME_INPUT_CONFIRM,
-                         GENERATE_WALLET_FAILED_MESSAGE);
-      break;
-    }
+      next_state = ui_text_next_state(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
 
-    case GENERATE_WALLET_NAME_INPUT_CONFIRM: {
+      if (NAME_INPUT != next_state) {
+        break;
+      }
+
+      // Validate wallet name against previously created wallets
       uint8_t temp;
-      if (get_index_by_name(flow_level.screen_input.input_text, &temp) ==
-          DOESNT_EXIST) {
+      int status = get_index_by_name(flow_level.screen_input.input_text, &temp);
+
+      if (DOESNT_EXIST == status) {
         memset((void *)&wallet_for_flash, 0, sizeof(wallet_for_flash));
         memset((void *)&wallet, 0, sizeof(wallet));
+
         set_wallet_init();
         snprintf((char *)wallet_for_flash.wallet_name,
                  sizeof(wallet_for_flash.wallet_name),
@@ -137,17 +132,16 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
                  sizeof(wallet.wallet_name),
                  "%s",
                  flow_level.screen_input.input_text);
+
         char display[65];
         snprintf(
             display, sizeof(display), "%s", flow_level.screen_input.input_text);
         address_scr_init(ui_text_confirm_wallet_name, display, false);
-        state = next_state(GENERATE_WALLET_PIN_INSTRUCTIONS_1,
-                           GENERATE_WALLET_NAME_INPUT);
-      } else if (get_index_by_name(flow_level.screen_input.input_text, &temp) ==
-                 INVALID_ARGUMENT) {
+        next_state =
+            confirm_next_state(PIN_INSTRUCTIONS, NAME_INPUT, TIMED_OUT);
+      } else if (INVALID_ARGUMENT == status) {
         message_scr_init(ui_text_wallet_name_size_limit);
-        state = next_state(GENERATE_WALLET_NAME_INPUT,
-                           GENERATE_WALLET_FAILED_MESSAGE);
+        next_state = confirm_next_state(NAME_INPUT, TIMED_OUT, TIMED_OUT);
       } else {
         LOG_ERROR("0xxx# wallet %d %d %d %s",
                   get_wallet_info(temp),
@@ -155,17 +149,13 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
                   get_wallet_locked_status(temp),
                   get_wallet_name(temp));
         message_scr_init(ui_text_wallet_name_exists);
-        state = next_state(GENERATE_WALLET_NAME_INPUT,
-                           GENERATE_WALLET_FAILED_MESSAGE);
+        next_state = confirm_next_state(NAME_INPUT, TIMED_OUT, TIMED_OUT);
       }
 
       break;
     }
 
-    case GENERATE_WALLET_PIN_INSTRUCTIONS_1: {
-      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
-      WALLET_UNSET_PIN(wallet.wallet_info);
-
+    case PIN_INSTRUCTIONS: {
       char display[75];
       if (strnlen(flow_level.screen_input.input_text,
                   sizeof(flow_level.screen_input.input_text)) <= 15)
@@ -173,117 +163,111 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
             display, sizeof(display), UI_TEXT_PIN_INS1, wallet.wallet_name);
       else
         snprintf(display, sizeof(display), UI_TEXT_PIN_INS1, "this wallet");
+
       delay_scr_init(display, DELAY_TIME);
       delay_scr_init(ui_wallet_pin_instruction_2, DELAY_LONG_STRING);
+      next_state = PIN_SELECT;
+      break;
+    }
+
+    case PIN_SELECT: {
+      WALLET_UNSET_PIN(wallet_for_flash.wallet_info);
+      WALLET_UNSET_PIN(wallet.wallet_info);
+
       confirm_scr_init(ui_text_do_you_want_to_set_pin);
       confirm_scr_focus_cancel();
-      state = next_state(GENERATE_WALLET_PIN_INPUT,
-                         GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1);
+      next_state =
+          confirm_next_state(PIN_INPUT, PASSPHRASE_INSTRUCTIONS, TIMED_OUT);
       break;
     }
 
-    case GENERATE_WALLET_SKIP_PIN: {
-      flow_level.level_three = GENERATE_WALLET_PIN_INPUT;
-
+    case PIN_INPUT: {
       WALLET_SET_PIN(wallet_for_flash.wallet_info);
       WALLET_SET_PIN(wallet.wallet_info);
-      break;
-    }
 
-    case GENERATE_WALLET_PIN_INPUT: {
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
-      state = next_state(GENERATE_WALLET_PIN_CONFIRM,
-                         GENERATE_WALLET_FAILED_MESSAGE);
+      next_state = ui_text_next_state(PIN_INPUT, PIN_SELECT, TIMED_OUT);
 
-      if (GENERATE_WALLET_PIN_CONFIRM == state) {
-        sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
-                   strnlen(flow_level.screen_input.input_text,
-                           sizeof(flow_level.screen_input.input_text)),
-                   wallet_credential_data.password_single_hash);
-        sha256_Raw(wallet_credential_data.password_single_hash,
-                   SHA256_DIGEST_LENGTH,
-                   wallet.password_double_hash);
-        memzero(flow_level.screen_input.input_text,
-                sizeof(flow_level.screen_input.input_text));
+      if (PIN_INPUT != next_state) {
+        break;
       }
+
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
+                 wallet_credential_data.password_single_hash);
+      sha256_Raw(wallet_credential_data.password_single_hash,
+                 SHA256_DIGEST_LENGTH,
+                 wallet.password_double_hash);
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      next_state = PIN_CONFIRM;
       break;
     }
 
-    case GENERATE_WALLET_PIN_CONFIRM: {
+    case PIN_CONFIRM: {
       input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
-      state = next_state(GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1,
-                         GENERATE_WALLET_FAILED_MESSAGE);
+      next_state = ui_text_next_state(PIN_CONFIRM, PIN_SELECT, TIMED_OUT);
 
-      if (GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1 == state) {
-        uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
-        sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
-                   strnlen(flow_level.screen_input.input_text,
-                           sizeof(flow_level.screen_input.input_text)),
-                   temp);
-        sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
-        if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) ==
-            0) {
-          if (is_passphrase_enabled())
-            flow_level.level_three = GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1;
-          else
-            flow_level.level_three = GENERATE_WALLET_PROCESSING;
-        } else {
-          memzero(flow_level.screen_input.input_text,
-                  sizeof(flow_level.screen_input.input_text));
-          memzero(temp, sizeof(temp));
-          message_scr_init(ui_text_pin_incorrect_re_enter);
-          state = next_state(GENERATE_WALLET_PIN_INPUT,
-                             GENERATE_WALLET_FAILED_MESSAGE);
-        }
+      if (PIN_CONFIRM != next_state) {
+        break;
       }
 
+      uint8_t CONFIDENTIAL temp[SHA256_DIGEST_LENGTH] = {0};
+      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+                 strnlen(flow_level.screen_input.input_text,
+                         sizeof(flow_level.screen_input.input_text)),
+                 temp);
+      sha256_Raw(temp, SHA256_DIGEST_LENGTH, temp);
+      if (memcmp(wallet.password_double_hash, temp, SHA256_DIGEST_LENGTH) ==
+          0) {
+        next_state = PASSPHRASE_INSTRUCTIONS;
+      } else {
+        message_scr_init(ui_text_pin_incorrect_re_enter);
+        next_state = confirm_next_state(PIN_CONFIRM, TIMED_OUT, TIMED_OUT);
+      }
+
+      memzero(flow_level.screen_input.input_text,
+              sizeof(flow_level.screen_input.input_text));
+      memzero(temp, sizeof(temp));
       break;
     }
 
-    case GENERATE_WALLET_PASSPHRASE_INSTRUCTIONS_1: {
+    case PASSPHRASE_INSTRUCTIONS: {
       WALLET_UNSET_PASSPHRASE(wallet_for_flash.wallet_info);
       WALLET_UNSET_PASSPHRASE(wallet.wallet_info);
 
       if (!is_passphrase_enabled()) {
-        state = GENERATE_WALLET_PROCESSING;
+        next_state = SEED_GENERATE;
         break;
       }
 
       char display[65];
-      if (strnlen(flow_level.screen_input.input_text,
-                  sizeof(flow_level.screen_input.input_text)) <= 15)
-        snprintf(display,
-                 sizeof(display),
-                 UI_TEXT_PASSPHRASE_INS1,
-                 wallet.wallet_name);
-      else
-        snprintf(
-            display, sizeof(display), UI_TEXT_PASSPHRASE_INS1, "this wallet");
+      snprintf(display,
+               sizeof(display),
+               UI_TEXT_PASSPHRASE_INS1,
+               wallet.wallet_name);
+
       delay_scr_init(display, DELAY_TIME);
       delay_scr_init(ui_wallet_passphrase_instruction_2, DELAY_TIME);
       delay_scr_init(ui_wallet_passphrase_instruction_3, DELAY_TIME);
       delay_scr_init(ui_wallet_passphrase_instruction_4, DELAY_TIME);
       confirm_scr_init(ui_text_use_passphrase_question);
       confirm_scr_focus_cancel();
-      state = next_state(GENERATE_WALLET_SKIP_PASSPHRASE,
-                         GENERATE_WALLET_PROCESSING);
+      next_state =
+          confirm_next_state(PASSPHRASE_ENABLE, SEED_GENERATE, TIMED_OUT);
       break;
     }
 
-    case GENERATE_WALLET_SKIP_PASSPHRASE: {
+    case PASSPHRASE_ENABLE: {
       WALLET_SET_PASSPHRASE(wallet_for_flash.wallet_info);
       WALLET_SET_PASSPHRASE(wallet.wallet_info);
-      state = GENERATE_WALLET_PROCESSING;
+      next_state = SEED_GENERATE;
       break;
     }
 
-    case GENERATE_WALLET_PROCESSING: {
+    case SEED_GENERATE: {
       instruction_scr_init(ui_text_processing, NULL);
-      state = GENERATE_WALLET_SEED_GENERATE;
-      break;
-    }
-
-    case GENERATE_WALLET_SEED_GENERATE: {
       // TODO: Use different variable for secret values instead of
       // wallet.wallet_share_with_mac_and_nonce
       random_generate(wallet.wallet_share_with_mac_and_nonce,
@@ -310,31 +294,36 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
       mnemonic_clear();
       memzero(wallet.wallet_share_with_mac_and_nonce,
               sizeof(wallet.wallet_share_with_mac_and_nonce));
-      flow_level.level_three = GENERATE_WALLET_SEED_GENERATED;
+
       instruction_scr_destructor();
       message_scr_init(ui_text_seed_generated_successfully);
-      state = next_state(GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE,
-                         GENERATE_WALLET_FAILED_MESSAGE);
+      next_state =
+          confirm_next_state(SAVE_WALLET_SHARE_TO_DEVICE, TIMED_OUT, TIMED_OUT);
       break;
     }
 
-    case GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE: {
+    case SAVE_WALLET_SHARE_TO_DEVICE: {
       uint32_t index;
       wallet_for_flash.state = DEFAULT_VALUE_IN_FLASH;
       add_wallet_share_to_sec_flash(
           &wallet_for_flash, &index, wallet_shamir_data.mnemonic_shares[4]);
-      state = GENERATE_WALLET_TAP_CARD_FLOW;
+      next_state = TAP_CARD_FLOW;
       break;
     }
 
-    case GENERATE_WALLET_TAP_CARD_FLOW: {
-      card_flow_create_wallet();
-    } break;
+    case TAP_CARD_FLOW: {
+      if (true == card_flow_create_wallet()) {
+        next_state = VERIFY_SHARES;
+      } else {
+        next_state = COMPLETED_WITH_ERRORS;
+      }
+      break;
+    }
 
-    case GENERATE_WALLET_VERIFY_SHARES: {
+    case VERIFY_SHARES: {
       instruction_scr_init(ui_text_processing, "");
-      state = verify_card_share_data() == 1 ? GENERATE_WALLET_SUCCESS_MESSAGE
-                                            : GENERATE_WALLET_FAILED_MESSAGE;
+      next_state = verify_card_share_data() == 1 ? COMPLETED_WITHOUT_ERRORS
+                                                 : COMPLETED_WITH_ERRORS;
       memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
       memzero(wallet_credential_data.password_single_hash,
               sizeof(wallet_credential_data.password_single_hash));
@@ -349,7 +338,7 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
       break;
     }
 
-    case GENERATE_WALLET_SUCCESS_MESSAGE: {
+    case COMPLETED_WITHOUT_ERRORS: {
       instruction_scr_destructor();
       const char *messages[6] = {
           ui_text_verification_is_now_complete_messages[0],
@@ -368,34 +357,41 @@ uint32_t generate_wallet_controller_new(uint32_t current_state) {
       }
 
       multi_instruction_init(messages, count, DELAY_LONG_STRING, true);
+      next_state = confirm_next_state(EXIT, EXIT, EXIT);
       break;
     }
 
-    case GENERATE_WALLET_FAILED_MESSAGE: {
-      message_scr_init(ui_text_creation_failed_delete_wallet);
+    case COMPLETED_WITH_ERRORS: {
+      mark_core_error_screen(ui_text_creation_failed_delete_wallet);
+      next_state = EXIT;
       break;
     }
 
+    case TIMED_OUT:
+    case EARLY_EXIT:
+    case EXIT:
     default:
       break;
   }
-  return state;
+
+  return next_state;
 }
 
 void create_wallet(bool new_wallet) {
   // TODO: use new_wallet to decide how mnemonics would be generated
-  uint32_t state = GENERATE_WALLET_NAME_INPUT;
+  uint32_t current_state = NAME_INPUT;
 
   while (1) {
-    uint32_t next_state = generate_wallet_controller_new(state);
+    uint32_t next_state = create_wallet_state_handler(current_state);
 
-    if ((GENERATE_WALLET_SUCCESS_MESSAGE == next_state) ||
-        (GENERATE_WALLET_FAILED_MESSAGE == next_state)) {
-      return;
+    if (TIMED_OUT <= next_state) {
+      break;
     }
 
-    state = next_state;
+    current_state = next_state;
   }
+
+  // TODO: Memzero all wallet variables
 
   return;
 }

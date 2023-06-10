@@ -1,18 +1,18 @@
 /**
- * @file    create_wallet_flow.h
+ * @file    core_error.h
  * @author  Cypherock X1 Team
- * @brief   Header file for the create wallet flow
+ * @brief   Core error handling apis
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CREATE_WALLET_FLOW_H
-#define CREATE_WALLET_FLOW_H
+#ifndef UI_STATE_MACHINE_H
+#define UI_STATE_MACHINE_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
+#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -31,14 +31,26 @@
  *****************************************************************************/
 
 /**
- * @brief This API executes the wallet creation flow on the device
- * @details This function generate random mnemonics or inputs seed phrase from
- * user, takes user inputs for wallet configuration, writes the wallet shares on
- * the X1 vault flash and X1 cards and verifies each share
+ * @brief
  *
- * @param new_wallet true if a new wallet needs to be created, false if the user
- * wants to recover the wallet from a seed phrase
+ * @param state_on_confirmation
+ * @param state_on_rejection
+ * @param state_on_p0_event
+ * @return uint8_t
  */
-void create_wallet(bool new_wallet);
+uint8_t confirm_next_state(uint8_t state_on_confirmation,
+                           uint8_t state_on_rejection,
+                           uint8_t state_on_p0_event);
 
-#endif /* CREATE_WALLET_FLOW_H */
+/**
+ * @brief
+ *
+ * @param state_on_text_input
+ * @param state_on_rejection
+ * @param state_on_p0_event
+ * @return uint8_t
+ */
+uint8_t ui_text_next_state(uint8_t state_on_text_input,
+                           uint8_t state_on_rejection,
+                           uint8_t state_on_p0_event);
+#endif /* UI_STATE_MACHINE_H */
