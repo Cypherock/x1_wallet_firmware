@@ -59,6 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_flow_create_wallet.h"
+
 #include "card_operations.h"
 #include "constant_texts.h"
 #include "nfc.h"
@@ -103,7 +105,8 @@ bool card_flow_create_wallet(void) {
     char display[40];
     snprintf(display, sizeof(display), UI_TEXT_TAP_CARD, card_number);
 
-    if (!write_card_share(card_number, display, ui_text_place_card_below)) {
+    if (CARD_OPERATION_SUCCESS !=
+        write_card_share(card_number, display, ui_text_place_card_below)) {
       card_write_read_status = false;
       break;
     }
@@ -112,7 +115,8 @@ bool card_flow_create_wallet(void) {
       instruction_scr_change_text(ui_text_card_removed_fast, true);
     }
 
-    if (!read_card_share(card_number - 1, display, ui_text_place_card_below)) {
+    if (CARD_OPERATION_SUCCESS !=
+        read_card_share(card_number - 1, display, ui_text_place_card_below)) {
       card_write_read_status = false;
       break;
     }

@@ -158,8 +158,9 @@ static void write_card_share_post_process(uint8_t card_num) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
-  bool result = false;
+card_error_type_e write_card_share(uint8_t card_num,
+                                   const char *heading,
+                                   const char *msg) {
   wallet.xcor = card_num;
 
   // Render the instruction screen
@@ -184,7 +185,6 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
         write_card_share_post_process(card_num);
-        result = true;
         break;
       } else {
         card_handle_errors(&card_data);
@@ -194,7 +194,8 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
         (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
       const char *error_msg = card_data.error_message;
-      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+      card_data.error_type = indicate_card_error(error_msg);
+      if (CARD_OPERATION_SUCCESS == card_data.error_type) {
         // Re-render the instruction screen
         instruction_scr_init(msg, heading);
         continue;
@@ -202,10 +203,9 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     }
 
     // If control reached here, it is an unrecoverable error, so break
-    result = false;
     break;
   }
 
   nfc_deselect_card();
-  return result;
+  return card_data.error_type;
 }

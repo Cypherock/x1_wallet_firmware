@@ -13,8 +13,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
 #include <stdint.h>
+
+#include "card_return_codes.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -39,9 +40,12 @@
  * @param card_num The X1 card number to read the share from
  * @param heading The heading of the instruction to be shown on the screen
  * @param msg The message to be shown on the screen
- * @return true If the process was completed successfully
- * @return false If the process could not be completed
+ * @return card_error_type_e Error code depicting the status of card operation.
+ * If the share was successfully read back, then CARD_OPERATION_SUCCESS is
+ * returned
  */
-bool read_card_share(uint8_t card_num, const char *heading, const char *msg);
+card_error_type_e read_card_share(uint8_t card_num,
+                                  const char *heading,
+                                  const char *msg);
 
 #endif /* READ_CARD_SHARE_H */

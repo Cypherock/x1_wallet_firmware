@@ -57,7 +57,9 @@
  *
  ******************************************************************************
  */
+#include "card_flow_create_wallet.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "create_wallet_flow.h"
 #include "crypto_random.h"
 #include "flash_api.h"
@@ -103,7 +105,7 @@ extern char *NUMBERS;
  * state handler
  */
 uint32_t create_wallet_state_handler(uint32_t current_state) {
-  uint32_t next_state;
+  uint32_t next_state = EXIT;
 
   switch (current_state) {
     case NAME_INPUT: {

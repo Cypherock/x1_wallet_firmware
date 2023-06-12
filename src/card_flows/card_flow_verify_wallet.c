@@ -59,6 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_flow_verify_wallet.h"
+
 #include "card_operations.h"
 #include "constant_texts.h"
 #include "ui_instruction.h"
