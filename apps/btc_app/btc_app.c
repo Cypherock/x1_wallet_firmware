@@ -63,6 +63,7 @@
 
 #include "btc_api.h"
 #include "btc_app_priv.h"
+#include "main_menu.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -114,6 +115,10 @@ void btc_app_main(usb_event_t usb_evt) {
       // btc_get_wallet_public_key(&query);
       break;
     }
+    case BTC_QUERY_GET_XPUBS_TAG: {
+      btc_get_xpub(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, the USB event should be
        * cleared manually */
@@ -122,5 +127,6 @@ void btc_app_main(usb_event_t usb_evt) {
     }
   }
 
+  main_menu_set_update_req(true);
   return;
 }

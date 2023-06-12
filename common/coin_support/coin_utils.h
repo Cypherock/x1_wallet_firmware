@@ -321,10 +321,9 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
  *
  * @note
  */
-void generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
+bool generate_xpub(const uint32_t *path,
+                   size_t path_length,
+                   const HDNode *s_node,
                    char *str);
 
 /**
@@ -350,6 +349,21 @@ void derive_hdnode_from_path(const uint32_t *path,
                              const size_t path_length,
                              const char *curve,
                              const uint8_t *seed,
+                             HDNode *hdnode);
+
+/**
+ * @brief Generates the node from provided start node at the requested path
+ * @details The function performs hardened derivation of the nodes at the
+ * specified derivation path.
+ *
+ * @param path
+ * @param path_length
+ * @param s_node
+ * @param hdnode
+ */
+bool derive_hdnode_from_node(const uint32_t *path,
+                             size_t path_length,
+                             const HDNode *s_node,
                              HDNode *hdnode);
 
 /**

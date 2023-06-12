@@ -334,22 +334,29 @@ int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr,
   return offset;
 }
 
-void generate_xpub(const uint32_t *path,
+bool generate_xpub(const uint32_t *path,
                    const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
+                   const HDNode *s_node,
                    char *str) {
-  uint32_t fingerprint = 0x0, version;
-  HDNode t_node;
+  uint32_t fingerprint = 0x0;
+  uint32_t version = 0;
+  HDNode t_node = {0};
+  bool status = true;
 
-  derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
+  status &= derive_hdnode_from_node(path, path_length - 1, s_node, &t_node);
   fingerprint = hdnode_fingerprint(&t_node);
-  hdnode_private_ckd(&t_node, path[path_length - 1]);
+  if (0 == hdnode_private_ckd(&t_node, path[path_length - 1])) {
+    // hdnode_private_ckd returns 1 when the derivation succeeds
+    status &= false;
+  }
   hdnode_fill_public_key(&t_node);
 
   get_version(path[0], path[1], NULL, &version);
-  hdnode_serialize_public(&t_node, fingerprint, version, str, 113);
+  if (0 == hdnode_serialize_public(&t_node, fingerprint, version, str, 113)) {
+    status &= false;
+  }
   memzero(&t_node, sizeof(HDNode));
+  return status;
 }
 
 void derive_hdnode_from_path(const uint32_t *path,
@@ -361,6 +368,21 @@ void derive_hdnode_from_path(const uint32_t *path,
   for (size_t i = 0; i < path_length; i++)
     hdnode_private_ckd(hdnode, path[i]);
   hdnode_fill_public_key(hdnode);
+}
+
+bool derive_hdnode_from_node(const uint32_t *path,
+                             const size_t path_length,
+                             const HDNode *s_node,
+                             HDNode *hdnode) {
+  memcpy(hdnode, s_node, sizeof(HDNode));
+  for (size_t i = 0; i < path_length; i++) {
+    if (0 == hdnode_private_ckd(hdnode, path[i])) {
+      // hdnode_private_ckd returns 1 when the derivation succeeds
+      return false;
+    }
+  }
+  hdnode_fill_public_key(hdnode);
+  return true;
 }
 
 void get_address_node(const txn_metadata *txn_metadata_ptr,

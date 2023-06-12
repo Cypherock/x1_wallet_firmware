@@ -170,11 +170,6 @@ void add_coin_controller() {
 
       mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
       mnemonic_clear();
-      generate_xpub(add_coin_data.derivation_path,
-                    add_coin_data.derivation_depth,
-                    curve,
-                    seed,
-                    (char *)cmd_add_coin.xpub);
       memzero(secret, sizeof(secret));
       memzero(seed, sizeof(seed));
       memzero(wallet_credential_data.passphrase,

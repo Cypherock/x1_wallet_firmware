@@ -104,7 +104,8 @@ bool decode_btc_query(const uint8_t *data,
                       uint16_t data_size,
                       btc_query_t *query_out) {
   if (NULL == data || NULL == query_out || 0 == data_size) {
-    btc_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
@@ -121,7 +122,8 @@ bool decode_btc_query(const uint8_t *data,
   if (true == status) {
     memcpy(query_out, &query, sizeof(query));
   } else {
-    btc_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
   return status;
@@ -149,7 +151,8 @@ bool encode_btc_result(btc_result_t *result,
 
 bool check_btc_query(const btc_query_t *query, pb_size_t exp_query_tag) {
   if ((NULL == query) || (exp_query_tag != query->which_request)) {
-    btc_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
   }
   return true;
@@ -161,17 +164,16 @@ btc_result_t init_btc_result(pb_size_t result_tag) {
   return result;
 }
 
-void btc_send_data_flow_error(error_data_flow_t error_code) {
+void btc_send_error(pb_size_t which_error, uint32_t error_code) {
   btc_result_t result = init_btc_result(BTC_RESULT_COMMON_ERROR_TAG);
-  result.common_error =
-      init_common_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, error_code);
+  result.common_error = init_common_error(which_error, error_code);
   btc_send_result(&result);
 }
 
 void btc_send_result(btc_result_t *result) {
-  // TODO: Eventually 2059 will be replaced by BTC_RESULT_SIZE when all
+  // TODO: Eventually 1700 will be replaced by BTC_RESULT_SIZE when all
   // option files for bitcoin app are complete
-  uint8_t buffer[2059] = {0};
+  uint8_t buffer[1700] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_btc_result(result, buffer, sizeof(buffer), &bytes_encoded));
   usb_send_msg(&buffer[0], bytes_encoded);
