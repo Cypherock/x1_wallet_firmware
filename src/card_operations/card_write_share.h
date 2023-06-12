@@ -13,9 +13,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <stdbool.h>
 #include <stdint.h>
-
-#include "card_return_codes.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -40,12 +39,9 @@
  * @param card_num The X1 card number to write the share
  * @param heading The heading of the instruction to be shown on the screen
  * @param msg The message to be shown on the screen
- * @return card_error_type_e Error code depicting the status of card operation.
- * If the share was successfully written, then CARD_OPERATION_SUCCESS is
- * returned
+ * @return true If the process was completed successfully
+ * @return false If the process could not be completed
  */
-card_error_type_e write_card_share(uint8_t card_num,
-                                   const char *heading,
-                                   const char *msg);
+bool write_card_share(uint8_t card_num, const char *heading, const char *msg);
 
 #endif /* WRITE_CARD_SHARE_H */

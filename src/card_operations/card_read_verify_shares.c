@@ -129,9 +129,9 @@ static void read_card_share_post_process(uint8_t xcor) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-card_error_type_e read_card_share(uint8_t xcor,
-                                  const char *heading,
-                                  const char *msg) {
+bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
+  bool result = false;
+
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
 
@@ -154,6 +154,7 @@ card_error_type_e read_card_share(uint8_t xcor,
         }
 
         read_card_share_post_process(xcor);
+        result = true;
         break;
       } else {
         card_handle_errors(&card_data);
@@ -163,8 +164,7 @@ card_error_type_e read_card_share(uint8_t xcor,
     if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
         (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
       const char *error_msg = card_data.error_message;
-      card_data.error_type = indicate_card_error(error_msg);
-      if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
         instruction_scr_init(msg, heading);
         continue;
@@ -172,11 +172,12 @@ card_error_type_e read_card_share(uint8_t xcor,
     }
 
     // If control reached here, it is an unrecoverable error, so break
+    result = false;
     break;
   }
 
   nfc_deselect_card();
-  return card_data.error_type;
+  return result;
 }
 
 int verify_card_share_data() {

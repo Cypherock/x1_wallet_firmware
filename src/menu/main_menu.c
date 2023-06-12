@@ -248,8 +248,6 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   return;
 }
 
-extern void create_wallet(void);
-
 void main_menu_handler(engine_ctx_t *ctx,
                        ui_event_t ui_event,
                        const void *data_ptr) {
@@ -274,7 +272,6 @@ void main_menu_handler(engine_ctx_t *ctx,
       break;
     }
     case MAIN_MENU_CREATE_WALLET: {
-      create_wallet();
       // TODO: Handle create wallet selection
       break;
     }

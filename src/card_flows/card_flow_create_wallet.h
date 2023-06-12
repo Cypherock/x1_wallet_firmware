@@ -39,16 +39,4 @@
  */
 bool card_flow_create_wallet(void);
 
-/**
- * @brief Verifies card data after readback from each card during wallet
- * creation
- * @details Internally performs shamir reconstruction using wallet shares from
- * the device and cards and compares against wallet id of the new wallet
- *
- * @return int Integer depicting status of verification. 1 if the verification
- * is done successfully.
- * TODO: Move this function to a better location
- */
-int verify_card_share_data();
-
 #endif /* CARD_FLOW_CREATE_WALLET_H */
