@@ -1,7 +1,7 @@
 /**
  * @file    ui_state_machine.c
  * @author  Cypherock X1 Team
- * @brief   Helpers to initialize an instance of common error.
+ * @brief   Helpers to listen for UI events and advance the state of a flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -115,9 +115,9 @@ uint8_t confirm_next_state(uint8_t state_on_confirmation,
   return next_state;
 }
 
-uint8_t ui_text_next_state(uint8_t state_on_text_input,
-                           uint8_t state_on_rejection,
-                           uint8_t state_on_p0_event) {
+uint8_t text_input_next_state(uint8_t state_on_text_input,
+                              uint8_t state_on_rejection,
+                              uint8_t state_on_p0_event) {
   uint8_t next_state = state_on_rejection;
   evt_status_t event = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
 

@@ -111,7 +111,7 @@ uint32_t create_wallet_state_handler(uint32_t current_state) {
     case NAME_INPUT: {
       input_text_init(
           ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
-      next_state = ui_text_next_state(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
+      next_state = text_input_next_state(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
 
       if (NAME_INPUT != next_state) {
         break;
@@ -188,7 +188,7 @@ uint32_t create_wallet_state_handler(uint32_t current_state) {
       WALLET_SET_PIN(wallet.wallet_info);
 
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
-      next_state = ui_text_next_state(PIN_INPUT, PIN_SELECT, TIMED_OUT);
+      next_state = text_input_next_state(PIN_INPUT, PIN_SELECT, TIMED_OUT);
 
       if (PIN_INPUT != next_state) {
         break;
@@ -209,7 +209,7 @@ uint32_t create_wallet_state_handler(uint32_t current_state) {
 
     case PIN_CONFIRM: {
       input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
-      next_state = ui_text_next_state(PIN_CONFIRM, PIN_SELECT, TIMED_OUT);
+      next_state = text_input_next_state(PIN_CONFIRM, PIN_SELECT, TIMED_OUT);
 
       if (PIN_CONFIRM != next_state) {
         break;
