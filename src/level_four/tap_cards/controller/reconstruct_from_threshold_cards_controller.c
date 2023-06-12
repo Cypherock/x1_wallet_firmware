@@ -123,6 +123,7 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
   card_operation_data_t card_data = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_data.nfc_data.retries = 5;
+  card_data.nfc_data.pairing_required = true;
 
   instruction_scr_init(config->message, config->heading);
   while (1) {
@@ -132,10 +133,6 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      if (false == load_card_session_key(card_data.nfc_data.card_key_id)) {
-        result = CARD_OPERATION_PAIRING_REQUIRED;
-        break;
-      }
       card_data.nfc_data.status = nfc_retrieve_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {

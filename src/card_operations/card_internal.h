@@ -39,8 +39,8 @@ typedef struct card_operation_data {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Initializes the applet on the card and performs necessary operations
- * for selecting the applet.
+ * @brief Initializes the applet on the card and loads session keys if encrypted
+ * communication is required.
  * @details This API handles card applet initialization and populates card_data
  * object. Wheather in success or failure, the API populates
  * card_data.error_type to indicate result. If applet initialization
@@ -56,6 +56,8 @@ typedef struct card_operation_data {
  * calling this API
  * - Retap error is returned in only two cases, Wrong card number tapped or
  * wrong family of card tapped
+ * - If encrypted communication is required, member of @ref NFC_connection_data
+ * @ref pairing_required must be set true.
  *
  * @param card_data Pointer to the data structure containing information about
  * the card operation.
@@ -86,15 +88,4 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data);
  * operation.
  */
 card_error_type_e card_handle_errors(card_operation_data_t *card_data);
-
-/**
- * @brief Loads the session key for the specified card key ID.
- * This function should be called after the applet init and before card
- * operations with encrypted data exchange A false return indicates the card is
- * not paired as the corresponding key id is not found.
- *
- * @param card_key_id Pointer to the buffer containing the card key ID.
- * @return True if the session key was successfully loaded, false otherwise.
- */
-bool load_card_session_key(uint8_t *card_key_id);
 #endif

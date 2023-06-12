@@ -149,6 +149,16 @@ static card_error_type_e default_nfc_errors_handler(
  */
 static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data);
+
+/**
+ * @brief Loads the session key for the specified card key ID.
+ * A false return indicates the card is not paired as the corresponding key id
+ * is not found.
+ *
+ * @param card_key_id Pointer to the buffer containing the card key ID.
+ * @return True if the session key was successfully loaded, false otherwise.
+ */
+static bool load_card_session_key(uint8_t *card_key_id);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -223,6 +233,20 @@ static card_error_type_e handle_wait_for_card_selection(
   NFC_RETURN_SUCCESS(card_data);
 }
 
+static bool load_card_session_key(uint8_t *card_key_id) {
+  ASSERT(NULL != card_key_id);
+
+  int8_t keystore_index = is_paired(card_key_id);
+
+  if (-1 == keystore_index) {
+    return false;
+  }
+
+  const uint8_t *session_key = get_keystore_pairing_key(keystore_index);
+  init_session_keys(session_key, session_key + 32, NULL);
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -256,6 +280,15 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
           NFC_RETURN_ABORT_ERROR(card_data,
                                  ui_critical_card_health_migrate_data);
         }
+
+        /* Check if pairing is required */
+        if (true == card_data->nfc_data.pairing_required) {
+          /* Return pairing error if not paired */
+          if (false == load_card_session_key(card_data->nfc_data.card_key_id)) {
+            NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
+          }
+        }
+
         NFC_RETURN_SUCCESS(card_data);
         break;
       case SW_CONDITIONS_NOT_SATISFIED:
@@ -357,18 +390,4 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
 
   // Shouldn't reach here
   NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_DEFAULT_INVALID);
-}
-
-bool load_card_session_key(uint8_t *card_key_id) {
-  ASSERT(NULL != card_key_id);
-
-  int8_t keystore_index = is_paired(card_key_id);
-
-  if (-1 == keystore_index) {
-    return false;
-  }
-
-  const uint8_t *session_key = get_keystore_pairing_key(keystore_index);
-  init_session_keys(session_key, session_key + 32, NULL);
-  return true;
 }

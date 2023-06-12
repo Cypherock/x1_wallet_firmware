@@ -167,6 +167,7 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
 
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
+  card_data.nfc_data.pairing_required = true;
   memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
 
   write_card_pre_process(card_num);
@@ -179,7 +180,6 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      load_card_session_key(card_data.nfc_data.card_key_id);
       card_data.nfc_data.status = nfc_add_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
