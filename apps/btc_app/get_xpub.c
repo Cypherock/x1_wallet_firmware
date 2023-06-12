@@ -317,11 +317,15 @@ void btc_get_xpub(btc_query_t *query) {
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
   instruction_scr_init(ui_text_processing, NULL);
-  one_shot_xpub_generate(init_req->derivation_paths,
-                         &master_node,
-                         xpub_list,
-                         init_req->derivation_paths_count);
+  if (true == one_shot_xpub_generate(init_req->derivation_paths,
+                                     &master_node,
+                                     xpub_list,
+                                     init_req->derivation_paths_count)) {
+    send_xpubs(query, xpub_list, init_req->derivation_paths_count);
+  } else {
+    // send unknown error; do not know failure reason
+    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
   memzero(&master_node, sizeof(HDNode));
-  send_xpubs(query, xpub_list, init_req->derivation_paths_count);
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
 }
