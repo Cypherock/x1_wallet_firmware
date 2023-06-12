@@ -508,25 +508,6 @@ void desktop_listener_task(lv_task_t *data) {
     switch (command) {
 #if X1WALLET_MAIN
       case START_EXPORT_WALLET: {
-        CY_Reset_Not_Allow(false);
-        // Using these two variable for temporarily saving new flow and
-        // controller variables
-        if (get_wallet_count() == 0) {
-          // No wallets present on device
-          comm_reject_request(WALLET_DOES_NOT_EXISTS, 0);
-        } else if (get_valid_wallet_count() == 0) {
-          // No valid wallets found
-          comm_reject_request(WALLET_DOES_NOT_EXISTS, 3);
-        } else {
-          snprintf(flow_level.confirmation_screen_text,
-                   sizeof(flow_level.confirmation_screen_text),
-                   "%s",
-                   ui_text_do_you_want_import_wallet_to_desktop);
-          flow_level.show_desktop_start_screen = true;
-          flow_level.level_two = LEVEL_THREE_EXPORT_TO_DESKTOP;
-        }
-        clear_message_received_data();
-
       } break;
 #ifdef DEV_BUILD
       case START_CARD_UPGRADE: {
