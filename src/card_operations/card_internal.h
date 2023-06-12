@@ -70,8 +70,8 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data);
  * action(card_data.nfc_data.status). Wheather success or failure, the API
  * populates and returns card_data.error_type to indicate result. The errors
  * returned by this handler are defined in @ref card_error_type_e. For retap
- * errors a message is populated to card_data.error_message, while in abort
- * error cases, error message is set to core error using @ref
+ * errors a message is populated to card_data.error_message, while in abort and
+ * locked wallet error cases, error message is set to core error using @ref
  * mark_core_error_screen.
  *
  * NOTE:

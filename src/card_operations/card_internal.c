@@ -337,6 +337,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
     default:
       switch (card_data->nfc_data.status & 0xFF00) {
         case POW_SW_WALLET_LOCKED:
+          mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
           NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
           break;
 

@@ -172,10 +172,6 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
       }
     }
 
-    if (CARD_OPERATION_LOCKED_WALLET == card_data.error_type) {
-      mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
-    }
-
     // If control reached here, it is an unrecoverable error, so break
     result = card_data.error_type;
     break;
