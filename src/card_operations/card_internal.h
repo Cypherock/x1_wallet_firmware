@@ -13,7 +13,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_operations.h"
+#include "card_return_codes.h"
 
 /* TODO: Remove the include and move required struct with cleanup*/
 #include "controller_tap_cards.h"
