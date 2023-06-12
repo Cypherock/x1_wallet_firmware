@@ -57,8 +57,8 @@
  ******************************************************************************
  */
 #include "apdu.h"
+#include "card_fetch_share.h"
 #include "card_internal.h"
-#include "card_reconstruct_wallet.h"
 #include "card_utils.h"
 #include "communication.h"
 #include "constant_texts.h"

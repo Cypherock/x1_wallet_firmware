@@ -13,9 +13,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_fetch_share.h"
 #include "card_pair.h"
 #include "card_read_verify_share.h"
-#include "card_reconstruct_wallet.h"
 #include "card_return_codes.h"
 #include "card_sign.h"
 #include "card_write_share.h"

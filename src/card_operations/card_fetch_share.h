@@ -1,13 +1,13 @@
 /**
- * @file    card_reconstruct_wallet.h
+ * @file    card_fetch_share.h
  * @author  Cypherock X1 Team
- * @brief   Reconstruction of wallets from cards apis
+ * @brief   API for fetching wallet share from a card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_RECONSTRUCT_WALLET_H
-#define CARD_RECONSTRUCT_WALLET_H
+#ifndef CARD_FETCH_SHARE_H
+#define CARD_FETCH_SHARE_H
 
 /*****************************************************************************
  * INCLUDES
