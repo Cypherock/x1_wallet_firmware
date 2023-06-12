@@ -40,12 +40,12 @@
 void btc_get_xpub(btc_query_t *query);
 
 /**
- * @brief Handler for card authentication, this flow expects
- * MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG as initial query, otherwise the flow
- * is aborted
+ * @brief Handler for bitcoin public key derivation.
+ * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
+ * query, otherwise the flow is aborted
  *
  * @param query object for card auth query
  */
-void btc_get_wallet_public_key(btc_query_t *query);
+void btc_get_public_key(btc_query_t *query);
 
 #endif
