@@ -57,17 +57,20 @@
  ******************************************************************************
  */
 #include "apdu.h"
+#include "card_internal.h"
+#include "card_reconstruct_wallet.h"
+#include "card_utils.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_main.h"
 #include "controller_tap_cards.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
 #include "tasks.h"
 #include "ui_instruction.h"
 #include "ui_message.h"
 
-extern int error_occurred_remaining_tries;
 extern Wallet_shamir_data wallet_shamir_data;
 
 static uint8_t remaining_cards;
@@ -107,33 +110,80 @@ void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
   }
 }
 
+/**
+ * Obsolete function, alternate function( @ref pair_card_operation) provided in
+ * @ref card_pair.h
+ */
 static void _tap_card_backend(uint8_t xcor) {
-  tap_card_data.retries = 5;
+}
 
-  while (!CY_Read_Reset_Flow()) {
-    tap_card_data.acceptable_cards = remaining_cards;
-    memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    tap_card_data.lvl3_retry_point = flow_level.level_three;
-    tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
-    if (xcor == 0)
-      tap_card_data.tapped_card = 0;
-    if (!tap_card_applet_connection())
-      return;
-    tap_card_data.status = nfc_retrieve_wallet(&wallet);
+card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
+  ASSERT(NULL != config);
 
-    if (tap_card_data.status == SW_NO_ERROR) {
-      remaining_cards = tap_card_data.acceptable_cards;
-      _handle_retrieve_wallet_success(xcor);
-      buzzer_start(BUZZER_DURATION);
-      instruction_scr_change_text(ui_text_remove_card_prompt, true);
-      if (xcor == 0)
-        nfc_detect_card_removal();
-      instruction_scr_destructor();
-      break;
-    } else if (tap_card_handle_applet_errors()) {
-      break;
+  card_operation_data_t card_data = {0};
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  card_data.nfc_data.retries = 5;
+
+  instruction_scr_init(config->message, config->heading);
+  while (1) {
+    card_data.nfc_data.acceptable_cards = config->remaining_cards;
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+
+    card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      if (false == load_card_session_key(card_data.nfc_data.card_key_id)) {
+        result = CARD_OPERATION_PAIRING_REQUIRED;
+        break;
+      }
+      card_data.nfc_data.status = nfc_retrieve_wallet(&wallet);
+
+      if (card_data.nfc_data.status == SW_NO_ERROR) {
+        remaining_cards = card_data.nfc_data.acceptable_cards;
+        _handle_retrieve_wallet_success(config->xcor);
+        buzzer_start(BUZZER_DURATION);
+        if (false == config->skip_card_removal) {
+          wait_for_card_removal();
+        }
+
+        result = CARD_OPERATION_SUCCESS;
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
     }
+
+    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
+        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(config->message, config->heading);
+        continue;
+      }
+    }
+
+    if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_data.error_type) {
+      card_error_type_e temp_error =
+          indicate_wrong_pin(card_data.nfc_data.status);
+      if (CARD_OPERATION_SUCCESS != temp_error) {
+        result = temp_error;
+        break;
+      }
+    }
+
+    if (CARD_OPERATION_LOCKED_WALLET == card_data.error_type) {
+      mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
   }
+
+  nfc_deselect_card();
+  LOG_ERROR("Card Error type: %d", card_data.error_type);
+  return result;
 }
 
 static void _handle_retrieve_wallet_success(uint8_t xcor) {
@@ -154,11 +204,4 @@ static void _handle_retrieve_wallet_success(uint8_t xcor) {
           sizeof(wallet.wallet_share_with_mac_and_nonce));
 
   wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
-
-  if (xcor < 1) {
-    flow_level.level_four++;
-  } else {
-    flow_level.level_three++;
-    flow_level.level_four = 1;
-  }
 }

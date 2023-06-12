@@ -1,39 +1,35 @@
 /**
- * @file    card_operations.h
+ * @file    card_reconstruct_wallet.h
  * @author  Cypherock X1 Team
- * @brief   Header file exporting card operations
- *
+ * @brief   Reconstruction of wallets from cards apis
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_OPERATIONS_H
-#define CARD_OPERATIONS_H
+#ifndef CARD_RECONSTRUCT_WALLET_H
+#define CARD_RECONSTRUCT_WALLET_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_pair.h"
-#include "card_read_verify_share.h"
-#include "card_reconstruct_wallet.h"
 #include "card_return_codes.h"
-#include "card_sign.h"
-#include "card_write_share.h"
-#include "check_pairing.h"
+#include "stdbool.h"
+#include "stdint.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define CARD_HANDLE_P0_EVENTS(p0_event)                                        \
-  do {                                                                         \
-    if (true == (p0_event).flag) {                                             \
-      return CARD_OPERATION_P0_OCCURED;                                        \
-    }                                                                          \
-  } while (0)
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct card_fetch_share_cfg {
+  uint8_t xcor;               /// xcor for share index for wallet reconstruction
+  uint8_t remaining_cards;    /// Cards remaining to be tapped by user
+  bool skip_card_removal;
+  const char *heading;
+  const char *message;
+} card_fetch_share_cfg_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -43,4 +39,16 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-#endif /* CARD_OPERATIONS_H */
+/**
+ * @brief Fetches wallet share data from a card.
+ * @details This function initializes the applet, retrieves the wallet data from
+ * the card, and shares the retrieved wallet data. It handles various error
+ * cases and returns an appropriate error code. For special case such as
+ * incorrect pin, it indicates the no. of attempts left.
+ *
+ * @param config A pointer to the configuration of the card fetch and share
+ * operation.
+ * @return A card_error_type_e value representing the result of the operation.
+ */
+card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config);
+#endif
