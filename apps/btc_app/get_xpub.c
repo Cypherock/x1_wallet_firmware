@@ -205,6 +205,8 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   // status = wallet_is_operational(request->initiate.wallet_id);
   if (0 == request->initiate.derivation_paths_count) {
     // request does not have any derivation paths, invalid request
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -311,7 +313,8 @@ void btc_get_xpub(btc_query_t *query) {
 
   // TODO: call the reconstruct flow and get seed from the core
   uint8_t seed[64] = {0};    // = generate_seed();
-  char xpub_list[init_req->derivation_paths_count][XPUB_SIZE];
+  char xpub_list[sizeof(init_req->derivation_paths) /
+                 sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
   instruction_scr_init(ui_text_processing, NULL);
