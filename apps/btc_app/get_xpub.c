@@ -137,7 +137,7 @@ static bool confirm_with_user(const char *wallet_name);
  * location for storing derived xpubs to be a match with provided count.
  *
  * @param paths Reference to the list of btc_get_xpub_derivation_path_t
- * @param m_node Reference to a const instance of HDNode for master node
+ * @param seed Reference to a const array containing the seed
  * @param xpubs Reference to the location to store all the xpubs to be derived
  * @param count Number of derivation paths in the list and consequently,
  * sufficient space in memory for storing derived xpubs.
@@ -148,7 +148,7 @@ static bool confirm_with_user(const char *wallet_name);
  * derivation path.
  */
 static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
-                                   const HDNode *m_node,
+                                   const uint8_t *seed,
                                    char xpubs[][XPUB_SIZE],
                                    pb_size_t count);
 
@@ -244,15 +244,13 @@ static bool confirm_with_user(const char *wallet_name) {
 }
 
 static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
-                                   const HDNode *m_node,
+                                   const uint8_t *seed,
                                    char xpubs[][XPUB_SIZE],
                                    pb_size_t count) {
-  // TODO: remove the fixed seed
-  uint8_t seed[64] = {0};
-  hdnode_from_seed(seed, 64, SECP256K1_NAME, (HDNode *)m_node);
   for (pb_size_t index = 0; index < count; index++) {
     const btc_get_xpub_derivation_path_t *path = &paths[index];
-    if (!generate_xpub(path->path, path->path_count, m_node, xpubs[index])) {
+    if (!generate_xpub(
+            path->path, path->path_count, SECP256K1_NAME, seed, xpubs[index])) {
       return false;
     }
   }
@@ -311,14 +309,14 @@ void btc_get_xpub(btc_query_t *query) {
   }
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
 
-  // TODO: call the reconstruct flow and get master node from the core
-  HDNode master_node = {0};    // = generate_master_node();
+  // TODO: call the reconstruct flow and get seed from the core
+  uint8_t seed[64] = {0};    // = generate_seed();
   char xpub_list[init_req->derivation_paths_count][XPUB_SIZE];
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
   instruction_scr_init(ui_text_processing, NULL);
   if (true == one_shot_xpub_generate(init_req->derivation_paths,
-                                     &master_node,
+                                     seed,
                                      xpub_list,
                                      init_req->derivation_paths_count)) {
     send_xpubs(query, xpub_list, init_req->derivation_paths_count);
@@ -326,6 +324,6 @@ void btc_get_xpub(btc_query_t *query) {
     // send unknown error; do not know failure reason
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
-  memzero(&master_node, sizeof(HDNode));
+  memzero(seed, sizeof(seed));
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
 }

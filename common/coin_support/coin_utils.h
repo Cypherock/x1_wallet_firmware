@@ -305,65 +305,45 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
+ * @details The function uses fingerprint of second last node and assumes first
+ * two nodes are purpose and coin index.
  *
- * @param [in] path             Path of the node to derive xpub uses fingerprint
- * of second last node. and assumes first two nodes are purpose and coin index.
+ * @param [in] path             Path of the node to derive xpub
  * @param [in] path_length      Length of the given path.
  * @param [in] curve            Curve to be used.
- * @param [in] seed             Seed to generate the master node.
- * @param [out] str              String to store the xpub.
+ * @param [in] seed             Seed to generate the master node of 64 bytes
+ * @param [out] str              String to store the xpub of XPUB_SIZE
  *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded.
+ * @retval false If the node derivation failed.
  */
 bool generate_xpub(const uint32_t *path,
                    size_t path_length,
-                   const HDNode *s_node,
+                   const char *curve,
+                   const uint8_t *seed,
                    char *str);
 
 /**
- * @brief Get the hdnode at given path from seed.
- * @details
+ * @brief Generates the node from provided seed at the requested path
+ * @details The function performs hardened derivation of the nodes at the
+ * specified derivation path.
  *
  * @param [in] path                 Path to derive the hdnode.
  * @param [in] path_length          Length of the path.
  * @param [in] curve                Curve name.
- * @param [in] seed                 Seed to derive the hdnode.
+ * @param [in] seed                 Seed to derive the hdnode of 64 bytes
  * @param [out] hdnode              Pointer to the HDNode instance used to store
  * the derived hdnode.
  *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded.
+ * @retval false If the node derivation failed.
  */
-void derive_hdnode_from_path(const uint32_t *path,
-                             const size_t path_length,
+bool derive_hdnode_from_path(const uint32_t *path,
+                             size_t path_length,
                              const char *curve,
                              const uint8_t *seed,
-                             HDNode *hdnode);
-
-/**
- * @brief Generates the node from provided start node at the requested path
- * @details The function performs hardened derivation of the nodes at the
- * specified derivation path.
- *
- * @param path
- * @param path_length
- * @param s_node
- * @param hdnode
- */
-bool derive_hdnode_from_node(const uint32_t *path,
-                             size_t path_length,
-                             const HDNode *s_node,
                              HDNode *hdnode);
 
 /**
