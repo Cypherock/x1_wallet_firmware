@@ -163,6 +163,7 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
       }
     }
 
+    /* TODO: Consider moving incorrect pin error handling to caller */
     if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_data.error_type) {
       card_error_type_e temp_error =
           indicate_wrong_pin(card_data.nfc_data.status);
