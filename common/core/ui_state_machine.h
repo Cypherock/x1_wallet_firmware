@@ -37,11 +37,11 @@
  * @param state_on_confirmation The state to be set on user confirmation
  * @param state_on_rejection The state to be set on user rejection
  * @param state_on_p0_event The state to be set on P0 event
- * @return uint8_t The next state based on event received
+ * @return uint32_t The next state based on event received
  */
-uint8_t confirm_next_state(uint8_t state_on_confirmation,
-                           uint8_t state_on_rejection,
-                           uint8_t state_on_p0_event);
+uint32_t get_state_on_confirm_scr(uint32_t state_on_confirmation,
+                                  uint32_t state_on_rejection,
+                                  uint32_t state_on_p0_event);
 
 /**
  * @brief Waits for UI event on an input screen and return next state
@@ -50,9 +50,9 @@ uint8_t confirm_next_state(uint8_t state_on_confirmation,
  * @param state_on_text_input The state to be set on user text input
  * @param state_on_rejection The state to be set on user rejection
  * @param state_on_p0_event The state to be set on P0 event
- * @return uint8_t The next state based on event received
+ * @return uint32_t The next state based on event received
  */
-uint8_t text_input_next_state(uint8_t state_on_text_input,
-                              uint8_t state_on_rejection,
-                              uint8_t state_on_p0_event);
+uint32_t get_state_on_input_scr(uint32_t state_on_text_input,
+                                uint32_t state_on_rejection,
+                                uint32_t state_on_p0_event);
 #endif /* UI_STATE_MACHINE_H */

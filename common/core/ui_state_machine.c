@@ -95,10 +95,10 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-uint8_t confirm_next_state(uint8_t state_on_confirmation,
-                           uint8_t state_on_rejection,
-                           uint8_t state_on_p0_event) {
-  uint8_t next_state = state_on_rejection;
+uint32_t get_state_on_confirm_scr(uint32_t state_on_confirmation,
+                                  uint32_t state_on_rejection,
+                                  uint32_t state_on_p0_event) {
+  uint32_t next_state = state_on_rejection;
   evt_status_t event = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
 
   if (true == event.p0_event.flag) {
@@ -115,10 +115,10 @@ uint8_t confirm_next_state(uint8_t state_on_confirmation,
   return next_state;
 }
 
-uint8_t text_input_next_state(uint8_t state_on_text_input,
-                              uint8_t state_on_rejection,
-                              uint8_t state_on_p0_event) {
-  uint8_t next_state = state_on_rejection;
+uint32_t get_state_on_input_scr(uint32_t state_on_text_input,
+                                uint32_t state_on_rejection,
+                                uint32_t state_on_p0_event) {
+  uint32_t next_state = state_on_rejection;
   evt_status_t event = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
 
   if (true == event.p0_event.flag) {
