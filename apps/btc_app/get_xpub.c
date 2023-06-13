@@ -265,16 +265,17 @@ static bool send_xpubs(btc_query_t *query,
   btc_result_t response = init_btc_result(BTC_RESULT_GET_XPUBS_TAG);
   btc_get_xpubs_result_response_t *result = &response.get_xpubs.result;
   size_t batch_limit = sizeof(response.get_xpubs.result.xpubs) / XPUB_SIZE;
-  pb_size_t remaining = count;
+  size_t remaining = count;
 
   response.get_xpubs.which_response = BTC_GET_XPUBS_RESPONSE_RESULT_TAG;
   while (true) {
-    // send paginated response
-    result->xpubs_count = CY_MIN(batch_limit, remaining);
-    const char(*xpubs)[XPUB_SIZE] = &xpub_list[count - remaining];
-    memcpy(result->xpubs, xpubs, batch_limit * XPUB_SIZE);
+    // send response as batched list of xpubs
+    size_t batch_size = CY_MIN(batch_limit, remaining);
+    result->xpubs_count = batch_size;
+    memcpy(
+        result->xpubs, &xpub_list[count - remaining], batch_size * XPUB_SIZE);
     btc_send_result(&response);
-    remaining -= result->xpubs_count;
+    remaining -= batch_size;
     if (0 == remaining) {
       break;
     }
