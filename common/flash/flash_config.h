@@ -17,7 +17,7 @@
 #define POW_RAND_NUMBER_SIZE 32    ///< Size of random number used for PoW
 #define POW_NONCE_SIZE 32          ///< Size of nonce used for PoW
 #define XPUB_SIZE                                                              \
-  112    ///< Size of extended public key. Refer BIP32 doc
+  113    ///< Size of extended public key. Refer BIP32 doc
          ///< https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 #define FAMILY_ID_SIZE 4    ///< Size of family id of Card
 #define MAX_TRANSACTION_SIZE                                                   \
