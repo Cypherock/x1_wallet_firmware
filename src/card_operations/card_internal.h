@@ -57,7 +57,7 @@ typedef struct card_operation_data {
  * - Retap error is returned in only two cases, Wrong card number tapped or
  * wrong family of card tapped
  * - If encrypted communication is required, member of @ref NFC_connection_data
- * @ref pairing_required must be set true.
+ * @ref init_session_keys must be set true.
  *
  * @param card_data Pointer to the data structure containing information about
  * the card operation.

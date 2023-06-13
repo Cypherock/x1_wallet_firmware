@@ -167,7 +167,7 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
 
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
-  card_data.nfc_data.pairing_required = true;
+  card_data.nfc_data.init_session_keys = true;
   memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
 
   write_card_pre_process(card_num);

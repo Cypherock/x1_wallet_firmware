@@ -123,7 +123,7 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
   card_operation_data_t card_data = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_data.nfc_data.retries = 5;
-  card_data.nfc_data.pairing_required = true;
+  card_data.nfc_data.init_session_keys = true;
 
   instruction_scr_init(config->message, config->heading);
   while (1) {

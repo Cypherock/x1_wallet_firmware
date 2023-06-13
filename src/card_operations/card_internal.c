@@ -284,7 +284,7 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
         }
 
         /* Check if pairing is required */
-        if (true == card_data->nfc_data.pairing_required) {
+        if (true == card_data->nfc_data.init_session_keys) {
           /* Return pairing error if not paired */
           if (false == load_card_session_key(card_data->nfc_data.card_key_id)) {
             NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
