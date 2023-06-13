@@ -164,3 +164,17 @@ card_error_type_e wait_for_card_removal(void) {
   // Shouldn't reach here
   return CARD_OPERATION_DEFAULT_INVALID;
 }
+
+card_error_type_e indicate_wrong_pin(ISO7816 status) {
+  /** Check incorrect pin error */
+  if (SW_CORRECT_LENGTH_00 == (status & 0xFF00)) {
+    char error_message[60] = "";
+    snprintf(error_message,
+             sizeof(error_message),
+             UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING,
+             (status & 0xFF));
+    return indicate_card_error(error_message);
+  } else {
+    return CARD_OPERATION_SUCCESS;
+  }
+}

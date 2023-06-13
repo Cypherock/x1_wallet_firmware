@@ -34,6 +34,8 @@
 #define UI_TEXT_VERIFY_MESSAGE "Verify Message"
 #define UI_TEXT_VERIFY_DOMAIN "Verify Domain"
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
+#define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
+  "Incorrect PIN!\n%d attempt(s) remaining"
 
 // product hash
 extern const char *product_hash;
