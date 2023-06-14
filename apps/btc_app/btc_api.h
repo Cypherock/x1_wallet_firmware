@@ -82,9 +82,10 @@ btc_result_t init_btc_result(pb_size_t result_tag);
 /**
  * @brief Send the error to the host.
  *
+ * @param which_error The error type to be sent
  * @param error_code The error code to sent to the host
  */
-void btc_send_data_flow_error(error_data_flow_t error_code);
+void btc_send_error(pb_size_t which_error, uint32_t error_code);
 
 /**
  * @brief This API encodes btc_result_t in protobuf structure.
