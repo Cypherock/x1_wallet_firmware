@@ -108,20 +108,6 @@ static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
  */
 static void handle_card_sign_data_operation(card_operation_data_t *card_data,
                                             card_sign_data_config_t *sign_data);
-
-/**
- * @brief Handles the response of a smart card sign operation.
- * Based on the error code, handles user action required and sets the corret UI
- * screen.
- *
- * @param card_data Pointer to the smart card operation data.
- * @param sign_data Pointer to the data to be signed.
- * @return card_error_type_e Returns a card error code indicating the success or
- * failure of the operation.
- */
-static card_error_type_e handle_sign_data_operation_response(
-    card_operation_data_t *card_data,
-    card_sign_data_config_t *sign_data);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -173,44 +159,15 @@ static void handle_card_sign_data_operation(
 
     card_data->nfc_data.status = get_card_auth_signature(
         sign_data->data, sign_data->data_size, sign_data->signature);
+
+    if (SW_NO_ERROR == card_data->nfc_data.status) {
+      buzzer_start(BUZZER_DURATION);
+    }
+
     card_handle_errors(card_data);
   }
 }
 
-static card_error_type_e handle_sign_data_operation_response(
-    card_operation_data_t *card_data,
-    card_sign_data_config_t *sign_data) {
-  card_error_type_e temp_error = CARD_OPERATION_DEFAULT_INVALID;
-  if (NULL != card_data->error_message) {
-    temp_error = indicate_card_error(card_data->error_message);
-  }
-
-  switch (card_data->error_type) {
-    case CARD_OPERATION_SUCCESS:
-      buzzer_start(BUZZER_DURATION);
-      if (false == sign_data->skip_card_removal) {
-        temp_error = wait_for_card_removal();
-
-        if (CARD_OPERATION_SUCCESS != temp_error) {
-          return temp_error;
-        }
-      }
-      break;
-
-    case CARD_OPERATION_RETAP_BY_USER_REQUIRED:
-      if (CARD_OPERATION_SUCCESS != temp_error) {
-        return temp_error;
-      }
-
-      instruction_scr_init(sign_data->message, sign_data->heading);
-      break;
-
-    default:
-      break;
-  }
-
-  return card_data->error_type;
-}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -219,16 +176,11 @@ card_error_type_e card_sign_auth_data(card_sign_data_config_t *sign_data) {
   ASSERT(NULL != sign_data && NULL != sign_data->data);
 
   card_operation_data_t card_data = {0};
-  instruction_scr_init(sign_data->message, sign_data->heading);
 
   while (1) {
     handle_card_sign_data_operation(&card_data, sign_data);
 
-    card_data.error_type =
-        handle_sign_data_operation_response(&card_data, sign_data);
-
-    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
-        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type) {
       continue;
     } else {
       break;
