@@ -149,6 +149,16 @@ static card_error_type_e default_nfc_errors_handler(
  */
 static card_error_type_e handle_wait_for_card_selection(
     card_operation_data_t *card_data);
+
+/**
+ * @brief Loads the session key for the specified card key ID.
+ * A false return indicates the card is not paired as the corresponding key id
+ * is not found.
+ *
+ * @param card_key_id Pointer to the buffer containing the card key ID.
+ * @return True if the session key was successfully loaded, false otherwise.
+ */
+static bool load_card_session_key(uint8_t *card_key_id);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -215,12 +225,28 @@ static card_error_type_e handle_wait_for_card_selection(
   nfc_en_select_card_task();
   evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
 
-  CARD_HANDLE_P0_EVENTS(evt_status.p0_event);
+  if (true == evt_status.p0_event.flag) {
+    return CARD_OPERATION_P0_OCCURED;
+  }
 
   /* This API call is required to select the detected card as `get_events` calls
    * the deselect function on exit */
   nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME);
   NFC_RETURN_SUCCESS(card_data);
+}
+
+static bool load_card_session_key(uint8_t *card_key_id) {
+  ASSERT(NULL != card_key_id);
+
+  int8_t keystore_index = is_paired(card_key_id);
+
+  if (-1 == keystore_index) {
+    return false;
+  }
+
+  const uint8_t *session_key = get_keystore_pairing_key(keystore_index);
+  init_session_keys(session_key, session_key + 32, NULL);
+  return true;
 }
 
 /*****************************************************************************
@@ -256,6 +282,17 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
           NFC_RETURN_ABORT_ERROR(card_data,
                                  ui_critical_card_health_migrate_data);
         }
+
+        /* Check if pairing is required */
+        if (true == card_data->nfc_data.init_session_keys) {
+          /* Return pairing error if not paired */
+          if (false == load_card_session_key(card_data->nfc_data.card_key_id)) {
+            NFC_RETURN_ERROR_WITH_MSG(card_data,
+                                      CARD_OPERATION_PAIRING_REQUIRED,
+                                      ui_text_device_and_card_not_paired);
+          }
+        }
+
         NFC_RETURN_SUCCESS(card_data);
         break;
       case SW_CONDITIONS_NOT_SATISFIED:
@@ -303,8 +340,13 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_security_conditions_not_met);
       break;
     case SW_NOT_PAIRED:
+      /* This error would indicates that device has the pairing keys but card
+       * doesn't. In practice this would happen if the card was paired with more
+       * than 5 devices after being paired to the device where error occurs. */
       invalidate_keystore();
-      NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
+      NFC_RETURN_ERROR_WITH_MSG(card_data,
+                                CARD_OPERATION_PAIRING_REQUIRED,
+                                ui_text_device_and_card_not_paired);
       break;
     case SW_CONDITIONS_NOT_SATISFIED:
       break;
@@ -358,18 +400,4 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
 
   // Shouldn't reach here
   NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_DEFAULT_INVALID);
-}
-
-bool load_card_session_key(uint8_t *card_key_id) {
-  ASSERT(NULL != card_key_id);
-
-  int8_t keystore_index = is_paired(card_key_id);
-
-  if (-1 == keystore_index) {
-    return false;
-  }
-
-  const uint8_t *session_key = get_keystore_pairing_key(keystore_index);
-  init_session_keys(session_key, session_key + 32, NULL);
-  return true;
 }

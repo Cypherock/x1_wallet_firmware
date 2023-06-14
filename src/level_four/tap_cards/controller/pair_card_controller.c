@@ -59,7 +59,7 @@
 #include "base58.h"
 #include "bip32.h"
 #include "card_internal.h"
-#include "card_operations.h"
+#include "card_return_codes.h"
 #include "card_utils.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"

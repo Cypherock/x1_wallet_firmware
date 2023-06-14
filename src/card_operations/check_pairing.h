@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "card_operations.h"
+#include "card_return_codes.h"
 #include "flash_config.h"
 
 /*****************************************************************************
