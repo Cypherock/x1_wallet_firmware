@@ -63,6 +63,7 @@
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
+#include "create_wallet_menu.h"
 #include "host_interface.h"
 #include "menu_priv.h"
 #include "status_api.h"
@@ -272,7 +273,8 @@ void main_menu_handler(engine_ctx_t *ctx,
       break;
     }
     case MAIN_MENU_CREATE_WALLET: {
-      // TODO: Handle create wallet selection
+      engine_add_next_flow_step(ctx, create_wallet_menu_get_step());
+      engine_goto_next_flow_step(ctx);
       break;
     }
     case MAIN_MENU_SETTINGS: {

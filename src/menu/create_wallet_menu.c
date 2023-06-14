@@ -1,7 +1,7 @@
 /**
- * @file    menu_config.c
+ * @file    create_wallet_menu.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Populate and handle main menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,9 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdint.h>
+#include "create_wallet_menu.h"
 
+#include "constant_texts.h"
+#include "core_error_priv.h"
+#include "create_wallet_flow.h"
 #include "menu_priv.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -74,37 +78,103 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef enum {
+  GENERATE_NEW_WALLET = 1,
+  RESTORE_FROM_SEED,
+} create_wallet_options_e;
 
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief This is the initializer callback for the create wallet menu.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr);
+
+/**
+ * @brief This is the UI event handler for the create wallet menu.
+ * @details The function decodes the UI event and calls the create wallet flow
+ * based on selection. It deletes the create wallet menu step if the back button
+ * is pressed on the menu
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param ui_event The ui event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+const flow_step_t create_wallet_step = {
+    .step_init_cb = create_wallet_menu_initialize,
+    .p0_cb = NULL,
+    .ui_cb = create_wallet_menu_handler,
+    .usb_cb = NULL,
+    .nfc_cb = NULL,
+    .evt_cfg_ptr = &device_nav_evt_config,
+    .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-/**
- * @brief Event listener configuration for the main menu and the onboarding menu
- */
-const evt_config_t main_menu_evt_config = {
-    .evt_selection = EVENT_CONFIG_UI | EVENT_CONFIG_USB,
-    .timeout = MAX_INACTIVITY_TIMEOUT};
-
-/**
- * @brief Event listener configuration for the menu of device triggered
- * navigation
- */
-const evt_config_t device_nav_evt_config = {.evt_selection = EVENT_CONFIG_UI,
-                                            .timeout = MAX_INACTIVITY_TIMEOUT};
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr) {
+  handle_core_errors();
+
+  /* Create an array of pointers holding the string to display on the menu. */
+  char *menu_option_ptr_array[NUMBER_OF_OPTIONS_NEW_WALLET];
+
+  for (uint8_t menu_index = 0; menu_index < NUMBER_OF_OPTIONS_NEW_WALLET;
+       menu_index++) {
+    menu_option_ptr_array[menu_index] =
+        (char *)ui_text_options_new_wallet[menu_index];
+  }
+
+  menu_init((const char **)menu_option_ptr_array,
+            NUMBER_OF_OPTIONS_NEW_WALLET,
+            ui_text_heading_new_wallet,
+            true);
+
+  return;
+}
+
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr) {
+  if (ui_event.event_type == UI_EVENT_REJECT) {
+    engine_delete_current_flow_step(ctx);
+    return;
+  }
+
+  switch (ui_event.list_selection) {
+    case GENERATE_NEW_WALLET: {
+      create_wallet_flow(true);
+      break;
+    }
+    case RESTORE_FROM_SEED: {
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  return;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+const flow_step_t *create_wallet_menu_get_step(void) {
+  return &create_wallet_step;
+}
