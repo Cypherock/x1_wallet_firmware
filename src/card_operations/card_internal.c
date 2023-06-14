@@ -287,7 +287,9 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
         if (true == card_data->nfc_data.init_session_keys) {
           /* Return pairing error if not paired */
           if (false == load_card_session_key(card_data->nfc_data.card_key_id)) {
-            NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
+            NFC_RETURN_ERROR_WITH_MSG(card_data,
+                                      CARD_OPERATION_PAIRING_REQUIRED,
+                                      ui_text_device_and_card_not_paired);
           }
         }
 
@@ -338,8 +340,13 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_security_conditions_not_met);
       break;
     case SW_NOT_PAIRED:
+      /* This error would indicates that device has the pairing keys but card
+       * doesn't. In practice this would happen if the card was paired with more
+       * than 5 devices after being paired to the device where error occurs. */
       invalidate_keystore();
-      NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_PAIRING_REQUIRED);
+      NFC_RETURN_ERROR_WITH_MSG(card_data,
+                                CARD_OPERATION_PAIRING_REQUIRED,
+                                ui_text_device_and_card_not_paired);
       break;
     case SW_CONDITIONS_NOT_SATISFIED:
       break;
