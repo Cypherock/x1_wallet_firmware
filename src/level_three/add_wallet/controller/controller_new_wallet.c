@@ -384,8 +384,13 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 }
 
 void create_wallet(bool new_wallet) {
-  // TODO: use new_wallet to decide how mnemonics would be generated
   new_wallet_state_e current_state = NAME_INPUT;
+
+  // TODO: Consolidate in one function
+  // Clear confidential data irrespective of the result of the flow
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   while (1) {
     new_wallet_state_e next_state = new_wallet_state_handler(current_state);
@@ -397,7 +402,10 @@ void create_wallet(bool new_wallet) {
     current_state = next_state;
   }
 
-  // TODO: Memzero all wallet variables
+  // Clear confidential data irrespective of the result of the flow
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   return;
 }

@@ -41,4 +41,32 @@
  */
 uint8_t get_wallet_list(const char *wallet_list[]);
 
+/**
+ * @brief This API searches for wallet on the flash using wallet_id as key
+ * @details If a VALID_WALLET is found in the flash, then this API fills the
+ * wallet_name, wallet_info, wallet_id fields of the Wallet structure
+ *
+ * @param wallet_id The wallet_id that needs to be searched
+ * @param wallet Reference to Wallet structure which will be populated by the
+ * function
+ * @return true If the wallet corresponding to wallet_id is found in the flash
+ * and is in VALID_WALLET state.
+ * @return false If the wallet corresponding to wallet_id is not found or is not
+ * in VALID_WALLET state.
+ */
+bool wallet_selector(const uint8_t *wallet_id, Wallet *wallet);
+
+/**
+ * @brief This API searches for wallet on the flash using wallet_id as key
+ * @details If a VALID_WALLET is found in the flash, then this API fills the
+ * wallet_name buffer
+ *
+ * @param wallet_id The wallet_id that needs to be searched
+ * @param wallet_name The buffer in which wallet name will be filled
+ * @return true If the wallet corresponding to wallet_id is found in the flash
+ * and is in VALID_WALLET state.
+ * @return false If the wallet corresponding to wallet_id is not found or is not
+ * in VALID_WALLET state.
+ */
+bool get_wallet_data(const uint8_t *wallet_id, uint8_t *wallet_name);
 #endif /* WALLET_LIST_H */

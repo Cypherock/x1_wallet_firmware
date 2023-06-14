@@ -1,8 +1,7 @@
 /**
- * @file    wallet_list.c
+ * @file    card_flow_create_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Title of the file.
- *          Short description of the file
+ * @brief   Source file containing card flow to create wallet on the X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "wallet_list.h"
+#include "card_flow_reconstruct_wallet.h"
 
-#include <string.h>
-
-#include "flash_api.h"
+#include "card_operations.h"
+#include "constant_texts.h"
+#include "nfc.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,15 +78,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -97,64 +96,14 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-uint8_t get_wallet_list(const char *wallet_list[]) {
-  uint8_t num_wallets = 0;
-  if (NULL == wallet_list) {
-    return num_wallets;
-  }
+card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
+  // TODO: Support this for threshold number of cards
 
-  for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
-    /* Only append to the wallet list if the wallet is filled - regardless of
-     * it's state */
-    if (true != wallet_is_filled(wallet_idx, NULL)) {
-      continue;
-    }
+  card_fetch_share_cfg_t configuration = {.heading = ui_text_tap_1_2_cards,
+                                          .message = ui_text_place_card_below,
+                                          .skip_card_removal = false,
+                                          .xcor = 0,
+                                          .remaining_cards = 0xF};
 
-    /* Point to the wallet name on wallet_list at index num_wallets */
-    wallet_list[num_wallets] = (char *)get_wallet_name(wallet_idx);
-    num_wallets++;
-  }
-
-  return num_wallets;
-}
-
-bool wallet_selector(const uint8_t *wallet_id, Wallet *wallet) {
-  if ((NULL == wallet_id) || (NULL == wallet)) {
-    return false;
-  }
-
-  for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
-    wallet_state state = INVALID_WALLET;
-    if (true != wallet_is_filled(wallet_idx, &state)) {
-      continue;
-    }
-
-    if (VALID_WALLET == state) {
-      if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
-        memcpy(wallet->wallet_id, wallet_id, WALLET_ID_SIZE);
-        memcpy(wallet->wallet_name, get_wallet_name(wallet_idx), NAME_SIZE);
-        wallet->wallet_info = get_wallet_info(wallet_idx);
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-bool get_wallet_data(const uint8_t *wallet_id, uint8_t *wallet_name) {
-  if (NULL == wallet_id) {
-    return false;
-  }
-
-  Wallet wallet = {0};
-  if (false == wallet_selector(wallet_id, &wallet)) {
-    return false;
-  }
-
-  if (NULL != wallet_name) {
-    memcpy(wallet_name, wallet.wallet_name, NAME_SIZE);
-  }
-
-  return true;
+  return card_fetch_share(&configuration);
 }
