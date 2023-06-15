@@ -177,4 +177,5 @@ void manager_card_training(manager_query_t *query) {
   snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
   delay_scr_init(msg, DELAY_TIME);
   // TODO: Show wallets if exist and wait for user acceptance on via app
+  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_CARD_CHECKUP);
 }
