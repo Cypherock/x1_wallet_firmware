@@ -383,7 +383,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
   return next_state;
 }
 
-void create_wallet(bool new_wallet) {
+void create_wallet_flow(bool new_wallet) {
   // TODO: use new_wallet to decide how mnemonics would be generated
   new_wallet_state_e current_state = NAME_INPUT;
 
