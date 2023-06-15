@@ -175,7 +175,8 @@ static void log_disabled_error() {
 static bool check_which_request(const manager_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_logs.which_request) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
