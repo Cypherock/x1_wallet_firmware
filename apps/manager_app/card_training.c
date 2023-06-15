@@ -137,7 +137,7 @@ static void send_training_error(uint32_t error_code) {
 void manager_card_training(manager_query_t *query) {
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_QUERY);
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
     return;
   }
 

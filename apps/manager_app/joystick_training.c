@@ -181,7 +181,7 @@ void manager_joystick_training(manager_query_t *query) {
   /* Validate if this flow is allowed */
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_JOYSTICK_TRAINING)) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_QUERY);
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
     return;
   }
 
