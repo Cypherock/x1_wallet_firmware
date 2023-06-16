@@ -61,15 +61,12 @@
  *****************************************************************************/
 
 #include "common_error.h"
-#include "events.h"
 #include "flash_api.h"
 #include "manager_api.h"
 #include "onboarding.h"
 #include "status_api.h"
-#include "ui_confirmation.h"
 #include "ui_core_confirm.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

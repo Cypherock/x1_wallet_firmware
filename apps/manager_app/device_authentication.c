@@ -61,13 +61,11 @@
  *****************************************************************************/
 #include "constant_texts.h"
 #include "device_authentication_api.h"
-#include "events.h"
 #include "manager_api.h"
-#include "manager_app.h"
 #include "onboarding.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
-#include "ui_delay.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -247,6 +245,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
           !core_user_confirmation(ui_text_start_device_verification,
                                   manager_send_error)) {
         // re-authentication denied by user
+        next_state = FLOW_COMPLETE;
         break;
       }
 
