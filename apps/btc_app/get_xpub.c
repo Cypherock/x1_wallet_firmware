@@ -281,7 +281,7 @@ void btc_get_xpub(btc_query_t *query) {
                  sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
-  instruction_scr_init(ui_text_processing, NULL);
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
   if (true == one_shot_xpub_generate(init_req->derivation_paths,
                                      seed,
                                      xpub_list,
