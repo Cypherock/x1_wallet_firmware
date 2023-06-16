@@ -61,12 +61,11 @@
  *****************************************************************************/
 #include "constant_texts.h"
 #include "device_authentication_api.h"
-#include "events.h"
 #include "manager_api.h"
-#include "manager_app.h"
 #include "onboarding.h"
 #include "status_api.h"
-#include "ui_delay.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -242,8 +241,13 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
-      // TODO: Check if it's a forced device authentication, in which case we
-      // will take users permission to perform authentication again
+      if (is_device_authenticated() &&
+          !core_user_confirmation(ui_text_start_device_verification,
+                                  manager_send_error)) {
+        // re-authentication denied by user
+        next_state = FLOW_COMPLETE;
+        break;
+      }
 
       /* Set flow status */
       core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
