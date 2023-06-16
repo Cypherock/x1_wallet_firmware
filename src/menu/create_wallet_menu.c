@@ -62,7 +62,6 @@
 #include "create_wallet_menu.h"
 
 #include "constant_texts.h"
-#include "core_error_priv.h"
 #include "create_wallet_flow.h"
 #include "menu_priv.h"
 #include "ui_screens.h"
