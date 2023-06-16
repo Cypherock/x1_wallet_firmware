@@ -129,8 +129,6 @@ const flow_step_t create_wallet_step = {
  *****************************************************************************/
 static void create_wallet_menu_initialize(engine_ctx_t *ctx,
                                           const void *data_ptr) {
-  handle_core_errors();
-
   /* Create an array of pointers holding the string to display on the menu. */
   char *menu_option_ptr_array[NUMBER_OF_OPTIONS_NEW_WALLET];
 
@@ -151,23 +149,27 @@ static void create_wallet_menu_initialize(engine_ctx_t *ctx,
 static void create_wallet_menu_handler(engine_ctx_t *ctx,
                                        ui_event_t ui_event,
                                        const void *data_ptr) {
-  if (ui_event.event_type == UI_EVENT_REJECT) {
-    engine_delete_current_flow_step(ctx);
-    return;
+  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
+    switch (ui_event.list_selection) {
+      case GENERATE_NEW_WALLET: {
+        create_wallet_flow(true);
+        break;
+      }
+      case RESTORE_FROM_SEED: {
+        // TODO: Handle restore from seed
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  } else {
+    // UI_EVENT_LIST_REJECTION handled below already
   }
 
-  switch (ui_event.list_selection) {
-    case GENERATE_NEW_WALLET: {
-      create_wallet_flow(true);
-      break;
-    }
-    case RESTORE_FROM_SEED: {
-      break;
-    }
-    default: {
-      break;
-    }
-  }
+  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+   * detected, or a create wallet flow was executed */
+  engine_delete_current_flow_step(ctx);
 
   return;
 }

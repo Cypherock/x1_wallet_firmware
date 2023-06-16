@@ -70,8 +70,9 @@ const char *ui_text_options_old_wallet[] = {"View Seed", "Delete Wallet"};
 
 // New wallet menu text
 const char *ui_text_heading_new_wallet = "Create wallet";
-const char *ui_text_options_new_wallet[] = {"Generate New Wallet",
-                                            "Restore from Seed"};
+const char *ui_text_options_new_wallet[NUMBER_OF_OPTIONS_NEW_WALLET] = {
+    "Generate New Wallet",
+    "Restore from Seed"};
 
 // Settings menu text
 const char *ui_text_heading_settings = "Settings";
