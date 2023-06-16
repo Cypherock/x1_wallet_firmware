@@ -211,7 +211,10 @@ void manager_get_logs(manager_query_t *query) {
 
   manager_result_t result = init_manager_result(MANAGER_RESULT_GET_LOGS_TAG);
   if (!check_which_request(query, MANAGER_GET_LOGS_REQUEST_INITIATE_TAG) ||
-      !core_user_confirmation(ui_text_send_logs_prompt, manager_send_error)) {
+      !core_user_confirmation(NULL,
+                              ui_text_send_logs_prompt,
+                              CONFIRMATION_SCREEN,
+                              manager_send_error)) {
     return;
   }
 
