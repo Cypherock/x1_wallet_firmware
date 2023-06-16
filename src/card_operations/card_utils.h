@@ -81,9 +81,10 @@ card_error_type_e wait_for_card_removal(void);
  * @details This function checks if the error is due to an incorrect PIN and
  * indicates the error to user with remaining pin attempts.
  *
- * @param status The ISO7816 status value representing the error.
+ * @param status The card_error_status_word_e status value representing the
+ * error.
  * @return The type of error encountered during display, or
  * CARD_OPERATION_SUCCESS if successful.
  */
-card_error_type_e indicate_wrong_pin(ISO7816 status);
+card_error_type_e indicate_wrong_pin(card_error_status_word_e status);
 #endif

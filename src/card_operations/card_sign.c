@@ -93,12 +93,12 @@
  * @param sign_data Pointer to the data to be signed with max 64 bytes.
  * @param sign_data_size Size of the data to be signed(max 64 bytes).
  * @param signature Pointer to the buffer where the signature will be stored.
- * @return ISO7816 Returns SW_NO_ERROR if the signature generation was
- * successful, or an error code if it failed.
+ * @return card_error_status_word_e Returns SW_NO_ERROR if the signature
+ * generation was successful, or an error code if it failed.
  */
-static ISO7816 get_card_auth_signature(uint8_t *sign_data,
-                                       uint16_t sign_data_size,
-                                       uint8_t *signature);
+static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
+                                                        uint16_t sign_data_size,
+                                                        uint8_t *signature);
 
 /**
  * @brief Initializes a smart card and signs data.
@@ -133,15 +133,15 @@ static card_error_type_e handle_sign_data_operation_response(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static ISO7816 get_card_auth_signature(uint8_t *sign_data,
-                                       uint16_t sign_data_size,
-                                       uint8_t *signature) {
+static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
+                                                        uint16_t sign_data_size,
+                                                        uint8_t *signature) {
   ASSERT(ECDSA_SIGNATURE_SIZE >= sign_data_size && NULL != sign_data &&
          NULL != signature);
 
   uint8_t sign_data_inout[ECDSA_SIGNATURE_SIZE] = {0};
   uint16_t sign_data_size_inout = sign_data_size;
-  ISO7816 status = DEFAULT_UINT32_IN_FLASH_ENUM;
+  card_error_status_word_e status = DEFAULT_UINT32_IN_FLASH_ENUM;
   memcpy(sign_data_inout, sign_data, sign_data_size);
   status = nfc_ecdsa(sign_data_inout, &sign_data_size_inout);
 
