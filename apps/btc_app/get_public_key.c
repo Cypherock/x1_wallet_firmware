@@ -64,10 +64,8 @@
 #include "btc.h"
 #include "btc/core.pb.h"
 #include "btc_api.h"
-#include "events.h"
 #include "pb_encode.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "usb_api.h"
 
@@ -231,22 +229,11 @@ static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed) {
       btc_get_address(seed, path, path_length, public_key, address);
 
   if (0 < address_length) {
-    // wait for user confirmation to send address to desktop
-    ui_scrollable_page(
-        ui_text_receive_on, address, MENU_SCROLL_HORIZONTAL, false);
-    evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-    if (true == events.p0_event.flag) {
-      // core will handle p0 events, exit now
-      status = false;
-    }
-    if (UI_EVENT_REJECT == events.ui_event.event_type) {
-      // user rejected sending of address, send error and exit
-      btc_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                     ERROR_USER_REJECTION_ADDRESS);
-      status = false;
-    } else if (UI_EVENT_CONFIRM == events.ui_event.event_type) {
+    // TODO: wait for user confirmation to send address to desktop
+    // status = core_user_confirmation(
+    //     ui_text_receive_on, address, SCROLL_PAGE_SCREEN, btc_send_error);
+    if (true == status) {
       // send response
-      status = true;
       btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
       response.get_public_key.which_response =
           BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
@@ -286,10 +273,11 @@ void btc_get_public_key(btc_query_t *query) {
                                  &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(msg, sizeof(msg), "Receive Bitcoin in %s", wallet_name);
-  // Take user consent to export address for the wallet
-  if (!core_user_confirmation(msg, btc_send_error)) {
-    return;
-  }
+  // TODO: Take user consent to export address for the wallet
+  // if (!core_user_confirmation(NULL, msg, CONFIRMATION_SCREEN,
+  // btc_send_error)) {
+  //   return;
+  // }
 
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
 
