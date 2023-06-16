@@ -270,7 +270,7 @@ void btc_get_xpub(btc_query_t *query) {
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
   // Take user consent to export xpub for the wallet
-  if (!core_user_confirmation(msg, btc_send_error)) {
+  if (!core_user_confirmation(NULL, msg, CONFIRMATION_SCREEN, btc_send_error)) {
     return;
   }
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);

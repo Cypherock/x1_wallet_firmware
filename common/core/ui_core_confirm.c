@@ -98,8 +98,18 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-bool core_user_confirmation(const char *msg, ui_core_rejection_cb *reject_cb) {
-  confirm_scr_init(msg);
+bool core_user_confirmation(const char *title,
+                            const char *body,
+                            ui_type_e type,
+                            ui_core_rejection_cb *reject_cb) {
+  if (SCROLL_PAGE_SCREEN == type) {
+    ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  } else if (CONFIRMATION_SCREEN == type) {
+    confirm_scr_init(body);
+  } else {
+    // unexpected ui_type_e received; should never reach here
+    return false;
+  }
   evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
   if (true == events.p0_event.flag) {
     // core will handle p0 events, exit now
