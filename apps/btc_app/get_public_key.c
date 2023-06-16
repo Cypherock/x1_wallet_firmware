@@ -127,9 +127,10 @@ static bool validate_request_data(btc_get_public_key_request_t *request);
  * @return int length of the derived address
  * @retval 0 If derivation failed
  */
-static int btc_get_address(HDNode *node,
-                           uint32_t purpose_index,
-                           uint32_t coin_index,
+static int btc_get_address(const uint8_t *seed,
+                           const uint32_t *path,
+                           uint32_t path_length,
+                           uint8_t *public_key,
                            char *address);
 
 /**
@@ -178,41 +179,58 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
   return status;
 }
 
-static int btc_get_address(HDNode *node,
-                           uint32_t purpose_index,
-                           uint32_t coin_index,
+static int btc_get_address(const uint8_t *seed,
+                           const uint32_t *path,
+                           uint32_t path_length,
+                           uint8_t *public_key,
                            char *address) {
-  int status = 0;
+  HDNode node = {0};
   uint8_t address_version = 0;
+  uint32_t purpose_index = path[0];
+  uint32_t coin_index = path[1];
+  int address_length = 0;
+
+  if (false ==
+      derive_hdnode_from_path(path, path_length, SECP256K1_NAME, seed, &node)) {
+    // send unknown error; unknown failure reason
+    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    memzero(&node, sizeof(HDNode));
+    return address_length;
+  }
 
   switch (purpose_index) {
     case NATIVE_SEGWIT:
-      status = get_segwit_address(
-          node->public_key, sizeof(node->public_key), coin_index, address);
+      address_length = get_segwit_address(
+          node.public_key, sizeof(node.public_key), coin_index, address);
       break;
     case NON_SEGWIT:
       get_version(purpose_index, coin_index, &address_version, NULL);
-      hdnode_get_address(node, address_version, address, 35);
+      hdnode_get_address(&node, address_version, address, 35);
       break;
     // TODO: add support for taproot and segwit
     default:
-      status = false;
+      address_length = 0;
       break;
   }
 
-  return status;
+  if (NULL != public_key) {
+    memcpy(public_key, node.public_key, ECDSA_PUB_KEY_SIZE);
+  }
+  memzero(&node, sizeof(HDNode));
+  return address_length;
 }
 
 static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed) {
   const uint32_t *path = query->get_public_key.initiate.derivation_path;
   uint32_t path_length = query->get_public_key.initiate.derivation_path_count;
-  HDNode node = {0};
+  uint8_t public_key[65] = {0};
   char address[50] = "";
-  bool status =
-      derive_hdnode_from_path(path, path_length, SECP256K1_NAME, seed, &node);
+  bool status = false;
 
-  if (true == status) {
-    btc_get_address(&node, path[0], path[1], address);
+  int address_length =
+      btc_get_address(seed, path, path_length, public_key, address);
+
+  if (0 < address_length) {
     // wait for user confirmation to send address to desktop
     ui_scrollable_page(
         ui_text_receive_on, address, MENU_SCROLL_HORIZONTAL, false);
@@ -228,19 +246,16 @@ static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed) {
       status = false;
     } else if (UI_EVENT_CONFIRM == events.ui_event.event_type) {
       // send response
+      status = true;
       btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
       response.get_public_key.which_response =
           BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
       ecdsa_uncompress_pubkey(get_curve_by_name(SECP256K1_NAME)->params,
-                              node.public_key,
+                              public_key,
                               response.get_public_key.result.public_key);
       btc_send_result(&response);
     }
-  } else {
-    // send unknown error; unknown failure reason
-    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
-  memzero(&node, sizeof(HDNode));
   return status;
 }
 
