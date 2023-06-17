@@ -66,6 +66,7 @@
 #include "btc_api.h"
 #include "pb_encode.h"
 #include "status_api.h"
+#include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "usb_api.h"
 
@@ -269,11 +270,10 @@ void btc_get_public_key(btc_query_t *query) {
   get_first_matching_index_by_id(init_req->wallet_id, &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(string, sizeof(string), "Receive Bitcoin in %s", wallet_name);
-  // TODO: Take user consent to export address for the wallet
-  // if (!core_user_confirmation(NULL, string, CONFIRMATION_SCREEN,
-  // btc_send_error)) {
-  //   return;
-  // }
+  if (!core_user_confirmation(
+          NULL, string, CONFIRMATION_SCREEN, btc_send_error)) {
+    return;
+  }
 
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
 
@@ -284,10 +284,10 @@ void btc_get_public_key(btc_query_t *query) {
 
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CARD);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  if (0 < btc_get_address(seed, path, path_length, public_key, string)
-      // && true == core_user_confirmation(ui_text_receive_on, string,
-      // SCROLL_PAGE_SCREEN, btc_send_error)
-  ) {
+  if (0 < btc_get_address(seed, path, path_length, public_key, string) &&
+      true ==
+          core_user_confirmation(
+              ui_text_receive_on, string, SCROLL_PAGE_SCREEN, btc_send_error)) {
     send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }
