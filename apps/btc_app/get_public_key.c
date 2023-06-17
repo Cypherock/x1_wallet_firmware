@@ -115,14 +115,22 @@ static bool check_which_request(const btc_query_t *query,
 static bool validate_request_data(btc_get_public_key_request_t *request);
 
 /**
- * @brief Derives public address from the provided public key
+ * @brief Derives public address from the provided seed
+ * @details The function can provided both public_key and address. It accepts
+ * NULL in output parameters and handles accordingly. In case if both the output
+ * locations point to NULL, the function returns 0 for safety. The function
+ * also manages all the terminal errors during derivation/encoding, in which
+ * case it will return 0 and send a relevant error to the host closing the
+ * request-response pair. All the errors/invalid cases are conveyed to the host
+ * as unknown_error = 1 because we expect the data validation was success.
  *
- * @param node Reference to the address node
- * @param purpose_index Purpose index of the provided address node path
- * @param coin_index Coin index of the provided address node path
+ * @param seed Reference to the wallet seed generated from X1 Card
+ * @param path Derivation path of the node to be derived
+ * @param path_length Expected length of the provided derivation path
+ * @param public_key Storage location for raw uncompressed public key
  * @param address Storage location for encoded public address
  *
- * @return int length of the derived address
+ * @return int length of the derived public address
  * @retval 0 If derivation failed
  */
 static int btc_get_address(const uint8_t *seed,
@@ -132,21 +140,12 @@ static int btc_get_address(const uint8_t *seed,
                            char *address);
 
 /**
- * @brief Derives public key from seed and takes user confirmation prior sending
- * to host
- * @details The function derives the HDNode at specified derivation path and
- * sends the uncompressed public key to the host. Prior to sending the public
- * key, the function derives and verifies public address in the respective
- * encoding format.
+ * @brief Takes and sends the uncompressed public key to the host as
+ * btc_result_t
  *
- * @param query Reference to the query received from the host
- * @param seed The wallet seed generated from X1 Card
- *
- * @return bool Indicating if the public key was sent successfully.
- * @retval true The user confirmed his/her intention to export address
- * @retval false The user either rejected the prompt or a P0 event occurred
+ * @param public_key An immutable reference to uncompressed public key buffer
  */
-static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed);
+static void send_public_key(const uint8_t *public_key);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -186,10 +185,14 @@ static int btc_get_address(const uint8_t *seed,
   uint8_t address_version = 0;
   uint32_t purpose_index = path[0];
   uint32_t coin_index = path[1];
+  char addr[50] = "";
   int address_length = 0;
 
-  if (false ==
-      derive_hdnode_from_path(path, path_length, SECP256K1_NAME, seed, &node)) {
+  if ((NULL == public_key && NULL == address) ||
+      false == derive_hdnode_from_path(
+                   path, path_length, SECP256K1_NAME, seed, &node)) {
+    // no need to process as output location is invalid
+    // it is safer to return 0 as the provided variable could point to NULL
     // send unknown error; unknown failure reason
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
@@ -198,52 +201,43 @@ static int btc_get_address(const uint8_t *seed,
 
   switch (purpose_index) {
     case NATIVE_SEGWIT:
-      address_length = get_segwit_address(
-          node.public_key, sizeof(node.public_key), coin_index, address);
+      // ignoring the return status and handling by size of address
+      get_segwit_address(
+          node.public_key, sizeof(node.public_key), coin_index, addr);
       break;
     case NON_SEGWIT:
       get_version(purpose_index, coin_index, &address_version, NULL);
-      hdnode_get_address(&node, address_version, address, 35);
+      hdnode_get_address(&node, address_version, addr, 35);
       break;
     // TODO: add support for taproot and segwit
     default:
-      address_length = 0;
       break;
   }
 
+  address_length = strnlen(addr, sizeof(addr));
+  if (0 >= address_length) {
+    // address encoding failed
+    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
   if (NULL != public_key) {
-    memcpy(public_key, node.public_key, ECDSA_PUB_KEY_SIZE);
+    ecdsa_uncompress_pubkey(
+        get_curve_by_name(SECP256K1_NAME)->params, node.public_key, public_key);
+  }
+  if (NULL != address) {
+    memcpy(address, addr, address_length);
   }
   memzero(&node, sizeof(HDNode));
   return address_length;
 }
 
-static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed) {
-  const uint32_t *path = query->get_public_key.initiate.derivation_path;
-  uint32_t path_length = query->get_public_key.initiate.derivation_path_count;
-  uint8_t public_key[65] = {0};
-  char address[50] = "";
-  bool status = false;
-
-  int address_length =
-      btc_get_address(seed, path, path_length, public_key, address);
-
-  if (0 < address_length) {
-    // TODO: wait for user confirmation to send address to desktop
-    // status = core_user_confirmation(
-    //     ui_text_receive_on, address, SCROLL_PAGE_SCREEN, btc_send_error);
-    if (true == status) {
-      // send response
-      btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
-      response.get_public_key.which_response =
-          BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
-      ecdsa_uncompress_pubkey(get_curve_by_name(SECP256K1_NAME)->params,
-                              public_key,
-                              response.get_public_key.result.public_key);
-      btc_send_result(&response);
-    }
-  }
-  return status;
+static void send_public_key(const uint8_t *public_key) {
+  btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
+  response.get_public_key.which_response =
+      BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
+  ecdsa_uncompress_pubkey(get_curve_by_name(SECP256K1_NAME)->params,
+                          public_key,
+                          response.get_public_key.result.public_key);
+  btc_send_result(&response);
 }
 
 /*****************************************************************************
@@ -260,8 +254,11 @@ static bool confirm_and_send(const btc_query_t *query, const uint8_t *seed) {
 
 void btc_get_public_key(btc_query_t *query) {
   const char *wallet_name = "";
-  char msg[100] = "";
+  char string[100] = "";
   uint8_t wallet_index = 0;
+  uint8_t public_key[65] = {0};
+  btc_get_public_key_intiate_request_t *init_req =
+      &query->get_public_key.initiate;
 
   if (!check_which_request(query, BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_key)) {
@@ -269,12 +266,11 @@ void btc_get_public_key(btc_query_t *query) {
   }
 
   // this will always succeed; can skip checking return value
-  get_first_matching_index_by_id(query->get_public_key.initiate.wallet_id,
-                                 &wallet_index);
+  get_first_matching_index_by_id(init_req->wallet_id, &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
-  snprintf(msg, sizeof(msg), "Receive Bitcoin in %s", wallet_name);
+  snprintf(string, sizeof(string), "Receive Bitcoin in %s", wallet_name);
   // TODO: Take user consent to export address for the wallet
-  // if (!core_user_confirmation(NULL, msg, CONFIRMATION_SCREEN,
+  // if (!core_user_confirmation(NULL, string, CONFIRMATION_SCREEN,
   // btc_send_error)) {
   //   return;
   // }
@@ -283,10 +279,16 @@ void btc_get_public_key(btc_query_t *query) {
 
   // TODO: call the reconstruct flow and get seed from the core
   uint8_t seed[64] = {0};    // = generate_seed();
+  const uint32_t *path = init_req->derivation_path;
+  uint32_t path_length = init_req->derivation_path_count;
 
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CARD);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  if (true == confirm_and_send(query, seed)) {
+  if (0 < btc_get_address(seed, path, path_length, public_key, string)
+      // && true == core_user_confirmation(ui_text_receive_on, string,
+      // SCROLL_PAGE_SCREEN, btc_send_error)
+  ) {
+    send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }
   memzero(seed, sizeof(seed));
