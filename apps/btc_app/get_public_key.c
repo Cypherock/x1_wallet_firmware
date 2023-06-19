@@ -189,11 +189,8 @@ static int btc_get_address(const uint8_t *seed,
   char addr[50] = "";
   int address_length = 0;
 
-  if ((NULL == public_key && NULL == address) ||
-      false == derive_hdnode_from_path(
-                   path, path_length, SECP256K1_NAME, seed, &node)) {
-    // no need to process as output location is invalid
-    // it is safer to return 0 as the provided variable could point to NULL
+  if (!derive_hdnode_from_path(
+          path, path_length, SECP256K1_NAME, seed, &node)) {
     // send unknown error; unknown failure reason
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
