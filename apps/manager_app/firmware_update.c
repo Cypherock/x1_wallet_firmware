@@ -107,7 +107,7 @@ static bool check_which_request(const manager_query_t *query,
  * @return true Indicating that the request is valid
  * @return false Indicating that the request is not valid
  */
-static bool validate_query(manager_firmware_update_request_t *request);
+static bool validate_query(const manager_firmware_update_request_t *request);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -130,7 +130,7 @@ static bool check_which_request(const manager_query_t *query,
   return true;
 }
 
-static bool validate_query(manager_firmware_update_request_t *request) {
+static bool validate_query(const manager_firmware_update_request_t *request) {
   if (false == request->initiate.has_version) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_FIELD_MISSING);
@@ -138,7 +138,7 @@ static bool validate_query(manager_firmware_update_request_t *request) {
   }
   uint32_t current_version = get_fwVer();
 
-  common_version_t *target = &request->initiate.version;
+  const common_version_t *target = &request->initiate.version;
   uint32_t target_version =
       (target->major << 24) | (target->minor << 16) | (target->patch);
 
@@ -185,7 +185,7 @@ void manager_confirm_firmware_update(manager_query_t *query) {
   // NOTE: This is a USB initiated flow, however, device will go in bootloader
   // mode after blocking delay of 500ms without serving any events. So in case
   // any abort event is triggered by the host, it will NOT be served!
-  // Wait for status pull to desktop (which requests at 200ms)
+  // NOTE: Wait for status pull to desktop (which requests at 200ms)
   instruction_scr_init(ui_text_processing, NULL);
   BSP_DelayMs(500);
   FW_enter_DFU();
