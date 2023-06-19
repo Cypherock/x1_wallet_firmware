@@ -82,6 +82,21 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host manager app and return false.
+ *
+ * @param query Reference to an instance of manager_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
+ *
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
+ */
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -94,6 +109,16 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->firmware_update.which_request) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS

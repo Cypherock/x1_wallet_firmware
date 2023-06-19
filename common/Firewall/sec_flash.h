@@ -18,6 +18,9 @@
 #ifndef SECURETASKS_PROTECTED_CODE_H_
 #define SECURETASKS_PROTECTED_CODE_H_
 
+#include "flash_config.h"
+#include "wallet.h"
+
 /// Possible device auth states
 /// @todo Use secure true/false value
 typedef enum device_auth_state {

@@ -90,7 +90,7 @@ extern const char *ui_text_options_logging_export[];
 extern const char *ui_text_options_passphrase[];
 
 // Firmware update text
-#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %lu.%lu.%lu"
 
 #if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
