@@ -131,14 +131,14 @@ static bool validate_request_data(btc_get_public_key_request_t *request);
  * @param public_key Storage location for raw uncompressed public key
  * @param address Storage location for encoded public address
  *
- * @return int length of the derived public address
+ * @return size_t length of the derived public address
  * @retval 0 If derivation failed
  */
-static int btc_get_address(const uint8_t *seed,
-                           const uint32_t *path,
-                           uint32_t path_length,
-                           uint8_t *public_key,
-                           char *address);
+static size_t btc_get_address(const uint8_t *seed,
+                              const uint32_t *path,
+                              uint32_t path_length,
+                              uint8_t *public_key,
+                              char *address);
 
 /**
  * @brief Takes and sends the uncompressed public key to the host as
@@ -177,17 +177,17 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
   return status;
 }
 
-static int btc_get_address(const uint8_t *seed,
-                           const uint32_t *path,
-                           uint32_t path_length,
-                           uint8_t *public_key,
-                           char *address) {
+static size_t btc_get_address(const uint8_t *seed,
+                              const uint32_t *path,
+                              uint32_t path_length,
+                              uint8_t *public_key,
+                              char *address) {
   HDNode node = {0};
   uint8_t address_version = 0;
   uint32_t purpose_index = path[0];
   uint32_t coin_index = path[1];
   char addr[50] = "";
-  int address_length = 0;
+  size_t address_length = 0;
 
   if (!derive_hdnode_from_path(
           path, path_length, SECP256K1_NAME, seed, &node)) {
