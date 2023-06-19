@@ -59,10 +59,11 @@ bool wallet_selector(const uint8_t *wallet_id, Wallet *wallet);
 /**
  * @brief This API searches for wallet on the flash using wallet_id as key
  * @details If a VALID_WALLET is found in the flash, then this API fills the
- * wallet_name buffer
+ * wallet_name buffer if provided
  *
  * @param wallet_id The wallet_id that needs to be searched
- * @param wallet_name The buffer in which wallet name will be filled
+ * @param wallet_name The buffer in which wallet name will be filled or NULL if
+ * wallet name is not required
  * @return true If the wallet corresponding to wallet_id is found in the flash
  * and is in VALID_WALLET state.
  * @return false If the wallet corresponding to wallet_id is not found or is not

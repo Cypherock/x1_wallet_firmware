@@ -72,10 +72,13 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
+// TODO: Add these pointers in a common header file
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 extern char *PASSPHRASE;
+
+// TODO: Remove usage of global variables
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 extern Wallet wallet;
@@ -197,6 +200,14 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
       } else if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_status) {
         next_state = PIN_INPUT;
       } else {
+        /* In case of other status code returned by the card operation:
+         * CARD_OPERATION_PAIRING_REQUIRED,
+         * CARD_OPERATION_LOCKED_WALLET,
+         * CARD_OPERATION_P0_OCCURED,
+         * CARD_OPERATION_ABORT_OPERATION
+         * These error codes are non-recoverable from this flow. Error message
+         * will be displayed to the user before the main menu
+         */
         next_state = COMPLETED_WITH_ERRORS;
       }
 
@@ -230,11 +241,9 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
           mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
 
       ASSERT(mnemo != NULL);
-      uint8_t seed[64] = {0};
-
-      mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed, NULL);
+      mnemonic_to_seed(
+          mnemo, wallet_credential_data.passphrase, seed_out, NULL);
       mnemonic_clear();
-      memcpy(seed_out, seed, sizeof(seed));
       next_state = COMPLETED;
       break;
     }
@@ -266,7 +275,9 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   // Select wallet based on wallet_id
-  wallet_selector(wallet_id, &wallet);
+  if (false == wallet_selector(wallet_id, &wallet)) {
+    return false;
+  }
 
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = PASSPHRASE_INPUT;
