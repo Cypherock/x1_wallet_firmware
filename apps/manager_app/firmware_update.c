@@ -98,6 +98,16 @@
 static bool check_which_request(const manager_query_t *query,
                                 pb_size_t which_request);
 
+/**
+ * @brief Checks if the provided request has valid data
+ * @details It checks if the target firmware version is strictly greater than
+ * the currently installed firmware version
+ *
+ * @param request Reference to the request received from the host
+ * @return true Indicating that the request is valid
+ * @return false Indicating that the request is not valid
+ */
+static bool validate_query(manager_firmware_update_request_t *request);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -120,18 +130,36 @@ static bool check_which_request(const manager_query_t *query,
   return true;
 }
 
+static bool validate_query(manager_firmware_update_request_t *request) {
+  if (false == request->initiate.has_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_FIELD_MISSING);
+    return false;
+  }
+  uint32_t current_version = get_fwVer();
+
+  common_version_t *target = &request->initiate.version;
+  uint32_t target_version =
+      (target->major << 24) | (target->minor << 16) | (target->patch);
+
+  // Query is invalid if the target version is equal or less than the current
+  // firmware version installed
+  if (target_version <= current_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void manager_confirm_firmware_update(manager_query_t *query) {
-  if (!check_which_request(
-          query, MANAGER_FIRMWARE_UPDATE_INITIATE_REQUEST_VERSION_TAG)) {
-    return;
-  }
-
-  if (false == query->firmware_update.initiate.has_version) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_FIELD_MISSING);
+  if ((!check_which_request(
+          query, MANAGER_FIRMWARE_UPDATE_INITIATE_REQUEST_VERSION_TAG)) ||
+      (!validate_query(&query->firmware_update))) {
     return;
   }
 
