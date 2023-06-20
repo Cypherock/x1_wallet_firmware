@@ -116,10 +116,9 @@ static bool check_which_request(const btc_query_t *query,
 static bool validate_request_data(btc_get_public_key_request_t *request);
 
 /**
- * @brief Derives public address from the provided seed
+ * @brief Derives uncompressed public key and address from the provided seed
  * @details The function can provided both public_key and address. It accepts
- * NULL in output parameters and handles accordingly. In case if both the output
- * locations point to NULL, the function returns 0 for safety. The function
+ * NULL in output parameters and handles accordingly. The function
  * also manages all the terminal errors during derivation/encoding, in which
  * case it will return 0 and send a relevant error to the host closing the
  * request-response pair. All the errors/invalid cases are conveyed to the host
@@ -232,9 +231,7 @@ static void send_public_key(const uint8_t *public_key) {
   btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
   response.get_public_key.which_response =
       BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
-  ecdsa_uncompress_pubkey(get_curve_by_name(SECP256K1_NAME)->params,
-                          public_key,
-                          response.get_public_key.result.public_key);
+  memcpy(response.get_public_key.result.public_key, public_key, 65);
   btc_send_result(&response);
 }
 
@@ -264,6 +261,7 @@ void btc_get_public_key(btc_query_t *query) {
   }
 
   // this will always succeed; can skip checking return value
+  // TODO: use a wrapper that looks for operational wallet and returns its name
   get_first_matching_index_by_id(init_req->wallet_id, &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(string, sizeof(string), "Receive Bitcoin in %s", wallet_name);
