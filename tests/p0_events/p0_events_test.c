@@ -126,6 +126,7 @@ TEST(p0_events_test, inactivity_evt) {
   TEST_ASSERT(p0_evt.abort_evt == false);
 
   p0_ctx_destroy();
+  p0_reset_evt();
 
   /* Re-check after destroying context */
   TEST_ASSERT(p0_get_evt(&p0_evt) == false);
@@ -159,6 +160,7 @@ TEST(p0_events_test, abort_evt) {
   TEST_ASSERT(p0_evt.abort_evt == true);
 
   p0_ctx_destroy();
+  p0_reset_evt();
 
   /* Re-check after destroying context */
   TEST_ASSERT(p0_get_evt(&p0_evt) == false);
@@ -192,6 +194,8 @@ TEST(p0_events_test, abort_inactivity_race) {
   TEST_ASSERT(p0_evt.abort_evt == true);
 
   p0_ctx_destroy();
+  p0_reset_evt();
+
   return;
 }
 
@@ -223,5 +227,6 @@ TEST(p0_events_test, inactivity_refresh_on_joystick_movement) {
   TEST_ASSERT(p0_evt.abort_evt == false);
 
   p0_ctx_destroy();
+  p0_reset_evt();
   return;
 }

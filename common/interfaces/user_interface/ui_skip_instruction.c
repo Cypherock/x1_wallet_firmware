@@ -120,7 +120,6 @@ static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
   switch (event) {
     case LV_EVENT_CLICKED:
       ui_set_cancel_event();
-      lv_obj_clean(lv_scr_act());
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(skip_btn, LV_BTN_STATE_REL);

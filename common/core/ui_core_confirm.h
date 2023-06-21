@@ -23,11 +23,6 @@
  * TYPEDEFS
  *****************************************************************************/
 
-typedef enum {
-  CONFIRMATION_SCREEN,
-  SCROLL_PAGE_SCREEN,
-} ui_type_e;
-
 typedef void(ui_core_rejection_cb)(pb_size_t which_error, uint32_t error_code);
 
 /*****************************************************************************

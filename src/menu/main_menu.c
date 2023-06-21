@@ -98,27 +98,6 @@ typedef enum {
   MAIN_MENU_SETTINGS,
   MAIN_MENU_NONE,
 } main_menu_options_e;
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-static main_menu_ctx_t main_menu_ctx = {
-    .update_required = true,
-    .wallet_count = 0,
-    .wallet_selected = MAIN_MENU_INVALID_WALLET_SELECTION};
-
-static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
-                                           .p0_cb = NULL,
-                                           .ui_cb = main_menu_handler,
-                                           .usb_cb = main_menu_host_interface,
-                                           .nfc_cb = NULL,
-                                           .evt_cfg_ptr = &main_menu_evt_config,
-                                           .flow_data_ptr = NULL};
-
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -147,9 +126,50 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx);
  *
  */
 static void main_menu_reset_context(void);
+
+/**
+ * @brief This p0 event callback function handles clearing p0 events occured
+ * while engine is waiting for other events.
+ *
+ * @details After main menu initalization, we don't expect p0 events as no
+ * operation or flow has been started yet.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param p0_evt The p0 event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr);
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static main_menu_ctx_t main_menu_ctx = {
+    .update_required = true,
+    .wallet_count = 0,
+    .wallet_selected = MAIN_MENU_INVALID_WALLET_SELECTION};
+
+static const flow_step_t main_menu_flow = {.step_init_cb = main_menu_initialize,
+                                           .p0_cb = ignore_p0_handler,
+                                           .ui_cb = main_menu_handler,
+                                           .usb_cb = main_menu_host_interface,
+                                           .nfc_cb = NULL,
+                                           .evt_cfg_ptr = &main_menu_evt_config,
+                                           .flow_data_ptr = NULL};
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr) {
+  ignore_p0_event();
+}
+
 static bool main_menu_get_update_req(void) {
   return main_menu_ctx.update_required;
 }

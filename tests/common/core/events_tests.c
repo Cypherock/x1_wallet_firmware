@@ -74,6 +74,7 @@ TEST_TEAR_DOWN(event_getter_test) {
   LOG_SWV("\n\n\n");
   usb_clear_event();
   p0_ctx_destroy();
+  p0_reset_evt();
   ui_reset_event();
 }
 

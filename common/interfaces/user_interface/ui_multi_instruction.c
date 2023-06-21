@@ -286,7 +286,6 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
           ((data->index_of_current_string == data->total_strings - 1) ||
            data->one_cycle_completed)) {
         ui_set_confirm_event();
-        lv_obj_clean(lv_scr_act());
       }
       break;
     }

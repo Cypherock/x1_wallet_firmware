@@ -386,7 +386,6 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
       } else if (data->state == SHOWING_SUGGESTIONS) {
         data->state = EXIT;
         ui_set_list_event(data->index);
-        lv_obj_clean(lv_scr_act());
         return;
       } else {
         // shouldn't come here
