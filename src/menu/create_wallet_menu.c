@@ -1,7 +1,7 @@
 /**
- * @file    core_error.c
+ * @file    create_wallet_menu.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief   Populate and handle main menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "create_wallet_menu.h"
 
-#include "core_error.h"
-
-#include "buzzer.h"
 #include "constant_texts.h"
-#include "events.h"
-#include "p0_events.h"
-#include "status_api.h"
-#include "ui_message.h"
+#include "core_error_priv.h"
+#include "create_wallet_flow.h"
+#include "menu_priv.h"
+#include "ui_screens.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -79,27 +78,63 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef enum {
+  GENERATE_NEW_WALLET = 1,
+  RESTORE_FROM_SEED,
+} create_wallet_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Display error message to user set by core operations.
+ * @brief This is the initializer callback for the create wallet menu.
  *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
- *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
+ * @param ctx The engine context* from which the flow is invoked
+ * @param data_ptr Currently unused pointer set by the engine
  */
-static void display_core_error();
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr);
 
+/**
+ * @brief This is the UI event handler for the create wallet menu.
+ * @details The function decodes the UI event and calls the create wallet flow
+ * based on selection. It deletes the create wallet menu step if the back button
+ * is pressed on the menu
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param ui_event The ui event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr);
+
+/**
+ * @brief This p0 event callback function handles clearing p0 events occured
+ * while engine is waiting for other events.
+ *
+ * @details After main menu initalization, we don't expect p0 events as no
+ * operation or flow has been started yet.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param p0_evt The p0 event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+const flow_step_t create_wallet_step = {
+    .step_init_cb = create_wallet_menu_initialize,
+    .p0_cb = ignore_p0_handler,
+    .ui_cb = create_wallet_menu_handler,
+    .usb_cb = NULL,
+    .nfc_cb = NULL,
+    .evt_cfg_ptr = &device_nav_evt_config,
+    .flow_data_ptr = NULL};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -107,57 +142,62 @@ static char core_error_msg[60] = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr) {
+  ignore_p0_event();
+}
 
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr) {
+  /* Create an array of pointers holding the string to display on the menu. */
+  char *menu_option_ptr_array[NUMBER_OF_OPTIONS_NEW_WALLET];
 
-  do {
-    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
+  for (uint8_t menu_index = 0; menu_index < NUMBER_OF_OPTIONS_NEW_WALLET;
+       menu_index++) {
+    menu_option_ptr_array[menu_index] =
+        (char *)ui_text_options_new_wallet[menu_index];
+  }
 
-  memzero(core_error_msg, sizeof(core_error_msg));
+  menu_init((const char **)menu_option_ptr_array,
+            NUMBER_OF_OPTIONS_NEW_WALLET,
+            ui_text_heading_new_wallet,
+            true);
+
+  return;
+}
+
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr) {
+  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
+    switch (ui_event.list_selection) {
+      case GENERATE_NEW_WALLET: {
+        create_wallet_flow(true);
+        break;
+      }
+      case RESTORE_FROM_SEED: {
+        // TODO: Handle restore from seed
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  } else {
+    // UI_EVENT_LIST_REJECTION handled below already
+  }
+
+  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+   * detected, or a create wallet flow was executed */
+  engine_delete_current_flow_step(ctx);
+
   return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
-    return;
-  }
-
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
-    return;
-  }
-
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
-  return;
-}
-
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
-
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
-  }
-
-  display_core_error();
-  return;
-}
-
-void ignore_p0_event() {
-  p0_reset_evt();
+const flow_step_t *create_wallet_menu_get_step(void) {
+  return &create_wallet_step;
 }
