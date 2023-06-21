@@ -117,7 +117,7 @@ static void display_core_error() {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
 
   do {
-    status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
+    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
     p0_reset_evt();
   } while (true != status.ui_event.event_occured);
 

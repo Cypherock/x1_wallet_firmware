@@ -88,14 +88,14 @@
  */
 const evt_config_t main_menu_evt_config = {
     .evt_selection = EVENT_CONFIG_UI | EVENT_CONFIG_USB,
-    .timeout = MAX_INACTIVITY_TIMEOUT};
+    .timeout = INFINITE_WAIT_TIMEOUT};
 
 /**
  * @brief Event listener configuration for the menu of device triggered
  * navigation
  */
 const evt_config_t device_nav_evt_config = {.evt_selection = EVENT_CONFIG_UI,
-                                            .timeout = MAX_INACTIVITY_TIMEOUT};
+                                            .timeout = INFINITE_WAIT_TIMEOUT};
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
