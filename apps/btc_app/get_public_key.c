@@ -265,8 +265,7 @@ void btc_get_public_key(btc_query_t *query) {
   get_first_matching_index_by_id(init_req->wallet_id, &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(string, sizeof(string), "Receive Bitcoin in %s", wallet_name);
-  if (!core_user_confirmation(
-          NULL, string, CONFIRMATION_SCREEN, btc_send_error)) {
+  if (!core_confirmation(string, btc_send_error)) {
     return;
   }
 
@@ -280,9 +279,7 @@ void btc_get_public_key(btc_query_t *query) {
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CARD);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   if (0 < btc_get_address(seed, path, path_length, public_key, string) &&
-      true ==
-          core_user_confirmation(
-              ui_text_receive_on, string, SCROLL_PAGE_SCREEN, btc_send_error)) {
+      true == core_scroll_page(ui_text_receive_on, string, btc_send_error)) {
     send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }

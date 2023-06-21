@@ -82,6 +82,14 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief
+ *
+ * @param reject_cb
+ * @return
+ */
+static bool wait_for_event(ui_core_rejection_cb *reject_cb);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -94,22 +102,7 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-bool core_user_confirmation(const char *title,
-                            const char *body,
-                            ui_type_e type,
-                            ui_core_rejection_cb *reject_cb) {
-  if (SCROLL_PAGE_SCREEN == type) {
-    ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
-  } else if (CONFIRMATION_SCREEN == type) {
-    confirm_scr_init(body);
-  } else {
-    // unexpected ui_type_e received; should never reach here
-    return false;
-  }
+static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
   evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
   if (true == events.p0_event.flag) {
     // core will handle p0 events, exit now
@@ -125,4 +118,20 @@ bool core_user_confirmation(const char *title,
   }
 
   return true;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+
+bool core_confirmation(const char *body, ui_core_rejection_cb *reject_cb) {
+  confirm_scr_init(body);
+  return wait_for_event(reject_cb);
+}
+
+bool core_scroll_page(const char *title,
+                      const char *body,
+                      ui_core_rejection_cb *reject_cb) {
+  ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  return wait_for_event(reject_cb);
 }
