@@ -180,14 +180,16 @@ static bool training_step(const joystick_step_t *step) {
 void manager_joystick_training(manager_query_t *query) {
   /* Validate if this flow is allowed */
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_JOYSTICK_TRAINING)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
     return;
   }
 
   /* Validate request */
   if (MANAGER_TRAIN_JOYSTICK_REQUEST_INITIATE_TAG !=
       get_which_request(&query->train_joystick)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return;
   }
 

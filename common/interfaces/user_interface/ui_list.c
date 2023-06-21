@@ -328,7 +328,6 @@ static void back_btn_event_handler(lv_obj_t *back_btn, const lv_event_t event) {
       break;
     case LV_EVENT_CLICKED: {
       ui_set_cancel_event();
-      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED:
@@ -376,7 +375,6 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       break;
     case LV_EVENT_CLICKED: {
       ui_set_confirm_event();
-      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED:

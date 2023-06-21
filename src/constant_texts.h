@@ -89,6 +89,9 @@ extern const char *ui_text_options_advanced_settings[];
 extern const char *ui_text_options_logging_export[];
 extern const char *ui_text_options_passphrase[];
 
+// Firmware update text
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+
 #if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */

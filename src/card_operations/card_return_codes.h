@@ -36,8 +36,9 @@ typedef enum card_errors_type {
                                             card of wrong family tapped */
   CARD_OPERATION_ABORT_OPERATION, /** Error occurring due to internal handling
                                      of NFC or card communication. These errors
-                                     can be associated to @ref ISO7816 errors or
-                                     PN532 errors */
+                                     can be associated to @ref
+                                     card_error_status_word_e errors or PN532
+                                     errors */
 
   CARD_OPERATION_DEFAULT_INVALID = 0xFF, /** Default invalid value */
 } card_error_type_e;

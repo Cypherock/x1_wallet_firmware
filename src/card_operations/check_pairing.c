@@ -126,10 +126,10 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
   card_operation_data_t operation_data = {{0}, NULL, 0};
   init_tap_card_data(&operation_data.nfc_data);
   status = card_initialize_applet(&operation_data);
-  buzzer_start(100);
   nfc_deselect_card();
 
   if (CARD_OPERATION_SUCCESS == status) {
+    buzzer_start(100);
     result->card_number =
         decode_card_number(operation_data.nfc_data.tapped_card);
     memcpy(
@@ -139,13 +139,6 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
       result->is_paired = false;
     } else {
       result->is_paired = true;
-    }
-  } else {
-    LOG_SWV("%s (%d):", __func__, __LINE__);
-    LOG_CRITICAL("COCP %04X\n", operation_data.nfc_data.status);
-    if (NULL != operation_data.error_message) {
-      message_scr_init(operation_data.error_message);
-      get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
     }
   }
   return status;

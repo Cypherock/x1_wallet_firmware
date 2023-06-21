@@ -152,7 +152,6 @@ static void message_scr_destructor() {
 static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
   if (event == LV_EVENT_CLICKED) {
     ui_set_confirm_event();
-    lv_obj_clean(lv_scr_act());
   } else if (event == LV_EVENT_DELETE) {
     /* Destruct object and data variables in case the object is being deleted
      * directly using lv_obj_clean() */

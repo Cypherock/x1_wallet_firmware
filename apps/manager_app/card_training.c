@@ -136,13 +136,15 @@ static void send_training_error(uint32_t error_code) {
 
 void manager_card_training(manager_query_t *query) {
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
     return;
   }
 
   if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
       query->train_card.which_request) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return;
   }
 
@@ -177,4 +179,5 @@ void manager_card_training(manager_query_t *query) {
   snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
   delay_scr_init(msg, DELAY_TIME);
   // TODO: Show wallets if exist and wait for user acceptance on via app
+  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_CARD_CHECKUP);
 }

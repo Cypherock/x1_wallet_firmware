@@ -1,7 +1,7 @@
 /**
- * @file    core_error.c
+ * @file    ui_core_confirm.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief   A ready-made confirmation UI that accepts rejection callback.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,12 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "core_error.h"
+#include "ui_core_confirm.h"
 
-#include "buzzer.h"
-#include "constant_texts.h"
+#include "error.pb.h"
 #include "events.h"
-#include "p0_events.h"
-#include "status_api.h"
-#include "ui_message.h"
+#include "ui_screens.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -83,23 +81,11 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Display error message to user set by core operations.
- *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
- *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
- */
-static void display_core_error();
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -107,57 +93,36 @@ static char core_error_msg[60] = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
-
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
-
-  do {
-    status = get_events(EVENT_CONFIG_UI, INIFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
-
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
-    return;
+bool core_user_confirmation(const char *title,
+                            const char *body,
+                            ui_type_e type,
+                            ui_core_rejection_cb *reject_cb) {
+  if (SCROLL_PAGE_SCREEN == type) {
+    ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  } else if (CONFIRMATION_SCREEN == type) {
+    confirm_scr_init(body);
+  } else {
+    // unexpected ui_type_e received; should never reach here
+    return false;
+  }
+  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+  if (true == events.p0_event.flag) {
+    // core will handle p0 events, exit now
+    return false;
+  }
+  if (UI_EVENT_REJECT == events.ui_event.event_type) {
+    // user rejected, send error and return false
+    if (NULL != reject_cb) {
+      reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+                ERROR_USER_REJECTION_CONFIRMATION);
+    }
+    return false;
   }
 
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
-    return;
-  }
-
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
-  return;
-}
-
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
-
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
-  }
-
-  display_core_error();
-  return;
-}
-
-void ignore_p0_event() {
-  p0_reset_evt();
+  return true;
 }

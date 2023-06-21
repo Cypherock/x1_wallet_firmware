@@ -15,6 +15,8 @@
 
 #include <error.pb.h>
 
+#include "app_error.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -45,4 +47,16 @@
 error_common_error_t init_common_error(pb_size_t which_error,
                                        uint32_t error_code);
 
+/**
+ * The function maps NFC status codes to specific card error codes.
+ *
+ * @param nfc_status An enumeration representing the status word returned by an
+ * NFC communication with a smart card.
+ *
+ * @return an error_card_error_t value based on the input parameter nfc_status,
+ * which is of type card_error_status_word_e. The returned value corresponds to
+ * the specific error code associated with the input nfc_status.
+ */
+error_card_error_t get_card_error_from_nfc_status(
+    card_error_status_word_e nfc_status);
 #endif

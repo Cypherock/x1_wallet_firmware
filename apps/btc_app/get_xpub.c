@@ -62,11 +62,9 @@
 
 #include "btc_api.h"
 #include "common_error.h"
-#include "events.h"
 #include "status_api.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -112,23 +110,6 @@ static bool check_which_request(const btc_query_t *query,
  * @retval false If any of the derivation path entries are invalid
  */
 static bool validate_request_data(btc_get_xpubs_request_t *request);
-
-/**
- * @brief The function confirms the user intention for initiating xpub export
- * @details The function will render a confirmation screen and listen for
- * events. The function will only listen to an UI event and handles UI and P0
- * event. In case of a P0 event, the function will simply return false and do an
- * early exit. In case if the user denied the permission by selecting cancel,
- * the function sends the error to the host bitcoin app.
- *
- * @param result Reference to an instance of btc_result_t
- * @param wallet_name Reference to immutable wallet name to be presented to user
- *
- * @return bool Indicating if the user confirmation succeeded.
- * @retval true The user confirmed his/her intention to export xpubs
- * @retval false The user either rejected the prompt or a P0 event occurred
- */
-static bool confirm_with_user(const char *wallet_name);
 
 /**
  * @brief Derives a list of xpubs corresponding to the provided list of
@@ -225,26 +206,6 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   return status;
 }
 
-static bool confirm_with_user(const char *wallet_name) {
-  // wait for user confirmation to send xpubs to desktop
-  char msg[100] = "";
-  snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
-  confirm_scr_init(msg);
-  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-  if (true == events.p0_event.flag) {
-    // core will handle p0 events, exit now
-    return false;
-  }
-  if (UI_EVENT_REJECT == events.ui_event.event_type) {
-    // user rejected sending of xpubs, send error and exit
-    btc_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                   ERROR_USER_REJECTION_CONFIRMATION);
-    return false;
-  }
-
-  return true;
-}
-
 static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
                                    const uint8_t *seed,
                                    char xpubs[][XPUB_SIZE],
@@ -295,6 +256,7 @@ static bool send_xpubs(btc_query_t *query,
 void btc_get_xpub(btc_query_t *query) {
   const char *wallet_name = "";
   uint8_t wallet_index = 0;
+  char msg[100] = "";
   const btc_get_xpubs_intiate_request_t *init_req = &query->get_xpubs.initiate;
 
   if (!check_which_request(query, BTC_GET_XPUBS_REQUEST_INITIATE_TAG) ||
@@ -306,8 +268,9 @@ void btc_get_xpub(btc_query_t *query) {
   get_first_matching_index_by_id(query->get_xpubs.initiate.wallet_id,
                                  &wallet_index);
   wallet_name = (const char *)get_wallet_name(wallet_index);
+  snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
   // Take user consent to export xpub for the wallet
-  if (!confirm_with_user(wallet_name)) {
+  if (!core_user_confirmation(NULL, msg, CONFIRMATION_SCREEN, btc_send_error)) {
     return;
   }
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
@@ -318,7 +281,7 @@ void btc_get_xpub(btc_query_t *query) {
                  sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
-  instruction_scr_init(ui_text_processing, NULL);
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
   if (true == one_shot_xpub_generate(init_req->derivation_paths,
                                      seed,
                                      xpub_list,

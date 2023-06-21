@@ -82,4 +82,11 @@ void manager_get_logs(manager_query_t *query);
  * @param query Reference to the decoded query struct from the host app
  */
 void manager_export_wallets(manager_query_t *query);
+
+/**
+ * @brief User confirmation for firmware update based on request from host
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void manager_confirm_firmware_update(manager_query_t *query);
 #endif

@@ -155,7 +155,8 @@ void get_device_info_flow(const manager_query_t *query) {
   if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
       query->get_device_info.which_request) {
     // set the relevant tags for error
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
   } else {
     manager_result_t result =
         init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
