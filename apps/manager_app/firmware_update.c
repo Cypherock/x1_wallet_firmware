@@ -170,8 +170,7 @@ void manager_confirm_firmware_update(manager_query_t *query) {
            query->firmware_update.initiate.version.major,
            query->firmware_update.initiate.version.minor,
            query->firmware_update.initiate.version.patch);
-  if (!core_user_confirmation(
-          NULL, msg, CONFIRMATION_SCREEN, manager_send_error)) {
+  if (!core_confirmation(msg, manager_send_error)) {
     return;
   }
 
