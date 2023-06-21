@@ -25,11 +25,27 @@
 #include <string.h>
 
 #include "aes.h"
+#include "app_error.h"
 #include "wallet.h"
 
 #define SHA256_SIZE 32
 #define POW_RAND_NUMBER_SIZE 32
 #define POW_NONCE_SIZE 32
+
+/// ISO7816 values
+#define CLA_ISO7816 0x00
+#define INS_EXTERNAL_AUTHENTICATE 0x82
+#define INS_SELECT 0xA4
+#define OFFSET_CDATA 0x05
+#define OFFSET_CLA 0x00
+#define OFFSET_EXT_CDATA 0x07
+#define OFFSET_INS 0x01
+#define OFFSET_LC 0x04
+#define OFFSET_P1 0x02
+#define OFFSET_P2 0x03
+
+/* TODO: Remove ISO7816 macro as it actually corresponds to card status*/
+#define ISO7816 card_error_status_word_e
 
 /// enum to define health of data on cards
 typedef enum {
@@ -117,41 +133,6 @@ typedef enum {
   TAG_INHERITANCE_ENCRYPTED_DATA = 0xD6,
   TAG_DATA_DISCREPANCY = 0xD7,
 } Tag_value;
-
-/// ISO7816 values
-typedef enum {
-  CLA_ISO7816 = 0x00,
-  INS_EXTERNAL_AUTHENTICATE = 0x82,
-  INS_SELECT = 0xA4,
-  OFFSET_CDATA = 5,
-  OFFSET_CLA = 0,
-  OFFSET_EXT_CDATA = 7,
-  OFFSET_INS = 1,
-  OFFSET_LC = 4,
-  OFFSET_P1 = 2,
-  OFFSET_P2 = 3,
-  SW_INCOMPATIBLE_APPLET = 0x1000,
-  SW_NO_ERROR = 0x9000,
-  SW_FILE_INVALID = 0x6983,
-  SW_RECORD_NOT_FOUND = 0x6A83,
-  SW_CORRECT_LENGTH_00 = 0x6C00,
-  SW_FILE_FULL = 0x6A84,
-  SW_WRONG_DATA = 0x6A80,
-  SW_NULL_POINTER_EXCEPTION = 0x6281,
-  SW_OUT_OF_BOUNDARY = 0x91BE,
-  SW_TRANSACTION_EXCEPTION = 0x6900,
-  SW_CRYPTO_EXCEPTION = 0x7C00,
-  SW_CONDITIONS_NOT_SATISFIED = 0x6985,
-  SW_SECURITY_CONDITIONS_NOT_SATISFIED = 0x6982,
-  SW_NOT_PAIRED = 0x7985,
-  SW_WARNING_STATE_UNCHANGED = 0x6200,
-  SW_FILE_NOT_FOUND = 0x6A82,
-  SW_INVALID_INS = 0x6D00,
-  POW_SW_WALLET_LOCKED = 0x7D00,
-  SW_INS_BLOCKED = 0x7E00,
-  POW_SW_CHALLENGE_FAILED = 0x6A88,
-  DEFAULT_UINT32_IN_FLASH_ENUM = 0xFFFFFFFFUL
-} ISO7816;
 
 /**
  * @brief Fills the APDU for the passed Tag value.

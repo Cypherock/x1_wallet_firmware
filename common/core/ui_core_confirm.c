@@ -1,7 +1,7 @@
 /**
- * @file    card_training.c
+ * @file    ui_core_confirm.c
  * @author  Cypherock X1 Team
- * @brief   Card training flow for user on-boarding.
+ * @brief   A ready-made confirmation UI that accepts rejection callback.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,11 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "check_pairing.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "onboarding.h"
-#include "status_api.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "wallet.h"
+#include "ui_core_confirm.h"
+
+#include "error.pb.h"
+#include "events.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -86,21 +83,12 @@
  *****************************************************************************/
 
 /**
- * @brief Sends the received message to host app.
- * @details The function internally calls manager_send_result to send the
- * message to host.
+ * @brief
  *
- * @param resp Reference to a filled structure instance of
- * manager_train_card_response_t
+ * @param reject_cb
+ * @return
  */
-static void send_training_response(manager_train_card_response_t *resp);
-
-/**
- * TODO: Replace with api provided by manager app
- *
- * @param error_code
- */
-static void send_training_error(uint32_t error_code);
+static bool wait_for_event(ui_core_rejection_cb *reject_cb);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -114,70 +102,36 @@ static void send_training_error(uint32_t error_code);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static void send_training_response(manager_train_card_response_t *resp) {
-  manager_result_t result = init_manager_result(MANAGER_RESULT_TRAIN_CARD_TAG);
-  memcpy(&(result.train_card), resp, sizeof(manager_train_card_response_t));
-  manager_send_result(&result);
-  return;
-}
+static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
+  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+  if (true == events.p0_event.flag) {
+    // core will handle p0 events, exit now
+    return false;
+  }
+  if (UI_EVENT_REJECT == events.ui_event.event_type) {
+    // user rejected, send error and return false
+    if (NULL != reject_cb) {
+      reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+                ERROR_USER_REJECTION_CONFIRMATION);
+    }
+    return false;
+  }
 
-static void send_training_error(uint32_t error_code) {
-  manager_train_card_response_t training =
-      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
-  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
-  training.common_error.unknown_error = error_code;
-  send_training_response(&training);
+  return true;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void manager_card_training(manager_query_t *query) {
-  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
-    return;
-  }
+bool core_confirmation(const char *body, ui_core_rejection_cb *reject_cb) {
+  confirm_scr_init(body);
+  return wait_for_event(reject_cb);
+}
 
-  if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
-      query->train_card.which_request) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    return;
-  }
-
-  // TODO: verify on-boarding state for safety
-  core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
-
-  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
-
-  check_pairing_result_t pair_result = {false, 0, {0}};
-  manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
-  card_error_type_e status = card_check_pairing(&pair_result);
-  if (CARD_OPERATION_SUCCESS != status) {
-    LOG_SWV("%s (%d)\n", __func__, __LINE__);
-    send_training_error(1);
-    return;
-  }
-  result.result.card_paired = pair_result.is_paired;
-  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
-    set_family_id_flash(pair_result.family_id);
-  }
-
-  // always pair the card
-  // TODO: Update the pairing flow to support flexible storage of shared key
-
-  // TODO: Fetch wallet list; send dummy data
-  result.result.card_paired = false;
-  result.result.wallet_list_count = 0;
-  send_training_response(&result);
-
-  char msg[64] = "";
-  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
-  delay_scr_init(msg, DELAY_TIME);
-  // TODO: Show wallets if exist and wait for user acceptance on via app
-  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_CARD_CHECKUP);
+bool core_scroll_page(const char *title,
+                      const char *body,
+                      ui_core_rejection_cb *reject_cb) {
+  ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  return wait_for_event(reject_cb);
 }

@@ -99,7 +99,7 @@
 #define ONBAORDING_DONE false
 
 #define TIMEOUT_SELECTION                                                      \
-  ((true == ONBAORDING_DONE) ? MAX_INACTIVITY_TIMEOUT : INIFINITE_WAIT_TIMEOUT)
+  ((true == ONBAORDING_DONE) ? MAX_INACTIVITY_TIMEOUT : INFINITE_WAIT_TIMEOUT)
 
 #define CHALLENGE_SIZE 32
 

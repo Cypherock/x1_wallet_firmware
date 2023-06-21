@@ -1,7 +1,7 @@
 /**
- * @file    card_training.c
+ * @file    create_wallet_menu.c
  * @author  Cypherock X1 Team
- * @brief   Card training flow for user on-boarding.
+ * @brief   Populate and handle main menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "create_wallet_menu.h"
 
-#include "check_pairing.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "onboarding.h"
-#include "status_api.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "wallet.h"
+#include "constant_texts.h"
+#include "core_error_priv.h"
+#include "create_wallet_flow.h"
+#include "menu_priv.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -80,31 +78,62 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef enum {
+  GENERATE_NEW_WALLET = 1,
+  RESTORE_FROM_SEED,
+} create_wallet_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This is the initializer callback for the create wallet menu.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr);
 
 /**
- * @brief Sends the received message to host app.
- * @details The function internally calls manager_send_result to send the
- * message to host.
+ * @brief This is the UI event handler for the create wallet menu.
+ * @details The function decodes the UI event and calls the create wallet flow
+ * based on selection. It deletes the create wallet menu step if the back button
+ * is pressed on the menu
  *
- * @param resp Reference to a filled structure instance of
- * manager_train_card_response_t
+ * @param ctx The engine context* from which the flow is invoked
+ * @param ui_event The ui event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
  */
-static void send_training_response(manager_train_card_response_t *resp);
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr);
 
 /**
- * TODO: Replace with api provided by manager app
+ * @brief This p0 event callback function handles clearing p0 events occured
+ * while engine is waiting for other events.
  *
- * @param error_code
+ * @details After main menu initalization, we don't expect p0 events as no
+ * operation or flow has been started yet.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param p0_evt The p0 event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
  */
-static void send_training_error(uint32_t error_code);
-
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+const flow_step_t create_wallet_step = {
+    .step_init_cb = create_wallet_menu_initialize,
+    .p0_cb = ignore_p0_handler,
+    .ui_cb = create_wallet_menu_handler,
+    .usb_cb = NULL,
+    .nfc_cb = NULL,
+    .evt_cfg_ptr = &device_nav_evt_config,
+    .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -113,71 +142,62 @@ static void send_training_error(uint32_t error_code);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr) {
+  ignore_p0_event();
+}
 
-static void send_training_response(manager_train_card_response_t *resp) {
-  manager_result_t result = init_manager_result(MANAGER_RESULT_TRAIN_CARD_TAG);
-  memcpy(&(result.train_card), resp, sizeof(manager_train_card_response_t));
-  manager_send_result(&result);
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr) {
+  /* Create an array of pointers holding the string to display on the menu. */
+  char *menu_option_ptr_array[NUMBER_OF_OPTIONS_NEW_WALLET];
+
+  for (uint8_t menu_index = 0; menu_index < NUMBER_OF_OPTIONS_NEW_WALLET;
+       menu_index++) {
+    menu_option_ptr_array[menu_index] =
+        (char *)ui_text_options_new_wallet[menu_index];
+  }
+
+  menu_init((const char **)menu_option_ptr_array,
+            NUMBER_OF_OPTIONS_NEW_WALLET,
+            ui_text_heading_new_wallet,
+            true);
+
   return;
 }
 
-static void send_training_error(uint32_t error_code) {
-  manager_train_card_response_t training =
-      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
-  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
-  training.common_error.unknown_error = error_code;
-  send_training_response(&training);
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr) {
+  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
+    switch (ui_event.list_selection) {
+      case GENERATE_NEW_WALLET: {
+        create_wallet_flow(true);
+        break;
+      }
+      case RESTORE_FROM_SEED: {
+        // TODO: Handle restore from seed
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  } else {
+    // UI_EVENT_LIST_REJECTION handled below already
+  }
+
+  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+   * detected, or a create wallet flow was executed */
+  engine_delete_current_flow_step(ctx);
+
+  return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void manager_card_training(manager_query_t *query) {
-  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
-    return;
-  }
-
-  if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
-      query->train_card.which_request) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    return;
-  }
-
-  // TODO: verify on-boarding state for safety
-  core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
-
-  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
-
-  check_pairing_result_t pair_result = {false, 0, {0}};
-  manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
-  card_error_type_e status = card_check_pairing(&pair_result);
-  if (CARD_OPERATION_SUCCESS != status) {
-    LOG_SWV("%s (%d)\n", __func__, __LINE__);
-    send_training_error(1);
-    return;
-  }
-  result.result.card_paired = pair_result.is_paired;
-  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
-    set_family_id_flash(pair_result.family_id);
-  }
-
-  // always pair the card
-  // TODO: Update the pairing flow to support flexible storage of shared key
-
-  // TODO: Fetch wallet list; send dummy data
-  result.result.card_paired = false;
-  result.result.wallet_list_count = 0;
-  send_training_response(&result);
-
-  char msg[64] = "";
-  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
-  delay_scr_init(msg, DELAY_TIME);
-  // TODO: Show wallets if exist and wait for user acceptance on via app
-  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_CARD_CHECKUP);
+const flow_step_t *create_wallet_menu_get_step(void) {
+  return &create_wallet_step;
 }

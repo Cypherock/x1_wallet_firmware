@@ -103,7 +103,8 @@ bool decode_manager_query(const uint8_t *data,
                           uint16_t data_size,
                           manager_query_t *query_out) {
   if (NULL == data || NULL == query_out || 0 == data_size) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
@@ -120,7 +121,8 @@ bool decode_manager_query(const uint8_t *data,
   if (true == status) {
     memcpy(query_out, &query, sizeof(query));
   } else {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_DECODING_FAILED);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
   return status;
@@ -149,7 +151,8 @@ bool encode_manager_result(manager_result_t *result,
 bool check_manager_query(const manager_query_t *query,
                          const pb_size_t exp_query_tag) {
   if ((NULL == query) || (exp_query_tag != query->which_request)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
   }
   return true;
@@ -161,11 +164,10 @@ manager_result_t init_manager_result(const pb_size_t result_tag) {
   return result;
 }
 
-void manager_send_data_flow_error(error_data_flow_t error_code) {
+void manager_send_error(pb_size_t which_error, uint32_t error_code) {
   manager_result_t result =
       init_manager_result(MANAGER_RESULT_COMMON_ERROR_TAG);
-  result.common_error =
-      init_common_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, error_code);
+  result.common_error = init_common_error(which_error, error_code);
   manager_send_result(&result);
 }
 

@@ -1,7 +1,8 @@
 /**
- * @file    card_training.c
+ * @file    firmware_update.c
  * @author  Cypherock X1 Team
- * @brief   Card training flow for user on-boarding.
+ * @brief   Manager app function to get user confirmation before going to
+ *          bootloader mode for firmware update
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +60,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include "check_pairing.h"
-#include "flash_api.h"
+#include "board.h"
+#include "common_error.h"
 #include "manager_api.h"
-#include "onboarding.h"
-#include "status_api.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "wallet.h"
+#include "sec_flash.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -84,24 +82,32 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host manager app and return false.
+ *
+ * @param query Reference to an instance of manager_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
+ *
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
+ */
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request);
 
 /**
- * @brief Sends the received message to host app.
- * @details The function internally calls manager_send_result to send the
- * message to host.
+ * @brief Checks if the provided request has valid data
+ * @details It checks if the target firmware version is strictly greater than
+ * the currently installed firmware version
  *
- * @param resp Reference to a filled structure instance of
- * manager_train_card_response_t
+ * @param request Reference to the request received from the host
+ * @return true Indicating that the request is valid
+ * @return false Indicating that the request is not valid
  */
-static void send_training_response(manager_train_card_response_t *resp);
-
-/**
- * TODO: Replace with api provided by manager app
- *
- * @param error_code
- */
-static void send_training_error(uint32_t error_code);
-
+static bool validate_query(const manager_firmware_update_request_t *request);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -113,71 +119,76 @@ static void send_training_error(uint32_t error_code);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->firmware_update.which_request) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
-static void send_training_response(manager_train_card_response_t *resp) {
-  manager_result_t result = init_manager_result(MANAGER_RESULT_TRAIN_CARD_TAG);
-  memcpy(&(result.train_card), resp, sizeof(manager_train_card_response_t));
-  manager_send_result(&result);
-  return;
+  return true;
 }
 
-static void send_training_error(uint32_t error_code) {
-  manager_train_card_response_t training =
-      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
-  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
-  training.common_error.unknown_error = error_code;
-  send_training_response(&training);
+static bool validate_query(const manager_firmware_update_request_t *request) {
+  if (false == request->initiate.has_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_FIELD_MISSING);
+    return false;
+  }
+  uint32_t current_version = get_fwVer();
+
+  const common_version_t *target = &request->initiate.version;
+  uint32_t target_version =
+      (target->major << 24) | (target->minor << 16) | (target->patch);
+
+  // Query is invalid if the target version is equal or less than the current
+  // firmware version installed
+  if (target_version <= current_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  return true;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void manager_card_training(manager_query_t *query) {
-  if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_CHECKUP)) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
+void manager_confirm_firmware_update(manager_query_t *query) {
+  if ((!check_which_request(
+          query, MANAGER_FIRMWARE_UPDATE_INITIATE_REQUEST_VERSION_TAG)) ||
+      (!validate_query(&query->firmware_update))) {
     return;
   }
 
-  if (MANAGER_TRAIN_CARD_REQUEST_INITIATE_TAG !=
-      query->train_card.which_request) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
+  char msg[100];
+  snprintf(msg,
+           sizeof(msg),
+           FIRMWARE_UPDATE_CONFIRMATION,
+           query->firmware_update.initiate.version.major,
+           query->firmware_update.initiate.version.minor,
+           query->firmware_update.initiate.version.patch);
+  if (!core_confirmation(msg, manager_send_error)) {
     return;
   }
 
-  // TODO: verify on-boarding state for safety
-  core_status_set_device_waiting_on(CORE_DEVICE_WAITING_ON_BUSY_IP_CARD);
+  manager_result_t result =
+      init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
+  manager_firmware_update_response_t *resp = &result.firmware_update;
+  resp->which_response = MANAGER_FIRMWARE_UPDATE_RESPONSE_CONFIRMED_TAG;
+  resp->confirmed.dummy_field = '\0';
+  manager_send_result(&result);
 
-  instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
+  // NOTE: This is a USB initiated flow, however, device will go in bootloader
+  // mode after blocking delay of 500ms without serving any events. So in case
+  // any abort event is triggered by the host, it will NOT be served!
+  // NOTE: Wait for status pull to desktop (which requests at 200ms)
+  instruction_scr_init(ui_text_processing, NULL);
+  BSP_DelayMs(500);
+  FW_enter_DFU();
+  BSP_reset();
 
-  check_pairing_result_t pair_result = {false, 0, {0}};
-  manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
-  card_error_type_e status = card_check_pairing(&pair_result);
-  if (CARD_OPERATION_SUCCESS != status) {
-    LOG_SWV("%s (%d)\n", __func__, __LINE__);
-    send_training_error(1);
-    return;
-  }
-  result.result.card_paired = pair_result.is_paired;
-  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
-    set_family_id_flash(pair_result.family_id);
-  }
-
-  // always pair the card
-  // TODO: Update the pairing flow to support flexible storage of shared key
-
-  // TODO: Fetch wallet list; send dummy data
-  result.result.card_paired = false;
-  result.result.wallet_list_count = 0;
-  send_training_response(&result);
-
-  char msg[64] = "";
-  snprintf(msg, sizeof(msg), UI_TEXT_CARD_TAPPED, pair_result.card_number);
-  delay_scr_init(msg, DELAY_TIME);
-  // TODO: Show wallets if exist and wait for user acceptance on via app
-  onboarding_set_step_done(MANAGER_ONBOARDING_STEP_CARD_CHECKUP);
+  return;
 }

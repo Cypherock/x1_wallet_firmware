@@ -61,12 +61,11 @@
  *****************************************************************************/
 #include "constant_texts.h"
 #include "device_authentication_api.h"
-#include "events.h"
 #include "manager_api.h"
-#include "manager_app.h"
 #include "onboarding.h"
 #include "status_api.h"
-#include "ui_delay.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -242,8 +241,13 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
-      // TODO: Check if it's a forced device authentication, in which case we
-      // will take users permission to perform authentication again
+      if (is_device_authenticated() &&
+          !core_confirmation(ui_text_start_device_verification,
+                             manager_send_error)) {
+        // re-authentication denied by user
+        next_state = FLOW_COMPLETE;
+        break;
+      }
 
       /* Set flow status */
       core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
@@ -258,7 +262,8 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG:
     default: {
       /* In case any other request is received, then we exit the flow early */
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -272,7 +277,8 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
@@ -297,7 +303,8 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
       break;
     }
     default: {
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -312,7 +319,8 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG:
     case MANAGER_AUTH_DEVICE_REQUEST_CHALLENGE_TAG: {
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
     case MANAGER_AUTH_DEVICE_REQUEST_RESULT_TAG: {
@@ -330,7 +338,8 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
       break;
     }
     default: {
-      manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_REQUEST);
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
   }
@@ -344,7 +353,8 @@ static device_auth_state_e result_handler(const manager_query_t *query) {
 void device_authentication_flow(manager_query_t *query) {
   /* Validate if this flow is allowed */
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_DEVICE_AUTH)) {
-    manager_send_data_flow_error(ERROR_DATA_FLOW_INVALID_QUERY);
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
     return;
   }
 
