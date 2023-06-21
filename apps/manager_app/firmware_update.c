@@ -1,7 +1,8 @@
 /**
- * @file    manager_app.c
+ * @file    firmware_update.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Manager app function to get user confirmation before going to
+ *          bootloader mode for firmware update
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +60,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "manager_app.h"
-
+#include "board.h"
+#include "common_error.h"
 #include "manager_api.h"
-#include "manager_app_priv.h"
-#include "onboarding.h"
-#include "status_api.h"
+#include "sec_flash.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +80,35 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host manager app and return false.
+ *
+ * @param query Reference to an instance of manager_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
+ *
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
+ */
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request);
+
+/**
+ * @brief Checks if the provided request has valid data
+ * @details It checks if the target firmware version is strictly greater than
+ * the currently installed firmware version
+ *
+ * @param request Reference to the request received from the host
+ * @return true Indicating that the request is valid
+ * @return false Indicating that the request is not valid
+ */
+static bool validate_query(const manager_firmware_update_request_t *request);
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,74 +117,79 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->firmware_update.which_request) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  return true;
+}
+
+static bool validate_query(const manager_firmware_update_request_t *request) {
+  if (false == request->initiate.has_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_FIELD_MISSING);
+    return false;
+  }
+  uint32_t current_version = get_fwVer();
+
+  const common_version_t *target = &request->initiate.version;
+  uint32_t target_version =
+      (target->major << 24) | (target->minor << 16) | (target->patch);
+
+  // Query is invalid if the target version is equal or less than the current
+  // firmware version installed
+  if (target_version <= current_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
-
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+void manager_confirm_firmware_update(manager_query_t *query) {
+  if ((!check_which_request(
+          query, MANAGER_FIRMWARE_UPDATE_INITIATE_REQUEST_VERSION_TAG)) ||
+      (!validate_query(&query->firmware_update))) {
     return;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
-  switch ((uint8_t)query.which_request) {
-    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
-      get_device_info_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_WALLETS_TAG: {
-      manager_export_wallets(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
-      device_authentication_flow(&query);
-      break;
-    }
-    case MANAGER_QUERY_AUTH_CARD_TAG: {
-      card_auth_handler(&query);
-      break;
-    }
-    case MANAGER_QUERY_GET_LOGS_TAG: {
-      manager_get_logs(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG: {
-      manager_joystick_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_TRAIN_CARD_TAG: {
-      manager_card_training(&query);
-      break;
-    }
-    case MANAGER_QUERY_FIRMWARE_UPDATE_TAG: {
-      manager_confirm_firmware_update(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
-    }
+  char msg[100];
+  snprintf(msg,
+           sizeof(msg),
+           FIRMWARE_UPDATE_CONFIRMATION,
+           query->firmware_update.initiate.version.major,
+           query->firmware_update.initiate.version.minor,
+           query->firmware_update.initiate.version.patch);
+  if (!core_user_confirmation(
+          NULL, msg, CONFIRMATION_SCREEN, manager_send_error)) {
+    return;
   }
 
-  // TODO: Check if on-boarding default screen is to be rendered
-  onboarding_set_static_screen();
+  manager_result_t result =
+      init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
+  manager_firmware_update_response_t *resp = &result.firmware_update;
+  resp->which_response = MANAGER_FIRMWARE_UPDATE_RESPONSE_CONFIRMED_TAG;
+  resp->confirmed.dummy_field = '\0';
+  manager_send_result(&result);
+
+  // NOTE: This is a USB initiated flow, however, device will go in bootloader
+  // mode after blocking delay of 500ms without serving any events. So in case
+  // any abort event is triggered by the host, it will NOT be served!
+  // NOTE: Wait for status pull to desktop (which requests at 200ms)
+  instruction_scr_init(ui_text_processing, NULL);
+  BSP_DelayMs(500);
+  FW_enter_DFU();
+  BSP_reset();
 
   return;
 }
