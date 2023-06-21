@@ -62,6 +62,7 @@
 #include "create_wallet_menu.h"
 
 #include "constant_texts.h"
+#include "core_error_priv.h"
 #include "create_wallet_flow.h"
 #include "menu_priv.h"
 #include "ui_screens.h"
@@ -107,12 +108,27 @@ static void create_wallet_menu_initialize(engine_ctx_t *ctx,
 static void create_wallet_menu_handler(engine_ctx_t *ctx,
                                        ui_event_t ui_event,
                                        const void *data_ptr);
+
+/**
+ * @brief This p0 event callback function handles clearing p0 events occured
+ * while engine is waiting for other events.
+ *
+ * @details After main menu initalization, we don't expect p0 events as no
+ * operation or flow has been started yet.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param p0_evt The p0 event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 const flow_step_t create_wallet_step = {
     .step_init_cb = create_wallet_menu_initialize,
-    .p0_cb = NULL,
+    .p0_cb = ignore_p0_handler,
     .ui_cb = create_wallet_menu_handler,
     .usb_cb = NULL,
     .nfc_cb = NULL,
@@ -126,6 +142,12 @@ const flow_step_t create_wallet_step = {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void ignore_p0_handler(engine_ctx_t *ctx,
+                              p0_evt_t p0_evt,
+                              const void *data_ptr) {
+  ignore_p0_event();
+}
+
 static void create_wallet_menu_initialize(engine_ctx_t *ctx,
                                           const void *data_ptr) {
   /* Create an array of pointers holding the string to display on the menu. */
