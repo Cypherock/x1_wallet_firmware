@@ -32,20 +32,30 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * This function pairs a specific card without handling of retap errors.
+ *
+ * @param card_number The number of the card to be paired. It should be an
+ * integer between 1 and 4.
+ *
+ * @return a uint32_t value, which could be an error status, @ref SW_NO_ERROR
+ * for success. Errors such as wrong family id card and wrong card sequence are
+ * not handled and an error code is returned for the same.
+ */
+uint32_t card_pair_without_retap(uint8_t card_number);
 
 /**
- * @brief This function performs pairing operation for specified card number
- * If card tapped is not already paired, pairing keys are generated and are
- * saved to flash. This flow saves the family id of the card tapped after
- * pairing if family id on flash was empty.
+ * This function performs a card pairing operation and returns an error status.
  *
- * @param card_number card number expected [1, 4]
- * @param heading Heading for instruction screen to be displayed when an error
- * occurs
- * @param message Message for instruction screen to be displayed when an error
- * occurs
- * @return true if either already paired or pairing keys were saved to flash
- * else fasle
+ * @param card_number The number of the card to be paired. It should be an
+ * integer between 1 and 4.
+ * @param heading A string that represents the heading of the card pairing
+ * operation. It is displayed on the screen to provide context to the user.
+ * @param message A pointer to a character array (string) containing the message
+ * to be displayed on the screen during the card pairing operation.
+ *
+ * @return a uint32_t value, which is an error status code, @ref SW_NO_ERROR for
+ * success.
  */
-bool pair_card_operation(uint8_t card_number, char *heading, char *message);
+uint32_t card_pair_operation(uint8_t card_number, char *heading, char *message);
 #endif

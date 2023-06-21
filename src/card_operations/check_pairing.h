@@ -46,8 +46,8 @@ typedef struct check_pairing_result {
  * @details The function depends on card_initialize_applet for initializing
  * applet and populating necessary card information. The function returns the
  * operation status and only for CARD_OPERATION_SUCCESS will the result hold any
- * valid information. The function queries the keystore entries (@ref is_paired)
- * to decide if the tapped card is paired.
+ * valid information. The function queries the keystore entries (@ref
+ * get_paired_card_index) to decide if the tapped card is paired.
  *
  * @param result Reference to the check_pairing_result_t
  *

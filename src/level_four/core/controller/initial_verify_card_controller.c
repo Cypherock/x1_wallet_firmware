@@ -328,7 +328,7 @@ static void _tap_card_backend(uint8_t card_number) {
         flow_level.level_one = 6;    // take to get-started screen
       break;
     }
-    if (is_paired(tap_card_data.card_key_id) > -1) {
+    if (get_paired_card_index(tap_card_data.card_key_id) > -1) {
       transmit_one_byte_confirm(START_CARD_AUTH);
       buzzer_start(BUZZER_DURATION);
       instruction_scr_destructor();

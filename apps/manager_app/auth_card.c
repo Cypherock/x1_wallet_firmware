@@ -529,12 +529,16 @@ static manager_error_code_t handle_auth_card_result_query(
         if (true == auth_card_data->ctx.pair_card_required) {
           uint8_t card_number =
               decode_card_number(auth_card_data->ctx.acceptable_cards);
-          bool result = pair_card_operation(card_number,
-                                            auth_card_data->ctx.heading,
-                                            auth_card_data->ctx.message);
+          uint32_t pairing_result =
+              card_pair_operation(card_number,
+                                  auth_card_data->ctx.heading,
+                                  auth_card_data->ctx.message);
 
-          if (true != result) {
-            delay_scr_init("Pairing operation failed", DELAY_TIME);
+          if (SW_NO_ERROR != pairing_result) {
+            LOG_ERROR("pairing error: %ld", pairing_result);
+            manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                               get_card_error_from_nfc_status(pairing_result));
+            delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
             return MANAGER_TASK_FAILED;
           }
         }
