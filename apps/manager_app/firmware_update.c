@@ -1,7 +1,8 @@
 /**
- * @file    core_error.c
+ * @file    firmware_update.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief   Manager app function to get user confirmation before going to
+ *          bootloader mode for firmware update
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +60,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "board.h"
+#include "common_error.h"
+#include "manager_api.h"
+#include "sec_flash.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
-#include "core_error.h"
-
-#include "buzzer.h"
-#include "constant_texts.h"
-#include "events.h"
-#include "p0_events.h"
-#include "status_api.h"
-#include "ui_message.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -84,22 +83,35 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Display error message to user set by core operations.
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host manager app and return false.
  *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
+ * @param query Reference to an instance of manager_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
  *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
  */
-static void display_core_error();
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request);
 
+/**
+ * @brief Checks if the provided request has valid data
+ * @details It checks if the target firmware version is strictly greater than
+ * the currently installed firmware version
+ *
+ * @param request Reference to the request received from the host
+ * @return true Indicating that the request is valid
+ * @return false Indicating that the request is not valid
+ */
+static bool validate_query(const manager_firmware_update_request_t *request);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -107,57 +119,76 @@ static char core_error_msg[60] = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
+static bool check_which_request(const manager_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->firmware_update.which_request) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
+  return true;
+}
 
-  do {
-    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
+static bool validate_query(const manager_firmware_update_request_t *request) {
+  if (false == request->initiate.has_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_FIELD_MISSING);
+    return false;
+  }
+  uint32_t current_version = get_fwVer();
 
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
+  const common_version_t *target = &request->initiate.version;
+  uint32_t target_version =
+      (target->major << 24) | (target->minor << 16) | (target->patch);
+
+  // Query is invalid if the target version is equal or less than the current
+  // firmware version installed
+  if (target_version <= current_version) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  return true;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
+void manager_confirm_firmware_update(manager_query_t *query) {
+  if ((!check_which_request(
+          query, MANAGER_FIRMWARE_UPDATE_INITIATE_REQUEST_VERSION_TAG)) ||
+      (!validate_query(&query->firmware_update))) {
     return;
   }
 
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
+  char msg[100];
+  snprintf(msg,
+           sizeof(msg),
+           FIRMWARE_UPDATE_CONFIRMATION,
+           query->firmware_update.initiate.version.major,
+           query->firmware_update.initiate.version.minor,
+           query->firmware_update.initiate.version.patch);
+  if (!core_confirmation(msg, manager_send_error)) {
     return;
   }
 
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
+  manager_result_t result =
+      init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
+  manager_firmware_update_response_t *resp = &result.firmware_update;
+  resp->which_response = MANAGER_FIRMWARE_UPDATE_RESPONSE_CONFIRMED_TAG;
+  resp->confirmed.dummy_field = '\0';
+  manager_send_result(&result);
+
+  // NOTE: This is a USB initiated flow, however, device will go in bootloader
+  // mode after blocking delay of 500ms without serving any events. So in case
+  // any abort event is triggered by the host, it will NOT be served!
+  // NOTE: Wait for status pull to desktop (which requests at 200ms)
+  instruction_scr_init(ui_text_processing, NULL);
+  BSP_DelayMs(500);
+  FW_enter_DFU();
+  BSP_reset();
+
   return;
-}
-
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
-
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
-  }
-
-  display_core_error();
-  return;
-}
-
-void ignore_p0_event() {
-  p0_reset_evt();
 }

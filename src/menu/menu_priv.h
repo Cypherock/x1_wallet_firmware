@@ -29,6 +29,7 @@
  * EXPORTED VARIABLES
  *****************************************************************************/
 extern const evt_config_t main_menu_evt_config;
+extern const evt_config_t device_nav_evt_config;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES

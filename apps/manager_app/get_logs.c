@@ -61,14 +61,12 @@
  *****************************************************************************/
 
 #include "common_error.h"
-#include "events.h"
 #include "flash_api.h"
 #include "manager_api.h"
 #include "onboarding.h"
 #include "status_api.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -118,22 +116,6 @@ static bool check_which_request(const manager_query_t *query,
  * @retval false Logs cannot be exported in the current state
  */
 static bool check_logs_export();
-
-/**
- * @brief The function confirms the user intention for initiating log export
- * @details The function will render a confirmation screen and listen for
- * events. The function will only listen to an UI event and handles UI and P0
- * event. In case of a P0 event, the function will simply return false and do an
- * early exit. In case if the user denied the permission by selecting cancel,
- * the function sends the error to the host manager app.
- *
- * @param result Reference to an instance of manager_result_t
- *
- * @return bool Indicating if the user confirmation succeeded.
- * @retval true The user confirmed his/her intention to export logs
- * @retval false The user either rejected the prompt or a P0 event occurred
- */
-static bool confirm_with_user(manager_result_t *result);
 
 /**
  * @brief The function prepares and send logs one flash page at a time
@@ -191,28 +173,6 @@ static bool check_logs_export() {
   return is_logging_enabled();
 }
 
-static bool confirm_with_user(manager_result_t *result) {
-  // wait for user confirmation to send logs to desktop
-  confirm_scr_init(ui_text_send_logs_prompt);
-  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-  if (true == events.p0_event.flag) {
-    // core will handle p0 events, exit now
-    return false;
-  }
-  if (UI_EVENT_REJECT == events.ui_event.event_type) {
-    // user rejected sending of logs, send error and exit
-    result->get_logs.which_response =
-        MANAGER_GET_LOGS_RESPONSE_COMMON_ERROR_TAG;
-    result->get_logs.common_error =
-        init_common_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                          ERROR_USER_REJECTION_CONFIRMATION);
-    manager_send_result(result);
-    return false;
-  }
-
-  return true;
-}
-
 static bool send_logs(manager_query_t *query, manager_result_t *result) {
   size_t log_size = 0;
   set_start_log_read();
@@ -251,12 +211,12 @@ void manager_get_logs(manager_query_t *query) {
 
   manager_result_t result = init_manager_result(MANAGER_RESULT_GET_LOGS_TAG);
   if (!check_which_request(query, MANAGER_GET_LOGS_REQUEST_INITIATE_TAG) ||
-      !confirm_with_user(&result)) {
+      !core_confirmation(ui_text_send_logs_prompt, manager_send_error)) {
     return;
   }
 
   result.get_logs.which_response = MANAGER_GET_LOGS_RESPONSE_LOGS_TAG;
-  instruction_scr_init(ui_text_sending_logs, NULL);
+  delay_scr_init(ui_text_sending_logs, DELAY_SHORT);
   core_status_set_flow_status(MANAGER_GET_LOGS_STATUS_USER_CONFIRMED);
   if (true == send_logs(query, &result)) {
     // logs sent successfully, display "Logs sent"

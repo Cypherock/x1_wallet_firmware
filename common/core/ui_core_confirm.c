@@ -1,7 +1,7 @@
 /**
- * @file    menu_config.c
+ * @file    ui_core_confirm.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   A ready-made confirmation UI that accepts rejection callback.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,9 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdint.h>
 
-#include "menu_priv.h"
+#include "ui_core_confirm.h"
+
+#include "error.pb.h"
+#include "events.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -76,6 +79,18 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief
+ *
+ * @param reject_cb
+ * @return
+ */
+static bool wait_for_event(ui_core_rejection_cb *reject_cb);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -83,28 +98,40 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-/**
- * @brief Event listener configuration for the main menu and the onboarding menu
- */
-const evt_config_t main_menu_evt_config = {
-    .evt_selection = EVENT_CONFIG_UI | EVENT_CONFIG_USB,
-    .timeout = INFINITE_WAIT_TIMEOUT};
-
-/**
- * @brief Event listener configuration for the menu of device triggered
- * navigation
- */
-const evt_config_t device_nav_evt_config = {.evt_selection = EVENT_CONFIG_UI,
-                                            .timeout = INFINITE_WAIT_TIMEOUT};
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
+  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+  if (true == events.p0_event.flag) {
+    // core will handle p0 events, exit now
+    return false;
+  }
+  if (UI_EVENT_REJECT == events.ui_event.event_type) {
+    // user rejected, send error and return false
+    if (NULL != reject_cb) {
+      reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+                ERROR_USER_REJECTION_CONFIRMATION);
+    }
+    return false;
+  }
+
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+
+bool core_confirmation(const char *body, ui_core_rejection_cb *reject_cb) {
+  confirm_scr_init(body);
+  return wait_for_event(reject_cb);
+}
+
+bool core_scroll_page(const char *title,
+                      const char *body,
+                      ui_core_rejection_cb *reject_cb) {
+  ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  return wait_for_event(reject_cb);
+}

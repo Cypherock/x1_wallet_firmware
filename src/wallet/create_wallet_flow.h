@@ -39,6 +39,6 @@
  * @param new_wallet true if a new wallet needs to be created, false if the user
  * wants to recover the wallet from a seed phrase
  */
-void create_wallet(bool new_wallet);
+void create_wallet_flow(bool new_wallet);
 
 #endif /* CREATE_WALLET_FLOW_H */

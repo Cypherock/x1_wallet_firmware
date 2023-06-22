@@ -1,7 +1,7 @@
 /**
- * @file    onboarding.c
+ * @file    create_wallet_menu.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Populate and handle main menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,16 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "onboarding.h"
+#include "create_wallet_menu.h"
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
-#include "flash_api.h"
+#include "create_wallet_flow.h"
 #include "menu_priv.h"
-#include "onboarding_host_interface.h"
-#include "onboarding_priv.h"
-#include "status_api.h"
-#include "ui_delay.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -81,20 +78,42 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  bool static_screen;
-  bool update_required;
-} onboarding_ctx_t;
+typedef enum {
+  GENERATE_NEW_WALLET = 1,
+  RESTORE_FROM_SEED,
+} create_wallet_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This is the initializer callback for the create wallet menu.
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr);
+
+/**
+ * @brief This is the UI event handler for the create wallet menu.
+ * @details The function decodes the UI event and calls the create wallet flow
+ * based on selection. It deletes the create wallet menu step if the back button
+ * is pressed on the menu
+ *
+ * @param ctx The engine context* from which the flow is invoked
+ * @param ui_event The ui event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
+ */
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr);
 
 /**
  * @brief This p0 event callback function handles clearing p0 events occured
  * while engine is waiting for other events.
  *
- * @details After onboarding initalization, we don't expect p0 events as no
+ * @details After main menu initalization, we don't expect p0 events as no
  * operation or flow has been started yet.
  *
  * @param ctx The engine context* from which the flow is invoked
@@ -104,20 +123,16 @@ typedef struct {
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
                               const void *data_ptr);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
-                                          .update_required = true};
-
-static const flow_step_t onboarding_flow = {
-    .step_init_cb = onboarding_initialize,
+const flow_step_t create_wallet_step = {
+    .step_init_cb = create_wallet_menu_initialize,
     .p0_cb = ignore_p0_handler,
-    .ui_cb = NULL,
-    .usb_cb = onboarding_host_interface,
+    .ui_cb = create_wallet_menu_handler,
+    .usb_cb = NULL,
     .nfc_cb = NULL,
-    .evt_cfg_ptr = &main_menu_evt_config,
+    .evt_cfg_ptr = &device_nav_evt_config,
     .flow_data_ptr = NULL};
 
 /*****************************************************************************
@@ -133,93 +148,56 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
   ignore_p0_event();
 }
 
+static void create_wallet_menu_initialize(engine_ctx_t *ctx,
+                                          const void *data_ptr) {
+  /* Create an array of pointers holding the string to display on the menu. */
+  char *menu_option_ptr_array[NUMBER_OF_OPTIONS_NEW_WALLET];
+
+  for (uint8_t menu_index = 0; menu_index < NUMBER_OF_OPTIONS_NEW_WALLET;
+       menu_index++) {
+    menu_option_ptr_array[menu_index] =
+        (char *)ui_text_options_new_wallet[menu_index];
+  }
+
+  menu_init((const char **)menu_option_ptr_array,
+            NUMBER_OF_OPTIONS_NEW_WALLET,
+            ui_text_heading_new_wallet,
+            true);
+
+  return;
+}
+
+static void create_wallet_menu_handler(engine_ctx_t *ctx,
+                                       ui_event_t ui_event,
+                                       const void *data_ptr) {
+  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
+    switch (ui_event.list_selection) {
+      case GENERATE_NEW_WALLET: {
+        create_wallet_flow(true);
+        break;
+      }
+      case RESTORE_FROM_SEED: {
+        // TODO: Handle restore from seed
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  } else {
+    // UI_EVENT_LIST_REJECTION handled below already
+  }
+
+  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+   * detected, or a create wallet flow was executed */
+  engine_delete_current_flow_step(ctx);
+
+  return;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  handle_core_errors();
-
-  if (false == onboarding_ctx.update_required) {
-    return;
-  }
-
-  /* Set core_status to CORE_DEVICE_IDLE_STATE_IDLE as we are entering back to
-   * the onboarding menu */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
-
-  /* Reset flow status back to zero */
-  core_status_set_flow_status(0);
-
-  if (true == onboarding_ctx.static_screen) {
-    delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
-  } else {
-    /* Since there is now way onboarding_ctx.static_screen be set to false after
-     * first time initialization, therefore welcome screen and slideshow will
-     * only be shown once to the user */
-    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
-    ui_text_slideshow_init(ui_text_onboarding,
-                           NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
-                           DELAY_TIME,
-                           false);
-  }
-
-  onboarding_ctx.update_required = false;
-  return;
-}
-
-void onboarding_set_static_screen(void) {
-  onboarding_ctx.static_screen = true;
-  onboarding_ctx.update_required = true;
-  return;
-}
-
-const flow_step_t *onboarding_get_step(void) {
-  return &onboarding_flow;
-}
-
-manager_onboarding_step_t onboarding_get_last_step(void) {
-  uint8_t step = get_onboarding_step();
-
-  /* First read on virgin device will fetch 0xFF, so manually enforce it to
-   * MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE */
-  if (DEFAULT_VALUE_IN_FLASH == step) {
-    return MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;
-  }
-
-  return (manager_onboarding_step_t)step;
-}
-
-void onboarding_set_step_done(const manager_onboarding_step_t next_step) {
-  /* Validate next_step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < next_step) {
-    return;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
-   * ensure we never go back a step */
-  if ((DEFAULT_VALUE_IN_FLASH == last_step) || (last_step < next_step)) {
-    save_onboarding_step((uint8_t)next_step);
-  }
-
-  return;
-}
-
-bool onboarding_step_allowed(const manager_onboarding_step_t step) {
-  /* Validate step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < step) {
-    return false;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Only allow steps that are already completed, or the new step is just the
-   * next step */
-  if ((MANAGER_ONBOARDING_STEP_COMPLETE == last_step) ||
-      (step <= last_step + 1)) {
-    return true;
-  }
-
-  return false;
+const flow_step_t *create_wallet_menu_get_step(void) {
+  return &create_wallet_step;
 }

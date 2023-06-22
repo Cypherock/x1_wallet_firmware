@@ -141,6 +141,10 @@ void manager_app_main(usb_event_t usb_evt) {
       manager_card_training(&query);
       break;
     }
+    case MANAGER_QUERY_FIRMWARE_UPDATE_TAG: {
+      manager_confirm_firmware_update(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, the USB event should be
        * cleared manually */

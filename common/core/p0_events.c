@@ -183,18 +183,19 @@ bool p0_get_evt(p0_evt_t *p_p0_evt) {
   return p0_evt_occurred;
 }
 
+void p0_reset_evt() {
+  /* Reset event status in global context */
+  p0_set_inactivity_evt(false);
+  p0_set_abort_evt(false);
+  p0_set_p0_evt_flag(false);
+}
+
 void p0_ctx_destroy(void) {
   /* Disable timer operations in interrupt cb */
   systick_set_timeout_config(false);
 
   /* Reset timeout in systick module */
   p0_set_inactivity_timeout(MAX_INACTIVITY_TIMEOUT);
-
-  /* Reset event status in global context */
-  p0_set_inactivity_evt(false);
-  p0_set_abort_evt(false);
-  p0_set_p0_evt_flag(false);
-
   return;
 }
 
