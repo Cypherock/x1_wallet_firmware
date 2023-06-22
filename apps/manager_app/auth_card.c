@@ -117,11 +117,9 @@ typedef struct {
  * authentication
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS sent encoded data
- * successfully, else error return
+ * @return bool true sent encoded data successfully, else return false
  */
-static manager_error_code_t prepare_card_auth_context(
-    auth_card_data_t *auth_card_data);
+static bool prepare_card_auth_context(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Handles signing of authentication data.
@@ -134,11 +132,10 @@ static manager_error_code_t prepare_card_auth_context(
  *
  * @param auth_card_data Pointer to authentication card data.
  *
- * @return manager_error_code_t Returns MANAGER_TASK_SUCCESS on success,
- * MANAGER_TASK_P0_ABORT_OCCURED if P0 abort occurred, and MANAGER_TASK_FAILED
+ * @return bool Returns true on success, else false
  * on failure.
  */
-static manager_error_code_t handle_sign_data(auth_card_data_t *auth_card_data);
+static bool handle_sign_data(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of card serial number.
@@ -146,11 +143,9 @@ static manager_error_code_t handle_sign_data(auth_card_data_t *auth_card_data);
  * response
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
- * code
+ * @return bool true if successful, else false
  */
-static manager_error_code_t handle_sign_card_serial(
-    auth_card_data_t *auth_card_data);
+static bool handle_sign_card_serial(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of server challenge.
@@ -158,11 +153,10 @@ static manager_error_code_t handle_sign_card_serial(
  * response
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_sign_challenge(
-    auth_card_data_t *auth_card_data);
+static bool handle_sign_challenge(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle initiate query for auth card.
@@ -172,11 +166,10 @@ static manager_error_code_t handle_sign_challenge(
  * - returns sign serial response
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_initiate_query(
-    auth_card_data_t *auth_card_data);
+static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle challenge query for auth card.
@@ -184,22 +177,19 @@ static manager_error_code_t handle_auth_card_initiate_query(
  * response
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_challenge_query(
-    auth_card_data_t *auth_card_data);
+static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle result of auth card.
  * Handles pairing of card based on result, flow state and card pair requirement
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
- * code
+ * @return bool true if successful, else false
  */
-static manager_error_code_t handle_auth_card_result_query(
-    auth_card_data_t *auth_card_data);
+static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to parse handle queries for auth card.
@@ -209,11 +199,10 @@ static manager_error_code_t handle_auth_card_result_query(
  * - Call relevant handler for queries
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_query(
-    auth_card_data_t *auth_card_data);
+static bool handle_auth_card_query(auth_card_data_t *auth_card_data);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -225,8 +214,7 @@ static manager_error_code_t handle_auth_card_query(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static manager_error_code_t prepare_card_auth_context(
-    auth_card_data_t *auth_card_data) {
+static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   auth_card_data->ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
   if (auth_card_data->query->auth_card.initiate.has_card_index) {
@@ -234,7 +222,7 @@ static manager_error_code_t prepare_card_auth_context(
         0 == auth_card_data->query->auth_card.initiate.card_index) {
       manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                          ERROR_DATA_FLOW_INVALID_DATA);
-      return MANAGER_TASK_DECODING_FAILED;
+      return false;
     }
     auth_card_data->ctx.acceptable_cards = encode_card_number(
         auth_card_data->query->auth_card.initiate.card_index);
@@ -259,10 +247,10 @@ static manager_error_code_t prepare_card_auth_context(
            SIGN_SERIAL_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
 
   memcpy(auth_card_data->ctx.family_id, get_family_id(), FAMILY_ID_SIZE);
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_sign_data(auth_card_data_t *auth_card_data) {
+static bool handle_sign_data(auth_card_data_t *auth_card_data) {
   card_sign_data_config_t sign_config = {0};
 
   manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
@@ -283,7 +271,7 @@ static manager_error_code_t handle_sign_data(auth_card_data_t *auth_card_data) {
   } else {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
-    return MANAGER_TASK_INVALID_STATE;
+    return false;
   }
 
   instruction_scr_init(auth_card_data->ctx.message,
@@ -309,27 +297,25 @@ static manager_error_code_t handle_sign_data(auth_card_data_t *auth_card_data) {
             MANAGER_AUTH_CARD_RESPONSE_CHALLENGE_SIGNATURE_TAG;
         manager_send_result(&result);
       }
-      return MANAGER_TASK_SUCCESS;
+      return true;
       break;
 
     case CARD_OPERATION_P0_OCCURED:
-      return MANAGER_TASK_P0_ABORT_OCCURED;
+      return false;
       break;
 
     default:
       manager_send_error(
           ERROR_COMMON_ERROR_CARD_ERROR_TAG,
           (uint32_t)get_card_error_from_nfc_status(sign_config.status));
-      return MANAGER_TASK_FAILED;
+      return false;
       break;
   }
 }
 
-static manager_error_code_t handle_sign_card_serial(
-    auth_card_data_t *auth_card_data) {
-  manager_error_code_t manager_error = handle_sign_data(auth_card_data);
-  if (MANAGER_TASK_SUCCESS != manager_error) {
-    return manager_error;
+static bool handle_sign_card_serial(auth_card_data_t *auth_card_data) {
+  if (!handle_sign_data(auth_card_data)) {
+    return false;
   }
 
   UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
@@ -342,14 +328,12 @@ static manager_error_code_t handle_sign_card_serial(
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
 
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_sign_challenge(
-    auth_card_data_t *auth_card_data) {
-  manager_error_code_t manager_error = handle_sign_data(auth_card_data);
-  if (MANAGER_TASK_SUCCESS != manager_error) {
-    return manager_error;
+static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
+  if (!handle_sign_data(auth_card_data)) {
+    return false;
   }
 
   UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
@@ -367,46 +351,42 @@ static manager_error_code_t handle_sign_challenge(
 
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_auth_card_initiate_query(
-    auth_card_data_t *auth_card_data) {
+static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
   if (MANAGER_AUTH_CARD_STATUS_INIT != auth_card_data->flow_status) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
-    return MANAGER_TASK_INVALID_STATE;
+    return false;
   }
 
   /* TODO: If onboarding is done, add check step for confirmation */
   // if(false == wait_for_user_confirmation()){
   //   //Abort operations
-  //    return MANAGER_TASK_REJECTED;
+  //    return false;
   // }
 
   UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
 
-  manager_error_code_t status = prepare_card_auth_context(auth_card_data);
-  if (MANAGER_TASK_SUCCESS != status) {
-    return status;
+  if (!prepare_card_auth_context(auth_card_data)) {
+    return false;
   }
 
   return handle_sign_card_serial(auth_card_data);
 }
 
-static manager_error_code_t handle_auth_card_challenge_query(
-    auth_card_data_t *auth_card_data) {
+static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data) {
   if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != auth_card_data->flow_status) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
-    return MANAGER_TASK_INVALID_STATE;
+    return false;
   }
 
   return handle_sign_challenge(auth_card_data);
 }
 
-static manager_error_code_t handle_auth_card_result_query(
-    auth_card_data_t *auth_card_data) {
+static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
   manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
   bool verified = auth_card_data->query->auth_card.result.verified;
 
@@ -419,11 +399,11 @@ static manager_error_code_t handle_auth_card_result_query(
         manager_send_result(&result);
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_SUCCESS;
+        return true;
       } else {
         manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_REQUEST);
-        return MANAGER_TASK_INVALID_STATE;
+        return false;
       }
       break;
 
@@ -435,7 +415,7 @@ static manager_error_code_t handle_auth_card_result_query(
         manager_send_result(&result);
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_SUCCESS;
+        return true;
       } else {
         if (true == auth_card_data->ctx.pair_card_required) {
           uint8_t card_number =
@@ -448,7 +428,7 @@ static manager_error_code_t handle_auth_card_result_query(
             manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                                ERROR_CARD_ERROR_UNKNOWN);
             delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-            return MANAGER_TASK_FAILED;
+            return false;
           }
         }
 
@@ -459,22 +439,21 @@ static manager_error_code_t handle_auth_card_result_query(
         result.auth_card.flow_complete.dummy_field = 0;
         manager_send_result(&result);
 
-        return MANAGER_TASK_SUCCESS;
+        return true;
       }
       break;
 
     default:
       manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                          ERROR_DATA_FLOW_INVALID_REQUEST);
-      return MANAGER_TASK_INVALID_STATE;
+      return false;
       break;
   }
 
-  return MANAGER_TASK_INVALID_DEFAULT;
+  return false;
 }
 
-static manager_error_code_t handle_auth_card_query(
-    auth_card_data_t *auth_card_data) {
+static bool handle_auth_card_query(auth_card_data_t *auth_card_data) {
   switch (auth_card_data->query->auth_card.which_request) {
     case MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG:
       return handle_auth_card_initiate_query(auth_card_data);
@@ -489,13 +468,13 @@ static manager_error_code_t handle_auth_card_query(
       break;
 
     default:
-      return MANAGER_TASK_UNKNOWN_QUERY_REQUEST;
       manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                          ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
       break;
   }
 
-  return MANAGER_TASK_INVALID_DEFAULT;
+  return false;
 }
 
 /*****************************************************************************
@@ -529,7 +508,7 @@ void card_auth_handler(manager_query_t *query) {
       .flow_status = MANAGER_AUTH_CARD_STATUS_INIT};
 
   while (1) {
-    if (MANAGER_TASK_SUCCESS != handle_auth_card_query(&auth_card_data)) {
+    if (true != handle_auth_card_query(&auth_card_data)) {
       usb_clear_event();
       return;
     }
@@ -540,7 +519,6 @@ void card_auth_handler(manager_query_t *query) {
 
     if (false ==
         manager_get_query(auth_card_data.query, MANAGER_QUERY_AUTH_CARD_TAG)) {
-      usb_clear_event();
       return;
     }
   }
