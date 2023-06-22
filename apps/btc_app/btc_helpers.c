@@ -128,7 +128,7 @@ bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   // common checks for xpub/account and address nodes
   if (PURPOSE_LEGACY != path[0] && PURPOSE_SEGWIT != path[0] &&
       PURPOSE_NSEGWIT != path[0] && PURPOSE_TAPROOT != path[0]) {
-    // purpose index mismatch
+    // unsupported purpose index
     status = false;
   }
   if (COIN_BTC != path[1] || is_non_hardened(path[2])) {

@@ -197,7 +197,7 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
     // TODO: Enable btc/coin specific check
-    if (false == btc_derivation_path_guard(path->path, path->path_count)) {
+    if (!btc_derivation_path_guard(path->path, path->path_count)) {
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
