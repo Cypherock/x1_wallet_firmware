@@ -343,7 +343,6 @@ static void _tap_card_backend(uint8_t card_number) {
         set_family_id_flash(cyi_verify_fid);
       instruction_scr_change_text(ui_text_remove_card_prompt, true);
       nfc_detect_card_removal();
-      handle_pair_card_success(card_number, session_nonce, card_pairing_data);
       transmit_one_byte_confirm(START_CARD_AUTH);
       instruction_scr_destructor();
       break;
