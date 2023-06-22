@@ -70,6 +70,7 @@
 #include "manager_app_priv.h"
 #include "onboarding.h"
 #include "status_api.h"
+#include "ui_core_confirm.h"
 #include "ui_delay.h"
 #include "ui_instruction.h"
 /*****************************************************************************
@@ -230,6 +231,12 @@ static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
              sizeof(auth_card_data->ctx.heading),
              UI_TEXT_TAP_CARD,
              (uint8_t)auth_card_data->query->auth_card.initiate.card_index);
+  } else if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
+    // In onboading card auth flow, a card index is required, if not sent by
+    // host, exit
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
   } else {
     snprintf(auth_card_data->ctx.heading,
              sizeof(auth_card_data->ctx.heading),
@@ -361,11 +368,12 @@ static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
     return false;
   }
 
-  /* TODO: If onboarding is done, add check step for confirmation */
-  // if(false == wait_for_user_confirmation()){
-  //   //Abort operations
-  //    return false;
-  // }
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
+    if (!core_confirmation(ui_text_start_verification_of_card,
+                           &manager_send_error)) {
+      return false;
+    }
+  }
 
   UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
 
@@ -439,6 +447,15 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
         result.auth_card.flow_complete.dummy_field = 0;
         manager_send_result(&result);
 
+        if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
+          // Set onboarding complete if card #4 is used.
+          if (0x08 == auth_card_data->ctx.acceptable_cards) {
+            onboarding_set_step_done(
+                MANAGER_ONBOARDING_STEP_CARD_AUTHENTICATION);
+            onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
+          }
+        }
+
         return true;
       }
       break;
@@ -487,6 +504,7 @@ void card_auth_handler(manager_query_t *query) {
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_AUTHENTICATION)) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
+    return;
   }
 
   if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG !=
