@@ -62,6 +62,7 @@
  *****************************************************************************/
 #include "card_pair.h"
 #include "card_sign.h"
+#include "common_error.h"
 #include "controller_tap_cards.h"
 #include "events.h"
 #include "lv_task.h"
