@@ -294,6 +294,10 @@ static bool handle_sign_data(auth_card_data_t *auth_card_data) {
                sizeof(resp->serial_signature.signature));
         result.auth_card.which_response =
             MANAGER_AUTH_CARD_RESPONSE_SERIAL_SIGNATURE_TAG;
+        if (ACCEPTABLE_CARDS_ALL == auth_card_data->ctx.acceptable_cards) {
+          auth_card_data->ctx.acceptable_cards =
+              ACCEPTABLE_CARDS_ALL ^ sign_config.acceptable_cards;
+        }
         manager_send_result(&result);
       } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
                  auth_card_data->query->auth_card.which_request) {

@@ -63,6 +63,7 @@
 #include "host_interface.h"
 
 #include "btc_app.h"
+#include "main_menu.h"
 #include "manager_app.h"
 #include "status_api.h"
 
@@ -111,6 +112,7 @@ void main_menu_host_interface(engine_ctx_t *ctx,
   switch (applet_id) {
     case 1: {
       manager_app_main(usb_evt);
+      main_menu_set_update_req(true);
       break;
     }
     case 2: {
