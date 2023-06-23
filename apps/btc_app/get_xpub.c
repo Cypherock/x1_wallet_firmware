@@ -61,6 +61,7 @@
  *****************************************************************************/
 
 #include "btc_api.h"
+#include "btc_helpers.h"
 #include "common_error.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -196,7 +197,7 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
     // TODO: Enable btc/coin specific check
-    if (false == verify_xpub_derivation_path(path->path, path->path_count)) {
+    if (!btc_derivation_path_guard(path->path, path->path_count)) {
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
@@ -270,7 +271,7 @@ void btc_get_xpub(btc_query_t *query) {
   wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
   // Take user consent to export xpub for the wallet
-  if (!core_user_confirmation(NULL, msg, CONFIRMATION_SCREEN, btc_send_error)) {
+  if (!core_confirmation(msg, btc_send_error)) {
     return;
   }
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);

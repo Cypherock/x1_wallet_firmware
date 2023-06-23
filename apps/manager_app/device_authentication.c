@@ -242,10 +242,8 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
       if (is_device_authenticated() &&
-          !core_user_confirmation(NULL,
-                                  ui_text_start_device_verification,
-                                  CONFIRMATION_SCREEN,
-                                  manager_send_error)) {
+          !core_confirmation(ui_text_start_device_verification,
+                             manager_send_error)) {
         // re-authentication denied by user
         next_state = FLOW_COMPLETE;
         break;

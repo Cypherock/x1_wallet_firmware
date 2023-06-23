@@ -112,7 +112,7 @@ void btc_app_main(usb_event_t usb_evt) {
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
-      // btc_get_wallet_public_key(&query);
+      btc_get_public_key(&query);
       break;
     }
     case BTC_QUERY_GET_XPUBS_TAG: {

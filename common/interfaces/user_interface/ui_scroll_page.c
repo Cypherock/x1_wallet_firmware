@@ -309,7 +309,6 @@ static void page_cancel_handler(lv_obj_t *pCancelLvglObj,
     }
     case LV_EVENT_CLICKED: {
       ui_set_cancel_event();
-      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED: {
@@ -348,7 +347,6 @@ static void page_accept_handler(lv_obj_t *pAcceptLvglObj,
     }
     case LV_EVENT_CLICKED: {
       ui_set_confirm_event();
-      lv_obj_clean(lv_scr_act());
       break;
     }
     case LV_EVENT_DEFOCUSED: {

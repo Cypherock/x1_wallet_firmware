@@ -1,21 +1,19 @@
 /**
- * @file    btc_app_priv.h
+ * @file    create_wallet_menu.h
  * @author  Cypherock X1 Team
- * @brief   Support for btc app internal operations
- *          This file is defined to separate Bitcoin's internal use functions,
- * flows, common APIs
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_APP_PRIV_H
-#define BTC_APP_PRIV_H
+
+#ifndef CREATE_WALLET_MENU_H
+#define CREATE_WALLET_MENU_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include "btc_api.h"
+#include "flow_engine.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -32,20 +30,11 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
+ * @brief This API returns the flow_step_t* for the create wallet menu.
  *
- * @param query Reference to the decoded query struct from the host app
+ * @return const flow_step_t* Pointer to the step for the create wallet menu
  */
-void btc_get_xpub(btc_query_t *query);
+const flow_step_t *create_wallet_menu_get_step(void);
 
-/**
- * @brief Handler for bitcoin public key derivation.
- * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
- * query, otherwise the flow is aborted
- *
- * @param query object for card auth query
- */
-void btc_get_public_key(btc_query_t *query);
-
-#endif
+#endif /* CREATE_WALLET_MENU_H */

@@ -1,7 +1,7 @@
 /**
- * @file    menu_config.c
+ * @file    btc_helpers.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Utilities specific to Bitcoin blockchain
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,9 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdint.h>
 
-#include "menu_priv.h"
+#include "btc_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -76,6 +75,26 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB not set.
+ *
+ * @return true   If the provided value has MSB set to 0.
+ * @return false  If the provided value has MSB set to 1.
+ */
+static inline bool is_non_hardened(uint32_t x);
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB set.
+ *
+ * @return true   If the provided value has MSB set to 1.
+ * @return false  If the provided value has MSB set to 0.
+ */
+static inline bool is_hardened(uint32_t x);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -83,28 +102,50 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-/**
- * @brief Event listener configuration for the main menu and the onboarding menu
- */
-const evt_config_t main_menu_evt_config = {
-    .evt_selection = EVENT_CONFIG_UI | EVENT_CONFIG_USB,
-    .timeout = INFINITE_WAIT_TIMEOUT};
-
-/**
- * @brief Event listener configuration for the menu of device triggered
- * navigation
- */
-const evt_config_t device_nav_evt_config = {.evt_selection = EVENT_CONFIG_UI,
-                                            .timeout = INFINITE_WAIT_TIMEOUT};
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static inline bool is_non_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0);
+}
+
+static inline bool is_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0x80000000);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+
+bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  bool status = false;
+  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
+    return status;
+  }
+  status = true;
+
+  // common checks for xpub/account and address nodes
+  if (PURPOSE_LEGACY != path[0] && PURPOSE_SEGWIT != path[0] &&
+      PURPOSE_NSEGWIT != path[0] && PURPOSE_TAPROOT != path[0]) {
+    // unsupported purpose index
+    status = false;
+  }
+  if (COIN_BTC != path[1] || is_non_hardened(path[2])) {
+    // coin index or account hardness mismatch
+    status = false;
+  }
+
+  if (BTC_ACC_ADDR_DEPTH == depth) {
+    // address node specific checks
+    if (is_hardened(path[3]) || is_hardened(path[4])) {
+      // change or address index must be non-hardened
+      status = false;
+    }
+    if (0 != path[3] && 1 != path[3]) {
+      // invalid change address
+      status = false;
+    }
+  }
+  return status;
+}

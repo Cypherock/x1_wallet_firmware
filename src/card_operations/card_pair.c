@@ -1,8 +1,8 @@
 /**
- * @file    pair_card_controller.c
+ * @file    card_pair.c
  * @author  Cypherock X1 Team
- * @brief   Pair card controller.
- *          This file contains the pair card controller and helper functions.
+ * @brief   Pair card operations.
+ *          This file contains the pair card opeartion handlers.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
