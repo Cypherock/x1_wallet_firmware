@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    btc_main.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,13 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include "host_interface.h"
-
-#include "btc_app.h"
 #include "btc_main.h"
+
+#include "btc_api.h"
+#include "btc_priv.h"
 #include "main_menu.h"
-#include "manager_app.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -81,15 +79,17 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+const btc_config_t *g_app = NULL;
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -100,51 +100,38 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
+void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
+  btc_query_t query = BTC_QUERY_INIT_DEFAULT;
+  g_app = app;
 
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
+  if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+  switch ((uint8_t)query.which_request) {
+    case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
+      btc_pub_key(&query);
       break;
     }
-    case 2: {
-      // TODO: instantiate & configure Bitcoin chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: instantiate & configure Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      // TODO: instantiate & configure Litecoin chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 5: {
-      // TODO: instantiate & configure Dogecoin chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 6: {
-      // TODO: instantiate & configure Dash chain
-      btc_main(usb_evt, get_btc_app());
+    case BTC_QUERY_GET_XPUBS_TAG: {
+      btc_xpub(&query);
       break;
     }
     default: {
-      // TODO: send core error about invalid applet id
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
       break;
     }
   }
 
+  // reset config reference
+  g_app = NULL;
   main_menu_set_update_req(true);
   return;
 }

@@ -5,8 +5,8 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_API_H
-#define BTC_API_H
+#ifndef BTC_FAM_API_H
+#define BTC_FAM_API_H
 
 /*****************************************************************************
  * INCLUDES

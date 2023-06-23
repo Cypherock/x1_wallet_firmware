@@ -1,5 +1,5 @@
 /**
- * @file    btc_app.h
+ * @file    btc_main.h
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef BTC_APP_H
-#define BTC_APP_H
+#ifndef BTC_FAM_MAIN_H
+#define BTC_FAM_MAIN_H
 
 /*****************************************************************************
  * INCLUDES
@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "btc_context.h"
 #include "events.h"
 
 /*****************************************************************************
@@ -44,7 +45,8 @@
  * bitcoin app.
  *
  * @param usb_evt The USB event which triggered invocation of the bitcoin app
+ * @param app
  */
-void btc_app_main(usb_event_t usb_evt);
+void btc_main(usb_event_t usb_evt, const btc_config_t *app);
 
-#endif /* BTC_APP_H */
+#endif /* BTC_FAM_MAIN_H */

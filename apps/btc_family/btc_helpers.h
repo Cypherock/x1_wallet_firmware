@@ -6,8 +6,8 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_HELPERS_H
-#define BTC_HELPERS_H
+#ifndef BTC_FAM_HELPERS_H
+#define BTC_FAM_HELPERS_H
 
 /*****************************************************************************
  * INCLUDES
@@ -25,9 +25,6 @@
 #define PURPOSE_NSEGWIT 0x80000054    // 84'
 #define PURPOSE_TAPROOT 0x80000056    // 86'
 
-#define COIN_BTC 0x80000000            // 0'
-#define COIN_BTC_TESTNET 0x80000001    // 1'
-
 #define BTC_ACC_XPUB_DEPTH 3
 #define BTC_ACC_ADDR_DEPTH 5
 
@@ -44,6 +41,42 @@
  *****************************************************************************/
 
 /**
+ * @brief Returns the segwit address string (result of Bech32 encoding).
+ * @details
+ *
+ * @param [in] public_key   Byte array representation of public key.
+ * @param [in] key_len      Length of public key byte array.
+ * @param [in] hrp          HRP value for bech32 encoding
+ * @param [out] address     char array to store segwit address.
+ *
+ * @return 0 if successful and 1 if failure.
+ * @retval 0 Success
+ * @retval 1 Failure
+ */
+int btc_segwit_addr(const uint8_t *public_key,
+                    uint8_t key_len,
+                    const char *hrp,
+                    char *address);
+
+/**
+ * @brief Returns the HD version for xpub encoding for the specified purpose
+ * index.
+ * @details The function simply fetches the respective value stored in the app
+ * config instance. It is not responsible for verifying if the provided purpose
+ * index is supported by the current Bitcoin family app.
+ *
+ * @param [in]  purpose_index   The purpose index to get the HD version for xpub
+ * @param [out] xpub_ver        The output version for the xpub encoding
+ *
+ * @return bool Indicates if the provided purpose index is supported
+ * @retval true if the purpose index is supported
+ * @retval false otherwise
+ *
+ * @note The function does checks for validity of the provided purpose index.
+ */
+bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver);
+
+/**
  * @brief Verifies the derivation path for any inconsistent/unsupported values.
  * @details The function supports checking for multiple derivation paths. Also,
  * based on the provided depth value, the function can act as xpub or address
@@ -52,9 +85,8 @@
  * (address node level) for public address derivation.
  * Currently, following purpose indices are allowed: 0x8000002C, 0x80000031,
  * 0x80000054, 0x80000056.
- * The only supported coin indices are: 0x80000000 & 0x80000001. The function
- * accepts 0 & 1 for change indices. For the rest of the levels, only correct
- * hardness is checked.
+ * The function accepts 0 & 1 for change indices. For the rest of the levels,
+ * only correct hardness is checked.
  *
  * @param[in] path      The derivation path to be checked
  * @param[in] depth     The number of levels in the derivation path

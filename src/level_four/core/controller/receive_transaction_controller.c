@@ -198,15 +198,6 @@ void receive_transaction_controller() {
 
       memzero(receive_transaction_data.address,
               sizeof(receive_transaction_data.address));
-      if (segwit)
-        get_segwit_address(
-            node.public_key,
-            sizeof(node.public_key),
-            BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
-            receive_transaction_data.address);
-      else
-        hdnode_get_address(
-            &node, address_version, receive_transaction_data.address, 35);
 
       flow_level.level_three = RECV_TXN_DISPLAY_ADDR;
     } break;

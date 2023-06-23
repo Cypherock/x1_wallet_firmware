@@ -338,9 +338,9 @@ bool generate_xpub(const uint32_t *path,
                    const size_t path_length,
                    const char *curve,
                    const uint8_t *seed,
+                   const uint32_t version,
                    char *str) {
   uint32_t fingerprint = 0x0;
-  uint32_t version = 0;
   HDNode t_node = {0};
   bool status = true;
 
@@ -352,8 +352,6 @@ bool generate_xpub(const uint32_t *path,
     status &= false;
   }
   hdnode_fill_public_key(&t_node);
-
-  get_version(path[0], path[1], NULL, &version);
   if (0 ==
       hdnode_serialize_public(&t_node, fingerprint, version, str, XPUB_SIZE)) {
     status &= false;

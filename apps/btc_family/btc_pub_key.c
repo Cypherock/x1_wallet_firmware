@@ -1,5 +1,5 @@
 /**
- * @file    get_public_key.c
+ * @file    btc_pub_key.c
  * @author  Cypherock X1 Team
  * @brief   Generates public key for bitcoin derivations.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -62,8 +62,12 @@
 
 #include "bip32.h"
 #include "btc.h"
+#include "btc/core.pb.h"
 #include "btc_api.h"
+#include "btc_context.h"
 #include "btc_helpers.h"
+#include "btc_priv.h"
+#include "pb_encode.h"
 #include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -181,9 +185,6 @@ static size_t btc_get_address(const uint8_t *seed,
                               uint8_t *public_key,
                               char *address) {
   HDNode node = {0};
-  uint8_t address_version = 0;
-  uint32_t purpose_index = path[0];
-  uint32_t coin_index = path[1];
   char addr[50] = "";
   size_t address_length = 0;
 
@@ -195,15 +196,14 @@ static size_t btc_get_address(const uint8_t *seed,
     return address_length;
   }
 
-  switch (purpose_index) {
+  switch (path[0]) {
     case NATIVE_SEGWIT:
       // ignoring the return status and handling by size of address
-      get_segwit_address(
-          node.public_key, sizeof(node.public_key), coin_index, addr);
+      btc_segwit_addr(
+          node.public_key, sizeof(node.public_key), g_app->bech32_hrp, addr);
       break;
     case NON_SEGWIT:
-      get_version(purpose_index, coin_index, &address_version, NULL);
-      hdnode_get_address(&node, address_version, addr, 35);
+      hdnode_get_address(&node, g_app->p2pkh_addr_ver, addr, 35);
       break;
     // TODO: add support for taproot and segwit
     default:
@@ -246,7 +246,7 @@ static void send_public_key(const uint8_t *public_key) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_get_public_key(btc_query_t *query) {
+void btc_pub_key(btc_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
   uint8_t seed[64] = {0};
@@ -263,8 +263,7 @@ void btc_get_public_key(btc_query_t *query) {
     return;
   }
 
-  snprintf(msg, sizeof(msg), "Receive Bitcoin in %s", wallet_name);
-
+  snprintf(msg, sizeof(msg), "Receive %s in %s", g_app->name, wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

@@ -1,7 +1,7 @@
 /**
- * @file    btc_app.c
+ * @file    btc_helpers.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Utilities specific to Bitcoin blockchain
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "btc_app.h"
 
-#include "btc_api.h"
-#include "btc_app_priv.h"
-#include "main_menu.h"
-#include "status_api.h"
+#include "btc_helpers.h"
+
+#include "bignum.h"
+#include "btc_priv.h"
+#include "hasher.h"
+#include "ripemd160.h"
+#include "segwit_addr.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +81,26 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB not set.
+ *
+ * @return true   If the provided value has MSB set to 0.
+ * @return false  If the provided value has MSB set to 1.
+ */
+static inline bool is_non_hardened(uint32_t x);
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB set.
+ *
+ * @return true   If the provided value has MSB set to 1.
+ * @return false  If the provided value has MSB set to 0.
+ */
+static inline bool is_hardened(uint32_t x);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -87,46 +109,91 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static inline bool is_non_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0);
+}
+
+static inline bool is_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0x80000000);
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_app_main(usb_event_t usb_evt) {
-  btc_query_t query = BTC_QUERY_INIT_DEFAULT;
-
-  if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+int btc_segwit_addr(const uint8_t *public_key,
+                    uint8_t key_len,
+                    const char *hrp,
+                    char *address) {
+  uint8_t rip[RIPEMD160_DIGEST_LENGTH] = {0};
+  if (!public_key || !address) {
+    return 1;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-  switch ((uint8_t)query.which_request) {
-    case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
-      btc_get_public_key(&query);
-      break;
-    }
-    case BTC_QUERY_GET_XPUBS_TAG: {
-      btc_get_xpub(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
-      break;
-    }
+  if (key_len != 33 && key_len != 65) {
+    return 1;
   }
 
-  main_menu_set_update_req(true);
-  return;
+  if (key_len == 65) {
+    bignum256 y_ordinate;
+    bn_read_be(public_key + 33, &y_ordinate);
+    ((uint8_t *)public_key)[0] = bn_is_odd(&y_ordinate) ? 0x03 : 0x02;
+    key_len = 33;
+  }
+
+  hasher_Raw(HASHER_SHA2_RIPEMD, public_key, key_len, rip);
+  return segwit_addr_encode(address, hrp, 0x00, rip, sizeof(rip));
+}
+
+bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {
+  bool status = true;
+  switch (purpose_index) {
+    case PURPOSE_LEGACY:
+      *xpub_ver = g_app->legacy_xpub_ver;
+      break;
+    case PURPOSE_SEGWIT:
+      *xpub_ver = g_app->segwit_xpub_ver;
+      break;
+    case PURPOSE_NSEGWIT:
+      *xpub_ver = g_app->nsegwit_xpub_ver;
+      break;
+    default:
+      status = false;
+  }
+  return status;
+}
+
+bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  bool status = false;
+  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
+    return status;
+  }
+  status = true;
+
+  // common checks for xpub/account and address nodes
+  if (NULL == g_app->is_purpose_supported ||
+      !g_app->is_purpose_supported(path[0])) {
+    // unsupported purpose index
+    status = false;
+  }
+  if (g_app->coin_type != path[1] || is_non_hardened(path[2])) {
+    // coin index or account hardness mismatch
+    status = false;
+  }
+
+  if (BTC_ACC_ADDR_DEPTH == depth) {
+    // address node specific checks
+    if (is_hardened(path[3]) || is_hardened(path[4])) {
+      // change or address index must be non-hardened
+      status = false;
+    }
+    if (0 != path[3] && 1 != path[3]) {
+      // invalid change address
+      status = false;
+    }
+  }
+  return status;
 }
