@@ -215,8 +215,7 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
     }
 
     case RECONSTRUCT_SEED: {
-      instruction_scr_init("", NULL);
-      instruction_scr_change_text(ui_text_processing, true);
+      instruction_scr_init(ui_text_processing, NULL);
       wallet_shamir_data.share_x_coords[1] = 5;
       get_flash_wallet_share_by_name((const char *)wallet.wallet_name,
                                      wallet_shamir_data.mnemonic_shares[1]);
@@ -275,7 +274,7 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   // Select wallet based on wallet_id
-  if (false == wallet_selector(wallet_id, &wallet)) {
+  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
     return false;
   }
 

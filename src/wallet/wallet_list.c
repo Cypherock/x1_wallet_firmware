@@ -118,7 +118,7 @@ uint8_t get_wallet_list(const char *wallet_list[]) {
   return num_wallets;
 }
 
-bool wallet_selector(const uint8_t *wallet_id, Wallet *wallet) {
+bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
   if ((NULL == wallet_id) || (NULL == wallet)) {
     return false;
   }
@@ -142,13 +142,13 @@ bool wallet_selector(const uint8_t *wallet_id, Wallet *wallet) {
   return false;
 }
 
-bool get_wallet_data(const uint8_t *wallet_id, uint8_t *wallet_name) {
+bool get_wallet_name_by_id(const uint8_t *wallet_id, uint8_t *wallet_name) {
   if (NULL == wallet_id) {
     return false;
   }
 
   Wallet wallet = {0};
-  if (false == wallet_selector(wallet_id, &wallet)) {
+  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
     return false;
   }
 

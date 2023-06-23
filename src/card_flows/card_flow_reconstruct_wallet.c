@@ -101,7 +101,7 @@ card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
 
   card_fetch_share_cfg_t configuration = {.heading = ui_text_tap_1_2_cards,
                                           .message = ui_text_place_card_below,
-                                          .skip_card_removal = false,
+                                          .skip_card_removal = true,
                                           .xcor = 0,
                                           .remaining_cards = 0xF};
 
