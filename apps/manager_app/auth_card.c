@@ -112,6 +112,12 @@ typedef struct {
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
+ * The function sends a response to host indicating that a flow has been
+ * completed.
+ */
+static void send_flow_complete_response();
+
+/**
  * @brief Read data from initiate request and prepare context for card
  * authentication
  *
@@ -253,6 +259,14 @@ static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
 
   memcpy(auth_card_data->ctx.family_id, get_family_id(), FAMILY_ID_SIZE);
   return true;
+}
+
+static void send_flow_complete_response() {
+  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
+  result.auth_card.which_response =
+      MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
+  result.auth_card.flow_complete.dummy_field = 0;
+  manager_send_result(&result);
 }
 
 static bool handle_sign_data(auth_card_data_t *auth_card_data) {
@@ -397,16 +411,12 @@ static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data) {
 }
 
 static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
-  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
   bool verified = auth_card_data->query->auth_card.result.verified;
 
   switch (auth_card_data->flow_status) {
     case MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED:
       if (false == verified) {
-        result.auth_card.which_response =
-            MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        result.auth_card.flow_complete.dummy_field = 0;
-        manager_send_result(&result);
+        send_flow_complete_response();
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
         return true;
@@ -419,10 +429,7 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
 
     case MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED:
       if (false == verified) {
-        result.auth_card.which_response =
-            MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        result.auth_card.flow_complete.dummy_field = 0;
-        manager_send_result(&result);
+        send_flow_complete_response();
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
         return true;
@@ -440,14 +447,11 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
             delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
             return false;
           }
+          UPDATE_FLOW_STATUS(auth_card_data,
+                             MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         }
 
-        UPDATE_FLOW_STATUS(auth_card_data,
-                           MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
-        result.auth_card.which_response =
-            MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        result.auth_card.flow_complete.dummy_field = 0;
-        manager_send_result(&result);
+        send_flow_complete_response();
 
         /**
          * Set onboarding complete here if 4th card auth is complete. The
