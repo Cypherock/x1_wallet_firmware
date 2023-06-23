@@ -64,15 +64,13 @@
 #include "card_sign.h"
 #include "common_error.h"
 #include "controller_tap_cards.h"
-#include "events.h"
 #include "manager_api.h"
 #include "manager_app.h"
 #include "manager_app_priv.h"
 #include "onboarding.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
+#include "ui_screens.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -451,13 +449,13 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
         result.auth_card.flow_complete.dummy_field = 0;
         manager_send_result(&result);
 
-        if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-          // Set onboarding complete if card #4 is used.
-          if (0x08 == auth_card_data->ctx.acceptable_cards) {
-            onboarding_set_step_done(
-                MANAGER_ONBOARDING_STEP_CARD_AUTHENTICATION);
-            onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-          }
+        /**
+         * Set onboarding complete here if 4th card auth is complete. The
+         * onboarding_set_step_done API internally verfies if onboarding was
+         * complete or not.
+         */
+        if (0x08 == auth_card_data->ctx.acceptable_cards) {
+          onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
         }
 
         return true;

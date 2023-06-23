@@ -58,8 +58,11 @@ typedef struct card_sign_data_config {
  * @details This function signs the authentication data using the provided
  * configuration. The signed data is stored in the signature field of the
  * sign_data parameter. If an error occurs during signing, the function returns
- * the type of error encountered. NOTE: Max size accepted for data member of
- * card_sign_data_config_t is 64 bytes
+ * the type of error encountered.
+ *
+ * NOTE:
+ * - Max size accepted for data member of card_sign_data_config_t is 64 bytes,
+ * - Doesn't handle the card retap errors and returns the corresponding error
  *
  * @param sign_data Pointer to the configuration for signing the authentication
  * data.
