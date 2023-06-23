@@ -106,13 +106,10 @@ void main_menu_host_interface(engine_ctx_t *ctx,
    * this request came in, therefore, we will pass control to the required
    * application here */
 
-  // add a switch case here to determine which app to boot.
-
   uint32_t applet_id = get_applet_id();
   switch (applet_id) {
     case 1: {
       manager_app_main(usb_evt);
-      main_menu_set_update_req(true);
       break;
     }
     case 2: {
@@ -125,5 +122,6 @@ void main_menu_host_interface(engine_ctx_t *ctx,
     }
   }
 
+  main_menu_set_update_req(true);
   return;
 }
