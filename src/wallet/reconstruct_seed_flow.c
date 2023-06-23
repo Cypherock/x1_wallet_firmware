@@ -150,7 +150,8 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
       char display[65];
       snprintf(
           display, sizeof(display), "%s", flow_level.screen_input.input_text);
-      address_scr_init(ui_text_confirm_passphrase, display, false);
+      ui_scrollable_page(
+          ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
       memzero(display, sizeof(display));
       next_state = get_state_on_confirm_scr(
           PASSPHRASE_CONFIRM, PASSPHRASE_INPUT, TIMED_OUT);
