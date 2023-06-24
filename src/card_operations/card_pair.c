@@ -313,10 +313,7 @@ uint32_t card_pair_without_retap(uint8_t card_number) {
   ASSERT(1 <= card_number && 4 >= card_number);
 
   uint32_t error_status = DEFAULT_UINT32_IN_FLASH;
-  card_operation_data_t card_data = {
-      .error_message = NULL,
-      .error_type = CARD_OPERATION_DEFAULT_INVALID,
-      .nfc_data = {0}};
+  card_operation_data_t card_data = {0};
   card_pairing_data_t pair_data = {0};
 
   error_status = pair_card_preprocess(&pair_data);
@@ -351,10 +348,7 @@ uint32_t card_pair_operation(uint8_t card_number,
   ASSERT(1 <= card_number && 4 >= card_number && NULL != message);
 
   uint32_t error_status = DEFAULT_UINT32_IN_FLASH;
-  card_operation_data_t card_data = {
-      .error_message = NULL,
-      .error_type = CARD_OPERATION_DEFAULT_INVALID,
-      .nfc_data = {0}};
+  card_operation_data_t card_data = {0};
   card_pairing_data_t pair_data = {0};
 
   error_status = pair_card_preprocess(&pair_data);
@@ -386,10 +380,10 @@ uint32_t card_pair_operation(uint8_t card_number,
         instruction_scr_init(message, heading);
         continue;
       }
-    } else {
-      error_status = card_data.nfc_data.status;
-      break;
     }
+
+    error_status = card_data.nfc_data.status;
+    break;
   }
 
   nfc_deselect_card();
