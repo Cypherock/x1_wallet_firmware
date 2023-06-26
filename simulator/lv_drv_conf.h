@@ -107,7 +107,7 @@
 #define MONITOR_VER_RES LV_VER_RES
 
 /* Scale window by this factor (useful when simulating small screens) */
-#define MONITOR_ZOOM 1
+#define MONITOR_ZOOM 4
 
 /* Used to test true double buffering with only address changing.
  * Set LV_VDB_SIZE = (LV_HOR_RES * LV_VER_RES) and  LV_VDB_DOUBLE = 1 and
