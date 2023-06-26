@@ -48,8 +48,17 @@ void btc_get_xpub(btc_query_t *query);
  * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
  * query, otherwise the flow is aborted
  *
- * @param query object for card auth query
+ * @param query object for address public key query
  */
 void btc_get_pub_key(btc_query_t *query);
+
+/**
+ * @brief Handler for bitcoin transaction signing
+ * @details This flow expects BTC_SIGN_TXN_REQUEST_INITIATE_TAG as initial
+ * query, otherwise the flow is aborted
+ *
+ * @param query object for sign transaction query
+ */
+void btc_sign_transaction(btc_query_t *query);
 
 #endif

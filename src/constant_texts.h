@@ -24,6 +24,7 @@
 #define UI_TEXT_BTC_RECEIVE_PROMPT "Receive %s in %s"
 #define UI_TEXT_ADD_ACCOUNT_PROMPT "Add %s to %s"
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
+#define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
@@ -254,7 +255,7 @@ extern const char *ui_text_authentication_required;
 extern const char *ui_text_start_auth_from_CySync;
 extern const char *ui_text_enable_passphrase_step;
 extern const char *ui_text_disable_passphrase_step;
-extern const char *ui_text_warning_transaction_fee_too_high;
+extern const char *ui_text_warning_txn_fee_too_high;
 extern const char *ui_text_enable_log_export;
 extern const char *ui_text_disable_log_export;
 

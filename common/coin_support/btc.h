@@ -197,28 +197,6 @@ typedef struct Send_Transaction_Cmd {
 #pragma pack(pop)
 
 /**
- * @brief Converts byte array represented unsigned transaction to struct
- * unsigned_txn.
- * @details
- *
- * @param [in] utxn_byte_array  Unsigned transaction byte array to be converted.
- * @param [in] size             Size of the byte array utxn_byte_array
- * @param [out] utxn_ptr        Pointer to the unsigned_txn instance to store
- * the field values.
- *
- * @return Offset used in conversion
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-int32_t byte_array_to_unsigned_txn(const uint8_t *utxn_byte_array,
-                                   uint32_t size,
-                                   unsigned_txn *utxn_ptr);
-
-/**
  * @brief Signs the provided unsigned transaction
  * @details
  *

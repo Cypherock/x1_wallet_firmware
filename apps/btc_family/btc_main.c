@@ -122,6 +122,10 @@ void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
       btc_get_xpub(&query);
       break;
     }
+    case BTC_QUERY_SIGN_TXN_TAG: {
+      btc_sign_transaction(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
