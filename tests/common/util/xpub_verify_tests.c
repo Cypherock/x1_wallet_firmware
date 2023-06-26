@@ -1,5 +1,7 @@
 #include "btc.h"
-#include "btc_fam_helpers.h"
+#include "btc_app.h"
+#include "btc_helpers.h"
+#include "btc_priv.h"
 #include "coin_utils.h"
 #include "eth.h"
 #include "near.h"
@@ -149,6 +151,7 @@ TEST(xpub, derivation_path_tests) {
     bool status = false;
     switch (paths[i][3]) {
       case BITCOIN:
+        g_app = get_btc_app();
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case NEAR:
