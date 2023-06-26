@@ -62,14 +62,13 @@
 
 #include "bip32.h"
 #include "btc.h"
-#include "btc/core.pb.h"
 #include "btc_api.h"
 #include "btc_helpers.h"
-#include "pb_encode.h"
+#include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-#include "usb_api.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -248,40 +247,43 @@ static void send_public_key(const uint8_t *public_key) {
  *****************************************************************************/
 
 void btc_get_public_key(btc_query_t *query) {
-  const char *wallet_name = "";
-  char string[100] = "";
-  uint8_t wallet_index = 0;
+  char wallet_name[16] = "";
+  char msg[100] = "";
+  uint8_t seed[64] = {0};
   uint8_t public_key[65] = {0};
   btc_get_public_key_intiate_request_t *init_req =
       &query->get_public_key.initiate;
 
   if (!check_which_request(query, BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG) ||
-      !validate_request_data(&query->get_public_key)) {
+      !validate_request_data(&query->get_public_key) ||
+      !get_wallet_name_by_id(query->get_xpubs.initiate.wallet_id,
+                             (uint8_t *)wallet_name)) {
     return;
   }
 
-  // this will always succeed; can skip checking return value
-  // TODO: use a wrapper that looks for operational wallet and returns its name
-  get_first_matching_index_by_id(init_req->wallet_id, &wallet_index);
-  wallet_name = (const char *)get_wallet_name(wallet_index);
-  snprintf(string, sizeof(string), "Receive Bitcoin in %s", wallet_name);
-  if (!core_confirmation(string, btc_send_error)) {
+  snprintf(msg, sizeof(msg), "Receive Bitcoin in %s", wallet_name);
+
+  // Take user consent to export public key for the wallet
+  if (!core_confirmation(msg, btc_send_error)) {
     return;
   }
 
   core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
 
-  // TODO: call the reconstruct flow and get seed from the core
-  uint8_t seed[64] = {0};    // = generate_seed();
+  if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
+    // TODO: Handle error case reporting to host
+    return;
+  }
+
   const uint32_t *path = init_req->derivation_path;
   uint32_t path_length = init_req->derivation_path_count;
 
-  core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CARD);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  if (0 < btc_get_address(seed, path, path_length, public_key, string) &&
-      true == core_scroll_page(ui_text_receive_on, string, btc_send_error)) {
+  if (0 < btc_get_address(seed, path, path_length, public_key, msg) &&
+      true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }
+
   memzero(seed, sizeof(seed));
 }

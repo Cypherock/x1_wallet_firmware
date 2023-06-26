@@ -63,9 +63,11 @@
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "common_error.h"
+#include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -255,33 +257,34 @@ static bool send_xpubs(btc_query_t *query,
  *****************************************************************************/
 
 void btc_get_xpub(btc_query_t *query) {
-  const char *wallet_name = "";
-  uint8_t wallet_index = 0;
+  char wallet_name[16] = "";
   char msg[100] = "";
+  uint8_t seed[64] = {0};
   const btc_get_xpubs_intiate_request_t *init_req = &query->get_xpubs.initiate;
+  char xpub_list[sizeof(init_req->derivation_paths) /
+                 sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
 
   if (!check_which_request(query, BTC_GET_XPUBS_REQUEST_INITIATE_TAG) ||
-      !validate_request_data(&query->get_xpubs)) {
+      !validate_request_data(&query->get_xpubs) ||
+      !get_wallet_name_by_id(query->get_xpubs.initiate.wallet_id,
+                             (uint8_t *)wallet_name)) {
     return;
   }
 
-  // this will always succeed; can skip checking return value
-  get_first_matching_index_by_id(query->get_xpubs.initiate.wallet_id,
-                                 &wallet_index);
-  wallet_name = (const char *)get_wallet_name(wallet_index);
   snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
+
   // Take user consent to export xpub for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;
   }
+
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
 
-  // TODO: call the reconstruct flow and get seed from the core
-  uint8_t seed[64] = {0};    // = generate_seed();
-  char xpub_list[sizeof(init_req->derivation_paths) /
-                 sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
+  if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
+    // TODO: Handle error case reporting to host
+    return;
+  }
 
-  core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CARD);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   if (true == one_shot_xpub_generate(init_req->derivation_paths,
                                      seed,
