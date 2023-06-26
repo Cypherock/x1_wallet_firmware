@@ -1,16 +1,16 @@
 /**
- * @file    reconstruct_from_threshold_cards_controller.c
+ * @file    card_fetch_share.c
  * @author  Cypherock X1 Team
- * @brief   Reconstruct from threshold.
- *          This file contains the implementation of the functions that
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Implements card operation to handle fetching of wallet share from X1
+ *          card
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -56,65 +56,79 @@
  *
  ******************************************************************************
  */
-#include "apdu.h"
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
 #include "card_fetch_share.h"
+
 #include "card_internal.h"
 #include "card_utils.h"
-#include "communication.h"
 #include "constant_texts.h"
-#include "controller_main.h"
-#include "controller_tap_cards.h"
-#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
-#include "tasks.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
+#include "ui_screens.h"
 
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
 extern Wallet_shamir_data wallet_shamir_data;
 
-static uint8_t remaining_cards;
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
 
-static void _tap_card_backend(uint8_t xcor);
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Helper function that copies wallet share retrieved from X1 card onto
+ * the RAM
+ *
+ * @param xcor The x-coordinate of the wallet share
+ */
 static void _handle_retrieve_wallet_success(uint8_t xcor);
 
-void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
-  switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-      tap_card_data.tapped_card = 0;
-      tap_card_data.active_cmd_type = CARD_ERROR_FACED;
-      flow_level.level_four = TAP_CARD_ONE_BACKEND;
-      break;
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static uint8_t remaining_cards;
 
-    case TAP_CARD_ONE_BACKEND:
-      remaining_cards = 15;
-      _tap_card_backend(0);
-      instruction_scr_destructor();
-      if (threshold == 1 && flow_level.level_four == TAP_CARD_TWO_FRONTEND) {
-        flow_level.level_three++;
-        flow_level.level_four = 1;
-      }
-      break;
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
 
-    case TAP_CARD_TWO_FRONTEND:
-      flow_level.level_four = TAP_CARD_TWO_BACKEND;
-      break;
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+static void _handle_retrieve_wallet_success(uint8_t xcor) {
+  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
+    memcpy(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
+               xcor * wallet.arbitrary_data_size,
+           wallet.arbitrary_data_share,
+           wallet.arbitrary_data_size);
+  else
+    memcpy(wallet_shamir_data.mnemonic_shares[xcor],
+           wallet.wallet_share_with_mac_and_nonce,
+           BLOCK_SIZE);
+  memcpy(wallet_shamir_data.share_encryption_data[xcor],
+         wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
+         NONCE_SIZE + WALLET_MAC_SIZE);
+  memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
+  memzero(wallet.wallet_share_with_mac_and_nonce,
+          sizeof(wallet.wallet_share_with_mac_and_nonce));
 
-    case TAP_CARD_TWO_BACKEND:
-      _tap_card_backend(1);
-      break;
-
-    default:
-      message_scr_init(ui_text_something_went_wrong);
-      break;
-  }
+  wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
 }
 
-/**
- * Obsolete function, alternate function( @ref pair_card_operation) provided in
- * @ref card_pair.h
- */
-static void _tap_card_backend(uint8_t xcor) {
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
 }
 
 card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
@@ -178,24 +192,4 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
   nfc_deselect_card();
   LOG_ERROR("Card Error type: %d", card_data.error_type);
   return result;
-}
-
-static void _handle_retrieve_wallet_success(uint8_t xcor) {
-  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
-    memcpy(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
-               xcor * wallet.arbitrary_data_size,
-           wallet.arbitrary_data_share,
-           wallet.arbitrary_data_size);
-  else
-    memcpy(wallet_shamir_data.mnemonic_shares[xcor],
-           wallet.wallet_share_with_mac_and_nonce,
-           BLOCK_SIZE);
-  memcpy(wallet_shamir_data.share_encryption_data[xcor],
-         wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
-         NONCE_SIZE + WALLET_MAC_SIZE);
-  memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
-  memzero(wallet.wallet_share_with_mac_and_nonce,
-          sizeof(wallet.wallet_share_with_mac_and_nonce));
-
-  wallet_shamir_data.share_x_coords[xcor] = wallet.xcor;
 }
