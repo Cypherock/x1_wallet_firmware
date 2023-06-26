@@ -248,6 +248,7 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
   status = atecc_nfc_ecdh(&public_key_uncompressed[1], pair_data->data + 45);
   if (ATCA_SUCCESS != status) {
     LOG_CRITICAL("xxec %d:%d", ATECC_ERROR_BASE + status, __LINE__);
+    mark_core_error_screen(ui_text_unknown_error_contact_support);
     return ATECC_ERROR_BASE + status;
   }
 
@@ -309,7 +310,8 @@ static void init_and_pair_card(card_operation_data_t *card_data,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-uint32_t card_pair_without_retap(uint8_t card_number) {
+card_error_type_e card_pair_without_retap(uint8_t card_number,
+                                          uint32_t *status) {
   ASSERT(1 <= card_number && 4 >= card_number);
 
   uint32_t error_status = DEFAULT_UINT32_IN_FLASH;
@@ -318,7 +320,10 @@ uint32_t card_pair_without_retap(uint8_t card_number) {
 
   error_status = pair_card_preprocess(&pair_data);
   if (SUCCESS != error_status) {
-    return error_status;
+    if (NULL != status) {
+      *status = error_status;
+    }
+    return CARD_OPERATION_ABORT_OPERATION;
   }
 
   while (1) {
@@ -339,21 +344,23 @@ uint32_t card_pair_without_retap(uint8_t card_number) {
   }
 
   nfc_deselect_card();
-  return error_status;
+
+  if (NULL != status) {
+    *status = error_status;
+  }
+  return card_data.error_type;
 }
 
-uint32_t card_pair_operation(uint8_t card_number,
-                             char *heading,
-                             char *message) {
+card_error_type_e card_pair_operation(uint8_t card_number,
+                                      char *heading,
+                                      char *message) {
   ASSERT(1 <= card_number && 4 >= card_number && NULL != message);
 
-  uint32_t error_status = DEFAULT_UINT32_IN_FLASH;
   card_operation_data_t card_data = {0};
   card_pairing_data_t pair_data = {0};
 
-  error_status = pair_card_preprocess(&pair_data);
-  if (SUCCESS != error_status) {
-    return error_status;
+  if (SUCCESS != pair_card_preprocess(&pair_data)) {
+    return CARD_OPERATION_ABORT_OPERATION;
   }
 
   instruction_scr_init(message, heading);
@@ -367,7 +374,10 @@ uint32_t card_pair_operation(uint8_t card_number,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       buzzer_start(BUZZER_DURATION);
-      error_status = handle_pairing_success(&card_data, &pair_data);
+      if (SW_NO_ERROR != handle_pairing_success(&card_data, &pair_data)) {
+        card_data.error_type = CARD_OPERATION_ABORT_OPERATION;
+        break;
+      }
       wait_for_card_removal();
       break;
     }
@@ -382,10 +392,9 @@ uint32_t card_pair_operation(uint8_t card_number,
       }
     }
 
-    error_status = card_data.nfc_data.status;
     break;
   }
 
   nfc_deselect_card();
-  return error_status;
+  return card_data.error_type;
 }

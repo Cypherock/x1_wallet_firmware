@@ -37,12 +37,15 @@
  *
  * @param card_number The number of the card to be paired. It should be an
  * integer between 1 and 4.
+ * @param status A pointer to a uint32_t variable that will be used to store the
+ * error status of the function. If the function returns
+ * CARD_OPERATION_ABORT_OPERATION, the error status will be stored in this
+ * variable. If this parameter is NULL, the error status will not be stored.
  *
- * @return a uint32_t value, which could be an error status, @ref SW_NO_ERROR
- * for success. Errors such as wrong family id card and wrong card sequence are
- * not handled and an error code is returned for the same.
+ * @return a value of type `card_error_type_e`.
  */
-uint32_t card_pair_without_retap(uint8_t card_number);
+card_error_type_e card_pair_without_retap(uint8_t card_number,
+                                          uint32_t *status);
 
 /**
  * This function performs a card pairing operation and returns an error status.
@@ -54,8 +57,9 @@ uint32_t card_pair_without_retap(uint8_t card_number);
  * @param message A pointer to a character array (string) containing the message
  * to be displayed on the screen during the card pairing operation.
  *
- * @return a uint32_t value, which is an error status code, @ref SW_NO_ERROR for
- * success.
+ * @return a value of type `card_error_type_e`.
  */
-uint32_t card_pair_operation(uint8_t card_number, char *heading, char *message);
+card_error_type_e card_pair_operation(uint8_t card_number,
+                                      char *heading,
+                                      char *message);
 #endif
