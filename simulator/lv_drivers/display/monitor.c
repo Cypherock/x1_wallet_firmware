@@ -274,6 +274,12 @@ int quit_filter(void *userdata, SDL_Event *event) {
   (void)userdata;
 
   if (event->type == SDL_WINDOWEVENT) {
+    if (event->window.event == SDL_WINDOWEVENT_RESIZED) {
+      SDL_SetWindowSize(
+          monitor.window,
+          event->window.data1,
+          event->window.data1 * MONITOR_VER_RES / MONITOR_HOR_RES);
+    }
     if (event->window.event == SDL_WINDOWEVENT_CLOSE) {
       sdl_quit_qry = true;
     }
@@ -373,13 +379,14 @@ static void monitor_sdl_refr_core(void)
 }
 
 static void window_create(monitor_t *m) {
-  m->window =
-      SDL_CreateWindow("TFT Simulator",
-                       SDL_WINDOWPOS_UNDEFINED,
-                       SDL_WINDOWPOS_UNDEFINED,
-                       MONITOR_HOR_RES * MONITOR_ZOOM,
-                       MONITOR_VER_RES * MONITOR_ZOOM,
-                       0); /*last param. SDL_WINDOW_BORDERLESS to hide borders*/
+  m->window = SDL_CreateWindow(
+      "TFT Simulator",
+      SDL_WINDOWPOS_UNDEFINED,
+      SDL_WINDOWPOS_UNDEFINED,
+      MONITOR_HOR_RES * MONITOR_ZOOM,
+      MONITOR_VER_RES * MONITOR_ZOOM,
+      SDL_WINDOW_RESIZABLE); /*last param. SDL_WINDOW_BORDERLESS to hide
+                                borders*/
 
 #if MONITOR_VIRTUAL_MACHINE || defined(MONITOR_EMSCRIPTEN)
   m->renderer = SDL_CreateRenderer(m->window, -1, SDL_RENDERER_SOFTWARE);
