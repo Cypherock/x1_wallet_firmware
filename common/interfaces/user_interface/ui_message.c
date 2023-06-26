@@ -88,11 +88,6 @@ static void message_scr_create();
 void message_scr_init(const char *message) {
   ASSERT(message != NULL);
 
-  /* Clear screen before populating any data, this will clear any UI component
-   * and it's corresponding objects. Important thing to note here is that the
-   * screen will be updated only when lv_task_handler() is called.
-   * This call will ensure that there is no object present in the currently
-   * active screen in case data from previous screen was not cleared */
   lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct Message_Data));

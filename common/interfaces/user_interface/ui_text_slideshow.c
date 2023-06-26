@@ -150,11 +150,6 @@ void ui_text_slideshow_init(const char *arr[MAX_NUM_OF_CHARS_IN_A_SLIDE],
                             const bool destruct_on_click) {
   ASSERT(arr != NULL);
 
-  /* Clear screen before populating any data, this will clear any UI component
-   * and it's corresponding objects. Important thing to note here is that the
-   * screen will be updated only when lv_task_handler() is called.
-   * This call will ensure that there is no object present in the currently
-   * active screen in case data from previous screen was not cleared */
   lv_obj_clean(lv_scr_act());
 
   if (count > MAX_NUM_OF_SLIDESHOWS)
