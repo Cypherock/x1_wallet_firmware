@@ -45,6 +45,6 @@
  * pointed by seed_out is filled with the seed
  * @return false If the reconstruction flow could not be completed
  */
-bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *const seed_out);
+bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
 
 #endif /* RECONSTRUCT_SEED_FLOW_H */
