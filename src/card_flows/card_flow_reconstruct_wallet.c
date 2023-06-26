@@ -63,7 +63,6 @@
 
 #include "card_operations.h"
 #include "constant_texts.h"
-#include "nfc.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
