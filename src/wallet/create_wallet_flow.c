@@ -103,7 +103,6 @@ typedef enum {
   PASSPHRASE_INSTRUCTIONS,
   PASSPHRASE_ENABLE,
   SEED_GENERATE,
-  SEED_GENERATED,
   SAVE_WALLET_SHARE_TO_DEVICE,
   TAP_CARD_FLOW,
   VERIFY_SHARES,
@@ -166,6 +165,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       } else {
         next_state = NAME_INPUT_CONFIRM;
       }
+
+      break;
     }
 
     case NAME_INPUT_CONFIRM: {
@@ -415,8 +416,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void create_wallet_flow(bool new_wallet) {
-  // TODO: use new_wallet to decide how mnemonics would be generated
+void create_wallet_flow(void) {
   new_wallet_state_e current_state = NAME_INPUT;
 
   // TODO: Consolidate in one function

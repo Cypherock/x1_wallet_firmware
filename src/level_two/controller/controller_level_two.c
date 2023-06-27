@@ -95,7 +95,7 @@ void level_two_controller() {
         if (flow_level.level_two == LEVEL_THREE_GENERATE_WALLET) {
           return;
         } else {
-          restore_wallet_controller();
+          return;
         }
         return;
       }
