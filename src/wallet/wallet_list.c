@@ -62,6 +62,8 @@
  *****************************************************************************/
 #include "wallet_list.h"
 
+#include <string.h>
+
 #include "flash_api.h"
 
 /*****************************************************************************
@@ -114,4 +116,45 @@ uint8_t get_wallet_list(const char *wallet_list[]) {
   }
 
   return num_wallets;
+}
+
+bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
+  if ((NULL == wallet_id) || (NULL == wallet)) {
+    return false;
+  }
+
+  for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
+    wallet_state state = INVALID_WALLET;
+    if (true != wallet_is_filled(wallet_idx, &state)) {
+      continue;
+    }
+
+    if (VALID_WALLET == state) {
+      if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
+        memcpy(wallet->wallet_id, wallet_id, WALLET_ID_SIZE);
+        memcpy(wallet->wallet_name, get_wallet_name(wallet_idx), NAME_SIZE);
+        wallet->wallet_info = get_wallet_info(wallet_idx);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+bool get_wallet_name_by_id(const uint8_t *wallet_id, uint8_t *wallet_name) {
+  if (NULL == wallet_id) {
+    return false;
+  }
+
+  Wallet wallet = {0};
+  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
+    return false;
+  }
+
+  if (NULL != wallet_name) {
+    memcpy(wallet_name, wallet.wallet_name, NAME_SIZE);
+  }
+
+  return true;
 }

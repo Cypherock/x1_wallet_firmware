@@ -1,23 +1,19 @@
 /**
- * @file    check_pairing.h
+ * @file    reconstruct_seed_flow.h
  * @author  Cypherock X1 Team
- * @brief   Api to tap a card and tell if it is paired.
+ * @brief   Header file for the reconstruct wallet seed flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CHECK_PAIRING_H
-#define CHECK_PAIRING_H
+#ifndef RECONSTRUCT_SEED_FLOW_H
+#define RECONSTRUCT_SEED_FLOW_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "card_return_codes.h"
-#include "flash_config.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -27,12 +23,6 @@
  * TYPEDEFS
  *****************************************************************************/
 
-typedef struct check_pairing_result {
-  bool is_paired;
-  uint8_t card_number;
-  uint8_t family_id[FAMILY_ID_SIZE];
-} check_pairing_result_t;
-
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -40,19 +30,21 @@ typedef struct check_pairing_result {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Handles card tap and pairing check
- * @details The function depends on card_initialize_applet for initializing
- * applet and populating necessary card information. The function returns the
- * operation status and only for CARD_OPERATION_SUCCESS will the result hold any
- * valid information. The function queries the keystore entries (@ref
- * get_paired_card_index) to decide if the tapped card is paired.
+ * @brief This API executes the wallet seed reconstruction flow on the device
+ * and returns the seed.
+ * @details This function takes user inputs based wallet configuration
+ * corresponding to wallet with wallet_id, reads the wallet shares from the X1
+ * vault flash and any 1 X1 card, and reconstructs each seed using Shamir
+ * reconstruction.
  *
- * @param result Reference to the check_pairing_result_t
- *
- * @return card_error_type_s Enum indicating operation status
+ * @param wallet_id The wallet_id of the wallet which needs to be reconstructed
+ * @param seed_out Pointer to buffer where the seed will be copied after
+ * regeneration
+ * @return true If the reconstruction flow completed successfully and buffer
+ * pointed by seed_out is filled with the seed
+ * @return false If the reconstruction flow could not be completed
  */
-card_error_type_e card_check_pairing(check_pairing_result_t *result);
+bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
 
-#endif
+#endif /* RECONSTRUCT_SEED_FLOW_H */

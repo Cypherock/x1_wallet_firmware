@@ -64,6 +64,7 @@
 #include "btc.h"
 #include "btc/core.pb.h"
 #include "btc_api.h"
+#include "btc_helpers.h"
 #include "pb_encode.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -166,9 +167,8 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
   bool status = true;
 
   // TODO: Enable btc/coin specific check
-  if (false ==
-      verify_receive_derivation_path(request->initiate.derivation_path,
-                                     request->initiate.derivation_path_count)) {
+  if (!btc_derivation_path_guard(request->initiate.derivation_path,
+                                 request->initiate.derivation_path_count)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;

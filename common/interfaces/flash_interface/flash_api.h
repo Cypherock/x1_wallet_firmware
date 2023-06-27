@@ -427,7 +427,7 @@ int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys);
  *
  * @note
  */
-int is_paired(const uint8_t *card_key_id);
+int get_paired_card_index(const uint8_t *card_key_id);
 
 /**
  * @brief Invalidates the pairing of the card by setting the used flag to 0.

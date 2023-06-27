@@ -1,17 +1,15 @@
 /**
- * @file    controller_new_wallet.c
+ * @file    create_wallet_flow.c
  * @author  Cypherock X1 Team
- * @brief   New wallet next controller.
- *          Handles post event (only next events) operations for new wallet
- *flow.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Source file for the create wallet flow
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -57,10 +55,15 @@
  *
  ******************************************************************************
  */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "create_wallet_flow.h"
+
 #include "card_flow_create_wallet.h"
 #include "constant_texts.h"
 #include "core_error.h"
-#include "create_wallet_flow.h"
 #include "crypto_random.h"
 #include "flash_api.h"
 #include "flash_if.h"
@@ -70,14 +73,26 @@
 #include "ui_state_machine.h"
 #include "wallet_utilities.h"
 
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+// TODO: Remove usage of global variables
 extern Flash_Wallet wallet_for_flash;
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 
+// TODO: Add these pointers in a common header file
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
 typedef enum {
   NAME_INPUT = 1,
   NAME_INPUT_CONFIRM,
@@ -99,6 +114,9 @@ typedef enum {
   EXIT,
 } new_wallet_state_e;
 
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
 /**
  * @brief State handler for the create wallet flow on the X1 vault
  *
@@ -106,6 +124,18 @@ typedef enum {
  * @return new_wallet_state_e The next state of the flow, based on processing
  * the current state handler
  */
+new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state);
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
 new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
   new_wallet_state_e next_state = EXIT;
 
@@ -382,10 +412,18 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 
   return next_state;
 }
-
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 void create_wallet_flow(bool new_wallet) {
   // TODO: use new_wallet to decide how mnemonics would be generated
   new_wallet_state_e current_state = NAME_INPUT;
+
+  // TODO: Consolidate in one function
+  // Clear confidential data irrespective of the result of the flow
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   while (1) {
     new_wallet_state_e next_state = new_wallet_state_handler(current_state);
@@ -397,7 +435,10 @@ void create_wallet_flow(bool new_wallet) {
     current_state = next_state;
   }
 
-  // TODO: Memzero all wallet variables
+  // Clear confidential data irrespective of the result of the flow
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
   return;
 }

@@ -1,23 +1,22 @@
 /**
- * @file    check_pairing.h
+ * @file    card_flow_reconstruct_wallet.h
  * @author  Cypherock X1 Team
- * @brief   Api to tap a card and tell if it is paired.
+ * @brief   Header file exporting card flow reconstruct wallet seed using the X1
+ *          cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CHECK_PAIRING_H
-#define CHECK_PAIRING_H
+#ifndef CARD_FLOW_RECONSTRUCT_WALLET_H
+#define CARD_FLOW_RECONSTRUCT_WALLET_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "card_return_codes.h"
-#include "flash_config.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -27,12 +26,6 @@
  * TYPEDEFS
  *****************************************************************************/
 
-typedef struct check_pairing_result {
-  bool is_paired;
-  uint8_t card_number;
-  uint8_t family_id[FAMILY_ID_SIZE];
-} check_pairing_result_t;
-
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -40,19 +33,13 @@ typedef struct check_pairing_result {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Handles card tap and pairing check
- * @details The function depends on card_initialize_applet for initializing
- * applet and populating necessary card information. The function returns the
- * operation status and only for CARD_OPERATION_SUCCESS will the result hold any
- * valid information. The function queries the keystore entries (@ref
- * get_paired_card_index) to decide if the tapped card is paired.
+ * @brief This functions executes a sequential card flow to read wallet share
+ * from atleast threshold number of X1 cards.
  *
- * @param result Reference to the check_pairing_result_t
- *
- * @return card_error_type_s Enum indicating operation status
+ * @param threshold The number of X1 cards need to be read from
+ * @return card_errors_type The return code of the flow
  */
-card_error_type_e card_check_pairing(check_pairing_result_t *result);
+card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold);
 
-#endif
+#endif /* CARD_FLOW_RECONSTRUCT_WALLET_H */

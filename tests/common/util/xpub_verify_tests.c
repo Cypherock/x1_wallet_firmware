@@ -1,4 +1,5 @@
 #include "btc.h"
+#include "btc_helpers.h"
 #include "coin_utils.h"
 #include "eth.h"
 #include "near.h"
@@ -145,7 +146,21 @@ TEST(xpub, derivation_path_tests) {
   for (int i = 0; i < sizeof(paths) / (7 * sizeof(uint32_t)); i++) {
     bool validity = paths[i][1] == 1;
     uint16_t depth = (uint16_t)paths[i][0];
-    bool status = verify_xpub_derivation_path(&paths[i][2], depth);
+    bool status = false;
+    switch (paths[i][3]) {
+      case BITCOIN:
+        status = btc_derivation_path_guard(&paths[i][2], depth);
+        break;
+      case NEAR:
+        status = near_verify_derivation_path(&paths[i][2], depth);
+        break;
+      case SOLANA:
+        status = sol_verify_derivation_path(&paths[i][2], depth);
+        break;
+      default:
+        status = verify_xpub_derivation_path(&paths[i][2], depth);
+        break;
+    }
 
     TEST_ASSERT(validity == status);
   }

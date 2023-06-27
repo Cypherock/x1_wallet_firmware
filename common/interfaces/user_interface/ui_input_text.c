@@ -110,6 +110,8 @@ void ui_input_text(const char *input_list,
   ASSERT(initial_heading != NULL);
   ASSERT(max_input_size != 0);
 
+  lv_obj_clean(lv_scr_act());
+
   data = malloc(sizeof(struct Input_Text_Data));
   obj = malloc(sizeof(struct Input_Text_Object));
 

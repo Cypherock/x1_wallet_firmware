@@ -1,7 +1,7 @@
 /**
- * @file    check_pairing.c
+ * @file    card_flow_create_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Fetches applet information and detects pairing status.
+ * @brief   Source file containing card flow to create wallet on the X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,10 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_flow_reconstruct_wallet.h"
 
-#include "check_pairing.h"
-
-#include "card_internal.h"
-#include "events.h"
-#include "ui_message.h"
+#include "card_operations.h"
+#include "constant_texts.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,13 +80,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * TODO: add description when this api gets concrete definition
- *
- * @param connection_data
- */
-static void init_tap_card_data(NFC_connection_data *connection_data);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -101,45 +92,17 @@ static void init_tap_card_data(NFC_connection_data *connection_data);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static void init_tap_card_data(NFC_connection_data *connection_data) {
-  memset(connection_data, 0, sizeof(NFC_connection_data));
-  connection_data->retries = 5;
-  connection_data->desktop_control = false;
-  connection_data->acceptable_cards = ACCEPTABLE_CARDS_ALL;
-  memset(connection_data->family_id, 0xff, sizeof(connection_data->family_id));
-  memset(connection_data->card_key_id, 0, sizeof(connection_data->card_key_id));
-}
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
+  // TODO: Support this for threshold number of cards
 
-card_error_type_e card_check_pairing(check_pairing_result_t *result) {
-  LOG_SWV("%s (%d): %p\n", __func__, __LINE__, result);
-  card_error_type_e status = CARD_OPERATION_DEFAULT_INVALID;
-  if (NULL == result) {
-    return status;
-  }
+  card_fetch_share_cfg_t configuration = {.heading = ui_text_tap_1_2_cards,
+                                          .message = ui_text_place_card_below,
+                                          .skip_card_removal = true,
+                                          .xcor = 0,
+                                          .remaining_cards = 0xF};
 
-  memset(result, 0, sizeof(check_pairing_result_t));
-  result->card_number = 0;
-  card_operation_data_t operation_data = {{0}, NULL, 0};
-  init_tap_card_data(&operation_data.nfc_data);
-  status = card_initialize_applet(&operation_data);
-  nfc_deselect_card();
-
-  if (CARD_OPERATION_SUCCESS == status) {
-    buzzer_start(100);
-    result->card_number =
-        decode_card_number(operation_data.nfc_data.tapped_card);
-    memcpy(
-        result->family_id, operation_data.nfc_data.family_id, FAMILY_ID_SIZE);
-    if (-1 == get_paired_card_index(operation_data.nfc_data.card_key_id)) {
-      // keystore index is -1; the keystore does not have key-id
-      result->is_paired = false;
-    } else {
-      result->is_paired = true;
-    }
-  }
-  return status;
+  return card_fetch_share(&configuration);
 }

@@ -1,7 +1,7 @@
 /**
- * @file    check_pairing.c
+ * @file    btc_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Fetches applet information and detects pairing status.
+ * @brief   Utilities specific to Bitcoin blockchain
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "check_pairing.h"
-
-#include "card_internal.h"
-#include "events.h"
-#include "ui_message.h"
+#include "btc_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -83,11 +79,20 @@
  *****************************************************************************/
 
 /**
- * TODO: add description when this api gets concrete definition
+ * @brief Checks if the provided 32-bit value has its MSB not set.
  *
- * @param connection_data
+ * @return true   If the provided value has MSB set to 0.
+ * @return false  If the provided value has MSB set to 1.
  */
-static void init_tap_card_data(NFC_connection_data *connection_data);
+static inline bool is_non_hardened(uint32_t x);
+
+/**
+ * @brief Checks if the provided 32-bit value has its MSB set.
+ *
+ * @return true   If the provided value has MSB set to 1.
+ * @return false  If the provided value has MSB set to 0.
+ */
+static inline bool is_hardened(uint32_t x);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -101,44 +106,45 @@ static void init_tap_card_data(NFC_connection_data *connection_data);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static void init_tap_card_data(NFC_connection_data *connection_data) {
-  memset(connection_data, 0, sizeof(NFC_connection_data));
-  connection_data->retries = 5;
-  connection_data->desktop_control = false;
-  connection_data->acceptable_cards = ACCEPTABLE_CARDS_ALL;
-  memset(connection_data->family_id, 0xff, sizeof(connection_data->family_id));
-  memset(connection_data->card_key_id, 0, sizeof(connection_data->card_key_id));
+static inline bool is_non_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0);
+}
+
+static inline bool is_hardened(uint32_t x) {
+  return ((x & 0x80000000) == 0x80000000);
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-card_error_type_e card_check_pairing(check_pairing_result_t *result) {
-  LOG_SWV("%s (%d): %p\n", __func__, __LINE__, result);
-  card_error_type_e status = CARD_OPERATION_DEFAULT_INVALID;
-  if (NULL == result) {
+bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  bool status = false;
+  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
     return status;
   }
+  status = true;
 
-  memset(result, 0, sizeof(check_pairing_result_t));
-  result->card_number = 0;
-  card_operation_data_t operation_data = {{0}, NULL, 0};
-  init_tap_card_data(&operation_data.nfc_data);
-  status = card_initialize_applet(&operation_data);
-  nfc_deselect_card();
+  // common checks for xpub/account and address nodes
+  if (PURPOSE_LEGACY != path[0] && PURPOSE_SEGWIT != path[0] &&
+      PURPOSE_NSEGWIT != path[0] && PURPOSE_TAPROOT != path[0]) {
+    // unsupported purpose index
+    status = false;
+  }
+  if (COIN_BTC != path[1] || is_non_hardened(path[2])) {
+    // coin index or account hardness mismatch
+    status = false;
+  }
 
-  if (CARD_OPERATION_SUCCESS == status) {
-    buzzer_start(100);
-    result->card_number =
-        decode_card_number(operation_data.nfc_data.tapped_card);
-    memcpy(
-        result->family_id, operation_data.nfc_data.family_id, FAMILY_ID_SIZE);
-    if (-1 == get_paired_card_index(operation_data.nfc_data.card_key_id)) {
-      // keystore index is -1; the keystore does not have key-id
-      result->is_paired = false;
-    } else {
-      result->is_paired = true;
+  if (BTC_ACC_ADDR_DEPTH == depth) {
+    // address node specific checks
+    if (is_hardened(path[3]) || is_hardened(path[4])) {
+      // change or address index must be non-hardened
+      status = false;
+    }
+    if (0 != path[3] && 1 != path[3]) {
+      // invalid change address
+      status = false;
     }
   }
   return status;

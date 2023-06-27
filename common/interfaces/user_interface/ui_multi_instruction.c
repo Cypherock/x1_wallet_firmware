@@ -390,11 +390,6 @@ void multi_instruction_init(const char **arr,
                             const bool destruct_on_click) {
   ASSERT(arr != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
 
-  /* Clear screen before populating any data, this will clear any UI component
-   * and it's corresponding objects. Important thing to note here is that the
-   * screen will be updated only when lv_task_handler() is called.
-   * This call will ensure that there is no object present in the currently
-   * active screen in case data from previous screen was not cleared */
   lv_obj_clean(lv_scr_act());
 
   data = NULL;
@@ -422,11 +417,6 @@ void multi_instruction_with_image_init(instruction_content_t content[],
                                        const bool destruct_on_click) {
   ASSERT(content != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
 
-  /* Clear screen before populating any data, this will clear any UI component
-   * and it's corresponding objects. Important thing to note here is that the
-   * screen will be updated only when lv_task_handler() is called.
-   * This call will ensure that there is no object present in the currently
-   * active screen in case data from previous screen was not cleared */
   lv_obj_clean(lv_scr_act());
 
   data = NULL;

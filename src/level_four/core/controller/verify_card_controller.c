@@ -218,7 +218,7 @@ void verify_card_controller() {
     } break;
 
     case VERIFY_CARD_SUCCESS:
-      if (is_paired(tap_card_data.card_key_id) == -1) {
+      if (get_paired_card_index(tap_card_data.card_key_id) == -1) {
         uint32_t stored_family_id = U32_READ_BE_ARRAY(get_family_id());
         if (stored_family_id != U32_READ_BE_ARRAY(tap_card_data.family_id) &&
             stored_family_id != 0xFFFFFFFF) {

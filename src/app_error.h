@@ -19,13 +19,21 @@
  * @{
  */
 // clang-format off
+
 #define NFC_ERROR_BASE          0x10000UL
 #define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
 #define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
 
 #define RNG_ERROR_BASE          0x20000UL
-#define RNG_MCU_ERROR_BASE       (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
-#define RNG_ATECC_ERROR_BASE     (RNG_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by ATECC
+#define RNG_MCU_ERROR_BASE      (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
+
+#define FLASH_ERROR_BASE        0x30000UL
+
+#define ATECC_ERROR_BASE        0x40000UL
+
+#define EXCEPTION_BASE                          0x50000UL
+#define EXCEPTION_DEVICE_COMPROMISED_BASE       (EXCEPTION_BASE | 0x01) /// Error code bases for device compromised exceptions
+#define EXCEPTION_CARD_COMPROMISED_BASE         (EXCEPTION_BASE | 0x02) /// Error code bases for device compromised exceptions
 
 /**
  * @defgroup nfc_error_codes NFC Error codes
@@ -97,6 +105,18 @@
 #define PN532_TG_IN_MISMATCH            (PN532_ERROR_BASE + 0x2C)    ///< Mismatch between the NFCID3 initiator and the NFCID3 target in DEP 212/424 kbps passive.
 #define PN532_OVER_CURRENT              (PN532_ERROR_BASE + 0x2D)    ///< An over-current event has been detected
 #define PN532_NAD_MISSING               (PN532_ERROR_BASE + 0x2E)    ///< NAD missing in DEP frame
+/** @}
+ *
+ * @defgroup Exception cases occuring in device
+ *
+ * @ingroup app_error
+ *
+ * @{
+ */
+
+#define EXCEPTION_INVALID_PROVISION_DATA  (EXCEPTION_DEVICE_COMPROMISED_BASE | 0x01)   ///< Invalid provision data on permanent storage of secure flash.
+
+#define EXCEPTION_CARD_NOT_VERIFIED       (EXCEPTION_CARD_COMPROMISED_BASE | 0x02)     ///< Card signature not verified exception
 /** @} */
 
 /**
