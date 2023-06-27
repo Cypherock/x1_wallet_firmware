@@ -30,20 +30,7 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  MANAGER_TASK_SUCCESS = 0,
-  MANAGER_TASK_FAILED,
-  MANAGER_TASK_REJECTED,
-  MANAGER_TASK_INVALID_ARGS,
-  MANAGER_TASK_DECODING_FAILED,
-  MANAGER_TASK_ENCODING_FAILED,
-  MANAGER_TASK_P0_ABORT_OCCURED,
-  MANAGER_TASK_P0_TIMEOUT_OCCURED,
-  MANAGER_TASK_UNKNOWN_QUERY_REQUEST,
-  MANAGER_TASK_INVALID_STATE,
 
-  MANAGER_TASK_INVALID_DEFAULT = 0xFF,
-} manager_error_code_t;
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/

@@ -64,18 +64,13 @@
 #include "card_sign.h"
 #include "common_error.h"
 #include "controller_tap_cards.h"
-#include "events.h"
-#include "lv_task.h"
 #include "manager_api.h"
 #include "manager_app.h"
 #include "manager_app_priv.h"
-#include "nfc.h"
 #include "onboarding.h"
 #include "status_api.h"
-#include "ui_confirmation.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -83,30 +78,20 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define FLOW_COMPLETE_STATE                                                    \
-  (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == core_status_get_flow_status())
-
-#define HANDLE_P0_EVENTS(p0_event)                                             \
-  do {                                                                         \
-    if (true == p0_event.inactivity_evt) {                                     \
-      /* TODO: Add handler to inform host*/                                    \
-      return MANAGER_TASK_P0_TIMEOUT_OCCURED;                                  \
-    } else if (true == p0_event.abort_evt) {                                   \
-      return MANAGER_TASK_P0_ABORT_OCCURED;                                    \
-    }                                                                          \
-  } while (0)
-
-/* TODO: Update condition for onboarding done*/
-#define ONBAORDING_DONE false
-
-#define TIMEOUT_SELECTION                                                      \
-  ((true == ONBAORDING_DONE) ? MAX_INACTIVITY_TIMEOUT : INFINITE_WAIT_TIMEOUT)
+#define FLOW_COMPLETE_STATE(auth_card_data)                                    \
+  (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == (auth_card_data)->flow_status)
 
 #define CHALLENGE_SIZE 32
 
 #define SIGN_SERIAL_BEEP_COUNT(pair_card_required) (pair_card_required) ? 3 : 2
 #define SIGN_CHALLENGE_BEEP_COUNT(pair_card_required)                          \
   (pair_card_required) ? 2 : 1
+
+#define UPDATE_FLOW_STATUS(auth_card_data, status)                             \
+  do {                                                                         \
+    (auth_card_data)->flow_status = status;                                    \
+    core_status_set_flow_status(status);                                       \
+  } while (0)
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -121,41 +106,25 @@ typedef struct {
 typedef struct {
   manager_query_t *query;
   auth_card_screen_ctx_t ctx;
+  manager_auth_card_status_t flow_status;
 } auth_card_data_t;
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Wait for query from host and decode if valid, else return error
- *
- * @param query_out query object for caller
- * @return manager_error_code_t MANAGER_TASK_SUCCESS
+ * The function sends a response to host indicating that a flow has been
+ * completed.
  */
-static manager_error_code_t get_and_decode_valid_query_from_host(
-    manager_query_t *query_out);
-
-/**
- * @brief Helper function to send byte stream encoded auth card responses to
- * host
- *
- * @param resp auth card response object with response type and relevant data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS sent encoded data
- * successfully, else error return
- */
-static manager_error_code_t send_auth_card_response(
-    manager_auth_card_response_t *resp);
+static void send_flow_complete_response();
 
 /**
  * @brief Read data from initiate request and prepare context for card
  * authentication
  *
  * @param auth_card_data object of auth card data
- * @return manager_error_code_t MANAGER_TASK_SUCCESS sent encoded data
- * successfully, else error return
+ * @return bool true sent encoded data successfully, else return false
  */
-static manager_error_code_t prepare_card_auth_context(
-    auth_card_data_t *auth_card_data);
+static bool prepare_card_auth_context(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Handles signing of authentication data.
@@ -167,15 +136,11 @@ static manager_error_code_t prepare_card_auth_context(
  * the status of card_sign_auth_data function.
  *
  * @param auth_card_data Pointer to authentication card data.
- * @param resp Pointer to manager authentication card response.
  *
- * @return manager_error_code_t Returns MANAGER_TASK_SUCCESS on success,
- * MANAGER_TASK_P0_ABORT_OCCURED if P0 abort occurred, and MANAGER_TASK_FAILED
+ * @return bool Returns true on success, else false
  * on failure.
  */
-static manager_error_code_t handle_sign_data(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_sign_data(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of card serial number.
@@ -183,13 +148,9 @@ static manager_error_code_t handle_sign_data(
  * response
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
- * code
+ * @return bool true if successful, else false
  */
-static manager_error_code_t handle_sign_card_serial(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_sign_card_serial(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to return signature of server challenge.
@@ -197,13 +158,10 @@ static manager_error_code_t handle_sign_card_serial(
  * response
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_sign_challenge(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_sign_challenge(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle initiate query for auth card.
@@ -213,13 +171,10 @@ static manager_error_code_t handle_sign_challenge(
  * - returns sign serial response
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_initiate_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle challenge query for auth card.
@@ -227,26 +182,19 @@ static manager_error_code_t handle_auth_card_initiate_query(
  * response
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_challenge_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to handle result of auth card.
  * Handles pairing of card based on result, flow state and card pair requirement
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
- * code
+ * @return bool true if successful, else false
  */
-static manager_error_code_t handle_auth_card_result_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Helper to parse handle queries for auth card.
@@ -256,13 +204,10 @@ static manager_error_code_t handle_auth_card_result_query(
  * - Call relevant handler for queries
  *
  * @param auth_card_data object of auth card data
- * @param resp object pointer card auth response
- * @return manager_error_code_t MANAGER_TASK_SUCCESS if successful, else error
+ * @return bool true if successful, else false
  * code
  */
-static manager_error_code_t handle_auth_card_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp);
+static bool handle_auth_card_query(auth_card_data_t *auth_card_data);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -274,67 +219,15 @@ static manager_error_code_t handle_auth_card_query(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static manager_error_code_t get_and_decode_valid_query_from_host(
-    manager_query_t *query_out) {
-  evt_status_t evt_status = get_events(EVENT_CONFIG_USB, TIMEOUT_SELECTION);
-
-  HANDLE_P0_EVENTS(evt_status.p0_event);
-
-  if (false == evt_status.usb_event.flag) {
-    /* We don't expect this to happen, either P0 or USB event must occur to
-     * return from get events*/
-    return MANAGER_TASK_FAILED;
-  }
-
-  if (!decode_manager_query(evt_status.usb_event.p_msg,
-                            evt_status.usb_event.msg_size,
-                            query_out)) {
-    return MANAGER_TASK_DECODING_FAILED;
-  }
-
-  if ((query_out->which_request != MANAGER_QUERY_AUTH_CARD_TAG)) {
-    return MANAGER_TASK_UNKNOWN_QUERY_REQUEST;
-  }
-
-  return MANAGER_TASK_SUCCESS;
-}
-
-static manager_error_code_t send_auth_card_response(
-    manager_auth_card_response_t *resp) {
-  // Initialize respose with zero values
-  manager_result_t result = MANAGER_RESULT_INIT_ZERO;
-
-  /* TODO: Update the buffer size when all option files have been updated for
-   * manager app*/
-  uint8_t buffer[MANAGER_AUTH_CARD_RESPONSE_SIZE + 4] = {0};
-  size_t bytes_written = 0;
-
-  // Set auth card valid tags
-  result.which_response = MANAGER_QUERY_AUTH_CARD_TAG;
-
-  // Copy response to pb result struct
-  memcpy(&(result.auth_card), resp, sizeof(manager_auth_card_response_t));
-
-  // Encode result to byte-stream
-  if (false ==
-      encode_manager_result(&result, buffer, sizeof(buffer), &bytes_written)) {
-    // Encoding failed, return false
-    return MANAGER_TASK_ENCODING_FAILED;
-  }
-
-  usb_send_msg(buffer, bytes_written);
-  return MANAGER_TASK_SUCCESS;
-}
-
-static manager_error_code_t prepare_card_auth_context(
-    auth_card_data_t *auth_card_data) {
+static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   auth_card_data->ctx.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 
   if (auth_card_data->query->auth_card.initiate.has_card_index) {
     if (4 < auth_card_data->query->auth_card.initiate.card_index ||
         0 == auth_card_data->query->auth_card.initiate.card_index) {
-      /* TODO: Return invalid query error code to host*/
-      return MANAGER_TASK_DECODING_FAILED;
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
     }
     auth_card_data->ctx.acceptable_cards = encode_card_number(
         auth_card_data->query->auth_card.initiate.card_index);
@@ -342,6 +235,12 @@ static manager_error_code_t prepare_card_auth_context(
              sizeof(auth_card_data->ctx.heading),
              UI_TEXT_TAP_CARD,
              (uint8_t)auth_card_data->query->auth_card.initiate.card_index);
+  } else if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
+    // In onboading card auth flow, a card index is required, if not sent by
+    // host, exit
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
   } else {
     snprintf(auth_card_data->ctx.heading,
              sizeof(auth_card_data->ctx.heading),
@@ -359,17 +258,24 @@ static manager_error_code_t prepare_card_auth_context(
            SIGN_SERIAL_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
 
   memcpy(auth_card_data->ctx.family_id, get_family_id(), FAMILY_ID_SIZE);
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_sign_data(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
+static void send_flow_complete_response() {
+  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
+  result.auth_card.which_response =
+      MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
+  result.auth_card.flow_complete.dummy_field = 0;
+  manager_send_result(&result);
+}
+
+static bool handle_sign_data(auth_card_data_t *auth_card_data) {
   card_sign_data_config_t sign_config = {0};
 
+  manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
+  manager_auth_card_response_t *resp = &result.auth_card;
+
   sign_config.acceptable_cards = auth_card_data->ctx.acceptable_cards;
-  sign_config.heading = auth_card_data->ctx.heading;
-  sign_config.message = auth_card_data->ctx.message;
   sign_config.family_id = auth_card_data->ctx.family_id;
 
   if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG ==
@@ -382,16 +288,13 @@ static manager_error_code_t handle_sign_data(
     sign_config.data_size = CHALLENGE_SIZE;
     sign_config.sign_type = CARD_SIGN_CUSTOM;
   } else {
-    // This function shouldn't be called in other states
-    return MANAGER_TASK_INVALID_STATE;
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
   }
 
-  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != core_status_get_flow_status() &&
-      false == auth_card_data->ctx.pair_card_required)
-    sign_config.skip_card_removal = false;
-  else
-    sign_config.skip_card_removal = true;
-
+  instruction_scr_init(auth_card_data->ctx.message,
+                       auth_card_data->ctx.heading);
   card_error_type_e status = card_sign_auth_data(&sign_config);
 
   switch (status) {
@@ -401,35 +304,44 @@ static manager_error_code_t handle_sign_data(
         memcpy(resp->serial_signature.signature,
                sign_config.signature,
                sizeof(resp->serial_signature.signature));
+        result.auth_card.which_response =
+            MANAGER_AUTH_CARD_RESPONSE_SERIAL_SIGNATURE_TAG;
+        if (ACCEPTABLE_CARDS_ALL == auth_card_data->ctx.acceptable_cards) {
+          auth_card_data->ctx.acceptable_cards =
+              ACCEPTABLE_CARDS_ALL ^ sign_config.acceptable_cards;
+        }
+        manager_send_result(&result);
       } else if (MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG ==
                  auth_card_data->query->auth_card.which_request) {
         memcpy(resp->challenge_signature.signature,
                sign_config.signature,
                sizeof(resp->challenge_signature.signature));
+        result.auth_card.which_response =
+            MANAGER_AUTH_CARD_RESPONSE_CHALLENGE_SIGNATURE_TAG;
+        manager_send_result(&result);
       }
-      return MANAGER_TASK_SUCCESS;
+      return true;
       break;
 
     case CARD_OPERATION_P0_OCCURED:
-      return MANAGER_TASK_P0_ABORT_OCCURED;
+      return false;
       break;
 
     default:
-      /* TODO: Send error response to host */
-      return MANAGER_TASK_FAILED;
+      manager_send_error(
+          ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+          (uint32_t)get_card_error_from_nfc_status(sign_config.status));
+      return false;
       break;
   }
 }
 
-static manager_error_code_t handle_sign_card_serial(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
-  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
-  if (MANAGER_TASK_SUCCESS != manager_error) {
-    return manager_error;
+static bool handle_sign_card_serial(auth_card_data_t *auth_card_data) {
+  if (!handle_sign_data(auth_card_data)) {
+    return false;
   }
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
+  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
 
   // Display text for challenge sign screen
   snprintf(auth_card_data->ctx.message,
@@ -439,19 +351,15 @@ static manager_error_code_t handle_sign_card_serial(
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
 
-  resp->which_response = MANAGER_AUTH_CARD_RESPONSE_SERIAL_SIGNATURE_TAG;
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_sign_challenge(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
-  manager_error_code_t manager_error = handle_sign_data(auth_card_data, resp);
-  if (MANAGER_TASK_SUCCESS != manager_error) {
-    return manager_error;
+static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
+  if (!handle_sign_data(auth_card_data)) {
+    return false;
   }
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
+  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
 
   if (auth_card_data->ctx.pair_card_required) {
     snprintf(auth_card_data->ctx.message,
@@ -466,70 +374,70 @@ static manager_error_code_t handle_sign_challenge(
 
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
-  resp->which_response = MANAGER_AUTH_CARD_RESPONSE_CHALLENGE_SIGNATURE_TAG;
-  return MANAGER_TASK_SUCCESS;
+  return true;
 }
 
-static manager_error_code_t handle_auth_card_initiate_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
-  if (MANAGER_AUTH_CARD_STATUS_INIT != core_status_get_flow_status()) {
-    return MANAGER_TASK_INVALID_STATE;
+static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
+  if (MANAGER_AUTH_CARD_STATUS_INIT != auth_card_data->flow_status) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
   }
 
-  /* TODO: If onboarding is done, add check step for confirmation */
-  // if(false == wait_for_user_confirmation()){
-  //   //Abort operations
-  //    return MANAGER_TASK_REJECTED;
-  // }
-
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
-
-  manager_error_code_t status = prepare_card_auth_context(auth_card_data);
-  if (MANAGER_TASK_SUCCESS != status) {
-    return status;
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
+    if (!core_confirmation(ui_text_start_verification_of_card,
+                           &manager_send_error)) {
+      return false;
+    }
   }
 
-  return handle_sign_card_serial(auth_card_data, resp);
+  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
+
+  if (!prepare_card_auth_context(auth_card_data)) {
+    return false;
+  }
+
+  return handle_sign_card_serial(auth_card_data);
 }
 
-static manager_error_code_t handle_auth_card_challenge_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
-  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != core_status_get_flow_status()) {
-    return MANAGER_TASK_INVALID_STATE;
+static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data) {
+  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != auth_card_data->flow_status) {
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
   }
 
-  return handle_sign_challenge(auth_card_data, resp);
+  return handle_sign_challenge(auth_card_data);
 }
 
-static manager_error_code_t handle_auth_card_result_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
-  bool result = auth_card_data->query->auth_card.result.verified;
+static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
+  bool verified = auth_card_data->query->auth_card.result.verified;
 
-  switch (core_status_get_flow_status()) {
+  switch (auth_card_data->flow_status) {
     case MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED:
-      if (false == result) {
-        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        resp->flow_complete.dummy_field = 0;
+      if (false == verified) {
+        send_flow_complete_response();
+
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_SUCCESS;
+        return true;
       } else {
-        return MANAGER_TASK_INVALID_STATE;
+        manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
       }
       break;
 
     case MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED:
-      if (false == result) {
-        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        resp->flow_complete.dummy_field = 0;
+      if (false == verified) {
+        send_flow_complete_response();
+
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-        return MANAGER_TASK_SUCCESS;
+        return true;
       } else {
         if (true == auth_card_data->ctx.pair_card_required) {
           uint8_t card_number =
               decode_card_number(auth_card_data->ctx.acceptable_cards);
+
           uint32_t pairing_status = DEFAULT_VALUE_IN_FLASH;
           if (CARD_OPERATION_SUCCESS !=
               card_pair_without_retap(card_number, &pairing_status)) {
@@ -537,48 +445,59 @@ static manager_error_code_t handle_auth_card_result_query(
             manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                                get_card_error_from_nfc_status(pairing_status));
             delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-            return MANAGER_TASK_FAILED;
+            return false;
           }
+          UPDATE_FLOW_STATUS(auth_card_data,
+                             MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         }
 
-        core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
-        resp->which_response = MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
-        resp->flow_complete.dummy_field = 0;
+        send_flow_complete_response();
 
-        return MANAGER_TASK_SUCCESS;
+        /**
+         * Set onboarding complete here if 4th card auth is complete. The
+         * onboarding_set_step_done API internally verfies if onboarding was
+         * complete or not.
+         */
+        if (0x08 == auth_card_data->ctx.acceptable_cards) {
+          onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
+        }
+
+        return true;
       }
       break;
 
     default:
-      return MANAGER_TASK_INVALID_STATE;
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
       break;
   }
 
-  return MANAGER_TASK_INVALID_DEFAULT;
+  return false;
 }
 
-static manager_error_code_t handle_auth_card_query(
-    auth_card_data_t *auth_card_data,
-    manager_auth_card_response_t *resp) {
+static bool handle_auth_card_query(auth_card_data_t *auth_card_data) {
   switch (auth_card_data->query->auth_card.which_request) {
     case MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG:
-      return handle_auth_card_initiate_query(auth_card_data, resp);
+      return handle_auth_card_initiate_query(auth_card_data);
       break;
 
     case MANAGER_AUTH_CARD_REQUEST_CHALLENGE_TAG:
-      return handle_auth_card_challenge_query(auth_card_data, resp);
+      return handle_auth_card_challenge_query(auth_card_data);
       break;
 
     case MANAGER_AUTH_CARD_REQUEST_RESULT_TAG:
-      return handle_auth_card_result_query(auth_card_data, resp);
+      return handle_auth_card_result_query(auth_card_data);
       break;
 
     default:
-      return MANAGER_TASK_UNKNOWN_QUERY_REQUEST;
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
       break;
   }
 
-  return MANAGER_TASK_INVALID_DEFAULT;
+  return false;
 }
 
 /*****************************************************************************
@@ -589,16 +508,18 @@ void card_auth_handler(manager_query_t *query) {
 
   /* Validate if this flow is allowed */
   if (!onboarding_step_allowed(MANAGER_ONBOARDING_STEP_CARD_AUTHENTICATION)) {
-    // TODO: Reject query
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_QUERY_NOT_ALLOWED);
+    return;
   }
 
   if (MANAGER_AUTH_CARD_REQUEST_INITIATE_TAG !=
       query->auth_card.which_request) {
-    // Ignore invalid request
+    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return;
   }
 
-  manager_auth_card_response_t resp = MANAGER_AUTH_CARD_RESPONSE_INIT_ZERO;
   auth_card_data_t auth_card_data = {
       .ctx =
           {
@@ -607,47 +528,23 @@ void card_auth_handler(manager_query_t *query) {
               .message = "",
               .pair_card_required = false,
           },
-      .query = query};
+      .query = query,
+      .flow_status = MANAGER_AUTH_CARD_STATUS_INIT};
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_INIT);
-  do {
-    /* TODO: Create a handler to resolve specific returns and either send error
-     * response or abort flow accordingly*/
-    if (MANAGER_TASK_SUCCESS !=
-        handle_auth_card_query(&auth_card_data, &resp)) {
+  while (1) {
+    if (true != handle_auth_card_query(&auth_card_data)) {
       usb_clear_event();
       return;
     }
 
-    send_auth_card_response(&resp);
-    /**
-     * TODO: Sending errors and response at this point is not ideal as host gets
-     * indicated of the issue after the error dispaly completes
-     * - Each handler should send their own response to host for success case
-     * - Send error response to host in errors cases before showing error
-     * display.
-     * - The parent should only be concerned with correct exit condition i.e.
-     * flow complete or error occurred
-     * - Flow complete should be indicated by flow status.
-     * - For early exits, say auth failed after the serial sign, handler can
-     * return MANAGER_TASK_FAILED to exit.
-     */
-    if (MANAGER_AUTH_CARD_RESPONSE_COMMON_ERROR_TAG == resp.which_response) {
-      return;
-    }
-    memzero(&resp, sizeof(resp));
-
-    if (FLOW_COMPLETE_STATE) {
+    if (FLOW_COMPLETE_STATE(&auth_card_data)) {
       return;
     }
 
-    if (MANAGER_TASK_SUCCESS !=
-        get_and_decode_valid_query_from_host(auth_card_data.query)) {
-      usb_clear_event();
+    if (false ==
+        manager_get_query(auth_card_data.query, MANAGER_QUERY_AUTH_CARD_TAG)) {
       return;
     }
-
-  } while (!FLOW_COMPLETE_STATE);
-
+  }
   return;
 }

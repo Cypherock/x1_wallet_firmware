@@ -165,7 +165,7 @@ card_error_type_e wait_for_card_removal(void) {
   return CARD_OPERATION_DEFAULT_INVALID;
 }
 
-card_error_type_e indicate_wrong_pin(ISO7816 status) {
+card_error_type_e indicate_wrong_pin(card_error_status_word_e status) {
   /** Check incorrect pin error */
   if (SW_CORRECT_LENGTH_00 == (status & 0xFF00)) {
     char error_message[60] = "";
