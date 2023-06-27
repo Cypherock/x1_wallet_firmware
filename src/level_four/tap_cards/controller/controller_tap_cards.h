@@ -117,22 +117,6 @@ bool tap_card_handle_applet_errors();
  *
  * @note
  */
-void tap_card_pair_card_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void tap_cards_for_write_and_verify_flow_controller();
 
 /**

@@ -238,7 +238,7 @@ static card_error_type_e handle_wait_for_card_selection(
 static bool load_card_session_key(uint8_t *card_key_id) {
   ASSERT(NULL != card_key_id);
 
-  int8_t keystore_index = is_paired(card_key_id);
+  int8_t keystore_index = get_paired_card_index(card_key_id);
 
   if (-1 == keystore_index) {
     return false;

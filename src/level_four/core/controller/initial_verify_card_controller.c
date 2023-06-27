@@ -328,7 +328,7 @@ static void _tap_card_backend(uint8_t card_number) {
         flow_level.level_one = 6;    // take to get-started screen
       break;
     }
-    if (is_paired(tap_card_data.card_key_id) > -1) {
+    if (get_paired_card_index(tap_card_data.card_key_id) > -1) {
       transmit_one_byte_confirm(START_CARD_AUTH);
       buzzer_start(BUZZER_DURATION);
       instruction_scr_destructor();
@@ -343,7 +343,6 @@ static void _tap_card_backend(uint8_t card_number) {
         set_family_id_flash(cyi_verify_fid);
       instruction_scr_change_text(ui_text_remove_card_prompt, true);
       nfc_detect_card_removal();
-      handle_pair_card_success(card_number, session_nonce, card_pairing_data);
       transmit_one_byte_confirm(START_CARD_AUTH);
       instruction_scr_destructor();
       break;

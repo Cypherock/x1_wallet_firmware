@@ -111,7 +111,8 @@ bool tap_card_applet_connection() {
 
     if (tap_card_data.status == SW_NO_ERROR) {
 #if X1WALLET_MAIN
-      tap_card_data.keystore_index = is_paired(tap_card_data.card_key_id);
+      tap_card_data.keystore_index =
+          get_paired_card_index(tap_card_data.card_key_id);
       if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
           flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
           tap_card_data.keystore_index == -1) {

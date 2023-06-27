@@ -134,7 +134,7 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
         decode_card_number(operation_data.nfc_data.tapped_card);
     memcpy(
         result->family_id, operation_data.nfc_data.family_id, FAMILY_ID_SIZE);
-    if (-1 == is_paired(operation_data.nfc_data.card_key_id)) {
+    if (-1 == get_paired_card_index(operation_data.nfc_data.card_key_id)) {
       // keystore index is -1; the keystore does not have key-id
       result->is_paired = false;
     } else {

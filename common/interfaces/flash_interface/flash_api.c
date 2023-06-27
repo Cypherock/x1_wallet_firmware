@@ -892,7 +892,7 @@ int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys) {
   return INCONSISTENT_STATE;
 }
 
-int is_paired(const uint8_t *card_key_id) {
+int get_paired_card_index(const uint8_t *card_key_id) {
   ASSERT(card_key_id != NULL);
 
   get_sec_flash_ram_instance();
