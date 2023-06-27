@@ -257,13 +257,15 @@ static bool send_xpubs(btc_query_t *query,
  *****************************************************************************/
 
 void btc_get_xpub(btc_query_t *query) {
-  char wallet_name[16] = "";
+  char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
   uint8_t seed[64] = {0};
   const btc_get_xpubs_intiate_request_t *init_req = &query->get_xpubs.initiate;
   char xpub_list[sizeof(init_req->derivation_paths) /
                  sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
 
+  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
+  // found but is invalid/locked wallet
   if (!check_which_request(query, BTC_GET_XPUBS_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_xpubs) ||
       !get_wallet_name_by_id(query->get_xpubs.initiate.wallet_id,
@@ -280,6 +282,8 @@ void btc_get_xpub(btc_query_t *query) {
 
   core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
 
+  // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
+  // button pressed on PIN/Passphrase entry
   if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
     // TODO: Handle error case reporting to host
     return;
