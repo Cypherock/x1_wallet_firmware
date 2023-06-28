@@ -185,8 +185,6 @@ static bool check_which_request(const btc_query_t *query,
 static bool validate_request_data(btc_get_xpubs_request_t *request) {
   bool status = true;
 
-  // TODO: enable checking if wallet is operational
-  // status = wallet_is_operational(request->initiate.wallet_id);
   if (0 == request->initiate.derivation_paths_count) {
     // request does not have any derivation paths, invalid request
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

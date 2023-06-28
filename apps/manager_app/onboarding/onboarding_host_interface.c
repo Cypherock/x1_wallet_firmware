@@ -98,11 +98,10 @@
 void onboarding_host_interface(engine_ctx_t *ctx,
                                usb_event_t usb_evt,
                                const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
+  /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
    * application here */
 
-  // TODO: Get info from core on which application to boot
   // Temporarily hardcode to manager app where we will do the onboarding
   manager_app_main(usb_evt);
 
