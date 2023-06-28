@@ -117,12 +117,13 @@ const char *ui_text_message_device_auth_success =
 const char *ui_text_message_device_auth_failure =
     "Device authentication failed";
 
-const char *ui_text_joystick_up = "Toggle up your joystick";
-const char *ui_text_joystick_right = "Toggle right your joystick";
-const char *ui_text_joystick_down = "Toggle down your joystick";
-const char *ui_text_joystick_left = "Toggle left your joystick";
-const char *ui_text_joystick_center = "Center click your joystick";
-const char *ui_text_joystick_checkup_complete = "Joystick checkup complete";
+const char *ui_text_joystick_up = "Toggle joystick up";
+const char *ui_text_joystick_right = "Toggle joystick right";
+const char *ui_text_joystick_down = "Toggle joystick down";
+const char *ui_text_joystick_left = "Toggle joystick left";
+const char *ui_text_joystick_center = "Center click joystick";
+const char *ui_text_joystick_checkup_complete =
+    "Joystick instructions complete";
 
 // Onboarding flow text
 const char *ui_text_onboarding_welcome = "Welcome";
