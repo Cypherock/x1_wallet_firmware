@@ -146,9 +146,9 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
+      /* In case we ever encounter invalid query, convey to the host app */
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }
