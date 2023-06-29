@@ -147,7 +147,11 @@ void manager_card_training(manager_query_t *query) {
     return;
   }
   result.result.card_paired = pair_result.is_paired;
-  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+  if (U32_READ_BE_ARRAY(pair_result.family_id) !=
+      U32_READ_BE_ARRAY(get_family_id())) {
+    /* Always update the tapped family-id if it's different. We need to allow
+     * all the next steps without family-id errors.
+     */
     set_family_id_flash(pair_result.family_id);
   }
 
