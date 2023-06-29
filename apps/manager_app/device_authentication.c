@@ -241,7 +241,13 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
 
   switch (request_type) {
     case MANAGER_AUTH_DEVICE_REQUEST_INITIATE_TAG: {
-      if (is_device_authenticated() &&
+      /* We need to get user confirmation only if auth is triggered via
+       * settings. This can be determined by ensuring all of the following:
+       * 1. onboarding is complete
+       * 2. device is already authenticated (i.e., it is on main menu)
+       */
+      if ((MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step() &&
+           is_device_authenticated()) &&
           !core_confirmation(ui_text_start_device_verification,
                              manager_send_error)) {
         // re-authentication denied by user
