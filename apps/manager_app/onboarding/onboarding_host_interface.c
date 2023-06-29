@@ -63,6 +63,7 @@
 
 #include "manager_app.h"
 #include "onboarding.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -108,6 +109,9 @@ void onboarding_host_interface(engine_ctx_t *ctx,
   /* If onboarding is complete, reset the flow as the core will now need to
    * render the main menu */
   if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
+    // this is an ideally good place to show congratulation message upon
+    // onboarding completion
+    delay_scr_init(ui_text_onboarding_complete, DELAY_TIME);
     engine_reset_flow(ctx);
   }
 
