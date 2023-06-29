@@ -143,6 +143,10 @@ static void memory_monitor(lv_task_t *param);
  * @retval int
  */
 
+// TODO: Update after refactor - Remove the following
+#include "onboarding.h"
+#include "ui_core_confirm.h"
+
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
@@ -152,6 +156,13 @@ int main(void) {
 
 #ifdef RUN_ENGINE
   logo_scr_init(2000);
+
+  // TODO: Update after refactor - Remove the following check and erase.
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step() &&
+      core_confirmation("Reset pairing?", NULL)) {
+    save_onboarding_step(0);
+  }
+
   while (1) {
     engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);
