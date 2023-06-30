@@ -63,6 +63,7 @@
 
 #include "manager_app.h"
 #include "onboarding.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,17 +99,19 @@
 void onboarding_host_interface(engine_ctx_t *ctx,
                                usb_event_t usb_evt,
                                const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
+  /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
    * application here */
 
-  // TODO: Get info from core on which application to boot
   // Temporarily hardcode to manager app where we will do the onboarding
   manager_app_main(usb_evt);
 
   /* If onboarding is complete, reset the flow as the core will now need to
    * render the main menu */
   if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
+    // this is an ideally good place to show congratulation message upon
+    // onboarding completion
+    delay_scr_init(ui_text_onboarding_complete, DELAY_TIME);
     engine_reset_flow(ctx);
   }
 

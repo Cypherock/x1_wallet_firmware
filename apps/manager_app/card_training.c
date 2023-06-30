@@ -95,13 +95,6 @@
  */
 static void send_training_response(manager_train_card_response_t *resp);
 
-/**
- * TODO: Replace with api provided by manager app
- *
- * @param error_code
- */
-static void send_training_error(uint32_t error_code);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -119,15 +112,6 @@ static void send_training_response(manager_train_card_response_t *resp) {
   memcpy(&(result.train_card), resp, sizeof(manager_train_card_response_t));
   manager_send_result(&result);
   return;
-}
-
-static void send_training_error(uint32_t error_code) {
-  manager_train_card_response_t training =
-      MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
-  training.which_response = MANAGER_TRAIN_CARD_RESPONSE_COMMON_ERROR_TAG;
-  training.common_error.which_error = ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG;
-  training.common_error.unknown_error = error_code;
-  send_training_response(&training);
 }
 
 /*****************************************************************************
@@ -159,11 +143,15 @@ void manager_card_training(manager_query_t *query) {
   card_error_type_e status = card_check_pairing(&pair_result);
   if (CARD_OPERATION_SUCCESS != status) {
     LOG_SWV("%s (%d)\n", __func__, __LINE__);
-    send_training_error(1);
+    manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG, 1);
     return;
   }
   result.result.card_paired = pair_result.is_paired;
-  if (DEFAULT_UINT32_IN_FLASH == U32_READ_BE_ARRAY(get_family_id())) {
+  if (U32_READ_BE_ARRAY(pair_result.family_id) !=
+      U32_READ_BE_ARRAY(get_family_id())) {
+    /* Always update the tapped family-id if it's different. We need to allow
+     * all the next steps without family-id errors.
+     */
     set_family_id_flash(pair_result.family_id);
   }
 

@@ -107,11 +107,8 @@ void manager_app_main(usb_event_t usb_evt) {
   /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
 
-  // TODO: Add calls to flows/ functions based on query type decoded from the
-  // protobuf
   switch ((uint8_t)query.which_request) {
     case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
       get_device_info_flow(&query);
@@ -146,14 +143,13 @@ void manager_app_main(usb_event_t usb_evt) {
       break;
     }
     default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
+      /* In case we ever encounter invalid query, convey to the host app */
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }
 
-  // TODO: Check if on-boarding default screen is to be rendered
   onboarding_set_static_screen();
 
   return;

@@ -150,7 +150,13 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   /* Reset flow status back to zero */
   core_status_set_flow_status(0);
 
-  if (true == onboarding_ctx.static_screen) {
+  if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE != onboarding_get_last_step() ||
+      true == onboarding_ctx.static_screen) {
+    /* The static screen should appear if
+     * 1. at least one onboarding milestone is complete
+     * 2. in-between the onboarding milestones (only in single session)
+     * 3. any action from host other than onboarding (only in single session)
+     */
     delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
   } else {
     /* Since there is now way onboarding_ctx.static_screen be set to false after
