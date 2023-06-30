@@ -159,7 +159,7 @@ int main(void) {
 
   // TODO: Update after refactor - Remove the following check and erase.
   if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step() &&
-      core_confirmation("Reset pairing?", NULL)) {
+      core_confirmation("Reset onboarding?", NULL)) {
     save_onboarding_step(0);
   }
 
