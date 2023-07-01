@@ -145,8 +145,12 @@ static bool validate_query(const manager_firmware_update_request_t *request) {
   // Query is invalid if the target version is equal or less than the current
   // firmware version installed
   if (target_version <= current_version) {
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
+    manager_result_t result =
+        init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
+    manager_firmware_update_response_t *resp = &result.firmware_update;
+    resp->which_response = MANAGER_FIRMWARE_UPDATE_RESPONSE_ERROR_TAG;
+    resp->error.error = MANAGER_FIRMWARE_UPDATE_ERROR_VERSION_NOT_ALLOWED;
+    manager_send_result(&result);
     return false;
   }
 
