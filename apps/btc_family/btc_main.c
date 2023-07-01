@@ -59,11 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+
 #include "btc_main.h"
 
 #include "btc_api.h"
 #include "btc_priv.h"
-#include "main_menu.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -123,15 +123,14 @@ void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
       break;
     }
     default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
+      /* In case we ever encounter invalid query, convey to the host app */
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }
 
   // reset config reference
   g_app = NULL;
-  main_menu_set_update_req(true);
   return;
 }

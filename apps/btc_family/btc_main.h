@@ -10,16 +10,12 @@
  *
  */
 
-#ifndef BTC_FAM_MAIN_H
-#define BTC_FAM_MAIN_H
+#ifndef BTC_MAIN_H
+#define BTC_MAIN_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include <btc/core.pb.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #include "btc_context.h"
 #include "events.h"
@@ -45,8 +41,8 @@
  * bitcoin app.
  *
  * @param usb_evt The USB event which triggered invocation of the bitcoin app
- * @param app
+ * @param app An immutable reference to the app configuration info
  */
 void btc_main(usb_event_t usb_evt, const btc_config_t *app);
 
-#endif /* BTC_FAM_MAIN_H */
+#endif /* BTC_MAIN_H */

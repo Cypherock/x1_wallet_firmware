@@ -62,12 +62,11 @@
 
 #include "btc_api.h"
 
-#include "assert_conf.h"
+#include <pb_decode.h>
+#include <pb_encode.h>
+
 #include "common_error.h"
 #include "events.h"
-#include "pb_decode.h"
-#include "pb_encode.h"
-#include "usb_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

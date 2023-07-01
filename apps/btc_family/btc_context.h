@@ -7,15 +7,15 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_FAM_CONTEXT_H
-#define BTC_FAM_CONTEXT_H
+#ifndef BTC_CONTEXT_H
+#define BTC_CONTEXT_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include "btc/core.pb.h"
-#include "stdint.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -76,6 +76,8 @@ typedef struct {
   char name[LONG_NAME_MAX_SIZE];
 
   /** Validates if the provided purpose_index is supported by the Bitcoin fork.
+   * The validation acts as safety check for receive address, account addition
+   * and transaction type for the specific fork of Bitcoin.
    */
   bool (*is_purpose_supported)(uint32_t purpose_index);
 } btc_config_t;

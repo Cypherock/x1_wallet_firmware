@@ -6,14 +6,15 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_FAM_HELPERS_H
-#define BTC_FAM_HELPERS_H
+#ifndef BTC_HELPERS_H
+#define BTC_HELPERS_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /*****************************************************************************
@@ -57,6 +58,29 @@ int btc_segwit_addr(const uint8_t *public_key,
                     uint8_t key_len,
                     const char *hrp,
                     char *address);
+
+/**
+ * @brief Generates xpub for the passed purpose id, coin id and account id.
+ * @details The function uses fingerprint of second last node and assumes first
+ * two nodes are purpose and coin index.
+ *
+ * @param [in] path             Path of the node to derive xpub
+ * @param [in] path_length      Length of the given path.
+ * @param [in] curve            Curve to be used.
+ * @param [in] seed             Seed to generate the master node of 64 bytes
+ * @param [in] version          HD version for xpub encoding
+ * @param [out] str              String to store the xpub of XPUB_SIZE
+ *
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded.
+ * @retval false If the node derivation failed.
+ */
+bool generate_xpub(const uint32_t *path,
+                   size_t path_length,
+                   const char *curve,
+                   const uint8_t *seed,
+                   uint32_t version,
+                   char *str);
 
 /**
  * @brief Returns the HD version for xpub encoding for the specified purpose

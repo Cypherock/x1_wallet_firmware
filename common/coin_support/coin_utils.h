@@ -304,29 +304,6 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
                                     const uint32_t size);
 
 /**
- * @brief Generates xpub for the passed purpose id, coin id and account id.
- * @details The function uses fingerprint of second last node and assumes first
- * two nodes are purpose and coin index.
- *
- * @param [in] path             Path of the node to derive xpub
- * @param [in] path_length      Length of the given path.
- * @param [in] curve            Curve to be used.
- * @param [in] seed             Seed to generate the master node of 64 bytes
- * @param [in] version          HD version for xpub encoding
- * @param [out] str              String to store the xpub of XPUB_SIZE
- *
- * @return bool Indicating if the derivation was successful
- * @retval true If the node derivation succeeded.
- * @retval false If the node derivation failed.
- */
-bool generate_xpub(const uint32_t *path,
-                   size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   uint32_t version,
-                   char *str);
-
-/**
  * @brief Generates the node from provided seed at the requested path
  * @details The function performs hardened derivation of the nodes at the
  * specified derivation path.

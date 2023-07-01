@@ -62,10 +62,9 @@
 
 #include "btc_helpers.h"
 
-#include "bignum.h"
 #include "btc_priv.h"
-#include "hasher.h"
-#include "ripemd160.h"
+#include "coin_utils.h"
+#include "flash_config.h"
 #include "segwit_addr.h"
 
 /*****************************************************************************
@@ -84,22 +83,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Checks if the provided 32-bit value has its MSB not set.
- *
- * @return true   If the provided value has MSB set to 0.
- * @return false  If the provided value has MSB set to 1.
- */
-static inline bool is_non_hardened(uint32_t x);
-
-/**
- * @brief Checks if the provided 32-bit value has its MSB set.
- *
- * @return true   If the provided value has MSB set to 1.
- * @return false  If the provided value has MSB set to 0.
- */
-static inline bool is_hardened(uint32_t x);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -111,14 +94,6 @@ static inline bool is_hardened(uint32_t x);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-static inline bool is_non_hardened(uint32_t x) {
-  return ((x & 0x80000000) == 0);
-}
-
-static inline bool is_hardened(uint32_t x) {
-  return ((x & 0x80000000) == 0x80000000);
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -146,6 +121,32 @@ int btc_segwit_addr(const uint8_t *public_key,
 
   hasher_Raw(HASHER_SHA2_RIPEMD, public_key, key_len, rip);
   return segwit_addr_encode(address, hrp, 0x00, rip, sizeof(rip));
+}
+
+bool generate_xpub(const uint32_t *path,
+                   const size_t path_length,
+                   const char *curve,
+                   const uint8_t *seed,
+                   const uint32_t version,
+                   char *str) {
+  uint32_t fingerprint = 0x0;
+  HDNode t_node = {0};
+  bool status = true;
+
+  status &=
+      derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
+  fingerprint = hdnode_fingerprint(&t_node);
+  if (0 == hdnode_private_ckd(&t_node, path[path_length - 1])) {
+    // hdnode_private_ckd returns 1 when the derivation succeeds
+    status &= false;
+  }
+  hdnode_fill_public_key(&t_node);
+  if (0 ==
+      hdnode_serialize_public(&t_node, fingerprint, version, str, XPUB_SIZE)) {
+    status &= false;
+  }
+  memzero(&t_node, sizeof(HDNode));
+  return status;
 }
 
 bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {

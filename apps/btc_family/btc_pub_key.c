@@ -60,14 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "bip32.h"
-#include "btc.h"
-#include "btc/core.pb.h"
 #include "btc_api.h"
-#include "btc_context.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
-#include "pb_encode.h"
 #include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -263,7 +258,8 @@ void btc_pub_key(btc_query_t *query) {
     return;
   }
 
-  snprintf(msg, sizeof(msg), "Receive %s in %s", g_app->name, wallet_name);
+  snprintf(
+      msg, sizeof(msg), UI_TEXT_BTC_RECEIVE_PROMPT, g_app->name, wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

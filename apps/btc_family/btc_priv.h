@@ -8,14 +8,15 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_FAM_PRIV_H
-#define BTC_FAM_PRIV_H
+#ifndef BTC_PRIV_H
+#define BTC_PRIV_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include "btc_api.h"
+#include <btc/core.pb.h>
+
 #include "btc_context.h"
 
 /*****************************************************************************

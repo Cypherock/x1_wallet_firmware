@@ -61,10 +61,8 @@
  *****************************************************************************/
 
 #include "btc_api.h"
-#include "btc_context.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
-#include "common_error.h"
 #include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -278,7 +276,8 @@ void btc_xpub(btc_query_t *query) {
     return;
   }
 
-  snprintf(msg, sizeof(msg), "Add %s to %s", g_app->name, wallet_name);
+  snprintf(
+      msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, g_app->name, wallet_name);
   // Take user consent to export xpub for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;
