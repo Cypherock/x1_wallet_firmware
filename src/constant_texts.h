@@ -62,9 +62,11 @@ extern const char *ui_text_options_new_wallet[];
 // Settings menu text
 #ifdef DEV_BUILD
 #define NUMBER_OF_OPTIONS_SETTINGS 10
+// TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
 #define NUMBER_OF_OPTIONS_SETTINGS 9
+// TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
 extern const char *ui_text_heading_settings;

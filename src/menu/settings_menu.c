@@ -135,7 +135,7 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-const flow_step_t settings_menu_step = {
+static const flow_step_t settings_menu_step = {
     .step_init_cb = settings_menu_initialize,
     .p0_cb = ignore_p0_handler,
     .ui_cb = settings_menu_handler,
@@ -188,7 +188,7 @@ static void settings_menu_handler(engine_ctx_t *ctx,
   }
 
   /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-   * detected, or a create wallet flow was executed */
+   * detected, or any option was executed */
   engine_delete_current_flow_step(ctx);
 
   return;
