@@ -96,13 +96,21 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * STATIC VARIABLES
  *****************************************************************************/
 
+/**
+ * The Dash fork of Bitcoin only supports legacy addresses. No support for
+ * Segwit and Native-Segwit. Hence, bech32_hrp is empty and segwit,
+ * native-segwit xpub version is set to 0.
+ * Values can be verified from the following references:
+ * https://docs.dash.org/projects/core/en/18.0.0/docs/reference/transactions-address-conversion.html#conversion-process
+ */
 const btc_config_t dash_app = {
     .coin_type = COIN_DASH,
     .p2pkh_addr_ver = 0x4c,
     .p2sh_addr_ver = 0x10,
     .legacy_xpub_ver = 0x0488b21e,
     .segwit_xpub_ver = 0x00,
-    .nsegwit_xpub_ver = 0x0488b21e,
+    .nsegwit_xpub_ver = 0x00,
+    .bech32_hrp = "",
     .lunit_name = "DASH",
     .name = "Dash",
 
