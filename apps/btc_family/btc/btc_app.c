@@ -89,7 +89,7 @@
  * @retval true The provided purpose index is supported
  * @retval false The provided purpose index is not supported
  */
-bool is_purpose_supported(uint32_t purpose_index);
+static bool is_purpose_supported(uint32_t purpose_index);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -119,7 +119,7 @@ const btc_config_t btc_app = {
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-bool is_purpose_supported(uint32_t purpose_index) {
+static bool is_purpose_supported(uint32_t purpose_index) {
   if (PURPOSE_LEGACY != purpose_index && PURPOSE_SEGWIT != purpose_index &&
       PURPOSE_NSEGWIT != purpose_index && PURPOSE_TAPROOT != purpose_index) {
     return false;
