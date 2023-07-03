@@ -114,28 +114,27 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       break;
     }
     case 2: {
-      // TODO: instantiate & configure Bitcoin chain
       btc_main(usb_evt, get_btc_app());
       break;
     }
     case 3: {
       // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: instantiate & configure Bitcoin testnet chain
+      // TODO: fetch & provide Bitcoin testnet chain
       btc_main(usb_evt, get_btc_app());
       break;
     }
     case 4: {
-      // TODO: instantiate & configure Litecoin chain
+      // TODO: fetch & provide Litecoin chain
       btc_main(usb_evt, get_btc_app());
       break;
     }
     case 5: {
-      // TODO: instantiate & configure Dogecoin chain
+      // TODO: fetch & provide Dogecoin chain
       btc_main(usb_evt, get_btc_app());
       break;
     }
     case 6: {
-      // TODO: instantiate & configure Dash chain
+      // TODO: fetch & provide Dash chain
       btc_main(usb_evt, get_btc_app());
       break;
     }

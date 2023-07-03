@@ -99,10 +99,10 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-int btc_segwit_addr(const uint8_t *public_key,
-                    uint8_t key_len,
-                    const char *hrp,
-                    char *address) {
+int btc_get_segwit_addr(const uint8_t *public_key,
+                        uint8_t key_len,
+                        const char *hrp,
+                        char *address) {
   uint8_t rip[RIPEMD160_DIGEST_LENGTH] = {0};
   if (!public_key || !address) {
     return 1;
@@ -123,12 +123,12 @@ int btc_segwit_addr(const uint8_t *public_key,
   return segwit_addr_encode(address, hrp, 0x00, rip, sizeof(rip));
 }
 
-bool generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   const uint32_t version,
-                   char *str) {
+bool btc_generate_xpub(const uint32_t *path,
+                       const size_t path_length,
+                       const char *curve,
+                       const uint8_t *seed,
+                       const uint32_t version,
+                       char *str) {
   uint32_t fingerprint = 0x0;
   HDNode t_node = {0};
   bool status = true;

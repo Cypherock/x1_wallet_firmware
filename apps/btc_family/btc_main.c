@@ -1,7 +1,7 @@
 /**
  * @file    btc_main.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   A common entry point to various Bitcoin family actions supported.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -115,11 +115,11 @@ void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
-      btc_pub_key(&query);
+      btc_get_pub_key(&query);
       break;
     }
     case BTC_QUERY_GET_XPUBS_TAG: {
-      btc_xpub(&query);
+      btc_get_xpub(&query);
       break;
     }
     default: {

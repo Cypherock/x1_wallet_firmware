@@ -214,12 +214,12 @@ static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
     const btc_get_xpub_derivation_path_t *path = &paths[index];
     uint32_t xpub_ver = 0;
     if (!btc_get_version(path->path[0], &xpub_ver) ||
-        !generate_xpub(path->path,
-                       path->path_count,
-                       SECP256K1_NAME,
-                       seed,
-                       xpub_ver,
-                       xpubs[index])) {
+        !btc_generate_xpub(path->path,
+                           path->path_count,
+                           SECP256K1_NAME,
+                           seed,
+                           xpub_ver,
+                           xpubs[index])) {
       return false;
     }
   }
@@ -259,7 +259,7 @@ static bool send_xpubs(btc_query_t *query,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_xpub(btc_query_t *query) {
+void btc_get_xpub(btc_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
   uint8_t seed[64] = {0};

@@ -41,7 +41,7 @@ extern const btc_config_t *g_app;
  *
  * @param query Reference to the decoded query struct from the host app
  */
-void btc_xpub(btc_query_t *query);
+void btc_get_xpub(btc_query_t *query);
 
 /**
  * @brief Handler for bitcoin public key derivation.
@@ -50,6 +50,6 @@ void btc_xpub(btc_query_t *query);
  *
  * @param query object for card auth query
  */
-void btc_pub_key(btc_query_t *query);
+void btc_get_pub_key(btc_query_t *query);
 
 #endif

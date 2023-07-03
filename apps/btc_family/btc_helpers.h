@@ -54,10 +54,10 @@
  * @retval 0 Success
  * @retval 1 Failure
  */
-int btc_segwit_addr(const uint8_t *public_key,
-                    uint8_t key_len,
-                    const char *hrp,
-                    char *address);
+int btc_get_segwit_addr(const uint8_t *public_key,
+                        uint8_t key_len,
+                        const char *hrp,
+                        char *address);
 
 /**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
@@ -75,12 +75,12 @@ int btc_segwit_addr(const uint8_t *public_key,
  * @retval true If the node derivation succeeded.
  * @retval false If the node derivation failed.
  */
-bool generate_xpub(const uint32_t *path,
-                   size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   uint32_t version,
-                   char *str);
+bool btc_generate_xpub(const uint32_t *path,
+                       size_t path_length,
+                       const char *curve,
+                       const uint8_t *seed,
+                       uint32_t version,
+                       char *str);
 
 /**
  * @brief Returns the HD version for xpub encoding for the specified purpose

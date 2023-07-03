@@ -194,7 +194,7 @@ static size_t btc_get_address(const uint8_t *seed,
   switch (path[0]) {
     case NATIVE_SEGWIT:
       // ignoring the return status and handling by size of address
-      btc_segwit_addr(
+      btc_get_segwit_addr(
           node.public_key, sizeof(node.public_key), g_app->bech32_hrp, addr);
       break;
     case NON_SEGWIT:
@@ -241,7 +241,7 @@ static void send_public_key(const uint8_t *public_key) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_pub_key(btc_query_t *query) {
+void btc_get_pub_key(btc_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
   uint8_t seed[64] = {0};
