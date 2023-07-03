@@ -76,7 +76,7 @@ const char *ui_text_options_new_wallet[NUMBER_OF_OPTIONS_NEW_WALLET] = {
 
 // Settings menu text
 const char *ui_text_heading_settings = "Settings";
-const char *ui_text_options_advanced_settings[] = {
+const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "Restore wallets from cards",
     "Check Card health",
     "Rotate Display",

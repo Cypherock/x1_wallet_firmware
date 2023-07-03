@@ -47,6 +47,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         src/
         src/menu
         src/wallet
+        src/settings
 
         src/card_operations
         src/card_flows
