@@ -1,7 +1,7 @@
 /**
- * @file    btc_app.c
+ * @file    btc_main.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   A common entry point to various Bitcoin family actions supported.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,11 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "btc_app.h"
+
+#include "btc_main.h"
 
 #include "btc_api.h"
-#include "btc_app_priv.h"
-#include "main_menu.h"
+#include "btc_priv.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -86,6 +86,8 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
+const btc_config_t *g_app = NULL;
+
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -98,8 +100,9 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_app_main(usb_event_t usb_evt) {
+void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
   btc_query_t query = BTC_QUERY_INIT_DEFAULT;
+  g_app = app;
 
   if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
@@ -112,7 +115,7 @@ void btc_app_main(usb_event_t usb_evt) {
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case BTC_QUERY_GET_PUBLIC_KEY_TAG: {
-      btc_get_public_key(&query);
+      btc_get_pub_key(&query);
       break;
     }
     case BTC_QUERY_GET_XPUBS_TAG: {
@@ -120,13 +123,14 @@ void btc_app_main(usb_event_t usb_evt) {
       break;
     }
     default: {
-      /* In case we ever encounter invalid query, the USB event should be
-       * cleared manually */
-      usb_clear_event();
+      /* In case we ever encounter invalid query, convey to the host app */
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }
 
-  main_menu_set_update_req(true);
+  // reset config reference
+  g_app = NULL;
   return;
 }

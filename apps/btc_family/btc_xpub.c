@@ -1,5 +1,5 @@
 /**
- * @file    get_xpub.c
+ * @file    btc_xpub.c
  * @author  Cypherock X1 Team
  * @brief   Apis for exporting account level xpub to host for bitcoin
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -62,7 +62,7 @@
 
 #include "btc_api.h"
 #include "btc_helpers.h"
-#include "common_error.h"
+#include "btc_priv.h"
 #include "reconstruct_seed_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -196,7 +196,6 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   pb_size_t count = request->initiate.derivation_paths_count;
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
-    // TODO: Enable btc/coin specific check
     if (!btc_derivation_path_guard(path->path, path->path_count)) {
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -213,8 +212,14 @@ static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
                                    pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const btc_get_xpub_derivation_path_t *path = &paths[index];
-    if (!generate_xpub(
-            path->path, path->path_count, SECP256K1_NAME, seed, xpubs[index])) {
+    uint32_t xpub_ver = 0;
+    if (!btc_get_version(path->path[0], &xpub_ver) ||
+        !btc_generate_xpub(path->path,
+                           path->path_count,
+                           SECP256K1_NAME,
+                           seed,
+                           xpub_ver,
+                           xpubs[index])) {
       return false;
     }
   }
@@ -271,8 +276,8 @@ void btc_get_xpub(btc_query_t *query) {
     return;
   }
 
-  snprintf(msg, sizeof(msg), "Add Bitcoin to %s", wallet_name);
-
+  snprintf(
+      msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, g_app->name, wallet_name);
   // Take user consent to export xpub for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

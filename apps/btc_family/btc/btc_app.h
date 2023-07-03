@@ -1,25 +1,25 @@
 /**
- * @file    btc_app_priv.h
+ * @file    btc_app.h
  * @author  Cypherock X1 Team
- * @brief   Support for btc app internal operations
- *          This file is defined to separate Bitcoin's internal use functions,
- * flows, common APIs
+ * @brief   Bitcoin app configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef BTC_APP_PRIV_H
-#define BTC_APP_PRIV_H
+#ifndef BTC_APP_H
+#define BTC_APP_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include "btc_api.h"
+#include "btc_context.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+
+#define COIN_BTC 0x80000000    // 0'
 
 /*****************************************************************************
  * TYPEDEFS
@@ -34,18 +34,10 @@
  *****************************************************************************/
 
 /**
+ * @brief Returns the config for Bitcoin chain app
  *
- * @param query Reference to the decoded query struct from the host app
+ * @return A const reference to btc_config_t
  */
-void btc_get_xpub(btc_query_t *query);
-
-/**
- * @brief Handler for bitcoin public key derivation.
- * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
- * query, otherwise the flow is aborted
- *
- * @param query object for card auth query
- */
-void btc_get_public_key(btc_query_t *query);
+const btc_config_t *get_btc_app();
 
 #endif

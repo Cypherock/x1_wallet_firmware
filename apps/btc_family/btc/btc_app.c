@@ -1,7 +1,7 @@
 /**
- * @file    btc_helpers.c
+ * @file    btc_app.c
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Bitcoin blockchain
+ * @brief   Bitcoin app configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,6 +60,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "btc_app.h"
+
 #include "btc_helpers.h"
 
 /*****************************************************************************
@@ -79,24 +81,35 @@
  *****************************************************************************/
 
 /**
- * @brief Checks if the provided 32-bit value has its MSB not set.
+ * @brief Check if the purpose index is supported by the Bitcoin app.
  *
- * @return true   If the provided value has MSB set to 0.
- * @return false  If the provided value has MSB set to 1.
- */
-static inline bool is_non_hardened(uint32_t x);
-
-/**
- * @brief Checks if the provided 32-bit value has its MSB set.
+ * @param purpose_index The purpose index to be checked
  *
- * @return true   If the provided value has MSB set to 1.
- * @return false  If the provided value has MSB set to 0.
+ * @return bool Indicates if the provided purpose index is supported
+ * @retval true The provided purpose index is supported
+ * @retval false The provided purpose index is not supported
  */
-static inline bool is_hardened(uint32_t x);
+static bool is_purpose_supported(uint32_t purpose_index);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+
+const btc_config_t btc_app = {
+    // coin specific data
+    .coin_type = COIN_BTC,
+    .p2pkh_addr_ver = 0x00,
+    .p2sh_addr_ver = 0x05,
+    .legacy_xpub_ver = 0x0488b21e,
+    .segwit_xpub_ver = 0x049d7cb2,
+    .nsegwit_xpub_ver = 0x04b24746,
+    .bech32_hrp = "bc",
+    .lunit_name = "BTC",
+    .name = "Bitcoin",
+
+    // action handlers
+    .is_purpose_supported = is_purpose_supported,
+};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -106,46 +119,18 @@ static inline bool is_hardened(uint32_t x);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static inline bool is_non_hardened(uint32_t x) {
-  return ((x & 0x80000000) == 0);
-}
-
-static inline bool is_hardened(uint32_t x) {
-  return ((x & 0x80000000) == 0x80000000);
+static bool is_purpose_supported(uint32_t purpose_index) {
+  if (PURPOSE_LEGACY != purpose_index && PURPOSE_SEGWIT != purpose_index &&
+      PURPOSE_NSEGWIT != purpose_index && PURPOSE_TAPROOT != purpose_index) {
+    return false;
+  }
+  return true;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
-  bool status = false;
-  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
-    return status;
-  }
-  status = true;
-
-  // common checks for xpub/account and address nodes
-  if (PURPOSE_LEGACY != path[0] && PURPOSE_SEGWIT != path[0] &&
-      PURPOSE_NSEGWIT != path[0] && PURPOSE_TAPROOT != path[0]) {
-    // unsupported purpose index
-    status = false;
-  }
-  if (COIN_BTC != path[1] || is_non_hardened(path[2])) {
-    // coin index or account hardness mismatch
-    status = false;
-  }
-
-  if (BTC_ACC_ADDR_DEPTH == depth) {
-    // address node specific checks
-    if (is_hardened(path[3]) || is_hardened(path[4])) {
-      // change or address index must be non-hardened
-      status = false;
-    }
-    if (0 != path[3] && 1 != path[3]) {
-      // invalid change address
-      status = false;
-    }
-  }
-  return status;
+const btc_config_t *get_btc_app() {
+  return &btc_app;
 }

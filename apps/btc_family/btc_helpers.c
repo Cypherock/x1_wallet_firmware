@@ -1,7 +1,7 @@
 /**
- * @file    btc_api.c
+ * @file    btc_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Defines helpers apis for bitcoin app.
+ * @brief   Utilities specific to Bitcoin blockchain
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,12 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "btc_api.h"
+#include "btc_helpers.h"
 
-#include "assert_conf.h"
-#include "common_error.h"
-#include "events.h"
-#include "pb_decode.h"
-#include "pb_encode.h"
-#include "usb_api.h"
+#include "btc_priv.h"
+#include "coin_utils.h"
+#include "flash_config.h"
+#include "segwit_addr.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,15 +80,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -100,100 +98,103 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool decode_btc_query(const uint8_t *data,
-                      uint16_t data_size,
-                      btc_query_t *query_out) {
-  if (NULL == data || NULL == query_out || 0 == data_size) {
-    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
-    return false;
+
+int btc_get_segwit_addr(const uint8_t *public_key,
+                        uint8_t key_len,
+                        const char *hrp,
+                        char *address) {
+  uint8_t rip[RIPEMD160_DIGEST_LENGTH] = {0};
+  if (!public_key || !address) {
+    return 1;
   }
 
-  /* Initialize bitcoin query */
-  btc_query_t query = BTC_QUERY_INIT_ZERO;
-
-  /* Create a stream that reads from the buffer. */
-  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
-
-  /* Now we are ready to decode the message. */
-  bool status = pb_decode(&stream, BTC_QUERY_FIELDS, &query);
-
-  /* Copy query obj if status is true*/
-  if (true == status) {
-    memcpy(query_out, &query, sizeof(query));
-  } else {
-    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
+  if (key_len != 33 && key_len != 65) {
+    return 1;
   }
 
+  if (key_len == 65) {
+    bignum256 y_ordinate;
+    bn_read_be(public_key + 33, &y_ordinate);
+    ((uint8_t *)public_key)[0] = bn_is_odd(&y_ordinate) ? 0x03 : 0x02;
+    key_len = 33;
+  }
+
+  hasher_Raw(HASHER_SHA2_RIPEMD, public_key, key_len, rip);
+  return segwit_addr_encode(address, hrp, 0x00, rip, sizeof(rip));
+}
+
+bool btc_generate_xpub(const uint32_t *path,
+                       const size_t path_length,
+                       const char *curve,
+                       const uint8_t *seed,
+                       const uint32_t version,
+                       char *str) {
+  uint32_t fingerprint = 0x0;
+  HDNode t_node = {0};
+  bool status = true;
+
+  status &=
+      derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
+  fingerprint = hdnode_fingerprint(&t_node);
+  if (0 == hdnode_private_ckd(&t_node, path[path_length - 1])) {
+    // hdnode_private_ckd returns 1 when the derivation succeeds
+    status &= false;
+  }
+  hdnode_fill_public_key(&t_node);
+  if (0 ==
+      hdnode_serialize_public(&t_node, fingerprint, version, str, XPUB_SIZE)) {
+    status &= false;
+  }
+  memzero(&t_node, sizeof(HDNode));
   return status;
 }
 
-bool encode_btc_result(btc_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
-    return false;
-
-  /* Create a stream that will write to our buffer. */
-  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
-
-  /* Now we are ready to encode the message! */
-  bool status = pb_encode(&stream, BTC_RESULT_FIELDS, result);
-
-  if (true == status) {
-    *bytes_written_out = stream.bytes_written;
+bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {
+  bool status = true;
+  switch (purpose_index) {
+    case PURPOSE_LEGACY:
+      *xpub_ver = g_app->legacy_xpub_ver;
+      break;
+    case PURPOSE_SEGWIT:
+      *xpub_ver = g_app->segwit_xpub_ver;
+      break;
+    case PURPOSE_NSEGWIT:
+      *xpub_ver = g_app->nsegwit_xpub_ver;
+      break;
+    default:
+      status = false;
   }
-
   return status;
 }
 
-bool check_btc_query(const btc_query_t *query, pb_size_t exp_query_tag) {
-  if ((NULL == query) || (exp_query_tag != query->which_request)) {
-    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_QUERY);
-    return false;
+bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  bool status = false;
+  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
+    return status;
   }
-  return true;
-}
+  status = true;
 
-btc_result_t init_btc_result(pb_size_t result_tag) {
-  btc_result_t result = BTC_RESULT_INIT_ZERO;
-  result.which_response = result_tag;
-  return result;
-}
-
-void btc_send_error(pb_size_t which_error, uint32_t error_code) {
-  btc_result_t result = init_btc_result(BTC_RESULT_COMMON_ERROR_TAG);
-  result.common_error = init_common_error(which_error, error_code);
-  btc_send_result(&result);
-}
-
-void btc_send_result(btc_result_t *result) {
-  // TODO: Eventually 1700 will be replaced by BTC_RESULT_SIZE when all
-  // option files for bitcoin app are complete
-  uint8_t buffer[1700] = {0};
-  size_t bytes_encoded = 0;
-  ASSERT(encode_btc_result(result, buffer, sizeof(buffer), &bytes_encoded));
-  usb_send_msg(&buffer[0], bytes_encoded);
-}
-
-bool btc_get_query(btc_query_t *query, pb_size_t exp_query_tag) {
-  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
-
-  if (true == event.p0_event.flag) {
-    return false;
+  // common checks for xpub/account and address nodes
+  if (NULL == g_app->is_purpose_supported ||
+      !g_app->is_purpose_supported(path[0])) {
+    // unsupported purpose index
+    status = false;
+  }
+  if (g_app->coin_type != path[1] || is_non_hardened(path[2])) {
+    // coin index or account hardness mismatch
+    status = false;
   }
 
-  if (!decode_btc_query(
-          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
-    return false;
+  if (BTC_ACC_ADDR_DEPTH == depth) {
+    // address node specific checks
+    if (is_hardened(path[3]) || is_hardened(path[4])) {
+      // change or address index must be non-hardened
+      status = false;
+    }
+    if (0 != path[3] && 1 != path[3]) {
+      // invalid change address
+      status = false;
+    }
   }
-
-  if (!check_btc_query(query, exp_query_tag)) {
-    return false;
-  }
-
-  return true;
+  return status;
 }

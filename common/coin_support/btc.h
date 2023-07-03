@@ -268,29 +268,6 @@ bool btc_verify_utxo(const uint8_t *raw_txn,
                      const unsigned_txn_input *input);
 
 /**
- * @brief Get the segwit address string.
- * @details
- *
- * @param [in] public_key   Byte array representation of public key.
- * @param [in] key_len      Length of public key byte array.
- * @param [in] coin_index   Byte value of coin index.
- * @param [out] address     char array to store segwit address.
- *
- * @return 1 if successful and 0 if failure.
- * @retval 1 Success
- * @retval 0 Failure
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-int get_segwit_address(const uint8_t *public_key,
-                       uint8_t key_len,
-                       uint32_t coin_index,
-                       char *address);
-
-/**
  * @brief Get the address from the passed public key.
  * @details
  *

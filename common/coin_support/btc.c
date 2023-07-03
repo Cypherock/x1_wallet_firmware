@@ -603,36 +603,6 @@ bool btc_verify_utxo(const uint8_t *raw_txn,
           0);
 }
 
-int get_segwit_address(const uint8_t *public_key,
-                       uint8_t key_len,
-                       const uint32_t coin_index,
-                       char *address) {
-  char *hrp;
-  uint8_t digest[SHA256_DIGEST_LENGTH];
-  uint8_t rip[RIPEMD160_DIGEST_LENGTH];
-  if (!public_key || !address)
-    return 1;
-
-  if (key_len != 33 && key_len != 65)
-    return 1;
-
-  if (key_len == 65) {
-    bignum256 y;
-    bn_read_be(public_key + 33, &y);
-    ((uint8_t *)public_key)[0] = bn_is_odd(&y) ? 0x03 : 0x02;
-    key_len = 33;
-  }
-
-  if (coin_index == BITCOIN)
-    hrp = "bc";
-  else
-    hrp = "tb";
-
-  sha256_Raw(public_key, key_len, digest);
-  ripemd160(digest, SHA256_DIGEST_LENGTH, rip);
-  return segwit_addr_encode(address, hrp, 0x00, rip, 20);
-}
-
 int get_address(const char *hrp,
                 const uint8_t *script_pub_key,
                 uint8_t version,

@@ -334,34 +334,6 @@ int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr,
   return offset;
 }
 
-bool generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   char *str) {
-  uint32_t fingerprint = 0x0;
-  uint32_t version = 0;
-  HDNode t_node = {0};
-  bool status = true;
-
-  status &=
-      derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
-  fingerprint = hdnode_fingerprint(&t_node);
-  if (0 == hdnode_private_ckd(&t_node, path[path_length - 1])) {
-    // hdnode_private_ckd returns 1 when the derivation succeeds
-    status &= false;
-  }
-  hdnode_fill_public_key(&t_node);
-
-  get_version(path[0], path[1], NULL, &version);
-  if (0 ==
-      hdnode_serialize_public(&t_node, fingerprint, version, str, XPUB_SIZE)) {
-    status &= false;
-  }
-  memzero(&t_node, sizeof(HDNode));
-  return status;
-}
-
 bool derive_hdnode_from_path(const uint32_t *path,
                              const size_t path_length,
                              const char *curve,
