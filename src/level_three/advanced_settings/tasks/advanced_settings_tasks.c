@@ -130,28 +130,6 @@ void level_three_advanced_settings_tasks() {
 #endif
 
     case LEVEL_THREE_VIEW_DEVICE_VERSION: {
-      uint32_t blVersion = FW_get_bootloader_version(), fwVersion = get_fwVer();
-      uint16_t fwMajor = (fwVersion >> 24) & 0xFF,
-               fwMinor = (fwVersion >> 16) & 0xFF, fwPatch = fwVersion & 0xFFFF;
-      uint16_t blMajor = (blVersion >> 24) & 0xFF,
-               blMinor = (blVersion >> 16) & 0xFF, blPatch = blVersion & 0xFFFF;
-      char fw_msg[60] = {0}, bl_msg[60] = {0};
-      const char *msg[2] = {fw_msg, bl_msg};
-
-      snprintf(fw_msg,
-               sizeof(fw_msg),
-               "Firmware Version\n%d.%d.%d-%s",
-               fwMajor,
-               fwMinor,
-               fwPatch,
-               GIT_REV);
-      snprintf(bl_msg,
-               sizeof(bl_msg),
-               "Bootloader Version\n%d.%d.%d",
-               blMajor,
-               blMinor,
-               blPatch);
-      multi_instruction_init(msg, 2, DELAY_TIME, true);
     } break;
 
     case LEVEL_THREE_VERIFY_CARD: {
