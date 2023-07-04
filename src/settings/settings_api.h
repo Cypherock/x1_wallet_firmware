@@ -36,4 +36,24 @@
  */
 void view_firmware_version(void);
 
+/**
+ * @brief This function configures the X1 vault to enable/disable exporting of
+ * log data to the host
+ *
+ */
+void toggle_log_export(void);
+
+/**
+ * @brief This function configures the X1 vault to enable/disable usage of
+ * passphrase on the X1 vault
+ *
+ */
+void toggle_passphrase(void);
+
+/**
+ * @brief This function configures the X1 vault to switch between left and right
+ * handed view
+ *
+ */
+void rotate_display(void);
 #endif /* SETTINGS_API_H */
