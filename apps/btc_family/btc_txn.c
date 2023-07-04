@@ -60,12 +60,13 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "btc.h"
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "btc_txn_helpers.h"
 #include "constant_texts.h"
 #include "reconstruct_seed_flow.h"
+#include "script.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -82,24 +83,6 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-
-typedef struct {
-  pb_byte_t prev_txn_hash[32];
-  uint32_t prev_output_index;
-  uint64_t value;
-  btc_sign_txn_input_script_pub_key_t script_pub_key;
-  uint32_t sequence;
-  uint32_t change_index;
-  uint32_t address_index;
-} sign_txn_input_t;
-
-typedef struct {
-  btc_sign_txn_initiate_request_t init_info;
-  btc_sign_txn_metadata_t metadata;
-
-  btc_sign_txn_output_t *outputs;
-  sign_txn_input_t *inputs;
-} txn_context;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -172,11 +155,67 @@ static bool handle_initiate_query(const btc_query_t *query);
  */
 static bool fetch_transaction_meta(btc_query_t *query);
 
+/**
+ * @brief Fetches each input UTXO and along with its corresponding raw
+ * transaction for verification
+ * @details The function will try to fetch and consequently verify each input
+ * by referring to the declared input count in btc_txn_context . The function
+ * will duplicate each input UTXOs transaction information into btc_txn_context
+ * .
+ *
+ * @param query Reference to an instance of btc_query_t for storing the
+ * transient input UTXOs.
+ *
+ * @return bool Indicating if all the input UTXOs are received and verified
+ * @retval true If all the UTXOs are fetched and verified
+ * @retval flase If any of the UTXOs failed verification or weren't fetched
+ */
+static bool fetch_input_utxo(btc_query_t *query);
+
+/**
+ * @brief Fetches the output UTXO list for the transaction
+ * @details The function refers to the number of output UTXOs declared in the
+ * btc_txn_context . It will also duplicate the received output UTXO.
+ *
+ * @param query Reference to an instance of btc_query_t for storing the
+ * transient output UTXOs.
+ *
+ * @return bool Indicating if all the output UTXOs were fetched
+ * @retval true If all the output UTXOs were fetched
+ */
+static bool fetch_output_utxo(btc_query_t *query);
+
+/**
+ * @brief Aggregates user consent for all output UTXOs and the transaction fee
+ * @details The function encodes all the receiver addresses along with their
+ * corresponding transfer value in BTC. It also calculates the transaction fee
+ * and checks for exaggerated fees. The user is assisted with additional
+ * prompt/warning if the function detects the high fee (for calculation of the
+ * upper limit of fee see get_transaction_fee_threshold(). The exact fee amount
+ * is also confirmed with the user.
+ *
+ * @return bool Indicating if the user confirmed the transaction
+ * @retval true If user confirmed the fee (along with high fee prompt if
+ * applicable) and all the receiver addresses along with the corresponding
+ * value.
+ * @retval false Immediate return if any of the confirmation is disapproved
+ */
+static bool get_user_verification();
+
+/**
+ *
+ * @param query Reference to an instance of btc_query_t for storing the
+ * transient output UTXOs.
+ *
+ * @return
+ */
+static bool sign_input_utxo(btc_query_t *query);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
-static txn_context *btc_txn_context = NULL;
+static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -254,8 +293,8 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   memcpy(&btc_txn_context->metadata,
          &query->sign_txn.meta,
          sizeof(btc_sign_txn_metadata_t));
-  btc_txn_context->inputs = (sign_txn_input_t *)malloc(
-      sizeof(sign_txn_input_t) * btc_txn_context->metadata.input_count);
+  btc_txn_context->inputs = (btc_txn_input_t *)malloc(
+      sizeof(btc_txn_input_t) * btc_txn_context->metadata.input_count);
   btc_txn_context->outputs = (btc_sign_txn_output_t *)malloc(
       sizeof(btc_sign_txn_output_t) * btc_txn_context->metadata.output_count);
   // TODO: check if malloc failed; report to host and exit
@@ -263,15 +302,120 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   return true;
 }
 
+static bool fetch_input_utxo(btc_query_t *query) {
+  // Validate input UTXOs for safety from attack. Ref:
+  // https://blog.trezor.io/details-of-firmware-updates-for-trezor-one-version-1-9-1-and-trezor-model-t-version-2-3-1-1eba8f60f2dd
+  for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
+        !check_which_request(query, BTC_SIGN_TXN_REQUEST_INPUT_TAG)) {
+      return false;
+    }
+
+    // verify transaction details and discard the raw-transaction (prev_txn)
+    const btc_sign_txn_input_prev_txn_t *txn = &query->sign_txn.input.prev_txn;
+    if (!btc_verify_input_utxo(
+            txn->bytes, txn->size, &btc_txn_context->inputs[idx])) {
+      // input UTXO validation failed, terminate immediately
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+
+    // clone the input UTXO details into btc_txn_context
+    btc_txn_input_t *input = &btc_txn_context->inputs[idx];
+    input->prev_output_index = query->sign_txn.input.prev_output_index;
+    input->address_index = query->sign_txn.input.address_index;
+    input->change_index = query->sign_txn.input.change_index;
+    input->value = query->sign_txn.input.value;
+    input->sequence = query->sign_txn.input.sequence;
+    input->script_pub_key.size = query->sign_txn.input.script_pub_key.size;
+    memcpy(input->prev_txn_hash, query->sign_txn.input.prev_txn_hash, 32);
+    memcpy(input->script_pub_key.bytes,
+           query->sign_txn.input.script_pub_key.bytes,
+           input->script_pub_key.size);
+
+    // send accepted response to indicate validation of input passed
+    send_response(BTC_SIGN_TXN_RESPONSE_INPUT_ACCEPTED_TAG);
+  }
+  return true;
+}
+
+static bool fetch_output_utxo(btc_query_t *query) {
+  for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
+        !check_which_request(query, BTC_SIGN_TXN_REQUEST_OUTPUT_TAG)) {
+      return false;
+    }
+
+    btc_sign_txn_output_t *output = &query->sign_txn.output;
+    memcpy(
+        &btc_txn_context->outputs[idx], output, sizeof(btc_sign_txn_output_t));
+  }
+  return true;
+}
+
+static bool get_user_verification() {
+  char title[20] = "";
+  char value[100] = "";
+  char address[100] = "";
+
+  for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
+    btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
+    btc_sign_txn_output_script_pub_key_t *script = &output->script_pub_key;
+    snprintf(title, sizeof(title), "Receiver #%d", (idx + 1));
+
+    if (true == output->is_change) {
+      // do not show the change output UTXOs
+      continue;
+    }
+    format_value(output->value, value, sizeof(value));
+    script_output_to_address(
+        script->bytes, script->size, address, sizeof(address));
+    if (!core_scroll_page(title, address, btc_send_error) ||
+        !core_scroll_page(title, value, btc_send_error)) {
+      return false;
+    }
+  }
+
+  // calculate fee in various forms
+  uint64_t max_fee = get_transaction_fee_threshold(btc_txn_context);
+  uint64_t fee_in_satoshi = btc_get_txn_fee(btc_txn_context);
+  format_value(fee_in_satoshi, value, sizeof(value));
+
+  // all the receivers are verified, check fee limit & show the fee
+  // validate fee limit is not too high and acceptable to user
+  if (fee_in_satoshi > max_fee &&
+      !core_confirmation(ui_text_warning_txn_fee_too_high, btc_send_error)) {
+    return false;
+  }
+
+  if (!core_scroll_page("Transaction fee", value, btc_send_error)) {
+    return false;
+  }
+  return true;
+}
+
+static bool sign_input_utxo(btc_query_t *query) {
+  if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
+      !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+    return false;
+  }
+
+  // TODO: Sign each input and send the signature
+  return false;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void btc_sign_transaction(btc_query_t *query) {
-  btc_txn_context = (txn_context *)malloc(sizeof(txn_context));
-  memzero(btc_txn_context, sizeof(txn_context));
+  btc_txn_context = (btc_txn_context_t *)malloc(sizeof(btc_txn_context_t));
+  memzero(btc_txn_context, sizeof(btc_txn_context_t));
 
-  if (!handle_initiate_query(query) && !fetch_transaction_meta(query)) {
+  if (!handle_initiate_query(query) && !fetch_transaction_meta(query) &&
+      !fetch_input_utxo(query) && !fetch_output_utxo(query) &&
+      !get_user_verification() && !sign_input_utxo(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 

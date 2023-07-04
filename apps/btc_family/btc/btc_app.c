@@ -107,6 +107,8 @@ const btc_config_t btc_app = {
     .lunit_name = "BTC",
     .name = "Bitcoin",
 
+    .max_fee = 2000000,
+
     // action handlers
     .is_purpose_supported = is_purpose_supported,
 };

@@ -103,7 +103,7 @@ int btc_get_segwit_addr(const uint8_t *public_key,
                         uint8_t key_len,
                         const char *hrp,
                         char *address) {
-  uint8_t rip[RIPEMD160_DIGEST_LENGTH] = {0};
+  uint8_t rip[SHA3_256_DIGEST_LENGTH] = {0};
   if (!public_key || !address) {
     return 1;
   }
@@ -120,7 +120,7 @@ int btc_get_segwit_addr(const uint8_t *public_key,
   }
 
   hasher_Raw(HASHER_SHA2_RIPEMD, public_key, key_len, rip);
-  return segwit_addr_encode(address, hrp, 0x00, rip, sizeof(rip));
+  return segwit_addr_encode(address, hrp, 0x00, rip, RIPEMD160_DIGEST_LENGTH);
 }
 
 bool btc_generate_xpub(const uint32_t *path,

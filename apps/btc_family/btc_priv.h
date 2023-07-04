@@ -27,6 +27,28 @@
  * TYPEDEFS
  *****************************************************************************/
 
+typedef struct {
+  pb_byte_t prev_txn_hash[32];
+  uint32_t prev_output_index;
+  uint64_t value;
+  btc_sign_txn_input_script_pub_key_t script_pub_key;
+  uint32_t sequence;
+  uint32_t change_index;
+  uint32_t address_index;
+} btc_txn_input_t;
+
+typedef struct {
+  // Populated by handle_initiate_query()
+  btc_sign_txn_initiate_request_t init_info;
+  // Populated by fetch_transaction_meta()
+  btc_sign_txn_metadata_t metadata;
+
+  // Populated by fetch_output_utxo()
+  btc_sign_txn_output_t *outputs;
+  // Populated by fetch_input_utxo()
+  btc_txn_input_t *inputs;
+} btc_txn_context_t;
+
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
