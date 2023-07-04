@@ -66,6 +66,7 @@
 #include "create_wallet_menu.h"
 #include "host_interface.h"
 #include "menu_priv.h"
+#include "settings_menu.h"
 #include "status_api.h"
 #include "wallet_list.h"
 
@@ -298,7 +299,8 @@ void main_menu_handler(engine_ctx_t *ctx,
       break;
     }
     case MAIN_MENU_SETTINGS: {
-      // TODO: Handle settings selection
+      engine_add_next_flow_step(ctx, settings_menu_get_step());
+      engine_goto_next_flow_step(ctx);
       break;
     }
     case MAIN_MENU_NONE:

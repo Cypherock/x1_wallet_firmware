@@ -205,13 +205,13 @@ void level_two_tasks() {
                                                : ui_text_options_passphrase[1]);
         else
           options_arr[advancedSettingsIndex] =
-              (char *)ui_text_options_advanced_settings[optionsIndex];
+              (char *)ui_text_options_settings[optionsIndex];
         optionsIndex++;
       }
 
       menu_init((const char **)options_arr,
                 NUMBER_OF_OPTIONS_ADVANCED_OPTIONS,
-                ui_text_options_advanced_settings[0],
+                ui_text_options_settings[0],
                 true);
 #endif
       break;

@@ -1,7 +1,7 @@
 /**
- * @file    create_wallet_menu.c
+ * @file    settings_menu.c
  * @author  Cypherock X1 Team
- * @brief   Populate and handle main menu options
+ * @brief   Populate and handle setting menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,11 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "create_wallet_menu.h"
+#include "settings_menu.h"
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
-#include "create_wallet_flow.h"
+#include "flash_api.h"
 #include "menu_priv.h"
 #include "ui_screens.h"
 
@@ -79,35 +79,44 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 typedef enum {
-  GENERATE_NEW_WALLET = 1,
-  RESTORE_FROM_SEED,
-} create_wallet_options_e;
+  RESTORE_WALLET_FROM_CARD = 1,
+  CHECK_CARD_HEALTH,
+  ROTATE_DISPLAY,
+  TOGGLE_LOG_EXPORT,
+  TOGGLE_PASSPHRASE,
+  FACTORY_RESET_DEVICE,
+  VIEW_DEVICE_INFO,
+  VIEW_CARD_VERSION,
+  VIEW_REGULATORY_INFO,
+#ifdef DEV_BUILD
+  TOGGLE_BUZZER,
+#endif
+} settings_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This is the initializer callback for the create wallet menu.
+ * @brief This is the initializer callback for the settings menu.
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param data_ptr Currently unused pointer set by the engine
  */
-static void create_wallet_menu_initialize(engine_ctx_t *ctx,
-                                          const void *data_ptr);
+static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
 
 /**
- * @brief This is the UI event handler for the create wallet menu.
- * @details The function decodes the UI event and calls the create wallet flow
- * based on selection. It deletes the create wallet menu step if the back button
+ * @brief This is the UI event handler for the settings menu.
+ * @details The function decodes the UI event and calls the settings flow
+ * based on selection. It deletes the settings menu step if the back button
  * is pressed on the menu
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param ui_event The ui event object which triggered the callback
  * @param data_ptr Currently unused pointer set by the engine
  */
-static void create_wallet_menu_handler(engine_ctx_t *ctx,
-                                       ui_event_t ui_event,
-                                       const void *data_ptr);
+static void settings_menu_handler(engine_ctx_t *ctx,
+                                  ui_event_t ui_event,
+                                  const void *data_ptr);
 
 /**
  * @brief This p0 event callback function handles clearing p0 events occured
@@ -126,10 +135,10 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-const flow_step_t create_wallet_step = {
-    .step_init_cb = create_wallet_menu_initialize,
+static const flow_step_t settings_menu_step = {
+    .step_init_cb = settings_menu_initialize,
     .p0_cb = ignore_p0_handler,
-    .ui_cb = create_wallet_menu_handler,
+    .ui_cb = settings_menu_handler,
     .usb_cb = NULL,
     .nfc_cb = NULL,
     .evt_cfg_ptr = &device_nav_evt_config,
@@ -148,29 +157,29 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
   ignore_p0_event();
 }
 
-static void create_wallet_menu_initialize(engine_ctx_t *ctx,
-                                          const void *data_ptr) {
-  menu_init((const char **)ui_text_options_new_wallet,
-            NUMBER_OF_OPTIONS_NEW_WALLET,
-            ui_text_heading_new_wallet,
+static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
+  ui_text_options_settings[TOGGLE_LOG_EXPORT - 1] =
+      (char *)(is_logging_enabled() ? ui_text_options_logging_export[0]
+                                    : ui_text_options_logging_export[1]);
+
+  ui_text_options_settings[TOGGLE_PASSPHRASE - 1] =
+      (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
+                                       : ui_text_options_passphrase[1]);
+
+  menu_init((const char **)ui_text_options_settings,
+            NUMBER_OF_OPTIONS_SETTINGS,
+            ui_text_heading_settings,
             true);
   return;
 }
 
-static void create_wallet_menu_handler(engine_ctx_t *ctx,
-                                       ui_event_t ui_event,
-                                       const void *data_ptr) {
+static void settings_menu_handler(engine_ctx_t *ctx,
+                                  ui_event_t ui_event,
+                                  const void *data_ptr) {
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
-      case GENERATE_NEW_WALLET: {
-        create_wallet_flow(true);
-        break;
-      }
-      case RESTORE_FROM_SEED: {
-        // TODO: Handle restore from seed
-        break;
-      }
       default: {
+        // TODO: Handle all cases
         break;
       }
     }
@@ -179,7 +188,7 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
   }
 
   /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-   * detected, or a create wallet flow was executed */
+   * detected, or any option was executed */
   engine_delete_current_flow_step(ctx);
 
   return;
@@ -188,6 +197,6 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *create_wallet_menu_get_step(void) {
-  return &create_wallet_step;
+const flow_step_t *settings_menu_get_step(void) {
+  return &settings_menu_step;
 }

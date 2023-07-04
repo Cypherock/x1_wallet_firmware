@@ -44,6 +44,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         src/
         src/menu
         src/wallet
+        src/settings
 
         src/card_operations
         src/card_flows

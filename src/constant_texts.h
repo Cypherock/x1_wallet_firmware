@@ -38,6 +38,8 @@
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
   "Incorrect PIN!\n%d attempt(s) remaining"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // product hash
 extern const char *product_hash;
@@ -61,10 +63,22 @@ extern const char *ui_text_options_new_wallet[];
 
 // Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 10
+#define NUMBER_OF_OPTIONS_SETTINGS 10
+// TODO: Update after refactor - remove the following MACRO
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
+#define NUMBER_OF_OPTIONS_SETTINGS 9
+// TODO: Update after refactor - remove the following MACRO
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
+extern const char *ui_text_heading_settings;
+extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
+extern const char *ui_text_options_logging_export[];
+extern const char *ui_text_options_passphrase[];
+
+#if DEV_BUILD
+extern const char *ui_text_options_buzzer_adjust[];
+#endif /* DEV_BUILD */
 
 // Manager app text
 // Device authentication text
@@ -85,18 +99,8 @@ extern const char *ui_text_onboarding_welcome;
 extern const char *ui_text_onboarding[];
 extern const char *ui_text_onboarding_complete;
 
-extern const char *ui_text_heading_settings;
-extern const char *ui_text_options_advanced_settings[];
-
-extern const char *ui_text_options_logging_export[];
-extern const char *ui_text_options_passphrase[];
-
 // Firmware update text
 #define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
-
-#if DEV_BUILD
-extern const char *ui_text_options_buzzer_adjust[];
-#endif /* DEV_BUILD */
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 
