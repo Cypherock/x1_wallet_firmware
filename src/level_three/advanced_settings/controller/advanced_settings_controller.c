@@ -102,8 +102,6 @@ void level_three_advanced_settings_controller() {
 #endif
 
     case LEVEL_THREE_VIEW_DEVICE_VERSION: {
-      counter.level = LEVEL_TWO;
-      flow_level.level_two = 1;
     } break;
     case LEVEL_THREE_VERIFY_CARD:
 #if X1WALLET_MAIN

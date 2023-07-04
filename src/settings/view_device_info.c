@@ -1,7 +1,8 @@
 /**
- * @file    settings_menu.c
+ * @file    view_version_info.c
  * @author  Cypherock X1 Team
- * @brief   Populate and handle setting menu options
+ * @brief   Source file with helper functions to display version details for the
+ *          X1 vault firmware, bootloader and X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,18 +60,18 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "settings_menu.h"
+#include <stdint.h>
 
 #include "constant_texts.h"
-#include "core_error_priv.h"
 #include "flash_api.h"
-#include "menu_priv.h"
 #include "settings_api.h"
 #include "ui_screens.h"
+#include "ui_state_machine.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
+extern const char *GIT_REV;
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -79,71 +80,14 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  RESTORE_WALLET_FROM_CARD = 1,
-  CHECK_CARD_HEALTH,
-  ROTATE_DISPLAY,
-  TOGGLE_LOG_EXPORT,
-  TOGGLE_PASSPHRASE,
-  FACTORY_RESET_DEVICE,
-  VIEW_DEVICE_INFO,
-  VIEW_CARD_VERSION,
-  VIEW_REGULATORY_INFO,
-#ifdef DEV_BUILD
-  TOGGLE_BUZZER,
-#endif
-} settings_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief This is the initializer callback for the settings menu.
- *
- * @param ctx The engine context* from which the flow is invoked
- * @param data_ptr Currently unused pointer set by the engine
- */
-static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
 
-/**
- * @brief This is the UI event handler for the settings menu.
- * @details The function decodes the UI event and calls the settings flow
- * based on selection. It deletes the settings menu step if the back button
- * is pressed on the menu
- *
- * @param ctx The engine context* from which the flow is invoked
- * @param ui_event The ui event object which triggered the callback
- * @param data_ptr Currently unused pointer set by the engine
- */
-static void settings_menu_handler(engine_ctx_t *ctx,
-                                  ui_event_t ui_event,
-                                  const void *data_ptr);
-
-/**
- * @brief This p0 event callback function handles clearing p0 events occured
- * while engine is waiting for other events.
- *
- * @details After main menu initalization, we don't expect p0 events as no
- * operation or flow has been started yet.
- *
- * @param ctx The engine context* from which the flow is invoked
- * @param p0_evt The p0 event object which triggered the callback
- * @param data_ptr Currently unused pointer set by the engine
- */
-static void ignore_p0_handler(engine_ctx_t *ctx,
-                              p0_evt_t p0_evt,
-                              const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const flow_step_t settings_menu_step = {
-    .step_init_cb = settings_menu_initialize,
-    .p0_cb = ignore_p0_handler,
-    .ui_cb = settings_menu_handler,
-    .usb_cb = NULL,
-    .nfc_cb = NULL,
-    .evt_cfg_ptr = &device_nav_evt_config,
-    .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -152,55 +96,36 @@ static const flow_step_t settings_menu_step = {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void ignore_p0_handler(engine_ctx_t *ctx,
-                              p0_evt_t p0_evt,
-                              const void *data_ptr) {
-  ignore_p0_event();
-}
-
-static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  ui_text_options_settings[TOGGLE_LOG_EXPORT - 1] =
-      (char *)(is_logging_enabled() ? ui_text_options_logging_export[0]
-                                    : ui_text_options_logging_export[1]);
-
-  ui_text_options_settings[TOGGLE_PASSPHRASE - 1] =
-      (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
-                                       : ui_text_options_passphrase[1]);
-
-  menu_init((const char **)ui_text_options_settings,
-            NUMBER_OF_OPTIONS_SETTINGS,
-            ui_text_heading_settings,
-            true);
-  return;
-}
-
-static void settings_menu_handler(engine_ctx_t *ctx,
-                                  ui_event_t ui_event,
-                                  const void *data_ptr) {
-  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
-    switch (ui_event.list_selection) {
-      case VIEW_DEVICE_INFO: {
-        view_firmware_version();
-      }
-      default: {
-        // TODO: Handle all cases
-        break;
-      }
-    }
-  } else {
-    // UI_EVENT_LIST_REJECTION handled below already
-  }
-
-  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-   * detected, or any option was executed */
-  engine_delete_current_flow_step(ctx);
-
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *settings_menu_get_step(void) {
-  return &settings_menu_step;
+void view_firmware_version(void) {
+  uint32_t blVersion = FW_get_bootloader_version(), fwVersion = get_fwVer();
+  uint16_t fwMajor = (fwVersion >> 24) & 0xFF,
+           fwMinor = (fwVersion >> 16) & 0xFF, fwPatch = fwVersion & 0xFFFF;
+  uint16_t blMajor = (blVersion >> 24) & 0xFF,
+           blMinor = (blVersion >> 16) & 0xFF, blPatch = blVersion & 0xFFFF;
+  char fw_msg[60] = {0}, bl_msg[60] = {0};
+  const char *msg[2] = {fw_msg, bl_msg};
+
+  snprintf(fw_msg,
+           sizeof(fw_msg),
+           UI_TEXT_FIRMWARE_VERSION,
+           fwMajor,
+           fwMinor,
+           fwPatch,
+           GIT_REV);
+  snprintf(bl_msg,
+           sizeof(bl_msg),
+           UI_TEXT_BOOTLOADER_VERSION,
+           blMajor,
+           blMinor,
+           blPatch);
+
+  multi_instruction_init(msg, 2, DELAY_TIME, true);
+
+  // Do not care about the return value from confirmation screen
+  (void)get_state_on_confirm_scr(0, 0, 0);
+  return;
 }
