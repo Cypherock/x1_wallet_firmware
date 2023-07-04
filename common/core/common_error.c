@@ -111,58 +111,58 @@ error_card_error_t get_card_error_from_nfc_status(
     card_error_status_word_e error_status_word) {
   switch (error_status_word) {
     case SW_FILE_INVALID:
-      return ERROR_CARD_SW_FILE_INVALID;
+      return ERROR_CARD_ERROR_SW_FILE_INVALID;
       break;
     case SW_INCOMPATIBLE_APPLET:
-      return ERROR_CARD_SW_INCOMPATIBLE_APPLET;
+      return ERROR_CARD_ERROR_SW_INCOMPATIBLE_APPLET;
       break;
     case SW_FILE_NOT_FOUND:
-      return ERROR_CARD_SW_FILE_NOT_FOUND;
+      return ERROR_CARD_ERROR_SW_FILE_NOT_FOUND;
     case SW_SECURITY_CONDITIONS_NOT_SATISFIED:
-      return ERROR_CARD_SW_SECURITY_CONDITIONS_NOT_SATISFIED;
+      return ERROR_CARD_ERROR_SW_SECURITY_CONDITIONS_NOT_SATISFIED;
       break;
     case SW_NOT_PAIRED:
-      return ERROR_CARD_SW_NOT_PAIRED;
+      return ERROR_CARD_ERROR_SW_NOT_PAIRED;
       break;
     case SW_CONDITIONS_NOT_SATISFIED:
-      return ERROR_CARD_SW_CONDITIONS_NOT_SATISFIED;
+      return ERROR_CARD_ERROR_SW_CONDITIONS_NOT_SATISFIED;
       break;
     case SW_WRONG_DATA:
-      return ERROR_CARD_SW_WRONG_DATA;
+      return ERROR_CARD_ERROR_SW_WRONG_DATA;
       break;
     case SW_FILE_FULL:
-      return ERROR_CARD_SW_FILE_FULL;
+      return ERROR_CARD_ERROR_SW_FILE_FULL;
       break;
     case SW_RECORD_NOT_FOUND:
-      return ERROR_CARD_SW_RECORD_NOT_FOUND;
+      return ERROR_CARD_ERROR_SW_RECORD_NOT_FOUND;
       break;
     case SW_TRANSACTION_EXCEPTION:
-      return ERROR_CARD_SW_TRANSACTION_EXCEPTION;
+      return ERROR_CARD_ERROR_SW_TRANSACTION_EXCEPTION;
       break;
     case SW_NULL_POINTER_EXCEPTION:
-      return ERROR_CARD_SW_NULL_POINTER_EXCEPTION;
+      return ERROR_CARD_ERROR_SW_NULL_POINTER_EXCEPTION;
       break;
     case SW_OUT_OF_BOUNDARY:
-      return ERROR_CARD_SW_OUT_OF_BOUNDARY;
+      return ERROR_CARD_ERROR_SW_OUT_OF_BOUNDARY;
       break;
     case SW_INVALID_INS:
-      return ERROR_CARD_SW_INVALID_INS;
+      return ERROR_CARD_ERROR_SW_INVALID_INS;
       break;
     case SW_INS_BLOCKED:
-      return ERROR_CARD_SW_INS_BLOCKED;
+      return ERROR_CARD_ERROR_SW_INS_BLOCKED;
       break;
     default:
       switch (error_status_word & 0xFF00) {
         case POW_SW_WALLET_LOCKED:
-          return ERROR_CARD_POW_SW_WALLET_LOCKED;
+          return ERROR_CARD_ERROR_POW_SW_WALLET_LOCKED;
           break;
 
         case SW_CORRECT_LENGTH_00:
-          return ERROR_CARD_SW_CORRECT_LENGTH_00;
+          return ERROR_CARD_ERROR_SW_CORRECT_LENGTH_00;
           break;
 
         case SW_CRYPTO_EXCEPTION:
-          return ERROR_CARD_SW_CRYPTO_EXCEPTION;
+          return ERROR_CARD_ERROR_SW_CRYPTO_EXCEPTION;
           break;
 
         default:
