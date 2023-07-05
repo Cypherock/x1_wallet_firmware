@@ -144,21 +144,11 @@ void view_device_regulatory_information(void) {
   content[6].img_x_offset = (LV_HOR_RES_MAX - ce_mark.header.w) >> 1;
   content[6].img_y_offset = (LV_VER_RES_MAX - ce_mark.header.h) >> 1;
 
-  snprintf(content[1].text,
-           sizeof(content[1].text),
-           ui_text_message_regulatory_info_1);
-  snprintf(content[2].text,
-           sizeof(content[2].text),
-           ui_text_message_regulatory_info_2);
-  snprintf(content[3].text,
-           sizeof(content[3].text),
-           ui_text_message_regulatory_info_3);
-  snprintf(content[4].text,
-           sizeof(content[4].text),
-           ui_text_message_regulatory_info_4);
-  snprintf(content[5].text,
-           sizeof(content[5].text),
-           ui_text_message_regulatory_info_5);
+  for (uint8_t slide = 0; slide < NUMBER_OF_SLIDES_REGULATORY_INFO; slide++) {
+    snprintf(content[slide + 1].text,
+             sizeof(content[slide + 1].text),
+             ui_text_regulatory_info[slide]);
+  }
 
   multi_instruction_with_image_init(content, 7, DELAY_TIME, true);
 

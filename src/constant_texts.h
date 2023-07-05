@@ -81,11 +81,8 @@ extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */
 
 // Regulatory info text
-extern const char *ui_text_message_regulatory_info_1;
-extern const char *ui_text_message_regulatory_info_2;
-extern const char *ui_text_message_regulatory_info_3;
-extern const char *ui_text_message_regulatory_info_4;
-extern const char *ui_text_message_regulatory_info_5;
+#define NUMBER_OF_SLIDES_REGULATORY_INFO 5
+extern const char *ui_text_regulatory_info[];
 
 // Manager app text
 // Device authentication text
