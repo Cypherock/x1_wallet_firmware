@@ -79,7 +79,7 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 #define FLOW_COMPLETE_STATE(auth_card_data)                                    \
-  (MANAGER_AUTH_CARD_STATUS_PAIRING_DONE == (auth_card_data)->flow_status)
+  (AUTH_CARD_COMPLETE == (auth_card_data)->state)
 
 #define CHALLENGE_SIZE 32
 
@@ -87,11 +87,6 @@
 #define SIGN_CHALLENGE_BEEP_COUNT(pair_card_required)                          \
   (pair_card_required) ? 2 : 1
 
-#define UPDATE_FLOW_STATUS(auth_card_data, status)                             \
-  do {                                                                         \
-    (auth_card_data)->flow_status = status;                                    \
-    core_status_set_flow_status(status);                                       \
-  } while (0)
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -103,10 +98,17 @@ typedef struct {
   bool pair_card_required;
 } auth_card_screen_ctx_t;
 
+typedef enum {
+  AUTH_CARD_SERIAL = 1,
+  AUTH_CARD_CHALLENGE,
+  AUTH_CARD_RESULT,
+  AUTH_CARD_COMPLETE,
+} auth_card_states_e;
+
 typedef struct {
   manager_query_t *query;
   auth_card_screen_ctx_t ctx;
-  manager_auth_card_status_t flow_status;
+  auth_card_states_e state;
 } auth_card_data_t;
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -114,8 +116,9 @@ typedef struct {
 /**
  * The function sends a response to host indicating that a flow has been
  * completed.
+ * @param auth_card_data object of auth card data
  */
-static void send_flow_complete_response();
+static void send_flow_complete_response(auth_card_data_t *auth_card_data);
 
 /**
  * @brief Read data from initiate request and prepare context for card
@@ -261,12 +264,13 @@ static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   return true;
 }
 
-static void send_flow_complete_response() {
+static void send_flow_complete_response(auth_card_data_t *auth_card_data) {
   manager_result_t result = init_manager_result(MANAGER_RESULT_AUTH_CARD_TAG);
   result.auth_card.which_response =
       MANAGER_AUTH_CARD_RESPONSE_FLOW_COMPLETE_TAG;
   result.auth_card.flow_complete.dummy_field = 0;
   manager_send_result(&result);
+  auth_card_data->state = AUTH_CARD_COMPLETE;
 }
 
 static bool handle_sign_data(auth_card_data_t *auth_card_data) {
@@ -341,7 +345,7 @@ static bool handle_sign_card_serial(auth_card_data_t *auth_card_data) {
     return false;
   }
 
-  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
 
   // Display text for challenge sign screen
   snprintf(auth_card_data->ctx.message,
@@ -350,7 +354,7 @@ static bool handle_sign_card_serial(auth_card_data_t *auth_card_data) {
            SIGN_CHALLENGE_BEEP_COUNT(auth_card_data->ctx.pair_card_required));
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
-
+  auth_card_data->state = AUTH_CARD_CHALLENGE;
   return true;
 }
 
@@ -359,7 +363,7 @@ static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
     return false;
   }
 
-  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
 
   if (auth_card_data->ctx.pair_card_required) {
     snprintf(auth_card_data->ctx.message,
@@ -374,11 +378,12 @@ static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
 
   instruction_scr_init(auth_card_data->ctx.message,
                        auth_card_data->ctx.heading);
+  auth_card_data->state = AUTH_CARD_RESULT;
   return true;
 }
 
 static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
-  if (MANAGER_AUTH_CARD_STATUS_INIT != auth_card_data->flow_status) {
+  if (AUTH_CARD_SERIAL != auth_card_data->state) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -391,7 +396,7 @@ static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
     }
   }
 
-  UPDATE_FLOW_STATUS(auth_card_data, MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
+  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
 
   if (!prepare_card_auth_context(auth_card_data)) {
     return false;
@@ -401,7 +406,7 @@ static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
 }
 
 static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data) {
-  if (MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED != auth_card_data->flow_status) {
+  if (AUTH_CARD_CHALLENGE != auth_card_data->state) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -413,10 +418,10 @@ static bool handle_auth_card_challenge_query(auth_card_data_t *auth_card_data) {
 static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
   bool verified = auth_card_data->query->auth_card.result.verified;
 
-  switch (auth_card_data->flow_status) {
-    case MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED:
+  switch (auth_card_data->state) {
+    case AUTH_CARD_CHALLENGE:
       if (false == verified) {
-        send_flow_complete_response();
+        send_flow_complete_response(auth_card_data);
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
         return true;
@@ -427,9 +432,9 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
       }
       break;
 
-    case MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED:
+    case AUTH_CARD_RESULT:
       if (false == verified) {
-        send_flow_complete_response();
+        send_flow_complete_response(auth_card_data);
 
         delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
         return true;
@@ -447,11 +452,10 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
             delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
             return false;
           }
-          UPDATE_FLOW_STATUS(auth_card_data,
-                             MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
+          core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         }
 
-        send_flow_complete_response();
+        send_flow_complete_response(auth_card_data);
 
         /**
          * Set onboarding complete here if 4th card auth is complete. The
@@ -529,7 +533,7 @@ void card_auth_handler(manager_query_t *query) {
               .pair_card_required = false,
           },
       .query = query,
-      .flow_status = MANAGER_AUTH_CARD_STATUS_INIT};
+      .state = AUTH_CARD_SERIAL};
 
   while (1) {
     if (true != handle_auth_card_query(&auth_card_data)) {
