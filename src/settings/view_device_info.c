@@ -1,7 +1,7 @@
 /**
- * @file    view_version_info.c
+ * @file    view_device_info.c
  * @author  Cypherock X1 Team
- * @brief   Source file with helper functions to display version details for the
+ * @brief   Source file with helper functions to display information for the
  *          X1 vault firmware, bootloader and X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
@@ -124,6 +124,33 @@ void view_firmware_version(void) {
            blPatch);
 
   multi_instruction_init(msg, 2, DELAY_TIME, true);
+
+  // Do not care about the return value from confirmation screen
+  (void)get_state_on_confirm_scr(0, 0, 0);
+  return;
+}
+
+void view_device_regulatory_information(void) {
+  instruction_content_t content[7] = {0};
+  LV_IMG_DECLARE(fcc_logo_black_2020);
+  LV_IMG_DECLARE(ce_mark);
+  content[0].img = &fcc_logo_black_2020;
+  content[0].img_x_offset =
+      (LV_HOR_RES_MAX - fcc_logo_black_2020.header.w) >> 1;
+  content[0].img_y_offset =
+      (LV_VER_RES_MAX - fcc_logo_black_2020.header.h) >> 1;
+  content[0].text_align = LV_ALIGN_OUT_BOTTOM_MID;
+  content[6].img = &ce_mark;
+  content[6].img_x_offset = (LV_HOR_RES_MAX - ce_mark.header.w) >> 1;
+  content[6].img_y_offset = (LV_VER_RES_MAX - ce_mark.header.h) >> 1;
+
+  for (uint8_t slide = 0; slide < NUMBER_OF_SLIDES_REGULATORY_INFO; slide++) {
+    snprintf(content[slide + 1].text,
+             sizeof(content[slide + 1].text),
+             ui_text_regulatory_info[slide]);
+  }
+
+  multi_instruction_with_image_init(content, 7, DELAY_TIME, true);
 
   // Do not care about the return value from confirmation screen
   (void)get_state_on_confirm_scr(0, 0, 0);

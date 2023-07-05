@@ -80,6 +80,10 @@ extern const char *ui_text_options_passphrase[];
 extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */
 
+// Regulatory info text
+#define NUMBER_OF_SLIDES_REGULATORY_INFO 5
+extern const char *ui_text_regulatory_info[];
+
 // Manager app text
 // Device authentication text
 extern const char *ui_text_message_device_authenticating;
