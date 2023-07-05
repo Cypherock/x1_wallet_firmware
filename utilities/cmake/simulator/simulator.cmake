@@ -40,6 +40,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/manager_app/onboarding
         apps/btc_family
         apps/btc_family/btc
+        apps/btc_family/dash
 
         src/
         src/menu

@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    dash_app.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief   Dash app configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "host_interface.h"
-
-#include "btc_app.h"
-#include "btc_main.h"
 #include "dash_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "status_api.h"
+
+#include "btc_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,9 +80,42 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Check if the purpose index is supported by the Dash app.
+ * @details The current supported/allowed purpose index is 0x8000002C
+ *
+ * @param purpose_index The purpose index to be checked
+ *
+ * @return bool Indicates if the provided purpose index is supported
+ * @retval true The provided purpose index is supported
+ * @retval false The provided purpose index is not supported
+ */
+static bool is_purpose_supported(uint32_t purpose_index);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+
+/**
+ * The Dash fork of Bitcoin only supports legacy addresses. No support for
+ * Segwit and Native-Segwit. Hence, bech32_hrp is empty and segwit,
+ * native-segwit xpub version is set to 0.
+ * Values can be verified from the following references:
+ * https://docs.dash.org/projects/core/en/18.0.0/docs/reference/transactions-address-conversion.html#conversion-process
+ */
+const btc_config_t dash_app = {
+    .coin_type = COIN_DASH,
+    .p2pkh_addr_ver = 0x4c,
+    .p2sh_addr_ver = 0x10,
+    .legacy_xpub_ver = 0x0488b21e,
+    .segwit_xpub_ver = 0x00,
+    .nsegwit_xpub_ver = 0x00,
+    .bech32_hrp = "",
+    .lunit_name = "DASH",
+    .name = "Dash",
+
+    .is_purpose_supported = is_purpose_supported,
+};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -97,53 +125,17 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static bool is_purpose_supported(uint32_t purpose_index) {
+  if (PURPOSE_LEGACY != purpose_index) {
+    return false;
+  }
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      // TODO: fetch & provide Litecoin chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 5: {
-      // TODO: fetch & provide Dogecoin chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    default: {
-      // TODO: send core error about invalid applet id
-      break;
-    }
-  }
-
-  main_menu_set_update_req(true);
-  return;
+const btc_config_t *get_dash_app() {
+  return &dash_app;
 }

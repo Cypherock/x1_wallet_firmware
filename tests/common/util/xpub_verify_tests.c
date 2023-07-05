@@ -3,6 +3,7 @@
 #include "btc_helpers.h"
 #include "btc_priv.h"
 #include "coin_utils.h"
+#include "dash_app.h"
 #include "eth.h"
 #include "near.h"
 #include "solana.h"
@@ -152,6 +153,10 @@ TEST(xpub, derivation_path_tests) {
     switch (paths[i][3]) {
       case BITCOIN:
         g_app = get_btc_app();
+        status = btc_derivation_path_guard(&paths[i][2], depth);
+        break;
+      case DASH:
+        g_app = get_dash_app();
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case NEAR:
