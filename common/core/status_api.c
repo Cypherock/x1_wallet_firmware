@@ -121,10 +121,6 @@ void core_status_set_flow_status(uint32_t flow_status) {
   return;
 }
 
-uint32_t core_status_get_flow_status() {
-  return core_status.flow_status;
-}
-
 void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on) {
   core_status.device_waiting_on = waiting_on;
   return;
