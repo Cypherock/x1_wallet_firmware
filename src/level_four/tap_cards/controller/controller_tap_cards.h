@@ -18,8 +18,6 @@
 #include "sha2.h"
 #include "stdbool.h"
 
-#define ACCEPTABLE_CARDS_ALL 15
-
 /**
  * @brief
  * @details

@@ -60,10 +60,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_pair.h"
-#include "card_sign.h"
+#include "app_error.h"
+#include "card_operations.h"
 #include "common_error.h"
-#include "controller_tap_cards.h"
 #include "manager_api.h"
 #include "manager_app.h"
 #include "manager_app_priv.h"
