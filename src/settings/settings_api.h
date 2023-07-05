@@ -56,4 +56,10 @@ void toggle_passphrase(void);
  *
  */
 void rotate_display(void);
+
+/**
+ * @brief This function displays regulatory information of the X1 vault.
+ *
+ */
+void view_device_regulatory_information(void);
 #endif /* SETTINGS_API_H */

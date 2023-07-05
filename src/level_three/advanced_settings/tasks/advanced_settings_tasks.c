@@ -142,39 +142,6 @@ void level_three_advanced_settings_tasks() {
     } break;
 
     case LEVEL_THREE_REGULATORY_INFO: {
-      instruction_content_t content[7] = {0};
-      LV_IMG_DECLARE(fcc_logo_black_2020);
-      LV_IMG_DECLARE(ce_mark);
-      content[0].img = &fcc_logo_black_2020;
-      content[0].img_x_offset =
-          (LV_HOR_RES_MAX - fcc_logo_black_2020.header.w) >> 1;
-      content[0].img_y_offset =
-          (LV_VER_RES_MAX - fcc_logo_black_2020.header.h) >> 1;
-      content[0].text_align = LV_ALIGN_OUT_BOTTOM_MID;
-      content[6].img = &ce_mark;
-      content[6].img_x_offset = (LV_HOR_RES_MAX - ce_mark.header.w) >> 1;
-      content[6].img_y_offset = (LV_VER_RES_MAX - ce_mark.header.h) >> 1;
-
-      snprintf(
-          content[1].text,
-          sizeof(content[1].text),
-          "This device complies with Part 15 of the FCC Rules. Operation is");
-      snprintf(
-          content[2].text,
-          sizeof(content[2].text),
-          "subject to the following two conditions: (1) this device may not");
-      snprintf(
-          content[3].text,
-          sizeof(content[3].text),
-          "cause harmful interference, and (2) this device must accept any");
-      snprintf(content[4].text,
-               sizeof(content[4].text),
-               "interference received, including interference that");
-      snprintf(content[5].text,
-               sizeof(content[5].text),
-               "may cause undesired operation.");
-
-      multi_instruction_with_image_init(content, 7, DELAY_TIME, true);
     } break;
 
 #if X1WALLET_MAIN
