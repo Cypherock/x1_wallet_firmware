@@ -179,8 +179,21 @@ static void settings_menu_handler(engine_ctx_t *ctx,
                                   const void *data_ptr) {
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
+      case ROTATE_DISPLAY: {
+        rotate_display();
+        break;
+      }
+      case TOGGLE_LOG_EXPORT: {
+        toggle_log_export();
+        break;
+      }
+      case TOGGLE_PASSPHRASE: {
+        toggle_passphrase();
+        break;
+      }
       case VIEW_DEVICE_INFO: {
         view_firmware_version();
+        break;
       }
       default: {
         // TODO: Handle all cases

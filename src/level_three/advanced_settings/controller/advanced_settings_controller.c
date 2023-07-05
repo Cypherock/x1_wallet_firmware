@@ -73,7 +73,6 @@ extern lv_task_t *timeout_task;
 void level_three_advanced_settings_controller() {
   switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-      flow_level.level_two = LEVEL_THREE_RESET_DEVICE;
     } break;
 #if X1WALLET_MAIN
     case LEVEL_THREE_SYNC_CARD_CONFIRM: {
@@ -85,11 +84,6 @@ void level_three_advanced_settings_controller() {
     } break;
 
     case LEVEL_THREE_TOGGLE_PASSPHRASE: {
-      set_enable_passphrase(
-          is_passphrase_enabled() ? PASSPHRASE_DISABLED : PASSPHRASE_ENABLED,
-          FLASH_SAVE_NOW);
-      flow_level.level_two = 1;
-      counter.level = LEVEL_TWO;
     } break;
 
     case LEVEL_THREE_FACTORY_RESET:
@@ -161,8 +155,6 @@ void level_three_advanced_settings_controller() {
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN: {
-      flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-      counter.level = LEVEL_TWO;
     } break;
 #endif
     case LEVEL_THREE_RESET_DEVICE: {
