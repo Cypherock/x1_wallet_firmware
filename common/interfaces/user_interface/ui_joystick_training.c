@@ -127,14 +127,14 @@ static void joystick_train_destructor() {
 static void joystick_event_handler(lv_obj_t *obj, const lv_event_t event) {
   switch (event) {
     case LV_EVENT_KEY: {
-      if (action != JOYSTICK_ACTION_CENTER &&
-          action == lv_indev_get_key(ui_get_indev())) {
+      if (JOYSTICK_ACTION_CENTER != action &&
+          lv_indev_get_key(ui_get_indev()) == action) {
         ui_set_confirm_event();
       }
       break;
     }
     case LV_EVENT_CLICKED: {
-      if (action == JOYSTICK_ACTION_CENTER) {
+      if (JOYSTICK_ACTION_CENTER == action) {
         ui_set_confirm_event();
       }
       break;
