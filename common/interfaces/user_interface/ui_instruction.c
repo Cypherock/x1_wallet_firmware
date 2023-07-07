@@ -78,6 +78,10 @@ void instruction_scr_init(const char *message, const char *heading_text) {
   ASSERT(message != NULL);
 
   lv_obj_clean(lv_scr_act());
+  /* Leave references as the lv_objects will be freed by lv_obj_clean across
+   * screen transitions */
+  heading = NULL;
+  instruction = NULL;
 
   if (heading_text != NULL) {
     heading = lv_label_create(lv_scr_act(), NULL);
@@ -87,11 +91,8 @@ void instruction_scr_init(const char *message, const char *heading_text) {
                LV_LABEL_ALIGN_CENTER);
   }
   instruction = lv_label_create(lv_scr_act(), NULL);
-  ui_paragraph(
-      instruction,
-      message,
-      LV_LABEL_ALIGN_CENTER);    // Creates task to print text on screen
-  if (heading == NULL)
+  ui_paragraph(instruction, message, LV_LABEL_ALIGN_CENTER);
+  if (NULL == heading_text)
     lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
   else
     lv_obj_align(
