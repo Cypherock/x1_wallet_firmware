@@ -79,84 +79,35 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
-/**
- * @brief struct to store message data
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note Add constant
- */
-struct Message_Data {
-  char *message;
-};
-
-/**
- * @brief struct to store message lvgl object
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-struct Message_Object {
-  lv_obj_t *message;
-};
-
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /**
- * @brief Create message screen
- * @details
+ * @brief Create lvgl object and setup callbacks for joystick training
  *
- * @see
- * @since v1.0.0
  */
 static void joystick_train_create();
 
 /**
- * @brief Clear screen
- * @details
+ * @brief Clear internal variables
  *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
  */
 static void joystick_train_destructor();
 
 /**
- * @brief Next button event handler.
- * @details
+ * @brief Event handler callback for the joystick training screen
  *
- * @param next_btn Next button lvgl object.
- * @param event Type of event.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @param obj The pointer to LVGL object
+ * @param event LVGL event that triggered the callback
  */
-static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event);
+static void joystick_event_handler(lv_obj_t *obj, const lv_event_t event);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
-static struct Message_Data *data = NULL;
-static struct Message_Object *obj = NULL;
+static const char *scr_message = NULL;
+static lv_obj_t *lvgl_object = NULL;
 static joystick_actions_e action = JOYSTICK_ACTION_CENTER;
 
 /*****************************************************************************
@@ -168,36 +119,43 @@ static joystick_actions_e action = JOYSTICK_ACTION_CENTER;
  *****************************************************************************/
 
 static void joystick_train_destructor() {
-  if (data != NULL) {
-    memzero(data, sizeof(struct Message_Data));
-    free(data);
-    data = NULL;
-  }
-  if (obj != NULL) {
-    free(obj);
-    obj = NULL;
-  }
+  scr_message = NULL;
+  lvgl_object = NULL;
+  return;
 }
 
-static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
-  if (event == LV_EVENT_KEY && action == lv_indev_get_key(ui_get_indev())) {
-    ui_set_confirm_event();
-  } else if (event == LV_EVENT_DELETE) {
-    /* Destruct object and data variables in case the object is being deleted
-     * directly using lv_obj_clean() */
-    joystick_train_destructor();
+static void joystick_event_handler(lv_obj_t *obj, const lv_event_t event) {
+  switch (event) {
+    case LV_EVENT_KEY: {
+      if (JOYSTICK_ACTION_CENTER != action &&
+          lv_indev_get_key(ui_get_indev()) == action) {
+        ui_set_confirm_event();
+      }
+      break;
+    }
+    case LV_EVENT_CLICKED: {
+      if (JOYSTICK_ACTION_CENTER == action) {
+        ui_set_confirm_event();
+      }
+      break;
+    }
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      joystick_train_destructor();
+      break;
+    }
   }
 }
 
 static void joystick_train_create() {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
+  ASSERT(scr_message != NULL);
 
-  obj->message = lv_label_create(lv_scr_act(), NULL);
-  ui_paragraph(obj->message, data->message, LV_LABEL_ALIGN_CENTER);
-  lv_obj_align(obj->message, NULL, LV_ALIGN_CENTER, 0, 0);
-  lv_group_add_obj(ui_get_group(), obj->message);
-  lv_obj_set_event_cb(obj->message, next_btn_event_handler);
+  lvgl_object = lv_label_create(lv_scr_act(), NULL);
+  ui_paragraph(lvgl_object, scr_message, LV_LABEL_ALIGN_CENTER);
+  lv_obj_align(lvgl_object, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_group_add_obj(ui_get_group(), lvgl_object);
+  lv_obj_set_event_cb(lvgl_object, joystick_event_handler);
 }
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -208,13 +166,8 @@ void joystick_train_init(const char *message, joystick_actions_e act) {
 
   lv_obj_clean(lv_scr_act());
   action = act;
+  scr_message = message;
 
-  data = malloc(sizeof(struct Message_Data));
-  obj = malloc(sizeof(struct Message_Object));
-
-  if (data != NULL) {
-    data->message = (char *)message;
-  }
 #ifdef DEV_BUILD
   ekp_enqueue(act, DEFAULT_DELAY);
 #endif
