@@ -129,17 +129,17 @@ void tap_card_pair_card_tasks() {
       break;
 
     case PAIR_CARD_SUCCESS_MESSAGE: {
-      uint8_t pair_count = 0;
-      if ((pair_count = get_keystore_used_count()) < 4) {
-        char str[100] = "";
-        snprintf(str,
-                 sizeof(str),
-                 "%d card pairing skipped, pair all cards for proper use",
-                 4 - pair_count);
-        delay_scr_init(str, DELAY_LONG_STRING);
-      } else {
-        delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
-      }
+      // uint8_t pair_count = 0;
+      // if ((pair_count = get_keystore_used_count()) < 4) {
+      //   char str[100] = "";
+      //   snprintf(str,
+      //            sizeof(str),
+      //            "%d card pairing skipped, pair all cards for proper use",
+      //            4 - pair_count);
+      //   delay_scr_init(str, DELAY_LONG_STRING);
+      // } else {
+      //   delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
+      // }
     } break;
 
     default:

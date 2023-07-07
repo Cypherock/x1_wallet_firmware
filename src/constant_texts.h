@@ -63,11 +63,11 @@ extern const char *ui_text_options_new_wallet[];
 
 // Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_SETTINGS 10
+#define NUMBER_OF_OPTIONS_SETTINGS 11
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_SETTINGS 9
+#define NUMBER_OF_OPTIONS_SETTINGS 10
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
@@ -75,6 +75,10 @@ extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
 extern const char *ui_text_options_logging_export[];
 extern const char *ui_text_options_passphrase[];
+
+extern const char *ui_text_card_pairing_success;
+extern const char *ui_text_card_pairing_warning;
+#define PAIR_CARD_MESSAGE "%d cards paired successfully"
 
 #if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
@@ -302,7 +306,6 @@ extern const char *ui_text_worng_eth_transaction;
 extern const char *ui_text_error_no_card_paired;
 extern const char *ui_text_error_pair_all_cards;
 extern const char *ui_text_error_pair_atleast_2_cards;
-extern const char *ui_text_card_pairing_success;
 extern const char *ui_text_continue_with_pairing;
 extern const char *ui_text_device_compromised;
 extern const char *ui_text_device_compromised_not_provisioned;
