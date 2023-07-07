@@ -189,6 +189,8 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
     break;
   }
 
+  // Update remaining cards in caller's config
+  config->remaining_cards = card_data.nfc_data.acceptable_cards;
   nfc_deselect_card();
   LOG_ERROR("Card Error type: %d", card_data.error_type);
   return result;

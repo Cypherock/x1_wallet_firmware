@@ -131,6 +131,9 @@ bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
 
     if (VALID_WALLET == state) {
       if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
+        if (true == is_wallet_locked(wallet_idx)) {
+          return false;
+        }
         memcpy(wallet->wallet_id, wallet_id, WALLET_ID_SIZE);
         memcpy(wallet->wallet_name, get_wallet_name(wallet_idx), NAME_SIZE);
         wallet->wallet_info = get_wallet_info(wallet_idx);

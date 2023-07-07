@@ -63,6 +63,7 @@
 
 #include "card_operations.h"
 #include "constant_texts.h"
+#include "flash_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -97,12 +98,23 @@
  *****************************************************************************/
 card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
   // TODO: Support this for threshold number of cards
+  uint8_t acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  card_fetch_share_cfg_t config = {.heading = ui_text_tap_1_2_cards,
+                                   .message = ui_text_place_card_below,
+                                   .skip_card_removal = true,
+                                   .xcor = 0,
+                                   .remaining_cards = acceptable_cards};
 
-  card_fetch_share_cfg_t configuration = {.heading = ui_text_tap_1_2_cards,
-                                          .message = ui_text_place_card_below,
-                                          .skip_card_removal = true,
-                                          .xcor = 0,
-                                          .remaining_cards = 0xF};
+  card_error_type_e card_status = card_fetch_share(&config);
 
-  return card_fetch_share(&configuration);
+  if (CARD_OPERATION_LOCKED_WALLET == card_status) {
+    int status = set_wallet_locked(
+        (const char *)wallet.wallet_name,
+        decode_card_number(config.remaining_cards ^ acceptable_cards));
+
+    if (SUCCESS != status) {
+      LOG_CRITICAL("xxx38: %d", status);
+    }
+  }
+  return card_status;
 }

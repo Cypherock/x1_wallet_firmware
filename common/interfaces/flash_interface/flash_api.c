@@ -651,6 +651,21 @@ int update_challenge_flash(const char *name,
   return SUCCESS_;
 }
 
+int set_wallet_locked(const char *wallet_name, uint8_t card_locked) {
+  ASSERT((NULL != wallet_name) && (1 <= card_locked) && (4 >= card_locked));
+
+  Flash_Wallet *flash_wallet;
+  int status = get_flash_wallet_by_name(wallet_name, &flash_wallet);
+  if (SUCCESS != status) {
+    return status;
+  }
+
+  flash_wallet->is_wallet_locked = true;
+  flash_wallet->challenge.card_locked = card_locked;
+  flash_struct_save();
+  return SUCCESS;
+}
+
 /**
  * @brief
  *
