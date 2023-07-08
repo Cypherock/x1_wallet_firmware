@@ -30,11 +30,11 @@
  *****************************************************************************/
 
 /**
- * @brief This API executes the wallet creation flow on the device
+ * @brief This API executes a new wallet creation flow on the device
  * @details This function generate random mnemonics, takes user inputs for
  * wallet configuration, writes the wallet shares on the X1 vault flash and X1
  * cards and verifies each share
  */
-void create_wallet_flow(void);
+void create_new_wallet_flow(void);
 
 #endif /* CREATE_WALLET_FLOW_H */

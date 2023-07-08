@@ -65,7 +65,7 @@
 #include "core_error_priv.h"
 #include "create_wallet_flow.h"
 #include "menu_priv.h"
-#include "recover_seed_phrase_flow.h"
+#include "restore_seed_phrase_flow.h"
 #include "ui_screens.h"
 
 /*****************************************************************************
@@ -174,7 +174,7 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case GENERATE_NEW_WALLET: {
-        create_wallet_flow();
+        create_new_wallet_flow();
         break;
       }
       case RESTORE_FROM_SEED: {

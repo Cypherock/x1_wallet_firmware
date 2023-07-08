@@ -416,7 +416,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void create_wallet_flow(void) {
+void create_new_wallet_flow(void) {
   new_wallet_state_e current_state = NAME_INPUT;
 
   // TODO: Consolidate in one function
