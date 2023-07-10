@@ -107,16 +107,15 @@ void pair_x1_cards(void) {
     return;
   }
 
-  // Display newly paired cards to the user
-  if (0 < new_cards_paired) {
-    char msg[100] = {0};
-    snprintf(msg, sizeof(msg), PAIR_CARD_MESSAGE, new_cards_paired);
-    delay_scr_init(msg, DELAY_TIME);
-  }
-
   if (MAX_KEYSTORE_ENTRY == get_keystore_used_count()) {
     delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
   } else {
+    // Display newly paired cards to the user
+    if (0 < new_cards_paired) {
+      char msg[100] = {0};
+      snprintf(msg, sizeof(msg), PAIR_CARD_MESSAGE, new_cards_paired);
+      delay_scr_init(msg, DELAY_TIME);
+    }
     delay_scr_init(ui_text_card_pairing_warning, DELAY_TIME);
   }
 
