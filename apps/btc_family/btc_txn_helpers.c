@@ -75,6 +75,11 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 
+#define STATIC
+#ifndef STATIC
+#define STATIC static
+#endif
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -94,7 +99,7 @@
  * @return weight of the transaction
  * @retval
  */
-static uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
+STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -109,7 +114,7 @@ static uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
  *****************************************************************************/
 
 // TODO: fix weight for segwit transactions - effects upper-limit fee check
-static uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
+STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
   uint8_t segwit_count = 0;
   uint32_t weight = 0;
 

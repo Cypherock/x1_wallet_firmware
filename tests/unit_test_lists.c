@@ -135,3 +135,23 @@ TEST_GROUP_RUNNER(manager_api_test) {
   RUN_TEST_CASE(manager_api_test, encode_valid_manager_result);
   RUN_TEST_CASE(manager_api_test, encode_invalid_size_manager_result);
 }
+
+TEST_GROUP_RUNNER(btc_txn_helper_test) {
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk_fail);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh_fail);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh_fail);
+
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit2);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_mixed);
+
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_format_value_0sat);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_format_value_1sat);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_format_value_1001sat);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_format_value_1btc);
+}
