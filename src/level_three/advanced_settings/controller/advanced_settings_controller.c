@@ -108,7 +108,6 @@ void level_three_advanced_settings_controller() {
       break;
 
     case LEVEL_THREE_READ_CARD_VERSION: {
-      controller_read_card_id();
     } break;
 #if X1WALLET_MAIN
     case LEVEL_THREE_REGULATORY_INFO: {

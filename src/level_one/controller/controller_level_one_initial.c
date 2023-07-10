@@ -101,13 +101,11 @@ void level_one_controller_initial() {
     } break;
 
     case 4: {
-      controller_read_card_id();
       reset_flow_level();
       flow_level.level_one = 5;
     } break;
 
     case 5: {
-      controller_read_card_id();
       char msg[32] = {'\0'};
       snprintf(msg,
                sizeof(msg),

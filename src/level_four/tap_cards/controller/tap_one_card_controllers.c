@@ -71,7 +71,6 @@
 #include "utils.h"
 
 extern char card_id_fetched[];
-extern char card_version[];
 bool no_wallet_on_cards = false;
 
 #if X1WALLET_MAIN
@@ -128,54 +127,6 @@ void tap_a_card_and_sync_controller() {
       reset_flow_level();
   }
 #endif
-}
-
-void controller_read_card_id() {
-  switch (flow_level.level_three) {
-    case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-      flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_BACKEND;
-      break;
-    case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
-      tap_card_data.retries = 5;
-      while (1) {
-        uint8_t version[CARD_VERSION_SIZE];
-        // todo log
-        nfc_select_card();    // Stuck here until card is detected
-        // todo log
-        uint8_t no_restrictions[6] = {DEFAULT_VALUE_IN_FLASH,
-                                      DEFAULT_VALUE_IN_FLASH,
-                                      DEFAULT_VALUE_IN_FLASH,
-                                      DEFAULT_VALUE_IN_FLASH};
-        uint8_t all_cards = 15;
-        tap_card_data.status =
-            nfc_select_applet(no_restrictions, &all_cards, version, NULL, NULL);
-
-        if (tap_card_data.status == SW_NO_ERROR) {
-          no_restrictions[CARD_ID_SIZE - 1] = all_cards ^ 15;
-          byte_array_to_hex_string(no_restrictions,
-                                   CARD_ID_SIZE,
-                                   card_id_fetched,
-                                   2 * CARD_ID_SIZE + 1);
-          byte_array_to_hex_string(version,
-                                   CARD_VERSION_SIZE,
-                                   card_version,
-                                   2 * CARD_VERSION_SIZE + 1);
-          flow_level.level_three = TAP_ONE_CARD_SUCCESS_MESSAGE;
-          break;
-        } else if (tap_card_handle_applet_errors()) {
-          break;
-        }
-      }
-      buzzer_start(BUZZER_DURATION);
-      lv_obj_clean(lv_scr_act());
-      break;
-    case TAP_ONE_CARD_SUCCESS_MESSAGE:
-    default:
-      counter.level = LEVEL_TWO;
-      flow_level.level_two = 1;
-      flow_level.level_three = 1;
-      break;
-  }
 }
 
 void controller_update_card_id() {

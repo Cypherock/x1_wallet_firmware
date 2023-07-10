@@ -175,7 +175,7 @@ static void select_applet_and_update_tapped_card(
   uint8_t temp = nfc_data->acceptable_cards;
   nfc_data->status = nfc_select_applet(nfc_data->family_id,
                                        &nfc_data->acceptable_cards,
-                                       NULL,
+                                       nfc_data->card_version,
                                        nfc_data->card_key_id,
                                        &nfc_data->recovery_mode);
 

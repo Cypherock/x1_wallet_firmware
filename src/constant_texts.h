@@ -38,8 +38,6 @@
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
   "Incorrect PIN!\n%d attempt(s) remaining"
-#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
-#define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // product hash
 extern const char *product_hash;
@@ -87,6 +85,11 @@ extern const char *ui_text_options_buzzer_adjust[];
 // Regulatory info text
 #define NUMBER_OF_SLIDES_REGULATORY_INFO 5
 extern const char *ui_text_regulatory_info[];
+
+// Version info text
+#define UI_TEXT_CARD_VERSION "Card Version\n%d.%d.%d-%s"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // Manager app text
 // Device authentication text

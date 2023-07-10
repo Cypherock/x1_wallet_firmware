@@ -69,4 +69,11 @@ void view_device_regulatory_information(void);
  *
  */
 void pair_x1_cards(void);
+
+/**
+ * @brief This function displays the version details of an X1 card
+ *
+ */
+void view_card_version(void);
+
 #endif /* SETTINGS_API_H */

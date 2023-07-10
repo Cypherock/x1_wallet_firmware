@@ -25,7 +25,7 @@
  * state based on the user's input (as communication via lvgl's UI components).
  *
  * @see LEVEL_THREE_ADVANCED_SETTINGS_TASKS, initial_verify_card_controller(),
- * level_three_advanced_settings_tasks(), controller_read_card_id(),
+ * level_three_advanced_settings_tasks(),
  * get_usb_msg_by_cmd_type(), device_provision_controller(),
  * device_authentication_controller(), tap_card_pair_card_controller()
  * @since v1.0.0

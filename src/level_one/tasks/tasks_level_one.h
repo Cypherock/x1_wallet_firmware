@@ -41,7 +41,7 @@ void level_one_tasks();
  * task handler will enable desktop request handler and render appropriate
  * display based on the current level one state of the application.
  *
- * @see flow_level, counter, tasks_read_card_id(), instruction_scr_init()
+ * @see flow_level, counter, instruction_scr_init()
  * @since v1.0.0
  */
 void level_one_tasks_initial();
