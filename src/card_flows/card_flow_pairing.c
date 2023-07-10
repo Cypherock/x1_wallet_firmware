@@ -98,17 +98,17 @@
  *****************************************************************************/
 bool card_flow_pairing(uint8_t *cards_paired) {
   uint8_t cards_paired_in_flow = 0;
-  uint8_t card;
+  uint8_t card_number;
   char display[40];
   evt_status_t event = {0};
 
-  for (card = 1; card <= MAX_KEYSTORE_ENTRY; card++) {
+  for (card_number = 1; card_number <= MAX_KEYSTORE_ENTRY; card_number++) {
     // Check if the card #x is already paired
-    if (1 == get_keystore_used_status(card - 1)) {
+    if (1 == get_keystore_used_status(card_number - 1)) {
       continue;
     }
 
-    snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, card);
+    snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, card_number);
     skip_instruction_scr_init(display);
 
     // Enable task to select NFC card
@@ -127,7 +127,8 @@ bool card_flow_pairing(uint8_t *cards_paired) {
     nfc_deselect_card();
 
     card_error_type_e card_error = CARD_OPERATION_ABORT_OPERATION;
-    card_error = card_pair_operation(card, display, ui_text_place_card_below);
+    card_error =
+        card_pair_operation(card_number, display, ui_text_place_card_below);
     if (CARD_OPERATION_ABORT_OPERATION == card_error) {
       return false;
     }

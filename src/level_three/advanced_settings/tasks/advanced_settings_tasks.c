@@ -217,7 +217,6 @@ void level_three_advanced_settings_tasks() {
     } break;
 #elif X1WALLET_MAIN
     case LEVEL_THREE_PAIR_CARD: {
-      tap_card_pair_card_tasks();
     } break;
 
     case LEVEL_THREE_TOGGLE_LOGGING: {
