@@ -165,16 +165,28 @@ card_error_type_e wait_for_card_removal(void) {
   return CARD_OPERATION_DEFAULT_INVALID;
 }
 
-card_error_type_e indicate_wrong_pin(card_error_status_word_e status) {
-  /** Check incorrect pin error */
-  if (SW_CORRECT_LENGTH_00 == (status & 0xFF00)) {
-    char error_message[60] = "";
-    snprintf(error_message,
-             sizeof(error_message),
-             UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING,
-             (status & 0xFF));
-    return indicate_card_error(error_message);
-  } else {
-    return CARD_OPERATION_SUCCESS;
+card_error_type_e handle_wallet_errors(const card_operation_data_t *card_data,
+                                       const Wallet *wallet) {
+  if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_data->error_type) {
+    card_error_status_word_e status = card_data->nfc_data.status;
+    /** Check incorrect pin error */
+    if (SW_CORRECT_LENGTH_00 == (status & 0xFF00)) {
+      char error_message[60] = "";
+      snprintf(error_message,
+               sizeof(error_message),
+               UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING,
+               (status & 0xFF));
+      return indicate_card_error(error_message);
+    }
+  } else if (CARD_OPERATION_LOCKED_WALLET == card_data->error_type) {
+    int status =
+        set_wallet_locked((const char *)wallet->wallet_name,
+                          decode_card_number(card_data->nfc_data.tapped_card));
+
+    if (SUCCESS != status) {
+      LOG_CRITICAL("xxx38: %d", status);
+    }
   }
+
+  return CARD_OPERATION_SUCCESS;
 }
