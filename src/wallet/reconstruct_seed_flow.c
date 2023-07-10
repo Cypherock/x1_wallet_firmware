@@ -161,6 +161,7 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
                  sizeof(wallet_credential_data.passphrase),
                  "%s",
                  flow_level.screen_input.input_text);
+        next_state = PIN_INPUT;
       }
 
       memzero(flow_level.screen_input.input_text,
