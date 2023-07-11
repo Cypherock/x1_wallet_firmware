@@ -122,10 +122,10 @@ static bool check_which_request(const btc_query_t *query,
                                 pb_size_t which_request);
 
 /**
- * @brief Validates all the derivation paths received in the request from host
- * @details The function validates each path entry in the request. If any
- * invalid path is detected, the function will send an error to the host and
- * return false.
+ * @brief Validates the derivation path received in the request from host
+ * @details The function validates the provided account derivation path in the
+ * request. If invalid path is detected, the function will send an error to the
+ * host and return false.
  *
  * @param request Reference to an instance of btc_sign_txn_request_t
  * @return bool Indicating if the verification passed or failed
@@ -247,6 +247,7 @@ static bool fetch_transaction_meta(btc_query_t *query) {
       !check_which_request(query, BTC_SIGN_TXN_REQUEST_META_TAG)) {
     return false;
   }
+  // TODO: add checks for validating the metadata
 
   // we now know the number of input and output UTXOs
   // allocate memory for input and output UTXOs in g_txn_context
@@ -282,5 +283,6 @@ void btc_sign_transaction(btc_query_t *query) {
   }
   if (NULL != g_txn_context) {
     free(g_txn_context);
+    g_txn_context = NULL;
   }
 }
