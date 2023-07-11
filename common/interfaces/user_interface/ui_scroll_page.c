@@ -462,27 +462,41 @@ static void ui_scrollable_page_create(void) {
       (scrolling_page_lvgl_t *)malloc(sizeof(scrolling_page_lvgl_t));
   ASSERT(NULL != gp_scrollabe_page_lvgl);
 
-  /* Create label gp_scrollabe_page_lvgl->p_ui_header_lvgl which stores the
-   * heading at the top of the screen */
-  gp_scrollabe_page_lvgl->p_ui_header_lvgl =
-      lv_label_create(lv_scr_act(), NULL);
-  ui_heading(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
-             gp_scrollabe_page_data->p_ui_heading,
-             LV_HOR_RES - 20,
-             LV_LABEL_ALIGN_CENTER);
-  lv_style_copy(&(gp_scrollabe_page_lvgl->ui_header_style), &lv_style_plain);
-  (gp_scrollabe_page_lvgl->ui_header_style).body.padding.bottom = 1;
-  (gp_scrollabe_page_lvgl->ui_header_style).body.border.width = 1;
-  (gp_scrollabe_page_lvgl->ui_header_style).body.border.part = LV_BORDER_BOTTOM;
-  lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
-                     LV_LABEL_STYLE_MAIN,
-                     &(gp_scrollabe_page_lvgl->ui_header_style));
-  lv_label_set_body_draw(gp_scrollabe_page_lvgl->p_ui_header_lvgl, true);
+  lv_coord_t scroll_page_height = 48;
+  lv_align_t scroll_page_aligment = LV_ALIGN_IN_TOP_MID;
 
-  /* Create a page gp_scrollabe_page_lvgl->p_ui_page_lvgl of size 128x32 pixels
-   * in the middle of the screen */
+  /* Accomodate cases where heading is not NULL */
+  if (NULL != gp_scrollabe_page_data->p_ui_heading) {
+    // 16 pixels will be consumed by the heading, so height of scrollable text
+    // would be less
+    scroll_page_height = 32;
+    scroll_page_aligment = LV_ALIGN_CENTER;
+
+    /* Create label gp_scrollabe_page_lvgl->p_ui_header_lvgl which stores the
+     * heading at the top of the screen */
+    gp_scrollabe_page_lvgl->p_ui_header_lvgl =
+        lv_label_create(lv_scr_act(), NULL);
+
+    ui_heading(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
+               gp_scrollabe_page_data->p_ui_heading,
+               LV_HOR_RES - 20,
+               LV_LABEL_ALIGN_CENTER);
+    lv_style_copy(&(gp_scrollabe_page_lvgl->ui_header_style), &lv_style_plain);
+    (gp_scrollabe_page_lvgl->ui_header_style).body.padding.bottom = 1;
+    (gp_scrollabe_page_lvgl->ui_header_style).body.border.width = 1;
+    (gp_scrollabe_page_lvgl->ui_header_style).body.border.part =
+        LV_BORDER_BOTTOM;
+    lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
+                       LV_LABEL_STYLE_MAIN,
+                       &(gp_scrollabe_page_lvgl->ui_header_style));
+    lv_label_set_body_draw(gp_scrollabe_page_lvgl->p_ui_header_lvgl, true);
+  }
+
+  /* Create a page gp_scrollabe_page_lvgl->p_ui_page_lvgl of size
+   * 128xpage_height pixels in the middle of the screen */
   gp_scrollabe_page_lvgl->p_ui_page_lvgl = lv_page_create(lv_scr_act(), NULL);
-  lv_obj_set_size(gp_scrollabe_page_lvgl->p_ui_page_lvgl, 128, 32);
+  lv_obj_set_size(
+      gp_scrollabe_page_lvgl->p_ui_page_lvgl, 128, scroll_page_height);
   /* Style the page to have no border and disable scrollbar visibility */
   lv_page_set_style(gp_scrollabe_page_lvgl->p_ui_page_lvgl,
                     LV_PAGE_STYLE_BG,
@@ -492,7 +506,7 @@ static void ui_scrollable_page_create(void) {
                     &lv_style_transp_fit);
   lv_page_set_sb_mode(gp_scrollabe_page_lvgl->p_ui_page_lvgl, LV_SB_MODE_OFF);
   lv_obj_align(
-      gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL, LV_ALIGN_CENTER, 0, 0);
+      gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL, scroll_page_aligment, 0, 0);
 
   /**
    * Create a label on page gp_scrollabe_page_lvgl->p_ui_page_lvgl which
@@ -651,7 +665,7 @@ void ui_scrollable_page(const char *p_page_ui_heading,
                         const char *p_page_ui_body,
                         e_scrollable_page_orientation_t page_orientation,
                         bool bool_cancel_accept_btn_visible) {
-  if ((NULL == p_page_ui_heading) || (NULL == p_page_ui_body)) {
+  if (NULL == p_page_ui_body) {
     return;
   }
 
