@@ -1,7 +1,7 @@
 /**
- * @file    create_wallet_flow.c
+ * @file    create_new_wallet_flow.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the create wallet flow
+ * @brief   Source file for the create new wallet flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,7 +59,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "create_wallet_flow.h"
+#include "create_new_wallet_flow.h"
 
 #include "card_flow_create_wallet.h"
 #include "constant_texts.h"

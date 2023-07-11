@@ -63,7 +63,7 @@
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
-#include "create_wallet_flow.h"
+#include "create_new_wallet_flow.h"
 #include "menu_priv.h"
 #include "restore_seed_phrase_flow.h"
 #include "ui_screens.h"
