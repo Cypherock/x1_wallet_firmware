@@ -134,10 +134,12 @@ void toggle_passphrase(void) {
 }
 
 void rotate_display(void) {
-  ui_rotate();
-  set_display_rotation(get_display_rotation() == LEFT_HAND_VIEW
-                           ? RIGHT_HAND_VIEW
-                           : LEFT_HAND_VIEW,
-                       FLASH_SAVE_NOW);
+  if (core_confirmation(ui_text_rotate_display_confirm, NULL)) {
+    ui_rotate();
+    set_display_rotation(get_display_rotation() == LEFT_HAND_VIEW
+                             ? RIGHT_HAND_VIEW
+                             : LEFT_HAND_VIEW,
+                         FLASH_SAVE_NOW);
+  }
   return;
 }
