@@ -73,6 +73,7 @@ extern const char *ui_text_options_new_wallet[];
 #endif /* DEV_BUILD*/
 extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
+extern const char *ui_text_rotate_display_confirm;
 extern const char *ui_text_options_logging_export[];
 extern const char *ui_text_options_passphrase[];
 
@@ -265,7 +266,6 @@ extern const char *ui_text_do_you_want_to_set_pin;
 extern const char *ui_text_auth_process;
 
 extern const char *ui_text_sync_x1card_confirm;
-extern const char *ui_text_rotate_display_confirm;
 
 extern const char *ui_text_factory_reset_confirm[];
 extern const char *ui_text_confirm_factory_reset;

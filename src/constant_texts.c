@@ -91,6 +91,9 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
 #endif
 };
 
+const char *ui_text_rotate_display_confirm =
+    "Display will rotate 180 degrees\nConfirm?";
+
 const char *ui_text_options_passphrase[] = {
     "Disable Passphrase Step",
     "Enable Passphrase Step",
@@ -395,8 +398,6 @@ const char *ui_text_auth_process = "Waiting for device authentication...";
 
 const char *ui_text_sync_x1card_confirm =
     "Device will be synced with wallets in card Confirm?";
-const char *ui_text_rotate_display_confirm =
-    "Display will rotate 180 degrees\nConfirm?";
 const char *ui_text_factory_reset_confirm[] = {
     "You will need 2 cards to perform factory reset",
     "Make sure at least 2 cards are accessible",
