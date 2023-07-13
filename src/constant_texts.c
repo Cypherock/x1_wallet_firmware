@@ -389,7 +389,7 @@ const char *ui_text_enable_passphrase_step =
     "Do you want to enable passphrase step on wallet creation?";
 const char *ui_text_disable_passphrase_step =
     "Do you want to disable passphrase step on wallet creation?";
-const char *ui_text_warning_transaction_fee_too_high =
+const char *ui_text_warning_txn_fee_too_high =
     "WARNING!\nTransaction fees\ntoo high, proceed?";
 const char *ui_text_enable_log_export = "Do you want to enable logging?";
 const char *ui_text_disable_log_export = "Do you want to disable logging?";

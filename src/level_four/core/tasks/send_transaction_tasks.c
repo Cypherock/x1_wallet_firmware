@@ -172,7 +172,6 @@ void send_transaction_tasks() {
               &var_send_transaction_data.unsigned_transaction,
               BYTE_ARRAY_TO_UINT32(
                   var_send_transaction_data.transaction_metadata.coin_index))) {
-        confirm_scr_init(ui_text_warning_transaction_fee_too_high);
         confirm_scr_focus_cancel();
       } else {
         mark_event_over();

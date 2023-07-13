@@ -124,10 +124,6 @@ void send_transaction_controller() {
       uint16_t msg_size = 0;
       if (get_usb_msg_by_cmd_type(
               SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
-        byte_array_to_unsigned_txn(
-            data_array,
-            msg_size,
-            &var_send_transaction_data.unsigned_transaction);
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
         if (!btc_validate_unsigned_txn(
