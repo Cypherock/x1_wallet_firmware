@@ -103,6 +103,7 @@ bool read_card_version(uint8_t *card_version,
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.card_version = card_version;
+  card_data.nfc_data.init_session_keys = false;
 
   instruction_scr_init(msg, heading);
 
