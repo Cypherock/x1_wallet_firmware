@@ -272,8 +272,8 @@ static uint32_t handle_pairing_success(card_operation_data_t *card_data,
       set_family_id_flash(card_data->nfc_data.family_id);
     }
 
-    uint32_t error_status =
-        pair_card_postprocess(pair_data, card_data->nfc_data.tapped_card);
+    uint32_t error_status = pair_card_postprocess(
+        pair_data, decode_card_number(card_data->nfc_data.tapped_card));
     if (SUCCESS != error_status) {
       return error_status;
     }
@@ -353,7 +353,7 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 
 card_error_type_e card_pair_operation(uint8_t card_number,
                                       char *heading,
-                                      char *message) {
+                                      const char *message) {
   ASSERT(1 <= card_number && 4 >= card_number && NULL != message);
 
   card_operation_data_t card_data = {0};
@@ -373,11 +373,12 @@ card_error_type_e card_pair_operation(uint8_t card_number,
     init_and_pair_card(&card_data, &pair_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      buzzer_start(BUZZER_DURATION);
       if (SW_NO_ERROR != handle_pairing_success(&card_data, &pair_data)) {
         card_data.error_type = CARD_OPERATION_ABORT_OPERATION;
         break;
       }
+
+      buzzer_start(BUZZER_DURATION);
       wait_for_card_removal();
       break;
     }

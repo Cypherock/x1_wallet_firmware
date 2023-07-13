@@ -86,6 +86,7 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "Device Info",
     "View Card Version",
     "Regulatory Info",
+    "Pair Card",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif
@@ -103,6 +104,9 @@ const char *ui_text_options_logging_export[] = {
     "Disable logs",
     "Enable logs",
 };
+
+const char *ui_text_card_pairing_success = "All cards are paired";
+const char *ui_text_card_pairing_warning = "Pair all cards for proper use";
 
 #if DEV_BUILD
 const char *ui_text_options_buzzer_adjust[] = {
@@ -455,7 +459,6 @@ const char *ui_text_error_no_card_paired = "No cards paired with device";
 const char *ui_text_error_pair_all_cards = "Pair all four cards first";
 const char *ui_text_error_pair_atleast_2_cards =
     "Pair at least two cards to restore";
-const char *ui_text_card_pairing_success = "Card pairing successful";
 const char *ui_text_continue_with_pairing = "Proceed with pairing?";
 const char *ui_text_device_compromised =
     "Device is compromised! Contact support";

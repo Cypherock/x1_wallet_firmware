@@ -142,20 +142,4 @@ void tasks_update_card_id();
  */
 void retrieve_key_from_card();
 
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_card_pair_card_tasks();
-
 #endif

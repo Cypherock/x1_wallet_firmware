@@ -89,6 +89,7 @@ typedef enum {
   VIEW_DEVICE_INFO,
   VIEW_CARD_VERSION,
   VIEW_REGULATORY_INFO,
+  PAIR_CARD,
 #ifdef DEV_BUILD
   TOGGLE_BUZZER,
 #endif
@@ -197,6 +198,10 @@ static void settings_menu_handler(engine_ctx_t *ctx,
       }
       case VIEW_REGULATORY_INFO: {
         view_device_regulatory_information();
+        break;
+      }
+      case PAIR_CARD: {
+        pair_x1_cards();
         break;
       }
       default: {

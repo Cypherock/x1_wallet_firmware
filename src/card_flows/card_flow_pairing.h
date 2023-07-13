@@ -1,17 +1,19 @@
 /**
- * @file    settings_api.h
+ * @file    card_flow_pairing.h
  * @author  Cypherock X1 Team
- * @brief   Header file which exports functionalities to the settings menu
+ * @brief   Header file for card pair flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef SETTINGS_API_H
-#define SETTINGS_API_H
+#ifndef CARD_FLOW_PAIRING_H
+#define CARD_FLOW_PAIRING_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <stdbool.h>
+#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -28,45 +30,15 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief This function displays the currently installed firmware version and
- * the bootloader version of the X1 vault device
- *
- */
-void view_firmware_version(void);
-
-/**
- * @brief This function configures the X1 vault to enable/disable exporting of
- * log data to the host
- *
- */
-void toggle_log_export(void);
-
-/**
- * @brief This function configures the X1 vault to enable/disable usage of
- * passphrase on the X1 vault
- *
- */
-void toggle_passphrase(void);
-
-/**
- * @brief This function configures the X1 vault to switch between left and right
- * handed view
- *
- */
-void rotate_display(void);
-
-/**
- * @brief This function displays regulatory information of the X1 vault.
- *
- */
-void view_device_regulatory_information(void);
-
-/**
- * @brief This function executes manual pairing operation between X1 card and X1
+ * @brief This card flow allows pairing of any unpaired X1 card with the X1
  * vault
  *
+ * @param number_of_cards_paired Reference to a variable which will be filled by
+ * the function. It will represent the number of cards paired by the flow
+ * @return true If the flow execution occurred successfully
+ * @return false If any CARD_OPERATION_CARD_ABORT error occurred or any P0 event
+ * occurred during the card flow
  */
-void pair_x1_cards(void);
-#endif /* SETTINGS_API_H */
+bool card_flow_pairing(uint8_t *cards_paired);
+#endif /* CARD_FLOW_PAIRING_H */

@@ -61,5 +61,5 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
  */
 card_error_type_e card_pair_operation(uint8_t card_number,
                                       char *heading,
-                                      char *message);
+                                      const char *message);
 #endif
