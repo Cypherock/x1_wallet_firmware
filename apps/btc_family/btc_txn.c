@@ -147,7 +147,10 @@ static bool handle_initiate_query(const btc_query_t *query);
  * @details The function waits on USB event then decoding and validation of the
  * received query. Post validation, based on the values in the query, the
  * function allocates memory for storing inputs & outputs in btc_txn_context.
- * Also, the data received in the query is duplicated into btc_txn_context .
+ * Also, the data received in the query is duplicated into btc_txn_context.
+ * Refer transaction format here: https://en.bitcoin.it/wiki/Transaction or
+ * https://developer.bitcoin.org/devguide/transactions.html or
+ * https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
  *
  * @param query Reference to storage for decoding query from host
  *
@@ -208,7 +211,7 @@ static bool get_user_verification();
  *
  * @return
  */
-static bool sign_input_utxo(btc_query_t *query);
+static bool sign_input(btc_query_t *query);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -325,17 +328,15 @@ static bool fetch_valid_input(btc_query_t *query) {
     // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
     // excluding OP_CODES) refer https://learnmeabitcoin.com/technical/script
     // for explaination Currently the device can spend P2PKH or P2WPKH inputs
-    // only for (int i = 0; i < in_count; i++) {
-    //   if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
-    //       txn_ctx->inputs[i].script_pub_key.size != 25) {
-    //     return false;
-    //   }
+    // only
+    // if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
+    //     txn_ctx->inputs[i].script_pub_key.size != 25) {
+    //   return false;
     // }
 
     // verify transaction details and discard the raw-transaction (prev_txn)
     const btc_sign_txn_input_prev_txn_t *txn = &query->sign_txn.input.prev_txn;
-    if (!btc_verify_input(
-            txn->bytes, txn->size, &btc_txn_context->inputs[idx])) {
+    if (!btc_verify_input(txn->bytes, txn->size, &query->sign_txn.input)) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -384,7 +385,7 @@ static bool fetch_valid_output(btc_query_t *query) {
       return false;
     }
     // send accepted response to indicate validation of output passed
-    send_response(BTC_SIGN_TXN_RESPONSE_INPUT_ACCEPTED_TAG);
+    send_response(BTC_SIGN_TXN_RESPONSE_OUTPUT_ACCEPTED_TAG);
   }
   if (true == zero_value_transaction) {
     // do not allow zero valued transaction; all input is going into fee
@@ -443,13 +444,37 @@ static bool get_user_verification() {
   return true;
 }
 
-static bool sign_input_utxo(btc_query_t *query) {
-  if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
-      !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+static bool sign_input(btc_query_t *query) {
+  uint8_t seed[64] = {0};
+  uint8_t digest[32] = {0};
+  if (!reconstruct_seed_flow(btc_txn_context->init_info.wallet_id, seed)) {
+    memzero(seed, sizeof(seed));
+    // TODO: handle errors of reconstruction flow
     return false;
   }
 
-  // TODO: Sign each input and send the signature
+  btc_result_t result = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+  // populate hashes cache for segwit transaction types
+  btc_segwit_init_cache(btc_txn_context);
+
+  for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
+        !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+      return false;
+    }
+
+    uint8_t *signature = result.sign_txn.signature.signature;
+
+    btc_digest_input(btc_txn_context, idx, digest);
+    ecdsa_sign_digest(get_curve_by_name(SECP256K1_NAME)->params,
+                      NULL,
+                      digest,
+                      signature,
+                      NULL,
+                      NULL);
+    btc_send_result(&result);
+  }
+  memzero(seed, sizeof(seed));
   return false;
 }
 
@@ -463,7 +488,7 @@ void btc_sign_transaction(btc_query_t *query) {
 
   if (!handle_initiate_query(query) && !fetch_transaction_meta(query) &&
       !fetch_valid_input(query) && !fetch_valid_output(query) &&
-      !get_user_verification() && !sign_input_utxo(query)) {
+      !get_user_verification() && !sign_input(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 

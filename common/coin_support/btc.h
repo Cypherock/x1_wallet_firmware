@@ -197,34 +197,6 @@ typedef struct Send_Transaction_Cmd {
 #pragma pack(pop)
 
 /**
- * @brief Signs the provided unsigned transaction
- * @details
- *
- * @param [in] utxn_ptr          Pointer to the unsigned_txn instance.
- * @param [in] txn_metadata_ptr  Pointer to the txn_metadata instance.
- * @param [in] index             Input index that will be included
- * @param [in] mnemonic          char array of mnemonic
- * @param [in] passphrase        char array of passphrase
- * @param [in] preimage          Pointer to txn_preimage instance.
- * @param [out] script_sig       Byte array which will store the signature.
- *
- * @return Length of the signature byte array.
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-int sig_from_unsigned_txn(const unsigned_txn *utxn_ptr,
-                          txn_metadata *txn_metadata_ptr,
-                          uint32_t index,
-                          const char *mnemonic,
-                          const char *passphrase,
-                          txn_preimage *preimage,
-                          uint8_t *script_sig);
-
-/**
  * @brief Get the address from the passed public key.
  * @details
  *

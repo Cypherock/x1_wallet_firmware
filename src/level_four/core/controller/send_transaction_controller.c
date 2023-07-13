@@ -258,14 +258,7 @@ void send_transaction_controller() {
       txn_preimage preimage;
       memzero(&preimage, sizeof(txn_preimage));
       memzero(send_transaction_cmd.signed_txn_byte_array, MAX_SCRIPT_SIG_SIZE);
-      send_transaction_cmd.signed_txn_length =
-          sig_from_unsigned_txn(&var_send_transaction_data.unsigned_transaction,
-                                &var_send_transaction_data.transaction_metadata,
-                                input_index,
-                                mnemo,
-                                wallet_credential_data.passphrase,
-                                &preimage,
-                                send_transaction_cmd.signed_txn_byte_array);
+      send_transaction_cmd.signed_txn_length = 0;
       memzero(secret, sizeof(secret));
       mnemonic_clear();
       flow_level.level_three = SEND_TXN_WAITING_SCREEN;

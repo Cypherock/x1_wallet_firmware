@@ -28,6 +28,13 @@
  *****************************************************************************/
 
 typedef struct {
+  bool filled;
+  uint8_t hash_prevouts[32];
+  uint8_t hash_sequence[32];
+  uint8_t hash_outputs[32];
+} btc_segwit_cache_t;
+
+typedef struct {
   pb_byte_t prev_txn_hash[32];
   uint32_t prev_output_index;
   uint64_t value;
@@ -53,23 +60,32 @@ typedef struct {
   /**
    * The structure holds the top-level simple datatypes of the transaction.
    * Refer description of `TxIn` at
-   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx,
+   * https://developer.bitcoin.org/devguide/transactions.html,
+   * https://developer.bitcoin.org/devguide/transactions.html#locktime-and-sequence-number,
+   * https://developer.bitcoin.org/devguide/transactions.html#signature-hash-types,
    * @note Populated by fetch_transaction_meta()
    */
   btc_sign_txn_metadata_t metadata;
+  // Populated for segwit transactions
+  btc_segwit_cache_t segwit_cache;
 
   /**
    * The structure holds the outputs (TxOut) of the transaction. Refer
    * description of `OutPoint` at
-   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
-   * @note Populated by fetch_output()
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx,
+   * https://developer.bitcoin.org/devguide/transactions.html#standard-transactions,
+   * https://github.com/bitcoin/bitcoin/blob/bc88f3ab903f8a748a7570a6e17579dc4e9ba791/src/policy/policy.cpp,
+   * https://github.com/bitcoin/bitcoin/blob/bc88f3ab903f8a748a7570a6e17579dc4e9ba791/src/script/standard.cpp#L237
+   * @note Populated by fetch_valid_output()
    */
   btc_sign_txn_output_t *outputs;
   /**
    * The structure holds the inputs (TxIn) of the transaction. Refer
    * description of `TxIn` at
-   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
-   * @note Populated by fetch_input()
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx,
+   * https://github.com/bitcoin/bitcoin/blob/bc88f3ab903f8a748a7570a6e17579dc4e9ba791/src/policy/policy.cpp
+   * @note Populated by fetch_valid_input()
    */
   btc_txn_input_t *inputs;
 } btc_txn_context_t;

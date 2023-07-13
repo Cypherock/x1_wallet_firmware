@@ -52,7 +52,7 @@
  */
 int btc_verify_input(const uint8_t *raw_txn,
                      uint32_t size,
-                     const btc_txn_input_t *input);
+                     const btc_sign_txn_input_t *input);
 
 /**
  * @brief
@@ -83,16 +83,26 @@ uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx);
 bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee);
 
 /**
- * @brief Formats the provided satoshi value to equivalent string formatted BTC
- * value
- * @details The function ensures appropriate decimal precision in the formatted
- * string. In the other words, the function can handle variable precision
- * on-the-fly based on the provided value.
+ * @brief The function populates the cache of hashes for signig segwit
+ * transaction.
+ * @details The function fills the calculates cache
  *
- * @param value_in_sat The value in Satoshi unit to be encoded to BTC
- * @param msg The output buffer for equivalent string formatted BTC value
- * @param msg_len The size of the output buffer
+ * @param context Reference to the context for the current transaction to be
+ * signed
  */
-void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
+void btc_segwit_init_cache(btc_txn_context_t *context);
+
+/**
+ * @brief
+ *
+ * @param context
+ * @param index`
+ * @param sig Reference to a buffer to hold unlocking script
+ *
+ * @return bool Indicating if the signing succeeded or not
+ */
+void btc_digest_input(const btc_txn_context_t *context,
+                      uint32_t index,
+                      uint8_t *sig);
 
 #endif    // BTC_TXN_HELPERS_H
