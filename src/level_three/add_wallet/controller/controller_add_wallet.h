@@ -26,23 +26,6 @@
 void generate_wallet_controller_b();
 
 /**
- * @brief Controller to restore wallet flow
- * @details The controller handles the flow for restoring wallets to the X1Cards
- * using mnemonic words. The controller handles the checks and validations for
- * preventing reference collisions of wallets before proceeding to the next
- * step. Thus, wallet name collision and wallet id collisions are the prior
- * checks that happen. Additionally, the mnemonic words are checked for validity
- * before proceeding to the next step.
- *
- * @see RESTORE_WALLET_TASKS, restore_wallet_controller_b(),
- * tap_cards_for_write_and_verify_flow_controller(),
- * restore_wallet_enter_mnemonics_flow_controller(), wallet.h,
- * mark_error_screen(), restore_wallet_controller_b()
- * @since v1.0.0
- */
-void restore_wallet_controller();
-
-/**
  * @brief Back button controller for level three restore wallet flow
  * @details Handles the back/cancel event processing for the restore wallet
  * flow.

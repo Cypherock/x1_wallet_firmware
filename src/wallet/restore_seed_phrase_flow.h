@@ -1,18 +1,17 @@
 /**
- * @file    create_wallet_flow.h
+ * @file    restore_seed_phrase_flow.h
  * @author  Cypherock X1 Team
- * @brief   Header file for the create wallet flow
+ * @brief   Header file for the import seed phrase flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CREATE_WALLET_FLOW_H
-#define CREATE_WALLET_FLOW_H
+#ifndef RESTORE_SEED_PHRASE_FLOW_H
+#define RESTORE_SEED_PHRASE_FLOW_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -31,14 +30,11 @@
  *****************************************************************************/
 
 /**
- * @brief This API executes the wallet creation flow on the device
- * @details This function generate random mnemonics or inputs seed phrase from
- * user, takes user inputs for wallet configuration, writes the wallet shares on
- * the X1 vault flash and X1 cards and verifies each share
- *
- * @param new_wallet true if a new wallet needs to be created, false if the user
- * wants to recover the wallet from a seed phrase
+ * @brief This API executes the seed phrase import flow on the device
+ * @details This function inputs seed phrase from user, takes user inputs for
+ * wallet configuration, writes the wallet shares on the X1 vault flash and X1
+ * cards and verifies each share
  */
-void create_wallet_flow(bool new_wallet);
+void restore_seed_phrase_flow(void);
 
-#endif /* CREATE_WALLET_FLOW_H */
+#endif /* RESTORE_SEED_PHRASE_FLOW_H */

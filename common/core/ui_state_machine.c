@@ -134,3 +134,27 @@ uint32_t get_state_on_input_scr(uint32_t state_on_text_input,
 
   return next_state;
 }
+
+uint32_t get_state_on_list_scr(uint32_t state_on_menu_input,
+                               uint32_t state_on_rejection,
+                               uint32_t state_on_p0_event,
+                               uint16_t *list_choice) {
+  uint32_t next_state = state_on_rejection;
+  evt_status_t event = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    next_state = state_on_p0_event;
+  } else {
+    ui_event_types_t ui_event = event.ui_event.event_type;
+    if (UI_EVENT_REJECT == ui_event) {
+      next_state = state_on_rejection;
+    } else if (UI_EVENT_LIST_CHOICE == ui_event) {
+      next_state = state_on_menu_input;
+      if (NULL != list_choice) {
+        *list_choice = event.ui_event.list_selection;
+      }
+    }
+  }
+
+  return next_state;
+}

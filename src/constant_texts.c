@@ -74,6 +74,9 @@ const char *ui_text_options_new_wallet[NUMBER_OF_OPTIONS_NEW_WALLET] = {
     "Generate New Wallet",
     "Restore from Seed"};
 
+const char *ui_text_mnemonics_number_options[NUMBER_OF_OPTIONS_MNEMONIC_INPUT] =
+    {"12", "18", "24"};
+
 // Settings menu text
 const char *ui_text_heading_settings = "Settings";
 const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
@@ -179,8 +182,6 @@ const char *ui_text_startup_instruction_screen_4[] = {
     "and download the cySync app to set up the device"
 
 };
-
-const char *ui_text_mnemonics_number_options[] = {"12", "18", "24"};
 
 const char *ui_text_view_data = "View data";
 

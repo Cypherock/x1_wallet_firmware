@@ -61,6 +61,9 @@ extern const char *ui_text_options_old_wallet[];
 extern const char *ui_text_heading_new_wallet;
 extern const char *ui_text_options_new_wallet[];
 
+#define NUMBER_OF_OPTIONS_MNEMONIC_INPUT 3
+extern const char *ui_text_mnemonics_number_options[];
+
 // Settings menu text
 #ifdef DEV_BUILD
 #define NUMBER_OF_OPTIONS_SETTINGS 11
@@ -122,8 +125,6 @@ extern const char *ui_text_startup_instruction_screen_2[];
 extern const char *ui_text_startup_instruction_screen_3[];
 
 extern const char *ui_text_startup_instruction_screen_4[];
-
-extern const char *ui_text_mnemonics_number_options[];
 
 extern const char *ui_text_view_data;
 

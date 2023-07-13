@@ -1,7 +1,7 @@
 /**
- * @file    create_wallet_flow.c
+ * @file    create_new_wallet_flow.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the create wallet flow
+ * @brief   Source file for the create new wallet flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,7 +59,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "create_wallet_flow.h"
+#include "create_new_wallet_flow.h"
 
 #include "card_flow_create_wallet.h"
 #include "constant_texts.h"
@@ -103,7 +103,6 @@ typedef enum {
   PASSPHRASE_INSTRUCTIONS,
   PASSPHRASE_ENABLE,
   SEED_GENERATE,
-  SEED_GENERATED,
   SAVE_WALLET_SHARE_TO_DEVICE,
   TAP_CARD_FLOW,
   VERIFY_SHARES,
@@ -166,6 +165,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       } else {
         next_state = NAME_INPUT_CONFIRM;
       }
+
+      break;
     }
 
     case NAME_INPUT_CONFIRM: {
@@ -415,8 +416,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void create_wallet_flow(bool new_wallet) {
-  // TODO: use new_wallet to decide how mnemonics would be generated
+void create_new_wallet_flow(void) {
   new_wallet_state_e current_state = NAME_INPUT;
 
   // TODO: Consolidate in one function
