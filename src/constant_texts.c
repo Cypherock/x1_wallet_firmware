@@ -125,7 +125,19 @@ const char *ui_text_regulatory_info[NUMBER_OF_SLIDES_REGULATORY_INFO] = {
     "subject to the following two conditions: (1) this device may not",
     "cause harmful interference, and (2) this device must accept any",
     "interference received, including interference that",
-    "may cause undesired operation.",
+    "may cause undesired operation",
+};
+
+// Factory reset text
+const char *ui_text_factory_reset_instruction =
+    "You will need 2 cards to perform factory reset\nMake sure at least 2 "
+    "cards are accessible\nDo you want to proceed?";
+const char *ui_text_confirm_factory_reset =
+    "This will erase all wallets from device. Confirm?";
+const char *ui_text_erasing = "Factory reset done Device will restart";
+const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] = {
+    "Exiting without factory reset",
+    "Press the center button to proceed",
 };
 
 // Manager app text
@@ -402,11 +414,6 @@ const char *ui_text_auth_process = "Waiting for device authentication...";
 
 const char *ui_text_sync_x1card_confirm =
     "Device will be synced with wallets in card Confirm?";
-const char *ui_text_factory_reset_confirm[] = {
-    "You will need 2 cards to perform factory reset",
-    "Make sure at least 2 cards are accessible",
-    "Press the center button to proceed",
-};
 
 const char *ui_text_card_seems_healthy = "Card seems healthy";
 const char *ui_text_click_to_view_wallets = "Click Ok to view wallets";
@@ -417,8 +424,6 @@ const char *ui_text_card_health_check_start = "Tap a card to check it's health";
 const char *ui_text_card_health_check_error[] = {
     "Card error: ",
     "Visit cypherock.com/error-codes for more info"};
-const char *ui_text_confirm_factory_reset =
-    "This will erase all wallets from device Confirm?";
 const char *ui_text_device_verification_success =
     "Device successfully authenticated";
 const char *ui_text_device_verification_failure =
@@ -483,12 +488,6 @@ const char *ui_text_unreliable_cards =
     "Warning, your cards are unreliable! Contact support";
 const char *ui_critical_card_health_migrate_data =
     "Card health is critical! Migrate to new set of cards";
-const char *ui_text_reset_exit[] = {
-    "",
-    "Exiting without factory reset",
-    "Press the center button to proceed",
-};
-const char *ui_text_erasing = "Factory reset done Device will restart";
 
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";

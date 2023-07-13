@@ -98,6 +98,14 @@ extern const char *ui_text_regulatory_info[];
 #define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
 #define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
+// Factory reset text
+extern const char *ui_text_factory_reset_instruction;
+extern const char *ui_text_confirm_factory_reset;
+extern const char *ui_text_erasing;
+#define NUMBER_OF_SLIDES_FACTORY_RESET_EXIT 2
+extern const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
+#define UI_TEXT_FACTORY_RESET_ERROR "Wallet '%s' not found on card(s)"
+
 // Manager app text
 // Device authentication text
 extern const char *ui_text_message_device_authenticating;
@@ -277,8 +285,6 @@ extern const char *ui_text_auth_process;
 
 extern const char *ui_text_sync_x1card_confirm;
 
-extern const char *ui_text_factory_reset_confirm[];
-extern const char *ui_text_confirm_factory_reset;
 extern const char *ui_text_no_wallets_present;
 extern const char *ui_text_card_seems_healthy;
 extern const char *ui_text_click_to_view_wallets;
@@ -327,8 +333,6 @@ extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
-extern const char *ui_text_reset_exit[];
-extern const char *ui_text_erasing;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

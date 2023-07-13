@@ -118,6 +118,27 @@ uint8_t get_wallet_list(const char *wallet_list[]) {
   return num_wallets;
 }
 
+uint8_t get_valid_wallet_meta_data_list(wallet_list_t *list) {
+  uint8_t count = 0;
+  if (NULL == list) {
+    return count;
+  }
+
+  for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
+    wallet_state state = INVALID_WALLET;
+    if (!wallet_is_filled(wallet_idx, &state) || VALID_WALLET != state) {
+      continue;
+    }
+
+    memcpy(list->wallet[count].name, get_wallet_name(wallet_idx), NAME_SIZE);
+    memcpy(list->wallet[count].id, get_wallet_id(wallet_idx), WALLET_ID_SIZE);
+    count++;
+  }
+
+  list->count = count;
+  return count;
+}
+
 bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
   if ((NULL == wallet_id) || (NULL == wallet)) {
     return false;

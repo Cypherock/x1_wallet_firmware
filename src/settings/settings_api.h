@@ -76,4 +76,13 @@ void pair_x1_cards(void);
  */
 void view_card_version(void);
 
+/**
+ * @brief This function implements factory reset flow for the X1 vault. If there
+ * are valid wallets present in device flash memory, the user will be prompted
+ * to tap two X1 cards and wallet list will be verified before performing the
+ * factory reset. ALL data will be cleared.
+ *
+ */
+void factory_reset(void);
+
 #endif /* SETTINGS_API_H */

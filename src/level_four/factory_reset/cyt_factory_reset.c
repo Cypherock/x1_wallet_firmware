@@ -65,8 +65,8 @@
 void cyt_factory_reset() {
   switch (flow_level.level_three) {
     case FACTORY_RESET_INFO:
-      multi_instruction_init(
-          ui_text_factory_reset_confirm, 3, DELAY_LONG_STRING, true);
+      // multi_instruction_init(
+      //     ui_text_factory_reset_instruction, 3, DELAY_LONG_STRING, true);
       break;
 
     case FACTORY_RESET_CONFIRM:
@@ -103,7 +103,7 @@ void cyt_factory_reset() {
     case FACTORY_RESET_CANCEL: {
       char msg[64] = "\0";
       const char *msg_list[3] = {
-          msg, ui_text_reset_exit[1], ui_text_reset_exit[2]};
+          msg, ui_text_reset_exit[0], ui_text_reset_exit[1]};
       instruction_scr_destructor();
       snprintf(msg,
                sizeof(msg),
