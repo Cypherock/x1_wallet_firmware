@@ -148,7 +148,7 @@ static void send_response(pb_size_t which_response);
  * derivation path for the account is also validated. After the validations,
  * user is prompted about the action for confirmation. The function returns true
  * indicating all the validation and user confirmation was a success. The
- * function also duplicates the data from query into the g_txn_context for
+ * function also duplicates the data from query into the btc_txn_context  for
  * further processing.
  *
  * @param query Constant reference to the decoded query received from the host
@@ -163,8 +163,8 @@ static bool handle_initiate_query(const btc_query_t *query);
  * @brief Handles fetching of the metadata/top-level transaction elements
  * @details The function waits on USB event then decoding and validation of the
  * received query. Post validation, based on the values in the query, the
- * function allocates memory for storing input & output UTXOs in g_txn_context.
- * Also, the data received in the query is duplicated into g_txn_context.
+ * function allocates memory for storing input & output UTXOs in btc_txn_context
+ * . Also, the data received in the query is duplicated into btc_txn_context .
  *
  * @param query Reference to storage for decoding query from host
  *
@@ -176,7 +176,7 @@ static bool fetch_transaction_meta(btc_query_t *query);
  * STATIC VARIABLES
  *****************************************************************************/
 
-static txn_context *g_txn_context = NULL;
+static txn_context *btc_txn_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -235,7 +235,7 @@ static bool handle_initiate_query(const btc_query_t *query) {
   }
 
   core_status_set_flow_status(BTC_SIGN_TXN_STATUS_CONFIRM);
-  memcpy(&g_txn_context->init_info,
+  memcpy(&btc_txn_context->init_info,
          &query->sign_txn.initiate,
          sizeof(btc_sign_txn_initiate_request_t));
   send_response(BTC_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
@@ -250,14 +250,14 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   // TODO: add checks for validating the metadata
 
   // we now know the number of input and output UTXOs
-  // allocate memory for input and output UTXOs in g_txn_context
-  memcpy(&g_txn_context->metadata,
+  // allocate memory for input and output UTXOs in btc_txn_context
+  memcpy(&btc_txn_context->metadata,
          &query->sign_txn.meta,
          sizeof(btc_sign_txn_metadata_t));
-  g_txn_context->inputs = (sign_txn_input_t *)malloc(
-      sizeof(sign_txn_input_t) * g_txn_context->metadata.input_count);
-  g_txn_context->outputs = (btc_sign_txn_output_t *)malloc(
-      sizeof(btc_sign_txn_output_t) * g_txn_context->metadata.output_count);
+  btc_txn_context->inputs = (sign_txn_input_t *)malloc(
+      sizeof(sign_txn_input_t) * btc_txn_context->metadata.input_count);
+  btc_txn_context->outputs = (btc_sign_txn_output_t *)malloc(
+      sizeof(btc_sign_txn_output_t) * btc_txn_context->metadata.output_count);
   // TODO: check if malloc failed; report to host and exit
   send_response(BTC_SIGN_TXN_RESPONSE_META_ACCEPTED_TAG);
   return true;
@@ -268,21 +268,21 @@ static bool fetch_transaction_meta(btc_query_t *query) {
  *****************************************************************************/
 
 void btc_sign_transaction(btc_query_t *query) {
-  g_txn_context = (txn_context *)malloc(sizeof(txn_context));
-  memzero(g_txn_context, sizeof(txn_context));
+  btc_txn_context = (txn_context *)malloc(sizeof(txn_context));
+  memzero(btc_txn_context, sizeof(txn_context));
 
   if (!handle_initiate_query(query) && !fetch_transaction_meta(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
-  if (NULL != g_txn_context && NULL != g_txn_context->inputs) {
-    free(g_txn_context->inputs);
+  if (NULL != btc_txn_context && NULL != btc_txn_context->inputs) {
+    free(btc_txn_context->inputs);
   }
-  if (NULL != g_txn_context && NULL != g_txn_context->outputs) {
-    free(g_txn_context->outputs);
+  if (NULL != btc_txn_context && NULL != btc_txn_context->outputs) {
+    free(btc_txn_context->outputs);
   }
-  if (NULL != g_txn_context) {
-    free(g_txn_context);
-    g_txn_context = NULL;
+  if (NULL != btc_txn_context) {
+    free(btc_txn_context);
+    btc_txn_context = NULL;
   }
 }
