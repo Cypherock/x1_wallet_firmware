@@ -298,6 +298,20 @@ int update_challenge_flash(const char *name,
                            const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
+ * The function sets a wallet as locked and assigns a card number in which the
+ * wallet was locked.
+ *
+ * @param wallet_name A pointer to a string representing the name of the wallet.
+ * @param card_number The `card_number` represents the number of the card that
+ * contains the locked wallet. It should be a value between 1 and 4 (inclusive).
+ *
+ * @return an integer value. The possible return values are SUCCESS if the
+ * wallet locking operation is successful, or an error code if there is an issue
+ * with retrieving the flash wallet or saving the flash structure.
+ */
+int set_wallet_locked(const char *wallet_name, uint8_t card_number);
+
+/**
  * @brief Add challenge to flash
  * @note This also resets stored nonce
  * @param name Wallet name

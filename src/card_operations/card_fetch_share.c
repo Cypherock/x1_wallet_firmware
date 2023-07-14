@@ -174,14 +174,9 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
       }
     }
 
-    /* TODO: Consider moving incorrect pin error handling to caller */
-    if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_data.error_type) {
-      card_error_type_e temp_error =
-          indicate_wrong_pin(card_data.nfc_data.status);
-      if (CARD_OPERATION_SUCCESS != temp_error) {
-        result = temp_error;
-        break;
-      }
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
+      break;
     }
 
     // If control reached here, it is an unrecoverable error, so break
@@ -189,6 +184,8 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
     break;
   }
 
+  // Update remaining cards in caller's config
+  config->remaining_cards = card_data.nfc_data.acceptable_cards;
   nfc_deselect_card();
   LOG_ERROR("Card Error type: %d", card_data.error_type);
   return result;

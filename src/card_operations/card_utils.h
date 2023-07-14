@@ -13,7 +13,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_operations.h"
+#include "card_internal.h"
 #include "controller_tap_cards.h"
 #include "stdbool.h"
 
@@ -77,14 +77,22 @@ void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial);
 card_error_type_e wait_for_card_removal(void);
 
 /**
- * @brief Indicates an incorrect PIN error to the user.
- * @details This function checks if the error is due to an incorrect PIN and
- * indicates the error to user with remaining pin attempts.
+ * @brief The function handles different wallet related errors that can occur
+ * during a card operation and returns the appropriate error type.
+ * @details This API handles CARD_OPERATION_INCORRECT_PIN_ENTERED and
+ * CARD_OPERATION_LOCKED_WALLET. For CARD_OPERATION_INCORRECT_PIN_ENTERED error,
+ * the api sets and displays an error message with incorrect attempts remaining
+ * For CARD_OPERATION_LOCKED_WALLET error, the api sets the locked status to the
+ * wallet along with the card number containing the locked wallet
  *
- * @param status The card_error_status_word_e status value representing the
- * error.
- * @return The type of error encountered during display, or
- * CARD_OPERATION_SUCCESS if successful.
+ * @param card_data A pointer to a structure containing information about the
+ * card operation.
+ * @param wallet The `wallet` parameter is a pointer to a `Wallet` object that
+ * was updated by the card opertation.
+ *
+ * @return returns CARD_OPERATION_SUCCESS if processes correctly else failure
+ * error type
  */
-card_error_type_e indicate_wrong_pin(card_error_status_word_e status);
+card_error_type_e handle_wallet_errors(const card_operation_data_t *card_data,
+                                       const Wallet *wallet);
 #endif
