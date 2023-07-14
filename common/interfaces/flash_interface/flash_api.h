@@ -298,19 +298,6 @@ int update_challenge_flash(const char *name,
                            const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
- * The function sets the wallet locked status and updates the locked card
- * number(1-4).
- *
- * @param wallet_id The wallet_id is used to determine which wallet is locked.
- * If that wallet is found, it's status is updated to locked
- * @param card_number It is used to determine on which card is the wallet
- * locked. The value of "card_locked" should be between 1 and 4, inclusive.
- *
- * @return SUCCESS if execution is successful, error is returned if any error is
- * encountered duirng wallet fetching.
- */
-
-/**
  * The function sets a wallet as locked and assigns a card number in which the
  * wallet was locked.
  *
