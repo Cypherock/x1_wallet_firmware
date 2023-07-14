@@ -1,8 +1,7 @@
 /**
- * @file    card_settings.c
+ * @file    read_card_version.c
  * @author  Cypherock X1 Team
- * @brief   Source file with helper functions related to X1 vault and X1 card
- *          mutual configuration
+ * @brief   Logic to read card ID from X1 card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_flow_pairing.h"
-#include "constant_texts.h"
-#include "flash_api.h"
-#include "read_card_version.h"
-#include "settings_api.h"
+#include "card_internal.h"
+#include "card_return_codes.h"
+#include "card_utils.h"
+#include "nfc.h"
 #include "ui_screens.h"
-#include "ui_state_machine.h"
-#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -100,58 +96,46 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void pair_x1_cards(void) {
-  uint8_t new_cards_paired = 0;
+bool read_card_version(uint8_t *card_version,
+                       const char *heading,
+                       const char *msg) {
+  bool result = false;
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.card_version = card_version;
+  card_data.nfc_data.init_session_keys = false;
 
-  // In case any error occurred return early
-  if (false == card_flow_pairing(&new_cards_paired)) {
-    return;
-  }
+  instruction_scr_init(msg, heading);
 
-  if (MAX_KEYSTORE_ENTRY == get_keystore_used_count()) {
-    delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
-  } else {
-    // Display newly paired cards to the user
-    if (0 < new_cards_paired) {
-      char msg[100] = {0};
-      snprintf(msg, sizeof(msg), PAIR_CARD_MESSAGE, new_cards_paired);
-      delay_scr_init(msg, DELAY_TIME);
+  while (1) {
+    memset(
+        card_data.nfc_data.family_id, DEFAULT_VALUE_IN_FLASH, FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+
+    card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      buzzer_start(BUZZER_DURATION);
+      result = true;
+      break;
+    } else {
+      card_handle_errors(&card_data);
     }
-    delay_scr_init(ui_text_card_pairing_warning, DELAY_TIME);
+
+    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
+        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(msg, heading);
+        continue;
+      }
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = false;
+    break;
   }
 
-  return;
-}
-
-void view_card_version(void) {
-  uint8_t card_version[CARD_VERSION_SIZE] = {0};
-
-  if (!read_card_version(card_version, NULL, ui_text_tap_a_card)) {
-    return;
-  }
-
-  char msg[100] = {0};
-  char git_revision[CARD_VERSION_GIT_REV_SIZE + 1] = {0};
-
-  uint8_t major_version = (card_version[0] & 0xf0) >> 4;
-  uint8_t minor_version = (card_version[0] & 0x0f);
-  uint8_t patch = card_version[1];
-
-  byte_array_to_hex_string(
-      &card_version[2], 4, git_revision, sizeof(git_revision));
-
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_CARD_VERSION,
-           major_version,
-           minor_version,
-           patch,
-           git_revision);
-
-  message_scr_init(msg);
-
-  // Do not care about the return value from confirmation screen
-  (void)get_state_on_confirm_scr(0, 0, 0);
-
-  return;
+  return result;
 }

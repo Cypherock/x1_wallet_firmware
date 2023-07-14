@@ -116,7 +116,7 @@ void level_one_tasks_initial() {
 
     case 4: {
       flow_level.level_three = TAP_ONE_CARD_TAP_A_CARD_FRONTEND;
-      tasks_read_card_id();
+      // tasks_read_card_id();
       instruction_scr_destructor();
       instruction_scr_init(ui_text_tap_a_card_instruction2, NULL);
     } break;

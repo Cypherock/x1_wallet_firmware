@@ -60,7 +60,7 @@ void level_one_controller_b();
  * the level one in initial application. Post card tapping (last step of
  * training), the USB is initialised for communication.
  *
- * @see flow_level, counter, mark_device_state(), controller_read_card_id(),
+ * @see flow_level, counter, mark_device_state(),
  * reset_flow_level() MX_USB_DEVICE_Init()
  * @since v1.0.0
  *

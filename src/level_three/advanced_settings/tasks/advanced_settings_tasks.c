@@ -138,7 +138,6 @@ void level_three_advanced_settings_tasks() {
     } break;
 
     case LEVEL_THREE_READ_CARD_VERSION: {
-      tasks_read_card_id();
     } break;
 
     case LEVEL_THREE_REGULATORY_INFO: {

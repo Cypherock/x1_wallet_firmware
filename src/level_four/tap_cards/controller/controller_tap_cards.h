@@ -42,6 +42,7 @@ typedef struct NFC_connection_data {
   uint8_t card_key_id[4];
   uint8_t recovery_mode;
   uint8_t card_absent_retries;
+  uint8_t *card_version;
   bool init_session_keys;
   ISO7816 status;
 } NFC_connection_data;
@@ -164,22 +165,6 @@ void tap_a_card_and_sync_controller();
  * @note
  */
 void delete_from_cards_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void controller_read_card_id();
 
 /**
  * @brief

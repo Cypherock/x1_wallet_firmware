@@ -78,7 +78,6 @@ extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 extern char *HEX;
 char card_id_fetched[2 * CARD_ID_SIZE + 1];
-char card_version[2 * CARD_VERSION_SIZE + 1];
 
 extern bool no_wallet_on_cards;
 void tap_a_card_and_sync_task() {
@@ -106,38 +105,6 @@ void tap_a_card_and_sync_task() {
       break;
     default:
       break;
-  }
-}
-
-static void get_card_version(char *arr, char message[22]) {
-  int offset = snprintf(message, 22, "Card version\n ");
-  message[offset++] = arr[0], message[offset++] = '.',
-  message[offset++] = arr[1], message[offset++] = '.';
-  if (arr[2] != '0')
-    message[offset++] = arr[2], message[offset++] = arr[3];
-  else
-    message[offset++] = arr[3], message[offset++] = 0;
-}
-
-void tasks_read_card_id() {
-  switch (flow_level.level_three) {    // revert back from level_three to
-                                       // level_four if broken
-    case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-      instruction_scr_init(ui_text_tap_a_card, NULL);
-      mark_event_over();
-      break;
-    case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
-      mark_event_over();
-      break;
-    case TAP_ONE_CARD_SUCCESS_MESSAGE: {
-      char message[22];
-      get_card_version(card_version, message);
-      message_scr_init((const char *)message);
-      break;
-
-      default:
-        break;
-    }
   }
 }
 

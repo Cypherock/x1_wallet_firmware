@@ -95,22 +95,6 @@ void tap_threshold_cards_for_reconstruction();
 void tap_a_card_and_sync_task();
 
 /**
- * @brief reads card id from a card
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tasks_read_card_id();
-
-/**
  * @brief Task to update card id
  * @details
  *

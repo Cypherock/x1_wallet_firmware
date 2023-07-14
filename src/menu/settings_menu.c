@@ -196,6 +196,10 @@ static void settings_menu_handler(engine_ctx_t *ctx,
         view_firmware_version();
         break;
       }
+      case VIEW_CARD_VERSION: {
+        view_card_version();
+        break;
+      }
       case VIEW_REGULATORY_INFO: {
         view_device_regulatory_information();
         break;
