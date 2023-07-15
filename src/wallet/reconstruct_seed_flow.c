@@ -111,12 +111,12 @@ typedef enum {
  * flow
  *
  * @param state The current state of the flow which needs to be executed
- * @param seed_out Pointer to buffer which needs to be populated with the wallet
+ * @param secret Pointer to buffer which needs to be populated with the wallet
  * seed
  * @return reconstruct_state_e The next state of the flow
  */
 reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *seed_out);
+                                             uint8_t *secret_out);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -129,8 +129,18 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
+  mnemonic_clear();
+  const char *mnemo =
+      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+
+  ASSERT(mnemo != NULL);
+  mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed_out, NULL);
+  mnemonic_clear();
+}
+
 reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *seed_out) {
+                                             uint8_t *secret_out) {
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
@@ -153,8 +163,8 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
       ui_scrollable_page(
           ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
       memzero(display, sizeof(display));
-      next_state = get_state_on_confirm_scr(
-          PASSPHRASE_CONFIRM, PASSPHRASE_INPUT, TIMED_OUT);
+      next_state =
+          get_state_on_confirm_scr(PIN_INPUT, PASSPHRASE_INPUT, TIMED_OUT);
 
       if (PASSPHRASE_CONFIRM == next_state) {
         snprintf(wallet_credential_data.passphrase,
@@ -225,7 +235,6 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
              wallet_shamir_data.share_encryption_data[0],
              NONCE_SIZE + WALLET_MAC_SIZE);
 
-      uint8_t secret[BLOCK_SIZE];
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         decrypt_shares();
       }
@@ -234,17 +243,10 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
                                  MINIMUM_NO_OF_SHARES,
                                  wallet_shamir_data.mnemonic_shares,
                                  wallet_shamir_data.share_x_coords,
-                                 secret);
+                                 secret_out);
+
       memzero(wallet_shamir_data.mnemonic_shares,
               sizeof(wallet_shamir_data.mnemonic_shares));
-      mnemonic_clear();
-      const char *mnemo =
-          mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-
-      ASSERT(mnemo != NULL);
-      mnemonic_to_seed(
-          mnemo, wallet_credential_data.passphrase, seed_out, NULL);
-      mnemonic_clear();
       next_state = COMPLETED;
       break;
     }
@@ -261,14 +263,10 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
   return next_state;
 }
 
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
-  if ((NULL == wallet_id) || (NULL == seed_out)) {
-    return false;
-  }
-
+reconstruct_state_e handle_secret_reconstruction(
+    const uint8_t *wallet_id,
+    uint8_t *secret_out,
+    reconstruct_state_e init_state) {
   // TODO: Consolidate in one function
   // Clear confidential data irrespective of the result of the flow
   memzero(&wallet, sizeof(wallet));
@@ -281,15 +279,33 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   }
 
   // Run flow till it reaches a completion state
-  reconstruct_state_e current_state = PASSPHRASE_INPUT;
+  reconstruct_state_e current_state = init_state;
   while (1) {
     reconstruct_state_e next_state =
-        reconstruct_seed_handler(current_state, seed_out);
+        reconstruct_seed_handler(current_state, secret_out);
 
     current_state = next_state;
     if (COMPLETED <= current_state) {
       break;
     }
+  }
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
+  if ((NULL == wallet_id) || (NULL == seed_out)) {
+    return false;
+  }
+
+  uint8_t secret[BLOCK_SIZE] = {0};
+  uint8_t result = false;
+
+  if (COMPLETED ==
+      handle_secret_reconstruction(wallet_id, secret, PASSPHRASE_INPUT)) {
+    get_seed_from_secret(secret, seed_out);
+    result = true;
   }
 
   // Clear confidential data irrespective of the result of the flow
@@ -297,9 +313,34 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
   memzero(&wallet_credential_data, sizeof(wallet_credential_data));
 
-  if (COMPLETED == current_state) {
-    return true;
+  return result;
+}
+
+uint8_t reconstruct_mnemonics_flow(
+    const uint8_t *wallet_id,
+    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS]
+                      [MAX_MNEMONIC_WORD_LENGTH]) {
+  if ((NULL == wallet_id) || (NULL == mnemonic_list)) {
+    return 0;
   }
 
-  return false;
+  uint8_t secret[BLOCK_SIZE] = {0};
+  uint8_t result = 0;
+
+  if (COMPLETED == handle_secret_reconstruction(wallet_id, secret, PIN_INPUT)) {
+    mnemonic_clear();
+    const char *mnemo =
+        mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+    uint16_t single_line_mnemonics_length =
+        strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
+    __single_to_multi_line(mnemo, single_line_mnemonics_length, mnemonic_list);
+    result = wallet.number_of_mnemonics;
+  }
+
+  // Clear confidential data irrespective of the result of the flow
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+
+  return result;
 }

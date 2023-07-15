@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "wallet.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -47,4 +48,7 @@
  */
 bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
 
+uint8_t reconstruct_mnemonics_flow(
+    const uint8_t *wallet_id,
+    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]);
 #endif /* RECONSTRUCT_SEED_FLOW_H */
