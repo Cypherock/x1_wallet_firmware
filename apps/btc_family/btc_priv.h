@@ -37,15 +37,40 @@ typedef struct {
   uint32_t address_index;
 } btc_txn_input_t;
 
+/**
+ * @brief Struct to store details of Unsigned Transaction.
+ * @details The structure sufficiently describes the transaction to be signed.
+ * All the fields are required to be populated. The transaction fields should
+ * match the standard specifications (refer:
+ * https://en.bitcoin.it/wiki/Protocol_documentation#tx).
+ */
 typedef struct {
-  // Populated by handle_initiate_query()
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by handle_initiate_query()
+   */
   btc_sign_txn_initiate_request_t init_info;
-  // Populated by fetch_transaction_meta()
+  /**
+   * The structure holds the top-level simple datatypes of the transaction.
+   * Refer description of `TxIn` at
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
+   * @note Populated by fetch_transaction_meta()
+   */
   btc_sign_txn_metadata_t metadata;
 
-  // Populated by fetch_output_utxo()
+  /**
+   * The structure holds the output UTXOs (OutPoint) of the transaction. Refer
+   * description of `OutPoint` at
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
+   * @note Populated by fetch_output_utxo()
+   */
   btc_sign_txn_output_t *outputs;
-  // Populated by fetch_input_utxo()
+  /**
+   * The structure holds the input UTXOs (TxIn) of the transaction. Refer
+   * description of `TxIn` at
+   * https://en.bitcoin.it/wiki/Protocol_documentation#tx
+   * @note Populated by fetch_input_utxo()
+   */
   btc_txn_input_t *inputs;
 } btc_txn_context_t;
 

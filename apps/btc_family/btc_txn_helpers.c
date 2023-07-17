@@ -221,50 +221,6 @@ int btc_verify_input_utxo(const uint8_t *raw_txn,
   return 0;
 }
 
-bool btc_validate_unsigned_txn(const btc_txn_context_t *txn_ctx) {
-  uint32_t in_count = txn_ctx->metadata.input_count;
-  uint32_t out_count = txn_ctx->metadata.output_count;
-  // TODO: move to fetch_transaction_meta()
-  if (in_count == 0 || out_count == 0) {
-    return false;
-  }
-  bool zero_value_transaction = true;
-
-  // TODO: move to fetch_input_utxo()
-  // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
-  // excluding OP_CODES) refer https://learnmeabitcoin.com/technical/script for
-  // explaination Currently the device can spend P2PKH or P2WPKH UTXOs only
-  for (int i = 0; i < in_count; i++) {
-    if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
-        txn_ctx->inputs[i].script_pub_key.size != 25) {
-      return false;
-    }
-  }
-
-  // TODO: move to fetch_output_utxo()
-  for (int i = 0; i < out_count; i++) {
-    if (OP_RETURN == txn_ctx->outputs[i].script_pub_key.bytes[0] &&
-        0 != txn_ctx->outputs[i].value) {
-      return false;
-    }
-    if (0 != txn_ctx->outputs[i].value) {
-      zero_value_transaction = 0;
-    }
-  }
-
-  if (zero_value_transaction == 1) {
-    return false;
-  }
-
-  // TODO: move to fetch_transaction_meta()
-  // Only accept SIGHASH_ALL for sighash type
-  // More info: https://wiki.bitcoinsv.io/index.php/SIGHASH_flags
-  if (txn_ctx->metadata.sighash != 0x00000001) {
-    return false;
-  }
-  return true;
-}
-
 uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx) {
   return (g_app->max_fee / 1000) * (get_transaction_weight(txn_ctx) / 4);
 }

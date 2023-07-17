@@ -286,7 +286,18 @@ static bool fetch_transaction_meta(btc_query_t *query) {
       !check_which_request(query, BTC_SIGN_TXN_REQUEST_META_TAG)) {
     return false;
   }
-  // TODO: add checks for validating the metadata
+  // check important information for supported/compatibility
+  if (0x00000001 != query->sign_txn.meta.sighash ||
+      0 == query->sign_txn.meta.input_count ||
+      0 == query->sign_txn.meta.output_count) {
+    /** Do not accept transaction with empty input/output.
+     * Only accept SIGHASH_ALL for sighash type More info:
+     * https://wiki.bitcoinsv.io/index.php/SIGHASH_flags
+     */
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   // we now know the number of input and output UTXOs
   // allocate memory for input and output UTXOs in btc_txn_context
@@ -310,6 +321,16 @@ static bool fetch_input_utxo(btc_query_t *query) {
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_INPUT_TAG)) {
       return false;
     }
+    // TODO: check input UTXO type; exit if unsupported
+    // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
+    // excluding OP_CODES) refer https://learnmeabitcoin.com/technical/script
+    // for explaination Currently the device can spend P2PKH or P2WPKH UTXOs
+    // only for (int i = 0; i < in_count; i++) {
+    //   if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
+    //       txn_ctx->inputs[i].script_pub_key.size != 25) {
+    //     return false;
+    //   }
+    // }
 
     // verify transaction details and discard the raw-transaction (prev_txn)
     const btc_sign_txn_input_prev_txn_t *txn = &query->sign_txn.input.prev_txn;
@@ -341,6 +362,9 @@ static bool fetch_input_utxo(btc_query_t *query) {
 }
 
 static bool fetch_output_utxo(btc_query_t *query) {
+  // track if it is a zero valued transaction
+  bool zero_value_transaction = true;
+
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_OUTPUT_TAG)) {
@@ -350,6 +374,21 @@ static bool fetch_output_utxo(btc_query_t *query) {
     btc_sign_txn_output_t *output = &query->sign_txn.output;
     memcpy(
         &btc_txn_context->outputs[idx], output, sizeof(btc_sign_txn_output_t));
+    if (0 != output->value) {
+      zero_value_transaction = false;
+    }
+    if (OP_RETURN == output->script_pub_key.bytes[0] && 0 != output->value) {
+      // ensure any funds are not being locked (not spendable)
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+  }
+  if (true == zero_value_transaction) {
+    // do not allow zero valued transaction
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
   }
   return true;
 }

@@ -280,8 +280,7 @@ uint64_t get_transaction_fee_threshold(const unsigned_txn *unsigned_txn_ptr,
  * @retval false    If the change address is invalid or script type is
  * unsupported.
  *
- * @see btc_sign_unsigned_txn(), BITCOIN, unsigned_txn, txn_metadata, HDNode,
- * btc_validate_unsigned_txn()
+ * @see btc_sign_unsigned_txn(), BITCOIN, unsigned_txn, txn_metadata, HDNode
  * @since v1.0.0
  *
  * @note The BTC change address is always a segwit address. So the metadata is

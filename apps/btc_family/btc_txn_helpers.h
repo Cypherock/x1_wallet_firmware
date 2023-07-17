@@ -55,20 +55,6 @@ int btc_verify_input_utxo(const uint8_t *raw_txn,
                           const btc_txn_input_t *input);
 
 /**
- * @brief Validates the structure of a Bitcoin (and its forks) transaction.
- * @details The function checks for existence of at least one input and one
- * output transaction. Supported UTXOs length validation and supported sighash
- * value.
- *
- * @param [in] btc_txn_context_t Immutable reference to the btc_txn_context_t
- *
- * @return bool Indicating if the transaction checks passed
- * @retval true If all the checks are success.
- * @retval false If any of the checks fail.
- */
-bool btc_validate_unsigned_txn(const btc_txn_context_t *txn_ctx);
-
-/**
  * @brief
  * @details
  *

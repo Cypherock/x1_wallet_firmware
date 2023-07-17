@@ -31,6 +31,7 @@
 
 #define SATOSHI_PER_BTC 100000000
 
+// Refer the flow control list: https://en.bitcoin.it/wiki/Script#Flow_control
 #define OP_RETURN 0x6A
 
 /*****************************************************************************
