@@ -401,7 +401,7 @@ static bool get_user_verification() {
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
     btc_sign_txn_output_script_pub_key_t *script = &output->script_pub_key;
-    snprintf(title, sizeof(title), "Receiver #%d", (idx + 1));
+    snprintf(title, sizeof(title), UI_TEXT_BTC_RECEIVER, (idx + 1));
 
     if (true == output->is_change) {
       // do not show the change output UTXOs
@@ -428,7 +428,7 @@ static bool get_user_verification() {
     return false;
   }
 
-  if (!core_scroll_page("Transaction fee", value, btc_send_error)) {
+  if (!core_scroll_page(UI_TEXT_BTC_FEE, value, btc_send_error)) {
     return false;
   }
   return true;

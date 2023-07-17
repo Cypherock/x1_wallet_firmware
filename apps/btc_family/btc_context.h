@@ -78,6 +78,7 @@ typedef struct {
   /** Helps put an upper limit on the fee. This tweak is helpful to assist user
    * in identifying potentially fraudulent transactions and help save unwanted
    * loss of funds.
+   * TODO: Link a reference
    */
   uint64_t max_fee;
 
