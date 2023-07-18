@@ -42,16 +42,4 @@ void level_three_old_wallet_tasks();
  * @since v1.0.0
  */
 void delete_wallet_task();
-
-/**
- * @brief Handles the pre-processing & display rendering of view seed operation.
- * @details This function handles the actual processing of seed retrieval to
- * view mnemonics.
- *
- * @see VIEW_SEED_TASKS, tap_threshold_cards_for_reconstruction(),
- * recover_secret_from_shares(), wallet.h, view_seed_controller()
- * @since v1.0.0
- */
-void view_seed_task();
-
 #endif
