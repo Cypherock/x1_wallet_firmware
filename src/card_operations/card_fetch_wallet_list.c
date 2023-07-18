@@ -124,7 +124,8 @@ bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status =
           nfc_list_all_wallet(response->wallet_list, response->length);
-      // Last 2 bytes of the APDU contain the SW
+      // TODO: Handle de-serialization of raw APDU inside nfc_list_all_wallet
+      // itself Last 2 bytes of the APDU contain the SW
       *response->length -= 2;
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {

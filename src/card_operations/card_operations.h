@@ -14,6 +14,7 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_fetch_share.h"
+#include "card_fetch_wallet_list.h"
 #include "card_pair.h"
 #include "card_read_verify_share.h"
 #include "card_return_codes.h"
