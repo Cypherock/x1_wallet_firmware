@@ -69,6 +69,7 @@
 #include "settings_menu.h"
 #include "status_api.h"
 #include "wallet_list.h"
+#include "wallet_menu.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -290,7 +291,9 @@ void main_menu_handler(engine_ctx_t *ctx,
 
   switch (menu_selected) {
     case MAIN_MENU_OLD_WALLET: {
-      // TODO: Handle old wallet selection
+      engine_add_next_flow_step(ctx,
+                                wallet_menu_get_step(ui_event.list_selection));
+      engine_goto_next_flow_step(ctx);
       break;
     }
     case MAIN_MENU_CREATE_WALLET: {
