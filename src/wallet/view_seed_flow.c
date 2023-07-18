@@ -61,9 +61,10 @@
  *****************************************************************************/
 #include "constant_texts.h"
 #include "core_error.h"
-#include "reconstruct_seed_flow.h"
+#include "reconstruct_wallet_flow.h"
 #include "ui_delay.h"
 #include "ui_list.h"
+#include "ui_message.h"
 #include "ui_multi_instruction.h"
 #include "ui_state_machine.h"
 /*****************************************************************************
@@ -79,18 +80,32 @@
  *****************************************************************************/
 typedef enum view_seed_states {
   VIEW_SEED_INSTRUCTIONS = 1,
-  MNEMONIC_RECONSTRUCTION,
-  MNEMONIC_DISPLAY,
-  COMPLETED,
-  COMPLETED_WITH_ERRORS,
-  TIMED_OUT,
-  EARLY_EXIT,
-  EXIT,
+  VIEW_SEED_MNEMONIC_RECONSTRUCTION,
+  VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE,
+  VIEW_SEED_MNEMONIC_DISPLAY,
+  VIEW_SEED_COMPLETED,
+  VIEW_SEED_COMPLETED_WITH_ERRORS,
+  VIEW_SEED_TIMED_OUT,
+  VIEW_SEED_EARLY_EXIT,
+  VIEW_SEED_EXIT,
 } view_seed_states_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief The function handles different states and transitions of view seed
+ * flow based on the current state.
+ *
+ * @param current_state The current state of the view seed process. It is of
+ * type `view_seed_states_e`, which is an enumeration representing different
+ * states of the process.
+ * @param wallet_id A pointer to a uint8_t array representing the wallet ID.
+ *
+ * @return the next state of the view_seed_states_e enum type.
+ */
+view_seed_states_e view_seed_handler(view_seed_states_e current_state,
+                                     const uint8_t *wallet_id);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -114,35 +129,50 @@ view_seed_states_e view_seed_handler(view_seed_states_e current_state,
       multi_instruction_init(
           ui_text_view_seed_messages, 3, DELAY_LONG_STRING, true);
       next_state = get_state_on_confirm_scr(
-          MNEMONIC_RECONSTRUCTION, EXIT_FAILURE, TIMED_OUT);
+          VIEW_SEED_MNEMONIC_RECONSTRUCTION, EXIT_FAILURE, VIEW_SEED_TIMED_OUT);
       break;
 
-    case MNEMONIC_RECONSTRUCTION:
+    case VIEW_SEED_MNEMONIC_RECONSTRUCTION:
       if (NULL == wallet_id) {
-        next_state = COMPLETED_WITH_ERRORS;
+        next_state = VIEW_SEED_COMPLETED_WITH_ERRORS;
         break;
       }
 
       memzero(mnemonics, sizeof(mnemonics));
       no_of_mnemonics = reconstruct_mnemonics_flow(wallet_id, mnemonics);
 
-      next_state = COMPLETED_WITH_ERRORS;
+      next_state = VIEW_SEED_COMPLETED_WITH_ERRORS;
       if (12 == no_of_mnemonics || 18 == no_of_mnemonics ||
           24 == no_of_mnemonics) {
-        next_state = MNEMONIC_DISPLAY;
+        next_state = VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE;
       }
       break;
 
-    case MNEMONIC_DISPLAY:
+    case VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE:
+      message_scr_init(ui_text_seed_generated_successfully);
+      next_state = get_state_on_confirm_scr(
+          VIEW_SEED_MNEMONIC_DISPLAY, VIEW_SEED_EXIT, VIEW_SEED_TIMED_OUT);
+      break;
+
+    case VIEW_SEED_MNEMONIC_DISPLAY:
+      set_theme(LIGHT);
       list_init(mnemonics, no_of_mnemonics, ui_text_word_hash, true);
-      next_state = get_state_on_confirm_scr(EXIT, EXIT, TIMED_OUT);
+      next_state = get_state_on_confirm_scr(
+          VIEW_SEED_COMPLETED, VIEW_SEED_EXIT, VIEW_SEED_TIMED_OUT);
+      reset_theme();
+
+      memzero(mnemonics, sizeof(mnemonics));
       break;
 
-    case COMPLETED_WITH_ERRORS:
+    case VIEW_SEED_COMPLETED_WITH_ERRORS:
       mark_core_error_screen(ui_text_something_went_wrong);
-      next_state = EXIT_FAILURE;
+      next_state = VIEW_SEED_EARLY_EXIT;
       break;
 
+    case VIEW_SEED_TIMED_OUT:
+    case VIEW_SEED_COMPLETED:
+    case VIEW_SEED_EXIT:
+    case VIEW_SEED_EARLY_EXIT:
     default:
       break;
   }
@@ -158,13 +188,18 @@ void view_seed_flow(uint8_t wallet_index) {
     return;
   }
 
-  const Flash_Wallet *wallet = get_wallet_by_index(wallet_index);
+  const Flash_Wallet *temp_wallet = get_wallet_by_index(wallet_index);
+  ASSERT(NULL != temp_wallet);
+
   view_seed_states_e flow_state = VIEW_SEED_INSTRUCTIONS;
 
   while (1) {
-    flow_state = view_seed_handler(flow_state, wallet->wallet_id);
-    if (TIMED_OUT <= flow_state) {
+    flow_state = view_seed_handler(flow_state, temp_wallet->wallet_id);
+    if (VIEW_SEED_COMPLETED <= flow_state) {
       break;
     }
   }
+
+  memzero(mnemonics, sizeof(mnemonics));
+  no_of_mnemonics = 0x0;
 }

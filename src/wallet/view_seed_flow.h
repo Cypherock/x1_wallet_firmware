@@ -28,5 +28,11 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief The function displays the mnemonics for a given wallet index.
+ *
+ * @param wallet_index The wallet index is an unsigned 8-bit integer that
+ * represents the index of the wallet on flash, acceptable index [0-3]
+ */
 void view_seed_flow(uint8_t wallet_index);
 #endif

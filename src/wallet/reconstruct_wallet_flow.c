@@ -59,7 +59,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "reconstruct_seed_flow.h"
+#include "reconstruct_wallet_flow.h"
 
 #include "card_flow_reconstruct_wallet.h"
 #include "constant_texts.h"
@@ -107,17 +107,46 @@ typedef enum {
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This function handles different states of the reconstruct wallet seed
- * flow
+ * @brief The function takes a 32 byte secret and generates the seed using a
+ * mnemonic and passphrase.
+ *
+ * @param secret The `secret` parameter is a pointer to a uint8_t array
+ * containing wallet secret data.
+ * @param seed_out The `seed_out` parameter is a pointer to a uint8_t array
+ * where the generated seed will be stored. The size of the array should be >=
+ * 64bytes to accommodate the seed.
+ */
+void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
+
+/**
+ * @brief This function handles different states of the reconstruct wallet flow
  *
  * @param state The current state of the flow which needs to be executed
- * @param secret Pointer to buffer which needs to be populated with the wallet
- * seed
+ * @param secret_out Pointer to buffer which needs to be populated with the
+ * wallet secret
  * @return reconstruct_state_e The next state of the flow
  */
-reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *secret_out);
+reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                               uint8_t *secret_out);
 
+/**
+ * @brief The function takes a wallet ID, a pointer to an output buffer, and an
+ * initial state, and runs a flow to reconstruct a secret based on the wallet
+ * ID.
+ *
+ * @param wallet_id A pointer to a uint8_t array that represents the wallet id.
+ * @param secret_out A pointer to a uint8_t array where the reconstructed secret
+ * will be stored.
+ * @param init_state The initial state of the secret reconstruction flow. It
+ * determines where the flow should start from.
+ *
+ * @return The function is expected to return a value of type
+ * `reconstruct_state_e`.
+ */
+reconstruct_state_e reconstruct_wallet_secret_flow(
+    const uint8_t *wallet_id,
+    uint8_t *secret_out,
+    reconstruct_state_e init_state);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -139,8 +168,8 @@ void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
   mnemonic_clear();
 }
 
-reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *secret_out) {
+reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                               uint8_t *secret_out) {
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
@@ -263,7 +292,7 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
   return next_state;
 }
 
-reconstruct_state_e handle_secret_reconstruction(
+reconstruct_state_e reconstruct_wallet_secret_flow(
     const uint8_t *wallet_id,
     uint8_t *secret_out,
     reconstruct_state_e init_state) {
@@ -275,20 +304,22 @@ reconstruct_state_e handle_secret_reconstruction(
 
   // Select wallet based on wallet_id
   if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
-    return false;
+    return EARLY_EXIT;
   }
 
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = init_state;
   while (1) {
     reconstruct_state_e next_state =
-        reconstruct_seed_handler(current_state, secret_out);
+        reconstruct_wallet_handler(current_state, secret_out);
 
     current_state = next_state;
     if (COMPLETED <= current_state) {
       break;
     }
   }
+
+  return current_state;
 }
 
 /*****************************************************************************
@@ -303,7 +334,7 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   uint8_t result = false;
 
   if (COMPLETED ==
-      handle_secret_reconstruction(wallet_id, secret, PASSPHRASE_INPUT)) {
+      reconstruct_wallet_secret_flow(wallet_id, secret, PASSPHRASE_INPUT)) {
     get_seed_from_secret(secret, seed_out);
     result = true;
   }
@@ -327,13 +358,18 @@ uint8_t reconstruct_mnemonics_flow(
   uint8_t secret[BLOCK_SIZE] = {0};
   uint8_t result = 0;
 
-  if (COMPLETED == handle_secret_reconstruction(wallet_id, secret, PIN_INPUT)) {
+  if (COMPLETED ==
+      reconstruct_wallet_secret_flow(wallet_id, secret, PIN_INPUT)) {
     mnemonic_clear();
     const char *mnemo =
         mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-    uint16_t single_line_mnemonics_length =
+    ASSERT(mnemo != NULL);
+
+    uint16_t len =
         strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
-    __single_to_multi_line(mnemo, single_line_mnemonics_length, mnemonic_list);
+    __single_to_multi_line(mnemo, len, mnemonic_list);
+    mnemonic_clear();
+
     result = wallet.number_of_mnemonics;
   }
 

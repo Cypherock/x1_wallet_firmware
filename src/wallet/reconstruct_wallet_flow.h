@@ -1,5 +1,5 @@
 /**
- * @file    reconstruct_seed_flow.h
+ * @file    reconstruct_wallet_flow.h
  * @author  Cypherock X1 Team
  * @brief   Header file for the reconstruct wallet seed flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -48,6 +48,20 @@
  */
 bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
 
+/**
+ * The function `reconstruct_mnemonics_flow` takes a wallet ID and a list of
+ * mnemonics as input, reconstructs a secret using the wallet ID, and returns
+ * the number of mnemonics in the wallet.
+ *
+ * @param wallet_id A pointer to an array of uint8_t representing the wallet ID.
+ * @param mnemonic_list A 2-dimensional array of characters representing the
+ * list of mnemonics. Each row in the array represents a single mnemonic word,
+ * and each column represents a character in the word. The maximum number of
+ * mnemonic words is defined by MAX_NUMBER_OF_MNEMONIC_WORDS, and the maximum
+ * length of each
+ *
+ * @return a uint8_t value.
+ */
 uint8_t reconstruct_mnemonics_flow(
     const uint8_t *wallet_id,
     char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]);
