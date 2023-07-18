@@ -225,18 +225,30 @@ uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx) {
   return (g_app->max_fee / 1000) * (get_transaction_weight(txn_ctx) / 4);
 }
 
-uint64_t btc_get_txn_fee(const btc_txn_context_t *txn_ctx) {
-  uint64_t result = 0;
+bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {
+  if (NULL == fee) {
+    return false;
+  }
+
+  uint64_t input = 0;
+  uint64_t output = 0;
+  *fee = UINT64_MAX;
 
   for (int idx = 0; idx < txn_ctx->metadata.input_count; idx++) {
-    result += txn_ctx->inputs[idx].value;
+    input += txn_ctx->inputs[idx].value;
   }
 
   for (int idx = 0; idx < txn_ctx->metadata.output_count; idx++) {
-    result -= txn_ctx->outputs[idx].value;
+    output -= txn_ctx->outputs[idx].value;
   }
 
-  return result;
+  if (input < output) {
+    // case of an overspending transaction
+    return false;
+  }
+
+  *fee = (input - output);
+  return true;
 }
 
 void format_value(const uint64_t value_in_sat,

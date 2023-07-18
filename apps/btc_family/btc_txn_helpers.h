@@ -68,13 +68,19 @@ uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx);
 /**
  * @brief Get the transaction fee of a transaction as the difference of the
  * input and output UTXO(s).
+ * @details The function calculates transaction fee in its smallest
+ * unit/denomination (satoshi). If the case of overspending is observed, then
+ * the result UINT64_MAX is stored at the location. In such a case, the value
+ * should not be used as this is an errornous transaction.
  *
  * @param [in] utxn_ptr     Immutable reference to btc_txn_context_t instance.
+ * @param [out] txn_ctx     Storage for the calculated fee
  *
- * @return Transaction fee in its smallest unit/denomination
- * @retval uint64_t The calculated transaction fee.
+ * @return bool Indicating if the process failed with errors
+ * @retval true If calculation succeeded
+ * @retval false In case of any inconsistency
  */
-uint64_t btc_get_txn_fee(const btc_txn_context_t *txn_ctx);
+bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee);
 
 /**
  * @brief Formats the provided satoshi value to equivalent string formatted BTC

@@ -290,6 +290,7 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   if (0x00000001 != query->sign_txn.meta.sighash ||
       0 == query->sign_txn.meta.input_count ||
       0 == query->sign_txn.meta.output_count) {
+    // TODO: Add upper limit on number input+output count
     /** Do not accept transaction with empty input/output.
      * Only accept SIGHASH_ALL for sighash type More info:
      * https://wiki.bitcoinsv.io/index.php/SIGHASH_flags
@@ -418,8 +419,14 @@ static bool get_user_verification() {
 
   // calculate fee in various forms
   uint64_t max_fee = get_transaction_fee_threshold(btc_txn_context);
-  uint64_t fee_in_satoshi = btc_get_txn_fee(btc_txn_context);
-  format_value(fee_in_satoshi, value, sizeof(value));
+  uint64_t fee_in_satoshi = 0;
+
+  if (!btc_get_txn_fee(btc_txn_context, &fee_in_satoshi)) {
+    // The transaction is overspending
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   // all the receivers are verified, check fee limit & show the fee
   // validate fee limit is not too high and acceptable to user
@@ -428,6 +435,7 @@ static bool get_user_verification() {
     return false;
   }
 
+  format_value(fee_in_satoshi, value, sizeof(value));
   if (!core_scroll_page(UI_TEXT_BTC_FEE, value, btc_send_error)) {
     return false;
   }
