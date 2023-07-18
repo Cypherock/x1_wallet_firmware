@@ -448,7 +448,10 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
             LOG_ERROR("pairing error: %ld", pairing_status);
             manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                                get_card_error_from_nfc_status(pairing_status));
-            delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
+            if (SW_CONDITIONS_NOT_SATISFIED != pairing_status &&
+                SW_FILE_INVALID != pairing_status) {
+              delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
+            }
             return false;
           }
           core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
@@ -536,7 +539,6 @@ void card_auth_handler(manager_query_t *query) {
 
   while (1) {
     if (true != handle_auth_card_query(&auth_card_data)) {
-      usb_clear_event();
       return;
     }
 

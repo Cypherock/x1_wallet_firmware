@@ -188,6 +188,7 @@ card_error_type_e card_sign_auth_data(card_sign_data_config_t *sign_data) {
   }
 
   sign_data->acceptable_cards = card_data.nfc_data.acceptable_cards;
+  sign_data->status = card_data.nfc_data.status;
   nfc_deselect_card();
   return card_data.error_type;
 }
