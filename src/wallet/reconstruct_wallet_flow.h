@@ -49,18 +49,14 @@
 bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
 
 /**
- * The function `reconstruct_mnemonics_flow` takes a wallet ID and a list of
- * mnemonics as input, reconstructs a secret using the wallet ID, and returns
- * the number of mnemonics in the wallet.
+ * This function takes a wallet ID as input and a 2D array buffer to populate
+ * mnemonics to. It reconstructs a secret using for the associated wallet, and
+ * returns the number of mnemonics in the wallet.
  *
  * @param wallet_id A pointer to an array of uint8_t representing the wallet ID.
- * @param mnemonic_list A 2-dimensional array of characters representing the
- * list of mnemonics. Each row in the array represents a single mnemonic word,
- * and each column represents a character in the word. The maximum number of
- * mnemonic words is defined by MAX_NUMBER_OF_MNEMONIC_WORDS, and the maximum
- * length of each
+ * @param mnemonic_list A 2-dimensional buffer to store mnemonics to.
  *
- * @return a uint8_t value.
+ * @return number of nmemonics for the wallet for success, else 0
  */
 uint8_t reconstruct_mnemonics_flow(
     const uint8_t *wallet_id,
