@@ -192,9 +192,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 const flow_step_t *wallet_menu_get_step(uint8_t selection_index) {
-  if (0 == selection_index || MAX_WALLETS_ALLOWED < selection_index) {
-    return NULL;
-  }
+  ASSERT(0 != selection_index && MAX_WALLETS_ALLOWED >= selection_index);
 
   wallet_index = selection_index - 1;
   return &wallet_step;
