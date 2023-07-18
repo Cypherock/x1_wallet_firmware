@@ -192,8 +192,8 @@ reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
       ui_scrollable_page(
           ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
       memzero(display, sizeof(display));
-      next_state =
-          get_state_on_confirm_scr(PIN_INPUT, PASSPHRASE_INPUT, TIMED_OUT);
+      next_state = get_state_on_confirm_scr(
+          PASSPHRASE_CONFIRM, PASSPHRASE_INPUT, TIMED_OUT);
 
       if (PASSPHRASE_CONFIRM == next_state) {
         snprintf(wallet_credential_data.passphrase,
