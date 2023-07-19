@@ -87,7 +87,7 @@ TEST_TEAR_DOWN(btc_txn_helper_test) {
   g_app = NULL;
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9?format=hex
    * txnElements -
@@ -121,10 +121,10 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk) {
       134,
       input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input_utxo(raw_txn, 134, &input));
+  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 134, &input));
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk_fail) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9?format=hex
    * txnElements -
@@ -159,10 +159,10 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk_fail) {
       134,
       input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(1, btc_verify_input_utxo(raw_txn, 134, &input));
+  TEST_ASSERT_EQUAL_INT(1, btc_verify_input(raw_txn, 134, &input));
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/eb0e2029310edade8e2a034aea4f0c4a1e243fe2dce67d05f95fddb7ac11bfbe?format=hex
    * txnElements -
@@ -197,10 +197,10 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh) {
                            50,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input_utxo(raw_txn, 224, &input));
+  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 224, &input));
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh_fail) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/eb0e2029310edade8e2a034aea4f0c4a1e243fe2dce67d05f95fddb7ac11bfbe?format=hex
    * txnElements -
@@ -236,10 +236,10 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh_fail) {
                            50,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(3, btc_verify_input_utxo(raw_txn, 224, &input));
+  TEST_ASSERT_EQUAL_INT(3, btc_verify_input(raw_txn, 224, &input));
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/21706dfac590a74e7d083ad60e790c3a1775a4818afd7aa3ddf1a3d76dc16b03?format=hex
    * txnElements -
@@ -293,10 +293,10 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh) {
                            44,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input_utxo(raw_txn, 929, &input));
+  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 929, &input));
 }
 
-TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh_fail) {
+TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
   /* Test data source: rawTxn -
    * https://blockchain.info/rawtx/21706dfac590a74e7d083ad60e790c3a1775a4818afd7aa3ddf1a3d76dc16b03?format=hex
    * txnElements -
@@ -352,7 +352,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh_fail) {
                            44,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(2, btc_verify_input_utxo(raw_txn, 929, &input));
+  TEST_ASSERT_EQUAL_INT(2, btc_verify_input(raw_txn, 929, &input));
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1) {

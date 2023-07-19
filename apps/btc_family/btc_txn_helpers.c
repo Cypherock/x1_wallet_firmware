@@ -161,9 +161,9 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-int btc_verify_input_utxo(const uint8_t *raw_txn,
-                          const uint32_t size,
-                          const btc_txn_input_t *input) {
+int btc_verify_input(const uint8_t *raw_txn,
+                     const uint32_t size,
+                     const btc_txn_input_t *input) {
   if (NULL == input || NULL == raw_txn || 0 == size) {
     return -1;
   }
@@ -178,14 +178,14 @@ int btc_verify_input_utxo(const uint8_t *raw_txn,
   // ignore network version (4-bytes), skip marker & flag (in segwit)
   offset += (raw_txn[4] == 0 ? 6 : 4);
   start_offset = offset;
-  // remember the number of input UTXOs in the raw_txn
+  // remember the number of inputs in the raw_txn
   count = raw_txn[offset++];
 
   for (int32_t input_index = 0; input_index < count; input_index++) {
     offset += 36;
     offset += (raw_txn[offset] + 1 + 4);
   }
-  // remember the number of output UTXOs in the raw_txn
+  // remember the number of outputs in the raw_txn
   count = raw_txn[offset++];
   for (int32_t output_index = 0; output_index < count; output_index++) {
     if (output_index == input->prev_output_index) {
@@ -211,7 +211,7 @@ int btc_verify_input_utxo(const uint8_t *raw_txn,
   memcpy(txn_data + offset - start_offset + 4, raw_txn + size - 4, 4);
   sha256_Raw(txn_data, offset - start_offset + 4 + 4, hash);
   sha256_Raw(hash, sizeof(hash), hash);
-  // verify UTXO txn hash
+  // verify input txn hash
   if (memcmp(hash, input->prev_txn_hash, sizeof(input->prev_txn_hash)) != 0) {
     return 2;
   }

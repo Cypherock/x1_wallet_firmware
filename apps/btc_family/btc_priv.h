@@ -59,17 +59,17 @@ typedef struct {
   btc_sign_txn_metadata_t metadata;
 
   /**
-   * The structure holds the output UTXOs (OutPoint) of the transaction. Refer
+   * The structure holds the outputs (TxOut) of the transaction. Refer
    * description of `OutPoint` at
    * https://en.bitcoin.it/wiki/Protocol_documentation#tx
-   * @note Populated by fetch_output_utxo()
+   * @note Populated by fetch_output()
    */
   btc_sign_txn_output_t *outputs;
   /**
-   * The structure holds the input UTXOs (TxIn) of the transaction. Refer
+   * The structure holds the inputs (TxIn) of the transaction. Refer
    * description of `TxIn` at
    * https://en.bitcoin.it/wiki/Protocol_documentation#tx
-   * @note Populated by fetch_input_utxo()
+   * @note Populated by fetch_input()
    */
   btc_txn_input_t *inputs;
 } btc_txn_context_t;

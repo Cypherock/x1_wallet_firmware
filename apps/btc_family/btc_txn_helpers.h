@@ -33,8 +33,8 @@
  *****************************************************************************/
 
 /**
- * @brief Verifies the provided input UTXO with its related raw transaction byte
- * @details The function verifies if the UTXO details match with the details in
+ * @brief Verifies the provided input with its related raw transaction byte
+ * @details The function verifies if the input details match with the details in
  * the raw transaction. This is done by checking the output value against the
  * specified output index in the raw transaction and then finally matching the
  * specified hash with the calculated hash from the raw transactions bytes.
@@ -44,15 +44,15 @@
  * @param [in] input    Immutable reference to the btc_txn_input_t.
  *
  * @return int Result of verification, 0 if verified otherwise error status.
- * @retval 0 UTXO verified successfully.
+ * @retval 0 Input verified successfully.
  * @retval -1 If function parameters are invalid
  * @retval 1 If specified output index (input->prev_output_index) is not present
  * @retval 2 If there is a hash (input->prev_txn_hash) mismatch
  * @retval 3 If there is a value (input->value) mismatch
  */
-int btc_verify_input_utxo(const uint8_t *raw_txn,
-                          uint32_t size,
-                          const btc_txn_input_t *input);
+int btc_verify_input(const uint8_t *raw_txn,
+                     uint32_t size,
+                     const btc_txn_input_t *input);
 
 /**
  * @brief
@@ -67,7 +67,7 @@ uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx);
 
 /**
  * @brief Get the transaction fee of a transaction as the difference of the
- * input and output UTXO(s).
+ * inputs and outputs.
  * @details The function calculates transaction fee in its smallest
  * unit/denomination (satoshi). If the case of overspending is observed, then
  * the result UINT64_MAX is stored at the location. In such a case, the value

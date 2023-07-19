@@ -137,12 +137,12 @@ TEST_GROUP_RUNNER(manager_api_test) {
 }
 
 TEST_GROUP_RUNNER(btc_txn_helper_test) {
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pk_fail);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2pkh_fail);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_utxo_p2wpkh_fail);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail);
 
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2);
