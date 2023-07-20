@@ -182,7 +182,7 @@ static bool fetch_valid_input(btc_query_t *query);
  * @return bool Indicating if all the outputs were fetched
  * @retval true If all the outputs were fetched
  */
-static bool fetch_output(btc_query_t *query);
+static bool fetch_valid_output(btc_query_t *query);
 
 /**
  * @brief Aggregates user consent for all outputs and the transaction fee
@@ -361,7 +361,7 @@ static bool fetch_valid_input(btc_query_t *query) {
   return true;
 }
 
-static bool fetch_output(btc_query_t *query) {
+static bool fetch_valid_output(btc_query_t *query) {
   // track if it is a zero valued transaction; all input is going into fee
   bool zero_value_transaction = true;
 
@@ -383,6 +383,8 @@ static bool fetch_output(btc_query_t *query) {
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
+    // send accepted response to indicate validation of output passed
+    send_response(BTC_SIGN_TXN_RESPONSE_INPUT_ACCEPTED_TAG);
   }
   if (true == zero_value_transaction) {
     // do not allow zero valued transaction; all input is going into fee
@@ -460,7 +462,7 @@ void btc_sign_transaction(btc_query_t *query) {
   memzero(btc_txn_context, sizeof(btc_txn_context_t));
 
   if (!handle_initiate_query(query) && !fetch_transaction_meta(query) &&
-      !fetch_valid_input(query) && !fetch_output(query) &&
+      !fetch_valid_input(query) && !fetch_valid_output(query) &&
       !get_user_verification() && !sign_input_utxo(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
