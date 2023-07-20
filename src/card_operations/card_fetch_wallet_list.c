@@ -103,7 +103,7 @@ bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
                             card_fetch_wallet_list_response_t *response) {
   bool result = false;
   if (NULL == configuration || NULL == response ||
-      NULL == response->wallet_list || NULL == response->length) {
+      NULL == response->wallet_list) {
     return result;
   }
 
@@ -122,14 +122,13 @@ bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
     response->tapped_card = card_data.nfc_data.tapped_card;
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      card_data.nfc_data.status =
-          nfc_list_all_wallet(response->wallet_list, response->length);
-      // TODO: Handle de-serialization of raw APDU inside nfc_list_all_wallet
-      // itself Last 2 bytes of the APDU contain the SW
-      *response->length -= 2;
+      card_data.nfc_data.status = nfc_list_all_wallet(response->wallet_list);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
-        wait_for_card_removal();
+        buzzer_start(BUZZER_DURATION);
+        if (!configuration->skip_card_removal) {
+          wait_for_card_removal();
+        }
         result = true;
         break;
       } else {

@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "wallet_list.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -24,14 +26,14 @@
  *****************************************************************************/
 typedef struct {
   uint8_t acceptable_cards;
+  bool skip_card_removal;
   const char *heading;
   const char *msg;
 } card_fetch_wallet_list_config_t;
 
 typedef struct {
   uint8_t tapped_card;
-  uint8_t *wallet_list;
-  uint16_t *length;
+  wallet_list_t *wallet_list;
 } card_fetch_wallet_list_response_t;
 
 /*****************************************************************************

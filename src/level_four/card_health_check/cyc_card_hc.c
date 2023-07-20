@@ -132,7 +132,7 @@ static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
           return;
       }
     }
-    tap_card_data.status = nfc_list_all_wallet(recv_apdu, recv_len);
+    // tap_card_data.status = nfc_list_all_wallet(recv_apdu, recv_len);
     *recv_len -= 2;
     switch ((uint32_t)tap_card_data.status) {
       case SW_NO_ERROR:
