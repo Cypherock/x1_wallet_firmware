@@ -445,12 +445,12 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
           uint32_t pairing_status = DEFAULT_VALUE_IN_FLASH;
           if (CARD_OPERATION_SUCCESS !=
               card_pair_without_retap(card_number, &pairing_status)) {
+            LOG_ERROR("pairing error: %ld", pairing_status);
             manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                                get_card_error_from_nfc_status(pairing_status));
             if (SW_CONDITIONS_NOT_SATISFIED != pairing_status &&
                 SW_FILE_INVALID != pairing_status) {
               delay_scr_init(ui_text_card_authentication_failed, DELAY_TIME);
-              LOG_ERROR("pairing error: %ld", pairing_status);
             }
             return false;
           }
