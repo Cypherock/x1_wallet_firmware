@@ -25,11 +25,10 @@
  *****************************************************************************/
 typedef enum card_errors_type {
   CARD_OPERATION_SUCCESS = 0,
-  CARD_OPERATION_CARD_REMOVED,     /** When card is removed before operation
-                                      completion*/
-  CARD_OPERATION_PAIRING_REQUIRED, /** Returned after card is unpaired */
-  CARD_OPERATION_LOCKED_WALLET,    /** Locked wallet detected during wallet
-                                      operation */
+  CARD_OPERATION_CARD_REMOVED,  /** When card is removed before operation
+                                   completion*/
+  CARD_OPERATION_LOCKED_WALLET, /** Locked wallet detected during wallet
+                                   operation */
   CARD_OPERATION_INCORRECT_PIN_ENTERED, /** Incorrect pin entered */
   CARD_OPERATION_P0_OCCURED,            /** P0 event occured */
 
