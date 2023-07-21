@@ -743,12 +743,12 @@ void apdu_extract_wallet_list(wallet_list_t *list,
     if (read_offset < len && INS_NAME == apdu[read_offset++]) {
       memcpy(
           list->wallet[index].name, apdu + read_offset + 1, apdu[read_offset]);
-      index += (apdu[read_offset] + 1);
+      read_offset += (apdu[read_offset] + 1);
     }
 
     if (read_offset < len && INS_WALLET_ID == apdu[read_offset++]) {
       memcpy(list->wallet[index].id, apdu + read_offset + 1, apdu[read_offset]);
-      index += (apdu[read_offset] + 1);
+      read_offset += (apdu[read_offset] + 1);
     }
   }
 
