@@ -334,9 +334,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       memzero(wallet.wallet_share_with_mac_and_nonce,
               sizeof(wallet.wallet_share_with_mac_and_nonce));
 
-      message_scr_init(ui_text_seed_generated_successfully);
-      next_state = get_state_on_confirm_scr(
-          SAVE_WALLET_SHARE_TO_DEVICE, TIMED_OUT, TIMED_OUT);
+      next_state = SAVE_WALLET_SHARE_TO_DEVICE;
       break;
     }
 
