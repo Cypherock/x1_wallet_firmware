@@ -348,7 +348,6 @@ const char *ui_text_wallet_deleted_successfully =
 const char *ui_text_recovery_successfull = "Recovery Successful!";
 const char *ui_text_processing = "Processing...";
 const char *ui_text_syncing_complete = "wallet(s) synced";
-const char *ui_text_seed_generated_successfully = "Seed generated successfully";
 const char *ui_text_press_enter_to_start_verification =
     "Proceed to verify wallet on cards";
 const char *ui_text_now_enter_your_seed_phrase = "Now enter your\nseed phrase";

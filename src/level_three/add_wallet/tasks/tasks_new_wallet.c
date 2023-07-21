@@ -168,7 +168,6 @@ void tasks_add_new_wallet() {
     } break;
 
     case GENERATE_WALLET_SEED_GENERATED: {
-      message_scr_init(ui_text_seed_generated_successfully);
     } break;
 
     case GENERATE_WALLET_SAVE_WALLET_SHARE_TO_DEVICE:
