@@ -95,6 +95,8 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * STATIC VARIABLES
  *****************************************************************************/
 
+// Secondary reference for aggregated coin info:
+// https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/common/defs/bitcoin/bitcoin.json
 const btc_config_t btc_app = {
     // coin specific data
     .coin_type = COIN_BTC,
@@ -106,6 +108,11 @@ const btc_config_t btc_app = {
     .bech32_hrp = "bc",
     .lunit_name = "BTC",
     .name = "Bitcoin",
+
+    // Refer public issues:
+    // https://github.com/trezor/trezor-firmware/issues/1087
+    // https://github.com/trezor/trezor-firmware/issues/1192
+    .max_fee = 2000000,
 
     // action handlers
     .is_purpose_supported = is_purpose_supported,

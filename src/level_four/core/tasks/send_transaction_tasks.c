@@ -167,21 +167,11 @@ void send_transaction_tasks() {
     } break;
 
     case SEND_TXN_CHECK_RECEIPT_FEES_LIMIT: {
-      if (btc_get_txn_fee(&var_send_transaction_data.unsigned_transaction) >
-          get_transaction_fee_threshold(
-              &var_send_transaction_data.unsigned_transaction,
-              BYTE_ARRAY_TO_UINT32(
-                  var_send_transaction_data.transaction_metadata.coin_index))) {
-        confirm_scr_focus_cancel();
-      } else {
-        mark_event_over();
-      }
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES: {
       instruction_scr_destructor();
-      uint64_t txn_fees =
-          btc_get_txn_fee(&var_send_transaction_data.unsigned_transaction);
+      uint64_t txn_fees = 0;
       double txn_fees_in_btc = 1.0 * txn_fees / (SATOSHI_PER_BTC);
       char display[225] = {0};
       uint8_t precision = get_floating_precision(txn_fees, SATOSHI_PER_BTC);

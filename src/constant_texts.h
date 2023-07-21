@@ -26,6 +26,8 @@
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_BTC_RECEIVER "Receiver #%d"
+#define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"

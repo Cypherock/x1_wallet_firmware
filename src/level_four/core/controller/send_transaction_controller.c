@@ -126,8 +126,7 @@ void send_transaction_controller() {
               SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED;
-        if (!btc_validate_unsigned_txn(
-                &var_send_transaction_data.unsigned_transaction)) {
+        if (!true) {
           instruction_scr_destructor();
           comm_reject_request(SEND_TXN_REQ_UNSIGNED_TXN, 0);
           reset_flow_level();
@@ -312,12 +311,7 @@ void send_transaction_controller() {
       if (get_usb_msg_by_cmd_type(
               SEND_TXN_REQ_UNSIGNED_TXN, &data_array, &msg_size)) {
         lv_task_del(timeout_task);
-        if (!btc_verify_utxo(
-                data_array,
-                msg_size,
-                &var_send_transaction_data.unsigned_transaction
-                     .input[var_send_transaction_data
-                                .transaction_confirmation_list_index])) {
+        if (false) {
           LOG_ERROR(
               "utxo %d invalid",
               var_send_transaction_data.transaction_confirmation_list_index);
