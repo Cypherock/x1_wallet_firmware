@@ -60,8 +60,8 @@
 #include "ui_text_slideshow.h"
 
 // Main menu text
-const char *ui_text_heading_main_menu = "Main menu";
-const char *ui_text_options_main_menu[] = {"Create wallet",
+const char *ui_text_heading_main_menu = "Main Menu";
+const char *ui_text_options_main_menu[] = {"Create Wallet",
                                            //"Add arbitrary data",
                                            "Settings"};
 
@@ -69,7 +69,7 @@ const char *ui_text_options_main_menu[] = {"Create wallet",
 const char *ui_text_options_old_wallet[] = {"View Seed", "Delete Wallet"};
 
 // New wallet menu text
-const char *ui_text_heading_new_wallet = "Create wallet";
+const char *ui_text_heading_new_wallet = "Create Wallet";
 const char *ui_text_options_new_wallet[NUMBER_OF_OPTIONS_NEW_WALLET] = {
     "Generate New Wallet",
     "Restore from Seed"};
