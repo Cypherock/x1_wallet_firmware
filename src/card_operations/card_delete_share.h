@@ -15,6 +15,7 @@
 #include "card_return_codes.h"
 #include "stdbool.h"
 #include "stdint.h"
+#include "wallet.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
