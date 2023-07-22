@@ -729,9 +729,9 @@ void apdu_extract_wallet_list(wallet_list_t *list,
 
   uint8_t read_offset = 0;
   // First byte of the APDU depicts number of wallets
-  uint8_t wallet_count = apdu[read_offset++];
+  list->count = apdu[read_offset++];
 
-  for (uint8_t index = 0; index < wallet_count; index++) {
+  for (uint8_t index = 0; index < list->count; index++) {
     if (read_offset < len && INS_WALLET_INFO == apdu[read_offset++]) {
       list->wallet[index].info = apdu[read_offset++];
     }
