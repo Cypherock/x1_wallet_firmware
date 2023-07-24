@@ -63,10 +63,10 @@
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "btc_script.h"
 #include "btc_txn_helpers.h"
 #include "constant_texts.h"
 #include "reconstruct_wallet_flow.h"
-#include "script.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -324,19 +324,17 @@ static bool fetch_valid_input(btc_query_t *query) {
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_INPUT_TAG)) {
       return false;
     }
-    // TODO: check input type; exit if unsupported
+    const btc_sign_txn_input_t *txin = &query->sign_txn.input;
     // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
-    // excluding OP_CODES) refer https://learnmeabitcoin.com/technical/script
-    // for explaination Currently the device can spend P2PKH or P2WPKH inputs
-    // only
-    // if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
-    //     txn_ctx->inputs[i].script_pub_key.size != 25) {
-    //   return false;
-    // }
+    // excluding OP_CODES). refer https://learnmeabitcoin.com/technical/script
+    // for explanation. Currently, the device can spend P2PKH or P2WPKH inputs
+    const btc_script_type_e type = btc_get_script_type(
+        txin->script_pub_key.bytes, txin->script_pub_key.size);
 
     // verify transaction details and discard the raw-transaction (prev_txn)
-    const btc_sign_txn_input_prev_txn_t *txn = &query->sign_txn.input.prev_txn;
-    if (!btc_verify_input(txn->bytes, txn->size, &query->sign_txn.input)) {
+    const btc_sign_txn_input_prev_txn_t *txn = &txin->prev_txn;
+    if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
+        !btc_verify_input(txn->bytes, txn->size, txin)) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -345,15 +343,15 @@ static bool fetch_valid_input(btc_query_t *query) {
 
     // clone the input details into btc_txn_context
     btc_txn_input_t *input = &btc_txn_context->inputs[idx];
-    input->prev_output_index = query->sign_txn.input.prev_output_index;
-    input->address_index = query->sign_txn.input.address_index;
-    input->change_index = query->sign_txn.input.change_index;
-    input->value = query->sign_txn.input.value;
-    input->sequence = query->sign_txn.input.sequence;
-    input->script_pub_key.size = query->sign_txn.input.script_pub_key.size;
-    memcpy(input->prev_txn_hash, query->sign_txn.input.prev_txn_hash, 32);
+    input->prev_output_index = txin->prev_output_index;
+    input->address_index = txin->address_index;
+    input->change_index = txin->change_index;
+    input->value = txin->value;
+    input->sequence = txin->sequence;
+    input->script_pub_key.size = txin->script_pub_key.size;
+    memcpy(input->prev_txn_hash, txin->prev_txn_hash, 32);
     memcpy(input->script_pub_key.bytes,
-           query->sign_txn.input.script_pub_key.bytes,
+           txin->script_pub_key.bytes,
            input->script_pub_key.size);
 
     // send accepted response to indicate validation of input passed
@@ -378,8 +376,13 @@ static bool fetch_valid_output(btc_query_t *query) {
     if (0 != output->value) {
       zero_value_transaction = false;
     }
-    if (OP_RETURN == output->script_pub_key.bytes[0] && 0 != output->value) {
-      // ensure any funds are not being locked (not spendable)
+    const btc_script_type_e type = btc_get_script_type(
+        output->script_pub_key.bytes, output->script_pub_key.size);
+    if (SCRIPT_TYPE_P2MS == type || SCRIPT_TYPE_P2PK == type ||
+        SCRIPT_TYPE_NONSTANDARD == type ||
+        (SCRIPT_TYPE_NULL_DATA == type && 0 != output->value)) {
+      // ensure output type is standard & we support verification by user
+      // ensure any funds are not being locked (not spendable) to NULL_DATA
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
@@ -411,8 +414,13 @@ static bool get_user_verification() {
       continue;
     }
     format_value(output->value, value, sizeof(value));
-    script_output_to_address(
+    int status = btc_get_script_pub_address(
         script->bytes, script->size, address, sizeof(address));
+    if (1 > status) {
+      // send error status as value for unknown error
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
+      return false;
+    }
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
       return false;

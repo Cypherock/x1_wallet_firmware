@@ -66,52 +66,6 @@
 #include "string.h"
 #include "utils.h"
 
-int get_address(const char *hrp,
-                const uint8_t *script_pub_key,
-                uint8_t version,
-                char *address_output) {
-  if (script_pub_key == NULL || address_output == NULL)
-    return 0;
-
-  if (script_pub_key[0] == 0) {
-    // Segwit address
-    return segwit_addr_encode(
-        address_output, hrp, 0x00, script_pub_key + 2, script_pub_key[1]);
-  }
-
-  uint8_t address[SHA3_256_DIGEST_LENGTH] = {0};
-  uint8_t offset = 1, script_offset = 0;
-
-  // refer https://learnmeabitcoin.com/technical/script for script type
-  // explaination
-  if (script_pub_key[0] == 0x41) {
-    // hash160 P2PK
-    hasher_Raw(HASHER_SHA2_RIPEMD,
-               script_pub_key + 1,
-               65,
-               address + offset);    // overwrite with RIPEMD160
-    offset += RIPEMD160_DIGEST_LENGTH;
-  } else if (script_pub_key[0] == 0x76) {
-    script_offset = 3;    // P2PKH
-  } else if (script_pub_key[0] == 0xa9) {
-    script_offset = 2;    // P2SH upto 15 pub keys
-    version = 5;          // Version for P2SH: 5
-  } else if (script_pub_key[1] > 0x50 && script_pub_key[1] <= 0x53)
-    return -1;    // P2MS upto 3 pub keys
-  else
-    return -2;    // Unknown script type
-
-  if (script_pub_key[0] != 0x41) {
-    memcpy(address + offset,
-           script_pub_key + script_offset,
-           RIPEMD160_DIGEST_LENGTH);
-    offset += RIPEMD160_DIGEST_LENGTH;
-  }
-  address[0] = version;
-
-  return base58_encode_check(address, offset, HASHER_SHA2D, address_output, 35);
-}
-
 bool validate_change_address(const unsigned_txn *utxn_ptr,
                              const txn_metadata *txn_metadata_ptr,
                              const char *mnemonic,
