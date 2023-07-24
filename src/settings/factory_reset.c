@@ -261,6 +261,9 @@ void factory_reset(void) {
     if (0 < uncommon_wallets.count) {
       // Display first wallet not present in cards - just to keep it
       // consistent with current UX
+
+      // TODO: Update message to show ALL missing wallets instead of just one
+      // wallet
       char msg[64];
       const char *msg_list[3] = {
           msg, ui_text_reset_exit[0], ui_text_reset_exit[1]};
