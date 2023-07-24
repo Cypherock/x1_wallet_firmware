@@ -81,6 +81,7 @@ extern const char *ui_text_rotate_display_confirm;
 extern const char *ui_text_options_logging_export[];
 extern const char *ui_text_options_passphrase[];
 
+extern const char *ui_text_pair_card_confirm;
 extern const char *ui_text_card_pairing_success;
 extern const char *ui_text_card_pairing_warning;
 #define PAIR_CARD_MESSAGE "%d cards paired successfully"
