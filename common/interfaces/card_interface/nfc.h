@@ -47,6 +47,7 @@
 #include "flash_if.h"
 #include "memzero.h"
 #include "wallet.h"
+#include "wallet_list.h"
 
 #define SHA256_SIZE 32
 #define ECDSA_SIGNATURE_SIZE 64
@@ -170,8 +171,8 @@ ISO7816 nfc_unpair();
  * @brief List all wallet saved in card
  * @details
  *
- * @param recv_apdu APDU received from card
- * @param recv_len Length of received APDU
+ * @param wallet_list Reference to buffer which will be populated by the NFC
+ * operation
  *
  * @returns ISO7816 Status Word
  * @retval
@@ -181,7 +182,7 @@ ISO7816 nfc_unpair();
  *
  * @note
  */
-ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t *recv_len);
+ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list);
 
 /**
  * @brief Select Applet

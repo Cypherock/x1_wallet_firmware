@@ -12,10 +12,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "flash_api.h"
+#include "wallet.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -24,6 +25,17 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  uint8_t info;
+  uint8_t locked;
+  uint8_t name[NAME_SIZE];
+  uint8_t id[WALLET_ID_SIZE];
+} wallet_metadata_t;
+
+typedef struct {
+  uint8_t count;
+  wallet_metadata_t wallet[MAX_WALLETS_ALLOWED];
+} wallet_list_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

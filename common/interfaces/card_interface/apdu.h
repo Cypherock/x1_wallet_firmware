@@ -27,6 +27,7 @@
 #include "aes.h"
 #include "app_error.h"
 #include "wallet.h"
+#include "wallet_list.h"
 
 #define SHA256_SIZE 32
 #define POW_RAND_NUMBER_SIZE 32
@@ -127,6 +128,7 @@ typedef enum {
   TAG_POW_RANDOM_NUM = 0xD1,
   TAG_POW_TARGET = 0xD2,
   TAG_POW_NONCE = 0xD3,
+  TAG_WALLET_LOCKED = 0xD4,
 
   // Tag for inheritance
   TAG_INHERITANCE_PLAIN_DATA = 0xD5,
@@ -538,5 +540,15 @@ Card_Data_Health get_card_data_health();
  * @since v1.0.0
  */
 void reset_card_data_health();
+
+/**
+ * @brief Deserialize raw APDU for wallet list command from an X1 card
+ *
+ * @param list Reference to buffer where wallet list will be populated after
+ * deserialization
+ * @param apdu Reference to buffer which contains the raw APDU received
+ * @param len Length of raw APDU
+ */
+void apdu_extract_wallet_list(wallet_list_t *list, uint8_t *apdu, uint16_t len);
 
 #endif

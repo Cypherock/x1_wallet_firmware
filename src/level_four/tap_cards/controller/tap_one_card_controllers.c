@@ -99,7 +99,7 @@ void tap_a_card_and_sync_controller() {
         if (!tap_card_applet_connection())
           break;
 
-        tap_card_data.status = nfc_list_all_wallet(recv_apdu, &recv_len);
+        // tap_card_data.status = nfc_list_all_wallet(recv_apdu, &recv_len);
         if (tap_card_data.status == SW_NO_ERROR ||
             tap_card_data.status == SW_RECORD_NOT_FOUND) {
           no_wallet_on_cards = false;

@@ -180,7 +180,7 @@ static void tap_card_backend(uint8_t *recv_apdu, uint16_t *recv_len) {
     if (!tap_card_applet_connection())
       break;
 
-    tap_card_data.status = nfc_list_all_wallet(recv_apdu, recv_len);
+    // tap_card_data.status = nfc_list_all_wallet(recv_apdu, recv_len);
     *recv_len -= 2;
     if (tap_card_data.status == SW_NO_ERROR ||
         tap_card_data.status == SW_RECORD_NOT_FOUND) {

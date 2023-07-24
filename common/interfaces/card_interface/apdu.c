@@ -719,3 +719,38 @@ Card_Data_Health get_card_data_health() {
 void reset_card_data_health() {
   card_data_health = DATA_HEALTH_UNKNOWN;
 }
+
+void apdu_extract_wallet_list(wallet_list_t *list,
+                              uint8_t *apdu,
+                              uint16_t len) {
+  if (NULL == list || NULL == apdu || 0 == len) {
+    return;
+  }
+
+  uint8_t read_offset = 0;
+  // First byte of the APDU depicts number of wallets
+  list->count = apdu[read_offset++];
+
+  for (uint8_t index = 0; index < list->count; index++) {
+    if (read_offset < len && INS_WALLET_INFO == apdu[read_offset++]) {
+      list->wallet[index].info = apdu[read_offset++];
+    }
+
+    if (read_offset < len && TAG_WALLET_LOCKED == apdu[read_offset++]) {
+      list->wallet[index].locked = apdu[read_offset++];
+    }
+
+    if (read_offset < len && INS_NAME == apdu[read_offset++]) {
+      memcpy(
+          list->wallet[index].name, apdu + read_offset + 1, apdu[read_offset]);
+      read_offset += (apdu[read_offset] + 1);
+    }
+
+    if (read_offset < len && INS_WALLET_ID == apdu[read_offset++]) {
+      memcpy(list->wallet[index].id, apdu + read_offset + 1, apdu[read_offset]);
+      read_offset += (apdu[read_offset] + 1);
+    }
+  }
+
+  return;
+}
