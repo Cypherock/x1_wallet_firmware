@@ -235,32 +235,4 @@ int get_address(const char *hrp,
 uint64_t get_transaction_fee_threshold(const unsigned_txn *unsigned_txn_ptr,
                                        uint32_t coin_index);
 
-/**
- * @brief Validates the change address for a Bitcoin (and its forks)
- * transaction.
- * @details It checks for existence of the change address and if it is a valid
- * address. The change address is extracted from the script (only P2PKH & P2WPKH
- * supported) of the last output transaction.
- *
- * @param [in] utxn_ptr                 - Pointer to unsigned_txn instance.
- * @param [in, out] txn_metadata_ptr    - Pointer to txn_metadata instance.
- * @param [in] mnemonic                 - char array of mnemonic
- * @param [in] passphrase               - char array of passphrase
- *
- * @return bool - Indicates whether the change address is valid or not.
- * @retval true     If the change address is valid.
- * @retval false    If the change address is invalid or script type is
- * unsupported.
- *
- * @see btc_sign_unsigned_txn(), BITCOIN, unsigned_txn, txn_metadata, HDNode
- * @since v1.0.0
- *
- * @note The BTC change address is always a segwit address. So the metadata is
- * updated to segwit's purpose index ignoring what is passed in the metadata.
- */
-bool validate_change_address(const unsigned_txn *utxn_ptr,
-                             const txn_metadata *txn_metadata_ptr,
-                             const char *mnemonic,
-                             const char *passphrase);
-
 #endif

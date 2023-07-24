@@ -112,14 +112,7 @@ void send_transaction_tasks() {
         hrp = "bc";
       else
         hrp = "tb";
-      int status =
-          get_address(hrp,
-                      var_send_transaction_data.unsigned_transaction
-                          .output[var_send_transaction_data
-                                      .transaction_confirmation_list_index]
-                          .script_public_key,
-                      version,
-                      address);
+      int status = 1;
       if (status <= 0) {
         comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
         reset_flow_level();

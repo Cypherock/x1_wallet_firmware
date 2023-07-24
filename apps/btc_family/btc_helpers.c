@@ -207,3 +207,23 @@ void format_value(const uint64_t value_in_sat,
   double fee_in_btc = 1.0 * value_in_sat / (SATOSHI_PER_BTC);
   snprintf(msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_app->lunit_name);
 }
+
+void btc_sig_to_script_sig(const uint8_t *sig,
+                           const uint8_t *pub_key,
+                           uint8_t *script_sig) {
+  if (NULL == sig || NULL == pub_key || NULL == script_sig) {
+    return;
+  }
+
+  uint8_t script[128] = {0};
+  memzero(script, sizeof(script));
+  uint8_t der_sig_len = ecdsa_sig_to_der(sig, &script[1]);
+
+  // PUSHDATA Opcode(1) + der_sig_len + SigHash Code(1) + PUSHDATA Opcode(1) +
+  // Public Key(33)
+  script[0] = der_sig_len + 1;
+  script[1 + der_sig_len] = 1;         // sighash code: 1
+  script[1 + der_sig_len + 1] = 33;    // push data opcode: 33
+  memcpy(&script[1 + der_sig_len + 1 + 1], pub_key, 33);
+  memcpy(script_sig, script, 128);
+}

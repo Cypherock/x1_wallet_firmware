@@ -236,9 +236,7 @@ bool btc_check_script_address(const uint8_t *script,
     return false;
   }
 
-  HDNode hdnode = {0};
   uint8_t digest[HASHER_DIGEST_LENGTH] = {0};
-
   btc_script_type_e type = btc_get_script_type(script, script_len);
   if (SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) {
     // allow only p2pkh and p2wpkh for change output
@@ -246,7 +244,6 @@ bool btc_check_script_address(const uint8_t *script,
   }
   uint8_t offset = (SCRIPT_TYPE_P2PKH == type) ? 3 : 2;
 
-  hasher_Raw(
-      HASHER_SHA2_RIPEMD, hdnode.public_key, BTC_SHORT_PUB_KEY_SIZE, digest);
+  hasher_Raw(HASHER_SHA2_RIPEMD, public_key, BTC_SHORT_PUB_KEY_SIZE, digest);
   return (memcmp(digest, &script[offset], RIPEMD160_DIGEST_LENGTH) == 0);
 }

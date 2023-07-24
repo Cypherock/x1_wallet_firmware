@@ -65,33 +65,3 @@
 #include "sha2.h"
 #include "string.h"
 #include "utils.h"
-
-bool validate_change_address(const unsigned_txn *utxn_ptr,
-                             const txn_metadata *txn_metadata_ptr,
-                             const char *mnemonic,
-                             const char *passphrase) {
-  if (txn_metadata_ptr->change_count[0] == 0)
-    return true;
-  uint8_t index = utxn_ptr->output_count[0] - 1, *change_address;
-  uint8_t digest[SHA256_DIGEST_LENGTH];
-  uint8_t rip[RIPEMD160_DIGEST_LENGTH];
-  HDNode hdnode;
-
-  if (utxn_ptr->output[index].script_public_key[0] == OP_RETURN)
-    return false;
-
-  if (utxn_ptr->output[index].script_length[0] == 22)
-    change_address = utxn_ptr->output[index].script_public_key + 2;
-  else if (utxn_ptr->output[index].script_length[0] == 25)
-    change_address = utxn_ptr->output[index].script_public_key + 3;
-  else
-    return false;
-
-  get_address_node(txn_metadata_ptr, -1, mnemonic, passphrase, &hdnode);
-  memzero(hdnode.chain_code, sizeof(hdnode.chain_code));
-  memzero(hdnode.private_key, sizeof(hdnode.private_key));
-  memzero(hdnode.private_key_extension, sizeof(hdnode.private_key_extension));
-  sha256_Raw(hdnode.public_key, sizeof(hdnode.public_key), digest);
-  ripemd160(digest, SHA256_DIGEST_LENGTH, rip);
-  return (memcmp(rip, change_address, sizeof(rip)) == 0);
-}

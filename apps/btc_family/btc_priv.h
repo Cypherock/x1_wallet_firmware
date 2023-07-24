@@ -88,6 +88,8 @@ typedef struct {
    * @note Populated by fetch_valid_input()
    */
   btc_txn_input_t *inputs;
+  // track change output in the list of outputs for quick access
+  int change_output_idx;
 } btc_txn_context_t;
 
 /*****************************************************************************

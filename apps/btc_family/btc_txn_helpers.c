@@ -199,7 +199,12 @@ STATIC bool digest_outputs(const btc_txn_context_t *context,
   for (uint8_t idx = 0; idx < context->metadata.output_count; idx++) {
     btc_sign_txn_output_t *output = &context->outputs[idx];
 
-    // TODO: memcpy(dst, src->value, sizeof(src->value));
+    // digest the 64-bit value
+    uint64_t val = context->outputs[idx].value;
+    REVERSE64(val, val);
+    dec_to_hex(val, buffer, 8);
+    sha256_Update(sha_256_ctx, buffer, 8);
+
     // correct the encoding for size to CompactSize. Refer:
     buffer[0] = output->script_pub_key.size;
     sha256_Update(sha_256_ctx, buffer, 1);
@@ -271,6 +276,7 @@ STATIC void calculate_p2wpkh_digest(const btc_txn_context_t *context,
 
   uint8_t buffer[100] = {0};
   SHA256_CTX sha_256_ctx = {0};
+  btc_txn_input_t *input = &context->inputs[input_index];
 
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
   sha256_Init(&sha_256_ctx);
@@ -281,23 +287,25 @@ STATIC void calculate_p2wpkh_digest(const btc_txn_context_t *context,
 
   sha256_Update(&sha_256_ctx, context->segwit_cache.hash_prevouts, 32);
   sha256_Update(&sha_256_ctx, context->segwit_cache.hash_sequence, 32);
-  sha256_Update(&sha_256_ctx, context->inputs[input_index].prev_txn_hash, 32);
+  sha256_Update(&sha_256_ctx, input->prev_txn_hash, 32);
 
-  write_le(buffer, context->inputs[input_index].prev_output_index);
+  write_le(buffer, input->prev_output_index);
   sha256_Update(&sha_256_ctx, buffer, 4);
 
-  buffer[0] = 0x76;
-  buffer[1] = 0xa9;
-  sha256_Update(&sha_256_ctx, buffer, 2);
+  buffer[0] = input->script_pub_key.size + 2 + 2 - 1;
+  buffer[1] = 0x76;
+  buffer[2] = 0xa9;
+  sha256_Update(&sha_256_ctx, buffer, 3);
   sha256_Update(&sha_256_ctx,
-                context->inputs->script_pub_key.bytes,
-                context->inputs[input_index].script_pub_key.size);
+                &input->script_pub_key.bytes[1],
+                input->script_pub_key.size - 1);
   buffer[0] = 0x88;
   buffer[1] = 0xac;
   sha256_Update(&sha_256_ctx, buffer, 2);
 
-  // m_memcpy(bytes, src->value, &offset, sizeof(src->value));
-  write_le(buffer, context->inputs[input_index].sequence);
+  // digest the 64-bit value (little-endian)
+  sha256_Update(&sha_256_ctx, (uint8_t *)&input->value, 8);
+  write_le(buffer, input->sequence);
   sha256_Update(&sha_256_ctx, buffer, 4);
   sha256_Update(&sha_256_ctx, context->segwit_cache.hash_outputs, 32);
 
@@ -394,7 +402,7 @@ bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {
   }
 
   for (int idx = 0; idx < txn_ctx->metadata.output_count; idx++) {
-    output -= txn_ctx->outputs[idx].value;
+    output += txn_ctx->outputs[idx].value;
   }
 
   if (input < output) {
