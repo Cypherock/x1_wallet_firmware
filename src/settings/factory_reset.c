@@ -86,6 +86,7 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef bool (*filter)(bool);
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -101,31 +102,40 @@
 static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list);
 
 /**
- * @brief Get the common wallet list from the wallet list retrieved from two X1
- * cards
+ * @brief Helper function to filter wallets between 2 wallet lists based on a
+ * filter callback
  *
- * @param wallets_in_card1 Pointer to buffer filled with wallet list in card #1
- * @param wallets_in_card2 Pointer to buffer filled with wallet list in card #2
- * @param common_wallets Pointer to buffer which will be filled with the common
- * wallets in card #1 and card #2
+ * @param wallet_list1 Pointer to the 1st wallet list
+ * @param wallet_list2 Pointer to the 2nd wallet list
+ * @param wallet_list_out Pointer to buffer where filtered wallet list will be
+ * populated
+ * @param filter_cb Callback to function containing logic whether a wallet needs
+ * to be added to the list based on match status
  */
-static void get_common_wallet_list(wallet_list_t *wallets_in_card1,
-                                   wallet_list_t *wallets_in_card2,
-                                   wallet_list_t *common_wallets);
+static void filter_wallet_list(wallet_list_t *wallet_list1,
+                               wallet_list_t *wallet_list2,
+                               wallet_list_t *wallet_list_out,
+                               filter filter_cb);
 
 /**
- * @brief Get the uncommon wallet list between the X1 vault and two X1 cards
+ * @brief Callback function to indicate if a wallets needs to be filtered if a
+ * match is not found
  *
- * @param wallets_in_vault Pointer to buffer filled with wallet list in X1 vault
- * @param wallets_in_cards Pointer to buffer filled with common wallet list in
- * two cards
- * @param uncommon_wallets Pointer to buffer which will be filled with the
- * wallets present in X1 vault but not in the two cards
+ * @param match_found Boolean representing whether a match was found in 2 lists
+ * @return true If the wallets needs to be filtered
+ * @return false If the wallets should not be filtered
  */
-static void get_uncommon_wallet_list(wallet_list_t *wallets_in_vault,
-                                     wallet_list_t *wallets_in_cards,
-                                     wallet_list_t *uncommon_wallets);
+static bool filter_uncommon_wallet(bool match_found);
 
+/**
+ * @brief Callback function to indicate if a wallets needs to be filtered if a
+ * match is found
+ *
+ * @param match_found Boolean representing whether a match was found in 2 lists
+ * @return true If the wallets should not be filtered
+ * @return false If the wallets should be filtered
+ */
+static bool filter_common_wallet(bool match_found);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -137,72 +147,46 @@ static void get_uncommon_wallet_list(wallet_list_t *wallets_in_vault,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void get_uncommon_wallet_list(wallet_list_t *wallets_in_vault,
-                                     wallet_list_t *wallets_in_cards,
-                                     wallet_list_t *uncommon_wallets) {
-  uint8_t uncommon_wallet_count = 0;
-  memzero(uncommon_wallets, sizeof(wallet_list_t));
+static void filter_wallet_list(wallet_list_t *wallet_list1,
+                               wallet_list_t *wallet_list2,
+                               wallet_list_t *wallet_list_out,
+                               filter filter_cb) {
+  memzero(wallet_list_out, sizeof(wallet_list_t));
+  wallet_list_out->count = 0;
 
-  for (uint8_t index = 0; index < wallets_in_vault->count; index++) {
+  for (uint8_t index = 0; index < wallet_list1->count; index++) {
     bool match = false;
 
-    for (uint8_t i = 0; i < wallets_in_cards->count; i++) {
-      if (memcmp(wallets_in_vault->wallet[index].name,
-                 wallets_in_vault->wallet[i].name,
+    for (uint8_t i = 0; i < wallet_list2->count; i++) {
+      if (memcmp(wallet_list1->wallet[index].name,
+                 wallet_list2->wallet[i].name,
                  NAME_SIZE) == 0 &&
-          memcmp(wallets_in_cards->wallet[index].id,
-                 wallets_in_cards->wallet[i].id,
+          memcmp(wallet_list1->wallet[index].id,
+                 wallet_list2->wallet[i].id,
                  WALLET_ID_SIZE) == 0) {
         match = true;
         break;
       }
     }
 
-    // If the metadata did not match, store it in the uncommon list
-    if (!match) {
-      uncommon_wallet_count += 1;
-      memcpy(&uncommon_wallets->wallet[uncommon_wallet_count - 1],
-             &wallets_in_vault->wallet[index],
+    // If the filter returned true, store it in the output list
+    if (filter_cb(match)) {
+      memcpy(&wallet_list_out->wallet[wallet_list_out->count],
+             &wallet_list1->wallet[index],
              sizeof(wallet_metadata_t));
+      wallet_list_out->count += 1;
     }
   }
 
-  uncommon_wallets->count = uncommon_wallet_count;
   return;
 }
 
-static void get_common_wallet_list(wallet_list_t *wallets_in_card1,
-                                   wallet_list_t *wallets_in_card2,
-                                   wallet_list_t *common_wallets) {
-  uint8_t common_wallet_count = 0;
-  memzero(common_wallets, sizeof(wallet_list_t));
+static bool filter_uncommon_wallet(bool match_found) {
+  return (!match_found);
+}
 
-  for (uint8_t index = 0; index < wallets_in_card1->count; index++) {
-    bool match = false;
-
-    for (uint8_t i = 0; i < wallets_in_card2->count; i++) {
-      if (memcmp(wallets_in_card1->wallet[index].name,
-                 wallets_in_card2->wallet[i].name,
-                 NAME_SIZE) == 0 &&
-          memcmp(wallets_in_card1->wallet[index].id,
-                 wallets_in_card2->wallet[i].id,
-                 WALLET_ID_SIZE) == 0) {
-        common_wallet_count += 1;
-        match = true;
-        break;
-      }
-    }
-
-    // If the metadata matched, store it in the common list
-    if (match) {
-      memcpy(&common_wallets->wallet[common_wallet_count - 1],
-             &wallets_in_card1->wallet[index],
-             sizeof(wallet_metadata_t));
-    }
-  }
-
-  common_wallets->count = common_wallet_count;
-  return;
+static bool filter_common_wallet(bool match_found) {
+  return match_found;
 }
 
 static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
@@ -236,7 +220,8 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
     return false;
   }
 
-  get_common_wallet_list(&wallets_in_card1, &wallets_in_card2, wallet_list);
+  filter_wallet_list(
+      &wallets_in_card1, &wallets_in_card2, wallet_list, filter_common_wallet);
   return true;
 }
 
@@ -266,8 +251,10 @@ void factory_reset(void) {
     }
 
     wallet_list_t uncommon_wallets = {0};
-    get_uncommon_wallet_list(
-        &wallets_in_vault, &wallets_in_cards, &uncommon_wallets);
+    filter_wallet_list(&wallets_in_vault,
+                       &wallets_in_cards,
+                       &uncommon_wallets,
+                       filter_uncommon_wallet);
 
     if (0 < uncommon_wallets.count) {
       // Display first wallet not present in cards - just to keep it
