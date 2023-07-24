@@ -220,6 +220,8 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
     return false;
   }
 
+  delay_scr_init(ui_text_processing, DELAY_TIME);
+
   filter_wallet_list(
       &wallets_in_card1, &wallets_in_card2, wallet_list, filter_common_wallet);
   return true;
