@@ -116,7 +116,7 @@ typedef enum {
  * where the generated seed will be stored. The size of the array should be >=
  * 64bytes to accommodate the seed.
  */
-void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
+static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
 
 /**
  * @brief This function handles different states of the reconstruct wallet flow
@@ -126,8 +126,8 @@ void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
  * wallet secret
  * @return reconstruct_state_e The next state of the flow
  */
-reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
-                                               uint8_t *secret_out);
+static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                                      uint8_t *secret_out);
 
 /**
  * @brief The function takes a wallet ID, a pointer to an output buffer, and an
@@ -143,7 +143,7 @@ reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
  * @return The function is expected to return a value of type
  * `reconstruct_state_e`.
  */
-reconstruct_state_e reconstruct_wallet_secret_flow(
+static reconstruct_state_e reconstruct_wallet_secret_flow(
     const uint8_t *wallet_id,
     uint8_t *secret_out,
     reconstruct_state_e init_state);
@@ -158,7 +158,7 @@ reconstruct_state_e reconstruct_wallet_secret_flow(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
+static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
   mnemonic_clear();
   const char *mnemo =
       mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
@@ -168,8 +168,8 @@ void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
   mnemonic_clear();
 }
 
-reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
-                                               uint8_t *secret_out) {
+static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                                      uint8_t *secret_out) {
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
@@ -291,16 +291,10 @@ reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   return next_state;
 }
 
-reconstruct_state_e reconstruct_wallet_secret_flow(
+static reconstruct_state_e reconstruct_wallet_secret_flow(
     const uint8_t *wallet_id,
     uint8_t *secret_out,
     reconstruct_state_e init_state) {
-  // TODO: Consolidate in one function
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-
   // Select wallet based on wallet_id
   if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
     return EARLY_EXIT;
@@ -332,17 +326,15 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
   uint8_t secret[BLOCK_SIZE] = {0};
   uint8_t result = false;
 
+  clear_wallet_data();
+
   if (COMPLETED ==
       reconstruct_wallet_secret_flow(wallet_id, secret, PASSPHRASE_INPUT)) {
     get_seed_from_secret(secret, seed_out);
     result = true;
   }
 
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-
+  clear_wallet_data();
   return result;
 }
 
@@ -356,6 +348,8 @@ uint8_t reconstruct_mnemonics_flow(
 
   uint8_t secret[BLOCK_SIZE] = {0};
   uint8_t result = 0;
+
+  clear_wallet_data();
 
   if (COMPLETED ==
       reconstruct_wallet_secret_flow(wallet_id, secret, PIN_INPUT)) {
@@ -372,10 +366,6 @@ uint8_t reconstruct_mnemonics_flow(
     result = wallet.number_of_mnemonics;
   }
 
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-
+  clear_wallet_data();
   return result;
 }

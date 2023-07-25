@@ -183,6 +183,12 @@ extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet wallet;
 
 /**
+ * @brief This function clears the data stored in the wallet,
+ * wallet_shamir_data, and wallet_credential_data variables.
+ */
+void clear_wallet_data();
+
+/**
  * @brief Encrypts hash of share using chachapoly
  * @details
  *

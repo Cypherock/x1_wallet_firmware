@@ -417,11 +417,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 void create_new_wallet_flow(void) {
   new_wallet_state_e current_state = NAME_INPUT;
 
-  // TODO: Consolidate in one function
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  clear_wallet_data();
 
   while (1) {
     new_wallet_state_e next_state = new_wallet_state_handler(current_state);
@@ -433,10 +429,6 @@ void create_new_wallet_flow(void) {
     current_state = next_state;
   }
 
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-
+  clear_wallet_data();
   return;
 }
