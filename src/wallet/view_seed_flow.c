@@ -64,7 +64,6 @@
 #include "reconstruct_wallet_flow.h"
 #include "ui_delay.h"
 #include "ui_list.h"
-#include "ui_message.h"
 #include "ui_multi_instruction.h"
 #include "ui_state_machine.h"
 /*****************************************************************************
@@ -120,11 +119,6 @@ static bool view_seed_handler(const uint8_t *wallet_id) {
 
     if (12 != no_of_mnemonics && 18 != no_of_mnemonics &&
         24 != no_of_mnemonics) {
-      break;
-    }
-
-    message_scr_init(ui_text_seed_generated_successfully);
-    if (0 != get_state_on_confirm_scr(0, 1, 2)) {
       break;
     }
 
