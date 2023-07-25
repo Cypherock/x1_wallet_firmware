@@ -78,41 +78,24 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum view_seed_states {
-  VIEW_SEED_INSTRUCTIONS = 1,
-  VIEW_SEED_MNEMONIC_RECONSTRUCTION,
-  VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE,
-  VIEW_SEED_MNEMONIC_DISPLAY,
-  VIEW_SEED_COMPLETED,
-  VIEW_SEED_COMPLETED_WITH_ERRORS,
-  VIEW_SEED_TIMED_OUT,
-  VIEW_SEED_EARLY_EXIT,
-  VIEW_SEED_EXIT,
-} view_seed_states_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief The function handles different states and transitions of view seed
- * flow based on the current state.
+ * @brief The function handles transitions of view seed flow for the passed
+ * wallet id.
  *
- * @param current_state The current state of the view seed process. It is of
- * type `view_seed_states_e`, which is an enumeration representing different
- * states of the process.
  * @param wallet_id A pointer to a uint8_t array representing the wallet ID.
  *
- * @return the next state of the view_seed_states_e enum type.
+ * @return true if view seed is successful, else false.
  */
-view_seed_states_e view_seed_handler(view_seed_states_e current_state,
-                                     const uint8_t *wallet_id);
+static bool view_seed_handler(const uint8_t *wallet_id);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-CONFIDENTIAL char mnemonics[MAX_NUMBER_OF_MNEMONIC_WORDS]
-                           [MAX_MNEMONIC_WORD_LENGTH] = {0};
-CONFIDENTIAL uint8_t no_of_mnemonics = 0;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -120,64 +103,43 @@ CONFIDENTIAL uint8_t no_of_mnemonics = 0;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-view_seed_states_e view_seed_handler(view_seed_states_e current_state,
-                                     const uint8_t *wallet_id) {
-  view_seed_states_e next_state = current_state;
+static bool view_seed_handler(const uint8_t *wallet_id) {
+  CONFIDENTIAL char mnemonics[MAX_NUMBER_OF_MNEMONIC_WORDS]
+                             [MAX_MNEMONIC_WORD_LENGTH] = {0};
+  CONFIDENTIAL uint8_t no_of_mnemonics = 0;
+  bool result = false;
 
-  switch (current_state) {
-    case VIEW_SEED_INSTRUCTIONS:
-      multi_instruction_init(
-          ui_text_view_seed_messages, 3, DELAY_LONG_STRING, true);
-      next_state = get_state_on_confirm_scr(
-          VIEW_SEED_MNEMONIC_RECONSTRUCTION, EXIT_FAILURE, VIEW_SEED_TIMED_OUT);
+  do {
+    multi_instruction_init(
+        ui_text_view_seed_messages, 3, DELAY_LONG_STRING, true);
+    if (0 != get_state_on_confirm_scr(0, 1, 2)) {
       break;
+    }
 
-    case VIEW_SEED_MNEMONIC_RECONSTRUCTION:
-      if (NULL == wallet_id) {
-        next_state = VIEW_SEED_COMPLETED_WITH_ERRORS;
-        break;
-      }
+    no_of_mnemonics = reconstruct_mnemonics_flow(wallet_id, mnemonics);
 
-      memzero(mnemonics, sizeof(mnemonics));
-      no_of_mnemonics = reconstruct_mnemonics_flow(wallet_id, mnemonics);
-
-      next_state = VIEW_SEED_COMPLETED_WITH_ERRORS;
-      if (12 == no_of_mnemonics || 18 == no_of_mnemonics ||
-          24 == no_of_mnemonics) {
-        next_state = VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE;
-      }
+    if (12 != no_of_mnemonics && 18 != no_of_mnemonics &&
+        24 != no_of_mnemonics) {
       break;
+    }
 
-    case VIEW_SEED_RECONSTRUCT_SUCCESS_MESSAGE:
-      message_scr_init(ui_text_seed_generated_successfully);
-      next_state = get_state_on_confirm_scr(
-          VIEW_SEED_MNEMONIC_DISPLAY, VIEW_SEED_EXIT, VIEW_SEED_TIMED_OUT);
+    message_scr_init(ui_text_seed_generated_successfully);
+    if (0 != get_state_on_confirm_scr(0, 1, 2)) {
       break;
+    }
 
-    case VIEW_SEED_MNEMONIC_DISPLAY:
-      set_theme(LIGHT);
-      list_init(mnemonics, no_of_mnemonics, ui_text_word_hash, true);
-      next_state = get_state_on_confirm_scr(
-          VIEW_SEED_COMPLETED, VIEW_SEED_EXIT, VIEW_SEED_TIMED_OUT);
-      reset_theme();
-
-      memzero(mnemonics, sizeof(mnemonics));
+    set_theme(LIGHT);
+    list_init(mnemonics, no_of_mnemonics, ui_text_word_hash, true);
+    if (0 == get_state_on_confirm_scr(0, 1, 2)) {
+      result = true;
       break;
+    }
+  } while (0);
 
-    case VIEW_SEED_COMPLETED_WITH_ERRORS:
-      mark_core_error_screen(ui_text_something_went_wrong);
-      next_state = VIEW_SEED_EARLY_EXIT;
-      break;
-
-    case VIEW_SEED_TIMED_OUT:
-    case VIEW_SEED_COMPLETED:
-    case VIEW_SEED_EXIT:
-    case VIEW_SEED_EARLY_EXIT:
-    default:
-      break;
-  }
-
-  return next_state;
+  reset_theme();
+  memzero(mnemonics, sizeof(mnemonics));
+  no_of_mnemonics = 0;
+  return result;
 }
 
 /*****************************************************************************
@@ -186,15 +148,9 @@ view_seed_states_e view_seed_handler(view_seed_states_e current_state,
 void view_seed_flow(uint8_t *wallet_id) {
   ASSERT(NULL != wallet_id);
 
-  view_seed_states_e flow_state = VIEW_SEED_INSTRUCTIONS;
-
-  while (1) {
-    flow_state = view_seed_handler(flow_state, wallet_id);
-    if (VIEW_SEED_COMPLETED <= flow_state) {
-      break;
-    }
+  if (false == view_seed_handler(wallet_id)) {
+    mark_core_error_screen(ui_text_something_went_wrong);
   }
 
-  memzero(mnemonics, sizeof(mnemonics));
-  no_of_mnemonics = 0x0;
+  return;
 }
