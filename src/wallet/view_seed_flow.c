@@ -183,18 +183,13 @@ view_seed_states_e view_seed_handler(view_seed_states_e current_state,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void view_seed_flow(uint8_t wallet_index) {
-  if (0 == wallet_index || MAX_WALLETS_ALLOWED < wallet_index) {
-    return;
-  }
-
-  const Flash_Wallet *temp_wallet = get_wallet_by_index(wallet_index);
-  ASSERT(NULL != temp_wallet);
+void view_seed_flow(uint8_t *wallet_id) {
+  ASSERT(NULL != wallet_id);
 
   view_seed_states_e flow_state = VIEW_SEED_INSTRUCTIONS;
 
   while (1) {
-    flow_state = view_seed_handler(flow_state, temp_wallet->wallet_id);
+    flow_state = view_seed_handler(flow_state, wallet_id);
     if (VIEW_SEED_COMPLETED <= flow_state) {
       break;
     }

@@ -131,6 +131,17 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx);
 static void main_menu_reset_context(void);
 
 /**
+ * The function retrieves the wallet ID from a user selection index.
+ *
+ * @param selection The selection parameter represents the user's selection from
+ * the main menu. It should be a value between 1 and 4, inclusive.
+ * @param wallet_id A pointer to a uint8_t variable where the wallet ID will be
+ * stored.
+ */
+static void get_wallet_id_from_list_selection(uint8_t selection,
+                                              uint8_t *wallet_id);
+
+/**
  * @brief This p0 event callback function handles clearing p0 events occured
  * while engine is waiting for other events.
  *
@@ -171,6 +182,20 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
                               const void *data_ptr) {
   ignore_p0_event();
+}
+
+static void get_wallet_id_from_list_selection(uint8_t selection,
+                                              uint8_t *wallet_id) {
+  ASSERT(0 != selection && 4 >= selection);
+
+  const char *wallet_list[MAIN_MENU_MAX_OPTIONS] = {0};
+  get_wallet_list(&wallet_list[0]);
+
+  Flash_Wallet *temp_wallet = NULL;
+  ASSERT(SUCCESS ==
+         get_flash_wallet_by_name(wallet_list[selection - 1], &temp_wallet));
+
+  memcpy(wallet_id, temp_wallet->wallet_id, WALLET_ID_SIZE);
 }
 
 static bool main_menu_get_update_req(void) {
@@ -291,8 +316,9 @@ void main_menu_handler(engine_ctx_t *ctx,
 
   switch (menu_selected) {
     case MAIN_MENU_OLD_WALLET: {
-      engine_add_next_flow_step(ctx,
-                                wallet_menu_get_step(ui_event.list_selection));
+      uint8_t wallet_id[WALLET_ID_SIZE] = {0};
+      get_wallet_id_from_list_selection(ui_event.list_selection, wallet_id);
+      engine_add_next_flow_step(ctx, wallet_menu_get_step(wallet_id));
       engine_goto_next_flow_step(ctx);
       break;
     }

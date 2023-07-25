@@ -127,7 +127,7 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static uint8_t wallet_index = 0xFF;
+static uint8_t wallet_id[WALLET_ID_SIZE] = {0};
 
 static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .p0_cb = ignore_p0_handler,
@@ -135,7 +135,7 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .usb_cb = NULL,
                                         .nfc_cb = NULL,
                                         .evt_cfg_ptr = &device_nav_evt_config,
-                                        .flow_data_ptr = &wallet_index};
+                                        .flow_data_ptr = &wallet_id};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -151,12 +151,12 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 }
 
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  char *wallet_list[MAX_WALLETS_ALLOWED] = {0};
-  get_wallet_list((const char **)wallet_list);
+  char wallet_name[NAME_SIZE] = {0};
+  get_wallet_name_by_id(wallet_id, (uint8_t *)wallet_name);
 
   menu_init((const char **)ui_text_options_old_wallet,
             NUMBER_OF_OPTIONS_OLD_WALLET,
-            (const char *)wallet_list[wallet_index],
+            (const char *)wallet_name,
             true);
   return;
 }
@@ -167,7 +167,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case VIEW_SEED: {
-        view_seed_flow(wallet_index);
+        view_seed_flow(wallet_id);
         break;
       }
       case DELETE_WALLET: {
@@ -192,9 +192,9 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *wallet_menu_get_step(uint8_t selection_index) {
-  ASSERT(0 != selection_index && MAX_WALLETS_ALLOWED >= selection_index);
+const flow_step_t *wallet_menu_get_step(uint8_t *selected_wallet_id) {
+  ASSERT(NULL != selected_wallet_id);
 
-  wallet_index = selection_index - 1;
+  memcpy(wallet_id, selected_wallet_id, WALLET_ID_SIZE);
   return &wallet_step;
 }

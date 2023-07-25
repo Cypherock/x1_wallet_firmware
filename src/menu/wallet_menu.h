@@ -32,14 +32,13 @@
  *****************************************************************************/
 
 /**
- * @brief The function returns a pointer to a flow_step_t structure based on the
- * given selection index[1-4].
+ * @brief This function returns a pointer to a `flow_step_t` struct and copies
+ * the selected wallet ID into a variable.
  *
- * @param selection_index The `selection_index` parameter is an unsigned 8-bit
- * integer that represents the index of a wallet selection.
+ * @param selected_wallet_id A pointer to a uint8_t variable that represents the
+ * selected wallet ID.
  *
- * @return a pointer to a constant `flow_step_t` object or NULL if invalid
- * selection index is passed
+ * @return a pointer to a constant variable of type `flow_step_t`.
  */
-const flow_step_t *wallet_menu_get_step(uint8_t selection_index);
+const flow_step_t *wallet_menu_get_step(uint8_t *selected_wallet_id);
 #endif /* WALLET_MENU_H */
