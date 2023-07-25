@@ -1,7 +1,7 @@
 /**
- * @file    btc_helpers.c
+ * @file    card_fetch_wallet_list.c
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Bitcoin blockchain
+ * @brief   Source file supporting fetching wallet list from the X1 card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,13 +59,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "card_fetch_wallet_list.h"
 
-#include "btc_helpers.h"
-
-#include "btc_priv.h"
-#include "coin_utils.h"
-#include "flash_config.h"
-#include "segwit_addr.h"
+#include "card_internal.h"
+#include "card_return_codes.h"
+#include "card_utils.h"
+#include "flash_api.h"
+#include "nfc.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,104 +99,58 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-int btc_get_segwit_addr(const uint8_t *public_key,
-                        uint8_t key_len,
-                        const char *hrp,
-                        char *address) {
-  // output of Hash160 (sha256 + ripemd160), use size of bigger hash
-  uint8_t rip[SHA256_DIGEST_LENGTH] = {0};
-  if (!public_key || !address) {
-    return 1;
+bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
+                            card_fetch_wallet_list_response_t *response) {
+  bool result = false;
+  if (NULL == configuration || NULL == response ||
+      NULL == response->wallet_list) {
+    return result;
   }
 
-  if (key_len != 33 && key_len != 65) {
-    return 1;
-  }
+  // Render the instruction screen
+  instruction_scr_init(configuration->msg, configuration->heading);
 
-  if (key_len == 65) {
-    bignum256 y_ordinate;
-    bn_read_be(public_key + 33, &y_ordinate);
-    ((uint8_t *)public_key)[0] = bn_is_odd(&y_ordinate) ? 0x03 : 0x02;
-    key_len = 33;
-  }
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.init_session_keys = true;
 
-  hasher_Raw(HASHER_SHA2_RIPEMD, public_key, key_len, rip);
-  return segwit_addr_encode(address, hrp, 0x00, rip, RIPEMD160_DIGEST_LENGTH);
-}
+  while (1) {
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards = configuration->acceptable_cards;
 
-bool btc_generate_xpub(const uint32_t *path,
-                       const size_t path_length,
-                       const char *curve,
-                       const uint8_t *seed,
-                       const uint32_t version,
-                       char *str) {
-  uint32_t fingerprint = 0x0;
-  HDNode t_node = {0};
-  bool status = true;
+    card_initialize_applet(&card_data);
+    response->tapped_card = card_data.nfc_data.tapped_card;
 
-  status &=
-      derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
-  fingerprint = hdnode_fingerprint(&t_node);
-  if (0 == hdnode_private_ckd(&t_node, path[path_length - 1])) {
-    // hdnode_private_ckd returns 1 when the derivation succeeds
-    status &= false;
-  }
-  hdnode_fill_public_key(&t_node);
-  if (0 ==
-      hdnode_serialize_public(&t_node, fingerprint, version, str, XPUB_SIZE)) {
-    status &= false;
-  }
-  memzero(&t_node, sizeof(HDNode));
-  return status;
-}
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status = nfc_list_all_wallet(response->wallet_list);
 
-bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {
-  bool status = true;
-  switch (purpose_index) {
-    case PURPOSE_LEGACY:
-      *xpub_ver = g_app->legacy_xpub_ver;
-      break;
-    case PURPOSE_SEGWIT:
-      *xpub_ver = g_app->segwit_xpub_ver;
-      break;
-    case PURPOSE_NSEGWIT:
-      *xpub_ver = g_app->nsegwit_xpub_ver;
-      break;
-    default:
-      status = false;
-  }
-  return status;
-}
-
-bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
-  bool status = false;
-  if (BTC_ACC_XPUB_DEPTH != depth && BTC_ACC_ADDR_DEPTH != depth) {
-    return status;
-  }
-  status = true;
-
-  // common checks for xpub/account and address nodes
-  if (NULL == g_app->is_purpose_supported ||
-      !g_app->is_purpose_supported(path[0])) {
-    // unsupported purpose index
-    status = false;
-  }
-  if (g_app->coin_type != path[1] || is_non_hardened(path[2])) {
-    // coin index or account hardness mismatch
-    status = false;
-  }
-
-  if (BTC_ACC_ADDR_DEPTH == depth) {
-    // address node specific checks
-    if (is_hardened(path[3]) || is_hardened(path[4])) {
-      // change or address index must be non-hardened
-      status = false;
+      if (card_data.nfc_data.status == SW_NO_ERROR) {
+        buzzer_start(BUZZER_DURATION);
+        if (!configuration->skip_card_removal) {
+          wait_for_card_removal();
+        }
+        result = true;
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
     }
-    if (0 != path[3] && 1 != path[3]) {
-      // invalid change address
-      status = false;
+
+    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
+        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(configuration->msg, configuration->heading);
+        continue;
+      }
     }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = false;
+    break;
   }
-  return status;
+
+  nfc_deselect_card();
+  return result;
 }

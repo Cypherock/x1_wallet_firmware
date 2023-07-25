@@ -75,6 +75,13 @@ typedef struct {
    */
   char name[LONG_NAME_MAX_SIZE];
 
+  /** Helps put an upper limit on the fee. This tweak is helpful to assist user
+   * in identifying potentially fraudulent transactions and help save unwanted
+   * loss of funds.
+   * TODO: Link a reference
+   */
+  uint64_t max_fee;
+
   /** Validates if the provided purpose_index is supported by the Bitcoin fork.
    * The validation acts as safety check for receive address, account addition
    * and transaction type for the specific fork of Bitcoin.

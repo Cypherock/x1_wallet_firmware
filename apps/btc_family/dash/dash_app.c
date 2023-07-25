@@ -102,6 +102,8 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * native-segwit xpub version is set to 0.
  * Values can be verified from the following references:
  * https://docs.dash.org/projects/core/en/18.0.0/docs/reference/transactions-address-conversion.html#conversion-process
+ * Secondary reference for aggregated coin info:
+ * https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/common/defs/bitcoin/dash.json
  */
 const btc_config_t dash_app = {
     .coin_type = COIN_DASH,
@@ -113,6 +115,8 @@ const btc_config_t dash_app = {
     .bech32_hrp = "",
     .lunit_name = "DASH",
     .name = "Dash",
+
+    .max_fee = 45000000,
 
     .is_purpose_supported = is_purpose_supported,
 };

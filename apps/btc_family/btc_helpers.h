@@ -29,6 +29,11 @@
 #define BTC_ACC_XPUB_DEPTH 3
 #define BTC_ACC_ADDR_DEPTH 5
 
+#define SATOSHI_PER_BTC 100000000
+
+// Refer the flow control list: https://en.bitcoin.it/wiki/Script#Flow_control
+#define OP_RETURN 0x6A
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/

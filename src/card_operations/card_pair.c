@@ -332,6 +332,8 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 
     init_and_pair_card(&card_data, &pair_data);
 
+    error_status = card_data.nfc_data.status;
+
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       error_status = handle_pairing_success(&card_data, &pair_data);
       buzzer_start(BUZZER_DURATION);

@@ -242,7 +242,6 @@ reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
         next_state = PIN_INPUT;
       } else {
         /* In case of other status code returned by the card operation:
-         * CARD_OPERATION_PAIRING_REQUIRED,
          * CARD_OPERATION_LOCKED_WALLET,
          * CARD_OPERATION_P0_OCCURED,
          * CARD_OPERATION_ABORT_OPERATION

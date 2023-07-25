@@ -26,6 +26,8 @@
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_BTC_RECEIVER "Receiver #%d"
+#define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
 #define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
@@ -236,7 +238,6 @@ extern const char *ui_text_tap_card_to_start;
 extern const char *ui_text_wallet_deleted_successfully;
 extern const char *ui_text_recovery_successfull;
 extern const char *ui_text_processing;
-extern const char *ui_text_seed_generated_successfully;
 extern const char *ui_text_press_enter_to_start_verification;
 extern const char *ui_text_now_enter_your_seed_phrase;
 extern const char *ui_text_now_enter_your_data;
