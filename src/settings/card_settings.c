@@ -65,6 +65,7 @@
 #include "flash_api.h"
 #include "read_card_version.h"
 #include "settings_api.h"
+#include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "utils.h"
@@ -101,6 +102,11 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void pair_x1_cards(void) {
+  if (MAX_KEYSTORE_ENTRY != get_keystore_used_count() &&
+      !core_confirmation(ui_text_pair_card_confirm, NULL)) {
+    return;
+  }
+
   uint8_t new_cards_paired = 0;
 
   // In case any error occurred return early

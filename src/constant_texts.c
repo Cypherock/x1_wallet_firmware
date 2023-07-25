@@ -108,6 +108,8 @@ const char *ui_text_options_logging_export[] = {
     "Enable logs",
 };
 
+const char *ui_text_pair_card_confirm =
+    "Do you want to proceed with card pairing?";
 const char *ui_text_card_pairing_success = "All cards are paired";
 const char *ui_text_card_pairing_warning = "Pair all cards for proper use";
 
