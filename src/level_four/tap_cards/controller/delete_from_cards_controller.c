@@ -181,6 +181,7 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   char heading[50] = "";
 
+  // TODO: Move this check to the delete flow
   if (true == check_wallet_already_delelted_on_card(delete_config)) {
     return CARD_OPERATION_SUCCESS;
   }
@@ -216,9 +217,9 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
           wait_for_card_removal();
         }
         break;
+      } else {
+        card_handle_errors(&card_data);
       }
-
-      card_handle_errors(&card_data);
     }
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
