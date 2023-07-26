@@ -62,6 +62,7 @@
 #include "constant_texts.h"
 #include "core_error.h"
 #include "reconstruct_wallet_flow.h"
+#include "ui_core_confirm.h"
 #include "ui_multi_instruction.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
@@ -105,9 +106,7 @@ static void view_seed_handler(const uint8_t *wallet_id) {
   CONFIDENTIAL uint8_t no_of_mnemonics = 0;
 
   do {
-    ui_scrollable_page(
-        NULL, ui_text_view_seed_messages, MENU_SCROLL_HORIZONTAL, true);
-    if (0 != get_state_on_confirm_scr(0, 1, 2)) {
+    if (!core_scroll_page(NULL, ui_text_view_seed_messages, NULL)) {
       break;
     }
 

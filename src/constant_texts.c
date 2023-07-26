@@ -378,8 +378,8 @@ const char *ui_text_creation_failed_delete_wallet =
 
 const char *ui_text_successfull = "Successful";
 const char *ui_text_view_seed_messages =
-    "Do not give the seed phrase to anyone. You will lose your coins if the "
-    "seed phrase gets stolen";
+    "Do not give the seed phrase to anyone.\nYou will lose your coins if the "
+    "seed phrase gets stolen.\nDo you want to proceed?";
 const char *ui_text_card_authentication_success =
     "Card authentication successful";
 const char *ui_text_card_authentication_failed = "Card authentication failed";
