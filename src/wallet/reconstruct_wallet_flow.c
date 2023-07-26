@@ -65,6 +65,7 @@
 #include "constant_texts.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
+#include "status_api.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_list.h"
@@ -173,6 +174,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
+      set_core_flow_status(COMMON_SEED_GENERATION_STATUS_INIT);
       if (!WALLET_IS_PASSPHRASE_SET(wallet.wallet_info)) {
         next_state = PIN_INPUT;
         break;
@@ -200,6 +202,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
                  sizeof(wallet_credential_data.passphrase),
                  "%s",
                  flow_level.screen_input.input_text);
+        set_core_flow_status(COMMON_SEED_GENERATION_STATUS_PASSPHRASE);
         next_state = PIN_INPUT;
       }
 
@@ -237,6 +240,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
       card_error_type_e card_status = card_flow_reconstruct_wallet(1);
 
       if (CARD_OPERATION_SUCCESS == card_status) {
+        set_core_flow_status(COMMON_SEED_GENERATION_STATUS_PIN_CARD);
         next_state = RECONSTRUCT_SEED;
       } else if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_status) {
         next_state = PIN_INPUT;

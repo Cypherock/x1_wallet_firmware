@@ -70,6 +70,11 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define CORE_STATUS_MASK 0xFF
+#define CORE_STATUS_SHIFT 8
+
+#define APP_STATUS_MASK 0xFF
+#define APP_STATUS_SHIFT 0
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -116,8 +121,15 @@ void core_status_set_idle_state(core_device_idle_state_t idle_state) {
   return;
 }
 
-void core_status_set_flow_status(uint32_t flow_status) {
-  core_status.flow_status = flow_status;
+void set_core_flow_status(uint32_t status) {
+  core_status.flow_status &= ~(CORE_STATUS_MASK << CORE_STATUS_SHIFT);
+  core_status.flow_status |= ((status & CORE_STATUS_MASK) << CORE_STATUS_SHIFT);
+  return;
+}
+
+void set_app_flow_status(uint32_t status) {
+  core_status.flow_status &= ~(APP_STATUS_MASK << APP_STATUS_SHIFT);
+  core_status.flow_status |= ((status & APP_STATUS_MASK) << APP_STATUS_SHIFT);
   return;
 }
 

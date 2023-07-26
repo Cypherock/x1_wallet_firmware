@@ -15,6 +15,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <common.pb.h>
 #include <core.pb.h>
 #include <stddef.h>
 
@@ -51,12 +52,24 @@ void core_status_set_idle_state(core_device_idle_state_t idle_state);
 void core_status_set_device_waiting_on(core_device_waiting_on_t waiting_on);
 
 /**
- * @brief This API sets the flow_status field of the core_status_t status
- * packet. This API can be called by the application based on it's requirements.
+ * @brief This API sets the 2nd byte of flow_status field in the
+ * core_status_t status packet. This API can be called by the application based
+ * on it's requirements.
  *
- * @param flow_status Value of the flow_status to be conveyed to the host.
+ * @param status Value of the 2nd byte of flow_status field to be conveyed to
+ * the host. First 1 byte will be masked from the 4 byte input.
  */
-void core_status_set_flow_status(uint32_t flow_status);
+void set_core_flow_status(uint32_t status);
+
+/**
+ * @brief This API sets the lowest (1st) byte of flow_status field in the
+ * core_status_t status packet. This API can be called by the application based
+ * on it's requirements.
+ *
+ * @param status Value of the 1st byte of flow_status field to be conveyed to
+ * the host. First 1 byte will be masked from the 4 byte input.
+ */
+void set_app_flow_status(uint32_t status);
 
 /**
  * @brief This API checks if aborts are enabled in the current flow.

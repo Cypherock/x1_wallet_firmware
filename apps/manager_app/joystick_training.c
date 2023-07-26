@@ -169,7 +169,7 @@ static bool training_step(const joystick_step_t *step) {
       return false;
     }
   } while (!events.ui_event.event_occured);
-  core_status_set_flow_status(step->status);
+  set_app_flow_status(step->status);
   return true;
 }
 

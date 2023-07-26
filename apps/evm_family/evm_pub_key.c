@@ -337,7 +337,7 @@ void evm_get_pub_keys(evm_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_CONFIRM);
+  set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
@@ -348,6 +348,7 @@ void evm_get_pub_keys(evm_query_t *query) {
     return;
   }
 
+  set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
   bool status = get_public_keys(init_req->derivation_paths,

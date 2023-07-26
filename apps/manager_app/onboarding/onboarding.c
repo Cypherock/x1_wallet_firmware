@@ -148,7 +148,8 @@ void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
 
   /* Reset flow status back to zero */
-  core_status_set_flow_status(0);
+  set_core_flow_status(0);
+  set_app_flow_status(0);
 
   if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE != onboarding_get_last_step() ||
       true == onboarding_ctx.static_screen) {
