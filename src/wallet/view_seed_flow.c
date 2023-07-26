@@ -62,9 +62,8 @@
 #include "constant_texts.h"
 #include "core_error.h"
 #include "reconstruct_wallet_flow.h"
-#include "ui_delay.h"
-#include "ui_list.h"
 #include "ui_multi_instruction.h"
+#include "ui_screens.h"
 #include "ui_state_machine.h"
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -86,10 +85,8 @@
  * wallet id.
  *
  * @param wallet_id A pointer to a uint8_t array representing the wallet ID.
- *
- * @return true if view seed is successful, else false.
  */
-static bool view_seed_handler(const uint8_t *wallet_id);
+static void view_seed_handler(const uint8_t *wallet_id);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -102,15 +99,14 @@ static bool view_seed_handler(const uint8_t *wallet_id);
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static bool view_seed_handler(const uint8_t *wallet_id) {
+static void view_seed_handler(const uint8_t *wallet_id) {
   CONFIDENTIAL char mnemonics[MAX_NUMBER_OF_MNEMONIC_WORDS]
                              [MAX_MNEMONIC_WORD_LENGTH] = {0};
   CONFIDENTIAL uint8_t no_of_mnemonics = 0;
-  bool result = false;
 
   do {
-    multi_instruction_init(
-        ui_text_view_seed_messages, 3, DELAY_LONG_STRING, true);
+    ui_scrollable_page(
+        NULL, ui_text_view_seed_messages, MENU_SCROLL_HORIZONTAL, true);
     if (0 != get_state_on_confirm_scr(0, 1, 2)) {
       break;
     }
@@ -124,27 +120,22 @@ static bool view_seed_handler(const uint8_t *wallet_id) {
 
     set_theme(LIGHT);
     list_init(mnemonics, no_of_mnemonics, ui_text_word_hash, true);
-    if (0 == get_state_on_confirm_scr(0, 1, 2)) {
-      result = true;
-      break;
-    }
+    get_state_on_confirm_scr(0, 0, 0);
+    break;
   } while (0);
 
   reset_theme();
   memzero(mnemonics, sizeof(mnemonics));
   no_of_mnemonics = 0;
-  return result;
+  return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void view_seed_flow(uint8_t *wallet_id) {
+void view_seed_flow(const uint8_t *wallet_id) {
   ASSERT(NULL != wallet_id);
 
-  if (false == view_seed_handler(wallet_id)) {
-    mark_core_error_screen(ui_text_something_went_wrong);
-  }
-
+  view_seed_handler(wallet_id);
   return;
 }

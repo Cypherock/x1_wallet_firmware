@@ -34,5 +34,5 @@
  * @param wallet_id A pointer to a uint8_t variable that represents the wallet
  * ID.
  */
-void view_seed_flow(uint8_t *wallet_id);
+void view_seed_flow(const uint8_t *wallet_id);
 #endif

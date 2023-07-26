@@ -92,7 +92,7 @@ typedef enum {
  * @brief This is the initializer callback for the wallet menu.
  *
  * @param ctx The engine context* from which the flow is invoked
- * @param data_ptr Currently unused pointer set by the engine
+ * @param data_ptr Data pointer here represents the wallet id of selected wallet
  */
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
 
@@ -104,7 +104,7 @@ static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param ui_event The ui event object which triggered the callback
- * @param data_ptr Currently unused pointer set by the engine
+ * @param data_ptr Data pointer here represents the wallet id of selected wallet
  */
 static void wallet_menu_handler(engine_ctx_t *ctx,
                                 ui_event_t ui_event,
@@ -119,7 +119,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param p0_evt The p0 event object which triggered the callback
- * @param data_ptr Currently unused pointer set by the engine
+ * @param data_ptr Data pointer here represents the wallet id of selected wallet
  */
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
@@ -152,7 +152,7 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   char wallet_name[NAME_SIZE] = {0};
-  get_wallet_name_by_id(wallet_id, (uint8_t *)wallet_name);
+  get_wallet_name_by_id(data_ptr, (uint8_t *)wallet_name);
 
   menu_init((const char **)ui_text_options_old_wallet,
             NUMBER_OF_OPTIONS_OLD_WALLET,
@@ -167,7 +167,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case VIEW_SEED: {
-        view_seed_flow(wallet_id);
+        view_seed_flow(data_ptr);
         break;
       }
       case DELETE_WALLET: {

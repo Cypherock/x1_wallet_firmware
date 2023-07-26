@@ -279,6 +279,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
       break;
     }
 
+    // TODO: Manage states better to indicate error when failure occurs
     case COMPLETED:
     case COMPLETED_WITH_ERRORS:
     case TIMED_OUT:

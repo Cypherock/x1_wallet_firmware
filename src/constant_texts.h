@@ -258,7 +258,7 @@ extern const char *ui_text_logs_sent;
 extern const char *ui_text_creation_failed_delete_wallet;
 
 extern const char *ui_text_successfull;
-extern const char *ui_text_view_seed_messages[];
+extern const char *ui_text_view_seed_messages;
 extern const char *ui_text_card_authentication_success;
 extern const char *ui_text_card_authentication_failed;
 extern const char *ui_text_authentication_required;
