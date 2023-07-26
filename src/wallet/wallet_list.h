@@ -54,6 +54,15 @@ typedef struct {
 uint8_t get_wallet_list(const char *wallet_list[]);
 
 /**
+ * @brief This API fills metadata for all the wallets present on X1 vault and
+ * are in VALID_WALLET state.
+ *
+ * @param wallet_list Refernce to buffer which will be filled by this function
+ * @return uint8_t The number of wallets returned
+ */
+uint8_t get_valid_wallet_meta_data_list(wallet_list_t *wallet_list);
+
+/**
  * @brief This API searches for wallet on the flash using wallet_id as key if it
  * is in VALID_WALLET state and not locked.
  * @details If a VALID_WALLET is found in the flash, then this API fills the

@@ -192,6 +192,10 @@ static void settings_menu_handler(engine_ctx_t *ctx,
         toggle_passphrase();
         break;
       }
+      case FACTORY_RESET_DEVICE: {
+        factory_reset();
+        break;
+      }
       case VIEW_DEVICE_INFO: {
         view_firmware_version();
         break;
