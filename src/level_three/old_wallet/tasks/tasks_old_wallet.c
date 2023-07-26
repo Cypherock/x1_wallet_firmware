@@ -78,7 +78,6 @@ void level_three_old_wallet_tasks() {
 
   switch (flow_level.level_two) {
     case LEVEL_THREE_VIEW_SEED: {
-      view_seed_task();
     } break;
 
     case LEVEL_THREE_DELETE_WALLET: {

@@ -102,7 +102,6 @@ void sync_cards_task() {
     } break;
     case SYNC_CARDS_ENTER_PIN_FLOW: {
       if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-        flow_level.level_three = VIEW_SEED_DUMMY_TASK;
         break;
       }
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);

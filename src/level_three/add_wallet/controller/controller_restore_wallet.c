@@ -530,11 +530,7 @@ restore_wallet_state_e restore_wallet_state_handler(
 void restore_seed_phrase_flow(void) {
   restore_wallet_state_e current_state = NAME_INPUT;
 
-  // TODO: Consolidate in one function
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  clear_wallet_data();
 
   while (1) {
     restore_wallet_state_e next_state =
@@ -547,10 +543,6 @@ void restore_seed_phrase_flow(void) {
     current_state = next_state;
   }
 
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-
+  clear_wallet_data();
   return;
 }

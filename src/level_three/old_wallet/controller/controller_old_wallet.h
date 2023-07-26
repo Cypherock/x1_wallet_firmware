@@ -17,21 +17,6 @@
 #include "controller_main.h"
 
 /**
- * @brief Controller to Constructs wallet seed  flow
- * @details This controller handles the post request processing of the view seed
- * flow. Based on the wallet configuration, it will skip some cases such as
- * PIN/passphrase entering and directly regenerate the wallet seed to view
- * mnemonics ti the user.
- *
- * @see VIEW_SEED_TASKS,
- * tap_threshold_cards_for_reconstruction_flow_controller(), view_seed_task()
- * @since v1.0.0
- *
- * @note
- */
-void view_seed_controller();
-
-/**
  * @brief Controller to handle post event processing of the delete wallet flow.
  * @details The function deletes the wallet from the device removing both the
  * basic information along with the device's share.

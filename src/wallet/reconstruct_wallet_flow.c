@@ -59,7 +59,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "reconstruct_seed_flow.h"
+#include "reconstruct_wallet_flow.h"
 
 #include "card_flow_reconstruct_wallet.h"
 #include "constant_texts.h"
@@ -107,17 +107,46 @@ typedef enum {
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This function handles different states of the reconstruct wallet seed
- * flow
+ * @brief The function takes a 32 byte secret and generates the seed using a
+ * mnemonic and passphrase.
+ *
+ * @param secret The `secret` parameter is a pointer to a uint8_t array
+ * containing wallet secret data.
+ * @param seed_out The `seed_out` parameter is a pointer to a uint8_t array
+ * where the generated seed will be stored. The size of the array should be >=
+ * 64bytes to accommodate the seed.
+ */
+static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
+
+/**
+ * @brief This function handles different states of the reconstruct wallet flow
  *
  * @param state The current state of the flow which needs to be executed
- * @param seed_out Pointer to buffer which needs to be populated with the wallet
- * seed
+ * @param secret_out Pointer to buffer which needs to be populated with the
+ * wallet secret
  * @return reconstruct_state_e The next state of the flow
  */
-reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *seed_out);
+static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                                      uint8_t *secret_out);
 
+/**
+ * @brief The function takes a wallet ID, a pointer to an output buffer, and an
+ * initial state, and runs a flow to reconstruct a secret based on the wallet
+ * ID.
+ *
+ * @param wallet_id A pointer to a uint8_t array that represents the wallet id.
+ * @param secret_out A pointer to a uint8_t array where the reconstructed secret
+ * will be stored.
+ * @param init_state The initial state of the secret reconstruction flow. It
+ * determines where the flow should start from.
+ *
+ * @return The function is expected to return a value of type
+ * `reconstruct_state_e`.
+ */
+static reconstruct_state_e reconstruct_wallet_secret_flow(
+    const uint8_t *wallet_id,
+    uint8_t *secret_out,
+    reconstruct_state_e init_state);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -129,8 +158,18 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
-                                             uint8_t *seed_out) {
+static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
+  mnemonic_clear();
+  const char *mnemo =
+      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+
+  ASSERT(mnemo != NULL);
+  mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed_out, NULL);
+  mnemonic_clear();
+}
+
+static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
+                                                      uint8_t *secret_out) {
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
@@ -224,7 +263,6 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
              wallet_shamir_data.share_encryption_data[0],
              NONCE_SIZE + WALLET_MAC_SIZE);
 
-      uint8_t secret[BLOCK_SIZE];
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         decrypt_shares();
       }
@@ -233,21 +271,15 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
                                  MINIMUM_NO_OF_SHARES,
                                  wallet_shamir_data.mnemonic_shares,
                                  wallet_shamir_data.share_x_coords,
-                                 secret);
+                                 secret_out);
+
       memzero(wallet_shamir_data.mnemonic_shares,
               sizeof(wallet_shamir_data.mnemonic_shares));
-      mnemonic_clear();
-      const char *mnemo =
-          mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-
-      ASSERT(mnemo != NULL);
-      mnemonic_to_seed(
-          mnemo, wallet_credential_data.passphrase, seed_out, NULL);
-      mnemonic_clear();
       next_state = COMPLETED;
       break;
     }
 
+    // TODO: Manage states better to indicate error when failure occurs
     case COMPLETED:
     case COMPLETED_WITH_ERRORS:
     case TIMED_OUT:
@@ -260,6 +292,30 @@ reconstruct_state_e reconstruct_seed_handler(reconstruct_state_e state,
   return next_state;
 }
 
+static reconstruct_state_e reconstruct_wallet_secret_flow(
+    const uint8_t *wallet_id,
+    uint8_t *secret_out,
+    reconstruct_state_e init_state) {
+  // Select wallet based on wallet_id
+  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
+    return EARLY_EXIT;
+  }
+
+  // Run flow till it reaches a completion state
+  reconstruct_state_e current_state = init_state;
+  while (1) {
+    reconstruct_state_e next_state =
+        reconstruct_wallet_handler(current_state, secret_out);
+
+    current_state = next_state;
+    if (COMPLETED <= current_state) {
+      break;
+    }
+  }
+
+  return current_state;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -268,37 +324,49 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
     return false;
   }
 
-  // TODO: Consolidate in one function
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  uint8_t secret[BLOCK_SIZE] = {0};
+  uint8_t result = false;
 
-  // Select wallet based on wallet_id
-  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
-    return false;
+  clear_wallet_data();
+
+  if (COMPLETED ==
+      reconstruct_wallet_secret_flow(wallet_id, secret, PASSPHRASE_INPUT)) {
+    get_seed_from_secret(secret, seed_out);
+    result = true;
   }
 
-  // Run flow till it reaches a completion state
-  reconstruct_state_e current_state = PASSPHRASE_INPUT;
-  while (1) {
-    reconstruct_state_e next_state =
-        reconstruct_seed_handler(current_state, seed_out);
+  clear_wallet_data();
+  return result;
+}
 
-    current_state = next_state;
-    if (COMPLETED <= current_state) {
-      break;
-    }
+uint8_t reconstruct_mnemonics_flow(
+    const uint8_t *wallet_id,
+    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS]
+                      [MAX_MNEMONIC_WORD_LENGTH]) {
+  if ((NULL == wallet_id) || (NULL == mnemonic_list)) {
+    return 0;
   }
 
-  // Clear confidential data irrespective of the result of the flow
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  uint8_t secret[BLOCK_SIZE] = {0};
+  uint8_t result = 0;
 
-  if (COMPLETED == current_state) {
-    return true;
+  clear_wallet_data();
+
+  if (COMPLETED ==
+      reconstruct_wallet_secret_flow(wallet_id, secret, PIN_INPUT)) {
+    mnemonic_clear();
+    const char *mnemo =
+        mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+    ASSERT(mnemo != NULL);
+
+    uint16_t len =
+        strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
+    __single_to_multi_line(mnemo, len, mnemonic_list);
+    mnemonic_clear();
+
+    result = wallet.number_of_mnemonics;
   }
 
-  return false;
+  clear_wallet_data();
+  return result;
 }

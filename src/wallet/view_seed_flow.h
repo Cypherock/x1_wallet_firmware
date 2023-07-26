@@ -1,20 +1,18 @@
 /**
- * @file    reconstruct_seed_flow.h
+ * @file    view_seed_flow.h
  * @author  Cypherock X1 Team
- * @brief   Header file for the reconstruct wallet seed flow
+ * @brief   Flow for view seed operation on an existing wallet
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef RECONSTRUCT_SEED_FLOW_H
-#define RECONSTRUCT_SEED_FLOW_H
+#ifndef VIEW_SEED_FLOW_H
+#define VIEW_SEED_FLOW_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-
+#include "stdint.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -31,20 +29,10 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This API executes the wallet seed reconstruction flow on the device
- * and returns the seed.
- * @details This function takes user inputs based wallet configuration
- * corresponding to wallet with wallet_id, reads the wallet shares from the X1
- * vault flash and any 1 X1 card, and reconstructs each seed using Shamir
- * reconstruction.
+ * @brief The function displays the mnemonics for a given wallet index.
  *
- * @param wallet_id The wallet_id of the wallet which needs to be reconstructed
- * @param seed_out Pointer to buffer where the seed will be copied after
- * regeneration
- * @return true If the reconstruction flow completed successfully and buffer
- * pointed by seed_out is filled with the seed
- * @return false If the reconstruction flow could not be completed
+ * @param wallet_id A pointer to a uint8_t variable that represents the wallet
+ * ID.
  */
-bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out);
-
-#endif /* RECONSTRUCT_SEED_FLOW_H */
+void view_seed_flow(const uint8_t *wallet_id);
+#endif

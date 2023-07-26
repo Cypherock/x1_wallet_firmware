@@ -65,7 +65,7 @@
 #include "btc_priv.h"
 #include "btc_txn_helpers.h"
 #include "constant_texts.h"
-#include "reconstruct_seed_flow.h"
+#include "reconstruct_wallet_flow.h"
 #include "script.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"

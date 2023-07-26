@@ -1,7 +1,7 @@
 /**
- * @file    wallet_menu.c
+ * @file    view_seed_flow.c
  * @author  Cypherock X1 Team
- * @brief   Populate and handle old wallet menu options
+ * @brief   Flow for view seed operation on an existing wallet
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "wallet_menu.h"
-
 #include "constant_texts.h"
-#include "core_error_priv.h"
-#include "menu_priv.h"
+#include "core_error.h"
+#include "reconstruct_wallet_flow.h"
+#include "ui_core_confirm.h"
+#include "ui_multi_instruction.h"
 #include "ui_screens.h"
-#include "view_seed_flow.h"
-#include "wallet_list.h"
-
+#include "ui_state_machine.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -79,63 +77,21 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  VIEW_SEED = 1,
-  DELETE_WALLET,
-
-} create_wallet_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This is the initializer callback for the wallet menu.
+ * @brief The function handles transitions of view seed flow for the passed
+ * wallet id.
  *
- * @param ctx The engine context* from which the flow is invoked
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
+ * @param wallet_id A pointer to a uint8_t array representing the wallet ID.
  */
-static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
+static void view_seed_handler(const uint8_t *wallet_id);
 
-/**
- * @brief This is the UI event handler for the wallet menu.
- * @details The function decodes the UI event and calls the wallet flow
- * based on selection. It deletes the wallet menu step if the back button
- * is pressed on the menu
- *
- * @param ctx The engine context* from which the flow is invoked
- * @param ui_event The ui event object which triggered the callback
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
- */
-static void wallet_menu_handler(engine_ctx_t *ctx,
-                                ui_event_t ui_event,
-                                const void *data_ptr);
-
-/**
- * @brief This p0 event callback function handles clearing p0 events occured
- * while engine is waiting for other events.
- *
- * @details After main menu initalization, we don't expect p0 events as no
- * operation or flow has been started yet.
- *
- * @param ctx The engine context* from which the flow is invoked
- * @param p0_evt The p0 event object which triggered the callback
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
- */
-static void ignore_p0_handler(engine_ctx_t *ctx,
-                              p0_evt_t p0_evt,
-                              const void *data_ptr);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static uint8_t wallet_id[WALLET_ID_SIZE] = {0};
-
-static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
-                                        .p0_cb = ignore_p0_handler,
-                                        .ui_cb = wallet_menu_handler,
-                                        .usb_cb = NULL,
-                                        .nfc_cb = NULL,
-                                        .evt_cfg_ptr = &device_nav_evt_config,
-                                        .flow_data_ptr = &wallet_id};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -144,57 +100,41 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void ignore_p0_handler(engine_ctx_t *ctx,
-                              p0_evt_t p0_evt,
-                              const void *data_ptr) {
-  ignore_p0_event();
-}
+static void view_seed_handler(const uint8_t *wallet_id) {
+  CONFIDENTIAL char mnemonics[MAX_NUMBER_OF_MNEMONIC_WORDS]
+                             [MAX_MNEMONIC_WORD_LENGTH] = {0};
+  CONFIDENTIAL uint8_t no_of_mnemonics = 0;
 
-static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  char wallet_name[NAME_SIZE] = {0};
-  get_wallet_name_by_id(data_ptr, (uint8_t *)wallet_name);
-
-  menu_init((const char **)ui_text_options_old_wallet,
-            NUMBER_OF_OPTIONS_OLD_WALLET,
-            (const char *)wallet_name,
-            true);
-  return;
-}
-
-static void wallet_menu_handler(engine_ctx_t *ctx,
-                                ui_event_t ui_event,
-                                const void *data_ptr) {
-  if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
-    switch (ui_event.list_selection) {
-      case VIEW_SEED: {
-        view_seed_flow(data_ptr);
-        break;
-      }
-      case DELETE_WALLET: {
-        // TODO: Handle delete wallet flow
-        break;
-      }
-      default: {
-        break;
-      }
+  do {
+    if (!core_scroll_page(NULL, ui_text_view_seed_messages, NULL)) {
+      break;
     }
-  } else {
-    // UI_EVENT_LIST_REJECTION handled below already
-  }
 
-  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-   * detected, or a wallet flow was executed */
-  engine_delete_current_flow_step(ctx);
+    no_of_mnemonics = reconstruct_mnemonics_flow(wallet_id, mnemonics);
 
+    if (12 != no_of_mnemonics && 18 != no_of_mnemonics &&
+        24 != no_of_mnemonics) {
+      break;
+    }
+
+    set_theme(LIGHT);
+    list_init(mnemonics, no_of_mnemonics, ui_text_word_hash, true);
+    get_state_on_confirm_scr(0, 0, 0);
+    break;
+  } while (0);
+
+  reset_theme();
+  memzero(mnemonics, sizeof(mnemonics));
+  no_of_mnemonics = 0;
   return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *wallet_menu_get_step(uint8_t *selected_wallet_id) {
-  ASSERT(NULL != selected_wallet_id);
+void view_seed_flow(const uint8_t *wallet_id) {
+  ASSERT(NULL != wallet_id);
 
-  memcpy(wallet_id, selected_wallet_id, WALLET_ID_SIZE);
-  return &wallet_step;
+  view_seed_handler(wallet_id);
+  return;
 }
