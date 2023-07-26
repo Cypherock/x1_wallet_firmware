@@ -118,7 +118,7 @@ static void handle_wallet_deleted_from_card(
  *
  * @return a boolean value.
  */
-bool check_wallet_already_delelted_on_card(
+static bool check_wallet_already_deleted_on_card(
     card_delete_share_cfg_t *delete_config);
 
 /*****************************************************************************
@@ -156,7 +156,7 @@ static void handle_wallet_deleted_from_card(
   return;
 }
 
-bool check_wallet_already_delelted_on_card(
+static bool check_wallet_already_deleted_on_card(
     card_delete_share_cfg_t *delete_config) {
   uint8_t flash_wallet_index = 0xFF;
   ASSERT(SUCCESS ==
@@ -182,7 +182,7 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
   char heading[50] = "";
 
   // TODO: Move this check to the delete flow
-  if (true == check_wallet_already_delelted_on_card(delete_config)) {
+  if (true == check_wallet_already_deleted_on_card(delete_config)) {
     return CARD_OPERATION_SUCCESS;
   }
 
@@ -200,7 +200,7 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
     card_data.nfc_data.tapped_card = 0;
     card_data.nfc_data.init_session_keys = true;
 
-    card_initialize_applet(&card_data);
+    result = card_initialize_applet(&card_data);
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status = nfc_delete_wallet(delete_config->wallet);
 
@@ -243,5 +243,5 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
   }
 
   nfc_deselect_card();
-  return card_data.error_type;
+  return result;
 }
