@@ -1,8 +1,8 @@
 /**
- * @file    card_settings.c
+ * @file    card_health_check.c
  * @author  Cypherock X1 Team
- * @brief   Source file with helper functions related to X1 vault and X1 card
- *          mutual configuration
+ * @brief   Logic to check card health and view wallet list in X1 card
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,15 +60,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_flow_pairing.h"
 #include "card_operations.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "settings_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
-#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -101,63 +100,107 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void pair_x1_cards(void) {
-  if (MAX_KEYSTORE_ENTRY != get_keystore_used_count() &&
-      !core_confirmation(ui_text_pair_card_confirm, NULL)) {
+void card_health_check(void) {
+  wallet_list_t wallets_in_card = {0};
+
+  card_fetch_wallet_list_config_t configuration = {0};
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.skip_card_removal = true;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = NULL;
+  configuration.frontend.msg = ui_text_card_health_check_start;
+
+  card_fetch_wallet_list_response_t response = {0};
+  response.wallet_list = &wallets_in_card;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
+
+  // P0 abort is the only condition we want to exit the flow
+  // Card abort error will be explicitly shown here as error codes
+  card_error_type_e status = card_fetch_wallet_list(&configuration, &response);
+  if (CARD_OPERATION_P0_OCCURED == status) {
     return;
   }
 
-  uint8_t new_cards_paired = 0;
-
-  // In case any error occurred return early
-  if (false == card_flow_pairing(&new_cards_paired)) {
+  // If the tapped card is not paired, it is a terminal case in the flow
+  // Card operation will return ABORT but the status will signify SW_NO_ERROR
+  if (CARD_OPERATION_ABORT_OPERATION == status &&
+      SW_NO_ERROR == response.card_info.status) {
     return;
   }
 
-  if (MAX_KEYSTORE_ENTRY == get_keystore_used_count()) {
-    delay_scr_init(ui_text_card_pairing_success, DELAY_TIME);
-  } else {
-    // Display newly paired cards to the user
-    if (0 < new_cards_paired) {
-      char msg[100] = {0};
-      snprintf(msg, sizeof(msg), PAIR_CARD_MESSAGE, new_cards_paired);
-      delay_scr_init(msg, DELAY_TIME);
+  // At this stage, either there is no core error message set, or it is set but
+  // we want to overwrite the error message using user facing messages in this
+  // flow
+  clear_core_error_screen();
+
+  uint32_t card_fault_status = 0;
+  if (1 == response.card_info.recovery_mode) {
+    card_fault_status = NFC_NULL_PTR_ERROR;
+  } else if (CARD_OPERATION_SUCCESS != status) {
+    card_fault_status = response.card_info.status;
+  }
+
+  uint8_t screens = 3;
+  char display_msg[100] = "";
+  const char *msg[3];
+
+  if (0 == card_fault_status) {
+    screens = 2;
+    msg[0] = ui_text_card_seems_healthy;
+    if (0 < wallets_in_card.count) {
+      msg[1] = ui_text_click_to_view_wallets;
+    } else {
+      msg[1] = ui_text_no_wallets_fetched;
     }
-    delay_scr_init(ui_text_card_pairing_warning, DELAY_TIME);
+  } else {
+    snprintf(display_msg,
+             sizeof(display_msg),
+             "%s: C%04lX",
+             ui_text_card_health_check_error[0],
+             card_fault_status);
+    msg[0] = (const char *)display_msg;
+    msg[1] = ui_text_card_health_check_error[1];
+    if (0 < wallets_in_card.count) {
+      msg[2] = ui_text_click_to_view_wallets;
+    } else {
+      msg[2] = ui_text_no_wallets_fetched;
+    }
   }
 
-  return;
-}
+  typedef enum {
+    CARD_HC_SHOW_WALLETS,
+    CARD_HC_EXIT_FLOW,
+  } card_health_check_states_e;
 
-void view_card_version(void) {
-  uint8_t card_version[CARD_VERSION_SIZE] = {0};
-
-  if (!read_card_version(card_version, NULL, ui_text_tap_a_card)) {
-    return;
+  card_health_check_states_e state_on_confirm = CARD_HC_EXIT_FLOW;
+  if (0 < wallets_in_card.count) {
+    state_on_confirm = CARD_HC_DISPLAY_WALLETS;
   }
 
-  char msg[100] = {0};
-  char git_revision[2 * CARD_VERSION_GIT_REV_SIZE + 1] = {0};
+  multi_instruction_init(msg, screens, DELAY_TIME, true);
 
-  uint8_t major_version = (card_version[0] & 0xf0) >> 4;
-  uint8_t minor_version = (card_version[0] & 0x0f);
-  uint8_t patch = card_version[1];
+  if (CARD_HC_DISPLAY_WALLETS == get_state_on_confirm_scr(state_on_confirm,
+                                                          CARD_HC_EXIT_FLOW,
+                                                          CARD_HC_EXIT_FLOW)) {
+    memzero(display_msg, sizeof(display_msg));
+    snprintf(display_msg,
+             sizeof(display_msg),
+             UI_TEXT_CARD_HEALTH_CHECK_ERROR,
+             decode_card_number(response.card_info.tapped_card));
 
-  byte_array_to_hex_string(
-      &card_version[2], 4, git_revision, sizeof(git_revision));
+    char wallet_list[MAX_WALLETS_ALLOWED][NAME_SIZE] = {"", "", "", ""};
+    for (uint8_t i = 0; i < wallets_in_card.count; i++) {
+      snprintf(
+          wallet_list[i], NAME_SIZE, (char *)wallets_in_card.wallet[i].name);
+    }
+    list_init(wallet_list, wallets_in_card.count, display_msg, false);
 
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_CARD_VERSION,
-           major_version,
-           minor_version,
-           patch,
-           git_revision);
-
-  message_scr_init(msg);
-
-  // Do not care about the return value from confirmation screen
-  (void)get_state_on_confirm_scr(0, 0, 0);
+    // Do not care about the return value from confirmation screen
+    (void)get_state_on_confirm_scr(0, 0, 0);
+  }
 
   return;
 }

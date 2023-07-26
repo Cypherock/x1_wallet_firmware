@@ -278,9 +278,12 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
          * to safely recover/export wallets to different set of cards in limited
          * attempts.
          */
+        // NOTE: This will currently fill the error msg. We will not be able to
+        // display any other error message that arise after this point
+        // TODO: Fix error message stacking by giving control to either the
+        // operation or the application
         if (1 == card_data->nfc_data.recovery_mode) {
-          NFC_RETURN_ABORT_ERROR(card_data,
-                                 ui_critical_card_health_migrate_data);
+          mark_core_error_screen(ui_critical_card_health_migrate_data);
         }
 
         /* Check if pairing is required */

@@ -161,3 +161,8 @@ void handle_core_errors() {
 void ignore_p0_event() {
   p0_reset_evt();
 }
+
+void clear_core_error_screen(void) {
+  memzero(core_error_msg, sizeof(core_error_msg));
+  return;
+}

@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "card_operation_typedefs.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -25,15 +26,13 @@
  * TYPEDEFS
  *****************************************************************************/
 typedef struct {
-  uint8_t acceptable_cards;
-  bool skip_card_removal;
-  const char *heading;
-  const char *msg;
+  card_operation_config_t operation;
+  card_operation_frontend_t frontend;
 } card_fetch_wallet_list_config_t;
 
 typedef struct {
-  uint8_t tapped_card;
   wallet_list_t *wallet_list;
+  card_info_t card_info;
 } card_fetch_wallet_list_response_t;
 
 /*****************************************************************************
@@ -47,14 +46,15 @@ typedef struct {
 /**
  * @brief This card operation extracts the wallet list from an X1 card
  *
- * @param configuration Reference to operation specific parameters such as
- * acceptable cards
+ * @param config Reference to operation specific parameters such as acceptable
+ * cards
  * @param response Reference to response structure which will be filled with the
  * wallet list and the card tapped
  * @return true If the operation was performed successfully
  * @return false If the operation did not complete
  */
-bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
-                            card_fetch_wallet_list_response_t *response);
+card_error_type_e card_fetch_wallet_list(
+    const card_fetch_wallet_list_config_t *config,
+    card_fetch_wallet_list_response_t *response);
 
 #endif /* CARD_FETCH_WALLET_LIST_H */
