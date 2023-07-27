@@ -436,7 +436,8 @@ const char *ui_text_its_a_while_check_your_cards =
     "It's been a while check if your cards are working properly";
 const char *ui_text_delete_this_wallet = "Delete this wallet";
 const char *ui_text_need_all_x1cards_to_delete_wallet_entirely =
-    "You'll need all cards to delete this wallet entirely, confirm?";
+    "You'll need all cards to delete this wallet entirely, do you want to "
+    "proceed?";
 const char *ui_text_20_spaces = "                    ";
 const char *ui_text_wallet_not_found_on_x1card = "No Wallet found on card";
 const char *ui_text_sync_wallets_next_steps = "Sync each wallet in next steps";

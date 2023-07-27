@@ -63,6 +63,7 @@
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
+#include "delete_wallet_flow.h"
 #include "menu_priv.h"
 #include "ui_screens.h"
 #include "view_seed_flow.h"
@@ -171,7 +172,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
         break;
       }
       case DELETE_WALLET: {
-        // TODO: Handle delete wallet flow
+        delete_wallet_flow(data_ptr);
         break;
       }
       default: {
