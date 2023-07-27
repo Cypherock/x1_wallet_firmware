@@ -4,14 +4,14 @@
  * @brief   Delete from cards controller.
  *          This file contains the implementation of the functions for deleting
  *          wallets from cards.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -57,113 +57,191 @@
  *
  ******************************************************************************
  */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "card_delete_share.h"
+#include "card_internal.h"
+#include "card_utils.h"
 #include "constant_texts.h"
-#include "controller_main.h"
-#include "controller_tap_cards.h"
 #include "flash_api.h"
 #include "nfc.h"
-#include "tasks.h"
 #include "ui_instruction.h"
 
-static void _handle_delete_wallet_success(uint8_t card_number,
-                                          uint8_t flash_wallet_index);
-static void _tap_card_backend(uint8_t card_number);
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
 
-void delete_from_cards_controller() {
-  if (flow_level.level_four > wallet.total_number_of_shares * 2) {
-    return;
-  }
-  switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-      tap_card_data.desktop_control = false;
-      tap_card_data.tapped_card = 0;
-      flow_level.level_four = TAP_CARD_ONE_BACKEND;
-      break;
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
 
-    case TAP_CARD_ONE_BACKEND:
-      _tap_card_backend(1);
-      break;
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
 
-    case TAP_CARD_TWO_FRONTEND:
-      flow_level.level_four = TAP_CARD_TWO_BACKEND;
-      break;
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
 
-    case TAP_CARD_TWO_BACKEND:
-      _tap_card_backend(2);
-      break;
+/**
+ * The function "delete_wallet_flash" is used to delete a wallet from the flash
+ * memory.
+ *
+ * @param flash_wallet_index The parameter "flash_wallet_index" is an unsigned
+ * 8-bit integer that represents the index of the wallet in the flash memory
+ * that needs to be deleted.
+ *
+ * @return void, which means it does not return any value.
+ */
+static void delete_wallet_flash(uint8_t flash_wallet_index);
 
-    case TAP_CARD_THREE_FRONTEND:
-      flow_level.level_four = TAP_CARD_THREE_BACKEND;
-      break;
+/**
+ * The function `handle_wallet_deleted_from_card` deletes a wallet from a card
+ * and from flash memory if the card number is 4.
+ *
+ * @param delete_config A pointer to a structure of type
+ * `card_delete_share_cfg_t`, which contains the following members:
+ *
+ * @return void, which means it does not return any value.
+ */
+static void handle_wallet_deleted_from_card(
+    card_delete_share_cfg_t *delete_config);
 
-    case TAP_CARD_THREE_BACKEND:
-      _tap_card_backend(3);
-      break;
+/**
+ * The function checks if a wallet has already been deleted from a card and
+ * deletes it if the card number is 4.
+ *
+ * @param delete_config A pointer to a structure of type
+ * card_delete_share_cfg_t, which contains the following members:
+ *
+ * @return a boolean value.
+ */
+static bool check_wallet_already_deleted_on_card(
+    card_delete_share_cfg_t *delete_config);
 
-    case TAP_CARD_FOUR_FRONTEND:
-      flow_level.level_four = TAP_CARD_FOUR_BACKEND;
-      break;
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
 
-    case TAP_CARD_FOUR_BACKEND:
-      _tap_card_backend(4);
-      break;
-    default:
-      break;
-  }
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+static void delete_wallet_flash(uint8_t flash_wallet_index) {
+  ASSERT(SUCCESS_ == delete_wallet_share_from_sec_flash(flash_wallet_index));
+  ASSERT(SUCCESS_ == delete_wallet_from_flash(flash_wallet_index));
+
+  return;
 }
 
-// Card number is 1,2,3 or 4
-static void _tap_card_backend(uint8_t card_number) {
-  uint8_t flash_wallet_index;
+static void handle_wallet_deleted_from_card(
+    card_delete_share_cfg_t *delete_config) {
+  uint8_t flash_wallet_index = 0xFF;
 
-  if (get_index_by_name((const char *)wallet.wallet_name,
-                        &flash_wallet_index) != SUCCESS_)
-    return;
-  memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-  tap_card_data.retries = 5;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)delete_config->wallet->wallet_name,
+                           &flash_wallet_index));
+  ASSERT(SUCCESS == delete_from_kth_card_flash(flash_wallet_index,
+                                               delete_config->card_number));
 
-  if (card_already_deleted_flash(flash_wallet_index, card_number)) {
-    if (card_number < 4)
-      flow_level.level_four++;
-    else {
-      flow_level.level_four = 1;
-      flow_level.level_three++;
-    }
-    return;
+  if (4 == delete_config->card_number) {
+    delete_wallet_flash(flash_wallet_index);
   }
+
+  return;
+}
+
+static bool check_wallet_already_deleted_on_card(
+    card_delete_share_cfg_t *delete_config) {
+  uint8_t flash_wallet_index = 0xFF;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)delete_config->wallet->wallet_name,
+                           &flash_wallet_index));
+
+  if (card_already_deleted_flash(flash_wallet_index,
+                                 delete_config->card_number)) {
+    if (4 == delete_config->card_number) {
+      ASSERT(SUCCESS_ == delete_wallet_from_flash(flash_wallet_index));
+    }
+    return true;
+  }
+  return false;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
+  card_operation_data_t card_data = {0};
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  char heading[50] = "";
+
+  // TODO: Move this check to the delete flow
+  if (true == check_wallet_already_deleted_on_card(delete_config)) {
+    return CARD_OPERATION_SUCCESS;
+  }
+
+  snprintf(
+      heading, sizeof(heading), UI_TEXT_TAP_CARD, delete_config->card_number);
+  instruction_scr_init(ui_text_place_card_below, heading);
+
+  card_data.error_type = CARD_OPERATION_DEFAULT_INVALID;
+  card_data.nfc_data.retries = 5;
 
   while (1) {
-    tap_card_data.lvl3_retry_point = flow_level.level_three;
-    tap_card_data.lvl4_retry_point = flow_level.level_four - 1;
-    tap_card_data.acceptable_cards = encode_card_number(card_number);
-    if (card_number == 1)
-      tap_card_data.tapped_card = 0;
-    if (!tap_card_applet_connection())
-      return;
-    tap_card_data.status = nfc_delete_wallet(&wallet);
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards =
+        encode_card_number(delete_config->card_number);
+    card_data.nfc_data.tapped_card = 0;
+    card_data.nfc_data.init_session_keys = true;
 
-    if (tap_card_data.status == SW_NO_ERROR ||
-        tap_card_data.status == SW_RECORD_NOT_FOUND) {
-      buzzer_start(BUZZER_DURATION);
-      instruction_scr_change_text(ui_text_remove_card_prompt, true);
-      if (card_number != 4)
-        nfc_detect_card_removal();
-      _handle_delete_wallet_success(card_number, flash_wallet_index);
-      break;
-    } else if (tap_card_handle_applet_errors()) {
+    result = card_initialize_applet(&card_data);
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status = nfc_delete_wallet(delete_config->wallet);
+
+      // Handle success case if deleted operation successful or wallet already
+      // deleted on the card
+      if (SW_NO_ERROR == card_data.nfc_data.status ||
+          SW_RECORD_NOT_FOUND == card_data.nfc_data.status) {
+        card_data.error_type = CARD_OPERATION_SUCCESS;
+        card_data.error_message = NULL;
+
+        handle_wallet_deleted_from_card(delete_config);
+        buzzer_start(BUZZER_DURATION);
+        if (4 != delete_config->card_number) {
+          wait_for_card_removal();
+        }
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
+    }
+
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, heading);
+        continue;
+      }
+    }
+
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
       break;
     }
-  }
-}
 
-static void _handle_delete_wallet_success(uint8_t card_number,
-                                          uint8_t flash_wallet_index) {
-  delete_from_kth_card_flash(flash_wallet_index, card_number);
-  if (card_number < 4)
-    flow_level.level_four++;
-  else {
-    flow_level.level_four = 1;
-    flow_level.level_three++;
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
   }
-  instruction_scr_destructor();
+
+  nfc_deselect_card();
+  return result;
 }

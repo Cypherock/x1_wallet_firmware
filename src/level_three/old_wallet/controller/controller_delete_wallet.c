@@ -88,7 +88,7 @@ void delete_wallet_controller() {
       flow_level.level_three = DELETE_WALLET_TAP_CARDS;
     } break;
     case DELETE_WALLET_TAP_CARDS:
-      delete_from_cards_controller();
+      // delete_from_cards_controller();
       break;
     case DELETE_WALLET_FROM_DEVICE: {
       uint8_t index;
