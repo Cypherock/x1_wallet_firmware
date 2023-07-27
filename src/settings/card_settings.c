@@ -137,7 +137,7 @@ void view_card_version(void) {
   }
 
   char msg[100] = {0};
-  char git_revision[CARD_VERSION_GIT_REV_SIZE + 1] = {0};
+  char git_revision[2 * CARD_VERSION_GIT_REV_SIZE + 1] = {0};
 
   uint8_t major_version = (card_version[0] & 0xf0) >> 4;
   uint8_t minor_version = (card_version[0] & 0x0f);
