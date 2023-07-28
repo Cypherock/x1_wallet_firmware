@@ -23,13 +23,15 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef struct card_fetch_share_cfg {
-  uint8_t xcor;               /// xcor for share index for wallet reconstruction
-  uint8_t remaining_cards;    /// Cards remaining to be tapped by user
-  bool skip_card_removal;
-  const char *heading;
-  const char *message;
-} card_fetch_share_cfg_t;
+typedef struct {
+  uint8_t xcor;    /// xcor for share index for wallet reconstruction
+  card_config_t card_config;
+  card_operation_frontent_t frontend;
+} card_fetch_share_configuration_t;
+
+typedef struct {
+  card_info_t card_info;
+} card_fetch_share_response_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -48,7 +50,9 @@ typedef struct card_fetch_share_cfg {
  *
  * @param config A pointer to the configuration of the card fetch and share
  * operation.
+ * @param response Pointer to buffer where response will be filled
  * @return A card_error_type_e value representing the result of the operation.
  */
-card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config);
+card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
+                                   card_fetch_share_response_t *response);
 #endif
