@@ -45,6 +45,8 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/btc_family
         apps/btc_family/btc
         apps/btc_family/dash
+        apps/btc_family/doge
+        apps/btc_family/ltc
 
         src/
         src/menu
