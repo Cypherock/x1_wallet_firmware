@@ -1,14 +1,14 @@
 /**
- * @file    card_return_code.h
+ * @file    card_operation_typedefs.h
  * @author  Cypherock X1 Team
- * @brief   Header file defining error codes for card operations
+ * @brief   Header file defining typedefs for card operations
  *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_RETURN_CODE_H
-#define CARD_RETURN_CODE_H
+#ifndef CARD_OPERATION_TYPEDEFS_H
+#define CARD_OPERATION_TYPEDEFS_H
 
 /*****************************************************************************
  * INCLUDES
@@ -53,15 +53,15 @@ typedef struct {
 } card_config_t;
 
 typedef struct {
+  const char *heading;
+  const char *msg;
+} card_operation_frontend_t;
+
+typedef struct {
   uint32_t status;
   uint8_t tapped_card;
   uint8_t recovery_mode;
 } card_info_t;
-
-typedef struct {
-  const char *heading;
-  const char *msg;
-} card_operation_frontent_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -71,4 +71,4 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-#endif /* CARD_RETURN_CODES_H */
+#endif /* CARD_OPERATION_TYPEDEFS_H */

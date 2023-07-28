@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "card_return_codes.h"
+#include "card_operation_typedefs.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
