@@ -80,16 +80,16 @@ const char *ui_text_mnemonics_number_options[NUMBER_OF_OPTIONS_MNEMONIC_INPUT] =
 // Settings menu text
 const char *ui_text_heading_settings = "Settings";
 const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
-    "Restore wallets from cards",
-    "Check Card health",
+    "Restore Wallets from Cards",
+    "Check Card Health",
     "Rotate Display",
-    "Toggle log export",
+    "Toggle Log export",
     "Toggle Passphrase Step",
     "Factory Reset",
     "Device Info",
     "View Card Version",
     "Regulatory Info",
-    "Pair Card",
+    "Pair Cards",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif
@@ -104,8 +104,8 @@ const char *ui_text_options_passphrase[] = {
 };
 
 const char *ui_text_options_logging_export[] = {
-    "Disable logs",
-    "Enable logs",
+    "Disable Logs",
+    "Enable Logs",
 };
 
 const char *ui_text_pair_card_confirm =
@@ -398,9 +398,9 @@ const char *ui_text_card_authentication_success =
     "Card authentication successful";
 const char *ui_text_card_authentication_failed = "Card authentication failed";
 const char *ui_text_enable_passphrase_step =
-    "Do you want to enable passphrase step on wallet creation?";
+    "Do you want to enable passphrase\n step on wallet creation?";
 const char *ui_text_disable_passphrase_step =
-    "Do you want to disable passphrase step on wallet creation?";
+    "Do you want to disable passphrase\n step on wallet creation?";
 const char *ui_text_warning_txn_fee_too_high =
     "WARNING!\nTransaction fees\ntoo high, proceed?";
 const char *ui_text_enable_log_export = "Do you want to enable logging?";
