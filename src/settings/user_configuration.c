@@ -124,7 +124,7 @@ void toggle_passphrase(void) {
     msg = ui_text_disable_passphrase_step;
   }
 
-  if (core_confirmation(msg, NULL)) {
+  if (core_scroll_page(NULL, msg, NULL)) {
     set_enable_passphrase(
         passphrase_enabled ? PASSPHRASE_DISABLED : PASSPHRASE_ENABLED,
         FLASH_SAVE_NOW);

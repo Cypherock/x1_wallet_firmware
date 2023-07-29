@@ -84,7 +84,7 @@ extern const char *ui_text_options_passphrase[];
 extern const char *ui_text_pair_card_confirm;
 extern const char *ui_text_card_pairing_success;
 extern const char *ui_text_card_pairing_warning;
-#define PAIR_CARD_MESSAGE "%d cards paired successfully"
+#define PAIR_CARD_MESSAGE "%d card(s) paired successfully"
 
 #if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
