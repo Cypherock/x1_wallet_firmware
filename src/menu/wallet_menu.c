@@ -153,6 +153,9 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   char wallet_name[NAME_SIZE] = {0};
+
+  // TODO: Handle cases for wallet in locked, partial, unverified or out of sync
+  // cases.
   get_wallet_name_by_id(data_ptr, (uint8_t *)wallet_name);
 
   menu_init((const char **)ui_text_options_old_wallet,

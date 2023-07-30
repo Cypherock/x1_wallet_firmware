@@ -108,6 +108,7 @@ static bool get_pin_input() {
   }
 
   memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
 
   input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
   if (0 == get_state_on_input_scr(0, 1, 2)) {
@@ -138,10 +139,9 @@ void delete_wallet_flow(const uint8_t *wallet_id) {
     return;
   }
 
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  clear_wallet_data();
 
+  // TODO: Handle cases for wallet with state not `VALID_WALLET`
   if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
     mark_core_error_screen(ui_text_something_went_wrong);
     return;
@@ -160,7 +160,5 @@ void delete_wallet_flow(const uint8_t *wallet_id) {
     }
   }
 
-  memzero(&wallet, sizeof(wallet));
-  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  clear_wallet_data();
 }
