@@ -136,6 +136,12 @@ card_error_type_e card_fetch_wallet_list(
       }
     }
 
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type) {
+      continue;
+    } else {
+      buzzer_start(BUZZER_DURATION);
+    }
+
     if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
         (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
       const char *error_msg = card_data.error_message;

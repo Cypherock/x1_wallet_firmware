@@ -160,11 +160,11 @@ static void handle_card_sign_data_operation(
     card_data->nfc_data.status = get_card_auth_signature(
         sign_data->data, sign_data->data_size, sign_data->signature);
 
-    if (SW_NO_ERROR == card_data->nfc_data.status) {
-      buzzer_start(BUZZER_DURATION);
-    }
-
     card_handle_errors(card_data);
+  }
+
+  if (CARD_OPERATION_CARD_REMOVED != card_data->error_type) {
+    buzzer_start(BUZZER_DURATION);
   }
 }
 
