@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    ltc_app.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief   Litecoin app configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,16 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "host_interface.h"
-
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
 #include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "status_api.h"
+
+#include "btc_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -87,9 +80,43 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Check if the purpose index is supported by the Litecoin app.
+ *
+ * @param purpose_index The purpose index to be checked
+ *
+ * @return bool Indicates if the provided purpose index is supported
+ * @retval true The provided purpose index is supported
+ * @retval false The provided purpose index is not supported
+ */
+static bool is_purpose_supported(uint32_t purpose_index);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+
+/**
+ * Litecoin supports Segwit and Native-Segwit but not Taproot unlike Bitcoin
+ * Values can be verified from the following references:
+ * https://github.com/litecoin-project/litecoin/blob/5ac781487cc9589131437b23c69829f04002b97e/src/chainparams.cpp#L65-L177
+ * Secondary reference for aggregated coin info:
+ * https://github.com/trezor/trezor-firmware/blob/a4034097d6386fd938a23e888fc85b7d2ca13df3/common/defs/bitcoin/litecoin.json
+ */
+const btc_config_t ltc_app = {
+    .coin_type = COIN_LTC,
+    .p2pkh_addr_ver = 0x30,
+    .p2sh_addr_ver = 0x32,
+    .legacy_xpub_ver = 0x19da462,
+    .segwit_xpub_ver = 0x1b26ef6,
+    .nsegwit_xpub_ver = 0x4b24746,
+    .bech32_hrp = "ltc",
+    .lunit_name = "LTC",
+    .name = "Litecoin",
+
+    .max_fee = 67000000,
+
+    .is_purpose_supported = is_purpose_supported,
+};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -99,51 +126,18 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static bool is_purpose_supported(uint32_t purpose_index) {
+  if (PURPOSE_LEGACY != purpose_index && PURPOSE_SEGWIT != purpose_index &&
+      PURPOSE_NSEGWIT != purpose_index) {
+    return false;
+  }
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    default: {
-      // TODO: send core error about invalid applet id
-      break;
-    }
-  }
-
-  main_menu_set_update_req(true);
-  return;
+const btc_config_t *get_ltc_app() {
+  return &ltc_app;
 }
