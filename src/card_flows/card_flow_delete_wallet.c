@@ -1,9 +1,7 @@
 /**
- * @file    delete_from_cards_controller.c
+ * @file    card_flow_delete_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Delete from cards controller.
- *          This file contains the implementation of the functions for deleting
- *          wallets from cards.
+ * @brief   Source file containing card flow to delete wallet on the X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -61,11 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_delete_share.h"
-#include "card_internal.h"
-#include "card_utils.h"
+#include "card_operations.h"
 #include "constant_texts.h"
-#include "flash_api.h"
 #include "nfc.h"
 #include "ui_instruction.h"
 
@@ -84,16 +79,26 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * The function `handle_wallet_deleted_from_card` deletes a wallet from a card.
+ * @brief The function "check_card_state_and_delete_wallet" is used to delete a
+ * wallet from the flash memory.
  *
- * @param delete_config A pointer to a structure of type
- * `card_delete_share_cfg_t`, which contains the following members:
+ * @param wallet_name Name of the wallet on flash to be deleted
  *
  * @return void, which means it does not return any value.
  */
-static void handle_wallet_deleted_from_card(
+static void check_card_state_and_delete_wallet(const char *wallet_name);
+
+/**
+ * @brief The function checks if a wallet has already been deleted from a card
+ * and deletes it if the card number is 4.
+ *
+ * @param delete_config A pointer to a structure of type
+ * card_delete_share_cfg_t, which contains the following members:
+ *
+ * @return a boolean value.
+ */
+static bool check_wallet_already_deleted_on_card(
     card_delete_share_cfg_t *delete_config);
 
 /*****************************************************************************
@@ -107,82 +112,58 @@ static void handle_wallet_deleted_from_card(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void handle_wallet_deleted_from_card(
+static void check_card_state_and_delete_wallet(const char *wallet_name) {
+  uint8_t flash_wallet_index = 0xFF;
+  ASSERT(SUCCESS == get_index_by_name(wallet_name, &flash_wallet_index));
+
+  if (0 == get_wallet_card_state(flash_wallet_index)) {
+    ASSERT(SUCCESS_ == delete_wallet_share_from_sec_flash(flash_wallet_index));
+    ASSERT(SUCCESS_ == delete_wallet_from_flash(flash_wallet_index));
+  }
+  return;
+}
+
+static bool check_wallet_already_deleted_on_card(
     card_delete_share_cfg_t *delete_config) {
   uint8_t flash_wallet_index = 0xFF;
-
   ASSERT(SUCCESS ==
          get_index_by_name((const char *)delete_config->wallet->wallet_name,
                            &flash_wallet_index));
-  ASSERT(SUCCESS == delete_from_kth_card_flash(flash_wallet_index,
-                                               delete_config->card_number));
-  return;
+
+  if (card_already_deleted_flash(flash_wallet_index,
+                                 delete_config->card_number)) {
+    return true;
+  }
+  return false;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
-  card_operation_data_t card_data = {0};
-  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
-  char heading[50] = "";
+card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
+  card_delete_share_cfg_t cfg = {.wallet = selected_wallet, .card_number = 0};
+  card_error_type_e error_code = 0;
 
-  snprintf(
-      heading, sizeof(heading), UI_TEXT_TAP_CARD, delete_config->card_number);
-  instruction_scr_init(ui_text_place_card_below, heading);
+  for (int i = 1; i <= 4; i++) {
+    error_code = CARD_OPERATION_DEFAULT_INVALID;
+    cfg.card_number = i;
 
-  card_data.error_type = CARD_OPERATION_DEFAULT_INVALID;
-  card_data.nfc_data.retries = 5;
-
-  while (1) {
-    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    card_data.nfc_data.acceptable_cards =
-        encode_card_number(delete_config->card_number);
-    card_data.nfc_data.tapped_card = 0;
-    card_data.nfc_data.init_session_keys = true;
-
-    result = card_initialize_applet(&card_data);
-    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      card_data.nfc_data.status = nfc_delete_wallet(delete_config->wallet);
-
-      // Handle success case if deleted operation successful or wallet already
-      // deleted on the card
-      if (SW_NO_ERROR == card_data.nfc_data.status ||
-          SW_RECORD_NOT_FOUND == card_data.nfc_data.status) {
-        card_data.error_type = CARD_OPERATION_SUCCESS;
-        card_data.error_message = NULL;
-
-        handle_wallet_deleted_from_card(delete_config);
-        buzzer_start(BUZZER_DURATION);
-        if (4 != delete_config->card_number) {
-          wait_for_card_removal();
-        }
-        break;
-      } else {
-        card_handle_errors(&card_data);
-      }
+    // If wallet already deleted from ith card, skip card tapping
+    if (true == check_wallet_already_deleted_on_card(&cfg)) {
+      error_code = CARD_OPERATION_SUCCESS;
+      continue;
     }
 
-    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
-        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
-      const char *error_msg = card_data.error_message;
-      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
-        // Re-render the instruction screen
-        instruction_scr_init(ui_text_place_card_below, heading);
-        continue;
-      }
-    }
+    // Operation to delete wallet from card and update card state on flash
+    error_code = card_delete_share(&cfg);
 
-    result = handle_wallet_errors(&card_data, &wallet);
-    if (CARD_OPERATION_SUCCESS != result) {
+    if (CARD_OPERATION_SUCCESS != error_code) {
       break;
     }
-
-    // If control reached here, it is an unrecoverable error, so break
-    result = card_data.error_type;
-    break;
   }
 
-  nfc_deselect_card();
-  return result;
+  // If wallet is deleted on all cards, delete from flash as well
+  check_card_state_and_delete_wallet((const char *)cfg.wallet->wallet_name);
+
+  return error_code;
 }

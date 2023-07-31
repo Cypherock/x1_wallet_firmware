@@ -1,17 +1,15 @@
 /**
- * @file    delete_from_cards_controller.c
+ * @file    delete_wallet_flow.c
  * @author  Cypherock X1 Team
- * @brief   Delete from cards controller.
- *          This file contains the implementation of the functions for deleting
- *          wallets from cards.
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   Flow for delete wallet operation on an existing wallet
+ * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2022 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -61,13 +59,18 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_delete_share.h"
-#include "card_internal.h"
-#include "card_utils.h"
+#include "card_flow_delete_wallet.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
-#include "nfc.h"
-#include "ui_instruction.h"
+#include "sha2.h"
+#include "shamir_wrapper.h"
+#include "tasks.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
+#include "ui_state_machine.h"
+#include "wallet.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,17 +88,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * The function `handle_wallet_deleted_from_card` deletes a wallet from a card.
- *
- * @param delete_config A pointer to a structure of type
- * `card_delete_share_cfg_t`, which contains the following members:
- *
- * @return void, which means it does not return any value.
- */
-static void handle_wallet_deleted_from_card(
-    card_delete_share_cfg_t *delete_config);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -103,86 +95,70 @@ static void handle_wallet_deleted_from_card(
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
+extern char *ALPHA_NUMERIC;
 
+extern Wallet wallet;
+extern Wallet_credential_data wallet_credential_data;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void handle_wallet_deleted_from_card(
-    card_delete_share_cfg_t *delete_config) {
-  uint8_t flash_wallet_index = 0xFF;
+static bool get_pin_input() {
+  if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+    return true;
+  }
 
-  ASSERT(SUCCESS ==
-         get_index_by_name((const char *)delete_config->wallet->wallet_name,
-                           &flash_wallet_index));
-  ASSERT(SUCCESS == delete_from_kth_card_flash(flash_wallet_index,
-                                               delete_config->card_number));
-  return;
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+  memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
+
+  input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+  if (0 == get_state_on_input_scr(0, 1, 2)) {
+    sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
+               strnlen(flow_level.screen_input.input_text,
+                       sizeof(flow_level.screen_input.input_text)),
+               wallet_credential_data.password_single_hash);
+    sha256_Raw(wallet_credential_data.password_single_hash,
+               SHA256_DIGEST_LENGTH,
+               wallet.password_double_hash);
+
+    memzero(flow_level.screen_input.input_text,
+            sizeof(flow_level.screen_input.input_text));
+    return true;
+  }
+
+  return false;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
-  card_operation_data_t card_data = {0};
-  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
-  char heading[50] = "";
+void delete_wallet_flow(const uint8_t *wallet_id) {
+  ASSERT(NULL != wallet_id);
 
-  snprintf(
-      heading, sizeof(heading), UI_TEXT_TAP_CARD, delete_config->card_number);
-  instruction_scr_init(ui_text_place_card_below, heading);
+  if (!core_scroll_page(
+          NULL, ui_text_need_all_x1cards_to_delete_wallet_entirely, NULL)) {
+    return;
+  }
 
-  card_data.error_type = CARD_OPERATION_DEFAULT_INVALID;
-  card_data.nfc_data.retries = 5;
+  clear_wallet_data();
+
+  // TODO: Handle cases for wallet with state not `VALID_WALLET`
+  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
+    mark_core_error_screen(ui_text_something_went_wrong);
+    return;
+  }
 
   while (1) {
-    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    card_data.nfc_data.acceptable_cards =
-        encode_card_number(delete_config->card_number);
-    card_data.nfc_data.tapped_card = 0;
-    card_data.nfc_data.init_session_keys = true;
-
-    result = card_initialize_applet(&card_data);
-    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      card_data.nfc_data.status = nfc_delete_wallet(delete_config->wallet);
-
-      // Handle success case if deleted operation successful or wallet already
-      // deleted on the card
-      if (SW_NO_ERROR == card_data.nfc_data.status ||
-          SW_RECORD_NOT_FOUND == card_data.nfc_data.status) {
-        card_data.error_type = CARD_OPERATION_SUCCESS;
-        card_data.error_message = NULL;
-
-        handle_wallet_deleted_from_card(delete_config);
-        buzzer_start(BUZZER_DURATION);
-        if (4 != delete_config->card_number) {
-          wait_for_card_removal();
-        }
-        break;
-      } else {
-        card_handle_errors(&card_data);
-      }
-    }
-
-    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
-        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
-      const char *error_msg = card_data.error_message;
-      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
-        // Re-render the instruction screen
-        instruction_scr_init(ui_text_place_card_below, heading);
-        continue;
-      }
-    }
-
-    result = handle_wallet_errors(&card_data, &wallet);
-    if (CARD_OPERATION_SUCCESS != result) {
+    if (!get_pin_input()) {
       break;
     }
 
-    // If control reached here, it is an unrecoverable error, so break
-    result = card_data.error_type;
-    break;
+    if (CARD_OPERATION_INCORRECT_PIN_ENTERED ==
+        card_flow_delete_wallet(&wallet)) {
+      continue;
+    } else {
+      break;
+    }
   }
 
-  nfc_deselect_card();
-  return result;
+  clear_wallet_data();
 }
