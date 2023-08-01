@@ -103,7 +103,7 @@ card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
     return result;
   }
 
-  card_fetch_share_configuration_t configuration = {0};
+  card_fetch_share_config_t configuration = {0};
   configuration.xcor = 0;
   configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
   configuration.operation.expected_family_id = get_family_id();

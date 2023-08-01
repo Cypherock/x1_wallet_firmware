@@ -131,7 +131,7 @@ static void _handle_retrieve_wallet_success(uint8_t xcor) {
 void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
 }
 
-card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
+card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
                                    card_fetch_share_response_t *response) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
 

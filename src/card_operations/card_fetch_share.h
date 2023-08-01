@@ -27,7 +27,7 @@ typedef struct {
   uint8_t xcor;    /// xcor for share index for wallet reconstruction
   card_operation_config_t operation;
   card_operation_frontend_t frontend;
-} card_fetch_share_configuration_t;
+} card_fetch_share_config_t;
 
 typedef struct {
   card_info_t card_info;
@@ -53,6 +53,6 @@ typedef struct {
  * @param response Pointer to buffer where response will be filled
  * @return A card_error_type_e value representing the result of the operation.
  */
-card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
+card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
                                    card_fetch_share_response_t *response);
 #endif
