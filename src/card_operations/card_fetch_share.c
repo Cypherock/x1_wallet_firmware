@@ -133,16 +133,23 @@ void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
 
 card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
                                    card_fetch_share_response_t *response) {
-  card_operation_data_t card_data = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+
+  if (NULL == config || NULL == config->operation.expected_family_id) {
+    return result;
+  }
+
+  card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
   instruction_scr_init(config->frontend.msg, config->frontend.heading);
 
   while (1) {
-    card_data.nfc_data.acceptable_cards = config->card_config.acceptable_cards;
-    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards = config->operation.acceptable_cards;
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
 
     card_initialize_applet(&card_data);
 
@@ -154,7 +161,7 @@ card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
         _handle_retrieve_wallet_success(config->xcor);
         buzzer_start(BUZZER_DURATION);
 
-        if (false == config->card_config.skip_card_removal) {
+        if (false == config->operation.skip_card_removal) {
           wait_for_card_removal();
         }
         result = CARD_OPERATION_SUCCESS;
@@ -184,11 +191,15 @@ card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
     break;
   }
 
+  if (response->card_info.tapped_family_id) {
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
+  }
   response->card_info.tapped_card = card_data.nfc_data.tapped_card;
   response->card_info.recovery_mode = card_data.nfc_data.recovery_mode;
   response->card_info.status = card_data.nfc_data.status;
 
   nfc_deselect_card();
-  LOG_ERROR("Card Error type: %d", card_data.error_type);
   return result;
 }

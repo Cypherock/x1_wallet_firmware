@@ -25,7 +25,7 @@
  *****************************************************************************/
 typedef struct {
   uint8_t xcor;    /// xcor for share index for wallet reconstruction
-  card_config_t card_config;
+  card_operation_config_t operation;
   card_operation_frontend_t frontend;
 } card_fetch_share_configuration_t;
 
