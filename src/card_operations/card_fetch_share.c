@@ -135,7 +135,9 @@ card_error_type_e card_fetch_share(card_fetch_share_configuration_t *config,
                                    card_fetch_share_response_t *response) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
 
-  if (NULL == config || NULL == config->operation.expected_family_id) {
+  // X-Coordinate cannot be more than the number of shares
+  if (NULL == config || TOTAL_NUMBER_OF_SHARES <= config->xcor ||
+      NULL == config->operation.expected_family_id) {
     return result;
   }
 
