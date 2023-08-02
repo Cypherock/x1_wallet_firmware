@@ -96,13 +96,55 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
-  // TODO: Support this for threshold number of cards
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
 
-  card_fetch_share_cfg_t configuration = {.heading = ui_text_tap_1_2_cards,
-                                          .message = ui_text_place_card_below,
-                                          .skip_card_removal = true,
-                                          .xcor = 0,
-                                          .remaining_cards = 0xF};
+  // Validate threshold
+  if (threshold > MAX_KEYSTORE_ENTRY) {
+    return result;
+  }
 
-  return card_fetch_share(&configuration);
+  card_fetch_share_config_t configuration = {0};
+  configuration.xcor = 0;
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = ui_text_tap_1_2_cards;
+  configuration.frontend.msg = ui_text_place_card_below;
+  configuration.operation.skip_card_removal = false;
+
+  card_fetch_share_response_t response = {0};
+  response.card_info.tapped_family_id = NULL;
+
+  for (uint8_t xcoord = 0; xcoord < threshold; xcoord++) {
+    // Don't accept the same card again
+    configuration.operation.acceptable_cards ^= response.card_info.tapped_card;
+
+    // Accept only paired cards
+    configuration.operation.expected_family_id = get_family_id();
+
+    // Change heading for second card onwards
+    if (0 != xcoord) {
+      configuration.frontend.heading = ui_text_tap_2_2_cards;
+    }
+
+    // Skip card removal in last card
+    if (threshold == xcoord + 1) {
+      configuration.operation.skip_card_removal = true;
+    }
+
+    configuration.xcor = xcoord;
+
+    // Reset response
+    response.card_info.status = 0;
+    response.card_info.tapped_card = 0;
+    response.card_info.recovery_mode = 0;
+
+    result = CARD_OPERATION_DEFAULT_INVALID;
+    result = card_fetch_share(&configuration, &response);
+
+    if (CARD_OPERATION_SUCCESS != result) {
+      break;
+    }
+  }
+
+  return result;
 }

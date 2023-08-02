@@ -62,7 +62,7 @@
 #include "card_fetch_wallet_list.h"
 
 #include "card_internal.h"
-#include "card_return_codes.h"
+#include "card_operation_typedefs.h"
 #include "card_utils.h"
 #include "flash_api.h"
 #include "nfc.h"

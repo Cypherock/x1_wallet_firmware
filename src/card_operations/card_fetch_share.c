@@ -131,18 +131,27 @@ static void _handle_retrieve_wallet_success(uint8_t xcor) {
 void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold) {
 }
 
-card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
-  ASSERT(NULL != config);
+card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
+                                   card_fetch_share_response_t *response) {
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+
+  // X-Coordinate cannot be more than the number of shares
+  if (NULL == config || TOTAL_NUMBER_OF_SHARES <= config->xcor ||
+      NULL == config->operation.expected_family_id) {
+    return result;
+  }
 
   card_operation_data_t card_data = {0};
-  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  instruction_scr_init(config->message, config->heading);
+  instruction_scr_init(config->frontend.msg, config->frontend.heading);
+
   while (1) {
-    card_data.nfc_data.acceptable_cards = config->remaining_cards;
-    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.acceptable_cards = config->operation.acceptable_cards;
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
 
     card_initialize_applet(&card_data);
 
@@ -153,10 +162,10 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
         remaining_cards = card_data.nfc_data.acceptable_cards;
         _handle_retrieve_wallet_success(config->xcor);
         buzzer_start(BUZZER_DURATION);
-        if (false == config->skip_card_removal) {
+
+        if (false == config->operation.skip_card_removal) {
           wait_for_card_removal();
         }
-
         result = CARD_OPERATION_SUCCESS;
         break;
       } else {
@@ -169,7 +178,7 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
-        instruction_scr_init(config->message, config->heading);
+        instruction_scr_init(config->frontend.msg, config->frontend.heading);
         continue;
       }
     }
@@ -184,9 +193,15 @@ card_error_type_e card_fetch_share(card_fetch_share_cfg_t *config) {
     break;
   }
 
-  // Update remaining cards in caller's config
-  config->remaining_cards = card_data.nfc_data.acceptable_cards;
+  if (response->card_info.tapped_family_id) {
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
+  }
+  response->card_info.tapped_card = card_data.nfc_data.tapped_card;
+  response->card_info.recovery_mode = card_data.nfc_data.recovery_mode;
+  response->card_info.status = card_data.nfc_data.status;
+
   nfc_deselect_card();
-  LOG_ERROR("Card Error type: %d", card_data.error_type);
   return result;
 }
