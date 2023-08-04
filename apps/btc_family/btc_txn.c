@@ -89,6 +89,8 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
+typedef btc_sign_txn_signature_response_signature_t scrip_sig_t;
+
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -216,13 +218,12 @@ static bool get_user_verification();
  *
  * @return
  */
-static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]);
+static bool sign_input(scrip_sig_t *signatures);
 
 /**
  *
  */
-static bool send_script_sig(btc_query_t *query,
-                            const uint8_t sigs[][SCRIPT_SIG_SIZE]);
+static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -504,7 +505,7 @@ static bool validate_change_address(const HDNode *acc_node) {
   return status;
 }
 
-static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]) {
+static bool sign_input(scrip_sig_t *signatures) {
   uint8_t buffer[64] = {0};
   HDNode node = {0};
   HDNode t_node = {0};
@@ -535,11 +536,12 @@ static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]) {
     memcpy(&t_node, &node, sizeof(HDNode));
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].change_index);
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].address_index);
+    hdnode_fill_public_key(&t_node);
     ecdsa_sign_digest(
-        curve, t_node.private_key, buffer, signatures[idx], NULL, NULL);
-    uint8_t script_len = btc_sig_to_script_sig(
-        signatures[idx], t_node.public_key, signatures[idx]);
-    if (0 == script_len || false == status) {
+        curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
+    signatures[idx].size = btc_sig_to_script_sig(
+        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    if (0 == signatures[idx].size || false == status) {
       // early exit as digest could not be calculated
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
       status = false;
@@ -552,8 +554,7 @@ static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]) {
   return status;
 }
 
-static bool send_script_sig(btc_query_t *query,
-                            const uint8_t sigs[][SCRIPT_SIG_SIZE]) {
+static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs) {
   btc_result_t result = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
   result.sign_txn.which_response = BTC_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
 
@@ -562,7 +563,8 @@ static bool send_script_sig(btc_query_t *query,
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
       return false;
     }
-    memcpy(result.sign_txn.signature.signature, sigs[idx], SCRIPT_SIG_SIZE);
+    memcpy(
+        &result.sign_txn.signature.signature, &sigs[idx], sizeof(scrip_sig_t));
     btc_send_result(&result);
   }
   return true;
@@ -575,12 +577,12 @@ static bool send_script_sig(btc_query_t *query,
 void btc_sign_transaction(btc_query_t *query) {
   btc_txn_context = (btc_txn_context_t *)malloc(sizeof(btc_txn_context_t));
   memzero(btc_txn_context, sizeof(btc_txn_context_t));
-  uint8_t signatures[TXN_MAX_INPUTS][SCRIPT_SIG_SIZE] = {0};
+  scrip_sig_t signatures[TXN_MAX_INPUTS] = {0};
 
   if (handle_initiate_query(query) && fetch_transaction_meta(query) &&
       fetch_valid_input(query) && fetch_valid_output(query) &&
-      get_user_verification() && sign_input(signatures) &&
-      send_script_sig(query, signatures)) {
+      get_user_verification() && sign_input(&signatures[0]) &&
+      send_script_sig(query, &signatures[0])) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
