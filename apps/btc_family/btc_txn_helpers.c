@@ -96,42 +96,47 @@
  *          would it take to execute a txn in block. Refer
  * https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-size-calculations
  *
- * @param [in] txn_ctx Instance of unsigned_txn
+ * @param [in] txn_ctx Instance of btc_txn_context_t
  *
  * @return weight of the transaction
- * @retval
  */
 STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
 
 /**
+ * @brief Digests all outputs of the current transaction into the provided
+ * sha256 hasher context.
  *
  * @param context Reference to an instance of btc_txn_context_t
  * @param sha_256_ctx Reference to the SHA256_CTX
  *
  * @return bool Indicating if all the outputs are digested
- * @retval true If all the outputs are digested into the
+ * @retval true If all the outputs are digested into the provided sha256 context
  */
 STATIC bool digest_outputs(const btc_txn_context_t *context,
                            SHA256_CTX *sha_256_ctx);
 
 /**
- * @brief
+ * @brief Calculates digest for p2pkh according to the BIP definition
  *
- * @param context
- * @param input_index
- * @param digest
- * @return
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
  */
 STATIC void calculate_p2pkh_digest(const btc_txn_context_t *context,
                                    uint8_t input_index,
                                    uint8_t *digest);
 
 /**
+ * @brief Calculates digest according to the serialization format defined in
+ * BIP-0143.
  *
- * @param context
- * @param input_index
- * @param digest
- * @return
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ *
+ * @return bool Indicating if the specified input was digested or not
+ * @retval true If the digest was calculated successfully
+ * @retval false If the digest was not calculated due to missing segwit cache
  */
 STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
                                     uint8_t input_index,

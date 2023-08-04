@@ -212,16 +212,52 @@ static bool fetch_valid_output(btc_query_t *query);
 static bool get_user_verification();
 
 /**
+ * @brief Validates the change output for an exact match with wallet's derived
+ * change address.
+ * @details The function ensures that the change output is spendable by the
+ * wallet by verifying the raw public address in the output script. The function
+ * ensures all its local HDNode instances are cleared before exit to ensure
+ * safety from key leakage.
  *
- * @param query Reference to an instance of btc_query_t for storing the
- * transient outputs.
+ * @param acc_node Reference to the valid account node
+ * @return bool Indicating if the validation passed.
+ * @retval true If the validation passed.
+ * @retval false If the validation failed.
+ */
+static bool validate_change_address(const HDNode *acc_node);
+
+/**
+ * @brief Signs all the inputs following SIGHASH_ALL type and prepares script
+ * sigs.
+ * @details The function internally calls wallet reconstruction sub-flow to get
+ * access to the seed. Each input is signed with their respective private key
+ * derived at the specified path. The function additionally validates the change
+ * output address for sanity. The function will ensure clearing of all the keys
+ * and other sensitive data (such as seed, HDNode, etc.) before exiting and
+ * should ensure no leakage of secret data.
  *
- * @return
+ * @param signatures Reference to the buffer sufficient enough for storing all
+ * the scriptSigs of the transaction being signed. Should be able to store
+ * >=btc_txn_context->metadata.input_count.
+ *
+ * @return bool Indicating if scriptSig for all the provided inputs was
+ * successfully generated
+ * @retval true If all the scriptSigs are generated without any error
+ * @retval false If any of the scriptSig failed to generate
  */
 static bool sign_input(scrip_sig_t *signatures);
 
 /**
+ * @brief Sends the generated scriptSigs to the host one-at-a-time
  *
+ * @param query Reference to an instance of btc_query_t to store transient
+ * requests from the host
+ * @param sigs Reference to a list of prepared scriptSigs. The buffer should
+ * hold at least btc_txn_context->metadata.input_count of scriptSigs
+ *
+ * @return bool Indicating if all the scriptSig is sent to the host
+ * @retval true If all the scriptSig was sent to host successfully
+ * @retval false If the host responded with unknown/wrong query
  */
 static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 
