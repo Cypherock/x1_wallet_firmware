@@ -80,33 +80,6 @@ extern char *HEX;
 char card_id_fetched[2 * CARD_ID_SIZE + 1];
 
 extern bool no_wallet_on_cards;
-void tap_a_card_and_sync_task() {
-  switch (flow_level.level_three) {    // revert back from level_three to
-                                       // level_four if broken
-    case TAP_ONE_CARD_TAP_A_CARD_FRONTEND:
-      instruction_scr_init(ui_text_tap_a_card, NULL);
-      mark_event_over();
-      break;
-    case TAP_ONE_CARD_TAP_A_CARD_BACKEND:
-      mark_event_over();
-      break;
-    case TAP_ONE_CARD_SUCCESS_MESSAGE:
-      if (no_wallet_on_cards == true) {
-        reset_flow_level();
-        flow_level.show_error_screen = true;
-        snprintf(flow_level.error_screen_text,
-                 90,
-                 "%s",
-                 ui_text_wallet_not_found_on_x1card);
-      } else {
-        delay_scr_init(ui_text_sync_wallets_next_steps, DELAY_TIME);
-      }
-
-      break;
-    default:
-      break;
-  }
-}
 
 void tasks_update_card_id() {
   switch (flow_level.level_three) {

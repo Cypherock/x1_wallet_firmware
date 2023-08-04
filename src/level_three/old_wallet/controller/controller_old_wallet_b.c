@@ -123,7 +123,6 @@ void level_three_old_wallet_controller_b() {
     } break;
 
     case LEVEL_THREE_SYNC_WALLET: {
-      sync_cards_controller_b();
     } break;
 
     default:

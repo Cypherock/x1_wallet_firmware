@@ -477,26 +477,6 @@ void verify_wallet_controller();
 void verify_wallet_controller_b();
 
 /**
- * @brief Sync all the available wallets on the cards with the device.
- * @details This controller is used to sync all the available wallets on the
- * cards with the device. The sync is done one wallet at a time.
- *
- * @see sync_wallet_controller_b(), sync_cards_task()
- * @since v1.0.0
- */
-void sync_cards_controller();
-
-/**
- * @brief Back button controller for sync wallet flow.
- * @details This controller is used to handle back button events during sync
- * wallet flow.
- *
- * @see sync_cards_controller(), sync_cards_task()\
- * @since v1.0.0
- */
-void sync_cards_controller_b();
-
-/**
  * @brief
  * @details
  *

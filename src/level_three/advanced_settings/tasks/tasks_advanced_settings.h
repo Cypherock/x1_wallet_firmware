@@ -26,8 +26,7 @@
  * upgrade, card verification along with card pairing.
  *
  * @see LEVEL_THREE_ADVANCED_SETTINGS_TASKS, initial_verify_card_task(),
- * verify_card_task(),  tap_a_card_and_sync_task(),
- * sync_cards_task(), task_device_provision()
+ * verify_card_task(), task_device_provision()
  * @since v1.0.0
  */
 void level_three_advanced_settings_tasks();
