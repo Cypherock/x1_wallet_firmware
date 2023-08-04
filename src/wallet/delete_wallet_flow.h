@@ -12,6 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "flash_struct.h"
 #include "stdint.h"
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -32,8 +33,8 @@
  * @brief This function deletes the user selected wallet from all cards and
  * device flash.
  *
- * @param wallet_id A pointer to a uint8_t variable that represents the wallet
- * ID.
+ * @param flash_wallet A pointer to a @ref Flash_Wallet object that represents
+ * copy of wallet info on flash.
  */
-void delete_wallet_flow(const uint8_t *wallet_id);
+void delete_wallet_flow(const Flash_Wallet *flash_wallet);
 #endif

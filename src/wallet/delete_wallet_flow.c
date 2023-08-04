@@ -131,8 +131,8 @@ static bool get_pin_input() {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void delete_wallet_flow(const uint8_t *wallet_id) {
-  ASSERT(NULL != wallet_id);
+void delete_wallet_flow(const Flash_Wallet *flash_wallet) {
+  ASSERT(NULL != flash_wallet);
 
   if (!core_scroll_page(
           NULL, ui_text_need_all_x1cards_to_delete_wallet_entirely, NULL)) {
@@ -141,11 +141,10 @@ void delete_wallet_flow(const uint8_t *wallet_id) {
 
   clear_wallet_data();
 
-  // TODO: Handle cases for wallet with state not `VALID_WALLET`
-  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
-    mark_core_error_screen(ui_text_something_went_wrong);
-    return;
-  }
+  // Populate global wallet object with wallet data
+  memcpy(wallet.wallet_id, flash_wallet->wallet_id, WALLET_ID_SIZE);
+  memcpy(wallet.wallet_name, flash_wallet->wallet_name, NAME_SIZE);
+  wallet.wallet_info = flash_wallet->wallet_info;
 
   while (1) {
     if (!get_pin_input()) {

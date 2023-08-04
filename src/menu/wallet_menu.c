@@ -93,7 +93,8 @@ typedef enum {
  * @brief This is the initializer callback for the wallet menu.
  *
  * @param ctx The engine context* from which the flow is invoked
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
+ * @param data_ptr Data pointer here represents the copy of @ref Flash_Wallet
+ * object of selected wallet
  */
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
 
@@ -105,7 +106,8 @@ static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param ui_event The ui event object which triggered the callback
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
+ * @param data_ptr Data pointer here represents the copy of @ref Flash_Wallet
+ * object of selected wallet
  */
 static void wallet_menu_handler(engine_ctx_t *ctx,
                                 ui_event_t ui_event,
@@ -120,7 +122,8 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param p0_evt The p0 event object which triggered the callback
- * @param data_ptr Data pointer here represents the wallet id of selected wallet
+ * @param data_ptr Data pointer here represents the copy of @ref Flash_Wallet
+ * object of selected wallet
  */
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
@@ -128,7 +131,7 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static uint8_t wallet_id[WALLET_ID_SIZE] = {0};
+static Flash_Wallet flash_wallet = {0};
 
 static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .p0_cb = ignore_p0_handler,
@@ -136,7 +139,7 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .usb_cb = NULL,
                                         .nfc_cb = NULL,
                                         .evt_cfg_ptr = &device_nav_evt_config,
-                                        .flow_data_ptr = &wallet_id};
+                                        .flow_data_ptr = &flash_wallet};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -148,38 +151,111 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
                               const void *data_ptr) {
-  ignore_p0_event();
+  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
+
+  if (VALID_WALLET == wallet_ptr->state &&
+      true != wallet_ptr->is_wallet_locked &&
+      0x0f == wallet_ptr->cards_states) {
+    ignore_p0_event();
+  } else {
+    memzero(&wallet_ptr, sizeof(wallet_ptr));
+    /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+     * detected, or a wallet flow was executed */
+    engine_delete_current_flow_step(ctx);
+  }
 }
 
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  char wallet_name[NAME_SIZE] = {0};
+  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
 
-  // TODO: Handle cases for wallet in locked, partial, unverified or out of sync
-  // cases.
-  get_wallet_name_by_id(data_ptr, (uint8_t *)wallet_name);
+  if (1 == wallet_ptr->is_wallet_locked) {
+    ui_scrollable_page(NULL,
+                       ui_text_wallet_lock_continue_to_unlock,
+                       MENU_SCROLL_HORIZONTAL,
+                       true);
+  } else if (0x0f != wallet_ptr->cards_states) {
+    ui_scrollable_page(NULL,
+                       ui_text_wallet_partial_continue_to_delete,
+                       MENU_SCROLL_HORIZONTAL,
+                       true);
+  } else {
+    switch (wallet_ptr->state) {
+      case VALID_WALLET:
+        menu_init((const char **)ui_text_options_old_wallet,
+                  NUMBER_OF_OPTIONS_OLD_WALLET,
+                  (const char *)wallet_ptr->wallet_name,
+                  true);
+        return;
+        break;
 
-  menu_init((const char **)ui_text_options_old_wallet,
-            NUMBER_OF_OPTIONS_OLD_WALLET,
-            (const char *)wallet_name,
+      case VALID_WALLET_WITHOUT_DEVICE_SHARE:
+        ui_scrollable_page(
+            NULL,
+            ui_text_wallet_out_of_sync_continue_to_sync_with_x1cards,
+            MENU_SCROLL_HORIZONTAL,
             true);
-  return;
+        break;
+
+      case INVALID_WALLET:
+        ui_scrollable_page(NULL,
+                           ui_text_creation_failed_delete_wallet,
+                           MENU_SCROLL_HORIZONTAL,
+                           true);
+        break;
+
+      case UNVERIFIED_VALID_WALLET:
+        ui_scrollable_page(NULL,
+                           ui_text_wallet_not_verified_continue_to_verify,
+                           MENU_SCROLL_HORIZONTAL,
+                           true);
+        break;
+
+      default:
+        break;
+    }
+  }
 }
 
 static void wallet_menu_handler(engine_ctx_t *ctx,
                                 ui_event_t ui_event,
                                 const void *data_ptr) {
+  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
+
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case VIEW_SEED: {
-        view_seed_flow(data_ptr);
+        view_seed_flow(wallet_ptr->wallet_id);
         break;
       }
       case DELETE_WALLET: {
-        delete_wallet_flow(data_ptr);
+        delete_wallet_flow(wallet_ptr);
         break;
       }
       default: {
         break;
+      }
+    }
+  } else if (UI_EVENT_CONFIRM == ui_event.event_type) {
+    if (1 == wallet_ptr->is_wallet_locked) {
+      // TODO: Implement is_wallet_locked wallet flow
+    } else if (0x0f != wallet_ptr->cards_states) {
+      delete_wallet_flow(wallet_ptr);
+    } else {
+      switch (wallet_ptr->state) {
+        case VALID_WALLET_WITHOUT_DEVICE_SHARE:
+          // TODO: Handle Sync wallet
+          break;
+
+        case INVALID_WALLET:
+          delete_wallet_flow(wallet_ptr);
+          break;
+
+        case UNVERIFIED_VALID_WALLET:
+          // TODO: Handle verify wallet
+          break;
+
+        default:
+          break;
       }
     }
   } else {
@@ -190,15 +266,16 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
    * detected, or a wallet flow was executed */
   engine_delete_current_flow_step(ctx);
 
+  memzero(wallet_ptr, sizeof(Flash_Wallet));
   return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *wallet_menu_get_step(uint8_t *selected_wallet_id) {
-  ASSERT(NULL != selected_wallet_id);
+const flow_step_t *wallet_menu_get_step(const Flash_Wallet *selected_wallet) {
+  ASSERT(NULL != selected_wallet);
 
-  memcpy(wallet_id, selected_wallet_id, WALLET_ID_SIZE);
+  memcpy(&flash_wallet, selected_wallet, sizeof(Flash_Wallet));
   return &wallet_step;
 }
