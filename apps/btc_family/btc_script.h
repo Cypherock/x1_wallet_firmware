@@ -312,4 +312,21 @@ bool btc_check_script_address(const uint8_t *script,
                               size_t script_len,
                               const uint8_t *public_key);
 
+/**
+ * @brief Prepares the script sig from provided signature and public key
+ * @details The function encodes the script sig according to Bitcoin
+ * specification as defined in the BIP-??. Refer:
+ *
+ * @param sig The non-DER encoded signature data bytes
+ * @param pub_key The compressed public key data bytes
+ * @param script_sig The output script sig buffer
+ *
+ * @return uint8_t Indicating the length of the scriptSig
+ * @retval 0 If any failure faced during generation of scriptSig
+ * @retval >0 Length of the scriptSig
+ */
+uint8_t btc_sig_to_script_sig(const uint8_t *sig,
+                              const uint8_t *pub_key,
+                              uint8_t *script_sig);
+
 #endif

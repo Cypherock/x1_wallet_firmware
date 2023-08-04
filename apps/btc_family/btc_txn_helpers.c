@@ -133,7 +133,7 @@ STATIC void calculate_p2pkh_digest(const btc_txn_context_t *context,
  * @param digest
  * @return
  */
-STATIC void calculate_p2wpkh_digest(const btc_txn_context_t *context,
+STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
                                     uint8_t input_index,
                                     uint8_t *digest);
 
@@ -266,12 +266,12 @@ STATIC void calculate_p2pkh_digest(const btc_txn_context_t *context,
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
 }
 
-STATIC void calculate_p2wpkh_digest(const btc_txn_context_t *context,
+STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
                                     const uint8_t input_index,
                                     uint8_t *digest) {
   if (!context->segwit_cache.filled) {
     // cache is not filled, no benefit to proceed as we depend on it
-    return;
+    return false;
   }
 
   uint8_t buffer[100] = {0};
@@ -318,6 +318,7 @@ STATIC void calculate_p2wpkh_digest(const btc_txn_context_t *context,
   sha256_Final(&sha_256_ctx, digest);
   sha256_Raw(digest, 32, digest);
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  return true;
 }
 
 /*****************************************************************************
@@ -451,19 +452,23 @@ void btc_segwit_init_cache(btc_txn_context_t *context) {
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
 }
 
-void btc_digest_input(const btc_txn_context_t *context,
+bool btc_digest_input(const btc_txn_context_t *context,
                       const uint32_t index,
                       uint8_t *digest) {
+  bool status = true;
   // detect input type and calculate appropriate digest
   btc_sign_txn_input_script_pub_key_t *script =
       &context->inputs[index].script_pub_key;
   btc_script_type_e type = btc_get_script_type(script->bytes, script->size);
 
   if (SCRIPT_TYPE_P2WPKH == type) {
-    // segwit digest calculation
-    calculate_p2wpkh_digest(context, index, digest);
+    // segwit digest calculation; could fail if segwit_cache not filled
+    status = calculate_p2wpkh_digest(context, index, digest);
   } else if (SCRIPT_TYPE_P2PKH == type) {
-    // p2pkh digest calculation
+    // p2pkh digest calculation; has not failure case
     calculate_p2pkh_digest(context, index, digest);
+  } else {
+    status = false;
   }
+  return status;
 }

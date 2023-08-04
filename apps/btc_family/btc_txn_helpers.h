@@ -99,9 +99,9 @@ void btc_segwit_init_cache(btc_txn_context_t *context);
  * @param index`
  * @param sig Reference to a buffer to hold unlocking script
  *
- * @return bool Indicating if the signing succeeded or not
+ * @return bool Indicating if the specified input was digested or not
  */
-void btc_digest_input(const btc_txn_context_t *context,
+bool btc_digest_input(const btc_txn_context_t *context,
                       uint32_t index,
                       uint8_t *sig);
 

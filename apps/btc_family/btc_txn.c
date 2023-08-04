@@ -480,37 +480,41 @@ static bool get_user_verification() {
 }
 
 static bool validate_change_address(const HDNode *acc_node) {
+  bool status = false;
   if (btc_txn_context->change_output_idx == -1) {
     // txn w/o change output should go through
-    return true;
+    return status;
   }
 
   HDNode t_node = {0};
   int idx = btc_txn_context->change_output_idx;
-  memcpy(&t_node, acc_node, sizeof(HDNode));
-
   const btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
   if (false == output->has_changes_index || false == output->is_change) {
-    return false;
+    return status;
   }
+
+  memcpy(&t_node, acc_node, sizeof(HDNode));
   hdnode_private_ckd(&t_node, 1);
   hdnode_private_ckd(&t_node, output->changes_index);
   hdnode_fill_public_key(&t_node);
-  return btc_check_script_address(output->script_pub_key.bytes,
-                                  output->script_pub_key.size,
-                                  t_node.public_key);
+  status = btc_check_script_address(output->script_pub_key.bytes,
+                                    output->script_pub_key.size,
+                                    t_node.public_key);
+  memzero(&t_node, sizeof(HDNode));
+  return status;
 }
 
 static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]) {
   uint8_t buffer[64] = {0};
   HDNode node = {0};
   HDNode t_node = {0};
+  bool status = false;
   const uint32_t *hd_path = btc_txn_context->init_info.derivation_path;
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
   if (!reconstruct_seed_flow(btc_txn_context->init_info.wallet_id, buffer)) {
     memzero(buffer, sizeof(buffer));
     // TODO: handle errors of reconstruction flow
-    return false;
+    return status;
   }
 
   // populate hashes cache for segwit transaction types
@@ -519,24 +523,33 @@ static bool sign_input(uint8_t signatures[][SCRIPT_SIG_SIZE]) {
       false == validate_change_address(&node)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
+    memzero(&node, sizeof(HDNode));
     memzero(buffer, sizeof(buffer));
-    return false;
+    return status;
   }
 
+  status = true;
   for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
     // generate the input digest and respective private key
-    btc_digest_input(btc_txn_context, idx, buffer);
+    status = btc_digest_input(btc_txn_context, idx, buffer);
     memcpy(&t_node, &node, sizeof(HDNode));
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].change_index);
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].address_index);
     ecdsa_sign_digest(
         curve, t_node.private_key, buffer, signatures[idx], NULL, NULL);
-    btc_sig_to_script_sig(signatures[idx], t_node.public_key, signatures[idx]);
+    uint8_t script_len = btc_sig_to_script_sig(
+        signatures[idx], t_node.public_key, signatures[idx]);
+    if (0 == script_len || false == status) {
+      // early exit as digest could not be calculated
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      status = false;
+      break;
+    }
   }
   memzero(&node, sizeof(HDNode));
   memzero(&t_node, sizeof(HDNode));
   memzero(buffer, sizeof(buffer));
-  return true;
+  return status;
 }
 
 static bool send_script_sig(btc_query_t *query,

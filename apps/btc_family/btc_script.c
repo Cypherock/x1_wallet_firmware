@@ -65,6 +65,7 @@
 #include "base58.h"
 #include "bip32.h"
 #include "btc_priv.h"
+#include "memzero.h"
 #include "ripemd160.h"
 #include "segwit_addr.h"
 
@@ -246,4 +247,27 @@ bool btc_check_script_address(const uint8_t *script,
 
   hasher_Raw(HASHER_SHA2_RIPEMD, public_key, BTC_SHORT_PUB_KEY_SIZE, digest);
   return (memcmp(digest, &script[offset], RIPEMD160_DIGEST_LENGTH) == 0);
+}
+
+uint8_t btc_sig_to_script_sig(const uint8_t *sig,
+                              const uint8_t *pub_key,
+                              uint8_t *script_sig) {
+  uint8_t script_sig_len = 0;
+  if (NULL == sig || NULL == pub_key || NULL == script_sig) {
+    return script_sig_len;
+  }
+
+  uint8_t script[128] = {0};
+  memzero(script, sizeof(script));
+  uint8_t der_sig_len = ecdsa_sig_to_der(sig, &script[1]);
+
+  // PUSHDATA Opcode(1) + der_sig_len + SigHash Code(1) + PUSHDATA Opcode(1) +
+  // Public Key(33)
+  script_sig_len = 1 + der_sig_len + 2 + 33;
+  script[0] = der_sig_len + 1;
+  script[1 + der_sig_len] = 1;         // sighash code: 1
+  script[1 + der_sig_len + 1] = 33;    // push data opcode: 33
+  memcpy(&script[1 + der_sig_len + 1 + 1], pub_key, 33);
+  memcpy(script_sig, script, 128);
+  return script_sig_len;
 }

@@ -137,17 +137,4 @@ bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth);
  */
 void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
 
-/**
- * @brief Prepares the script sig from provided signature and public key
- * @details The function encodes the script sig according to Bitcoin
- * specification as defined in the BIP-??. Refer:
- *
- * @param sig The non-DER encoded signature data bytes
- * @param pub_key The compressed public key data bytes
- * @param script_sig The output script sig buffer
- */
-void btc_sig_to_script_sig(const uint8_t *sig,
-                           const uint8_t *pub_key,
-                           uint8_t *script_sig);
-
 #endif
