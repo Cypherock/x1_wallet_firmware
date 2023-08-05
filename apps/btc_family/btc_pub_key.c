@@ -164,7 +164,6 @@ static bool check_which_request(const btc_query_t *query,
 static bool validate_request_data(btc_get_public_key_request_t *request) {
   bool status = true;
 
-  // TODO: Enable btc/coin specific check
   if (!btc_derivation_path_guard(request->initiate.derivation_path,
                                  request->initiate.derivation_path_count)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

@@ -31,9 +31,6 @@
 
 #define SATOSHI_PER_BTC 100000000
 
-// Refer the flow control list: https://en.bitcoin.it/wiki/Script#Flow_control
-#define OP_RETURN 0x6A
-
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -125,5 +122,19 @@ bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver);
  * @retval false otherwise
  */
 bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth);
+
+/**
+ * @brief Formats the provided satoshi value to equivalent string formatted BTC
+ * value
+ * @details The function ensures appropriate decimal precision in the formatted
+ * string. In the other words, the function can handle variable precision
+ * on-the-fly based on the provided value. Refer:
+ * https://developer.bitcoin.org/devguide/payment_processing.html#plain-text
+ *
+ * @param value_in_sat The value in Satoshi unit to be encoded to BTC
+ * @param msg The output buffer for equivalent string formatted BTC value
+ * @param msg_len The size of the output buffer
+ */
+void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
 
 #endif

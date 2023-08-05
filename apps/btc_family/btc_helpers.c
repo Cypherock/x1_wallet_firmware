@@ -199,3 +199,11 @@ bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   }
   return status;
 }
+
+void format_value(const uint64_t value_in_sat,
+                  char *msg,
+                  const size_t msg_len) {
+  uint8_t precision = get_floating_precision(value_in_sat, SATOSHI_PER_BTC);
+  double fee_in_btc = 1.0 * value_in_sat / (SATOSHI_PER_BTC);
+  snprintf(msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_app->lunit_name);
+}

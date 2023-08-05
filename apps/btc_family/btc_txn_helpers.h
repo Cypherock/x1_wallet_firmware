@@ -52,16 +52,18 @@
  */
 int btc_verify_input(const uint8_t *raw_txn,
                      uint32_t size,
-                     const btc_txn_input_t *input);
+                     const btc_sign_txn_input_t *input);
 
 /**
- * @brief
- * @details
+ * @brief Calculates an estimated upper cap on the transaction fee.
+ * @details The function calculates the fee according to the assumed upper cap
+ * of coin.max_fee per kb. This function is only providing the threshold value
+ * of transaction fee above which, user should be prompted with a warning.
  *
- * @param [in] unsigned_txn_ptr Instance of unsigned_txn
+ * @param txn_ctx Instance of btc_txn_context_t
  *
- * @return
- * @retval
+ * @return uint64_t Value for the transaction fee
+ * @retval Upper limit on the transaction fee in satoshi (smallest unit for BTC)
  */
 uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx);
 
@@ -83,16 +85,38 @@ uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx);
 bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee);
 
 /**
- * @brief Formats the provided satoshi value to equivalent string formatted BTC
- * value
- * @details The function ensures appropriate decimal precision in the formatted
- * string. In the other words, the function can handle variable precision
- * on-the-fly based on the provided value.
+ * @brief The function populates the cache of hashes for signig segwit
+ * transaction.
+ * @details The function fills the calculated cache. The cache consists of the
+ * common piece of information to be serialized for signing a segwit input.
+ * These are 3 digests calculated over different pieces of information
+ * serialized from an unsigned transaction; namely hashPrevouts, hashSequence,
+ * hashOutputs. For examples refer:
+ * https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#user-content-Native_P2WPKH
  *
- * @param value_in_sat The value in Satoshi unit to be encoded to BTC
- * @param msg The output buffer for equivalent string formatted BTC value
- * @param msg_len The size of the output buffer
+ * @param context Reference to the context for the current transaction to be
+ * signed
  */
-void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
+void btc_segwit_init_cache(btc_txn_context_t *context);
+
+/**
+ * @brief Prepares digest for the specified input to be signed.
+ * @details The function prepares digest in conformation to the BIP definitions
+ * for each of the input type. Currently, the function supports only 2 types of
+ * input namely, P2PKH & P2WPKH. The prepared digest can be signed by a valid
+ * private key to spend the input.
+ *
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index for the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ *
+ * @return bool Indicating if the specified input was digested or not
+ * @retval true If the digest was calculated successfully
+ * @retval false If the digest was not calculated. This could be because the
+ * segwit cache is not filed or the input type is other than P2PKH and P2WPKH.
+ */
+bool btc_digest_input(const btc_txn_context_t *context,
+                      uint32_t index,
+                      uint8_t *digest);
 
 #endif    // BTC_TXN_HELPERS_H

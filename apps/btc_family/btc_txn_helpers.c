@@ -64,7 +64,9 @@
 
 #include <stdio.h>
 
+#include "bignum.h"
 #include "btc_helpers.h"
+#include "btc_script.h"
 #include "utils.h"
 
 /*****************************************************************************
@@ -94,12 +96,51 @@
  *          would it take to execute a txn in block. Refer
  * https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-size-calculations
  *
- * @param [in] txn_ctx Instance of unsigned_txn
+ * @param [in] txn_ctx Instance of btc_txn_context_t
  *
  * @return weight of the transaction
- * @retval
  */
 STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
+
+/**
+ * @brief Digests all outputs of the current transaction into the provided
+ * sha256 hasher context.
+ *
+ * @param context Reference to an instance of btc_txn_context_t
+ * @param sha_256_ctx Reference to the SHA256_CTX
+ *
+ * @return bool Indicating if all the outputs are digested
+ * @retval true If all the outputs are digested into the provided sha256 context
+ */
+STATIC bool digest_outputs(const btc_txn_context_t *context,
+                           SHA256_CTX *sha_256_ctx);
+
+/**
+ * @brief Calculates digest for p2pkh according to the BIP definition
+ *
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ */
+STATIC void calculate_p2pkh_digest(const btc_txn_context_t *context,
+                                   uint8_t input_index,
+                                   uint8_t *digest);
+
+/**
+ * @brief Calculates digest according to the serialization format defined in
+ * BIP-0143.
+ *
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ *
+ * @return bool Indicating if the specified input was digested or not
+ * @retval true If the digest was calculated successfully
+ * @retval false If the digest was not calculated due to missing segwit cache
+ */
+STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
+                                    uint8_t input_index,
+                                    uint8_t *digest);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -157,13 +198,141 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
   return weight;
 }
 
+STATIC bool digest_outputs(const btc_txn_context_t *context,
+                           SHA256_CTX *sha_256_ctx) {
+  uint8_t buffer[100] = {0};
+  for (uint8_t idx = 0; idx < context->metadata.output_count; idx++) {
+    btc_sign_txn_output_t *output = &context->outputs[idx];
+
+    // digest the 64-bit value
+    uint64_t val = context->outputs[idx].value;
+    REVERSE64(val, val);
+    dec_to_hex(val, buffer, 8);
+    sha256_Update(sha_256_ctx, buffer, 8);
+
+    // correct the encoding for size to CompactSize. Refer:
+    buffer[0] = output->script_pub_key.size;
+    sha256_Update(sha_256_ctx, buffer, 1);
+    sha256_Update(sha_256_ctx, output->script_pub_key.bytes, buffer[0]);
+  }
+}
+
+STATIC void calculate_p2pkh_digest(const btc_txn_context_t *context,
+                                   const uint8_t input_index,
+                                   uint8_t *digest) {
+  uint8_t buffer[100] = {0};
+  SHA256_CTX sha_256_ctx = {0};
+
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  sha256_Init(&sha_256_ctx);
+
+  // digest version and input count
+  write_le(buffer, context->metadata.version);
+  buffer[4] = context->metadata.input_count;
+  sha256_Update(&sha_256_ctx, buffer, 5);
+
+  for (uint8_t idx = 0; idx < context->metadata.input_count; idx++) {
+    btc_txn_input_t *input = &context->inputs[idx];
+
+    // digest Outpoint (input transaction hash, index)
+    sha256_Update(&sha_256_ctx, input->prev_txn_hash, 32);
+    write_le(buffer, input->prev_output_index);
+    sha256_Update(&sha_256_ctx, buffer, 4);
+
+    if (input_index == idx) {
+      // TODO: use Compact size encoding here. Ref -
+      // https://developer.bitcoin.org/reference/transactions.html#compactsize-unsigned-integers
+      // digest the locking script to sign
+      buffer[0] = input->script_pub_key.size;
+      sha256_Update(&sha_256_ctx, buffer, 1);
+      sha256_Update(&sha_256_ctx, input->script_pub_key.bytes, buffer[0]);
+    } else {
+      // skip all the other Outpoints
+      buffer[0] = 0;
+      sha256_Update(&sha_256_ctx, buffer, 1);
+    }
+
+    write_le(buffer, input->sequence);
+    sha256_Update(&sha_256_ctx, buffer, 4);
+  }
+
+  buffer[0] = context->metadata.output_count;
+  sha256_Update(&sha_256_ctx, buffer, 1);
+  digest_outputs(context, &sha_256_ctx);
+
+  // digest locktime and sighash
+  write_le(buffer, context->metadata.locktime);
+  write_le(buffer + 4, context->metadata.sighash);
+  sha256_Update(&sha_256_ctx, buffer, 8);
+
+  // double hash
+  sha256_Final(&sha_256_ctx, digest);
+  sha256_Raw(digest, 32, digest);
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+}
+
+STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
+                                    const uint8_t input_index,
+                                    uint8_t *digest) {
+  if (!context->segwit_cache.filled) {
+    // cache is not filled, no benefit to proceed as we depend on it
+    return false;
+  }
+
+  uint8_t buffer[100] = {0};
+  SHA256_CTX sha_256_ctx = {0};
+  btc_txn_input_t *input = &context->inputs[input_index];
+
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  sha256_Init(&sha_256_ctx);
+
+  // digest version
+  write_le(buffer, context->metadata.version);
+  sha256_Update(&sha_256_ctx, buffer, 4);
+
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_prevouts, 32);
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_sequence, 32);
+  sha256_Update(&sha_256_ctx, input->prev_txn_hash, 32);
+
+  write_le(buffer, input->prev_output_index);
+  sha256_Update(&sha_256_ctx, buffer, 4);
+
+  buffer[0] = input->script_pub_key.size + 2 + 2 - 1;
+  buffer[1] = 0x76;
+  buffer[2] = 0xa9;
+  sha256_Update(&sha_256_ctx, buffer, 3);
+  sha256_Update(&sha_256_ctx,
+                &input->script_pub_key.bytes[1],
+                input->script_pub_key.size - 1);
+  buffer[0] = 0x88;
+  buffer[1] = 0xac;
+  sha256_Update(&sha_256_ctx, buffer, 2);
+
+  // digest the 64-bit value (little-endian)
+  sha256_Update(&sha_256_ctx, (uint8_t *)&input->value, 8);
+  write_le(buffer, input->sequence);
+  sha256_Update(&sha_256_ctx, buffer, 4);
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_outputs, 32);
+
+  // digest locktime and sighash
+  write_le(buffer, context->metadata.locktime);
+  write_le(buffer + 4, context->metadata.sighash);
+  sha256_Update(&sha_256_ctx, buffer, 8);
+
+  // double hash
+  sha256_Final(&sha_256_ctx, digest);
+  sha256_Raw(digest, 32, digest);
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 int btc_verify_input(const uint8_t *raw_txn,
                      const uint32_t size,
-                     const btc_txn_input_t *input) {
+                     const btc_sign_txn_input_t *input) {
   if (NULL == input || NULL == raw_txn || 0 == size) {
     return -1;
   }
@@ -239,7 +408,7 @@ bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {
   }
 
   for (int idx = 0; idx < txn_ctx->metadata.output_count; idx++) {
-    output -= txn_ctx->outputs[idx].value;
+    output += txn_ctx->outputs[idx].value;
   }
 
   if (input < output) {
@@ -251,10 +420,60 @@ bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {
   return true;
 }
 
-void format_value(const uint64_t value_in_sat,
-                  char *msg,
-                  const size_t msg_len) {
-  uint8_t precision = get_floating_precision(value_in_sat, SATOSHI_PER_BTC);
-  double fee_in_btc = 1.0 * value_in_sat / (SATOSHI_PER_BTC);
-  snprintf(msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_app->lunit_name);
+void btc_segwit_init_cache(btc_txn_context_t *context) {
+  uint8_t bytes[32] = {0};
+  SHA256_CTX sha_256_ctx = {0};
+  btc_segwit_cache_t *segwit_cache = &context->segwit_cache;
+
+  // calculate double SHA256 of the input UTXOs
+  sha256_Init(&sha_256_ctx);
+  for (int idx = 0; idx < context->metadata.input_count; idx++) {
+    sha256_Update(&sha_256_ctx, context->inputs[idx].prev_txn_hash, 32);
+    write_le(bytes, context->inputs[idx].prev_output_index);
+    sha256_Update(&sha_256_ctx, bytes, sizeof(uint32_t));
+  }
+  // double hash
+  sha256_Final(&sha_256_ctx, segwit_cache->hash_prevouts);
+  sha256_Raw(segwit_cache->hash_prevouts, 32, segwit_cache->hash_prevouts);
+  sha256_Init(&sha_256_ctx);
+
+  // calculate double SHA256 of the input sequences
+  for (int idx = 0; idx < context->metadata.input_count; idx++) {
+    write_le(bytes, context->inputs[idx].sequence);
+    sha256_Update(&sha_256_ctx, bytes, sizeof(uint32_t));
+  }
+  // double hash
+  sha256_Final(&sha_256_ctx, segwit_cache->hash_sequence);
+  sha256_Raw(segwit_cache->hash_sequence, 32, segwit_cache->hash_sequence);
+  sha256_Init(&sha_256_ctx);
+
+  // calculate double SHA256 of the output UTXOs
+  digest_outputs(context, &sha_256_ctx);
+  // double hash
+  sha256_Final(&sha_256_ctx, segwit_cache->hash_outputs);
+  sha256_Raw(segwit_cache->hash_outputs, 32, segwit_cache->hash_outputs);
+
+  segwit_cache->filled = true;
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+}
+
+bool btc_digest_input(const btc_txn_context_t *context,
+                      const uint32_t index,
+                      uint8_t *digest) {
+  bool status = true;
+  // detect input type and calculate appropriate digest
+  btc_sign_txn_input_script_pub_key_t *script =
+      &context->inputs[index].script_pub_key;
+  btc_script_type_e type = btc_get_script_type(script->bytes, script->size);
+
+  if (SCRIPT_TYPE_P2WPKH == type) {
+    // segwit digest calculation; could fail if segwit_cache not filled
+    status = calculate_p2wpkh_digest(context, index, digest);
+  } else if (SCRIPT_TYPE_P2PKH == type) {
+    // p2pkh digest calculation; has not failure case
+    calculate_p2pkh_digest(context, index, digest);
+  } else {
+    status = false;
+  }
+  return status;
 }

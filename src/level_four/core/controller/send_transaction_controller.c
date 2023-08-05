@@ -241,14 +241,7 @@ void send_transaction_controller() {
                                  wallet_shamir_data.share_x_coords,
                                  secret);
       mnemonic_clear();
-      const char *mnemo =
-          mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-      if (input_index == 0 &&
-          !validate_change_address(
-              &var_send_transaction_data.unsigned_transaction,
-              &var_send_transaction_data.transaction_metadata,
-              mnemo,
-              wallet_credential_data.passphrase)) {
+      if (input_index == 0) {
         instruction_scr_destructor();
         comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0x02);
         mark_error_screen(ui_text_btc_change_address_mismatch);
@@ -258,14 +251,7 @@ void send_transaction_controller() {
       txn_preimage preimage;
       memzero(&preimage, sizeof(txn_preimage));
       memzero(send_transaction_cmd.signed_txn_byte_array, MAX_SCRIPT_SIG_SIZE);
-      send_transaction_cmd.signed_txn_length =
-          sig_from_unsigned_txn(&var_send_transaction_data.unsigned_transaction,
-                                &var_send_transaction_data.transaction_metadata,
-                                input_index,
-                                mnemo,
-                                wallet_credential_data.passphrase,
-                                &preimage,
-                                send_transaction_cmd.signed_txn_byte_array);
+      send_transaction_cmd.signed_txn_length = 0;
       memzero(secret, sizeof(secret));
       mnemonic_clear();
       flow_level.level_three = SEND_TXN_WAITING_SCREEN;

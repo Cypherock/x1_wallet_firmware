@@ -56,10 +56,14 @@
  ******************************************************************************
  */
 
+#include "bip32.h"
 #include "btc_app.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "btc_script.h"
 #include "btc_txn_helpers.h"
+#include "curves.h"
+#include "ecdsa.h"
 #include "unity_fixture.h"
 #include "utils.h"
 
@@ -103,11 +107,11 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
       268,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {.prev_output_index = 0,
-                           .value = 5000000000,
-                           .script_pub_key = {
-                               .size = 67,
-                           }};
+  btc_sign_txn_input_t input = {.prev_output_index = 0,
+                                .value = 5000000000,
+                                .script_pub_key = {
+                                    .size = 67,
+                                }};
   hex_string_to_byte_array(
       "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9",
       64,
@@ -140,7 +144,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
       268,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {
+  btc_sign_txn_input_t input = {
       .prev_output_index = 1,    // incorrect index; correct is '0'
       .value = 5000000000,
       .script_pub_key = {
@@ -181,11 +185,11 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh) {
       448,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {.prev_output_index = 0,
-                           .value = 100000000,
-                           .script_pub_key = {
-                               .size = 25,
-                           }};
+  btc_sign_txn_input_t input = {.prev_output_index = 0,
+                                .value = 100000000,
+                                .script_pub_key = {
+                                    .size = 25,
+                                }};
   hex_string_to_byte_array(
       "eb0e2029310edade8e2a034aea4f0c4a1e243fe2dce67d05f95fddb7ac11bfbe",
       64,
@@ -219,7 +223,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail) {
       448,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {
+  btc_sign_txn_input_t input = {
       .prev_output_index = 0,
       .value = 1000000000,    // invalid value; more by a factor of 10
       .script_pub_key = {
@@ -277,11 +281,11 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh) {
       1858,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {.prev_output_index = 0,
-                           .value = 993264,
-                           .script_pub_key = {
-                               .size = 22,
-                           }};
+  btc_sign_txn_input_t input = {.prev_output_index = 0,
+                                .value = 993264,
+                                .script_pub_key = {
+                                    .size = 22,
+                                }};
   hex_string_to_byte_array(
       "21706dfac590a74e7d083ad60e790c3a1775a4818afd7aa3ddf1a3d76dc16b03",
       64,
@@ -334,11 +338,11 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
       1858,
       raw_txn);
   // only fill necessary values
-  btc_txn_input_t input = {.prev_output_index = 0,
-                           .value = 993264,
-                           .script_pub_key = {
-                               .size = 22,
-                           }};
+  btc_sign_txn_input_t input = {.prev_output_index = 0,
+                                .value = 993264,
+                                .script_pub_key = {
+                                    .size = 22,
+                                }};
   hex_string_to_byte_array(
       // invalid txn hash test. valid txn hash/id:
       // 21706dfac590a74e7d083ad60e790c3a1775a4818afd7aa3ddf1a3d76dc16b03
@@ -579,4 +583,169 @@ TEST(btc_txn_helper_test, btc_txn_helper_format_value_1btc) {
   const char expected_msg[] = "1 BTC";
   format_value(value_in_sat, msg, sizeof(msg));
   TEST_ASSERT_EQUAL_STRING(expected_msg, msg);
+}
+
+TEST(btc_txn_helper_test, btc_script_check_script_address) {
+  uint8_t script_pub[22] = {0};
+  uint8_t public_key[33] = {0};
+
+  hex_string_to_byte_array(
+      "00144e0fd42c1c6f2597b14042037557b516187cfa38", 44, script_pub);
+  hex_string_to_byte_array(
+      "02cc2dd74781ac8ee9d931bba9783abac2c1f20d503d5f6df1e53f84e913a4a266",
+      66,
+      public_key);
+  TEST_ASSERT_TRUE(
+      btc_check_script_address(script_pub, sizeof(script_pub), public_key));
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_p2pkh_digest_1_2) {
+  uint8_t calculated_digest[32] = {0};
+  uint8_t expected_digest[32] = {0};
+  btc_txn_input_t input = {
+      .prev_txn_hash = {0},
+      .value = 11014713900,
+      .prev_output_index = 0,
+      .script_pub_key = {.size = 25},
+      .change_index = 0,
+      .address_index = 0,
+      .sequence = UINT32_MAX,
+  };
+  btc_sign_txn_output_t outputs[] = {
+      {
+          .value = 1100000000,
+          .script_pub_key = {.size = 25},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+      {
+          .value = 9883316624,
+          .script_pub_key = {.size = 25},
+          .is_change = true,
+          .has_changes_index = true,
+          .changes_index = 0,
+      },
+  };
+  btc_txn_context_t context = {
+      .init_info = {.derivation_path_count = 3,
+                    .derivation_path = {0x80000000 + 84,
+                                        0x80000000,
+                                        0x80000000}},
+      .metadata = {.version = 2,
+                   .input_count = 1,
+                   .output_count = 2,
+                   .sighash = 1,
+                   .locktime = 0},
+      .segwit_cache = {0},
+      .change_output_idx = 1,
+  };
+  context.inputs = &input;
+  context.outputs = outputs;
+
+  hex_string_to_byte_array(
+      "630ff449462972b58a3e79d7117ddbc87df95b572185fbaea94282bd7f15c5e7",
+      64,
+      input.prev_txn_hash);
+  hex_string_to_byte_array("76a91448f551693d43698002e0fe9f514aecf6f94f75f688ac",
+                           50,
+                           input.script_pub_key.bytes);
+  hex_string_to_byte_array("76a914e05d7d7e46ff0ad8b53091a4d2edc69b60f251b888ac",
+                           50,
+                           outputs[0].script_pub_key.bytes);
+  hex_string_to_byte_array("76a914a4695d02b19af59cdc2a524ce34eca9af5e1353688ac",
+                           50,
+                           outputs[1].script_pub_key.bytes);
+  hex_string_to_byte_array(
+      "7F0CEFA35F4EF744AC73916A1F7B4465FA8FF028C09048E2C043BE0838963A77",
+      64,
+      expected_digest);
+  btc_digest_input(&context, 0, calculated_digest);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_digest, calculated_digest, 32);
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_1_2) {
+  uint8_t calculated_digest[32] = {0};
+  uint8_t expected_digest[32] = {0};
+  btc_segwit_cache_t expected_cache = {.filled = true};
+  btc_txn_input_t input = {
+      .prev_txn_hash = {0},
+      .value = 76425,
+      .prev_output_index = 0,
+      .script_pub_key = {.size = 22},
+      .change_index = 0,
+      .address_index = 1,
+      .sequence = UINT32_MAX,
+  };
+  btc_sign_txn_output_t outputs[] = {
+      {
+          .value = 10000,
+          .script_pub_key = {.size = 22},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+      {
+          .value = 64165,
+          .script_pub_key = {.size = 22},
+          .is_change = true,
+          .has_changes_index = true,
+          .changes_index = 0,
+      },
+  };
+  btc_txn_context_t context = {
+      .init_info = {.derivation_path_count = 3,
+                    .derivation_path = {0x80000000 + 84,
+                                        0x80000000,
+                                        0x80000000}},
+      .metadata = {.version = 2,
+                   .input_count = 1,
+                   .output_count = 2,
+                   .sighash = 1,
+                   .locktime = 0},
+      .segwit_cache = {0},
+      .change_output_idx = 1,
+  };
+  context.inputs = &input;
+  context.outputs = outputs;
+
+  hex_string_to_byte_array(
+      "fa9a08bbb86c80da7944a231240a85e9d46eb2315b6ba9989039247471706bfc",
+      64,
+      input.prev_txn_hash);
+  hex_string_to_byte_array("001423e992c8c08db39037f9e3ab1827e279213ad953",
+                           44,
+                           input.script_pub_key.bytes);
+  hex_string_to_byte_array("00141013ffc18eb488597d5a77c3c17a97341106681e",
+                           44,
+                           outputs[0].script_pub_key.bytes);
+  hex_string_to_byte_array("00147633be4e56de62f4a9b083e5c4a37eeccbba359c",
+                           44,
+                           outputs[1].script_pub_key.bytes);
+  hex_string_to_byte_array(
+      "A2BD84FFC6731B976672BEE4BA8710EA5DA4D46A2B4555AE44913FD1C3D5E7A9",
+      64,
+      expected_cache.hash_prevouts);
+  hex_string_to_byte_array(
+      "3BB13029CE7B1F559EF5E747FCAC439F1455A2EC7C5F09B72290795E70665044",
+      64,
+      expected_cache.hash_sequence);
+  hex_string_to_byte_array(
+      "236FE9B23372D09CC0514E7DD14F137136ED0E211C3FED8E9BB6201C028F0DAD",
+      64,
+      expected_cache.hash_outputs);
+  hex_string_to_byte_array(
+      "120D9BC5E49C75F2C32477AF519ED986FE3DEA6DFA90E29506E00D5949722564",
+      64,
+      expected_digest);
+  btc_segwit_init_cache(&context);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_prevouts, context.segwit_cache.hash_prevouts, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_sequence, context.segwit_cache.hash_sequence, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_outputs, context.segwit_cache.hash_outputs, 32);
+  btc_digest_input(&context, 0, calculated_digest);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_digest, calculated_digest, 32);
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_2_2) {
 }

@@ -63,10 +63,10 @@
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "btc_script.h"
 #include "btc_txn_helpers.h"
 #include "constant_texts.h"
 #include "reconstruct_wallet_flow.h"
-#include "script.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -80,9 +80,16 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 
+#define TXN_MAX_INPUTS 200
+#define TXN_MAX_OUTPUTS 200
+#define TXN_MAX_UTXO_SUM ((TXN_MAX_INPUTS + TXN_MAX_OUTPUTS) / 2)
+#define SCRIPT_SIG_SIZE 128
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+
+typedef btc_sign_txn_signature_response_signature_t scrip_sig_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -147,7 +154,10 @@ static bool handle_initiate_query(const btc_query_t *query);
  * @details The function waits on USB event then decoding and validation of the
  * received query. Post validation, based on the values in the query, the
  * function allocates memory for storing inputs & outputs in btc_txn_context.
- * Also, the data received in the query is duplicated into btc_txn_context .
+ * Also, the data received in the query is duplicated into btc_txn_context.
+ * Refer transaction format here: https://en.bitcoin.it/wiki/Transaction or
+ * https://developer.bitcoin.org/devguide/transactions.html or
+ * https://developer.bitcoin.org/reference/transactions.html#raw-transaction-format
  *
  * @param query Reference to storage for decoding query from host
  *
@@ -202,13 +212,54 @@ static bool fetch_valid_output(btc_query_t *query);
 static bool get_user_verification();
 
 /**
+ * @brief Validates the change output for an exact match with wallet's derived
+ * change address.
+ * @details The function ensures that the change output is spendable by the
+ * wallet by verifying the raw public address in the output script. The function
+ * ensures all its local HDNode instances are cleared before exit to ensure
+ * safety from key leakage.
  *
- * @param query Reference to an instance of btc_query_t for storing the
- * transient outputs.
- *
- * @return
+ * @param acc_node Reference to the valid account node
+ * @return bool Indicating if the validation passed.
+ * @retval true If the validation passed.
+ * @retval false If the validation failed.
  */
-static bool sign_input_utxo(btc_query_t *query);
+static bool validate_change_address(const HDNode *acc_node);
+
+/**
+ * @brief Signs all the inputs following SIGHASH_ALL type and prepares script
+ * sigs.
+ * @details The function internally calls wallet reconstruction sub-flow to get
+ * access to the seed. Each input is signed with their respective private key
+ * derived at the specified path. The function additionally validates the change
+ * output address for sanity. The function will ensure clearing of all the keys
+ * and other sensitive data (such as seed, HDNode, etc.) before exiting and
+ * should ensure no leakage of secret data.
+ *
+ * @param signatures Reference to the buffer sufficient enough for storing all
+ * the scriptSigs of the transaction being signed. Should be able to store
+ * >=btc_txn_context->metadata.input_count.
+ *
+ * @return bool Indicating if scriptSig for all the provided inputs was
+ * successfully generated
+ * @retval true If all the scriptSigs are generated without any error
+ * @retval false If any of the scriptSig failed to generate
+ */
+static bool sign_input(scrip_sig_t *signatures);
+
+/**
+ * @brief Sends the generated scriptSigs to the host one-at-a-time
+ *
+ * @param query Reference to an instance of btc_query_t to store transient
+ * requests from the host
+ * @param sigs Reference to a list of prepared scriptSigs. The buffer should
+ * hold at least btc_txn_context->metadata.input_count of scriptSigs
+ *
+ * @return bool Indicating if all the scriptSig is sent to the host
+ * @retval true If all the scriptSig was sent to host successfully
+ * @retval false If the host responded with unknown/wrong query
+ */
+static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -285,11 +336,13 @@ static bool fetch_transaction_meta(btc_query_t *query) {
       !check_which_request(query, BTC_SIGN_TXN_REQUEST_META_TAG)) {
     return false;
   }
+  uint32_t in_count = query->sign_txn.meta.input_count;
+  uint32_t out_count = query->sign_txn.meta.output_count;
   // check important information for supported/compatibility
-  if (0x00000001 != query->sign_txn.meta.sighash ||
-      0 == query->sign_txn.meta.input_count ||
-      0 == query->sign_txn.meta.output_count) {
-    // TODO: Add upper limit on number input+output count
+  if (0x00000001 != query->sign_txn.meta.sighash || 0 == in_count ||
+      0 == out_count || TXN_MAX_INPUTS < in_count ||
+      TXN_MAX_OUTPUTS < out_count ||
+      TXN_MAX_UTXO_SUM < (in_count + out_count)) {
     /** Do not accept transaction with empty input/output.
      * Only accept SIGHASH_ALL for sighash type More info:
      * https://wiki.bitcoinsv.io/index.php/SIGHASH_flags
@@ -321,21 +374,19 @@ static bool fetch_valid_input(btc_query_t *query) {
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_INPUT_TAG)) {
       return false;
     }
-    // TODO: check input type; exit if unsupported
+    const btc_sign_txn_input_t *txin = &query->sign_txn.input;
     // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
-    // excluding OP_CODES) refer https://learnmeabitcoin.com/technical/script
-    // for explaination Currently the device can spend P2PKH or P2WPKH inputs
-    // only for (int i = 0; i < in_count; i++) {
-    //   if (txn_ctx->inputs[i].script_pub_key.size != 22 &&
-    //       txn_ctx->inputs[i].script_pub_key.size != 25) {
-    //     return false;
-    //   }
-    // }
+    // excluding OP_CODES). refer https://learnmeabitcoin.com/technical/script
+    // for explanation. Currently, the device can spend P2PKH or P2WPKH inputs
+    const btc_script_type_e type = btc_get_script_type(
+        txin->script_pub_key.bytes, txin->script_pub_key.size);
 
+    // TODO: ensure only valid input for the path are being provided. spending a
+    // segwit input on the legacy derivation path does not make sense.
     // verify transaction details and discard the raw-transaction (prev_txn)
-    const btc_sign_txn_input_prev_txn_t *txn = &query->sign_txn.input.prev_txn;
-    if (!btc_verify_input(
-            txn->bytes, txn->size, &btc_txn_context->inputs[idx])) {
+    const btc_sign_txn_input_prev_txn_t *txn = &txin->prev_txn;
+    if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
+        0 != btc_verify_input(txn->bytes, txn->size, txin)) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -344,15 +395,15 @@ static bool fetch_valid_input(btc_query_t *query) {
 
     // clone the input details into btc_txn_context
     btc_txn_input_t *input = &btc_txn_context->inputs[idx];
-    input->prev_output_index = query->sign_txn.input.prev_output_index;
-    input->address_index = query->sign_txn.input.address_index;
-    input->change_index = query->sign_txn.input.change_index;
-    input->value = query->sign_txn.input.value;
-    input->sequence = query->sign_txn.input.sequence;
-    input->script_pub_key.size = query->sign_txn.input.script_pub_key.size;
-    memcpy(input->prev_txn_hash, query->sign_txn.input.prev_txn_hash, 32);
+    input->prev_output_index = txin->prev_output_index;
+    input->address_index = txin->address_index;
+    input->change_index = txin->change_index;
+    input->value = txin->value;
+    input->sequence = txin->sequence;
+    input->script_pub_key.size = txin->script_pub_key.size;
+    memcpy(input->prev_txn_hash, txin->prev_txn_hash, 32);
     memcpy(input->script_pub_key.bytes,
-           query->sign_txn.input.script_pub_key.bytes,
+           txin->script_pub_key.bytes,
            input->script_pub_key.size);
 
     // send accepted response to indicate validation of input passed
@@ -364,6 +415,10 @@ static bool fetch_valid_input(btc_query_t *query) {
 static bool fetch_valid_output(btc_query_t *query) {
   // track if it is a zero valued transaction; all input is going into fee
   bool zero_value_transaction = true;
+  // restrict multiple change outputs; it is wastage of fee for user; this is
+  // a loose check as it is externally controlled
+  bool change_detected = false;
+  btc_txn_context->change_output_idx = -1;
 
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
@@ -377,14 +432,27 @@ static bool fetch_valid_output(btc_query_t *query) {
     if (0 != output->value) {
       zero_value_transaction = false;
     }
-    if (OP_RETURN == output->script_pub_key.bytes[0] && 0 != output->value) {
-      // ensure any funds are not being locked (not spendable)
+    const btc_script_type_e type = btc_get_script_type(
+        output->script_pub_key.bytes, output->script_pub_key.size);
+    if (SCRIPT_TYPE_P2MS == type || SCRIPT_TYPE_P2PK == type ||
+        SCRIPT_TYPE_NONSTANDARD == type ||
+        (SCRIPT_TYPE_NULL_DATA == type && 0 != output->value) ||
+        (true == change_detected && true == output->is_change)) {
+      // ensure output type is standard & we support verification by user
+      // ensure any funds are not being locked (not spendable) to NULL_DATA
+      // ensure exactly one change address is present/declared
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
+
+    if (output->is_change) {
+      // first change output declaration detected; store for quick access
+      change_detected = true;
+      btc_txn_context->change_output_idx = idx;
+    }
     // send accepted response to indicate validation of output passed
-    send_response(BTC_SIGN_TXN_RESPONSE_INPUT_ACCEPTED_TAG);
+    send_response(BTC_SIGN_TXN_RESPONSE_OUTPUT_ACCEPTED_TAG);
   }
   if (true == zero_value_transaction) {
     // do not allow zero valued transaction; all input is going into fee
@@ -410,8 +478,13 @@ static bool get_user_verification() {
       continue;
     }
     format_value(output->value, value, sizeof(value));
-    script_output_to_address(
+    int status = btc_get_script_pub_address(
         script->bytes, script->size, address, sizeof(address));
+    if (1 > status) {
+      // send error status as value for unknown error
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
+      return false;
+    }
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
       return false;
@@ -443,14 +516,94 @@ static bool get_user_verification() {
   return true;
 }
 
-static bool sign_input_utxo(btc_query_t *query) {
-  if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
-      !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
-    return false;
+static bool validate_change_address(const HDNode *acc_node) {
+  bool status = false;
+  if (btc_txn_context->change_output_idx == -1) {
+    // txn w/o change output should go through
+    return status;
   }
 
-  // TODO: Sign each input and send the signature
-  return false;
+  HDNode t_node = {0};
+  int idx = btc_txn_context->change_output_idx;
+  const btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
+  if (false == output->has_changes_index || false == output->is_change) {
+    return status;
+  }
+
+  memcpy(&t_node, acc_node, sizeof(HDNode));
+  hdnode_private_ckd(&t_node, 1);
+  hdnode_private_ckd(&t_node, output->changes_index);
+  hdnode_fill_public_key(&t_node);
+  status = btc_check_script_address(output->script_pub_key.bytes,
+                                    output->script_pub_key.size,
+                                    t_node.public_key);
+  memzero(&t_node, sizeof(HDNode));
+  return status;
+}
+
+static bool sign_input(scrip_sig_t *signatures) {
+  uint8_t buffer[64] = {0};
+  HDNode node = {0};
+  HDNode t_node = {0};
+  bool status = false;
+  const uint32_t *hd_path = btc_txn_context->init_info.derivation_path;
+  const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
+  if (!reconstruct_seed_flow(btc_txn_context->init_info.wallet_id, buffer)) {
+    memzero(buffer, sizeof(buffer));
+    // TODO: handle errors of reconstruction flow
+    return status;
+  }
+
+  // populate hashes cache for segwit transaction types
+  btc_segwit_init_cache(btc_txn_context);
+  if (!derive_hdnode_from_path(hd_path, 3, SECP256K1_NAME, buffer, &node) ||
+      false == validate_change_address(&node)) {
+    btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    memzero(&node, sizeof(HDNode));
+    memzero(buffer, sizeof(buffer));
+    return status;
+  }
+
+  status = true;
+  for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
+    // generate the input digest and respective private key
+    status = btc_digest_input(btc_txn_context, idx, buffer);
+    memcpy(&t_node, &node, sizeof(HDNode));
+    hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].change_index);
+    hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].address_index);
+    hdnode_fill_public_key(&t_node);
+    ecdsa_sign_digest(
+        curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
+    signatures[idx].size = btc_sig_to_script_sig(
+        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    if (0 == signatures[idx].size || false == status) {
+      // early exit as digest could not be calculated
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      status = false;
+      break;
+    }
+  }
+  memzero(&node, sizeof(HDNode));
+  memzero(&t_node, sizeof(HDNode));
+  memzero(buffer, sizeof(buffer));
+  return status;
+}
+
+static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs) {
+  btc_result_t result = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+  result.sign_txn.which_response = BTC_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
+
+  for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
+        !check_which_request(query, BTC_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+      return false;
+    }
+    memcpy(
+        &result.sign_txn.signature.signature, &sigs[idx], sizeof(scrip_sig_t));
+    btc_send_result(&result);
+  }
+  return true;
 }
 
 /*****************************************************************************
@@ -460,10 +613,12 @@ static bool sign_input_utxo(btc_query_t *query) {
 void btc_sign_transaction(btc_query_t *query) {
   btc_txn_context = (btc_txn_context_t *)malloc(sizeof(btc_txn_context_t));
   memzero(btc_txn_context, sizeof(btc_txn_context_t));
+  scrip_sig_t signatures[TXN_MAX_INPUTS] = {0};
 
-  if (!handle_initiate_query(query) && !fetch_transaction_meta(query) &&
-      !fetch_valid_input(query) && !fetch_valid_output(query) &&
-      !get_user_verification() && !sign_input_utxo(query)) {
+  if (handle_initiate_query(query) && fetch_transaction_meta(query) &&
+      fetch_valid_input(query) && fetch_valid_output(query) &&
+      get_user_verification() && sign_input(&signatures[0]) &&
+      send_script_sig(query, &signatures[0])) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
