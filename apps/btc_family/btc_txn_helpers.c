@@ -168,11 +168,12 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
     weight += 32;    // previous transaction hash
     weight += 4;     // previous output index
     weight += 1;     // script length size
-    weight += txn_ctx->inputs[input_index].script_pub_key.size;
-    weight += 4;    // sequence
-                    // Check if current input is segwit or not
+    weight += 4;     // sequence
+                     // Check if current input is segwit or not
     if (0 == txn_ctx->inputs[input_index].script_pub_key.bytes[0]) {
       segwit_count++;
+    } else {
+      weight += txn_ctx->inputs[input_index].script_pub_key.size;
     }
   }
 

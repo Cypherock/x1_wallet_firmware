@@ -462,15 +462,24 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2) {
   free(txn_ctx.outputs);
 }
 
+/* FIX: Required to fix the hardcoded value of 106 (2 + 33 + 71) since the
+ * signature part of the witness can vary (71 bytes | 72 bytes | 73 bytes).
+ * Check the get_transaction_weight function. */
+static inline uint32_t fix_segwit_weight(uint32_t segwit_weight,
+                                         uint32_t input_count,
+                                         uint32_t witness_size) {
+  return segwit_weight - 106 * input_count + witness_size;
+}
+
 TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1) {
   /* Test data source:
-   * https://blockchain.info/rawtx/484856dd051827cb459375b77033c8f2d5bed6971edb7ddcc4ae95c97307f5d3?format=json
+   * https://blockchain.info/rawtx/55ab320da6636eff54126ca1fcfab8db76b14ad35690f4e6092772655313b80f?format=json
    */
   btc_txn_context_t txn_ctx = {
       .metadata =
           {
               .version = 1,
-              .output_count = 1,
+              .output_count = 2,
               .input_count = 1,
               .locktime = 0,
               .sighash = 1,
@@ -482,26 +491,35 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1) {
   txn_ctx.outputs =
       (btc_sign_txn_output_t *)malloc(sizeof(btc_sign_txn_output_t));
 
-  btc_txn_input_t *input = &txn_ctx.inputs[0];
-  btc_sign_txn_output_t *output = &txn_ctx.outputs[0];
+  /* FIX: store the size for witnesses here due to the absence of designated
+   * struct fields */
+  uint32_t witness_size = 1; /* number of witness components - 1 byte */
+  witness_size += 1;         /* size of first component      - 1 byte */
+  witness_size += 71;        /* first component */
+  witness_size += 1;         /* size of second component     - 1 byte */
+  witness_size += 33;        /* second component */
+  /* Witness Components
+   * ==================
+   * Signature:
+   * 3044022061cf7d5e42cc8e55a24a315c0a4b589a62ddb5aa3fc730ea00d765d5984977a8022034a69e38e023b3b1f37f52d305ccf816e2ed8a07c855d09d89b3bce10f9aa6d001
+   * PubKey:
+   * 032959ac5254ec45ff1a0dee1994b33489f6ed670f6db5eb83fca85b544bc78688
+   */
 
-  input->script_pub_key.size = 34;
-  input->value = 4517;
-  input->sequence = 4294967295;
-  input->prev_output_index = 0;
-  hex_string_to_byte_array(
-      "00208b0c8df2e80eda0f4eeb6d6cfb9c1f481f49c4a201585c079be76eac7d5326b8",
-      68,
-      input->script_pub_key.bytes);
+  /* fill in relevant values */
+  hex_string_to_byte_array("00147c343c768adcb9b01d32e0ab2d5bb4b9657053d9",
+                           44,
+                           txn_ctx.inputs[0].script_pub_key.bytes);
+  /* 76a9149adeade91a046e530e0b162686cb281ce4d9a70188ac */
+  txn_ctx.outputs[0].script_pub_key.size = 25;
+  /* 00147c343c768adcb9b01d32e0ab2d5bb4b9657053d9 */
+  txn_ctx.outputs[1].script_pub_key.size = 22;
 
-  output->value = 2500;
-  output->script_pub_key.size = 34;
-  hex_string_to_byte_array(
-      "5120e2960e4a0b7162b4c016c35a1285ab94d6a87dcadf8cffb192f8c756c62d93e2",
-      68,
-      output->script_pub_key.bytes);
+  uint32_t txn_weight = get_transaction_weight(&txn_ctx);
+  uint32_t fixed_weight =
+      fix_segwit_weight(txn_weight, txn_ctx.metadata.input_count, witness_size);
 
-  TEST_ASSERT_EQUAL_UINT(688, get_transaction_weight(&txn_ctx));
+  TEST_ASSERT_EQUAL_UINT(573, fixed_weight);
 
   free(txn_ctx.inputs);
   free(txn_ctx.outputs);
@@ -526,25 +544,36 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit2) {
   txn_ctx.inputs = (btc_txn_input_t *)malloc(sizeof(btc_txn_input_t));
   txn_ctx.outputs =
       (btc_sign_txn_output_t *)malloc(sizeof(btc_sign_txn_output_t));
-
   btc_txn_input_t *input = &txn_ctx.inputs[0];
   btc_sign_txn_output_t *output = &txn_ctx.outputs[0];
 
-  input->script_pub_key.size = 22;
-  input->value = 382055;
-  input->sequence = 0;
-  input->prev_output_index = 6;
+  /* FIX: store the size for witnesses here due to the absence of designated
+   * struct fields */
+  uint32_t witness_size = 1; /* number of witness components - 1 byte */
+  witness_size += 1;         /* size of first component      - 1 byte */
+  witness_size += 71;        /* first component */
+  witness_size += 1;         /* size of second component     - 1 byte */
+  witness_size += 33;        /* second component */
+  /* Witness Components
+   * ==================
+   * Signature:
+   * 30440220617a8fe692258e918007d3c467cf5a7d12d8f218a3f68181e3aab61c9b521e4702202b5997d5cd125135e8353e9be15b27a8a0f639a7017b16b9faf948c123ac408f01
+   * PubKey:
+   * 0323b4774cd51989d43d59ac61b269b6bca28545e6ded8ff1959fc81f8f9fb8733
+   */
+
+  /* fill in relevant values */
   hex_string_to_byte_array("00149031c2a9996e57eb787967e794358e823595b666",
                            44,
                            input->script_pub_key.bytes);
-
-  output->value = 380699;
+  /* 76a914d2192be350c2e4b16d4905d0c356080c331e34de88ac */
   output->script_pub_key.size = 25;
-  hex_string_to_byte_array("76a914d2192be350c2e4b16d4905d0c356080c331e34de88ac",
-                           50,
-                           output->script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_UINT(449, get_transaction_weight(&txn_ctx));
+  uint32_t txn_weight = get_transaction_weight(&txn_ctx);
+  uint32_t fixed_weight =
+      fix_segwit_weight(txn_weight, txn_ctx.metadata.input_count, witness_size);
+
+  TEST_ASSERT_EQUAL_UINT(449, fixed_weight);
 
   free(txn_ctx.inputs);
   free(txn_ctx.outputs);
