@@ -160,6 +160,9 @@ TEST_GROUP_RUNNER(btc_txn_helper_test) {
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2pkh_digest_1_2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_1_2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_2_2);
+
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_get_fee);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_get_fee_overspend);
 }
 
 TEST_GROUP_RUNNER(btc_helper_test) {

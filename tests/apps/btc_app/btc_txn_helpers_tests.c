@@ -749,3 +749,69 @@ TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_1_2) {
 
 TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_2_2) {
 }
+
+TEST(btc_txn_helper_test, btc_txn_helper_get_fee) {
+  /* Test data source:
+   * https://blockchain.info/rawtx/b77a9ff6738877d4eb2d300b1c0ec7ca4d14353e8d501d55139019609ca2e4e5?format=json
+   */
+  btc_txn_context_t txn_ctx = {
+      .metadata =
+          {
+              .version = 1,
+              .output_count = 2,
+              .input_count = 3,
+              .locktime = 0,
+              .sighash = 1,
+          },
+      .inputs = NULL,
+      .outputs = NULL,
+  };
+  txn_ctx.inputs = (btc_txn_input_t *)malloc(3 * sizeof(btc_txn_input_t));
+  txn_ctx.outputs =
+      (btc_sign_txn_output_t *)malloc(2 * sizeof(btc_sign_txn_output_t));
+
+  txn_ctx.inputs[0].value = 5136;
+  txn_ctx.inputs[1].value = 336366;
+  txn_ctx.inputs[2].value = 4682;
+
+  txn_ctx.outputs[0].value = 2900;
+  txn_ctx.outputs[1].value = 341352;
+
+  uint64_t fee = 0;
+  TEST_ASSERT_EQUAL_UINT(true, btc_get_txn_fee(&txn_ctx, &fee));
+  TEST_ASSERT_EQUAL_UINT(1932, fee);
+
+  free(txn_ctx.inputs);
+  free(txn_ctx.outputs);
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_get_fee_overspend) {
+  /* overspent transaction */
+
+  btc_txn_context_t txn_ctx = {
+      .metadata =
+          {
+              .version = 1,
+              .output_count = 2,
+              .input_count = 1,
+              .locktime = 0,
+              .sighash = 1,
+          },
+      .inputs = NULL,
+      .outputs = NULL,
+  };
+  txn_ctx.inputs = (btc_txn_input_t *)malloc(1 * sizeof(btc_txn_input_t));
+  txn_ctx.outputs =
+      (btc_sign_txn_output_t *)malloc(2 * sizeof(btc_sign_txn_output_t));
+
+  txn_ctx.inputs[0].value = 5000;
+
+  txn_ctx.outputs[0].value = 4999;
+  txn_ctx.outputs[1].value = 2;
+
+  uint64_t fee = 0;
+  TEST_ASSERT_EQUAL_UINT(false, btc_get_txn_fee(&txn_ctx, &fee));
+
+  free(txn_ctx.inputs);
+  free(txn_ctx.outputs);
+}
