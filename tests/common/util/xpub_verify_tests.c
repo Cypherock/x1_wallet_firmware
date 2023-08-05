@@ -4,7 +4,9 @@
 #include "btc_priv.h"
 #include "coin_utils.h"
 #include "dash_app.h"
+#include "doge_app.h"
 #include "eth.h"
+#include "ltc_app.h"
 #include "near.h"
 #include "solana.h"
 #include "unity_fixture.h"
@@ -114,7 +116,12 @@ const uint32_t paths[][7] = {
     {3, 1, NON_SEGWIT, BITCOIN, 0x80000000},       // btc  valid
     {3, 1, NON_SEGWIT, BTC_TEST, 0x8fffffff},      // btct valid
     {3, 1, NON_SEGWIT, DOGE, 0x80000000},          // doge valid
+    {3, 1, NON_SEGWIT, DOGE, 0x8fffffff},          // doge  valid
     {3, 1, NON_SEGWIT, DASH, 0x8fffffff},          // dash valid
+    {3, 1, NATIVE_SEGWIT, LITCOIN, 0x80000000},    // ltc  valid
+    {3, 1, NATIVE_SEGWIT, LITCOIN, 0x8fffffff},    // ltc  valid
+    {3, 1, NON_SEGWIT, LITCOIN, 0x8fffffff},       // ltc  valid
+    {3, 1, NON_SEGWIT, LITCOIN, 0x80000000},       // ltc  valid
     {5,
      0,
      NON_SEGWIT,
@@ -129,10 +136,20 @@ const uint32_t paths[][7] = {
      BITCOIN,
      0x80000000,
      0x80000000,
-     0x8fffffff},                               // btc  invalid
-    {3, 0, NATIVE_SEGWIT, DOGE, 0x80000000},    // doge invalid
-    {3, 0, NON_SEGWIT, DASH, 0x0fffffff},       // dash invalid
-    {1, 0, NON_SEGWIT},                         // invalid
+     0x8fffffff},                                           // btc  invalid
+    {3, 0, NATIVE_SEGWIT, DOGE, 0x80000000},                // doge invalid
+    {4, 0, NON_SEGWIT, DOGE, 0x80000000, 0x8fffffff},       // doge  invalid
+    {3, 0, NON_SEGWIT, DASH, 0x0fffffff},                   // dash invalid
+    {3, 0, NON_SEGWIT, LITCOIN, 0x00000000},                // ltc  invalid
+    {4, 0, NON_SEGWIT, LITCOIN, 0x80000000, 0x8fffffff},    // ltc  invalid
+    {5,
+     0,
+     NATIVE_SEGWIT,
+     LITCOIN,
+     0x80000000,
+     0x80000000,
+     0x8fffffff},          // ltc  invalid
+    {1, 0, NON_SEGWIT},    // invalid
 };
 
 TEST_GROUP(xpub);
@@ -157,6 +174,14 @@ TEST(xpub, derivation_path_tests) {
         break;
       case DASH:
         g_app = get_dash_app();
+        status = btc_derivation_path_guard(&paths[i][2], depth);
+        break;
+      case LITCOIN:
+        g_app = get_ltc_app();
+        status = btc_derivation_path_guard(&paths[i][2], depth);
+        break;
+      case DOGE:
+        g_app = get_doge_app();
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case NEAR:
