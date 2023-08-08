@@ -278,15 +278,19 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
          * to safely recover/export wallets to different set of cards in limited
          * attempts.
          */
+        // NOTE: This will currently fill the error msg. We will not be able to
+        // display any other error message that arise after this point
+        // TODO: Fix error message stacking by giving control to either the
+        // operation or the application
         if (1 == card_data->nfc_data.recovery_mode) {
-          NFC_RETURN_ABORT_ERROR(card_data,
-                                 ui_critical_card_health_migrate_data);
+          mark_core_error_screen(ui_critical_card_health_migrate_data);
         }
 
         /* Check if pairing is required */
         if (true == card_data->nfc_data.init_session_keys) {
           /* Return pairing error if not paired */
           if (false == load_card_session_key(card_data->nfc_data.card_key_id)) {
+            card_data->nfc_data.pairing_error = true;
             NFC_RETURN_ABORT_ERROR(card_data,
                                    ui_text_device_and_card_not_paired);
           }
@@ -343,6 +347,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
        * doesn't. In practice this would happen if the card was paired with more
        * than 5 devices after being paired to the device where error occurs. */
       invalidate_keystore();
+      card_data->nfc_data.pairing_error = true;
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_device_and_card_not_paired);
       break;
     case SW_CONDITIONS_NOT_SATISFIED:

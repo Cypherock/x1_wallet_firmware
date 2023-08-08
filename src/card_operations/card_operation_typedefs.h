@@ -60,6 +60,7 @@ typedef struct {
 
 typedef struct {
   uint32_t status;
+  bool pairing_error;
   uint8_t tapped_card;
   uint8_t recovery_mode;
   uint8_t *tapped_family_id;

@@ -196,27 +196,37 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
   card_fetch_wallet_list_config_t configuration = {0};
   card_fetch_wallet_list_response_t response = {0};
 
-  configuration.acceptable_cards = 0xF;
-  configuration.heading = ui_text_tap_1_2_cards;
-  configuration.msg = ui_text_place_card_below;
-  configuration.skip_card_removal = false;
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.skip_card_removal = false;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = ui_text_tap_1_2_cards;
+  configuration.frontend.msg = ui_text_place_card_below;
 
   response.wallet_list = &wallets_in_card1;
-  response.tapped_card = 0;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
 
-  if (!card_fetch_wallet_list(&configuration, &response)) {
+  if (CARD_OPERATION_SUCCESS !=
+      card_fetch_wallet_list(&configuration, &response)) {
     return false;
   }
 
   // Do not accept the same card again
-  configuration.acceptable_cards ^= response.tapped_card;
-  configuration.heading = ui_text_tap_2_2_cards;
-  configuration.skip_card_removal = true;
+  configuration.operation.acceptable_cards ^= response.card_info.tapped_card;
+  configuration.operation.skip_card_removal = true;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = ui_text_tap_2_2_cards;
 
   response.wallet_list = &wallets_in_card2;
-  response.tapped_card = 0;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
 
-  if (!card_fetch_wallet_list(&configuration, &response)) {
+  if (CARD_OPERATION_SUCCESS !=
+      card_fetch_wallet_list(&configuration, &response)) {
     return false;
   }
 

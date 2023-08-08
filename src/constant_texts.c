@@ -142,6 +142,16 @@ const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] = {
     "Press the center button to proceed",
 };
 
+// Card health check text
+const char *ui_text_card_seems_healthy = "Card seems healthy";
+const char *ui_text_click_to_view_wallets = "Click Ok to view wallets";
+const char *ui_text_no_wallets_fetched =
+    "No Wallets fetched\nClick Ok to return";
+const char *ui_text_card_health_check_start = "Tap a card to check it's health";
+const char *ui_text_card_health_check_error[] = {
+    "Card error: ",
+    "Visit cypherock.com/error-codes for more info"};
+
 // Manager app text
 // Device authentication text
 const char *ui_text_message_device_authenticating = "Device\nauthenticating...";
@@ -416,15 +426,7 @@ const char *ui_text_auth_process = "Waiting for device authentication...";
 const char *ui_text_sync_x1card_confirm =
     "Device will be synced with wallets in card Confirm?";
 
-const char *ui_text_card_seems_healthy = "Card seems healthy";
-const char *ui_text_click_to_view_wallets = "Click Ok to view wallets";
-const char *ui_text_no_wallets_fetched =
-    "No Wallets fetched\nClick Ok to return";
 const char *ui_text_no_wallets_present = "No Wallets Present in card";
-const char *ui_text_card_health_check_start = "Tap a card to check it's health";
-const char *ui_text_card_health_check_error[] = {
-    "Card error: ",
-    "Visit cypherock.com/error-codes for more info"};
 const char *ui_text_device_verification_success =
     "Device successfully authenticated";
 const char *ui_text_device_verification_failure =

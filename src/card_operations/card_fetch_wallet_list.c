@@ -99,37 +99,36 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
-                            card_fetch_wallet_list_response_t *response) {
-  bool result = false;
-  if (NULL == configuration || NULL == response ||
-      NULL == response->wallet_list) {
-    return result;
+card_error_type_e card_fetch_wallet_list(
+    const card_fetch_wallet_list_config_t *config,
+    card_fetch_wallet_list_response_t *response) {
+  if (NULL == config || NULL == response || NULL == response->wallet_list) {
+    return CARD_OPERATION_DEFAULT_INVALID;
   }
 
   // Render the instruction screen
-  instruction_scr_init(configuration->msg, configuration->heading);
+  instruction_scr_init(config->frontend.msg, config->frontend.heading);
 
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
   while (1) {
-    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    card_data.nfc_data.acceptable_cards = configuration->acceptable_cards;
+    card_data.nfc_data.acceptable_cards = config->operation.acceptable_cards;
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
 
     card_initialize_applet(&card_data);
-    response->tapped_card = card_data.nfc_data.tapped_card;
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status = nfc_list_all_wallet(response->wallet_list);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
         buzzer_start(BUZZER_DURATION);
-        if (!configuration->skip_card_removal) {
+        if (!config->operation.skip_card_removal) {
           wait_for_card_removal();
         }
-        result = true;
         break;
       } else {
         card_handle_errors(&card_data);
@@ -141,16 +140,25 @@ bool card_fetch_wallet_list(card_fetch_wallet_list_config_t *configuration,
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
-        instruction_scr_init(configuration->msg, configuration->heading);
+        instruction_scr_init(config->frontend.msg, config->frontend.heading);
         continue;
       }
     }
 
     // If control reached here, it is an unrecoverable error, so break
-    result = false;
     break;
   }
 
+  if (response->card_info.tapped_family_id) {
+    memcpy(card_data.nfc_data.family_id,
+           config->operation.expected_family_id,
+           FAMILY_ID_SIZE);
+  }
+  response->card_info.pairing_error = card_data.nfc_data.pairing_error;
+  response->card_info.tapped_card = card_data.nfc_data.tapped_card;
+  response->card_info.recovery_mode = card_data.nfc_data.recovery_mode;
+  response->card_info.status = card_data.nfc_data.status;
+
   nfc_deselect_card();
-  return result;
+  return card_data.error_type;
 }
