@@ -125,9 +125,7 @@ void card_health_check(void) {
   }
 
   // If the tapped card is not paired, it is a terminal case in the flow
-  // Card operation will return ABORT but the status will signify SW_NO_ERROR
-  if (CARD_OPERATION_ABORT_OPERATION == status &&
-      SW_NO_ERROR == response.card_info.status) {
+  if (true == response.card_info.pairing_error) {
     return;
   }
 

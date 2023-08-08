@@ -40,6 +40,7 @@ typedef struct NFC_connection_data {
   uint8_t family_id[FAMILY_ID_SIZE +
                     2];    // TODO: Review(need to find reason for extra byte)
   uint8_t card_key_id[4];
+  bool pairing_error;
   uint8_t recovery_mode;
   uint8_t card_absent_retries;
   uint8_t *card_version;

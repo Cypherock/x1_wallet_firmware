@@ -198,6 +198,7 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
            config->operation.expected_family_id,
            FAMILY_ID_SIZE);
   }
+  response->card_info.pairing_error = card_data.nfc_data.pairing_error;
   response->card_info.tapped_card = card_data.nfc_data.tapped_card;
   response->card_info.recovery_mode = card_data.nfc_data.recovery_mode;
   response->card_info.status = card_data.nfc_data.status;
