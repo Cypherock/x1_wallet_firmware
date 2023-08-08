@@ -42,11 +42,14 @@ endif()
 target_include_directories(${EXECUTABLE} PRIVATE
         apps/manager_app
         apps/manager_app/onboarding
+
         apps/btc_family
         apps/btc_family/btc
         apps/btc_family/dash
         apps/btc_family/doge
         apps/btc_family/ltc
+
+        apps/near_app
 
         src/
         src/menu
