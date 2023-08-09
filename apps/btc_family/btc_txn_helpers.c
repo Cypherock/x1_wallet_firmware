@@ -154,7 +154,6 @@ STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-// TODO: fix weight for segwit transactions - effects upper-limit fee check
 STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
   uint8_t segwit_count = 0;
   uint32_t weight = 0;
@@ -172,8 +171,6 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
                      // Check if current input is segwit or not
     if (0 == txn_ctx->inputs[input_index].script_pub_key.bytes[0]) {
       segwit_count++;
-    } else {
-      weight += txn_ctx->inputs[input_index].script_pub_key.size;
     }
   }
 
