@@ -34,7 +34,7 @@
  * device flash.
  *
  * @param flash_wallet A pointer to a @ref Flash_Wallet object that represents
- * copy of wallet info on flash.
+ * wallet to be deleted on flash.
  */
 void delete_wallet_flow(const Flash_Wallet *flash_wallet);
 #endif

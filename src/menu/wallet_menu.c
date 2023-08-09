@@ -131,7 +131,7 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static Flash_Wallet flash_wallet = {0};
+static const Flash_Wallet *wallet_ptr = NULL;
 
 static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .p0_cb = ignore_p0_handler,
@@ -139,7 +139,7 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
                                         .usb_cb = NULL,
                                         .nfc_cb = NULL,
                                         .evt_cfg_ptr = &device_nav_evt_config,
-                                        .flow_data_ptr = &flash_wallet};
+                                        .flow_data_ptr = NULL};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -151,23 +151,10 @@ static const flow_step_t wallet_step = {.step_init_cb = wallet_menu_initialize,
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
                               const void *data_ptr) {
-  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
-
-  if (VALID_WALLET == wallet_ptr->state &&
-      true != wallet_ptr->is_wallet_locked &&
-      0x0f == wallet_ptr->cards_states) {
-    ignore_p0_event();
-  } else {
-    memzero(&wallet_ptr, sizeof(wallet_ptr));
-    /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-     * detected, or a wallet flow was executed */
-    engine_delete_current_flow_step(ctx);
-  }
+  ignore_p0_event();
 }
 
 static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
-
   if (1 == wallet_ptr->is_wallet_locked) {
     ui_scrollable_page(NULL,
                        ui_text_wallet_lock_continue_to_unlock,
@@ -219,8 +206,6 @@ static void wallet_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
 static void wallet_menu_handler(engine_ctx_t *ctx,
                                 ui_event_t ui_event,
                                 const void *data_ptr) {
-  Flash_Wallet *wallet_ptr = (Flash_Wallet *)data_ptr;
-
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case VIEW_SEED: {
@@ -266,7 +251,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
    * detected, or a wallet flow was executed */
   engine_delete_current_flow_step(ctx);
 
-  memzero(wallet_ptr, sizeof(Flash_Wallet));
+  wallet_ptr = NULL;
   return;
 }
 
@@ -276,6 +261,6 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
 const flow_step_t *wallet_menu_get_step(const Flash_Wallet *selected_wallet) {
   ASSERT(NULL != selected_wallet);
 
-  memcpy(&flash_wallet, selected_wallet, sizeof(Flash_Wallet));
+  wallet_ptr = selected_wallet;
   return &wallet_step;
 }
