@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 usage () {
     echo -e "USAGE: $0 [-c] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"

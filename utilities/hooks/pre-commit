@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Run clang-format
 CLANG_FORMAT_EXECUTABLE="clang-format"

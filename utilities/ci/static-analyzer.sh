@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Uncomment the following line to disable clang-tidy checks
 # exit 0
