@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    evm_app.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,18 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include "host_interface.h"
-
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
 #include "evm_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
+
+#include "evm_api.h"
+#include "evm_priv.h"
 #include "status_api.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,15 +79,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -104,51 +98,31 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
+void evm_main(usb_event_t usb_evt) {
+  evm_query_t query = EVM_QUERY_INIT_DEFAULT;
 
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    case 7: {
-      evm_main(usb_evt);
+  if (false == decode_evm_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+  switch ((uint8_t)query.which_request) {
+    case EVM_QUERY_GET_PUBLIC_KEYS_TAG: {
+      delay_scr_init("Detected Ethereum query", DELAY_TIME);
+      // evm_get_public_keys(&query);
       break;
     }
     default: {
-      // TODO: send core error about invalid applet id
+      /* In case we ever encounter invalid query, the USB event should be
+       * cleared manually */
+      usb_clear_event();
       break;
     }
   }
 
-  main_menu_set_update_req(true);
   return;
 }
