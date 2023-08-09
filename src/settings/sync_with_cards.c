@@ -106,8 +106,10 @@ static bool get_wallets_from_card(wallet_list_t *wallet_list,
  *
  * @param wallet_list The list of wallets present in an X1 card
  * @param tapped_card The encoded value of the tapped card
+ * @return true If the flash write operation was performed successfully
+ * @return false If the flash write operation returned some error
  */
-static void sync_wallets_in_flash(const wallet_list_t *wallet_list,
+static bool sync_wallets_in_flash(const wallet_list_t *wallet_list,
                                   const uint8_t *tapped_card);
 
 /**
@@ -153,7 +155,7 @@ static bool get_wallets_from_card(wallet_list_t *wallet_list,
   return true;
 }
 
-static void sync_wallets_in_flash(const wallet_list_t *wallet_list,
+static bool sync_wallets_in_flash(const wallet_list_t *wallet_list,
                                   const uint8_t *tapped_card) {
   for (uint8_t index = 0; index < wallet_list->count; index++) {
     Flash_Wallet new_wallet = {0};
@@ -172,11 +174,14 @@ static void sync_wallets_in_flash(const wallet_list_t *wallet_list,
       new_wallet.challenge.card_locked = *tapped_card;
     }
 
-    uint32_t dummy;
-    add_wallet_to_flash(&new_wallet, &dummy);
+    uint32_t flash_index = MAX_WALLETS_ALLOWED;
+    if (SUCCESS_ != add_wallet_to_flash(&new_wallet, &flash_index) ||
+        MAX_WALLETS_ALLOWED <= flash_index) {
+      return false;
+    }
   }
 
-  return;
+  return true;
 }
 
 bool sync_with_card_eligibility(void) {
@@ -228,7 +233,12 @@ void sync_with_cards(void) {
   delay_scr_init(ui_text_sync_wallets_next_steps, DELAY_TIME);
 
   flash_delete_all_wallets();
-  sync_wallets_in_flash(&wallets_in_card, &tapped_card);
+
+  if (!sync_wallets_in_flash(&wallets_in_card, &tapped_card)) {
+    mark_core_error_screen(
+        ui_text_something_went_wrong_contact_support_send_logs);
+    return;
+  }
 
   uint8_t wallets_synced = 0;
   char msg[100] = "";
@@ -238,12 +248,6 @@ void sync_with_cards(void) {
     if (!wallet_is_filled(index, &state)) {
       continue;
     }
-
-    clear_wallet_data();
-
-    memcpy(wallet.wallet_id, get_wallet_id(index), WALLET_ID_SIZE);
-    memcpy(wallet.wallet_name, get_wallet_name(index), NAME_SIZE);
-    wallet.wallet_info = get_wallet_info(index);
 
     // If the wallet is locked, then move on to the next wallet
     if (is_wallet_locked(index)) {
@@ -263,7 +267,7 @@ void sync_with_cards(void) {
       continue;
     }
 
-    sync_state_e flow_state = sync_wallets_flow();
+    sync_state_e flow_state = sync_wallets_flow(get_wallet_id(index));
     bool abort = false;
 
     switch (flow_state) {
@@ -282,7 +286,7 @@ void sync_with_cards(void) {
           snprintf(msg,
                    sizeof(msg),
                    UI_TEXT_SYNC_WALLET_LOCKED,
-                   (char *)wallet.wallet_name);
+                   (char *)get_wallet_name(index));
           delay_scr_init(msg, DELAY_TIME);
         } else {
           abort = true;
@@ -297,7 +301,7 @@ void sync_with_cards(void) {
         snprintf(msg,
                  sizeof(msg),
                  UI_TEXT_SYNC_WALLET_DONE,
-                 (char *)wallet.wallet_name);
+                 (char *)get_wallet_name(index));
         delay_scr_init(msg, DELAY_TIME);
         wallets_synced += 1;
         break;
@@ -307,8 +311,6 @@ void sync_with_cards(void) {
       default:
         break;
     }
-
-    clear_wallet_data();
 
     // Return early if we have to abort
     if (abort) {

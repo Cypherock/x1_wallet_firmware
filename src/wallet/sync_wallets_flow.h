@@ -46,9 +46,9 @@ typedef enum {
  * @details The flow takes PIN input based on wallet configuration and executes
  * card flow to fetch atleast threshold shares. If shares are received
  * successfully, the device share is generated and the wallet is marked valid.
- * @note The caller must fill wallet_id, wallet_name and wallet_info fields of
- * the global `wallet` variable of the desired wallet to be synced
  *
+ * @param wallet_id Pointer to buffer containing the wallet ID of the wallet
+ * that needs to be synced on the X1 Vault
  * @return sync_state_e Final state of the flow
  * It could be of of the following
  * SYNC_COMPLETED: If the wallet was synced successfully
@@ -59,6 +59,6 @@ typedef enum {
  * SYNC_EARLY_EXIT: If the user tries to exit the flow (by pressing back button
  * on PIN input)
  */
-sync_state_e sync_wallets_flow(void);
+sync_state_e sync_wallets_flow(const uint8_t *wallet_id);
 
 #endif /* SYNC_WALLETS_FLOW */

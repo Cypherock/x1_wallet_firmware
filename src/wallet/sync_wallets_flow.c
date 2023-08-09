@@ -221,7 +221,20 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-sync_state_e sync_wallets_flow(void) {
+sync_state_e sync_wallets_flow(const uint8_t *wallet_id) {
+  clear_wallet_data();
+
+  uint8_t index = MAX_WALLETS_ALLOWED;
+  if (SUCCESS_ != get_first_matching_index_by_id(wallet_id, &index) ||
+      MAX_WALLETS_ALLOWED <= index) {
+    return SYNC_EARLY_EXIT;
+  }
+
+  // Populate wallet structure
+  memcpy(wallet.wallet_id, get_wallet_id(index), WALLET_ID_SIZE);
+  memcpy(wallet.wallet_name, get_wallet_name(index), NAME_SIZE);
+  wallet.wallet_info = get_wallet_info(index);
+
   sync_state_e current_state = SYNC_PIN_INPUT;
   // Generate wallet share by perform 2 card tap flow
   while (1) {
@@ -232,6 +245,8 @@ sync_state_e sync_wallets_flow(void) {
       break;
     }
   }
+
+  clear_wallet_data();
 
   return current_state;
 }
