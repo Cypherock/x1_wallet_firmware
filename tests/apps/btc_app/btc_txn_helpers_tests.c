@@ -359,6 +359,17 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
   TEST_ASSERT_EQUAL_INT(2, btc_verify_input(raw_txn, 929, &input));
 }
 
+/* FIX: Required to fix the hardcoded value of 106 (2 + 33 + 71) since the
+ * signature part of the script can vary (71 bytes | 72 bytes | 73 bytes).
+ * Check the get_transaction_weight function. */
+static inline uint32_t fix_legacy_weight(uint32_t legacy_weight,
+                                         uint32_t input_count,
+                                         uint32_t script_sig_size) {
+  return legacy_weight +
+         ((int32_t)script_sig_size - EXPECTED_SCRIPT_SIG_SIZE * input_count) *
+             4;
+}
+
 TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1) {
   /* Test data source:
    * https://blockchain.info/rawtx/ee6507696b0691651355797c77cf4a6e2a0a30540784c3fd4f45f92ff890b0c1?format=json
@@ -385,15 +396,17 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1) {
   /* Input 0 ScriptSig:
    * 47304402205291ec6f7870d49158d3e03cd7f3cdf33044cbd248d63f73ed46f4e83bac173f022053639907c363acd4c2c7774616417a4bb2c0817e49f630841e9329970f7d5d01012103c5d52e46f6a9312127d552f201ec7cde3c8fae420731bc198c650ac1f685ae8b
    */
-  int32_t script_sig_size = 106 * 4;
+  uint32_t script_sig_size = 106;
 
   /* 76a914f9f6a393d59b793a421b5f995bb09da767ec4f6588ac */
   txn_ctx.outputs[0].script_pub_key.size = 25;
   /* 76a9148d10806ee8786726bf2d2b03b7168fbd96f1475088ac */
   txn_ctx.outputs[1].script_pub_key.size = 25;
 
-  TEST_ASSERT_EQUAL_UINT(900,
-                         get_transaction_weight(&txn_ctx) + script_sig_size);
+  uint32_t weight = get_transaction_weight(&txn_ctx);
+  uint32_t fixed_weight =
+      fix_legacy_weight(weight, txn_ctx.metadata.input_count, script_sig_size);
+  TEST_ASSERT_EQUAL_UINT(900, fixed_weight);
 
   free(txn_ctx.inputs);
   free(txn_ctx.outputs);
@@ -425,15 +438,17 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2) {
   /* Input 0 ScriptSig:
    * 493046022100cacdac51a47bdd90c9c2f11450b929f131c0433bb6f651a333611d2e01cb2da9022100de25c004529df921fc0e181fcd069b75851f6791999512bdc18632aa0e5fd641012103bd32d9b96614bbc1efb50cfc78b19430ef1297fe68ae8a276b35f46e097440d4
    */
-  int32_t script_sig_size = 108 * 4;
+  uint32_t script_sig_size = 108;
 
   /* 76a914bcf8d79a438f3fb5dac48074811c452761b9479a88ac */
   txn_ctx.outputs[0].script_pub_key.size = 25;
   /* 76a914699dbaa9e46b869021b3d567cbb3e8e6915ecdd288ac */
   txn_ctx.outputs[1].script_pub_key.size = 25;
 
-  TEST_ASSERT_EQUAL_UINT(908,
-                         get_transaction_weight(&txn_ctx) + script_sig_size);
+  uint32_t weight = get_transaction_weight(&txn_ctx);
+  uint32_t fixed_weight =
+      fix_legacy_weight(weight, txn_ctx.metadata.input_count, script_sig_size);
+  TEST_ASSERT_EQUAL_UINT(908, fixed_weight);
 
   free(txn_ctx.inputs);
   free(txn_ctx.outputs);
@@ -445,7 +460,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2) {
 static inline uint32_t fix_segwit_weight(uint32_t segwit_weight,
                                          uint32_t input_count,
                                          uint32_t witness_size) {
-  return segwit_weight - 106 * input_count + witness_size;
+  return segwit_weight - EXPECTED_SCRIPT_SIG_SIZE * input_count + witness_size;
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1) {
