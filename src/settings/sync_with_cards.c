@@ -139,19 +139,25 @@ static bool get_wallets_from_card(wallet_list_t *wallet_list,
   card_fetch_wallet_list_config_t configuration = {0};
   card_fetch_wallet_list_response_t response = {0};
 
-  configuration.acceptable_cards = ACCEPTABLE_CARDS_ALL;
-  configuration.heading = ui_text_tap_1_2_cards;
-  configuration.msg = ui_text_place_card_below;
-  configuration.skip_card_removal = false;
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.skip_card_removal = false;
+  configuration.operation.expected_family_id = get_family_id();
+
+  configuration.frontend.heading = ui_text_tap_1_2_cards;
+  configuration.frontend.msg = ui_text_place_card_below;
 
   response.wallet_list = wallet_list;
-  response.tapped_card = 0;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.pairing_error = false;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
 
   if (!card_fetch_wallet_list(&configuration, &response)) {
     return false;
   }
 
-  *tapped_card = response.tapped_card;
+  *tapped_card = response.card_info.tapped_card;
   return true;
 }
 
