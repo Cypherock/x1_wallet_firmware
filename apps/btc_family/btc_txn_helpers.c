@@ -93,8 +93,15 @@
 /**
  * @brief Returns transaction weight for a given transaction
  * @details Weight is required for fee estimation and signifies how much time
- *          would it take to execute a txn in block. Refer
- * https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-size-calculations
+ *          would it take to execute a txn in block.
+ *          This function will give precise results for P2PKH and P2WPKH when we
+ *          use a fixed size for script_sig in addition to the weight returned
+ *          by this function. For P2SH & P2WSH, the function will give wrong
+ *          results so we will re-evaluate this function when the support for
+ *          those types is added. Refer:
+ *          https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-size-calculations
+ *          https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/core/src/apps/bitcoin/sign_tx/tx_weight.py#L95
+ *          https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/common/protob/messages-bitcoin.proto#L357
  *
  * @param [in] txn_ctx Instance of btc_txn_context_t
  *
@@ -154,7 +161,6 @@ STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-// TODO: fix weight for segwit transactions - effects upper-limit fee check
 STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
   uint8_t segwit_count = 0;
   uint32_t weight = 0;
@@ -168,11 +174,12 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
     weight += 32;    // previous transaction hash
     weight += 4;     // previous output index
     weight += 1;     // script length size
-    weight += txn_ctx->inputs[input_index].script_pub_key.size;
-    weight += 4;    // sequence
-                    // Check if current input is segwit or not
+    weight += 4;     // sequence
+                     // Check if current input is segwit or not
     if (0 == txn_ctx->inputs[input_index].script_pub_key.bytes[0]) {
       segwit_count++;
+    } else {
+      weight += EXPECTED_SCRIPT_SIG_SIZE;
     }
   }
 
@@ -191,8 +198,8 @@ STATIC uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx) {
 
   if (segwit_count > 0) {
     weight += 2;    // Segwit headers
-    weight +=
-        (106 * segwit_count);    // Adding sizes of all witnesses for all inputs
+    weight += (EXPECTED_SCRIPT_SIG_SIZE *
+               segwit_count);    // Adding sizes of all witnesses for all inputs
   }
 
   return weight;
