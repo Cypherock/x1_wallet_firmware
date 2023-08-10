@@ -129,7 +129,7 @@ bool decode_evm_query(const uint8_t *data,
   return status;
 }
 
-bool encode_evm_result(evm_result_t *result,
+bool encode_evm_result(const evm_result_t *result,
                        uint8_t *buffer,
                        uint16_t max_buffer_len,
                        size_t *bytes_written_out) {

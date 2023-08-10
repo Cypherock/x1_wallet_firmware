@@ -1,5 +1,5 @@
 /**
- * @file    evm_app.h
+ * @file    evm_main.h
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef EVM_APP_H
-#define EVM_APP_H
+#ifndef EVM_MAIN_H
+#define EVM_MAIN_H
 
 /*****************************************************************************
  * INCLUDES
@@ -46,4 +46,4 @@
  */
 void evm_main(usb_event_t usb_evt);
 
-#endif /* EVM_APP_H */
+#endif /* EVM_MAIN_H */

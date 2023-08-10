@@ -54,7 +54,7 @@ bool decode_evm_query(const uint8_t *data,
  * @param[out] bytes_written_out: bytes written to bytestream
  * @return bool True if decoding was successful, else false
  */
-bool encode_evm_result(evm_result_t *result,
+bool encode_evm_result(const evm_result_t *result,
                        uint8_t *buffer,
                        uint16_t max_buffer_len,
                        size_t *bytes_written_out);
@@ -110,4 +110,4 @@ void evm_send_result(evm_result_t *result);
  */
 bool evm_get_query(evm_query_t *query, pb_size_t exp_query_tag);
 
-#endif
+#endif /* EVM_API_H */
