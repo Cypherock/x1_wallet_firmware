@@ -154,6 +154,11 @@ void handle_core_errors() {
     /* TODO: Send message to host if P0 occured if core status is set to usb */
   }
 
+  if (true == evt.abort_evt) {
+    usb_clear_event();
+    p0_reset_evt();
+  }
+
   display_core_error();
   return;
 }
