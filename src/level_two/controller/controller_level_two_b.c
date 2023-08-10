@@ -102,7 +102,6 @@ void level_two_controller_b() {
         }
 #if X1WALLET_MAIN
         if (flow_level.level_two == LEVEL_THREE_SYNC_WALLET_FLOW) {
-          sync_cards_controller_b();
           counter.next_event_flag = true;
           return;
         }

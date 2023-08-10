@@ -81,9 +81,6 @@ extern const char *GIT_TAG;
 extern const char *GIT_BRANCH;
 
 void level_three_advanced_settings_tasks() {
-#if X1WALLET_MAIN
-  uint8_t valid_wallets = get_valid_wallet_count();
-#endif
   switch (flow_level.level_two) {
     case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
       transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
@@ -93,19 +90,6 @@ void level_three_advanced_settings_tasks() {
 
 #if X1WALLET_MAIN
     case LEVEL_THREE_SYNC_CARD_CONFIRM: {
-#ifndef DEV_BUILD
-      if (valid_wallets != get_wallet_count()) {
-        reset_flow_level();
-        mark_error_screen(ui_text_wallet_partial_fix);
-        break;
-      }
-#endif
-      if (get_keystore_used_count() < 2) {
-        tap_card_take_to_pairing();
-        mark_error_screen(ui_text_error_pair_atleast_2_cards);
-        break;
-      }
-      confirm_scr_init(ui_text_sync_x1card_confirm);
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
@@ -162,15 +146,12 @@ void level_three_advanced_settings_tasks() {
 #endif
 
     case LEVEL_THREE_SYNC_CARD: {
-      tap_a_card_and_sync_task();
     } break;
 
     case LEVEL_THREE_SYNC_SELECT_WALLET: {
-      mark_event_over();
     } break;
 
     case LEVEL_THREE_SYNC_WALLET_FLOW: {
-      sync_cards_task();
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN: {

@@ -121,7 +121,6 @@ void level_three_old_wallet_controller() {
       verify_wallet_controller();
     } break;
     case LEVEL_THREE_SYNC_WALLET: {
-      sync_cards_controller();
     } break;
     default:
       break;

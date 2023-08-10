@@ -149,22 +149,6 @@ void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold);
  *
  * @note
  */
-void tap_a_card_and_sync_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void delete_from_cards_controller();
 
 /**
