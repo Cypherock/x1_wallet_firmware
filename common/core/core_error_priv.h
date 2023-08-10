@@ -33,8 +33,10 @@
  * @brief Handle P0 timeout event and display error message set by core
  * opearations using @ref mark_core_error_screen. In case of P0 timeout event,
  * message is displayed (if local error message buffer was empty) and a core
- * error is sent to host. After P0 handling, if a core error message was set,
- * that message is displayed.
+ * error is sent to host. In case of abort event from the host, the usb event
+ * is cleared so that stale event does not go to application in next event loop.
+ * After P0 handling, if a core error message was set, that message is displayed
+ * if inactivity was the reason.
  *
  * NOTE:
  * 1. Should be called on initialization of a core flow like main menu or
