@@ -131,15 +131,18 @@ static main_menu_options_e main_menu_lookup(uint16_t menu_selectn_idx);
 static void main_menu_reset_context(void);
 
 /**
- * The function retrieves the wallet ID from a user selection index.
+ * @brief The function retrieves Flash_Wallet pointer based on a selection from
+ * main menu wallet list.
  *
  * @param selection The selection parameter represents the user's selection from
- * the main menu. It should be a value between 1 and 4, inclusive.
- * @param wallet_id A pointer to a uint8_t variable where the wallet ID will be
- * stored.
+ * the main menu wallet list. It should be a value between 1 and 4 (inclusive).
+ * @param flash_wallet A double pointer to a Flash_Wallet object. This parameter
+ * is used to store the address of the Flash_Wallet object retrieved from the
+ * list selection.
  */
-static void get_wallet_id_from_list_selection(uint8_t selection,
-                                              uint8_t *wallet_id);
+
+static void get_flash_wallet_from_list_selection(uint8_t selection,
+                                                 Flash_Wallet **flash_wallet);
 
 /**
  * @brief This p0 event callback function handles clearing p0 events occured
@@ -184,18 +187,15 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
   ignore_p0_event();
 }
 
-static void get_wallet_id_from_list_selection(uint8_t selection,
-                                              uint8_t *wallet_id) {
-  ASSERT(0 != selection && 4 >= selection);
+static void get_flash_wallet_from_list_selection(uint8_t selection,
+                                                 Flash_Wallet **flash_wallet) {
+  ASSERT(0 != selection && 4 >= selection && NULL != flash_wallet);
 
   const char *wallet_list[MAIN_MENU_MAX_OPTIONS] = {0};
   get_wallet_list(&wallet_list[0]);
 
-  Flash_Wallet *temp_wallet = NULL;
   ASSERT(SUCCESS ==
-         get_flash_wallet_by_name(wallet_list[selection - 1], &temp_wallet));
-
-  memcpy(wallet_id, temp_wallet->wallet_id, WALLET_ID_SIZE);
+         get_flash_wallet_by_name(wallet_list[selection - 1], flash_wallet));
 }
 
 static bool main_menu_get_update_req(void) {
@@ -316,10 +316,12 @@ void main_menu_handler(engine_ctx_t *ctx,
 
   switch (menu_selected) {
     case MAIN_MENU_OLD_WALLET: {
-      uint8_t wallet_id[WALLET_ID_SIZE] = {0};
-      get_wallet_id_from_list_selection(ui_event.list_selection, wallet_id);
-      engine_add_next_flow_step(ctx, wallet_menu_get_step(wallet_id));
+      Flash_Wallet *flash_wallet = NULL;
+      get_flash_wallet_from_list_selection(ui_event.list_selection,
+                                           &flash_wallet);
+      engine_add_next_flow_step(ctx, wallet_menu_get_step(flash_wallet));
       engine_goto_next_flow_step(ctx);
+      flash_wallet = NULL;
       break;
     }
     case MAIN_MENU_CREATE_WALLET: {
