@@ -53,7 +53,7 @@ bool decode_btc_query(const uint8_t *data,
  * @param[out] bytes_written_out: bytes written to bytestream
  * @return bool True if decoding was successful, else false
  */
-bool encode_btc_result(btc_result_t *result,
+bool encode_btc_result(const btc_result_t *result,
                        uint8_t *buffer,
                        uint16_t max_buffer_len,
                        size_t *bytes_written_out);
@@ -95,7 +95,7 @@ void btc_send_error(pb_size_t which_error, uint32_t error_code);
  *
  * @param result The result which needs to be sent to the host.
  */
-void btc_send_result(btc_result_t *result);
+void btc_send_result(const btc_result_t *result);
 
 /**
  * @brief This API receives request of type btc_query_t of type

@@ -128,12 +128,13 @@ bool decode_manager_query(const uint8_t *data,
   return status;
 }
 
-bool encode_manager_result(manager_result_t *result,
+bool encode_manager_result(const manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
     return false;
+  }
 
   /* Create a stream that will write to our buffer. */
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
@@ -171,10 +172,8 @@ void manager_send_error(pb_size_t which_error, uint32_t error_code) {
   manager_send_result(&result);
 }
 
-void manager_send_result(manager_result_t *result) {
-  // TODO: Eventually 2059 will be replaced by MANAGER_RESULT_SIZE when all
-  // option files for manager app are complete
-  uint8_t buffer[2059] = {0};
+void manager_send_result(const manager_result_t *result) {
+  uint8_t buffer[MANAGER_RESULT_SIZE] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_manager_result(result, buffer, sizeof(buffer), &bytes_encoded));
   usb_send_msg(&buffer[0], bytes_encoded);

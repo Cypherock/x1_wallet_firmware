@@ -96,7 +96,7 @@ void evm_send_error(pb_size_t which_error, uint32_t error_code);
  *
  * @param result The result which needs to be sent to the host.
  */
-void evm_send_result(evm_result_t *result);
+void evm_send_result(const evm_result_t *result);
 
 /**
  * @brief This API receives request of type evm_query_t of type

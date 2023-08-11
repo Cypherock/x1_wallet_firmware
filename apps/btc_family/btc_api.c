@@ -128,7 +128,7 @@ bool decode_btc_query(const uint8_t *data,
   return status;
 }
 
-bool encode_btc_result(btc_result_t *result,
+bool encode_btc_result(const btc_result_t *result,
                        uint8_t *buffer,
                        uint16_t max_buffer_len,
                        size_t *bytes_written_out) {
@@ -169,7 +169,7 @@ void btc_send_error(pb_size_t which_error, uint32_t error_code) {
   btc_send_result(&result);
 }
 
-void btc_send_result(btc_result_t *result) {
+void btc_send_result(const btc_result_t *result) {
   // TODO: Eventually 1700 will be replaced by BTC_RESULT_SIZE when all
   // option files for bitcoin app are complete
   uint8_t buffer[1700] = {0};

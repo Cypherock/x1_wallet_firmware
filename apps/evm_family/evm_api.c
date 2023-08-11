@@ -170,7 +170,7 @@ void evm_send_error(pb_size_t which_error, uint32_t error_code) {
   evm_send_result(&result);
 }
 
-void evm_send_result(evm_result_t *result) {
+void evm_send_result(const evm_result_t *result) {
   // TODO: Eventually 1700 will be replaced by EVM_RESULT_SIZE when all
   // option files for EVM app are complete
   uint8_t buffer[1700] = {0};
