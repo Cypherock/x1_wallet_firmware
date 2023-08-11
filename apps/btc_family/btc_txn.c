@@ -328,6 +328,9 @@ static bool handle_initiate_query(const btc_query_t *query) {
          &query->sign_txn.initiate,
          sizeof(btc_sign_txn_initiate_request_t));
   send_response(BTC_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
+  // show processing screen for a minimum duration (additional time will add due
+  // to actual processing)
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
   return true;
 }
 
