@@ -54,7 +54,7 @@ bool decode_near_query(const uint8_t *data,
  * @param[out] bytes_written_out: bytes written to bytestream
  * @return bool True if decoding was successful, else false
  */
-bool encode_near_result(near_result_t *result,
+bool encode_near_result(const near_result_t *result,
                         uint8_t *buffer,
                         uint16_t max_buffer_len,
                         size_t *bytes_written_out);
@@ -96,7 +96,7 @@ void near_send_error(pb_size_t which_error, uint32_t error_code);
  *
  * @param result The result which needs to be sent to the host.
  */
-void near_send_result(near_result_t *result);
+void near_send_result(const near_result_t *result);
 
 /**
  * @brief This API receives request of type near_query_t of type

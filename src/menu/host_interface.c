@@ -140,6 +140,9 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       break;
     }
     case 7: {
+      break;
+    }
+    case 8: {
       near_main(usb_evt);
       break;
     }
