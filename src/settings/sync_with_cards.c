@@ -73,8 +73,6 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-// TODO: Remove usage of global variables
-extern Wallet wallet;
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -153,7 +151,8 @@ static bool get_wallets_from_card(wallet_list_t *wallet_list,
   response.card_info.status = 0;
   response.card_info.tapped_family_id = NULL;
 
-  if (!card_fetch_wallet_list(&configuration, &response)) {
+  if (CARD_OPERATION_SUCCESS !=
+      card_fetch_wallet_list(&configuration, &response)) {
     return false;
   }
 
@@ -260,7 +259,7 @@ void sync_with_cards(void) {
       snprintf(msg,
                sizeof(msg),
                UI_TEXT_SYNC_WALLET_LOCKED,
-               (char *)wallet.wallet_name);
+               (char *)get_wallet_name(index));
       delay_scr_init(msg, DELAY_TIME);
       continue;
     }
@@ -268,7 +267,7 @@ void sync_with_cards(void) {
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_SYNC_WALLET_PROMPT,
-             (char *)wallet.wallet_name);
+             (char *)get_wallet_name(index));
     if (!core_scroll_page(NULL, msg, NULL)) {
       continue;
     }
@@ -287,8 +286,8 @@ void sync_with_cards(void) {
         if (is_wallet_locked(index)) {
           // Inform user if the wallet is locked in the card and move on to
           // the next card
+          clear_core_error_screen();
 
-          // TODO: Clear core error screen
           snprintf(msg,
                    sizeof(msg),
                    UI_TEXT_SYNC_WALLET_LOCKED,

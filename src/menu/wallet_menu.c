@@ -65,6 +65,7 @@
 #include "core_error_priv.h"
 #include "delete_wallet_flow.h"
 #include "menu_priv.h"
+#include "sync_wallets_flow.h"
 #include "ui_screens.h"
 #include "view_seed_flow.h"
 #include "wallet_list.h"
@@ -228,7 +229,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
     } else {
       switch (wallet_ptr->state) {
         case VALID_WALLET_WITHOUT_DEVICE_SHARE:
-          // TODO: Handle Sync wallet
+          (void)sync_wallets_flow(wallet_ptr->wallet_id);
           break;
 
         case INVALID_WALLET:
