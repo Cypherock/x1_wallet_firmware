@@ -53,7 +53,7 @@ bool decode_manager_query(const uint8_t *data,
  * @param[out] bytes_written_out: bytes written to bytestream
  * @return bool True if decoding was successful, else false
  */
-bool encode_manager_result(manager_result_t *result,
+bool encode_manager_result(const manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            size_t *bytes_written_out);
@@ -95,7 +95,7 @@ void manager_send_error(pb_size_t which_error, uint32_t error_code);
  *
  * @param result The result which needs to be sent to the host.
  */
-void manager_send_result(manager_result_t *result);
+void manager_send_result(const manager_result_t *result);
 
 /**
  * @brief This API receives request of type manager_query_t of type

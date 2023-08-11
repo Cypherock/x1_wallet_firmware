@@ -108,19 +108,17 @@ bool decode_manager_query(const uint8_t *data,
     return false;
   }
 
-  /* Initialize manager query */
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(manager_query_t));
 
   /* Create a stream that reads from the buffer. */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);
 
   /* Now we are ready to decode the message. */
-  bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, &query);
+  bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, query_out);
 
-  /* Copy query obj if status is true*/
-  if (true == status) {
-    memcpy(query_out, &query, sizeof(query));
-  } else {
+  /* Send error to host if status is false*/
+  if (false == status) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_DECODING_FAILED);
   }
@@ -128,12 +126,13 @@ bool decode_manager_query(const uint8_t *data,
   return status;
 }
 
-bool encode_manager_result(manager_result_t *result,
+bool encode_manager_result(const manager_result_t *result,
                            uint8_t *buffer,
                            uint16_t max_buffer_len,
                            size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
     return false;
+  }
 
   /* Create a stream that will write to our buffer. */
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
@@ -171,10 +170,8 @@ void manager_send_error(pb_size_t which_error, uint32_t error_code) {
   manager_send_result(&result);
 }
 
-void manager_send_result(manager_result_t *result) {
-  // TODO: Eventually 2059 will be replaced by MANAGER_RESULT_SIZE when all
-  // option files for manager app are complete
-  uint8_t buffer[2059] = {0};
+void manager_send_result(const manager_result_t *result) {
+  uint8_t buffer[MANAGER_RESULT_SIZE] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_manager_result(result, buffer, sizeof(buffer), &bytes_encoded));
   usb_send_msg(&buffer[0], bytes_encoded);
