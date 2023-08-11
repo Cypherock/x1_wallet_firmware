@@ -1,13 +1,13 @@
 /**
- * @file    near_context.h
+ * @file    near_helpers.h
  * @author  Cypherock X1 Team
- * @brief   Header file defining typedefs and MACROS for the NEAR app
+ * @brief   Header file to export some helper functions for the NEAR app
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef NEAR_CONTEXT_H
-#define NEAR_CONTEXT_H
+#ifndef NEAR_HELPERS_H
+#define NEAR_HELPERS_H
 
 /*****************************************************************************
  * INCLUDES
@@ -18,23 +18,10 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-// NEAR implicit account derivation path: m/44'/397'/0'/0'/i'
-#define NEAR_IMPLICIT_ACCOUNT_DEPTH 5
-
-#define NEAR_PURPOSE_INDEX (0x8000002C)    // 44'
-#define NEAR_COIN_INDEX (0x8000018D)       // 397'
-#define NEAR_ACCOUNT_INDEX 0x80000000      // 0'
-#define NEAR_CHANGE_INDEX 0x80000000       // 0'
-
-#define NEAR_SYMBOL "NEAR"
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-
-// TODO: Populate structure for NEAR
-typedef struct {
-} near_config_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -43,5 +30,20 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Verifies the derivation path for any inconsistent/unsupported values.
+ * The derivation depth is fixed at level 5. So if the depth level != 5, then
+ * this function return false indicating invalid derivation path. Also, the path
+ * indices should be hardened (as the EC curve only supports hadened derivation)
+ * otherwise it is considered invalid. The supported derivation path is
+ * `m/44'/397'/0'/0'/i'`.
+ *
+ * @param path      The address derivation path to be checked
+ * @param levels    The number of levels in the derivation path
+ *
+ * @return true If the derivation path is as correct
+ * @return false If the derivation path is NOT as expected
+ */
+bool near_derivation_path_guard(const uint32_t *path, uint8_t levels);
 
-#endif /* NEAR_CONTEXT_H */
+#endif /* NEAR_HELPERS_H */

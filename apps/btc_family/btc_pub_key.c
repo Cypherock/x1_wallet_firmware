@@ -259,11 +259,8 @@ void btc_get_pub_key(btc_query_t *query) {
     return;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_BTC_RECEIVE_PROMPT,
-           g_btc_app->name,
-           wallet_name);
+  snprintf(
+      msg, sizeof(msg), UI_TEXT_RECEIVE_PROMPT, g_btc_app->name, wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

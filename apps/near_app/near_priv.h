@@ -1,40 +1,28 @@
 /**
- * @file    near_context.h
+ * @file    near_priv.h
  * @author  Cypherock X1 Team
- * @brief   Header file defining typedefs and MACROS for the NEAR app
+ * @brief   Support for NEAR app internal operations
+ *          This file is defined to separate Bitcoin's internal use functions,
+ * flows, common APIs
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef NEAR_CONTEXT_H
-#define NEAR_CONTEXT_H
+#ifndef NEAR_PRIV_H
+#define NEAR_PRIV_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
+#include <near/core.pb.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-// NEAR implicit account derivation path: m/44'/397'/0'/0'/i'
-#define NEAR_IMPLICIT_ACCOUNT_DEPTH 5
-
-#define NEAR_PURPOSE_INDEX (0x8000002C)    // 44'
-#define NEAR_COIN_INDEX (0x8000018D)       // 397'
-#define NEAR_ACCOUNT_INDEX 0x80000000      // 0'
-#define NEAR_CHANGE_INDEX 0x80000000       // 0'
-
-#define NEAR_SYMBOL "NEAR"
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-
-// TODO: Populate structure for NEAR
-typedef struct {
-} near_config_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -44,4 +32,13 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-#endif /* NEAR_CONTEXT_H */
+/**
+ * @brief Handler for NEAR public key derivation.
+ * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
+ * query, otherwise the flow is aborted
+ *
+ * @param query object for address public key query
+ */
+void near_get_pub_keys(near_query_t *query);
+
+#endif /* NEAR_PRIV_H */

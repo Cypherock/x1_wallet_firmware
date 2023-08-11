@@ -635,7 +635,7 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
 
   switch (coin) {
     case NEAR:
-      status = near_verify_derivation_path(path, depth);
+      status = false;
       break;
 
     case SOLANA:
@@ -673,7 +673,7 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
 
   switch (coin) {
     case NEAR:
-      status = near_verify_derivation_path(path, depth);
+      status = false;
       break;
 
     case SOLANA:    // m/44'/501'/i'/j'
