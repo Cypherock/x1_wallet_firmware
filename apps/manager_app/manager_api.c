@@ -108,19 +108,17 @@ bool decode_manager_query(const uint8_t *data,
     return false;
   }
 
-  /* Initialize manager query */
-  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(manager_query_t));
 
   /* Create a stream that reads from the buffer. */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);
 
   /* Now we are ready to decode the message. */
-  bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, &query);
+  bool status = pb_decode(&stream, MANAGER_QUERY_FIELDS, query_out);
 
-  /* Copy query obj if status is true*/
-  if (true == status) {
-    memcpy(query_out, &query, sizeof(query));
-  } else {
+  /* Send error to host if status is false*/
+  if (false == status) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_DECODING_FAILED);
   }
