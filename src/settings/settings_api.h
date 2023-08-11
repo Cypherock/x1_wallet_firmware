@@ -85,4 +85,18 @@ void view_card_version(void);
  */
 void factory_reset(void);
 
+/**
+ * @brief This function implements card health check for an X1 card. It will
+ * show user facing messages if there are any card errors and additionally will
+ * show wallet list present in the X1 card to the user.
+ *
+ */
+void card_health_check(void);
+
+/*
+ * @brief This function implements flow which allows user to sync wallets
+ * between an X1 Vault device and 2 X1 Cards.
+ *
+ */
+void sync_with_cards(void);
 #endif /* SETTINGS_API_H */

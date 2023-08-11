@@ -520,7 +520,7 @@ static bool validate_change_address(const HDNode *acc_node) {
   bool status = false;
   if (btc_txn_context->change_output_idx == -1) {
     // txn w/o change output should go through
-    return status;
+    return true;
   }
 
   HDNode t_node = {0};

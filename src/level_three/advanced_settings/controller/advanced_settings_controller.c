@@ -131,25 +131,11 @@ void level_three_advanced_settings_controller() {
 #endif
 
     case LEVEL_THREE_SYNC_CARD: {
-      tap_a_card_and_sync_controller();
     } break;
 
     case LEVEL_THREE_SYNC_SELECT_WALLET: {
-      uint8_t index = -1;
-      flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-      flow_level.level_two = LEVEL_THREE_SYNC_WALLET_FLOW;
-      flow_level.level_three = SYNC_CARDS_SUCCESS;
-      if (get_ith_wallet_without_share(0, &index) == SUCCESS_) {
-        memcpy(wallet.wallet_name, get_wallet_name(index), NAME_SIZE);
-        wallet.wallet_info = get_wallet_info(index);
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.level_two = LEVEL_THREE_SYNC_WALLET_FLOW;
-        flow_level.level_three = SYNC_CARDS_START;
-        break;
-      }
     } break;
     case LEVEL_THREE_SYNC_WALLET_FLOW: {
-      sync_cards_controller();
     } break;
 
     case LEVEL_THREE_ROTATE_SCREEN: {

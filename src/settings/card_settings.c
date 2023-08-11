@@ -61,9 +61,9 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_flow_pairing.h"
+#include "card_operations.h"
 #include "constant_texts.h"
 #include "flash_api.h"
-#include "read_card_version.h"
 #include "settings_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"

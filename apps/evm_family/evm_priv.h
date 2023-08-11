@@ -1,19 +1,23 @@
 /**
- * @file    delete_wallet_flow.h
+ * @file    evm_priv.h
  * @author  Cypherock X1 Team
- * @brief   Flow for delete wallet operation on an existing wallet
+ * @brief   Support for evm app internal operations
+ *          This file is defined to separate EVM's internal use functions,
+ * flows, common APIs
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef DELETE_WALLET_FLOW_H
-#define DELETE_WALLET_FLOW_H
+#ifndef EVM_PRIV_H
+#define EVM_PRIV_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "flash_struct.h"
-#include "stdint.h"
+
+#include "events.h"
+#include "evm_api.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -29,12 +33,5 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief This function deletes the user selected wallet from all cards and
- * device flash.
- *
- * @param flash_wallet A pointer to a @ref Flash_Wallet object that represents
- * wallet to be deleted on flash.
- */
-void delete_wallet_flow(const Flash_Wallet *flash_wallet);
-#endif
+
+#endif /* EVM_PRIV_H */

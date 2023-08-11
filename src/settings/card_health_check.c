@@ -1,7 +1,8 @@
 /**
- * @file    core_error.c
+ * @file    card_health_check.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief   Logic to check card health and view wallet list in X1 card
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +60,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
-#include "core_error.h"
-
-#include "buzzer.h"
+#include "card_operations.h"
 #include "constant_texts.h"
-#include "events.h"
-#include "p0_events.h"
-#include "status_api.h"
-#include "ui_message.h"
+#include "core_error.h"
+#include "flash_api.h"
+#include "settings_api.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
+#include "ui_state_machine.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -83,23 +84,11 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Display error message to user set by core operations.
- *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
- *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
- */
-static void display_core_error();
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -107,67 +96,109 @@ static char core_error_msg[60] = {0};
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
-
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
-
-  do {
-    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
-
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+void card_health_check(void) {
+  wallet_list_t wallets_in_card = {0};
 
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
+  card_fetch_wallet_list_config_t configuration = {0};
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.skip_card_removal = true;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = NULL;
+  configuration.frontend.msg = ui_text_card_health_check_start;
+
+  card_fetch_wallet_list_response_t response = {0};
+  response.wallet_list = &wallets_in_card;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
+
+  // P0 abort is the only condition we want to exit the flow
+  // Card abort error will be explicitly shown here as error codes
+  card_error_type_e status = card_fetch_wallet_list(&configuration, &response);
+  if (CARD_OPERATION_P0_OCCURED == status) {
     return;
   }
 
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
+  // If the tapped card is not paired, it is a terminal case in the flow
+  if (true == response.card_info.pairing_error) {
     return;
   }
 
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
-  return;
-}
+  // At this stage, either there is no core error message set, or it is set but
+  // we want to overwrite the error message using user facing messages in this
+  // flow
+  clear_core_error_screen();
 
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
-
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
+  uint32_t card_fault_status = 0;
+  if (1 == response.card_info.recovery_mode) {
+    card_fault_status = NFC_NULL_PTR_ERROR;
+  } else if (CARD_OPERATION_SUCCESS != status) {
+    card_fault_status = response.card_info.status;
   }
 
-  if (true == evt.abort_evt) {
-    usb_clear_event();
-    p0_reset_evt();
+  uint8_t screens = 3;
+  char display_msg[100] = "";
+  const char *msg[3];
+
+  if (0 == card_fault_status) {
+    screens = 2;
+    msg[0] = ui_text_card_seems_healthy;
+    if (0 < wallets_in_card.count) {
+      msg[1] = ui_text_click_to_view_wallets;
+    } else {
+      msg[1] = ui_text_no_wallets_fetched;
+    }
+  } else {
+    snprintf(display_msg,
+             sizeof(display_msg),
+             "%s: C%04lX",
+             ui_text_card_health_check_error[0],
+             card_fault_status);
+    msg[0] = (const char *)display_msg;
+    msg[1] = ui_text_card_health_check_error[1];
+    if (0 < wallets_in_card.count) {
+      msg[2] = ui_text_click_to_view_wallets;
+    } else {
+      msg[2] = ui_text_no_wallets_fetched;
+    }
   }
 
-  display_core_error();
-  return;
-}
+  typedef enum {
+    CARD_HC_SHOW_WALLETS,
+    CARD_HC_EXIT_FLOW,
+  } card_health_check_states_e;
 
-void ignore_p0_event() {
-  p0_reset_evt();
-}
+  card_health_check_states_e state_on_confirm = CARD_HC_EXIT_FLOW;
+  if (0 < wallets_in_card.count) {
+    state_on_confirm = CARD_HC_DISPLAY_WALLETS;
+  }
 
-void clear_core_error_screen(void) {
-  memzero(core_error_msg, sizeof(core_error_msg));
+  multi_instruction_init(msg, screens, DELAY_TIME, true);
+
+  if (CARD_HC_DISPLAY_WALLETS == get_state_on_confirm_scr(state_on_confirm,
+                                                          CARD_HC_EXIT_FLOW,
+                                                          CARD_HC_EXIT_FLOW)) {
+    memzero(display_msg, sizeof(display_msg));
+    snprintf(display_msg,
+             sizeof(display_msg),
+             UI_TEXT_CARD_HEALTH_CHECK_ERROR,
+             decode_card_number(response.card_info.tapped_card));
+
+    char wallet_list[MAX_WALLETS_ALLOWED][NAME_SIZE] = {"", "", "", ""};
+    for (uint8_t i = 0; i < wallets_in_card.count; i++) {
+      snprintf(
+          wallet_list[i], NAME_SIZE, (char *)wallets_in_card.wallet[i].name);
+    }
+    list_init(wallet_list, wallets_in_card.count, display_msg, false);
+
+    // Do not care about the return value from confirmation screen
+    (void)get_state_on_confirm_scr(0, 0, 0);
+  }
+
   return;
 }

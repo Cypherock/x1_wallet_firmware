@@ -1,7 +1,7 @@
 /**
- * @file    core_error.c
+ * @file    evm_api.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief   Defines helpers apis for EVM app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,15 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "core_error.h"
+#include "evm_api.h"
 
-#include "buzzer.h"
-#include "constant_texts.h"
+#include "assert_conf.h"
+#include "common_error.h"
 #include "events.h"
-#include "p0_events.h"
-#include "status_api.h"
-#include "ui_message.h"
+#include "pb_decode.h"
+#include "pb_encode.h"
+#include "usb_api.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -81,93 +82,118 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-/**
- * @brief Display error message to user set by core operations.
- *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
- *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
- */
-static void display_core_error();
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
-
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
-
-  do {
-    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
-
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
-    return;
+bool decode_evm_query(const uint8_t *data,
+                      uint16_t data_size,
+                      evm_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
 
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
-    return;
+  /* Initialize EVM query */
+  evm_query_t query = EVM_QUERY_INIT_ZERO;
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, EVM_QUERY_FIELDS, &query);
+
+  /* Copy query obj if status is true*/
+  if (true == status) {
+    memcpy(query_out, &query, sizeof(query));
+  } else {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
-  return;
+  return status;
 }
 
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
+bool encode_evm_result(const evm_result_t *result,
+                       uint8_t *buffer,
+                       uint16_t max_buffer_len,
+                       size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
 
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, EVM_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
   }
 
-  if (true == evt.abort_evt) {
-    usb_clear_event();
-    p0_reset_evt();
+  return status;
+}
+
+bool check_evm_query(const evm_query_t *query, pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+evm_result_t init_evm_result(pb_size_t result_tag) {
+  evm_result_t result = EVM_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void evm_send_error(pb_size_t which_error, uint32_t error_code) {
+  evm_result_t result = init_evm_result(EVM_RESULT_COMMON_ERROR_TAG);
+  result.common_error = init_common_error(which_error, error_code);
+  evm_send_result(&result);
+}
+
+void evm_send_result(evm_result_t *result) {
+  // TODO: Eventually 1700 will be replaced by EVM_RESULT_SIZE when all
+  // option files for EVM app are complete
+  uint8_t buffer[1700] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_evm_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  usb_send_msg(&buffer[0], bytes_encoded);
+}
+
+bool evm_get_query(evm_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
   }
 
-  display_core_error();
-  return;
-}
+  if (!decode_evm_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
 
-void ignore_p0_event() {
-  p0_reset_evt();
-}
+  if (!check_evm_query(query, exp_query_tag)) {
+    return false;
+  }
 
-void clear_core_error_screen(void) {
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
+  return true;
 }

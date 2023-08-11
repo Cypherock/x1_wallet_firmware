@@ -48,6 +48,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/btc_family/dash
         apps/btc_family/doge
         apps/btc_family/ltc
+        apps/evm_family
 
         apps/near_app
 

@@ -40,6 +40,7 @@ typedef struct NFC_connection_data {
   uint8_t family_id[FAMILY_ID_SIZE +
                     2];    // TODO: Review(need to find reason for extra byte)
   uint8_t card_key_id[4];
+  bool pairing_error;
   uint8_t recovery_mode;
   uint8_t card_absent_retries;
   uint8_t *card_version;
@@ -133,22 +134,6 @@ void tap_cards_for_write_and_verify_flow_controller();
  * @note
  */
 void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold);
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_a_card_and_sync_controller();
 
 /**
  * @brief

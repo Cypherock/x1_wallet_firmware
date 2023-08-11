@@ -180,6 +180,14 @@ static void settings_menu_handler(engine_ctx_t *ctx,
                                   const void *data_ptr) {
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
+      case RESTORE_WALLET_FROM_CARD: {
+        sync_with_cards();
+        break;
+      }
+      case CHECK_CARD_HEALTH: {
+        card_health_check();
+        break;
+      }
       case ROTATE_DISPLAY: {
         rotate_display();
         break;

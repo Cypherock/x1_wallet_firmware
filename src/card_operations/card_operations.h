@@ -22,6 +22,7 @@
 #include "card_sign.h"
 #include "card_write_share.h"
 #include "check_pairing.h"
+#include "read_card_version.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES

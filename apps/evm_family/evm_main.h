@@ -1,19 +1,27 @@
 /**
- * @file    delete_wallet_flow.h
+ * @file    evm_main.h
  * @author  Cypherock X1 Team
- * @brief   Flow for delete wallet operation on an existing wallet
+ * @brief
+ * @details
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
+ *
  */
-#ifndef DELETE_WALLET_FLOW_H
-#define DELETE_WALLET_FLOW_H
+
+#ifndef EVM_MAIN_H
+#define EVM_MAIN_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "flash_struct.h"
-#include "stdint.h"
+
+#include <evm/core.pb.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "events.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -30,11 +38,12 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This function deletes the user selected wallet from all cards and
- * device flash.
+ * @brief Entry point for the EVM application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * EVM app.
  *
- * @param flash_wallet A pointer to a @ref Flash_Wallet object that represents
- * wallet to be deleted on flash.
+ * @param usb_evt The USB event which triggered invocation of the EVM app
  */
-void delete_wallet_flow(const Flash_Wallet *flash_wallet);
-#endif
+void evm_main(usb_event_t usb_evt);
+
+#endif /* EVM_MAIN_H */

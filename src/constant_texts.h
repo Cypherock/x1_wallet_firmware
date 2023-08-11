@@ -107,6 +107,20 @@ extern const char *ui_text_erasing;
 extern const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
 #define UI_TEXT_FACTORY_RESET_ERROR "Wallet '%s' not found on card(s)"
 
+// Card health check text
+extern const char *ui_text_card_seems_healthy;
+extern const char *ui_text_click_to_view_wallets;
+extern const char *ui_text_no_wallets_fetched;
+extern const char *ui_text_card_health_check_start;
+extern const char *ui_text_card_health_check_error[];
+#define UI_TEXT_CARD_HEALTH_CHECK_ERROR "Wallets in Card #%d"
+
+// Sync wallets with cards text
+#define UI_TEXT_SYNC_WALLET_PROMPT "Do you want to sync wallet %s?"
+#define UI_TEXT_SYNC_WALLET_LOCKED "Wallet %s is locked"
+#define UI_TEXT_SYNC_WALLET_DONE "Syncing %s complete"
+extern const char *ui_text_syncing_complete;
+
 // Manager app text
 // Device authentication text
 extern const char *ui_text_message_device_authenticating;
@@ -287,11 +301,6 @@ extern const char *ui_text_auth_process;
 extern const char *ui_text_sync_x1card_confirm;
 
 extern const char *ui_text_no_wallets_present;
-extern const char *ui_text_card_seems_healthy;
-extern const char *ui_text_click_to_view_wallets;
-extern const char *ui_text_no_wallets_fetched;
-extern const char *ui_text_card_health_check_start;
-extern const char *ui_text_card_health_check_error[];
 extern const char *ui_text_device_verification_success;
 extern const char *ui_text_device_verification_failure;
 extern const char *ui_text_unauthenticate_via_cysync;
@@ -328,7 +337,6 @@ extern const char *ui_text_pow_challenge_failed;
 extern const char *ui_text_card_removed_fast;
 extern const char *ui_text_card_freq_discon_fault;
 extern const char *ui_text_card_align_with_device_screen;
-extern const char *ui_text_syncing_complete;
 extern const char *ui_text_remove_card_prompt;
 extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;

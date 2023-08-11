@@ -38,4 +38,11 @@
  * @param error_msg The error description message to be shown to user
  */
 void mark_core_error_screen(const char *error_msg);
+
+/**
+ * @brief This function clears the message buffer of the core error screen
+ *
+ * @note It will potentially clear a message set by an operation in the flow.
+ */
+void clear_core_error_screen(void);
 #endif

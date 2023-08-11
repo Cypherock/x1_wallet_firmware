@@ -1,7 +1,7 @@
 /**
- * @file    core_error.c
+ * @file    evm_main.c
  * @author  Cypherock X1 Team
- * @brief   Display and return core errors.
+ * @brief
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "evm_main.h"
 
-#include "core_error.h"
-
-#include "buzzer.h"
-#include "constant_texts.h"
-#include "events.h"
-#include "p0_events.h"
+#include "evm_api.h"
+#include "evm_priv.h"
 #include "status_api.h"
-#include "ui_message.h"
+#include "ui_delay.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -81,93 +79,50 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-/**
- * @brief Display error message to user set by core operations.
- *
- * @details When a core operation faces a fatal error, it can set an error
- * message using using @ref mark_core_error_screen before exiting the flow. This
- * API displays that error message and sets the core device idle status to
- * CORE_DEVICE_IDLE_STATE_DEVICE.
- *
- * NOTE: P0 events are ignored in this API, as this could also be used to
- * display P0 errors
- */
-static void display_core_error();
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
-    return;
-
-  evt_status_t status = {0};
-  message_scr_init(core_error_msg);
-  buzzer_start(BUZZER_DURATION);
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
-
-  do {
-    status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
-    p0_reset_evt();
-  } while (true != status.ui_event.event_occured);
-
-  memzero(core_error_msg, sizeof(core_error_msg));
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void mark_core_error_screen(const char *error_msg) {
-  if (NULL == error_msg) {
+void evm_main(usb_event_t usb_evt) {
+  evm_query_t query = EVM_QUERY_INIT_DEFAULT;
+
+  if (false == decode_evm_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
   }
 
-  // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
-    return;
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
+  switch ((uint8_t)query.which_request) {
+    case EVM_QUERY_GET_PUBLIC_KEYS_TAG: {
+      delay_scr_init("Detected Ethereum query", DELAY_TIME);
+      // evm_get_public_keys(&query);
+      break;
+    }
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_QUERY);
+      break;
+    }
   }
 
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
-  return;
-}
-
-void handle_core_errors() {
-  /* Check P0 events */
-  p0_evt_t evt = {0};
-  p0_get_evt(&evt);
-
-  if (true == evt.inactivity_evt) {
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
-    p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
-  }
-
-  if (true == evt.abort_evt) {
-    usb_clear_event();
-    p0_reset_evt();
-  }
-
-  display_core_error();
-  return;
-}
-
-void ignore_p0_event() {
-  p0_reset_evt();
-}
-
-void clear_core_error_screen(void) {
-  memzero(core_error_msg, sizeof(core_error_msg));
   return;
 }

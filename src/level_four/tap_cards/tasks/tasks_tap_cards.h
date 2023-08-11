@@ -79,22 +79,6 @@ void tap_cards_for_verification_flow();
 void tap_threshold_cards_for_reconstruction();
 
 /**
- * @brief Task to sync card with device
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_a_card_and_sync_task();
-
-/**
  * @brief Task to update card id
  * @details
  *

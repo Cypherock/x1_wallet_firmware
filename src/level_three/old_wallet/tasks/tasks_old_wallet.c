@@ -135,7 +135,6 @@ void level_three_old_wallet_tasks() {
       verify_wallet_tasks();
       break;
     case LEVEL_THREE_SYNC_WALLET: {
-      sync_cards_task();
     } break;
     default:
       break;

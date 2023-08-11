@@ -241,19 +241,21 @@ static void page_update_buttons(void) {
 static void page_update_footnote(void) {
   ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl));
 
-  snprintf(gp_scrollabe_page_data->p_ui_footnote,
-           MAXIMUM_CHARACTERS_IN_FOOTNOTE,
-           "%d/%d",
-           gp_scrollabe_page_data->curr_page_num,
-           gp_scrollabe_page_data->total_page_num);
-  ui_paragraph(gp_scrollabe_page_lvgl->p_ui_footnote_lvgl,
-               gp_scrollabe_page_data->p_ui_footnote,
-               LV_LABEL_ALIGN_CENTER);
-  lv_obj_align(gp_scrollabe_page_lvgl->p_ui_footnote_lvgl,
-               NULL,
-               LV_ALIGN_IN_BOTTOM_MID,
-               0,
-               0);
+  if (NULL != gp_scrollabe_page_lvgl->p_ui_footnote_lvgl) {
+    snprintf(gp_scrollabe_page_data->p_ui_footnote,
+             MAXIMUM_CHARACTERS_IN_FOOTNOTE,
+             "%d/%d",
+             gp_scrollabe_page_data->curr_page_num,
+             gp_scrollabe_page_data->total_page_num);
+    ui_paragraph(gp_scrollabe_page_lvgl->p_ui_footnote_lvgl,
+                 gp_scrollabe_page_data->p_ui_footnote,
+                 LV_LABEL_ALIGN_CENTER);
+    lv_obj_align(gp_scrollabe_page_lvgl->p_ui_footnote_lvgl,
+                 NULL,
+                 LV_ALIGN_IN_BOTTOM_MID,
+                 0,
+                 0);
+  }
 
   return;
 }
@@ -513,8 +515,8 @@ static void ui_scrollable_page_create(void) {
    * contains the body holding the actual text Size of the label is
    * lv_page_get_fit_width(gp_scrollabe_page_lvgl->p_ui_page_lvgl) - 16,
    * lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) Text will be
-   * broken into multiple lines, but only 2 lines (32 pixels) are available on
-   * the page. So this creates a scrollable label on the page.
+   * broken into multiple lines, but only 2 or 3 lines (32 pixels/ 48 pixels)
+   * are available on the page. So this creates a scrollable label on the page.
    */
   gp_scrollabe_page_lvgl->p_ui_body_lvgl =
       lv_label_create(gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL);
@@ -540,9 +542,9 @@ static void ui_scrollable_page_create(void) {
 
   /**
    * Create a label on page gp_scrollabe_page_lvgl->p_ui_page_lvgl which
-   * contains padding of dummy text (\n characted) of height
-   * lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) / 2 In worst
-   * case, this label will serve as padding for the scrolling page.
+   * contains padding of dummy text (\n or \n\n character) of height
+   * lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) / 2
+   * In worst case, this label will serve as padding for the scrolling page.
    *
    */
   lv_obj_t *paddingLabel =
@@ -552,7 +554,15 @@ static void ui_scrollable_page_create(void) {
       paddingLabel,
       lv_page_get_fit_width(gp_scrollabe_page_lvgl->p_ui_page_lvgl) - 16,
       lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) / 2);
-  lv_label_set_text(paddingLabel, "\n");
+
+  // Pad with \n if there are 2 rows of text and pad with \n\n if there are 3
+  // rows of text
+  if (32 == scroll_page_height) {
+    lv_label_set_text(paddingLabel, "\n");
+  } else {
+    lv_label_set_text(paddingLabel, "\n\n");
+  }
+
   lv_label_set_align(paddingLabel, LV_LABEL_ALIGN_CENTER);
   lv_obj_align(paddingLabel,
                gp_scrollabe_page_lvgl->p_ui_body_lvgl,
@@ -651,9 +661,13 @@ static void ui_scrollable_page_create(void) {
   /**
    * Create a label gp_scrollabe_page_lvgl->p_ui_footnote_lvgl which holds the
    * text that goes as part of a footnote on the current screen
+   * Footnote to be shown only if total pages > 1
    */
-  gp_scrollabe_page_lvgl->p_ui_footnote_lvgl =
-      lv_label_create(lv_scr_act(), NULL);
+  gp_scrollabe_page_lvgl->p_ui_footnote_lvgl = NULL;
+  if (1 < gp_scrollabe_page_data->total_page_num) {
+    gp_scrollabe_page_lvgl->p_ui_footnote_lvgl =
+        lv_label_create(lv_scr_act(), NULL);
+  }
 
   /* Update all icons: Left/right arrows, Accept/Cancel buttons and Footnote */
   page_update_icons();

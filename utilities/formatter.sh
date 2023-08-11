@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 FOLDERS=(common/Firewall
     common/coin_support

@@ -179,13 +179,4 @@ void verify_card_task();
  */
 void card_upgrade_task();
 
-/**
- * @brief
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void sync_cards_task();
-
 #endif
