@@ -118,23 +118,21 @@ static bool validate_request_data(btc_get_xpubs_request_t *request);
  * @brief Derives a list of xpubs corresponding to the provided list of
  * derivation paths.
  * @details The function expects the size of list for derivation paths and
- * location for storing derived xpubs to be a match with provided count.
+ * location for storing derived xpubs to be a match with provided count. The
+ * function will internally fetch the wallet seed and ensure all the sensitive
+ * data is cleared out before exit. Ensures no key leakage happens.
  *
- * @param paths Reference to the list of btc_get_xpub_derivation_path_t
- * @param seed Reference to a const array containing the seed
+ * @param req Reference to the btc_get_xpubs_intiate_request_t containing query
+ * received from the host
  * @param xpubs Reference to the location to store all the xpubs to be derived
- * @param count Number of derivation paths in the list and consequently,
- * sufficient space in memory for storing derived xpubs.
  *
  * @return bool Indicating if the complete xpub list was derived
  * @retval true If all the requested xpubs were derived.
  * @retval false If the xpub derivation failed. This could be due to invalid
  * derivation path.
  */
-static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
-                                   const uint8_t *seed,
-                                   char xpubs[][XPUB_SIZE],
-                                   pb_size_t count);
+static bool one_shot_xpub_generate(const btc_get_xpubs_intiate_request_t *req,
+                                   char xpubs[][XPUB_SIZE]);
 
 /**
  * @brief The function sends xpubs for the requested batch
@@ -206,12 +204,19 @@ static bool validate_request_data(btc_get_xpubs_request_t *request) {
   return status;
 }
 
-static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
-                                   const uint8_t *seed,
-                                   char xpubs[][XPUB_SIZE],
-                                   pb_size_t count) {
-  for (pb_size_t index = 0; index < count; index++) {
-    const btc_get_xpub_derivation_path_t *path = &paths[index];
+static bool one_shot_xpub_generate(const btc_get_xpubs_intiate_request_t *req,
+                                   char xpubs[][XPUB_SIZE]) {
+  uint8_t seed[64] = {0};
+
+  if (!reconstruct_seed_flow(req->wallet_id, &seed[0], btc_send_error)) {
+    memzero(seed, sizeof(seed));
+    return false;
+  }
+
+  set_app_flow_status(BTC_GET_XPUBS_STATUS_SEED_GENERATED);
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
+  for (pb_size_t index = 0; index < req->derivation_paths_count; index++) {
+    const btc_get_xpub_derivation_path_t *path = &req->derivation_paths[index];
     uint32_t xpub_ver = 0;
     if (!btc_get_version(path->path[0], &xpub_ver) ||
         !btc_generate_xpub(path->path,
@@ -220,9 +225,11 @@ static bool one_shot_xpub_generate(const btc_get_xpub_derivation_path_t *paths,
                            seed,
                            xpub_ver,
                            xpubs[index])) {
+      memzero(seed, sizeof(seed));
       return false;
     }
   }
+  memzero(seed, sizeof(seed));
   return true;
 }
 
@@ -262,7 +269,6 @@ static bool send_xpubs(btc_query_t *query,
 void btc_get_xpub(btc_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
-  uint8_t seed[64] = {0};
   const btc_get_xpubs_intiate_request_t *init_req = &query->get_xpubs.initiate;
   char xpub_list[sizeof(init_req->derivation_paths) /
                  sizeof(btc_get_xpub_derivation_path_t)][XPUB_SIZE] = {0};
@@ -286,20 +292,7 @@ void btc_get_xpub(btc_query_t *query) {
   }
 
   set_app_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
-
-  if (!reconstruct_seed(
-          query->get_xpubs.initiate.wallet_id, &seed[0], btc_send_error)) {
-    memzero(seed, sizeof(seed));
-    return;
-  }
-
-  set_app_flow_status(BTC_GET_XPUBS_STATUS_SEED_GENERATED);
-  delay_scr_init(ui_text_processing, DELAY_SHORT);
-  bool status = one_shot_xpub_generate(init_req->derivation_paths,
-                                       seed,
-                                       xpub_list,
-                                       init_req->derivation_paths_count);
-  memzero(seed, sizeof(seed));
+  bool status = one_shot_xpub_generate(init_req, xpub_list);
   if (true == status) {
     status = send_xpubs(query, xpub_list, init_req->derivation_paths_count);
   } else {

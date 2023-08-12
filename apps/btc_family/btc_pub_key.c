@@ -123,18 +123,15 @@ static bool validate_request_data(btc_get_public_key_request_t *request);
  * request-response pair. All the errors/invalid cases are conveyed to the host
  * as unknown_error = 1 because we expect the data validation was success.
  *
- * @param seed Reference to the wallet seed generated from X1 Card
- * @param path Derivation path of the node to be derived
- * @param path_length Expected length of the provided derivation path
+ * @param req Reference to the btc_get_public_key_intiate_request_t containing
+ * query received from the host
  * @param public_key Storage location for raw uncompressed public key
  * @param address Storage location for encoded public address
  *
  * @return size_t length of the derived public address
  * @retval 0 If derivation failed
  */
-static size_t btc_get_address(const uint8_t *seed,
-                              const uint32_t *path,
-                              uint32_t path_length,
+static size_t btc_get_address(const btc_get_public_key_intiate_request_t *req,
                               uint8_t *public_key,
                               char *address);
 
@@ -173,15 +170,24 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
   return status;
 }
 
-static size_t btc_get_address(const uint8_t *seed,
-                              const uint32_t *path,
-                              uint32_t path_length,
+static size_t btc_get_address(const btc_get_public_key_intiate_request_t *req,
                               uint8_t *public_key,
                               char *address) {
   HDNode node = {0};
+  uint8_t seed[64] = {0};
   char addr[50] = "";
   size_t address_length = 0;
 
+  if (!reconstruct_seed_flow(req->wallet_id, &seed[0], btc_send_error)) {
+    memzero(seed, sizeof(seed));
+    return false;
+  }
+
+  const uint32_t *path = req->derivation_path;
+  uint32_t path_length = req->derivation_path_count;
+
+  set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_SEED_GENERATED);
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
   if (!derive_hdnode_from_path(
           path, path_length, SECP256K1_NAME, seed, &node)) {
     // send unknown error; unknown failure reason
@@ -245,10 +251,7 @@ static void send_public_key(const uint8_t *public_key) {
 void btc_get_pub_key(btc_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
-  uint8_t seed[64] = {0};
   uint8_t public_key[65] = {0};
-  btc_get_public_key_intiate_request_t *init_req =
-      &query->get_public_key.initiate;
 
   if (!check_which_request(query, BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_key) ||
@@ -266,21 +269,7 @@ void btc_get_pub_key(btc_query_t *query) {
   }
 
   set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
-
-  if (!reconstruct_seed(
-          query->get_xpubs.initiate.wallet_id, &seed[0], btc_send_error)) {
-    memzero(seed, sizeof(seed));
-    return;
-  }
-
-  set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_SEED_GENERATED);
-  const uint32_t *path = init_req->derivation_path;
-  uint32_t path_length = init_req->derivation_path_count;
-
-  delay_scr_init(ui_text_processing, DELAY_SHORT);
-  size_t length = btc_get_address(seed, path, path_length, public_key, msg);
-  memzero(seed, sizeof(seed));
-  if (0 < length &&
+  if (0 < btc_get_address(&query->get_public_key.initiate, public_key, msg) &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_VERIFY);
     send_public_key(public_key);
