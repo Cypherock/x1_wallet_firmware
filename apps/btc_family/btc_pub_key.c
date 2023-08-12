@@ -277,11 +277,11 @@ void btc_get_pub_key(btc_query_t *query) {
   uint32_t path_length = init_req->derivation_path_count;
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  if (0 < btc_get_address(seed, path, path_length, public_key, msg) &&
+  size_t length = btc_get_address(seed, path, path_length, public_key, msg);
+  memzero(seed, sizeof(seed));
+  if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }
-
-  memzero(seed, sizeof(seed));
 }
