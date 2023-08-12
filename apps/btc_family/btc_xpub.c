@@ -293,15 +293,16 @@ void btc_get_xpub(btc_query_t *query) {
   }
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  if (true == one_shot_xpub_generate(init_req->derivation_paths,
-                                     seed,
-                                     xpub_list,
-                                     init_req->derivation_paths_count)) {
+  bool status = one_shot_xpub_generate(init_req->derivation_paths,
+                                       seed,
+                                       xpub_list,
+                                       init_req->derivation_paths_count);
+  memzero(seed, sizeof(seed));
+  if (true == status) {
     send_xpubs(query, xpub_list, init_req->derivation_paths_count);
   } else {
     // send unknown error; do not know failure reason
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
-  memzero(seed, sizeof(seed));
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
 }
