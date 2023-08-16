@@ -77,7 +77,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define ED25519_UNCOMPRESSED_PUB_KEY_SIZE 64
+#define ED25519_UNCOMPRESSED_PUB_KEY_SIZE 65
 #define NEAR_PUB_KEY_SIZE ED25519_UNCOMPRESSED_PUB_KEY_SIZE
 
 /*****************************************************************************
@@ -171,6 +171,7 @@ static bool send_public_keys(near_query_t *query,
  * parameter and handles accordingly. The function also manages all the terminal
  * errors during derivation/encoding, in which case it will return false and
  * send a relevant error to the host closing the request-response pair
+ * TODO: Make this a common utility function
  *
  * @param seed Reference to the wallet seed generated
  * @param path Derivation path of the node to be derived
