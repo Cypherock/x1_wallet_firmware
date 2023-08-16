@@ -77,8 +77,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define ED25519_UNCOMPRESSED_PUB_KEY_SIZE 65
-#define NEAR_PUB_KEY_SIZE ED25519_UNCOMPRESSED_PUB_KEY_SIZE
+#define NEAR_PUB_KEY_SIZE sizeof(ed25519_public_key)
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -170,27 +169,25 @@ static bool send_public_keys(near_query_t *query,
                              const pb_size_t which_response);
 
 /**
- * @details The function provides an uncompressed public key and ASCII encoded
- * public key. It accepts NULL for output parameter and handles accordingly. The
- * function also manages all the terminal errors during derivation/encoding, in
- * which case it will return false and send a relevant error to the host closing
- * the request-response pair All the errors/invalid cases are conveyed to the
- * host as unknown_error = 1 because we expect the data validation was success.
+ * @details The function provides an ED25519 public key for NEAR. It accepts
+ * NULL for output parameter and handles accordingly. The function also manages
+ * all the terminal errors during derivation/encoding, in which case it will
+ * return false and send a relevant error to the host closing the
+ * request-response pair All the errors/invalid cases are conveyed to the host
+ * as unknown_error = 1 because we expect the data validation was success.
  * TODO: Make this a common utility function
  *
  * @param seed Reference to the wallet seed generated
  * @param path Derivation path of the node to be derived
  * @param path_length Expected length of the provided derivation path
  * @param public_key Storage location for raw uncompressed public key
- * @param address Storage location for ASCII encoded public key
  *
  * @retval false If derivation failed
  */
 static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
-                           uint8_t *public_key,
-                           char *address);
+                           uint8_t *public_key);
 
 /**
  * @brief Helper function to take user consent before exporting public keys to
@@ -260,8 +257,7 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
 static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
-                           uint8_t *public_key,
-                           char *address) {
+                           uint8_t *public_key) {
   HDNode node = {0};
 
   if (!derive_hdnode_from_path(path, path_length, ED25519_NAME, seed, &node)) {
@@ -272,18 +268,7 @@ static bool get_public_key(const uint8_t *seed,
   }
 
   if (NULL != public_key) {
-    ecdsa_uncompress_pubkey(
-        get_curve_by_name(ED25519_NAME)->params, node.public_key, public_key);
-  }
-
-  if (NULL != address) {
-    uint8_t ed25519_pub_key[32] = {0};
-    char msg[100] = "";
-
-    ed25519_publickey(node.private_key, &ed25519_pub_key[0]);
-    byte_array_to_hex_string(
-        &ed25519_pub_key[0], sizeof(ed25519_pub_key), msg, sizeof(msg));
-    memcpy(address, msg, sizeof(msg));
+    ed25519_publickey(node.private_key, public_key);
   }
 
   memzero(&node, sizeof(HDNode));
@@ -297,7 +282,7 @@ static bool fill_public_keys(const near_get_public_key_derivation_path_t *paths,
   for (pb_size_t index = 0; index < count; index++) {
     const near_get_public_key_derivation_path_t *path = &paths[index];
     if (!get_public_key(
-            seed, path->path, path->path_count, public_key_list[index], NULL)) {
+            seed, path->path, path->path_count, public_key_list[index])) {
       return false;
     }
   }
@@ -383,7 +368,6 @@ void near_get_pub_keys(near_query_t *query) {
   const pb_size_t which_request = query->which_request;
   const near_get_public_key_intiate_request_t *init_req = NULL;
   pb_size_t which_response;
-  char address[100] = "";
 
   if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
     which_response = NEAR_RESULT_GET_PUBLIC_KEYS_TAG;
@@ -428,17 +412,8 @@ void near_get_pub_keys(near_query_t *query) {
 
   // Fill the uncompressed public keys and ASCII formatted address into local
   // buffers
-  bool result = false;
-  if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    result = fill_public_keys(
-        init_req->derivation_paths, seed, &pubkey_list[0], count);
-  } else {
-    result = get_public_key(seed,
-                            init_req->derivation_paths->path,
-                            init_req->derivation_paths->path_count,
-                            pubkey_list[0],
-                            address);
-  }
+  bool result = result =
+      fill_public_keys(init_req->derivation_paths, seed, pubkey_list, count);
 
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
@@ -450,6 +425,9 @@ void near_get_pub_keys(near_query_t *query) {
   // In case the request is to `GET_PUBLIC_KEY` type, then wait for user
   // verification of the address
   if (NEAR_QUERY_GET_PUBLIC_KEY_TAG == which_request) {
+    char address[100] = "";
+    byte_array_to_hex_string(
+        pubkey_list[0], sizeof(pubkey_list[0]), address, sizeof(address));
     if (!core_scroll_page(ui_text_receive_on, address, near_send_error)) {
       return;
     }
@@ -457,7 +435,7 @@ void near_get_pub_keys(near_query_t *query) {
   }
 
   if (!send_public_keys(
-          query, &pubkey_list[0], count, which_request, which_response)) {
+          query, pubkey_list, count, which_request, which_response)) {
     return;
   }
 
