@@ -11,8 +11,6 @@
 #ifndef POW_H
 #define POW_H
 
-#include <string.h>
-
 /**
  * @file
  *
@@ -44,6 +42,11 @@
  * periodically.
  */
 
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include <string.h>
+
 #include "app_error.h"
 #include "board.h"
 #include "byte_utilities.h"
@@ -51,11 +54,25 @@
 #include "sha2.h"
 #include "ui_text_slideshow.h"
 
+/*****************************************************************************
+ * MACROS AND DEFINES
+ *****************************************************************************/
 #define SHA256_SIZE 32
 #define POW_RAND_NUMBER_SIZE 32
 #define POW_NONCE_SIZE 32
 #define POW_TIMER_MS 180000
 
+/*****************************************************************************
+ * TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * EXPORTED VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ *****************************************************************************/
 /**
  * This is in hashes per second adjusted with 5% delay (50ms delay in each event
  * loop) b/w each hash. Recorded hash rate is approx 7775 hashes per second in
@@ -107,20 +124,13 @@ void start_proof_of_work_task(const char *name);
 void stop_proof_of_work_task();
 
 /**
- * @brief Actual task for proof of work. Used by task manager.
- * @details
+ * @brief The function performs a proof-of-work task by repeatedly hashing a
+ * combination of a random number and a nonce until a target value is found.
  *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @return true if the proof of work is completed and a valid nonce is found
+ * else false
  */
-void proof_of_work_task();
+bool proof_of_work_task();
 
 /**
  * @brief Get current nonce being used by the proof of work module.
