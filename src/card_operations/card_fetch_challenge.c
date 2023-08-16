@@ -141,6 +141,8 @@ card_error_type_e card_fetch_challenge(const uint8_t *wallet_name) {
         ASSERT(SUCCESS == add_challenge_flash((const char *)wallet_name,
                                               target,
                                               random_number));
+        log_hex_array("pow-rn: ", random_number, POW_RAND_NUMBER_SIZE);
+        LOG_CRITICAL("pow-tg n: %d", pow_count_set_bits(target));
         buzzer_start(BUZZER_DURATION);
         break;
       } else if (SW_WARNING_STATE_UNCHANGED == card_data.nfc_data.status) {
