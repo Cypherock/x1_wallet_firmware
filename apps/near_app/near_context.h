@@ -26,7 +26,8 @@
 #define NEAR_ACCOUNT_INDEX 0x80000000      // 0'
 #define NEAR_CHANGE_INDEX 0x80000000       // 0'
 
-#define NEAR_SYMBOL "NEAR"
+#define NEAR_TOKEN_NAME "NEAR"
+#define NEAR_CHAIN_NAME "Near"
 
 /*****************************************************************************
  * TYPEDEFS

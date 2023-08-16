@@ -227,7 +227,7 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
     status = false;
   }
 
-  if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request && 1 < count) {
+  if (NEAR_QUERY_GET_PUBLIC_KEY_TAG == which_request && 1 < count) {
     // `GET_PUBLIC_KEY` request contains more than one derivation path which is
     // not expected
     near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -329,11 +329,18 @@ static bool get_user_consent(const pb_size_t which_request,
   char msg[100] = "";
 
   if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    snprintf(
-        msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, NEAR_SYMBOL, wallet_name);
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_ADD_ACCOUNT_PROMPT,
+             NEAR_CHAIN_NAME,
+             wallet_name);
   } else {
-    snprintf(
-        msg, sizeof(msg), UI_TEXT_RECEIVE_PROMPT, NEAR_SYMBOL, wallet_name);
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_RECEIVE_TOKEN_PROMPT,
+             NEAR_TOKEN_NAME,
+             NEAR_CHAIN_NAME,
+             wallet_name);
   }
 
   return core_scroll_page(NULL, msg, near_send_error);
