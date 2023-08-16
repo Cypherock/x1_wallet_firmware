@@ -67,6 +67,7 @@
 #include "constant_texts.h"
 #include "flash_api.h"
 #include "nfc.h"
+#include "pow_utilities.h"
 #include "ui_screens.h"
 
 /*****************************************************************************
