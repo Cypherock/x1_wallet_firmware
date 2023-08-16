@@ -163,10 +163,10 @@ static void _wallet_locked_tap_card() {
         }
         instruction_scr_destructor();
         mark_error_screen(ui_text_pow_challenge_failed);
-        add_challenge_flash((const char *)wallet.wallet_name,
-                            target,
-                            random_number,
-                            tap_card_data.tapped_card);
+        // add_challenge_flash((const char *)wallet.wallet_name,
+        //                     target,
+        //                     random_number,
+        //                     tap_card_data.tapped_card);
         reset_flow_level();
         buzzer_start(BUZZER_DURATION);
         break;

@@ -358,9 +358,7 @@ int update_time_to_unlock_flash(const char *name,
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Nonce saved successfully
  */
-int save_nonce_flash(const char *name,
-                     const uint8_t nonce[POW_NONCE_SIZE],
-                     const uint32_t time_to_unlock_in_secs);
+int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]);
 
 /**
  * @brief Set the wallet state in flash

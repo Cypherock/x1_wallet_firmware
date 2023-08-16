@@ -21,7 +21,6 @@
 #include "card_pair.h"
 #include "card_read_verify_share.h"
 #include "card_sign.h"
-#include "card_unlock_wallet.h"
 #include "card_write_share.h"
 #include "check_pairing.h"
 #include "read_card_version.h"
