@@ -123,19 +123,19 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
  * @brief Fills the list of public keys corresponding to the provided list of
  * derivation paths in the buffer
  * @details The function expects the size of list for derivation paths and
- * location for storing derived xpubs to be a match with provided count. All the
- * errors/invalid cases are conveyed to the host as unknown_error = 1 because we
- * expect the data validation was success.
-
+ * location for storing derived public keys to be a match with provided count.
  *
  * @param paths Reference to the list of near_get_public_key_derivation_path_t
  * @param seed Reference to a const array containing the seed
  * @param public_key Reference to the location to store all the public keys to
  * be derived
  * @param count Number of derivation paths in the list and consequently,
- * sufficient space in memory for storing derived xpubs.
+ * sufficient space in memory for storing derived public keys.
+ *
+ * @retval true If all the requested public keys were derived successfully
+ * @retval false If there is any issue occurred during the key derivation
  */
-static void fill_public_keys(const near_get_public_key_derivation_path_t *paths,
+static bool fill_public_keys(const near_get_public_key_derivation_path_t *paths,
                              const uint8_t *seed,
                              uint8_t public_key_list[][NEAR_PUB_KEY_SIZE],
                              pb_size_t count);
@@ -153,37 +153,44 @@ static void fill_public_keys(const near_get_public_key_derivation_path_t *paths,
  * @param query Reference to an instance of near_query_t
  * @param pubkey_list Reference to list of derived public key to be sent to the
  * host
- * @param count Number of xpub entries in the list of xpubs
+ * @param count Number of public keys entries in the list of public keys
  * @param which_request The type of request to be expected from the host
+ * @param which_response The type of response to be sent to the host
  *
- * @return bool Indicating if the xpub was exported completely to the host
- * @retval true If all the requested xpubs were exported to the host app
+ * @return bool Indicating if the public keys was exported completely to the
+ * host
+ * @retval true If all the requested public keys were exported to the host app
  * @retval false If the export was interrupted by a P0 event or an invalid query
  * was received from the host app.
  */
 static bool send_public_keys(near_query_t *query,
                              const uint8_t pubkey_list[][NEAR_PUB_KEY_SIZE],
                              const pb_size_t count,
-                             const pb_size_t which_request);
+                             const pb_size_t which_request,
+                             const pb_size_t which_response);
 
 /**
- * @details The function provides a public key. It accepts NULL for output
- * parameter and handles accordingly. The function also manages all the terminal
- * errors during derivation/encoding, in which case it will return false and
- * send a relevant error to the host closing the request-response pair
+ * @details The function provides an uncompressed public key and ASCII encoded
+ * public key. It accepts NULL for output parameter and handles accordingly. The
+ * function also manages all the terminal errors during derivation/encoding, in
+ * which case it will return false and send a relevant error to the host closing
+ * the request-response pair All the errors/invalid cases are conveyed to the
+ * host as unknown_error = 1 because we expect the data validation was success.
  * TODO: Make this a common utility function
  *
  * @param seed Reference to the wallet seed generated
  * @param path Derivation path of the node to be derived
  * @param path_length Expected length of the provided derivation path
  * @param public_key Storage location for raw uncompressed public key
+ * @param address Storage location for ASCII encoded public key
  *
  * @retval false If derivation failed
  */
 static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
-                           uint8_t *public_key);
+                           uint8_t *public_key,
+                           char *address);
 
 /**
  * @brief Helper function to take user consent before exporting public keys to
@@ -253,10 +260,13 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
 static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
-                           uint8_t *public_key) {
+                           uint8_t *public_key,
+                           char *address) {
   HDNode node = {0};
 
   if (!derive_hdnode_from_path(path, path_length, ED25519_NAME, seed, &node)) {
+    // send unknown error; unknown failure reason
+    near_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
     return false;
   }
@@ -266,20 +276,28 @@ static bool get_public_key(const uint8_t *seed,
         get_curve_by_name(ED25519_NAME)->params, node.public_key, public_key);
   }
 
+  if (NULL != address) {
+    uint8_t ed25519_pub_key[32] = {0};
+    char msg[100] = "";
+
+    ed25519_publickey(node.private_key, &ed25519_pub_key[0]);
+    byte_array_to_hex_string(
+        &ed25519_pub_key[0], sizeof(ed25519_pub_key), msg, sizeof(msg));
+    memcpy(address, msg, sizeof(msg));
+  }
+
   memzero(&node, sizeof(HDNode));
   return true;
 }
 
-static void fill_public_keys(const near_get_public_key_derivation_path_t *paths,
+static bool fill_public_keys(const near_get_public_key_derivation_path_t *paths,
                              const uint8_t *seed,
                              uint8_t public_key_list[][NEAR_PUB_KEY_SIZE],
                              pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const near_get_public_key_derivation_path_t *path = &paths[index];
     if (!get_public_key(
-            seed, path->path, path->path_count, public_key_list[index])) {
-      // send unknown error; unknown failure reason
-      near_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+            seed, path->path, path->path_count, public_key_list[index], NULL)) {
       return false;
     }
   }
@@ -290,8 +308,9 @@ static void fill_public_keys(const near_get_public_key_derivation_path_t *paths,
 static bool send_public_keys(near_query_t *query,
                              const uint8_t pubkey_list[][NEAR_PUB_KEY_SIZE],
                              const pb_size_t count,
-                             const pb_size_t which_request) {
-  near_result_t response = init_near_result(NEAR_RESULT_GET_PUBLIC_KEY_TAG);
+                             const pb_size_t which_request,
+                             const pb_size_t which_response) {
+  near_result_t response = init_near_result(which_response);
   near_get_public_key_result_response_t *result =
       &response.get_public_key.result;
   size_t batch_limit =
@@ -361,10 +380,20 @@ void near_get_pub_keys(near_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};
 
-  const near_get_public_key_intiate_request_t *init_req = NULL;
-  init_req = &query->get_public_keys.initiate;
-  const pb_size_t count = init_req->derivation_paths_count;
   const pb_size_t which_request = query->which_request;
+  const near_get_public_key_intiate_request_t *init_req = NULL;
+  pb_size_t which_response;
+  char address[100] = "";
+
+  if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
+    which_response = NEAR_RESULT_GET_PUBLIC_KEYS_TAG;
+    init_req = &query->get_public_keys.initiate;
+  } else {
+    which_response = NEAR_RESULT_GET_PUBLIC_KEY_TAG;
+    init_req = &query->get_public_key.initiate;
+  }
+
+  const pb_size_t count = init_req->derivation_paths_count;
 
   uint8_t pubkey_list[sizeof(init_req->derivation_paths) /
                       sizeof(near_get_public_key_derivation_path_t)]
@@ -396,30 +425,39 @@ void near_get_pub_keys(near_query_t *query) {
   core_status_set_flow_status(NEAR_GET_PUBLIC_KEY_STATUS_SEED_GENERATED);
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
-  fill_public_keys(init_req->derivation_paths, seed, &pubkey_list[0], count);
+
+  // Fill the uncompressed public keys and ASCII formatted address into local
+  // buffers
+  bool result = false;
+  if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
+    result = fill_public_keys(
+        init_req->derivation_paths, seed, &pubkey_list[0], count);
+  } else {
+    result = get_public_key(seed,
+                            init_req->derivation_paths->path,
+                            init_req->derivation_paths->path_count,
+                            pubkey_list[0],
+                            address);
+  }
 
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
 
+  if (!result) {
+    return;
+  }
+
   // In case the request is to `GET_PUBLIC_KEY` type, then wait for user
   // verification of the address
-  if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    char msg[200] = "";
-
-    // Convert the public key in ASCII format
-    byte_array_to_hex_string((const uint8_t *)&pubkey_list[0],
-                             sizeof(pubkey_list[0]),
-                             msg,
-                             sizeof(msg));
-
-    if (!core_scroll_page(ui_text_receive_on, msg, near_send_error)) {
+  if (NEAR_QUERY_GET_PUBLIC_KEY_TAG == which_request) {
+    if (!core_scroll_page(ui_text_receive_on, address, near_send_error)) {
       return;
     }
-
     core_status_set_flow_status(NEAR_GET_PUBLIC_KEY_STATUS_VERIFY);
   }
 
-  if (!send_public_keys(query, &pubkey_list[0], count, which_request)) {
+  if (!send_public_keys(
+          query, &pubkey_list[0], count, which_request, which_response)) {
     return;
   }
 
