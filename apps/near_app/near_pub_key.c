@@ -299,7 +299,7 @@ static bool send_public_keys(near_query_t *query,
   near_get_public_key_result_response_t *result =
       &response.get_public_key.result;
   size_t batch_limit =
-      sizeof(response.get_public_keys.result.public_key) / NEAR_PUB_KEY_SIZE;
+      sizeof(response.get_public_keys.result.public_keys) / NEAR_PUB_KEY_SIZE;
   size_t remaining = count;
 
   response.get_public_keys.which_response =
@@ -307,9 +307,9 @@ static bool send_public_keys(near_query_t *query,
   while (true) {
     // send response as batched list of public keys
     size_t batch_size = CY_MIN(batch_limit, remaining);
-    result->public_key_count = batch_size;
+    result->public_keys_count = batch_size;
 
-    memcpy(result->public_key,
+    memcpy(result->public_keys,
            &pubkey_list[count - remaining],
            batch_size * NEAR_PUB_KEY_SIZE);
 
