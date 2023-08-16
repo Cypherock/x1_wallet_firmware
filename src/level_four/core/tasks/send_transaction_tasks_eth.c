@@ -58,7 +58,6 @@
  */
 #include "btc.h"
 #include "constant_texts.h"
-#include "contracts.h"
 #include "controller_level_four.h"
 #include "eth.h"
 #include "harmony.h"
@@ -115,7 +114,7 @@ void send_transaction_tasks_eth() {
 
       instruction_scr_destructor();
       byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address,
-                               ETHEREUM_ADDRESS_LENGTH,
+                               20,
                                address + 2,
                                sizeof(address) - 2);
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);

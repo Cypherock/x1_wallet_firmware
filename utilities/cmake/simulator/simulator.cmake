@@ -45,6 +45,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/btc_family/doge
         apps/btc_family/ltc
         apps/evm_family
+        apps/evm_family/eth
 
         apps/near_app
 

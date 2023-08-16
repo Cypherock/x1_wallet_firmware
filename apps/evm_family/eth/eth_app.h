@@ -1,26 +1,26 @@
 /**
- * @file    evm_priv.h
+ * @file    eth_app.h
  * @author  Cypherock X1 Team
- * @brief   Support for evm app internal operations
- *          This file is defined to separate EVM's internal use functions,
- * flows, common APIs
+ * @brief   Ethereum application configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef EVM_PRIV_H
-#define EVM_PRIV_H
+#ifndef ETH_APP_H
+#define ETH_APP_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include "events.h"
-#include "evm_api.h"
+#include "evm_context.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+
+/// Number of entries in whitelisted contracts list
+#define ETH_WHITELISTED_CONTRACTS_COUNT 497
 
 /*****************************************************************************
  * TYPEDEFS
@@ -30,10 +30,15 @@
  * EXPORTED VARIABLES
  *****************************************************************************/
 
-extern const evm_config_t *g_evm_app;
-
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
-#endif /* EVM_PRIV_H */
+/**
+ * @brief Returns the config for Ethereum chain app
+ *
+ * @return A const reference to evm_config_t
+ */
+const evm_config_t *get_eth_app();
+
+#endif    // ETH_APP_H
