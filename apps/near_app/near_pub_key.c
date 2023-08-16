@@ -410,8 +410,6 @@ void near_get_pub_keys(near_query_t *query) {
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  // Fill the uncompressed public keys and ASCII formatted address into local
-  // buffers
   bool result = result =
       fill_public_keys(init_req->derivation_paths, seed, pubkey_list, count);
 

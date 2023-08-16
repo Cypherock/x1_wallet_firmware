@@ -2,7 +2,7 @@
  * @file    near_priv.h
  * @author  Cypherock X1 Team
  * @brief   Support for NEAR app internal operations
- *          This file is defined to separate Bitcoin's internal use functions,
+ *          This file is defined to separate NEAR's internal use functions,
  * flows, common APIs
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"

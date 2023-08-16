@@ -19,6 +19,20 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 // NEAR implicit account derivation path: m/44'/397'/0'/0'/i'
+
+// Rationale to keep it m/44'/397'/0'/0'/i':
+// NEAR implicit accounts can be any public/private keypair
+// https://docs.near.org/integrator/implicit-accounts
+
+// NEAR official CLI uses m/44'/397'/0'/0'/1' as the first account
+// https://docs.near.org/tools/near-cli
+
+// Ledger uses m/44'/397'/0'/0'/0'
+// https://github.com/near/near-wallet/issues/1537
+
+// There are some wallets which even use m/44'/9000'/0'/0/0
+// https://support.atomicwallet.io/article/146-list-of-derivation-paths
+
 #define NEAR_IMPLICIT_ACCOUNT_DEPTH 5
 
 #define NEAR_PURPOSE_INDEX (0x8000002C)    // 44'
