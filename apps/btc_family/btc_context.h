@@ -22,9 +22,9 @@
  *****************************************************************************/
 
 /// this makes length of 7 with a termination NULL byte
-#define SHORT_NAME_MAX_SIZE 8
+#define BTC_SHORT_NAME_MAX_SIZE 8
 /// this makes length of 15 with a termination NULL byte
-#define LONG_NAME_MAX_SIZE 16
+#define BTC_LONG_NAME_MAX_SIZE 16
 #define BECH32_HRP_SIZE 3
 
 /*****************************************************************************
@@ -70,10 +70,10 @@ typedef struct {
   /** Largest unit/denomination indicator/symbol. This will be used in UX for
    * displaying fees and amount.
    */
-  char lunit_name[SHORT_NAME_MAX_SIZE];
+  char lunit_name[BTC_SHORT_NAME_MAX_SIZE];
   /** Common name of the blockchain known to the users. This will be used in UX
    */
-  char name[LONG_NAME_MAX_SIZE];
+  char name[BTC_LONG_NAME_MAX_SIZE];
 
   /** Helps put an upper limit on the fee. This tweak is helpful to assist user
    * in identifying potentially fraudulent transactions and help save unwanted
