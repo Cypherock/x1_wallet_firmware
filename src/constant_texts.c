@@ -313,6 +313,7 @@ const char *ui_text_family_id_mismatch =
 
 const char *ui_text_wrong_wallet_is_now_locked =
     "Wrong PIN!\nWallet is now locked";
+const char *ui_text_wallet_already_unlocked = "Wallet already unlocked";
 const char *ui_text_hash_not_accepted_by_card = "Hash not accepted by card!";
 
 const char *ui_text_do_not_detach_device =

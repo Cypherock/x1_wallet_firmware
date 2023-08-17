@@ -95,7 +95,7 @@ void level_three_old_wallet_controller() {
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED: {
-      wallet_locked_controller();
+      // wallet_locked_controller();
     } break;
 
     case LEVEL_THREE_VERIFY_WALLET: {
