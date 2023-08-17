@@ -109,7 +109,7 @@ void near_main(usb_event_t usb_evt) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEY_TAG: {
+    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG: {
       // TODO: Implement NEAR receive
       break;
     }
