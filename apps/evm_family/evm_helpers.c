@@ -1,7 +1,7 @@
 /**
- * @file    evm_main.c
+ * @file    evm_helpers.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Utilities specific to EVM chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,10 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "evm_main.h"
 
-#include "evm_priv.h"
-#include "status_api.h"
+#include "evm_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -77,17 +75,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-const evm_config_t *g_evm_app = NULL;
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -98,32 +94,10 @@ const evm_config_t *g_evm_app = NULL;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void evm_main(usb_event_t usb_evt, const evm_config_t *app) {
-  evm_query_t query = EVM_QUERY_INIT_DEFAULT;
-  g_evm_app = app;
-
-  if (false == decode_evm_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+bool evm_derivation_path_guard(uint32_t depth) {
+  // TODO: add metamask and ledger live related checks
+  if (EVM_DRV_LEGACY_DEPTH != depth && EVM_DRV_OTHER_DEPTH != depth) {
+    return false;
   }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-  switch ((uint8_t)query.which_request) {
-    case EVM_QUERY_GET_PUBLIC_KEYS_TAG: {
-      evm_get_pub_keys(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
-  }
-
-  g_evm_app = NULL;
-  return;
+  return true;
 }

@@ -214,15 +214,14 @@ static bool validate_request_data(evm_get_public_keys_request_t *request) {
   pb_size_t count = request->initiate.derivation_paths_count;
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
-    // TODO: add metamask and ledger live related checks
-    if (EVM_DRV_LEGACY_DEPTH != path->path_count &&
-        EVM_DRV_OTHER_DEPTH != path->path_count) {
+    if (!evm_derivation_path_guard(path->path_count)) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
       break;
     }
   }
+
   return status;
 }
 
@@ -268,7 +267,7 @@ static void send_public_keys(evm_query_t *query,
   evm_result_t response = init_evm_result(EVM_RESULT_GET_PUBLIC_KEYS_TAG);
   evm_get_public_keys_result_response_t *result =
       &response.get_public_keys.result;
-  size_t batch_limit =
+  static const size_t batch_limit =
       sizeof(response.get_public_keys.result.public_keys) / EVM_PUB_KEY_SIZE;
   size_t remaining = count;
 
@@ -343,10 +342,13 @@ void evm_get_pub_keys(evm_query_t *query) {
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  if (true == get_public_keys(init_req->derivation_paths,
-                              init_req->derivation_paths_count,
-                              seed,
-                              public_keys)) {
+  bool status = get_public_keys(init_req->derivation_paths,
+                                init_req->derivation_paths_count,
+                                seed,
+                                public_keys);
+
+  memzero(seed, sizeof(seed));
+  if (status) {
     send_public_keys(query, public_keys, init_req->derivation_paths_count);
   } else {
     // send unknown error; do not know failure reason
@@ -354,5 +356,4 @@ void evm_get_pub_keys(evm_query_t *query) {
   }
 
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-  memzero(seed, sizeof(seed));
 }

@@ -41,4 +41,18 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Verifies the derivation path.
+ * @details The function supports checking dephts for derivation paths. The
+ * only allowed depth count is either 4 (legacy) for 5 (metamask and ledger
+ * live) for public address derivation.
+ *
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path depth is valid
+ * @retval true if the path depth is valid
+ * @retval false otherwise
+ */
+bool evm_derivation_path_guard(uint32_t depth);
+
 #endif /* EVM_HELPERS_H */
