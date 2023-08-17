@@ -109,13 +109,13 @@ static bool check_which_request(const near_query_t *query,
  * invalid index is detected, the function will send an error to the host and
  * return false.
  *
- * @param req Reference to an instance of near_get_public_key_intiate_request_t
+ * @param req Reference to an instance of near_get_public_keys_intiate_request_t
  * @param which_request The type of request received from the host.
  * @return bool Indicating if the verification passed or failed
  * @retval true If the derivation path entries are valid
  * @retval false If any of the derivation path entries are invalid
  */
-static bool validate_request(const near_get_public_key_intiate_request_t *req,
+static bool validate_request(const near_get_public_keys_intiate_request_t *req,
                              const pb_size_t which_request);
 
 /**
@@ -124,7 +124,7 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
  * @details The function expects the size of list for derivation paths and
  * location for storing derived public keys to be a match with provided count.
  *
- * @param paths Reference to the list of near_get_public_key_derivation_path_t
+ * @param path Reference to the list of near_get_public_keys_derivation_path_t
  * @param seed Reference to a const array containing the seed
  * @param public_key Reference to the location to store all the public keys to
  * be derived
@@ -134,7 +134,7 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
  * @retval true If all the requested public keys were derived successfully
  * @retval false If there is any issue occurred during the key derivation
  */
-static bool fill_public_keys(const near_get_public_key_derivation_path_t *paths,
+static bool fill_public_keys(const near_get_public_keys_derivation_path_t *path,
                              const uint8_t *seed,
                              uint8_t public_key_list[][NEAR_PUB_KEY_SIZE],
                              pb_size_t count);
@@ -210,7 +210,7 @@ static bool get_user_consent(const pb_size_t which_request,
 
 static bool check_which_request(const near_query_t *query,
                                 pb_size_t which_request) {
-  if (which_request != query->get_public_key.which_request) {
+  if (which_request != query->get_public_keys.which_request) {
     near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -219,7 +219,7 @@ static bool check_which_request(const near_query_t *query,
   return true;
 }
 
-static bool validate_request(const near_get_public_key_intiate_request_t *req,
+static bool validate_request(const near_get_public_keys_intiate_request_t *req,
                              const pb_size_t which_request) {
   bool status = true;
   const pb_size_t count = req->derivation_paths_count;
@@ -231,15 +231,16 @@ static bool validate_request(const near_get_public_key_intiate_request_t *req,
     status = false;
   }
 
-  if (NEAR_QUERY_GET_PUBLIC_KEY_TAG == which_request && 1 < count) {
-    // `GET_PUBLIC_KEY` request contains more than one derivation path which is
-    // not expected
+  if (NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request &&
+      1 < count) {
+    // `NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
+    // one derivation path which is not expected
     near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
-  const near_get_public_key_derivation_path_t *path = NULL;
+  const near_get_public_keys_derivation_path_t *path = NULL;
 
   for (pb_size_t index = 0; index < count; index++) {
     path = &req->derivation_paths[index];
@@ -275,14 +276,14 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool fill_public_keys(const near_get_public_key_derivation_path_t *paths,
+static bool fill_public_keys(const near_get_public_keys_derivation_path_t *path,
                              const uint8_t *seed,
                              uint8_t public_key_list[][NEAR_PUB_KEY_SIZE],
                              pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
-    const near_get_public_key_derivation_path_t *path = &paths[index];
+    const near_get_public_keys_derivation_path_t *current = &path[index];
     if (!get_public_key(
-            seed, path->path, path->path_count, public_key_list[index])) {
+            seed, current->path, current->path_count, public_key_list[index])) {
       return false;
     }
   }
@@ -296,14 +297,14 @@ static bool send_public_keys(near_query_t *query,
                              const pb_size_t which_request,
                              const pb_size_t which_response) {
   near_result_t response = init_near_result(which_response);
-  near_get_public_key_result_response_t *result =
-      &response.get_public_key.result;
+  near_get_public_keys_result_response_t *result =
+      &response.get_public_keys.result;
   size_t batch_limit =
       sizeof(response.get_public_keys.result.public_keys) / NEAR_PUB_KEY_SIZE;
   size_t remaining = count;
 
   response.get_public_keys.which_response =
-      NEAR_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
+      NEAR_GET_PUBLIC_KEYS_RESPONSE_RESULT_TAG;
   while (true) {
     // send response as batched list of public keys
     size_t batch_size = CY_MIN(batch_limit, remaining);
@@ -321,7 +322,7 @@ static bool send_public_keys(near_query_t *query,
 
     if (!near_get_query(query, which_request) ||
         !check_which_request(query,
-                             NEAR_GET_PUBLIC_KEY_REQUEST_FETCH_NEXT_TAG)) {
+                             NEAR_GET_PUBLIC_KEYS_REQUEST_FETCH_NEXT_TAG)) {
       return false;
     }
   }
@@ -366,26 +367,26 @@ void near_get_pub_keys(near_query_t *query) {
   uint8_t seed[64] = {0};
 
   const pb_size_t which_request = query->which_request;
-  const near_get_public_key_intiate_request_t *init_req = NULL;
+  const near_get_public_keys_intiate_request_t *init_req = NULL;
   pb_size_t which_response;
 
   if (NEAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
     which_response = NEAR_RESULT_GET_PUBLIC_KEYS_TAG;
     init_req = &query->get_public_keys.initiate;
   } else {
-    which_response = NEAR_RESULT_GET_PUBLIC_KEY_TAG;
-    init_req = &query->get_public_key.initiate;
+    which_response = NEAR_RESULT_GET_USER_VERIFIED_PUBLIC_KEY_TAG;
+    init_req = &query->get_user_verified_public_key.initiate;
   }
 
   const pb_size_t count = init_req->derivation_paths_count;
 
   uint8_t pubkey_list[sizeof(init_req->derivation_paths) /
-                      sizeof(near_get_public_key_derivation_path_t)]
+                      sizeof(near_get_public_keys_derivation_path_t)]
                      [NEAR_PUB_KEY_SIZE] = {0};
 
   // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
   // found but is invalid/locked wallet
-  if (!check_which_request(query, NEAR_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG) ||
+  if (!check_which_request(query, NEAR_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request(init_req, which_request) ||
       !get_wallet_name_by_id(init_req->wallet_id, (uint8_t *)wallet_name)) {
     return;
@@ -396,17 +397,16 @@ void near_get_pub_keys(near_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(NEAR_GET_PUBLIC_KEY_STATUS_CONFIRM);
+  core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
-  if (!reconstruct_seed_flow(query->get_public_key.initiate.wallet_id,
-                             &seed[0])) {
+  if (!reconstruct_seed_flow(init_req->wallet_id, &seed[0])) {
     // TODO: Handle error case reporting to host
     return;
   }
 
-  core_status_set_flow_status(NEAR_GET_PUBLIC_KEY_STATUS_SEED_GENERATED);
+  core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
@@ -420,16 +420,16 @@ void near_get_pub_keys(near_query_t *query) {
     return;
   }
 
-  // In case the request is to `GET_PUBLIC_KEY` type, then wait for user
-  // verification of the address
-  if (NEAR_QUERY_GET_PUBLIC_KEY_TAG == which_request) {
+  // In case the request is to `NEAR_QUERY_GET_PUBLIC_KEY_TAG` type, then wait
+  // for user verification of the address
+  if (NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[100] = "";
     byte_array_to_hex_string(
         pubkey_list[0], sizeof(pubkey_list[0]), address, sizeof(address));
     if (!core_scroll_page(ui_text_receive_on, address, near_send_error)) {
       return;
     }
-    core_status_set_flow_status(NEAR_GET_PUBLIC_KEY_STATUS_VERIFY);
+    core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
   if (!send_public_keys(

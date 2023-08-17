@@ -111,7 +111,7 @@ void near_main(usb_event_t usb_evt) {
 
   switch ((uint8_t)query.which_request) {
     case NEAR_QUERY_GET_PUBLIC_KEYS_TAG:
-    case NEAR_QUERY_GET_PUBLIC_KEY_TAG: {
+    case NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
       near_get_pub_keys(&query);
       break;
     }
