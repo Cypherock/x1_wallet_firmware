@@ -44,6 +44,8 @@
  * EVM app.
  *
  * @param usb_evt The USB event which triggered invocation of the EVM app
+ * @param app Const reference to the preferred evm app configuration to govern
+ * appropriate runtime execution
  */
 void evm_main(usb_event_t usb_evt, const evm_config_t *app);
 
