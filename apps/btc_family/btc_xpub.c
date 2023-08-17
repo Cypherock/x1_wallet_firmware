@@ -276,8 +276,11 @@ void btc_get_xpub(btc_query_t *query) {
     return;
   }
 
-  snprintf(
-      msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, g_app->name, wallet_name);
+  snprintf(msg,
+           sizeof(msg),
+           UI_TEXT_ADD_ACCOUNT_PROMPT,
+           g_btc_app->name,
+           wallet_name);
   // Take user consent to export xpub for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

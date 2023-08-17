@@ -78,7 +78,7 @@ TEST_GROUP(btc_txn_helper_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(btc_txn_helper_test) {
-  g_app = get_btc_app();
+  g_btc_app = get_btc_app();
 }
 
 /**
@@ -88,7 +88,7 @@ TEST_SETUP(btc_txn_helper_test) {
  * api of usb-event and clearing buffers using usb-comm APIs.
  */
 TEST_TEAR_DOWN(btc_txn_helper_test) {
-  g_app = NULL;
+  g_btc_app = NULL;
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {

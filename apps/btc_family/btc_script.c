@@ -178,8 +178,8 @@ int btc_get_script_pub_address(const uint8_t *script,
     case SCRIPT_TYPE_P2SH: {
       uint8_t raw_addr[21] = {0};
       int offset = (SCRIPT_TYPE_P2PKH == type) ? 3 : 2;
-      raw_addr[0] = (SCRIPT_TYPE_P2PKH == type) ? g_app->p2pkh_addr_ver
-                                                : g_app->p2sh_addr_ver;
+      raw_addr[0] = (SCRIPT_TYPE_P2PKH == type) ? g_btc_app->p2pkh_addr_ver
+                                                : g_btc_app->p2sh_addr_ver;
       memcpy(&raw_addr[1], &script[offset], 20);
       status =
           base58_encode_check(raw_addr, 21, HASHER_SHA2D, addr, out_len - 1);
@@ -201,7 +201,7 @@ int btc_get_script_pub_address(const uint8_t *script,
       int version = (script[0] == 0 ? 0 : script[0] - 0x50);
       // get null-terminated string output address
       status = segwit_addr_encode(
-          addr, g_app->bech32_hrp, version, script + 2, script[1]);
+          addr, g_btc_app->bech32_hrp, version, script + 2, script[1]);
 
       if (status != 1) {
         // segwit_addr_encode returns 0 on failure and 1 on success

@@ -96,7 +96,7 @@ typedef struct {
  * EXPORTED VARIABLES
  *****************************************************************************/
 
-extern const btc_config_t *g_app;
+extern const btc_config_t *g_btc_app;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES

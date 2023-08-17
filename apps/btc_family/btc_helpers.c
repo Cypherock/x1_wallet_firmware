@@ -154,13 +154,13 @@ bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {
   bool status = true;
   switch (purpose_index) {
     case PURPOSE_LEGACY:
-      *xpub_ver = g_app->legacy_xpub_ver;
+      *xpub_ver = g_btc_app->legacy_xpub_ver;
       break;
     case PURPOSE_SEGWIT:
-      *xpub_ver = g_app->segwit_xpub_ver;
+      *xpub_ver = g_btc_app->segwit_xpub_ver;
       break;
     case PURPOSE_NSEGWIT:
-      *xpub_ver = g_app->nsegwit_xpub_ver;
+      *xpub_ver = g_btc_app->nsegwit_xpub_ver;
       break;
     default:
       status = false;
@@ -176,12 +176,12 @@ bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   status = true;
 
   // common checks for xpub/account and address nodes
-  if (NULL == g_app->is_purpose_supported ||
-      !g_app->is_purpose_supported(path[0])) {
+  if (NULL == g_btc_app->is_purpose_supported ||
+      !g_btc_app->is_purpose_supported(path[0])) {
     // unsupported purpose index
     status = false;
   }
-  if (g_app->coin_type != path[1] || is_non_hardened(path[2])) {
+  if (g_btc_app->coin_type != path[1] || is_non_hardened(path[2])) {
     // coin index or account hardness mismatch
     status = false;
   }
@@ -205,5 +205,6 @@ void format_value(const uint64_t value_in_sat,
                   const size_t msg_len) {
   uint8_t precision = get_floating_precision(value_in_sat, SATOSHI_PER_BTC);
   double fee_in_btc = 1.0 * value_in_sat / (SATOSHI_PER_BTC);
-  snprintf(msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_app->lunit_name);
+  snprintf(
+      msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_btc_app->lunit_name);
 }

@@ -86,7 +86,7 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-const btc_config_t *g_app = NULL;
+const btc_config_t *g_btc_app = NULL;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -102,7 +102,7 @@ const btc_config_t *g_app = NULL;
 
 void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
   btc_query_t query = BTC_QUERY_INIT_DEFAULT;
-  g_app = app;
+  g_btc_app = app;
 
   if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
@@ -135,6 +135,6 @@ void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
   }
 
   // reset config reference
-  g_app = NULL;
+  g_btc_app = NULL;
   return;
 }
