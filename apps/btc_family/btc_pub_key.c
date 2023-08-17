@@ -193,11 +193,13 @@ static size_t btc_get_address(const uint8_t *seed,
   switch (path[0]) {
     case NATIVE_SEGWIT:
       // ignoring the return status and handling by size of address
-      btc_get_segwit_addr(
-          node.public_key, sizeof(node.public_key), g_app->bech32_hrp, addr);
+      btc_get_segwit_addr(node.public_key,
+                          sizeof(node.public_key),
+                          g_btc_app->bech32_hrp,
+                          addr);
       break;
     case NON_SEGWIT:
-      hdnode_get_address(&node, g_app->p2pkh_addr_ver, addr, 35);
+      hdnode_get_address(&node, g_btc_app->p2pkh_addr_ver, addr, 35);
       break;
     // TODO: add support for taproot and segwit
     default:
@@ -257,8 +259,11 @@ void btc_get_pub_key(btc_query_t *query) {
     return;
   }
 
-  snprintf(
-      msg, sizeof(msg), UI_TEXT_BTC_RECEIVE_PROMPT, g_app->name, wallet_name);
+  snprintf(msg,
+           sizeof(msg),
+           UI_TEXT_BTC_RECEIVE_PROMPT,
+           g_btc_app->name,
+           wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return;

@@ -398,7 +398,7 @@ int btc_verify_input(const uint8_t *raw_txn,
 }
 
 uint64_t get_transaction_fee_threshold(const btc_txn_context_t *txn_ctx) {
-  return (g_app->max_fee / 1000) * (get_transaction_weight(txn_ctx) / 4);
+  return (g_btc_app->max_fee / 1000) * (get_transaction_weight(txn_ctx) / 4);
 }
 
 bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {

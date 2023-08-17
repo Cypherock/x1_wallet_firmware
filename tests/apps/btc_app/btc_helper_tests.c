@@ -73,7 +73,7 @@ TEST_GROUP(btc_helper_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(btc_helper_test) {
-  g_app = get_btc_app();
+  g_btc_app = get_btc_app();
 }
 
 /**
@@ -83,7 +83,7 @@ TEST_SETUP(btc_helper_test) {
  * api of usb-event and clearing buffers using usb-comm APIs.
  */
 TEST_TEAR_DOWN(btc_helper_test) {
-  g_app = NULL;
+  g_btc_app = NULL;
 }
 
 TEST(btc_helper_test, btc_helper_get_segwit_addr_even_y) {
@@ -168,7 +168,7 @@ TEST(btc_helper_test, btc_helper_generate_xpub_nsegwit) {
                                   sizeof(path) / sizeof(uint32_t),
                                   SECP256K1_NAME,
                                   seed,
-                                  g_app->nsegwit_xpub_ver,
+                                  g_btc_app->nsegwit_xpub_ver,
                                   xpub);
 
   TEST_ASSERT_EQUAL_UINT(1, result);
@@ -199,7 +199,7 @@ TEST(btc_helper_test, btc_helper_generate_xpub_segwit) {
                                   sizeof(path) / sizeof(uint32_t),
                                   SECP256K1_NAME,
                                   seed,
-                                  g_app->segwit_xpub_ver,
+                                  g_btc_app->segwit_xpub_ver,
                                   xpub);
 
   TEST_ASSERT_EQUAL_UINT(1, result);
@@ -230,7 +230,7 @@ TEST(btc_helper_test, btc_helper_generate_xpub_legacy) {
                                   sizeof(path) / sizeof(uint32_t),
                                   SECP256K1_NAME,
                                   seed,
-                                  g_app->legacy_xpub_ver,
+                                  g_btc_app->legacy_xpub_ver,
                                   xpub);
 
   TEST_ASSERT_EQUAL_UINT(1, result);
