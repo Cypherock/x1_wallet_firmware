@@ -64,6 +64,7 @@
 
 #include "coin_utils.h"
 #include "near_context.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -112,4 +113,41 @@ bool near_derivation_path_guard(const uint32_t *path, uint8_t levels) {
             is_hardened(address));
 
   return status;
+}
+
+void near_get_new_account_id_from_fn_args(const char *args,
+                                          uint32_t args_len,
+                                          char *account_id) {
+  // length of '{"new_account_id":"'
+  const int start = 19;
+
+  // length of '","new_public_key":"ed25519:..."}'
+  const int end = args_len - 74;
+
+  memcpy(account_id, args + start, end - start);
+  account_id[end - start] = '\0';
+
+  return;
+}
+
+void get_amount_string(const uint8_t *amount,
+                       char *string,
+                       size_t size_of_string) {
+  char amount_string[40] = "";
+  char amount_decimal_string[40] = "";
+  byte_array_to_hex_string(
+      amount, NEAR_DEPOSIT_SIZE_BYTES, amount_string, sizeof(amount_string));
+
+  convert_byte_array_to_decimal_string(NEAR_DEPOSIT_SIZE_BYTES * 2,
+                                       NEAR_DECIMAL,
+                                       amount_string,
+                                       amount_decimal_string,
+                                       sizeof(amount_decimal_string));
+
+  snprintf(string,
+           size_of_string,
+           "%s %s",
+           amount_decimal_string,
+           near_app.lunit_name);
+  return;
 }

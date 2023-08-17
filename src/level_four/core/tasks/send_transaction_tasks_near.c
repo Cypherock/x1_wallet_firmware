@@ -88,80 +88,33 @@ void send_transaction_tasks_near() {
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_NEAR: {
-      char nonce_hex_str[NEAR_NONCE_SIZE_BYTES * 2 + 1] = {'\0'};
-      uint8_t nonce_dec_str[NEAR_NONCE_SIZE_BYTES * 3] = {0};
-      uint16_t nonce_dec_len = sizeof(nonce_dec_str), nonce_hex_len;
-      int index, offset;
-      nonce_hex_len = byte_array_to_hex_string(near_utxn.nonce,
-                                               sizeof(near_utxn.nonce),
-                                               nonce_hex_str,
-                                               sizeof(nonce_hex_str));
-      convertbase16tobase10(
-          nonce_hex_len - 1, nonce_hex_str, nonce_dec_str, nonce_dec_len);
-      // Loop till 2nd last index; to handle "0" nonce value by generalising for
-      // 1 digit nonce values
-      for (index = 0; index < nonce_dec_len - 1; index++)
-        if (nonce_dec_str[index] != 0)
-          break;
-      for (offset = index; index < nonce_dec_len; index++)
-        nonce_dec_str[index - offset] = nonce_dec_str[index] + '0';
-      ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
-      nonce_dec_str[index - offset] = '\0';
-      address_scr_init(ui_text_verify_nonce, (char *)nonce_dec_str, false);
+      // char nonce_hex_str[NEAR_NONCE_SIZE_BYTES * 2 + 1] = {'\0'};
+      // uint8_t nonce_dec_str[NEAR_NONCE_SIZE_BYTES * 3] = {0};
+      // uint16_t nonce_dec_len = sizeof(nonce_dec_str), nonce_hex_len;
+      // int index, offset;
+      // nonce_hex_len = byte_array_to_hex_string(near_utxn.nonce,
+      //                                          sizeof(near_utxn.nonce),
+      //                                          nonce_hex_str,
+      //                                          sizeof(nonce_hex_str));
+      // convertbase16tobase10(
+      //     nonce_hex_len - 1, nonce_hex_str, nonce_dec_str, nonce_dec_len);
+      // // Loop till 2nd last index; to handle "0" nonce value by generalising
+      // for
+      // // 1 digit nonce values
+      // for (index = 0; index < nonce_dec_len - 1; index++)
+      //   if (nonce_dec_str[index] != 0)
+      //     break;
+      // for (offset = index; index < nonce_dec_len; index++)
+      //   nonce_dec_str[index - offset] = nonce_dec_str[index] + '0';
+      // ASSERT((index > offset) && ((index - offset) < nonce_dec_len));
+      // nonce_dec_str[index - offset] = '\0';
+      // address_scr_init(ui_text_verify_nonce, (char *)nonce_dec_str, false);
     } break;
 
     case SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR: {
-      instruction_scr_destructor();
-      char top_heading[45];
-      char display[110];
-
-      snprintf(
-          top_heading, sizeof(top_heading), "%s", ui_text_verify_create_from);
-      snprintf(display,
-               sizeof(display),
-               "%s%s%.*s",
-               ui_text_20_spaces,
-               ui_text_20_spaces,
-               (int)near_utxn.signer_id_length,
-               near_utxn.signer);
-      address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR: {
-      instruction_scr_destructor();
-      char top_heading[45];
-      char display[110];
-
-      if (near_utxn.actions_type == NEAR_ACTION_TRANSFER) {
-        snprintf(
-            top_heading, sizeof(top_heading), "%s", ui_text_verify_address);
-        snprintf(display,
-                 sizeof(display),
-                 "%s%s%.*s",
-                 ui_text_20_spaces,
-                 ui_text_20_spaces,
-                 (int)near_utxn.receiver_id_length,
-                 near_utxn.receiver);
-      } else if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
-        snprintf(top_heading,
-                 sizeof(top_heading),
-                 "%s",
-                 ui_text_verify_new_account_id);
-        char account[NEAR_ACC_ID_MAX_LEN + 1] = {0};
-        size_t account_length = near_get_new_account_id_from_fn_args(
-            (const char *)near_utxn.action.fn_call.args,
-            near_utxn.action.fn_call.args_length,
-            account);
-        snprintf(display,
-                 sizeof(display),
-                 "%s%s%.*s",
-                 ui_text_20_spaces,
-                 ui_text_20_spaces,
-                 (int)account_length,
-                 account);
-      }
-
-      address_scr_init(top_heading, display, true);
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_NEAR: {
@@ -172,85 +125,9 @@ void send_transaction_tasks_near() {
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_NEAR: {
-      char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
-      char display[110] = {'\0'};
-      memzero(amount_string, sizeof(amount_string));
-      if (near_utxn.actions_type == NEAR_ACTION_TRANSFER) {
-        byte_array_to_hex_string(near_utxn.action.transfer.amount,
-                                 16,
-                                 amount_string,
-                                 sizeof(amount_string));
-      } else if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
-        byte_array_to_hex_string(near_utxn.action.fn_call.deposit,
-                                 16,
-                                 amount_string,
-                                 sizeof(amount_string));
-      } else {
-        // TODO: add error handling / handling for other actions
-      }
-      if (!convert_byte_array_to_decimal_string(32,
-                                                near_get_decimal(),
-                                                amount_string,
-                                                amount_decimal_string,
-                                                sizeof(amount_decimal_string)))
-        break;
-      instruction_scr_destructor();
-      snprintf(
-          display,
-          sizeof(display),
-          UI_TEXT_VERIFY_AMOUNT,
-          amount_decimal_string,
-          get_coin_symbol(
-              BYTE_ARRAY_TO_UINT32(
-                  var_send_transaction_data.transaction_metadata.coin_index),
-              0));
-      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_FEES_NEAR: {
-      char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
-      char display[110] = {'\0'};
-      byte_array_to_hex_string((const uint8_t *)var_send_transaction_data
-                                   .transaction_metadata.transaction_fees,
-                               8,
-                               amount_string,
-                               sizeof(amount_string));
-      uint8_t decimal_val_s[32 * 3] = {0};
-      if (sizeof(decimal_val_s) / sizeof(decimal_val_s[0]) > UINT8_MAX) {
-        LOG_ERROR("0xxx#");
-        break;
-      }
-      if (!convert_byte_array_to_decimal_string(16,
-                                                NEAR_FEES_DECIMAL,
-                                                amount_string,
-                                                amount_decimal_string,
-                                                sizeof(amount_decimal_string)))
-        break;
-      instruction_scr_destructor();
-      if (near_utxn.actions_type == NEAR_ACTION_TRANSFER) {
-        snprintf(
-            display,
-            sizeof(display),
-            UI_TEXT_SEND_TXN_FEE,
-            amount_decimal_string,
-            get_coin_symbol(
-                BYTE_ARRAY_TO_UINT32(
-                    var_send_transaction_data.transaction_metadata.coin_index),
-                0));
-      } else if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
-        snprintf(
-            display,
-            sizeof(display),
-            UI_TEXT_SEND_TXN_FEE,
-            "0.0012",
-            get_coin_symbol(
-                BYTE_ARRAY_TO_UINT32(
-                    var_send_transaction_data.transaction_metadata.coin_index),
-                0));
-      } else {
-        // TODO: add error handling / handling for other actions
-      }
-      confirm_scr_init(display);
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_NEAR: {

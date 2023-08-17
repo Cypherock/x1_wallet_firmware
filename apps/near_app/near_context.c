@@ -1,7 +1,7 @@
 /**
- * @file    near_main.c
+ * @file    near_context.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Near coin actions supported.
+ * @brief   Constant variables and configurations for the NEAR app
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_main.h"
+#include "near_context.h"
 
-#include "near_api.h"
-#include "near_priv.h"
-#include "status_api.h"
+#include "coin_utils.h"
+#include "near_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,6 +84,10 @@
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
+const near_config_t near_app = {
+    .lunit_name = "NEAR",
+    .name = "Near",
+};
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -97,35 +100,3 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void near_main(usb_event_t usb_evt) {
-  near_query_t query = NEAR_QUERY_INIT_DEFAULT;
-
-  if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG:
-    case NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      near_get_pub_keys(&query);
-      break;
-    }
-    case NEAR_QUERY_SIGN_TXN_TAG: {
-      near_sign_transaction(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
-  }
-
-  return;
-}

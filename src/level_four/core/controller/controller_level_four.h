@@ -63,7 +63,6 @@ typedef enum {
 
 extern uint8_t provision_date[4];
 extern uint8_t auth_card_number;
-extern near_unsigned_txn near_utxn;
 extern solana_unsigned_txn solana_unsigned_txn_ptr;
 
 /**

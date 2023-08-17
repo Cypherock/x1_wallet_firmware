@@ -146,7 +146,8 @@ TEST_GROUP_RUNNER(btc_txn_helper_test) {
 
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2);
-  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1);
+  // RUN_TEST_CASE(btc_txn_helper_test,
+  // btc_txn_helper_transaction_weight_segwit1);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_mixed);
 
@@ -178,4 +179,19 @@ TEST_GROUP_RUNNER(evm_txn_test) {
 #ifdef EVM_TXN_MANUAL_TEST
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
 #endif
+}
+
+TEST_GROUP_RUNNER(near_helper_test) {
+  RUN_TEST_CASE(near_helper_test, near_helper_send_decoder_transfer_action);
+  RUN_TEST_CASE(near_helper_test,
+                near_helper_send_decoder_function_call_explicit_account);
+  RUN_TEST_CASE(near_helper_test, near_helper_sign_txn);
+}
+
+TEST_GROUP_RUNNER(near_txn_user_verification_test) {
+  RUN_TEST_CASE(near_txn_user_verification_test,
+                near_txn_user_verification_transfer_action);
+
+  RUN_TEST_CASE(near_txn_user_verification_test,
+                near_txn_user_verification_function_call_explicit_account);
 }

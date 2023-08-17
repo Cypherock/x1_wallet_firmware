@@ -316,8 +316,7 @@ static bool handle_initiate_query(const btc_query_t *query) {
     return false;
   }
 
-  snprintf(
-      msg, sizeof(msg), UI_TEXT_BTC_SEND_PROMPT, g_btc_app->name, wallet_name);
+  snprintf(msg, sizeof(msg), UI_TEXT_SEND_PROMPT, g_btc_app->name, wallet_name);
   // Take user consent to sign transaction for the wallet
   if (!core_confirmation(msg, btc_send_error)) {
     return false;

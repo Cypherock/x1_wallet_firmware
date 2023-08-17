@@ -1,7 +1,9 @@
 /**
- * @file    near_main.c
+ * @file    near_txn_user_verification.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Near coin actions supported.
+ * @brief   Source file to handle user confirmation flow during txn signing for
+ *          NEAR protocol
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +62,14 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_main.h"
+#include <stdint.h>
 
+#include "constant_texts.h"
 #include "near_api.h"
+#include "near_context.h"
+#include "near_helpers.h"
 #include "near_priv.h"
-#include "status_api.h"
+#include "ui_core_confirm.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,15 +84,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -97,35 +102,48 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
+  char address[200] = "";
+  char value[200] = "";
 
-void near_main(usb_event_t usb_evt) {
-  near_query_t query = NEAR_QUERY_INIT_DEFAULT;
+  snprintf(address,
+           CY_MIN(decoded_utxn->receiver_id_length, sizeof(address)),
+           "%s",
+           decoded_utxn->receiver);
 
-  if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+  get_amount_string(decoded_utxn->action.transfer.amount, value, sizeof(value));
+
+  if (!core_scroll_page(ui_text_verify_address, address, near_send_error) ||
+      !core_scroll_page(ui_text_verify_amount, value, near_send_error)) {
+    return false;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  return true;
+}
 
-  switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG:
-    case NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      near_get_pub_keys(&query);
-      break;
-    }
-    case NEAR_QUERY_SIGN_TXN_TAG: {
-      near_sign_transaction(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
+bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
+  char address[200] = "";
+  char account[200] = "";
+  char value[200] = "";
+
+  snprintf(address,
+           CY_MIN(decoded_utxn->signer_id_length, sizeof(address)),
+           "%s",
+           decoded_utxn->signer);
+
+  near_get_new_account_id_from_fn_args(
+      (const char *)decoded_utxn->action.fn_call.args,
+      decoded_utxn->action.fn_call.args_length,
+      account);
+
+  get_amount_string(decoded_utxn->action.fn_call.deposit, value, sizeof(value));
+
+  if (!core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
+      !core_scroll_page(
+          ui_text_verify_new_account_id, account, near_send_error) ||
+      !core_scroll_page(ui_text_verify_amount, value, near_send_error)) {
+    return false;
   }
 
-  return;
+  return true;
 }

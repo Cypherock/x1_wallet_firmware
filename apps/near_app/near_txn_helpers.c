@@ -1,7 +1,7 @@
 /**
- * @file    near_main.c
+ * @file    near_txn_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Near coin actions supported.
+ * @brief   Helper functions for the NEAR app for txn signing flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,11 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_main.h"
+#include "near_txn_helpers.h"
 
-#include "near_api.h"
-#include "near_priv.h"
-#include "status_api.h"
+#include "coin_utils.h"
+#include "near_context.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -97,35 +97,94 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void near_main(usb_event_t usb_evt) {
-  near_query_t query = NEAR_QUERY_INIT_DEFAULT;
-
-  if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+bool near_parse_transaction(const uint8_t *byte_array,
+                            uint16_t byte_array_size,
+                            near_unsigned_txn *utxn) {
+  if (byte_array == NULL || utxn == NULL)
     return;
+  memzero(utxn, sizeof(near_unsigned_txn));
+
+  uint16_t offset = 0;
+
+  utxn->signer_id_length = U32_READ_LE_ARRAY(byte_array);
+  offset += 4;
+  utxn->signer = (byte_array + offset);
+  offset += utxn->signer_id_length;
+  utxn->signer_key.key_type = byte_array[offset++];
+  utxn->signer_key.key = (byte_array + offset);
+  offset += 32;
+  memcpy(utxn->nonce, byte_array + offset, sizeof(utxn->nonce));
+  offset += 8;
+  utxn->receiver_id_length = U32_READ_LE_ARRAY(byte_array + offset);
+  offset += 4;
+  utxn->receiver = (byte_array + offset);
+  offset += utxn->receiver_id_length;
+  utxn->blockhash = (byte_array + offset);
+  offset += 32;
+  utxn->action_count = U32_READ_LE_ARRAY(byte_array + offset);
+  offset += 4;
+  utxn->actions_type = byte_array[offset++];
+
+  // Currently, our decoder only supports 1 action
+  if (1 < utxn->action_count) {
+    return false;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  switch (utxn->actions_type) {
+    case NEAR_ACTION_TRANSFER: {
+      memcpy(utxn->action.transfer.amount,
+             byte_array + offset,
+             sizeof(utxn->action.transfer.amount));
+      cy_reverse_byte_array(utxn->action.transfer.amount,
+                            sizeof(utxn->action.transfer.amount));
+      break;
+    }
 
-  switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG:
-    case NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      near_get_pub_keys(&query);
+    case NEAR_ACTION_FUNCTION_CALL: {
+      utxn->action.fn_call.method_name_length =
+          U32_READ_LE_ARRAY(byte_array + offset);
+      offset += 4;
+      utxn->action.fn_call.method_name = (char *)(byte_array + offset);
+      offset += utxn->action.fn_call.method_name_length;
+
+      // As of now, we only support signing of create_account method
+      if (0 != strncmp(utxn->action.fn_call.method_name,
+                       "create_account",
+                       utxn->action.fn_call.method_name_length)) {
+        return false;
+      }
+
+      utxn->action.fn_call.args_length = U32_READ_LE_ARRAY(byte_array + offset);
+      offset += 4;
+      utxn->action.fn_call.args = (byte_array + offset);
+      offset += utxn->action.fn_call.args_length;
+      memcpy(utxn->action.fn_call.gas,
+             byte_array + offset,
+             sizeof(utxn->action.fn_call.gas));
+      cy_reverse_byte_array(utxn->action.fn_call.gas,
+                            sizeof(utxn->action.fn_call.gas));
+      offset += 8;
+      memcpy(utxn->action.fn_call.deposit,
+             byte_array + offset,
+             sizeof(utxn->action.fn_call.deposit));
+      cy_reverse_byte_array(utxn->action.fn_call.deposit,
+                            sizeof(utxn->action.fn_call.deposit));
       break;
     }
-    case NEAR_QUERY_SIGN_TXN_TAG: {
-      near_sign_transaction(&query);
-      break;
-    }
+
     default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
+      return false;
       break;
     }
   }
 
-  return;
+  // Reverse byte order
+  cy_reverse_byte_array(utxn->nonce, sizeof(utxn->nonce));
+
+  // TODO: Offset validation should occur at every read
+  if (offset <= byte_array_size) {
+    return true;
+  }
+
+  return false;
 }

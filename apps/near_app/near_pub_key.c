@@ -337,14 +337,14 @@ static bool get_user_consent(const pb_size_t which_request,
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_ADD_ACCOUNT_PROMPT,
-             NEAR_CHAIN_NAME,
+             near_app.name,
              wallet_name);
   } else {
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_RECEIVE_TOKEN_PROMPT,
-             NEAR_TOKEN_NAME,
-             NEAR_CHAIN_NAME,
+             near_app.lunit_name,
+             near_app.name,
              wallet_name);
   }
 

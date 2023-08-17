@@ -24,8 +24,8 @@
 #define UI_TEXT_RECEIVE_PROMPT "Receive %s in %s"
 #define UI_TEXT_ADD_ACCOUNT_PROMPT "Add %s to %s"
 #define UI_TEXT_RECEIVE_TOKEN_PROMPT "Receive %s on %s in %s"
-#define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
-#define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_SEND_PROMPT "Send %s from %s"
+#define UI_TEXT_SEND_TOKEN_PROMPT "Send %s on %s from %s"
 #define UI_TEXT_BTC_RECEIVER "Receiver #%d"
 #define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
@@ -239,6 +239,7 @@ extern const char *ui_text_enter_passphrase;
 extern const char *ui_text_confirm_passphrase;
 extern const char *ui_text_receive_on;
 extern const char *ui_text_verify_address;
+extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_confirm_wallet_name;

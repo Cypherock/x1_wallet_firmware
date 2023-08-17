@@ -61,6 +61,7 @@
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "flash_api.h"
+#include "near_context.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
 #include "ui_address.h"

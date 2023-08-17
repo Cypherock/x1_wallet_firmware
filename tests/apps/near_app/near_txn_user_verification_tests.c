@@ -1,7 +1,7 @@
 /**
- * @file    unit_tests_main.c
+ * @file    near_helper_txn_user_verification_tests.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   Unit tests for NEAR user verification flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,94 +56,61 @@
  ******************************************************************************
  */
 
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
-                            issue*/
-#include "application_startup.h"
+#include "near.h"
+#include "near_context.h"
+#include "near_helpers.h"
+#include "near_txn_user_verification.h"
 #include "unity_fixture.h"
+#include "utils.h"
 
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
+TEST_GROUP(near_txn_user_verification_test);
 
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
-
-void RunAllTests(void) {
-  RUN_TEST_GROUP(event_getter_test);
-  RUN_TEST_GROUP(p0_events_test);
-  RUN_TEST_GROUP(ui_events_test);
-  RUN_TEST_GROUP(usb_evt_api_test);
-  RUN_TEST_GROUP(nfc_events_test);
-#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
-  RUN_TEST_GROUP(nfc_events_manual_test);
-#endif
-  RUN_TEST_GROUP(xpub);
-  RUN_TEST_GROUP(array_lists_tests);
-  RUN_TEST_GROUP(flow_engine_tests);
-  RUN_TEST_GROUP(manager_api_test);
-  RUN_TEST_GROUP(btc_txn_helper_test);
-  RUN_TEST_GROUP(btc_helper_test);
-  RUN_TEST_GROUP(evm_txn_test);
-  RUN_TEST_GROUP(near_helper_test);
-#ifdef NEAR_FLOW_MANUAL_TEST
-  RUN_TEST_GROUP(near_txn_user_verification_test);
-#endif
+TEST_SETUP(near_txn_user_verification_test) {
+  return;
 }
 
-/**
- * @brief  The entry point to the unit test framework
- * This entry point is a parallel entry point to the int main(void) of the
- * actual firmware.
- */
-int main(void) {
-  application_init();
-
-  UnityBegin("unit_tests_main.c");
-  RunAllTests();
-  UnityEnd();
+TEST_TEAR_DOWN(near_txn_user_verification_test) {
+  return;
 }
 
-#if USE_SIMULATOR == 0
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
+TEST(near_txn_user_verification_test,
+     near_txn_user_verification_transfer_action) {
+  uint8_t raw_txn[300] = {0};
+  hex_string_to_byte_array(
+      "400000006165396130393365363930376538366439373730663339623063386265316463"
+      "366663333861316236383930326664396432376164353638316130383439613100ae9a09"
+      "3e6907e86d9770f39b0c8be1dc6fc38a1b68902fd9d27ad5681a0849a102a40d43345400"
+      "004000000061653961303933653639303765383664393737306633396230633862653164"
+      "633666633338613162363839303266643964323761643536383161303834396131eba9ab"
+      "a955a871062ff51a1544d924aeb721f00324cab7979da9e5da258a459d0100000003400f"
+      "5de8db500daeff4d120000000000",
+      460,
+      raw_txn);
+
+  near_unsigned_txn utxn = {0};
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 230, &utxn));
+
+  TEST_ASSERT_TRUE(user_verification_transfer(&utxn));
 }
 
-/**
- * @brief Function to transmit data in real-time over SWV channel
- * @param file unused
- * @param *ptr string pointer for data to send
- * @param len  length of data to send
- *
- * @ret len of data transmitted
- */
-int _write(int file, char *ptr, int len) {
-#ifndef NDEBUG    // Disable printf in release mode
-  int DataIdx;
-  for (DataIdx = 0; DataIdx < len; DataIdx++) {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
-#endif
-}
+TEST(near_txn_user_verification_test,
+     near_txn_user_verification_function_call_explicit_account) {
+  uint8_t raw_txn[350] = {0};
+  hex_string_to_byte_array(
+      "400000006165396130393365363930376538366439373730663339623063386265316463"
+      "366663333861316236383930326664396432376164353638316130383439613100ae9a09"
+      "3e6907e86d9770f39b0c8be1dc6fc38a1b68902fd9d27ad5681a0849a102a40d43345400"
+      "00040000006e656172dcc303d157e62d1b4cba98a91a0826efebd14ebec5effc58bfe9c4"
+      "1a3ed9cb9701000000020e0000006372656174655f6163636f756e74700000007b226e65"
+      "775f6163636f756e745f6964223a22686f646c5f746573745f313233342e6e656172222c"
+      "226e65775f7075626c69635f6b6579223a22656432353531393a436b61417178585a4653"
+      "75783459427376716b693571696662354e6678787569414e6278595476746e356657227d"
+      "00c06e31d9100100000080f64ae1c7022d15000000000000",
+      624,
+      raw_txn);
 
-#endif /* USE_SIMULATOR == 0 */
+  near_unsigned_txn utxn = {0};
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 312, &utxn));
+
+  TEST_ASSERT_TRUE(user_verification_function(&utxn));
+}
