@@ -708,11 +708,11 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
   return status;
 }
 
-FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
-                                                  const size_t path_length,
-                                                  const bool harden_all,
-                                                  char *output,
-                                                  const size_t out_len) {
+FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
+                                          const size_t path_length,
+                                          const bool harden_all,
+                                          char *output,
+                                          const size_t out_len) {
   if (out_len == 0 || output == NULL || path == NULL)
     return FRC_INVALID_ARGUMENTS;
 

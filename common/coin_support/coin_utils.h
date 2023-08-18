@@ -495,11 +495,11 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
  * @param output            Pointer to the character array to be used for output
  * @param out_len           Maximum length of the output character array
  */
-FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
-                                                  const size_t path_length,
-                                                  const bool harden_all,
-                                                  char *output,
-                                                  const size_t out_len);
+FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
+                                          const size_t path_length,
+                                          const bool harden_all,
+                                          char *output,
+                                          const size_t out_len);
 
 /**
  * @brief Create a new display node and return its pointer

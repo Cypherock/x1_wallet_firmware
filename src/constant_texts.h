@@ -41,6 +41,8 @@
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
   "Incorrect PIN!\n%d attempt(s) remaining"
+#define UI_TEXT_BLIND_SIGNING_WARNING                                          \
+  LV_SYMBOL_WARNING " Blind Signing\nProceed at your own risk!"
 
 // product hash
 extern const char *product_hash;
