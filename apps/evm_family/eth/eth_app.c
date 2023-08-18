@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    eth_app.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief   Ethereum application configuration and helpers
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,23 +60,21 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "host_interface.h"
-
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
 #include "eth_app.h"
-#include "evm_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
+
+/**
+ * @brief Whitelisted contracts with respective token symbol
+ * @details A map of Ethereum contract addresses with their token symbols. These
+ * will enable the device to verify the ERC20 token transaction in a
+ * user-friendly manner.
+ *
+ * @see erc20_contracts_t
+ */
+extern const erc20_contracts_t eth_contracts[];
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -94,6 +92,16 @@
  * STATIC VARIABLES
  *****************************************************************************/
 
+static const evm_config_t eth_app = {
+    .lunit_name = "ETH",
+    .name = "Ethereum",
+    .chain_id = 1,
+
+    // whitelisted contracts
+    .whitelisted_contracts = eth_contracts,
+    .whitelist_count = ETH_WHITELISTED_CONTRACTS_COUNT,
+};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -106,55 +114,6 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    case 7: {
-      evm_main(usb_evt, get_eth_app());
-      break;
-    }
-    case 8: {
-      near_main(usb_evt);
-      break;
-    }
-    default: {
-      // TODO: send core error about invalid applet id
-      break;
-    }
-  }
-
-  main_menu_set_update_req(true);
-  return;
+const evm_config_t *get_eth_app() {
+  return &eth_app;
 }

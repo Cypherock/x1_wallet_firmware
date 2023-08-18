@@ -86,6 +86,8 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
+const evm_config_t *g_evm_app = NULL;
+
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -98,8 +100,9 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void evm_main(usb_event_t usb_evt) {
+void evm_main(usb_event_t usb_evt, const evm_config_t *app) {
   evm_query_t query = EVM_QUERY_INIT_DEFAULT;
+  g_evm_app = app;
 
   if (false == decode_evm_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
@@ -124,5 +127,6 @@ void evm_main(usb_event_t usb_evt) {
     }
   }
 
+  g_evm_app = NULL;
   return;
 }

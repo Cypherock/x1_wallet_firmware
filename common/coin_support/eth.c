@@ -60,12 +60,14 @@
 
 #include "assert_conf.h"
 #include "constant_texts.h"
-#include "contracts.h"
 #include "eth_sign_data/eip712_utils.h"
+#include "evm_contracts.h"
 #include "int-util.h"
 #include "logger.h"
 #include "pb_decode.h"
 #include "utils.h"
+
+extern const erc20_contracts_t *eth_contracts;
 
 extern ui_display_node *current_display_node;
 
@@ -491,14 +493,14 @@ static PAYLOAD_STATUS eth_decode_txn_payload(
         (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
         (metadata_ptr->is_token_transfer) &&
         (metadata_ptr->network_chain_id == ETHEREUM_MAINNET_CHAIN)) {
-      for (int16_t i = 0; i < WHITELISTED_CONTRACTS_COUNT; i++) {
+      for (int16_t i = 0; i < 0; i++) {
         if (strncmp(metadata_ptr->token_name,
-                    whitelisted_contracts[i].symbol,
+                    eth_contracts[i].symbol,
                     ETHEREUM_TOKEN_SYMBOL_LENGTH) == 0) {
-          metadata_ptr->eth_val_decimal[0] = whitelisted_contracts[i].decimal;
+          metadata_ptr->eth_val_decimal[0] = eth_contracts[i].decimal;
           eth_is_token_whitelisted = true;
           result = (memcmp(eth_utxn_ptr->to_address,
-                           whitelisted_contracts[i].address,
+                           eth_contracts[i].address,
                            ETHEREUM_ADDRESS_LENGTH) == 0)
                        ? PAYLOAD_WHITELISTED
                        : PAYLOAD_CONTRACT_INVALID;

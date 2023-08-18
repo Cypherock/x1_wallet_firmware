@@ -1,35 +1,52 @@
 /**
- * @file    evm_main.h
+ * @file    evm_context.h
  * @author  Cypherock X1 Team
- * @brief
- * @details
+ * @brief   Ethereum config for various network chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
- *
  */
-
-#ifndef EVM_MAIN_H
-#define EVM_MAIN_H
+#ifndef EVM_CONTEXT_H
+#define EVM_CONTEXT_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include <evm/core.pb.h>
-#include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
-#include "events.h"
-#include "evm_context.h"
+#include "evm_contracts.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
 
+/// this makes length of 7 with a termination NULL byte
+#define EVM_SHORT_NAME_MAX_SIZE 8
+/// this makes length of 15 with a termination NULL byte
+#define EVM_LONG_NAME_MAX_SIZE 16
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+
+typedef struct {
+  /** Largest unit/denomination indicator/symbol. This will be used in UX for
+   * displaying fees and amount.
+   */
+  const char lunit_name[EVM_SHORT_NAME_MAX_SIZE];
+  /** Common name of the blockchain known to the users. This will be used in UX
+   */
+  const char name[EVM_LONG_NAME_MAX_SIZE];
+
+  /** Refer:
+   * https://github.com/ethereum/EIPs/blob/830708a049fc982fd595cb0c4dca703aebefd003/EIPS/eip-2294.md
+   */
+  const uint64_t chain_id;
+  const erc20_contracts_t *whitelisted_contracts;
+  const uint16_t whitelist_count;
+} evm_config_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -38,15 +55,5 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Entry point for the EVM application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * EVM app.
- *
- * @param usb_evt The USB event which triggered invocation of the EVM app
- * @param app Const reference to the preferred evm app configuration to govern
- * appropriate runtime execution
- */
-void evm_main(usb_event_t usb_evt, const evm_config_t *app);
 
-#endif /* EVM_MAIN_H */
+#endif
