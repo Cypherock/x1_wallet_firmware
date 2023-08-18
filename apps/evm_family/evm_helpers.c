@@ -147,14 +147,6 @@ static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth) {
  *****************************************************************************/
 
 bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
-  /* types of derivations
-   *
-   * legacy        : m/44'/60'/0'/x
-   * bip44         : m/44'/60'/0'/0/x
-   * account model : m/44'/60'/x'/0/0
-   *
-   */
-
   if (is_legacy_hd_path(path, depth)) {
     return true;
   }

@@ -44,14 +44,17 @@
 
 /**
  * @brief Verifies the derivation path.
- * @details The function supports checking dephts for derivation paths. The
- * only allowed depth count is either 4 (legacy) for 5 (metamask and ledger
- * live) for public address derivation.
+ * @details The function supports checking derivation paths for HD wallets
+ * Types of derivations:
+ * legacy        : m/44'/60'/0'/x
+ * bip44         : m/44'/60'/0'/0/x
+ * account model : m/44'/60'/x'/0/0
  *
+ * @param[in] path      The derivation path as an uint32 array
  * @param[in] depth     The number of levels in the derivation path
  *
- * @return bool Indicates if the provided path depth is valid
- * @retval true if the path depth is valid
+ * @return bool Indicates if the provided derivation path is valid
+ * @retval true if the derivation path is valid
  * @retval false otherwise
  */
 bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);

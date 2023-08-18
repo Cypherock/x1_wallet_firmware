@@ -320,11 +320,10 @@ void evm_get_pub_keys(evm_query_t *query) {
     return;
   }
 
-  // TODO: Replace EVM_CHAIN_NAME with chain name
   snprintf(msg,
            sizeof(msg),
            UI_TEXT_ADD_ACCOUNT_PROMPT,
-           g_evm_app->lunit_name,
+           g_evm_app->name,
            wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, evm_send_error)) {
