@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    solana_main.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief   A common entry point to various Solana coin actions supported.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,22 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "host_interface.h"
-
-#include <core.pb.h>
-
-#include "btc_app.h"
-#include "btc_main.h"
-#include "core_api.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
 #include "solana_main.h"
+
+#include "solana_api.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -91,15 +78,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -110,59 +97,32 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
+void solana_main(usb_event_t usb_evt) {
+  solana_query_t query = SOLANA_QUERY_INIT_DEFAULT;
 
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    case 7: {
-      evm_main(usb_evt, get_eth_app());
-      break;
-    }
-    case 8: {
-      near_main(usb_evt);
-      break;
-    }
-    case 9: {
-      solana_main(usb_evt);
-      break;
-    }
-    default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
-      break;
-    }
+  if (false == decode_solana_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
   }
 
-  main_menu_set_update_req(true);
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case SOLANA_QUERY_GET_PUBLIC_KEYS_TAG: {
+      // TODO: Implement SOLANA add account
+    } break;
+
+    case SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
+      // TODO: Implement SOLANA receive
+    } break;
+
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_QUERY);
+    } break;
+  }
+
   return;
 }

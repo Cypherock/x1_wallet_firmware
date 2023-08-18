@@ -1,7 +1,7 @@
 /**
- * @file    host_interface.c
+ * @file    solana_api.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the main-menu host interface
+ * @brief   Defines helpers apis for Solana app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,23 +60,13 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "host_interface.h"
+#include "solana_api.h"
 
-#include <core.pb.h>
+#include <pb_decode.h>
+#include <pb_encode.h>
 
-#include "btc_app.h"
-#include "btc_main.h"
-#include "core_api.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "solana_main.h"
-#include "status_api.h"
+#include "common_error.h"
+#include "events.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -91,15 +81,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -109,60 +99,97 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void main_menu_host_interface(engine_ctx_t *ctx,
-                              usb_event_t usb_evt,
-                              const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-
-  uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    case 7: {
-      evm_main(usb_evt, get_eth_app());
-      break;
-    }
-    case 8: {
-      near_main(usb_evt);
-      break;
-    }
-    case 9: {
-      solana_main(usb_evt);
-      break;
-    }
-    default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
-      break;
-    }
+bool decode_solana_query(const uint8_t *data,
+                         uint16_t data_size,
+                         solana_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
 
-  main_menu_set_update_req(true);
-  return;
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(solana_query_t));
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, SOLANA_QUERY_FIELDS, query_out);
+
+  /* Send error to host if status is false*/
+  if (false == status) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_DECODING_FAILED);
+  }
+
+  return status;
+}
+
+bool encode_solana_result(const solana_result_t *result,
+                          uint8_t *buffer,
+                          uint16_t max_buffer_len,
+                          size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, SOLANA_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
+  }
+
+  return status;
+}
+
+bool check_solana_query(const solana_query_t *query, pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+solana_result_t init_solana_result(pb_size_t result_tag) {
+  solana_result_t result = SOLANA_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void solana_send_error(pb_size_t which_error, uint32_t error_code) {
+  solana_result_t result = init_solana_result(SOLANA_RESULT_COMMON_ERROR_TAG);
+  result.common_error = init_common_error(which_error, error_code);
+  solana_send_result(&result);
+}
+
+void solana_send_result(const solana_result_t *result) {
+  // TODO: Set the options file for all
+  uint8_t buffer[1700] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_solana_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  usb_send_msg(&buffer[0], bytes_encoded);
+}
+
+bool solana_get_query(solana_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
+  }
+
+  if (!decode_solana_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
+
+  if (!check_solana_query(query, exp_query_tag)) {
+    return false;
+  }
+
+  return true;
 }

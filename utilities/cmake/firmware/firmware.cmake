@@ -52,6 +52,8 @@ target_include_directories(${EXECUTABLE} PRIVATE
 
         apps/near_app
 
+        apps/solana_app
+
         src/
         src/menu
         src/wallet
