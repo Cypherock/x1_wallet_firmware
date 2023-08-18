@@ -62,6 +62,9 @@
 
 #include "evm_helpers.h"
 
+#include "coin_utils.h"
+#include "eth.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -78,6 +81,37 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Verifies the derivation path for legacy accounts.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path is valid for legacy accounts
+ */
+static inline bool is_legacy_hd_path(const uint32_t *path, uint32_t depth);
+
+/**
+ * @brief Verifies the derivation path for default BIP44 path. Metamask uses
+ * this.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path is a default bip44 path
+ */
+static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth);
+
+/**
+ * @brief Verifies the derivation path for account model. Ledger live uses this.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path uses account as the key
+ */
+static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -90,14 +124,48 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static inline bool is_legacy_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_LEGACY_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && EVM_DRV_ACCOUNT == path[2] &&
+         is_non_hardened(path[3]);
+}
+
+static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_BIP44_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && is_hardened(path[2]) &&
+         0 == path[3] && 0 == path[4];
+}
+
+static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_ACCOUNT_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && EVM_DRV_ACCOUNT == path[2] &&
+         0 == path[3] && is_non_hardened(path[4]);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-bool evm_derivation_path_guard(uint32_t depth) {
-  // TODO: add metamask and ledger live related checks
-  if (EVM_DRV_LEGACY_DEPTH != depth && EVM_DRV_OTHER_DEPTH != depth) {
-    return false;
+bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  /* types of derivations
+   *
+   * legacy        : m/44'/60'/0'/x
+   * bip44         : m/44'/60'/0'/0/x
+   * account model : m/44'/60'/x'/0/0
+   *
+   */
+
+  if (is_legacy_hd_path(path, depth)) {
+    return true;
   }
-  return true;
+
+  if (is_bip44_hd_path(path, depth)) {
+    return true;
+  }
+
+  if (is_account_hd_path(path, depth)) {
+    return true;
+  }
+
+  return false;
 }

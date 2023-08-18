@@ -65,6 +65,7 @@
 
 #include "evm_api.h"
 #include "evm_helpers.h"
+#include "evm_priv.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -214,7 +215,7 @@ static bool validate_request_data(evm_get_public_keys_request_t *request) {
   pb_size_t count = request->initiate.derivation_paths_count;
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
-    if (!evm_derivation_path_guard(path->path_count)) {
+    if (!evm_derivation_path_guard(path->path, path->path_count)) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
@@ -323,7 +324,7 @@ void evm_get_pub_keys(evm_query_t *query) {
   snprintf(msg,
            sizeof(msg),
            UI_TEXT_ADD_ACCOUNT_PROMPT,
-           EVM_CHAIN_NAME,
+           g_evm_app->lunit_name,
            wallet_name);
   // Take user consent to export public key for the wallet
   if (!core_confirmation(msg, evm_send_error)) {

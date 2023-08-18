@@ -17,6 +17,7 @@
 
 #include "events.h"
 #include "evm_api.h"
+#include "evm_context.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES

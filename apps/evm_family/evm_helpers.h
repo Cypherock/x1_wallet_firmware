@@ -22,12 +22,13 @@
  *****************************************************************************/
 
 #define EVM_DRV_LEGACY_DEPTH 4
-#define EVM_DRV_OTHER_DEPTH 5
+#define EVM_DRV_BIP44_DEPTH 5
+#define EVM_DRV_ACCOUNT_DEPTH 5
 
 #define EVM_PUB_KEY_SIZE 65
 #define EVM_SHORT_PUB_KEY_SIZE 33
 
-#define EVM_CHAIN_NAME "ETH"
+#define EVM_DRV_ACCOUNT 0x80000000
 
 /*****************************************************************************
  * TYPEDEFS
@@ -53,6 +54,6 @@
  * @retval true if the path depth is valid
  * @retval false otherwise
  */
-bool evm_derivation_path_guard(uint32_t depth);
+bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);
 
 #endif /* EVM_HELPERS_H */

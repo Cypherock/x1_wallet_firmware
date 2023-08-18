@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "evm_main.h"
 
+#include "evm_context.h"
 #include "evm_priv.h"
 #include "status_api.h"
 
