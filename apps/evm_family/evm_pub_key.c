@@ -173,8 +173,14 @@ static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
  * @param public_keys Reference to list of derived public keys to be sent to the
  * host
  * @param count Number of public key entries in the list of public keys
+ *
+ * @return bool Indicating if the public keys were exported completely to the
+ * host
+ * @retval true If all the requested public keys were exported to the host app
+ * @retval false If the export was interrupted by a P0 event or an invalid query
+ * was received from the host app.
  */
-static void send_public_keys(evm_query_t *query,
+static bool send_public_keys(evm_query_t *query,
                              const uint8_t public_keys[][EVM_PUB_KEY_SIZE],
                              size_t count);
 
@@ -262,7 +268,7 @@ static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
   return true;
 }
 
-static void send_public_keys(evm_query_t *query,
+static bool send_public_keys(evm_query_t *query,
                              const uint8_t public_keys[][EVM_PUB_KEY_SIZE],
                              size_t count) {
   evm_result_t response = init_evm_result(EVM_RESULT_GET_PUBLIC_KEYS_TAG);
@@ -292,9 +298,10 @@ static void send_public_keys(evm_query_t *query,
     if (!evm_get_query(query, EVM_QUERY_GET_PUBLIC_KEYS_TAG) ||
         !check_which_request(query,
                              EVM_GET_PUBLIC_KEYS_REQUEST_FETCH_NEXT_TAG)) {
-      return;
+      return false;
     }
   }
+  return true;
 }
 
 /*****************************************************************************
@@ -336,6 +343,7 @@ void evm_get_pub_keys(evm_query_t *query) {
   // button pressed on PIN/Passphrase entry
   if (!reconstruct_seed_flow(query->get_public_keys.initiate.wallet_id,
                              &seed[0])) {
+    memzero(seed, sizeof(seed));
     // TODO: Handle error case reporting to host
     return;
   }
@@ -349,11 +357,16 @@ void evm_get_pub_keys(evm_query_t *query) {
 
   memzero(seed, sizeof(seed));
   if (status) {
-    send_public_keys(query, public_keys, init_req->derivation_paths_count);
+    status =
+        send_public_keys(query, public_keys, init_req->derivation_paths_count);
   } else {
     // send unknown error; do not know failure reason
     evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
 
-  delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  if (status) {
+    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  }
+
+  return;
 }

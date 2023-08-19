@@ -274,6 +274,7 @@ void btc_get_pub_key(btc_query_t *query) {
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
   if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
+    memzero(seed, sizeof(seed));
     // TODO: Handle error case reporting to host
     return;
   }
