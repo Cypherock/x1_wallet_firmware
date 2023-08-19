@@ -149,6 +149,11 @@ static void fill_wallet_list(manager_get_wallets_result_response_t *resp) {
     get_flash_wallet_by_name(wallet_list[index], &flash_wallet);
 
     ASSERT(NULL != flash_wallet);
+
+    // Wallet is NOT in usable state if
+    // 1. It is in locked state in any of the X1 cards
+    // 2. Wallet state in X1 Vault flash is not VALID_WALLET
+    // 3. Card state in X1 Vault flash is not 0xF
     if (flash_wallet->is_wallet_locked || VALID_WALLET != flash_wallet->state ||
         0x0F != flash_wallet->cards_states) {
       list[index].is_valid = false;
