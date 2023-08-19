@@ -84,9 +84,6 @@ void level_three_old_wallet_tasks() {
       delete_wallet_task();
     } break;
 
-    case LEVEL_THREE_EXPORT_TO_DESKTOP: {
-    } break;
-
     case LEVEL_THREE_ADD_COIN: {
       add_coin_tasks();
     } break;

@@ -39,7 +39,6 @@ typedef enum commandType {
   READY_STATE_PACKET = 41,    ///< Request by desktop for device status
   STATUS_PACKET = 42,    ///< Command for device status request and response
 
-  START_EXPORT_WALLET = 43,       ///< Request by desktop app to fetch wallets
   SEND_WALLET_TO_DESKTOP = 44,    ///< Response for fetch wallets request
 
   USER_CONFIRMED_PASSPHRASE =
