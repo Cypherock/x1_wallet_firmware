@@ -222,7 +222,6 @@ const char *ui_text_something_went_wrong_contact_support_send_logs =
 const char *ui_text_already_have_maxi_wallets =
     "You already have maximum number of wallets";
 const char *ui_text_aborted = "Aborted from\nthe cySync app";
-const char *ui_text_no_wallet_found = "No wallet found";
 const char *ui_text_operation_has_been_cancelled =
     "Operation has been cancelled!";
 const char *ui_text_wallet_name_exists =

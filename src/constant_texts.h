@@ -162,7 +162,6 @@ extern const char *ui_text_something_went_wrong;
 extern const char *ui_text_something_went_wrong_contact_support_send_logs;
 extern const char *ui_text_already_have_maxi_wallets;
 extern const char *ui_text_aborted;
-extern const char *ui_text_no_wallet_found;
 extern const char *ui_text_operation_has_been_cancelled;
 extern const char *ui_text_wallet_name_exists;
 extern const char *ui_text_pin_incorrect_re_enter;

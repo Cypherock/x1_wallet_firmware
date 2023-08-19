@@ -39,7 +39,7 @@ void delete_wallet_controller();
  * is done here.
  *
  * @see LEVEL_THREE_OLD_WALLET_TASKS, view_seed_controller(),
- * delete_wallet_controller(), export_wallet_controller(),
+ * delete_wallet_controller(),
  * add_coin_controller(), send_transaction_controller(),
  * send_transaction_controller_eth(), receive_transaction_controller_eth(),
  * receive_transaction_controller(), wallet_locked_controller(),

@@ -507,8 +507,6 @@ void desktop_listener_task(lv_task_t *data) {
   if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
     switch (command) {
 #if X1WALLET_MAIN
-      case START_EXPORT_WALLET: {
-      } break;
 #ifdef DEV_BUILD
       case START_CARD_UPGRADE: {
         CY_Reset_Not_Allow(false);

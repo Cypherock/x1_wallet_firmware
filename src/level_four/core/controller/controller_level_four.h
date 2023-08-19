@@ -91,38 +91,6 @@ typedef struct Provision_Data_Struct {
 extern Provision_Data_struct provision_keys_data;
 
 /**
- * @brief Stores the chosen wallet index for the export wallet process.
- * @details The chosen wallet index is stored temporarily in the RAM during the
- * export wallet process.
- *
- * @see export_wallet_controller(), export_wallet_task(),
- * desktop_listener_task(), START_EXPORT_WALLET, Cmd_Export_Wallet_t
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Export_Wallet_Data {
-  uint8_t chosen_wallet_index;
-} Export_Wallet_Data;
-#pragma pack(pop)
-
-/**
- * @brief Stores the chosen wallet's public information for the export wallet
- * process.
- * @details
- *
- * @see export_wallet_controller(), export_wallet_task(),
- * desktop_listener_task(), START_EXPORT_WALLET, Export_Wallet_Data
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Cmd_Export_Wallet_t {
-  uint8_t wallet_name[NAME_SIZE];
-  uint8_t wallet_info;
-  uint8_t wallet_id[WALLET_ID_SIZE];
-} Cmd_Export_Wallet_t;
-#pragma pack(pop)
-
-/**
  * @brief Stores the generated xpubs list for the add coin process.
  * @details The generated xpubs list is stored temporarily in the RAM during the
  * add coin process before it is sent to the desktop app.
@@ -226,25 +194,6 @@ void wallet_locked_controller();
  */
 void wallet_locked_controller_b();
 
-/**
- * @brief This controller is executed for exporting wallet on device
- * @details This controller is used to export the wallet on device using the
- * desktop app.
- *
- * @see export_wallet_task(), desktop_listener_task(), START_EXPORT_WALLET
- * @since v1.0.0
- */
-void export_wallet_controller();
-
-/**
- * @brief Back button controller for exporting wallet flow.
- * @details This controller is used to handle back button events during
- * exporting the wallet to the desktop app.
- *
- * @see export_wallet_controller(), export_wallet_task()
- * @since v1.0.0
- */
-void export_wallet_controller_b();
 /**
  * @brief This controller is executed for adding xpub to the device.
  * @details This controller is used to add xpub to the desktop app for the coins
