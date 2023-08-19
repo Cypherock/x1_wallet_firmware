@@ -138,7 +138,7 @@ static bool pow_started;
 static SHA256_CTX sha2;
 static Flash_Wallet *flash_wallet;    // Pointer to wallet which the device is
                                       // currently trying to unlock
-static lv_task_t *pow_update_flash_task;
+static lv_task_t *pow_update_flash_task = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -226,7 +226,9 @@ void stop_proof_of_work_task() {
   log_hex_array("target",
                 flash_wallet->challenge.target,
                 sizeof(flash_wallet->challenge.target));
+  lv_task_set_prio(pow_update_flash_task, LV_TASK_PRIO_OFF);
   lv_task_del(pow_update_flash_task);
+  pow_update_flash_task = NULL;
   pow_save_data_to_flash();
   pow_started = false;
 }
@@ -238,9 +240,14 @@ bool proof_of_work_task() {
 
   bool result = false;
 
+  /**
+   * @brief LV task handler is required to update the display and run the task
+   * which calls pow_timer_handler.
+   */
   lv_task_handler();
+
   // The counter will run for x secs if limit = SECS_TO_HASHES(x)
-  uint16_t limit = SECS_TO_HASHES(100);
+  uint16_t limit = SECS_TO_HASHES(1);
 
   for (uint16_t counter = 0; counter < limit; counter++) {
     sha256_Init(&sha2);
