@@ -1,7 +1,7 @@
 /**
- * @file    near_main.c
+ * @file    evm_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Near coin actions supported.
+ * @brief   Utilities specific to EVM chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,10 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_main.h"
+#include "evm_helpers.h"
 
-#include "near_api.h"
-#include "status_api.h"
+#include "coin_utils.h"
+#include "eth.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -78,6 +78,41 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Verifies the derivation path for legacy accounts.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path is valid for legacy accounts
+ */
+static inline bool is_legacy_hd_path(const uint32_t *path, uint32_t depth);
+
+/**
+ * @brief Verifies the derivation path for default BIP44 path. Metamask uses
+ * this.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path is a default bip44 path
+ */
+static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth);
+
+/**
+ * @brief Verifies the derivation path for account model. Ledger live uses this.
+ *
+ * @param[in] path      The derivation path
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided path uses account as the key
+ */
+static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -86,40 +121,43 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static inline bool is_legacy_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_LEGACY_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && EVM_DRV_ACCOUNT == path[2] &&
+         is_non_hardened(path[3]);
+}
+
+static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_BIP44_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && is_hardened(path[2]) &&
+         0 == path[3] && 0 == path[4];
+}
+
+static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth) {
+  return EVM_DRV_ACCOUNT_DEPTH == depth && ETHEREUM_PURPOSE_INDEX == path[0] &&
+         ETHEREUM_COIN_INDEX == path[1] && EVM_DRV_ACCOUNT == path[2] &&
+         0 == path[3] && is_non_hardened(path[4]);
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void near_main(usb_event_t usb_evt) {
-  near_query_t query = NEAR_QUERY_INIT_DEFAULT;
-
-  if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
+  if (is_legacy_hd_path(path, depth)) {
+    return true;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG: {
-      // TODO: Implement NEAR receive
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
+  if (is_bip44_hd_path(path, depth)) {
+    return true;
   }
 
-  return;
+  if (is_account_hd_path(path, depth)) {
+    return true;
+  }
+
+  return false;
 }

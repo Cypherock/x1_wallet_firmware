@@ -1,27 +1,34 @@
 /**
- * @file    evm_priv.h
+ * @file    evm_helpers.h
  * @author  Cypherock X1 Team
- * @brief   Support for evm app internal operations
- *          This file is defined to separate EVM's internal use functions,
- * flows, common APIs
+ * @brief   Utilities api definitions for EVM chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef EVM_PRIV_H
-#define EVM_PRIV_H
+#ifndef EVM_HELPERS_H
+#define EVM_HELPERS_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 
-#include "events.h"
-#include "evm_api.h"
-#include "evm_context.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+
+#define EVM_DRV_LEGACY_DEPTH 4
+#define EVM_DRV_BIP44_DEPTH 5
+#define EVM_DRV_ACCOUNT_DEPTH 5
+
+#define EVM_PUB_KEY_SIZE 65
+#define EVM_SHORT_PUB_KEY_SIZE 33
+
+#define EVM_DRV_ACCOUNT 0x80000000
 
 /*****************************************************************************
  * TYPEDEFS
@@ -31,19 +38,25 @@
  * EXPORTED VARIABLES
  *****************************************************************************/
 
-extern const evm_config_t *g_evm_app;
-
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /**
- * @brief Handler for getting public keys for EVM.
- * @details This flow expects EVM_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG as
- * initial query, otherwise the flow is aborted
+ * @brief Verifies the derivation path.
+ * @details The function supports checking derivation paths for HD wallets
+ * Types of derivations:
+ * legacy        : m/44'/60'/0'/x
+ * bip44         : m/44'/60'/0'/0/x
+ * account model : m/44'/60'/x'/0/0
  *
- * @param query Reference to the decoded query struct from the host app
+ * @param[in] path      The derivation path as an uint32 array
+ * @param[in] depth     The number of levels in the derivation path
+ *
+ * @return bool Indicates if the provided derivation path is valid
+ * @retval true if the derivation path is valid
+ * @retval false otherwise
  */
-void evm_get_pub_keys(evm_query_t *query);
+bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);
 
-#endif /* EVM_PRIV_H */
+#endif /* EVM_HELPERS_H */

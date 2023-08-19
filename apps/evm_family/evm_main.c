@@ -61,10 +61,9 @@
  *****************************************************************************/
 #include "evm_main.h"
 
-#include "evm_api.h"
+#include "evm_context.h"
 #include "evm_priv.h"
 #include "status_api.h"
-#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -115,8 +114,7 @@ void evm_main(usb_event_t usb_evt, const evm_config_t *app) {
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case EVM_QUERY_GET_PUBLIC_KEYS_TAG: {
-      delay_scr_init("Detected Ethereum query", DELAY_TIME);
-      // evm_get_public_keys(&query);
+      evm_get_pub_keys(&query);
       break;
     }
     default: {
