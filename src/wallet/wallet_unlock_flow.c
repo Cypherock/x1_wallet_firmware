@@ -170,6 +170,8 @@ static wallet_unlock_state_e wallet_unlock_handler(
       }
 
       char heading[50] = "";
+      card_operation_frontend_t frontend = {.heading = heading,
+                                            .msg = ui_text_place_card_below};
       snprintf(heading,
                sizeof(heading),
                UI_TEXT_TAP_CARD,
@@ -177,7 +179,8 @@ static wallet_unlock_state_e wallet_unlock_handler(
       instruction_scr_init(ui_text_place_card_below, heading);
 
     case WALLET_UNLOCK_REFETCH_CHALLENGE: {
-      card_error_type_e error = card_fetch_challenge(flash_wallet->wallet_name);
+      card_error_type_e error =
+          card_fetch_challenge(flash_wallet->wallet_name, &frontend);
 
       switch (error) {
         case CARD_OPERATION_SUCCESS:
