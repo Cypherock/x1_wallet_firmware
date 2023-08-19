@@ -73,7 +73,6 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-extern Wallet_shamir_data wallet_shamir_data;
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -103,8 +102,8 @@ extern Wallet_shamir_data wallet_shamir_data;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-card_error_type_e card_fetch_challenge(const uint8_t *wallet_name) {
-  // X-Coordinate cannot be more than the number of shares
+card_error_type_e card_fetch_challenge(const uint8_t *wallet_name,
+                                       card_operation_frontend_t *frontend) {
   if (NULL == wallet_name) {
     return CARD_OPERATION_DEFAULT_INVALID;
   }
@@ -117,15 +116,9 @@ card_error_type_e card_fetch_challenge(const uint8_t *wallet_name) {
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  char heading[50] = "";
-
-  uint8_t wallet_index;
-  get_index_by_name((const char *)wallet_name, &wallet_index);
-
-  snprintf(heading,
-           sizeof(heading),
-           UI_TEXT_TAP_CARD,
-           decode_card_number(get_wallet_card_locked(wallet_index)));
+  uint8_t wallet_index = 0xFF;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)wallet_name, &wallet_index));
 
   while (1) {
     card_data.nfc_data.acceptable_cards = get_wallet_card_locked(wallet_index);
@@ -147,7 +140,7 @@ card_error_type_e card_fetch_challenge(const uint8_t *wallet_name) {
         buzzer_start(BUZZER_DURATION);
         break;
       } else if (SW_WARNING_STATE_UNCHANGED == card_data.nfc_data.status) {
-        // If wallet is not in locked state, then update flash wallet data.
+        // wallet is in unlocked state on card; update flash wallet data.
         ASSERT(SUCCESS ==
                update_wallet_locked_flash((const char *)wallet_name, false));
         buzzer_start(BUZZER_DURATION);
@@ -167,7 +160,7 @@ card_error_type_e card_fetch_challenge(const uint8_t *wallet_name) {
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
-        instruction_scr_init(ui_text_place_card_below, heading);
+        instruction_scr_init(frontend->msg, frontend->heading);
         continue;
       }
     }

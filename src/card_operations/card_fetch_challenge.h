@@ -37,14 +37,22 @@
  * @brief Fetches wallet challenge data from a card.
  * @details This function initializes the applet, retrieves the wallet challenge
  * from the card. It handles various error cases and returns an appropriate
- * error code. NOTE: The instruction to tap card is not displayed by the
+ * error code.
+ *
+ * NOTE:
+ * 1. The instruction to tap card is not displayed by the
  * function as the api might be called as a continuation to error handling of a
- * separate flow
+ * separate flow.
+ * 2. This function updates challenge data and lock status on flash for the
+ * specified wallet.
  *
  * @param wallet_name The `wallet_name` parameter is a pointer to a uint8_t
  * array that represents the name of the wallet.
+ * @param frontend Pointer to the object of @ref card_operation_frontend_t
+ * structure, which represents the text to be displayed on retap errors.
  *
  * @return A card_error_type_e value representing the result of the operation.
  */
-card_error_type_e card_fetch_challenge(const uint8_t *wallet_name);
+card_error_type_e card_fetch_challenge(const uint8_t *wallet_name,
+                                       card_operation_frontend_t *frontend);
 #endif
