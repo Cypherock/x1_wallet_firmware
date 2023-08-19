@@ -24,7 +24,6 @@
  *
  * @see view_seed_task(), delete_wallet_task(), wallet_locked_task(),
  * verify_wallet_task(), export_wallet_task(), add_coin_tasks(),
- * send_transaction_tasks(), receive_transaction_tasks(),
  * send_transaction_tasks_eth(), receive_transaction_tasks_eth(),
  * LEVEL_THREE_OLD_WALLET_TASKS, Flow_level.level_two,
  * level_three_old_wallet_controller_b() level_three_old_wallet_controller()

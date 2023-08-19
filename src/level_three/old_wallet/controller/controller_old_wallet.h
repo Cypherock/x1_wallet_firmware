@@ -39,12 +39,10 @@ void delete_wallet_controller();
  * is done here.
  *
  * @see LEVEL_THREE_OLD_WALLET_TASKS, view_seed_controller(),
- * delete_wallet_controller(),
- * add_coin_controller(), send_transaction_controller(),
- * send_transaction_controller_eth(), receive_transaction_controller_eth(),
- * receive_transaction_controller(), wallet_locked_controller(),
- * verify_wallet_controller(),
- * level_three_old_wallet_tasks()
+ * delete_wallet_controller(), export_wallet_controller(),
+ * add_coin_controller(),  send_transaction_controller_eth(),
+ * receive_transaction_controller_eth(), wallet_locked_controller(),
+ * verify_wallet_controller(), level_three_old_wallet_tasks()
  * @since v1.0.0
  */
 void level_three_old_wallet_controller();
@@ -57,8 +55,8 @@ void level_three_old_wallet_controller();
  *
  * @see LEVEL_THREE_OLD_WALLET_TASKS,
  * verify_wallet_controller_b(), wallet_locked_controller_b(),
- * receive_transaction_controller_b_eth(), receive_transaction_controller_b(),
- * send_transaction_controller_b_eth(), send_transaction_controller_b(),
+ * receive_transaction_controller_b_eth(),
+ * send_transaction_controller_b_eth(),
  * level_three_old_wallet_tasks()
  * @since v1.0.0
  */

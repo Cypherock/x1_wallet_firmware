@@ -60,7 +60,6 @@
 #include "bip32.h"
 #include "bip39.h"
 #include "board.h"
-#include "btc.h"
 #include "communication.h"
 #include "controller_level_four.h"
 #include "controller_main.h"

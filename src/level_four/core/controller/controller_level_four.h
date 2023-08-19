@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "btc.h"
 #include "controller_main.h"
 #include "cryptoauthlib.h"
 #include "eth.h"
@@ -120,9 +119,7 @@ typedef struct Cmd_Add_Coin_t {
 #pragma pack(push, 1)
 typedef struct Send_Transaction_Data {
   uint8_t transaction_confirmation_list_index;
-  unsigned_txn unsigned_transaction;
   txn_metadata transaction_metadata;
-  signed_txn signed_transaction;
 
 } Send_Transaction_Data;
 #pragma pack(pop)
@@ -130,7 +127,6 @@ typedef struct Send_Transaction_Data {
 extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;
 extern Send_Transaction_Data var_send_transaction_data;
-extern Send_Transaction_Cmd send_transaction_cmd;
 
 /**
  * @brief Card upgrade controller available for development purposes.
@@ -217,29 +213,6 @@ void add_coin_controller_b();
 /**
  * @brief Next button controller is executed for processing and signing unsigned
  * transaction.
- * @details This controller is used to process and sign the unsigned transaction
- * for BTC that is requested from the desktop app.
- *
- * @see send_transaction_controller_b(), send_transaction_tasks(),
- * send_transaction_controller_eth(), send_transaction_tasks_eth()
- * @since v1.0.0
- */
-void send_transaction_controller();
-
-/**
- * @brief Back button controller for send transaction flow.
- * @details This controller is used to handle back button events during
- * processing and signing unsigned transaction for BTC.
- *
- * @see send_transaction_controller(), send_transaction_tasks(),
- * send_transaction_controller_eth(), send_transaction_tasks_eth()
- * @since v1.0.0
- */
-void send_transaction_controller_b();
-
-/**
- * @brief Next button controller is executed for processing and signing unsigned
- * transaction.
  */
 void send_transaction_controller_near();
 
@@ -312,31 +285,7 @@ void send_transaction_controller_b_solana();
  * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
  * @since v1.0.0
  */
-void receive_transaction_controller();
-
-/**
- * @brief Next button controller is executed for generating address using xpub.
- * @details This controller handles is used to generate receiving address for
- * the BTC coins requested by desktop from a list of supported coins.
- *
- * @see receive_transaction_controller_b(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START,
- * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
- * @since v1.0.0
- */
 void receive_transaction_controller_near();
-
-/**
- * @brief Back button controller for receive transaction flow.
- * @details This controller is used to handle back button events during
- * generating receiving address for BTC.
- *
- * @see receive_transaction_controller(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START,
- * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
- * @since v1.0.0
- */
-void receive_transaction_controller_b();
 
 /**
  * @brief Next button controller is executed for generating address using xpub

@@ -108,7 +108,7 @@ void send_transaction_controller_near_b() {
     case SEND_TXN_CONFIRM_PASSPHRASE_NEAR: {
       memzero(wallet_credential_data.passphrase,
               sizeof(wallet_credential_data.passphrase));
-      flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE;
+      flow_level.level_three = SEND_TXN_ENTER_PASSPHRASE_NEAR;
     } break;
 
     default:

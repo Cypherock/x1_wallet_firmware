@@ -110,28 +110,6 @@ typedef struct {
 #pragma pack(pop)
 
 /**
- * @brief Struct to store the details of an Unsigned Transaction.
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-#pragma pack(push, 1)
-typedef struct {
-  uint8_t network_version[4];
-  uint8_t input_count[1];
-  unsigned_txn_input *input;
-  uint8_t output_count[1];
-  txn_output *output;
-  uint8_t locktime[4];
-  uint8_t sighash[4];
-
-} unsigned_txn;
-#pragma pack(pop)
-
-/**
  * @brief Struct to store details of the preimage of a Transaction.
  * @details
  *
@@ -156,29 +134,6 @@ typedef struct {
   uint8_t sighash[4];
   uint8_t filled;
 } txn_preimage;
-#pragma pack(pop)
-
-/**
- * @brief Struct to store the details of a Signed Transaction.
- * @details
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-#pragma pack(push, 1)
-typedef struct {
-  uint8_t network_version[4];
-  uint8_t marker[1];
-  uint8_t flag[1];
-  uint8_t input_count[1];
-  signed_txn_input *input;
-  uint8_t output_count[1];
-  txn_output *output;
-  txn_witness *witness;
-  uint8_t locktime[4];
-} signed_txn;
 #pragma pack(pop)
 
 /**

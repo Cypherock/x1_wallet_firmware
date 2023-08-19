@@ -58,7 +58,6 @@
  ******************************************************************************
  */
 #include "bip32.h"
-#include "btc.h"
 #include "communication.h"
 #include "controller_level_four.h"
 #include "cryptoauthlib.h"
