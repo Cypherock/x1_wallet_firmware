@@ -291,6 +291,7 @@ void btc_get_xpub(btc_query_t *query) {
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
   if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
+    memzero(seed, sizeof(seed));
     // TODO: Handle error case reporting to host
     return;
   }
@@ -302,10 +303,15 @@ void btc_get_xpub(btc_query_t *query) {
                                        init_req->derivation_paths_count);
   memzero(seed, sizeof(seed));
   if (true == status) {
-    send_xpubs(query, xpub_list, init_req->derivation_paths_count);
+    status = send_xpubs(query, xpub_list, init_req->derivation_paths_count);
   } else {
     // send unknown error; do not know failure reason
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
-  delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+
+  if (status) {
+    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  }
+
+  return;
 }
