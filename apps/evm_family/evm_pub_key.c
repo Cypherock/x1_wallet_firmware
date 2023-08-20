@@ -114,7 +114,8 @@ static bool check_which_request(const evm_query_t *query,
  * @retval true If all the derivation path entries are valid
  * @retval false If any of the derivation path entries are invalid
  */
-static bool validate_request_data(evm_get_public_keys_request_t *request);
+static bool validate_request_data(evm_get_public_keys_request_t *request,
+                                  const pb_size_t which_request);
 
 /**
  * @details The function provides a public key. It accepts NULL for output
@@ -154,10 +155,10 @@ static bool get_public_key(const uint8_t *seed,
  * @retval false If the public key derivation failed. This could be due to
  * invalid derivation path.
  */
-static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
-                            pb_size_t count,
-                            const uint8_t *seed,
-                            uint8_t public_keys[][EVM_PUB_KEY_SIZE]);
+static bool fill_public_keys(const evm_get_public_keys_derivation_path_t *paths,
+                             const uint8_t *seed,
+                             uint8_t public_keys[][EVM_PUB_KEY_SIZE],
+                             pb_size_t count);
 
 /**
  * @brief The function sends public keys for the requested batch
@@ -182,7 +183,23 @@ static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
  */
 static bool send_public_keys(evm_query_t *query,
                              const uint8_t public_keys[][EVM_PUB_KEY_SIZE],
-                             size_t count);
+                             const size_t count,
+                             const pb_size_t which_request,
+                             const pb_size_t which_response);
+/**
+ * @brief Helper function to take user consent before exporting public keys to
+ * the host. Uses an appropriate message template based on the query request
+ * received from the host.
+ *
+ * @param which_request The type of request received from host
+ * @param wallet_name The name of the wallet on which the request needs to be
+ * performed
+ * @return true If the user accepted the request
+ * @return false If the user rejected or any P0 event occurred during the
+ * confirmation.
+ */
+static bool get_user_consent(const pb_size_t which_request,
+                             const char *wallet_name);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -207,11 +224,21 @@ static bool check_which_request(const evm_query_t *query,
   return true;
 }
 
-static bool validate_request_data(evm_get_public_keys_request_t *request) {
+static bool validate_request_data(evm_get_public_keys_request_t *request,
+                                  const pb_size_t which_request) {
   bool status = true;
 
   if (0 == request->initiate.derivation_paths_count) {
     // request does not have any derivation paths, invalid request
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    status = false;
+  }
+
+  if (EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request &&
+      1 < request->initiate.derivation_paths_count) {
+    // `EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
+    // one derivation path which is not expected
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -254,10 +281,10 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
-                            pb_size_t count,
-                            const uint8_t *seed,
-                            uint8_t public_keys[][EVM_PUB_KEY_SIZE]) {
+static bool fill_public_keys(const evm_get_public_keys_derivation_path_t *paths,
+                             const uint8_t *seed,
+                             uint8_t public_keys[][EVM_PUB_KEY_SIZE],
+                             pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const evm_get_public_keys_derivation_path_t *path = &paths[index];
     if (!get_public_key(
@@ -270,8 +297,10 @@ static bool get_public_keys(const evm_get_public_keys_derivation_path_t *paths,
 
 static bool send_public_keys(evm_query_t *query,
                              const uint8_t public_keys[][EVM_PUB_KEY_SIZE],
-                             size_t count) {
-  evm_result_t response = init_evm_result(EVM_RESULT_GET_PUBLIC_KEYS_TAG);
+                             const size_t count,
+                             const pb_size_t which_request,
+                             const pb_size_t which_response) {
+  evm_result_t response = init_evm_result(which_response);
   evm_get_public_keys_result_response_t *result =
       &response.get_public_keys.result;
   static const size_t batch_limit =
@@ -280,6 +309,7 @@ static bool send_public_keys(evm_query_t *query,
 
   response.get_public_keys.which_response =
       EVM_GET_PUBLIC_KEYS_RESPONSE_RESULT_TAG;
+
   while (true) {
     // send response as batched list of public keys
     size_t batch_size = CY_MIN(batch_limit, remaining);
@@ -295,7 +325,7 @@ static bool send_public_keys(evm_query_t *query,
       break;
     }
 
-    if (!evm_get_query(query, EVM_QUERY_GET_PUBLIC_KEYS_TAG) ||
+    if (!evm_get_query(query, which_request) ||
         !check_which_request(query,
                              EVM_GET_PUBLIC_KEYS_REQUEST_FETCH_NEXT_TAG)) {
       return false;
@@ -304,16 +334,48 @@ static bool send_public_keys(evm_query_t *query,
   return true;
 }
 
+static bool get_user_consent(const pb_size_t which_request,
+                             const char *wallet_name) {
+  char msg[100] = "";
+
+  if (EVM_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_ADD_ACCOUNT_PROMPT,
+             g_evm_app->name,
+             wallet_name);
+  } else {
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_RECEIVE_PROMPT,
+             g_evm_app->lunit_name,
+             g_evm_app->name,
+             wallet_name);
+  }
+
+  return core_scroll_page(NULL, msg, evm_send_error);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void evm_get_pub_keys(evm_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
-  char msg[100] = "";
   uint8_t seed[64] = {0};
-  evm_get_public_keys_intiate_request_t *init_req =
-      &query->get_public_keys.initiate;
+
+  const pb_size_t which_request = query->which_request;
+  evm_get_public_keys_intiate_request_t *init_req = NULL;
+  pb_size_t which_response = EVM_RESULT_COMMON_ERROR_TAG;
+
+  if (EVM_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
+    which_response = EVM_RESULT_GET_PUBLIC_KEYS_TAG;
+    init_req = &query->get_public_keys.initiate;
+  } else {
+    which_response = EVM_RESULT_GET_USER_VERIFIED_PUBLIC_KEY_TAG;
+    init_req = &query->get_user_verified_public_key.initiate;
+  }
+
   uint8_t public_keys[sizeof(init_req->derivation_paths) /
                       sizeof(evm_get_public_keys_derivation_path_t)]
                      [EVM_PUB_KEY_SIZE] = {0};
@@ -321,19 +383,14 @@ void evm_get_pub_keys(evm_query_t *query) {
   // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
   // found but is invalid/locked wallet
   if (!check_which_request(query, EVM_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
-      !validate_request_data(&query->get_public_keys) ||
+      !validate_request_data(&query->get_public_keys, which_request) ||
       !get_wallet_name_by_id(query->get_public_keys.initiate.wallet_id,
                              (uint8_t *)wallet_name)) {
     return;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_ADD_ACCOUNT_PROMPT,
-           g_evm_app->name,
-           wallet_name);
   // Take user consent to export public key for the wallet
-  if (!core_confirmation(msg, evm_send_error)) {
+  if (!get_user_consent(which_request, wallet_name)) {
     return;
   }
 
@@ -345,29 +402,43 @@ void evm_get_pub_keys(evm_query_t *query) {
                              &seed[0])) {
     memzero(seed, sizeof(seed));
     // TODO: Handle error case reporting to host
+    memzero(seed, sizeof(seed));
     return;
   }
 
   set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  bool status = get_public_keys(init_req->derivation_paths,
-                                init_req->derivation_paths_count,
-                                seed,
-                                public_keys);
+  if (!fill_public_keys(init_req->derivation_paths,
+                        seed,
+                        public_keys,
+                        init_req->derivation_paths_count)) {
+    // Clear seed as soon as it is not needed
+    memzero(seed, sizeof(seed));
 
-  memzero(seed, sizeof(seed));
-  if (status) {
-    status =
-        send_public_keys(query, public_keys, init_req->derivation_paths_count);
-  } else {
     // send unknown error; do not know failure reason
     evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+
+    return;
   }
 
-  if (status) {
-    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  if (EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
+    char address[100] = "";
+    byte_array_to_hex_string(
+        public_keys[0], sizeof(public_keys[0]), address, sizeof(address));
+    if (!core_scroll_page(ui_text_receive_on, address, evm_send_error)) {
+      return;
+    }
+    core_status_set_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
-  return;
+  if (!send_public_keys(query,
+                        public_keys,
+                        init_req->derivation_paths_count,
+                        which_request,
+                        which_response)) {
+    return;
+  }
+
+  delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
 }
