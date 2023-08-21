@@ -62,7 +62,7 @@
 
 #include "near_helpers.h"
 
-#include "coin_utils.h"
+#include "constant_texts.h"
 #include "near_context.h"
 #include "utils.h"
 
@@ -146,7 +146,7 @@ void get_amount_string(const uint8_t *amount,
 
   snprintf(string,
            size_of_string,
-           "%s %s",
+           UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
            near_app.lunit_name);
   return;

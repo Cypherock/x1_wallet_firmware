@@ -104,7 +104,7 @@
  *****************************************************************************/
 bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
   char address[200] = "";
-  char value[200] = "";
+  char value[100] = "";
 
   snprintf(address,
            CY_MIN(decoded_utxn->receiver_id_length, sizeof(address)),
@@ -114,7 +114,7 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
   get_amount_string(decoded_utxn->action.transfer.amount, value, sizeof(value));
 
   if (!core_scroll_page(ui_text_verify_address, address, near_send_error) ||
-      !core_scroll_page(ui_text_verify_amount, value, near_send_error)) {
+      !core_confirmation(value, near_send_error)) {
     return false;
   }
 
@@ -124,7 +124,7 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
 bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
   char address[200] = "";
   char account[200] = "";
-  char value[200] = "";
+  char value[100] = "";
 
   snprintf(address,
            CY_MIN(decoded_utxn->signer_id_length, sizeof(address)),
@@ -141,7 +141,7 @@ bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
   if (!core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
       !core_scroll_page(
           ui_text_verify_new_account_id, account, near_send_error) ||
-      !core_scroll_page(ui_text_verify_amount, value, near_send_error)) {
+      !core_confirmation(value, near_send_error)) {
     return false;
   }
 

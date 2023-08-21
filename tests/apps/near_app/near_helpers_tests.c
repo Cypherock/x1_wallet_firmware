@@ -98,8 +98,8 @@ TEST(near_helper_test, near_helper_send_decoder_transfer_action) {
       expected_receiver, (char *)utxn.receiver, utxn.receiver_id_length);
 
   // Verify transfer amount
-  const char expected_amount[] = "22.129003433752526485 NEAR";
-  char amount_decimal_string[30] = "";
+  const char expected_amount[] = "Verify amount\n22.129003433752526485\nNEAR";
+  char amount_decimal_string[100] = "";
   get_amount_string(utxn.action.transfer.amount,
                     amount_decimal_string,
                     sizeof(amount_decimal_string));
@@ -150,8 +150,8 @@ TEST(near_helper_test,
   TEST_ASSERT_EQUAL_STRING(expected_account_name, account);
 
   // Verify amount string
-  const char expected_amount[] = "0.1 NEAR";
-  char amount_decimal_string[30] = "";
+  const char expected_amount[] = "Verify amount\n0.1\nNEAR";
+  char amount_decimal_string[100] = "";
   get_amount_string(utxn.action.fn_call.deposit,
                     amount_decimal_string,
                     sizeof(amount_decimal_string));
