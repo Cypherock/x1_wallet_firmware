@@ -85,69 +85,6 @@ void level_two_controller_b() {
     } break;
 
     case LEVEL_TWO_ADVANCED_SETTINGS: {
-      if (counter.level > LEVEL_TWO) {
-        if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM) {
-          comm_reject_request(USER_FIRMWARE_UPGRADE_CHOICE, 0);
-          reset_flow_level();
-          flow_level.level_one = 6;
-          counter.next_event_flag = true;
-          return;
-        }
-
-        if (flow_level.level_two == LEVEL_THREE_VERIFY_CARD) {
-          comm_reject_request(START_CARD_AUTH, 0);
-          reset_flow_level();
-          counter.next_event_flag = true;
-          return;
-        }
-#if X1WALLET_MAIN
-        if (flow_level.level_two == LEVEL_THREE_SYNC_WALLET_FLOW) {
-          counter.next_event_flag = true;
-          return;
-        }
-#endif
-#ifdef ALLOW_LOG_EXPORT
-        if (flow_level.level_two == LEVEL_THREE_FETCH_LOGS_INIT) {
-          comm_reject_request(APP_LOG_DATA_REJECT, 0);
-          reset_flow_level();
-          flow_level.level_one = 6;
-          counter.next_event_flag = true;
-          return;
-        }
-#endif
-#if X1WALLET_MAIN
-        if (flow_level.level_two == LEVEL_THREE_PAIR_CARD) {
-          if (flow_level.show_error_screen) {
-            reset_flow_level();
-          } else {
-            switch (flow_level.level_four) {
-              case PAIR_CARD_RED_FRONTEND:
-              case PAIR_CARD_BLUE_FRONTEND:
-              case PAIR_CARD_GREEN_FRONTEND:
-              case PAIR_CARD_YELLOW_FRONTEND:
-                flow_level.level_four += 2;
-                /* code */
-                break;
-
-              default:
-                reset_flow_level();
-                break;
-            }
-          }
-          return;
-        }
-        if (flow_level.level_two == LEVEL_THREE_FACTORY_RESET) {
-          reset_flow_level();
-          return;
-        }
-#endif
-        else {
-          flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-          reset_flow_level_greater_than(LEVEL_ONE);
-          counter.level = LEVEL_TWO;
-        }
-        return;
-      }
     } break;
 
     default:

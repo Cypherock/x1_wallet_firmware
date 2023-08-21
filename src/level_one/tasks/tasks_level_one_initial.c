@@ -86,11 +86,11 @@ void level_one_tasks_initial() {
   }
 
   if (flow_level.show_desktop_start_screen) {
-    if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
-      message_scr_init(flow_level.confirmation_screen_text);
-    else
-      confirm_scr_init(flow_level.confirmation_screen_text);
-    return;
+    // if (flow_level.level_two == LEVEL_THREE_RESET_DEVICE_CONFIRM)
+    //   message_scr_init(flow_level.confirmation_screen_text);
+    // else
+    //   confirm_scr_init(flow_level.confirmation_screen_text);
+    // return;
   }
 
   if (counter.level > LEVEL_ONE) {

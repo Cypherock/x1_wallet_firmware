@@ -148,11 +148,6 @@ bool main_app_ready = false;
 /// lvgl task to listen for desktop start command
 lv_task_t *listener_task;
 
-#if X1WALLET_MAIN == 1
-/// lvgl task to listen for desktop start command in restricted mode
-lv_task_t *authentication_task;
-#endif
-
 /// Stores arbitrary data during flows
 char arbitrary_data[4096 / 8 + 1];
 
@@ -394,41 +389,6 @@ void _timeout_listener(lv_task_t *task) {
 
 #if X1WALLET_MAIN
 /**
- * @brief wrapper listener for desktop commands while authentication is not
- * complete
- * @details During authentication only a few select commands are allowed to be
- * started i.e. Device authentication, firmware update, device info, logger
- *
- * @param task lv task calling __authentication listener
- */
-void __authentication_listener(lv_task_t *task) {
-  En_command_type_t command;
-  uint8_t *data_array = NULL;
-  uint16_t msg_size = 0;
-  if (is_device_ready() && get_usb_msg(&command, &data_array, &msg_size)) {
-    switch (command) {
-      case START_FIRMWARE_UPGRADE:
-      case APP_LOG_DATA_SEND:
-      case START_DEVICE_AUTHENTICATION:
-      case DEVICE_INFO:
-        desktop_listener_task(listener_task);
-        if (device_auth_flag == true) {
-          // skip confirmation screen for device auth in case of restricted mode
-          flow_level.show_desktop_start_screen = false;
-          memset(flow_level.confirmation_screen_text,
-                 0,
-                 sizeof(flow_level.confirmation_screen_text));
-        }
-        break;
-      default:
-        comm_reject_invalid_cmd();
-        clear_message_received_data();
-        break;
-    }
-  }
-}
-
-/**
  * @brief Checks the state of wallet for the wallet id passed before loading the
  * into Wallet instance.
  * @details The functions looks for an operational wallet instance with the
@@ -523,18 +483,6 @@ void desktop_listener_task(lv_task_t *data) {
         clear_message_received_data();
       } break;
 #endif
-      case START_CARD_AUTH: {
-        CY_Reset_Not_Allow(false);
-        snprintf(flow_level.confirmation_screen_text,
-                 sizeof(flow_level.confirmation_screen_text),
-                 "%s",
-                 ui_text_start_verification_of_card);
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.show_desktop_start_screen = true;
-        flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
-        clear_message_received_data();
-      } break;
-
       case ADD_COIN_START: {
         if (wallet_selector(data_array)) {
           CY_Reset_Not_Allow(false);
@@ -745,87 +693,7 @@ void desktop_listener_task(lv_task_t *data) {
         }
         clear_message_received_data();
       } break;
-#ifdef DEV_BUILD
-      case EXPORT_ALL: {
-        const Flash_Wallet *flash_wallet;
-        uint8_t allWalletsID[(WALLET_ID_SIZE + NAME_SIZE + 1) *
-                             MAX_WALLETS_ALLOWED];
-        memset(allWalletsID,
-               0,
-               (WALLET_ID_SIZE + NAME_SIZE + 01) * MAX_WALLETS_ALLOWED);
-        uint8_t walletCounter = 0;
-        uint8_t walletsAdded = 0;
-        uint8_t allWalletsIDOffset = 1;
-        for (; walletCounter < MAX_WALLETS_ALLOWED; walletCounter++) {
-          flash_wallet = get_wallet_by_index(walletCounter);
-          ASSERT(flash_wallet != NULL);
-          if (flash_wallet->state == VALID_WALLET) {
-            memcpy(allWalletsID + allWalletsIDOffset,
-                   flash_wallet->wallet_name,
-                   NAME_SIZE);
-            allWalletsIDOffset += NAME_SIZE;
-            memcpy(allWalletsID + allWalletsIDOffset,
-                   &flash_wallet->wallet_info,
-                   1);
-            allWalletsIDOffset += 1;
-            memcpy(allWalletsID + allWalletsIDOffset,
-                   flash_wallet->wallet_id,
-                   WALLET_ID_SIZE);
-            allWalletsIDOffset += WALLET_ID_SIZE;
-            walletsAdded++;
-          }
-        }
-        memset(allWalletsID + 0, walletsAdded, 1);
-        clear_message_received_data();
-        transmit_data_to_app(EXPORT_ALL_SEND, allWalletsID, allWalletsIDOffset);
-        return;
-      } break;
-#endif
-      case START_DEVICE_AUTHENTICATION: {
-        CY_Reset_Not_Allow(false);
-        if (data_array[0] == 1) {
-          flow_level.level_three = SIGN_SERIAL_NUMBER;
-          clear_message_received_data();
-        }
-
-        if (data_array[0] == 2) {
-          flow_level.level_three = SIGN_CHALLENGE;
-          clear_message_received_data();
-        }
-
-        if (data_array[0] == 3) {
-          flow_level.level_three = AUTHENTICATION_SUCCESS;
-          clear_message_received_data();
-        }
-
-        if (data_array[0] == 4) {
-          flow_level.level_three = AUTHENTICATION_UNSUCCESSFUL;
-          clear_message_received_data();
-        }
-        if (main_app_ready) {
-          snprintf(flow_level.confirmation_screen_text,
-                   sizeof(flow_level.confirmation_screen_text),
-                   "%s",
-                   ui_text_start_device_verification);
-          flow_level.show_desktop_start_screen = true;
-        }
-        device_auth_flag = 1;
-
-      } break;
-
 #elif X1WALLET_INITIAL
-      case START_CARD_AUTH: {
-        reset_flow_level();
-        CY_Set_External_Triggered(true);
-        counter.level = LEVEL_THREE;
-        lv_obj_clean(lv_scr_act());
-        auth_card_number = data_array[0];
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.level_two = LEVEL_THREE_VERIFY_CARD;
-        flow_level.level_three = VERIFY_CARD_START_MESSAGE;
-        clear_message_received_data();
-      } break;
-
       case START_DEVICE_PROVISION: {    // 81,02 success and external keys sent
                                         // to device, 81,03 failure
         CY_Set_External_Triggered(true);
@@ -864,86 +732,9 @@ void desktop_listener_task(lv_task_t *data) {
         }
         clear_message_received_data();
       } break;
-
-      case START_DEVICE_AUTHENTICATION: {
-        CY_Reset_Not_Allow(false);
-        CY_Set_External_Triggered(true);
-        switch (data_array[0]) {
-          case 1:
-            lv_obj_clean(lv_scr_act());
-          case 2:
-          case 3:
-          case 4:
-            counter.level = 3;
-            flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-            flow_level.level_two = LEVEL_THREE_START_DEVICE_AUTHENTICATION;
-            flow_level.level_three = SIGN_SERIAL_NUMBER + data_array[0] - 1;
-            counter.next_event_flag = true;
-            lv_task_set_prio(listener_task,
-                             LV_TASK_PRIO_OFF);    // Tasks will now not run
-            break;
-
-          default:
-            cy_exit_flow();
-        }
-        if (data_array[0] == 2)
-          clear_message_received_data();
-      } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif
-      case START_FIRMWARE_UPGRADE: {
-        CY_Reset_Not_Allow(false);
-        snprintf(flow_level.confirmation_screen_text,
-                 sizeof(flow_level.confirmation_screen_text),
-                 "Update firmware to version %d.%d.%d",
-                 data_array[0],
-                 data_array[1],
-                 (uint16_t)(data_array[3] | ((uint16_t)data_array[2] << 8)));
-        flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.show_desktop_start_screen = true;
-        flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;
-        clear_message_received_data();
-      } break;
-
-      case DEVICE_INFO: {
-        clear_message_received_data();
-        uint8_t device_info[37] = {0};
-        if (get_device_serial() == SUCCESS) {
-          memcpy(device_info + 1, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-        } else {
-          LOG_CRITICAL("err xx4: %d", atecc_data.status);
-        }
-        device_info[0] = is_device_authenticated() ? 1 : 0;
-        uint32_t fwVer = get_fwVer();
-        fwVer = U32_SWAP_ENDIANNESS(fwVer);
-        memcpy(device_info + 33, &fwVer, sizeof(fwVer));
-
-        transmit_data_to_app(DEVICE_INFO, device_info, sizeof(device_info));
-      } break;
-#ifdef ALLOW_LOG_EXPORT
-      case APP_LOG_DATA_SEND: {
-#if X1WALLET_MAIN
-        if (!is_logging_enabled() && !CY_is_app_restricted()) {
-          clear_message_received_data();
-          comm_reject_request(APP_LOG_DATA_REJECT, 2);
-        } else
-#endif
-        {
-          CY_Reset_Not_Allow(false);
-          flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-          flow_level.level_two = LEVEL_THREE_FETCH_LOGS_INIT;
-          clear_message_received_data();
-          counter.level = LEVEL_THREE;
-          flow_level.show_desktop_start_screen = true;
-          snprintf(flow_level.confirmation_screen_text,
-                   sizeof(flow_level.confirmation_screen_text),
-                   "%s",
-                   ui_text_send_logs_prompt);
-        }
-      } break;
-#endif
-
       case LIST_SUPPORTED_COINS: {
         uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
                             U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
@@ -984,14 +775,6 @@ void desktop_listener_task(lv_task_t *data) {
       clear_message_received_data();
       counter.next_event_flag = true;
       lv_obj_clean(lv_scr_act());
-#if X1WALLET_MAIN == 1
-      if (CY_is_app_restricted() == true)
-        lv_task_set_prio(authentication_task,
-                         LV_TASK_PRIO_OFF);    // Tasks will now not run
-      else
-#endif
-        lv_task_set_prio(listener_task,
-                         LV_TASK_PRIO_OFF);    // Tasks will now not run
     }
   }
 }

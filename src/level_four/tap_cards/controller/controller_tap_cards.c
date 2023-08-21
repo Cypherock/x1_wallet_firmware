@@ -113,9 +113,7 @@ bool tap_card_applet_connection() {
 #if X1WALLET_MAIN
       tap_card_data.keystore_index =
           get_paired_card_index(tap_card_data.card_key_id);
-      if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
-          flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
-          tap_card_data.keystore_index == -1) {
+      if (false) {
         tap_card_take_to_pairing();
         return false;
       }
@@ -300,7 +298,6 @@ void tap_card_take_to_pairing() {
   reset_flow_level();
   counter.level = LEVEL_THREE;
   flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-  flow_level.level_two = LEVEL_THREE_PAIR_CARD;
   if (tap_card_data.desktop_control)
     comm_reject_request(tap_card_data.active_cmd_type, 0);
   instruction_scr_destructor();

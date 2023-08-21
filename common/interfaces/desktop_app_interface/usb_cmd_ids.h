@@ -34,7 +34,6 @@ typedef enum commandType {
   SIGNED_CHALLENGE = 17,         ///< Send challenge signature to desktop
 
   APP_LOG_DATA_REJECT = 37,    ///< Request by desktop to receive logs
-  APP_LOG_DATA_SEND = 38,      ///< Response to send log to desktop
 
   READY_STATE_PACKET = 41,    ///< Request by desktop for device status
   STATUS_PACKET = 42,    ///< Command for device status request and response
@@ -76,19 +75,14 @@ typedef enum commandType {
   APDU_PACKET = 61,
   STOP_CARD_UPGRADE = 62,
 #endif
-  START_CARD_AUTH = 70,     ///< Request by desktop for start card auth
   CARD_ERROR_FACED = 71,    ///< Response by device for card auth error faced
 #ifdef DEV_BUILD
-  EXPORT_ALL = 72,
   EXPORT_ALL_SEND = 73,
 #endif
 
   WALLET_IS_LOCKED = 75,          ///< Prompt by device when wallet is locked
   WALLET_DOES_NOT_EXISTS = 76,    ///< Prompt by device when wallet not found
 
-  START_FIRMWARE_UPGRADE =
-      77,    ///< Request by desktop to initiate firmware update
-  USER_FIRMWARE_UPGRADE_CHOICE = 78,    ///< Response by device firmware update
   USER_REJECT_PIN_INPUT = 79,    ///< Prompt for pin input rejection by user
 
   WALLET_DOES_NOT_EXISTS_ON_CARD =
@@ -101,15 +95,11 @@ typedef enum commandType {
   CONFIRM_PROVISION = 80,    ///< Response by device(initial firmwaer) after
                              ///< provisioning complete/failed
 
-  START_DEVICE_AUTHENTICATION =
-      83,    ///< Request by device to start device authentication
-
   DEVICE_SERAIL_NO_SIGNED =
       85,    ///< Response by device with device serial number and signature
   DEVICE_CHALLENGE_SIGNED =
       86,    ///< Response by device with challenge signature
 
-  DEVICE_INFO = 87,             ///< Command for device information
   COMM_SDK_VERSION_REQ = 88,    ///< Command for Communication SDK version
 
   RECV_TXN_USER_VERIFIED_ACCOUNT =

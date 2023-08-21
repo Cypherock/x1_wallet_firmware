@@ -62,8 +62,6 @@
 #include "controller_level_four.h"
 #include "controller_main.h"
 #include "controller_tap_cards.h"
-#include "cy_card_hc.h"
-#include "cy_factory_reset.h"
 #include "tasks.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
@@ -82,51 +80,6 @@ extern const char *GIT_BRANCH;
 
 void level_three_advanced_settings_tasks() {
   switch (flow_level.level_two) {
-    case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-      transmit_one_byte_confirm(USER_FIRMWARE_UPGRADE_CHOICE);
-      instruction_scr_init(ui_text_processing, NULL);
-      mark_event_over();
-    } break;
-
-#if X1WALLET_MAIN
-    case LEVEL_THREE_SYNC_CARD_CONFIRM: {
-    } break;
-
-    case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-      confirm_scr_init(ui_text_rotate_display_confirm);
-    } break;
-
-    case LEVEL_THREE_TOGGLE_PASSPHRASE: {
-    } break;
-
-    case LEVEL_THREE_FACTORY_RESET:
-      cyt_factory_reset();
-      break;
-
-    case LEVEL_THREE_CARD_HEALTH_CHECK:
-      cyt_card_hc();
-      break;
-#endif
-
-    case LEVEL_THREE_VIEW_DEVICE_VERSION: {
-    } break;
-
-    case LEVEL_THREE_VERIFY_CARD: {
-#if X1WALLET_MAIN
-      verify_card_task();
-#elif X1WALLET_INITIAL
-      initial_verify_card_task();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-    } break;
-
-    case LEVEL_THREE_READ_CARD_VERSION: {
-    } break;
-
-    case LEVEL_THREE_REGULATORY_INFO: {
-    } break;
-
 #if X1WALLET_MAIN
 #ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
@@ -136,71 +89,13 @@ void level_three_advanced_settings_tasks() {
     case LEVEL_THREE_CARD_UPGRADE:
       card_upgrade_task();
       break;
-
-    case LEVEL_THREE_ADJUST_BUZZER:
-      menu_init(&ui_text_options_buzzer_adjust[1],
-                2,
-                ui_text_options_buzzer_adjust[0],
-                false);
-      break;
 #endif
-
-    case LEVEL_THREE_SYNC_CARD: {
-    } break;
-
-    case LEVEL_THREE_SYNC_SELECT_WALLET: {
-    } break;
-
-    case LEVEL_THREE_SYNC_WALLET_FLOW: {
-    } break;
-
-    case LEVEL_THREE_ROTATE_SCREEN: {
-    } break;
 #endif
-
-    case LEVEL_THREE_RESET_DEVICE: {
-      CY_Reset_Not_Allow(true);
-      BSP_DelayMs(
-          500);    // Wait for status pull to desktop (which requests at 200ms)
-      FW_enter_DFU();
-      BSP_reset();
-    } break;
-
-#ifdef ALLOW_LOG_EXPORT
-    case LEVEL_THREE_FETCH_LOGS_INIT: {
-      instruction_scr_init(ui_text_sending_logs, NULL);
-      mark_event_over();
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS_WAIT: {
-      mark_event_over();
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS: {
-      mark_event_over();
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS_FINISH: {
-      ui_text_slideshow_destructor();
-      delay_scr_init(ui_text_logs_sent, DELAY_TIME);
-      CY_Reset_Not_Allow(true);
-    } break;
-#endif
-
 #if X1WALLET_INITIAL
     case LEVEL_THREE_START_DEVICE_PROVISION: {
       task_device_provision();
     } break;
-
-    case LEVEL_THREE_START_DEVICE_AUTHENTICATION: {
-      task_device_authentication();
-    } break;
 #elif X1WALLET_MAIN
-    case LEVEL_THREE_PAIR_CARD: {
-    } break;
-
-    case LEVEL_THREE_TOGGLE_LOGGING: {
-    } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif

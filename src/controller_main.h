@@ -201,7 +201,7 @@ typedef struct Flow_level {
    * wallet, unlock wallet, device_provision (only in initial application).
    *
    * @see SYNC_CARDS_TASKS, VERIFY_WALLET_TASKS, WALLET_LOCKED_TASKS,
-   * START_DEVICE_AUTHENTICATION, SEND_TRANSACTION_ETH,
+   * SEND_TRANSACTION_ETH,
    * RECEIVE_TRANSACTION_TASKS_ETH, RECEIVE_TRANSACTION_TASKS, SEND_TRANSACTION,
    * ADD_COINS_TASKS, EXPORT_WALLET_TASKS, VERIFY_CARD_FLOW, PAIR_CARD_FLOW,
    * TAP_CARDS_FLOW, TAP_ONE_CARD_FLOW, controller_level_four.h,
@@ -465,7 +465,7 @@ void reset_flow_level_greater_than(enum LEVEL level);
  * message which is shown to the user for confirmation before actually starting
  * the requested flow. It has the capacity to respond to certain requests
  * directly without user consent (such as DEVICE_INFO, START_CARD_AUTH,
- * START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION).
+ * START_DEVICE_PROVISION,
  *
  * @param task lv_task passed while registering the callback.
  *
@@ -523,7 +523,7 @@ void _timeout_listener(lv_task_t *task);
  * view. This is responsible for exiting flows in situations of errors or if
  * requested by desktop only in case of desktop initiated flows.
  *
- * @see START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION, nfc_select_card(),
+ * @see START_DEVICE_PROVISION,  nfc_select_card(),
  * set_instant_abort(), nfc_set_early_exit_handler()
  * @since v1.0.0
  *

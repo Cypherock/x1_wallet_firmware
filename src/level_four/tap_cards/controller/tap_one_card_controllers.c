@@ -70,9 +70,6 @@
 #include "ui_instruction.h"
 #include "utils.h"
 
-extern char card_id_fetched[];
-bool no_wallet_on_cards = false;
-
 void controller_update_card_id() {
   switch (flow_level.level_three) {
     case 1:

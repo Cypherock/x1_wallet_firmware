@@ -64,54 +64,13 @@
 #include "controller_level_four.h"
 #include "controller_main.h"
 #include "controller_tap_cards.h"
-#include "cy_card_hc.h"
-#include "cy_factory_reset.h"
 #include "tasks.h"
 
 extern lv_task_t *timeout_task;
 
 void level_three_advanced_settings_controller() {
   switch (flow_level.level_two) {
-    case LEVEL_THREE_RESET_DEVICE_CONFIRM: {
-    } break;
 #if X1WALLET_MAIN
-    case LEVEL_THREE_SYNC_CARD_CONFIRM: {
-      flow_level.level_two = LEVEL_THREE_SYNC_CARD;
-    } break;
-
-    case LEVEL_THREE_ROTATE_SCREEN_CONFIRM: {
-      flow_level.level_two = LEVEL_THREE_ROTATE_SCREEN;
-    } break;
-
-    case LEVEL_THREE_TOGGLE_PASSPHRASE: {
-    } break;
-
-    case LEVEL_THREE_FACTORY_RESET:
-      cyc_factory_reset();
-      break;
-
-    case LEVEL_THREE_CARD_HEALTH_CHECK:
-      cyc_card_hc();
-      break;
-#endif
-
-    case LEVEL_THREE_VIEW_DEVICE_VERSION: {
-    } break;
-    case LEVEL_THREE_VERIFY_CARD:
-#if X1WALLET_MAIN
-      verify_card_controller();
-#elif X1WALLET_INITIAL
-      initial_verify_card_controller();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-      break;
-
-    case LEVEL_THREE_READ_CARD_VERSION: {
-    } break;
-#if X1WALLET_MAIN
-    case LEVEL_THREE_REGULATORY_INFO: {
-    } break;
 #ifdef DEV_BUILD
     case LEVEL_THREE_UPDATE_CARD_ID: {
       controller_update_card_id();
@@ -120,79 +79,13 @@ void level_three_advanced_settings_controller() {
     case LEVEL_THREE_CARD_UPGRADE:
       card_upgrade_controller();
       break;
-
-    case LEVEL_THREE_ADJUST_BUZZER: {
-#if USE_SIMULATOR == 0
-      buzzer_disabled = flow_level.screen_input.list_choice == 1;
 #endif
-      counter.level = LEVEL_TWO;
-      flow_level.level_two = 1;
-    } break;
 #endif
-
-    case LEVEL_THREE_SYNC_CARD: {
-    } break;
-
-    case LEVEL_THREE_SYNC_SELECT_WALLET: {
-    } break;
-    case LEVEL_THREE_SYNC_WALLET_FLOW: {
-    } break;
-
-    case LEVEL_THREE_ROTATE_SCREEN: {
-    } break;
-#endif
-    case LEVEL_THREE_RESET_DEVICE: {
-    } break;
-
-#ifdef ALLOW_LOG_EXPORT
-    case LEVEL_THREE_FETCH_LOGS_INIT: {
-      set_start_log_read();
-      flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS_WAIT: {
-      if (get_usb_msg_by_cmd_type(APP_LOG_DATA_SEND, NULL, NULL)) {
-        flow_level.level_two = LEVEL_THREE_FETCH_LOGS;
-        clear_message_received_data();
-      }
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS: {
-      if (get_log_read_status() == LOG_READ_FINISH) {
-        // logs finished, reset any data and proceed
-        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_FINISH;
-      } else {
-        flow_level.level_two = LEVEL_THREE_FETCH_LOGS_WAIT;
-      }
-    } break;
-
-    case LEVEL_THREE_FETCH_LOGS_FINISH: {
-      reset_flow_level();
-#if X1WALLET_INITIAL
-      flow_level.level_one = 6;
-#endif
-    } break;
-#endif
-
 #if X1WALLET_INITIAL
     case LEVEL_THREE_START_DEVICE_PROVISION: {
       device_provision_controller();
     } break;
-
-    case LEVEL_THREE_START_DEVICE_AUTHENTICATION: {
-      device_authentication_controller();
-    } break;
 #elif X1WALLET_MAIN
-    case LEVEL_THREE_PAIR_CARD: {
-    } break;
-
-    case LEVEL_THREE_TOGGLE_LOGGING: {
-      set_logging_config(
-          is_logging_enabled() ? LOGGING_DISABLED : LOGGING_ENABLED,
-          FLASH_SAVE_NOW);
-      counter.level = LEVEL_TWO;
-      flow_level.level_two = 1;
-    } break;
 #else
 #error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
 #endif

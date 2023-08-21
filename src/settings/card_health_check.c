@@ -175,14 +175,14 @@ void card_health_check(void) {
 
   card_health_check_states_e state_on_confirm = CARD_HC_EXIT_FLOW;
   if (0 < wallets_in_card.count) {
-    state_on_confirm = CARD_HC_DISPLAY_WALLETS;
+    state_on_confirm = CARD_HC_SHOW_WALLETS;
   }
 
   multi_instruction_init(msg, screens, DELAY_TIME, true);
 
-  if (CARD_HC_DISPLAY_WALLETS == get_state_on_confirm_scr(state_on_confirm,
-                                                          CARD_HC_EXIT_FLOW,
-                                                          CARD_HC_EXIT_FLOW)) {
+  if (CARD_HC_SHOW_WALLETS == get_state_on_confirm_scr(state_on_confirm,
+                                                       CARD_HC_EXIT_FLOW,
+                                                       CARD_HC_EXIT_FLOW)) {
     memzero(display_msg, sizeof(display_msg));
     snprintf(display_msg,
              sizeof(display_msg),

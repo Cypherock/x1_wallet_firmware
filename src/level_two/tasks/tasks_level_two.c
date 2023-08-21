@@ -190,30 +190,7 @@ void level_two_tasks() {
         level_three_advanced_settings_tasks();
         return;
       }
-#if X1WALLET_MAIN
-      uint8_t advancedSettingsIndex = 0, optionsIndex = 1;
-      for (; advancedSettingsIndex < NUMBER_OF_OPTIONS_ADVANCED_OPTIONS;
-           advancedSettingsIndex++) {
-        if (optionsIndex == LEVEL_THREE_TOGGLE_LOGGING)
-          options_arr[advancedSettingsIndex] =
-              (char *)(is_logging_enabled()
-                           ? ui_text_options_logging_export[0]
-                           : ui_text_options_logging_export[1]);
-        else if (optionsIndex == LEVEL_THREE_TOGGLE_PASSPHRASE)
-          options_arr[advancedSettingsIndex] =
-              (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
-                                               : ui_text_options_passphrase[1]);
-        else
-          options_arr[advancedSettingsIndex] =
-              (char *)ui_text_options_settings[optionsIndex];
-        optionsIndex++;
-      }
 
-      menu_init((const char **)options_arr,
-                NUMBER_OF_OPTIONS_ADVANCED_OPTIONS,
-                ui_text_options_settings[0],
-                true);
-#endif
       break;
 
     default:
