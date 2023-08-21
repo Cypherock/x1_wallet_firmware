@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/near/get_public_key.proto
+near.GetPublicKeysDerivationPath.path type:FT_STATIC max_count:5 fixed_length:true
+near.GetPublicKeysIntiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+near.GetPublicKeysIntiateRequest.derivation_paths type:FT_STATIC max_count:100 fixed_length:true
+near.GetPublicKeysResultResponse.public_keys type:FT_STATIC max_size:32 max_count:10 fixed_length:true

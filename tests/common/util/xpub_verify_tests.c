@@ -7,6 +7,7 @@
 #include "eth.h"
 #include "ltc_app.h"
 #include "near.h"
+#include "near_helpers.h"
 #include "solana.h"
 #include "unity_fixture.h"
 
@@ -184,7 +185,7 @@ TEST(xpub, derivation_path_tests) {
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case NEAR:
-        status = near_verify_derivation_path(&paths[i][2], depth);
+        status = near_derivation_path_guard(&paths[i][2], depth);
         break;
       case SOLANA:
         status = sol_verify_derivation_path(&paths[i][2], depth);

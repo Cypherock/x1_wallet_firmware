@@ -253,21 +253,6 @@ void near_deserialize_account_ids(const uint8_t *data,
 size_t near_get_account_ids_count(const uint8_t *data, const uint16_t data_len);
 
 /**
- * @brief Verifies the derivation path for any inconsistent/unsupported values.
- * The derivation depth is fixed at level 5. So if the depth level < 5, then
- * this function return false indicating invalid derivation path. Also, the path
- * indices should be hardened (as the EC curve only supports hadened derivation)
- * otherwise it is considered invalid. The supported derivation path is
- * `m/44'/397'/0'/0'/i'`.
- *
- * @param[in] path      The address derivation path to be checked
- * @param[in] levels    The number of levels in the derivation path
- *
- * @return bool     Returns true if the path values are valid. False otherwise.
- */
-bool near_verify_derivation_path(const uint32_t *path, uint8_t levels);
-
-/**
  * @brief Returns the decimal value of near asset
  *
  * @return uint8_t decimal value

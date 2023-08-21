@@ -1,7 +1,7 @@
 /**
- * @file    near_main.c
+ * @file    near_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Near coin actions supported.
+ * @brief   Helper functions for the NEAR app
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_main.h"
+#include "near_helpers.h"
 
-#include "near_api.h"
-#include "near_priv.h"
-#include "status_api.h"
+#include "coin_utils.h"
+#include "near_context.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,30 +97,19 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void near_main(usb_event_t usb_evt) {
-  near_query_t query = NEAR_QUERY_INIT_DEFAULT;
-
-  if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+bool near_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (NEAR_IMPLICIT_ACCOUNT_DEPTH != levels) {
+    return status;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  uint32_t purpose = path[0], coin = path[1], account = path[2],
+           change = path[3], address = path[4];
 
-  switch ((uint8_t)query.which_request) {
-    case NEAR_QUERY_GET_PUBLIC_KEYS_TAG:
-    case NEAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      near_get_pub_keys(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
-  }
+  // m/44'/397'/0'/0'/i'
+  status = (NEAR_PURPOSE_INDEX == purpose && NEAR_COIN_INDEX == coin &&
+            NEAR_ACCOUNT_INDEX == account && NEAR_CHANGE_INDEX == change &&
+            is_hardened(address));
 
-  return;
+  return status;
 }
