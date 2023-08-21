@@ -410,7 +410,7 @@ void near_get_pub_keys(near_query_t *query) {
 
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  bool result = result =
+  bool result =
       fill_public_keys(init_req->derivation_paths, seed, pubkey_list, count);
 
   // Clear seed as soon as it is not needed
