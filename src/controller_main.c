@@ -89,7 +89,6 @@
 #include "arbitrum.h"
 #include "avalanche.h"
 #include "bsc.h"
-#include "btc.h"
 #include "chacha20poly1305.h"
 #include "communication.h"
 #include "constant_texts.h"
@@ -156,6 +155,11 @@ lv_task_t *authentication_task;
 
 /// Stores arbitrary data during flows
 char arbitrary_data[4096 / 8 + 1];
+
+// TODO: Variable required for code compilation: Delete after all coins are
+// ported
+Send_Transaction_Data var_send_transaction_data = {0};
+Receive_Transaction_Data receive_transaction_data = {0};
 
 /**
  * @brief Global Flow_level instance.
@@ -498,7 +502,6 @@ static bool wallet_selector(uint8_t *data_array) {
 #endif
 
 extern Add_Coin_Data add_coin_data;
-extern Receive_Transaction_Data receive_transaction_data;
 
 void desktop_listener_task(lv_task_t *data) {
   En_command_type_t command;
@@ -624,14 +627,6 @@ void desktop_listener_task(lv_task_t *data) {
                                        .transaction_metadata.network_chain_id),
                      wallet.wallet_name);
           } else {
-            flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION;
-            snprintf(flow_level.confirmation_screen_text,
-                     sizeof(flow_level.confirmation_screen_text),
-                     "Send %s from %s",
-                     get_coin_name(coin_index,
-                                   var_send_transaction_data
-                                       .transaction_metadata.network_chain_id),
-                     wallet.wallet_name);
           }
           if (!validate_txn_metadata(
                   &var_send_transaction_data.transaction_metadata)) {
@@ -746,13 +741,6 @@ void desktop_listener_task(lv_task_t *data) {
                                    receive_transaction_data.network_chain_id),
                      wallet.wallet_name);
           } else {
-            flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION;
-            snprintf(flow_level.confirmation_screen_text,
-                     sizeof(flow_level.confirmation_screen_text),
-                     "Receive %s in %s",
-                     get_coin_name(coin_index,
-                                   receive_transaction_data.network_chain_id),
-                     wallet.wallet_name);
           }
         }
         clear_message_received_data();
@@ -957,17 +945,7 @@ void desktop_listener_task(lv_task_t *data) {
 #endif
 
       case LIST_SUPPORTED_COINS: {
-        uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_BITCOIN),
-                            U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_BTC_TEST),
-                            U32_SWAP_ENDIANNESS(BTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_LITECOIN),
-                            U32_SWAP_ENDIANNESS(LTC_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_DOGE),
-                            U32_SWAP_ENDIANNESS(DOGE_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_DASH),
-                            U32_SWAP_ENDIANNESS(DASH_COIN_VERSION),
-                            U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
+        uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
                             U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR),
                             U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),

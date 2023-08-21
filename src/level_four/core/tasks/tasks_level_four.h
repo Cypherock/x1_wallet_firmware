@@ -42,15 +42,6 @@ void add_coin_tasks();
 
 /**
  * @brief This task is executed for processing and signing unsigned transaction.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void send_transaction_tasks();
-
-/**
- * @brief This task is executed for processing and signing unsigned transaction.
  */
 void send_transaction_tasks_near();
 
@@ -75,15 +66,6 @@ void sign_message_tasks_eth();
  * @brief This task is executed for processing and signing unsigned transaction.
  */
 void send_transaction_tasks_solana();
-
-/**
- * @brief This task is executed for generating address using xpub.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void receive_transaction_tasks();
 
 /**
  * @brief This task is executed for generating address using xpub for Ethereum.

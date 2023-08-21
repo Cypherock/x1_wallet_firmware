@@ -56,7 +56,6 @@
  *
  ******************************************************************************
  */
-#include "btc.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"

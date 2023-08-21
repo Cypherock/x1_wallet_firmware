@@ -77,10 +77,6 @@ void level_three_old_wallet_controller() {
       add_coin_controller();
     } break;
 
-    case LEVEL_THREE_SEND_TRANSACTION: {
-      send_transaction_controller();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
       send_transaction_controller_eth();
     } break;
@@ -107,10 +103,6 @@ void level_three_old_wallet_controller() {
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_SOLANA: {
       receive_transaction_controller_solana();
-    } break;
-
-    case LEVEL_THREE_RECEIVE_TRANSACTION: {
-      receive_transaction_controller();
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED: {

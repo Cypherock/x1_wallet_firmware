@@ -88,10 +88,6 @@ void level_three_old_wallet_tasks() {
       add_coin_tasks();
     } break;
 
-    case LEVEL_THREE_SEND_TRANSACTION: {
-      send_transaction_tasks();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
       send_transaction_tasks_eth();
     } break;
@@ -106,10 +102,6 @@ void level_three_old_wallet_tasks() {
 
     case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
       send_transaction_tasks_solana();
-    } break;
-
-    case LEVEL_THREE_RECEIVE_TRANSACTION: {
-      receive_transaction_tasks();
     } break;
 
     case LEVEL_THREE_RECEIVE_TRANSACTION_ETH: {

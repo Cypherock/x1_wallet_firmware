@@ -1,4 +1,3 @@
-#include "btc.h"
 #include "btc_app.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
