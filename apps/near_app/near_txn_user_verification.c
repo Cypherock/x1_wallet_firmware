@@ -107,7 +107,7 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
   char value[100] = "";
 
   snprintf(address,
-           CY_MIN(decoded_utxn->receiver_id_length, sizeof(address)),
+           CY_MIN(decoded_utxn->receiver_id_length + 1, sizeof(address)),
            "%s",
            decoded_utxn->receiver);
 

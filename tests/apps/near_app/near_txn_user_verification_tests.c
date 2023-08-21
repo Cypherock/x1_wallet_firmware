@@ -94,6 +94,23 @@ TEST(near_txn_user_verification_test,
 }
 
 TEST(near_txn_user_verification_test,
+     near_txn_user_verification_transfer_action_to_explicit_account) {
+  uint8_t raw_txn[300] = {0};
+  hex_string_to_byte_array(
+      "120000006379706865726f636b686f646c2e6e65617200ae9a093e6907e86d9770f39b0c"
+      "8be1dc6fc38a1b68902fd9d27ad5681a0849a1819aaeab815900000e0000006379706865"
+      "726f636b2e6e6561726c9db75a59d0c3ad6b57db90865045b41a98690e3a7fe61cdfda87"
+      "413cb5d19b010000000300788799cb4b5c6c310a000000000000",
+      260,
+      raw_txn);
+
+  near_unsigned_txn utxn = {0};
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 130, &utxn));
+
+  TEST_ASSERT_TRUE(user_verification_transfer(&utxn));
+}
+
+TEST(near_txn_user_verification_test,
      near_txn_user_verification_function_call_explicit_account) {
   uint8_t raw_txn[350] = {0};
   hex_string_to_byte_array(

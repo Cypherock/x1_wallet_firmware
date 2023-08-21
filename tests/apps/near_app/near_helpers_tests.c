@@ -95,10 +95,42 @@ TEST(near_helper_test, near_helper_send_decoder_transfer_action) {
   const char expected_receiver[] =
       "ae9a093e6907e86d9770f39b0c8be1dc6fc38a1b68902fd9d27ad5681a0849a1";
   TEST_ASSERT_EQUAL_STRING_LEN(
-      expected_receiver, (char *)utxn.receiver, utxn.receiver_id_length);
+      expected_receiver, (char *)utxn.receiver, strlen(expected_receiver));
 
   // Verify transfer amount
   const char expected_amount[] = "Verify amount\n22.129003433752526485\nNEAR";
+  char amount_decimal_string[100] = "";
+  get_amount_string(utxn.action.transfer.amount,
+                    amount_decimal_string,
+                    sizeof(amount_decimal_string));
+
+  TEST_ASSERT_EQUAL_STRING(expected_amount, amount_decimal_string);
+}
+
+TEST(near_helper_test,
+     near_helper_send_decoder_transfer_action_to_explicit_account) {
+  uint8_t raw_txn[300] = {0};
+  hex_string_to_byte_array(
+      "120000006379706865726f636b686f646c2e6e65617200ae9a093e6907e86d9770f39b0c"
+      "8be1dc6fc38a1b68902fd9d27ad5681a0849a1819aaeab815900000e0000006379706865"
+      "726f636b2e6e6561726c9db75a59d0c3ad6b57db90865045b41a98690e3a7fe61cdfda87"
+      "413cb5d19b010000000300788799cb4b5c6c310a000000000000",
+      260,
+      raw_txn);
+
+  near_unsigned_txn utxn = {0};
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 130, &utxn));
+
+  // Verify that the txn contains an action of type 'TRANSFER'
+  TEST_ASSERT_EQUAL_UINT8(NEAR_ACTION_TRANSFER, utxn.actions_type);
+
+  // Verify receiver address
+  const char expected_receiver[] = "cypherock.near";
+  TEST_ASSERT_EQUAL_STRING_LEN(
+      expected_receiver, (char *)utxn.receiver, strlen(expected_receiver));
+
+  // Verify transfer amount
+  const char expected_amount[] = "Verify amount\n0.0481353634875\nNEAR";
   char amount_decimal_string[100] = "";
   get_amount_string(utxn.action.transfer.amount,
                     amount_decimal_string,

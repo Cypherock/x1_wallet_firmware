@@ -79,7 +79,6 @@ extern lv_indev_t *indev_keypad;
 #endif
 #endif /* USE_SIMULATOR == 1 */
 
-#define NEAR_FLOW_MANUAL_TEST
 void RunAllTests(void) {
   RUN_TEST_GROUP(event_getter_test);
   RUN_TEST_GROUP(p0_events_test);
