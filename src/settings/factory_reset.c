@@ -67,6 +67,7 @@
 #include "card_operations.h"
 #include "coin_specific_data.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "flash_struct.h"
 #include "settings_api.h"
@@ -241,6 +242,12 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void factory_reset(void) {
+  // Ensure that atleast 2 cards are paired
+  if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
+    mark_core_error_screen(ui_text_error_pair_atleast_2_cards);
+    return;
+  }
+
   wallet_list_t wallets_in_cards = {0};
   wallet_list_t wallets_in_vault = {0};
 

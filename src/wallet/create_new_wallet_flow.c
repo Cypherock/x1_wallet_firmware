@@ -69,6 +69,7 @@
 #include "flash_if.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
+#include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_utilities.h"
@@ -416,6 +417,18 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
  *****************************************************************************/
 void create_new_wallet_flow(void) {
   new_wallet_state_e current_state = NAME_INPUT;
+
+  // Ensure that atleast 4 cards are paired
+  if (get_keystore_used_count() < MAX_KEYSTORE_ENTRY) {
+    mark_core_error_screen(ui_text_error_pair_all_cards);
+    return;
+  }
+
+  // Confirm that all 4 cards are needed
+  if (!core_scroll_page(
+          NULL, ui_text_need_all_x1cards_to_create_wallet, NULL)) {
+    return;
+  }
 
   clear_wallet_data();
 

@@ -306,6 +306,7 @@ extern const char *ui_text_unauthenticate_via_cysync;
 extern const char *ui_text_start_device_verification;
 extern const char *ui_text_its_a_while_check_your_cards;
 extern const char *ui_text_delete_this_wallet;
+extern const char *ui_text_need_all_x1cards_to_create_wallet;
 extern const char *ui_text_need_all_x1cards_to_delete_wallet_entirely;
 extern const char *ui_text_20_spaces;
 extern const char *ui_text_wallet_not_found_on_x1card;

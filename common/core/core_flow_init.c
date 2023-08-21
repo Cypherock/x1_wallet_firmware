@@ -113,9 +113,9 @@ engine_ctx_t *get_core_flow_ctx(void) {
 
   /* If onboarding is not complete, invoke onboarding flow from the manager app
    */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-  }
+  // if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
+  //   engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+  // }
 
   // TODO: Check device authentication status
 
