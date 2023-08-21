@@ -400,7 +400,6 @@ void evm_get_pub_keys(evm_query_t *query) {
   // button pressed on PIN/Passphrase entry
   if (!reconstruct_seed_flow(query->get_public_keys.initiate.wallet_id,
                              &seed[0])) {
-    memzero(seed, sizeof(seed));
     // TODO: Handle error case reporting to host
     memzero(seed, sizeof(seed));
     return;
@@ -409,16 +408,17 @@ void evm_get_pub_keys(evm_query_t *query) {
   set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  if (!fill_public_keys(init_req->derivation_paths,
-                        seed,
-                        public_keys,
-                        init_req->derivation_paths_count)) {
-    // Clear seed as soon as it is not needed
-    memzero(seed, sizeof(seed));
+  bool status = fill_public_keys(init_req->derivation_paths,
+                                 seed,
+                                 public_keys,
+                                 init_req->derivation_paths_count);
 
+  // Clear seed as soon as it is not needed
+  memzero(seed, sizeof(seed));
+
+  if (!status) {
     // send unknown error; do not know failure reason
     evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-
     return;
   }
 
