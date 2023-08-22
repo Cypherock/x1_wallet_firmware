@@ -205,38 +205,6 @@ Flash_Wallet *get_flash_wallet() {
   return &wallet_for_flash;
 }
 
-void process_ui_events(void) {
-  ui_event_t os_ui_event;
-  if (ui_get_and_reset_event(&os_ui_event)) {
-    switch (os_ui_event.event_type) {
-      case UI_EVENT_CONFIRM: {
-        if (ui_mark_list_choice)
-          (*ui_mark_list_choice)(1);
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
-      } break;
-      case UI_EVENT_REJECT: {
-        if (ui_mark_list_choice)
-          (*ui_mark_list_choice)(0);
-        if (ui_mark_event_cancel)
-          (*ui_mark_event_cancel)();
-      } break;
-      case UI_EVENT_LIST_CHOICE: {
-        if (ui_mark_list_choice)
-          (*ui_mark_list_choice)(os_ui_event.list_selection);
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
-      } break;
-      case UI_EVENT_TEXT_INPUT: {
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
-      } break;
-      default: {
-      } break;
-    }
-  }
-}
-
 void mark_event_over() {
   counter.next_event_flag = true;
 #if X1WALLET_MAIN
