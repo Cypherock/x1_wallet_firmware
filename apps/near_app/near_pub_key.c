@@ -397,7 +397,7 @@ void near_get_pub_keys(near_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_CONFIRM);
+  set_app_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
@@ -406,8 +406,7 @@ void near_get_pub_keys(near_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
-
+  set_app_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
   bool result =
@@ -429,7 +428,7 @@ void near_get_pub_keys(near_query_t *query) {
     if (!core_scroll_page(ui_text_receive_on, address, near_send_error)) {
       return;
     }
-    core_status_set_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_VERIFY);
+    set_app_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
   if (!send_public_keys(

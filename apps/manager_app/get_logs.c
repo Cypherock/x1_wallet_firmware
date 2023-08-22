@@ -217,7 +217,7 @@ void manager_get_logs(manager_query_t *query) {
 
   result.get_logs.which_response = MANAGER_GET_LOGS_RESPONSE_LOGS_TAG;
   delay_scr_init(ui_text_sending_logs, DELAY_SHORT);
-  core_status_set_flow_status(MANAGER_GET_LOGS_STATUS_USER_CONFIRMED);
+  set_app_flow_status(MANAGER_GET_LOGS_STATUS_USER_CONFIRMED);
   if (true == send_logs(query, &result)) {
     // logs sent successfully, display "Logs sent"
     delay_scr_init(ui_text_logs_sent, DELAY_TIME);

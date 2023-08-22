@@ -324,7 +324,7 @@ static bool handle_initiate_query(const btc_query_t *query) {
     return false;
   }
 
-  core_status_set_flow_status(BTC_SIGN_TXN_STATUS_CONFIRM);
+  set_app_flow_status(BTC_SIGN_TXN_STATUS_CONFIRM);
   memcpy(&btc_txn_context->init_info,
          &query->sign_txn.initiate,
          sizeof(btc_sign_txn_initiate_request_t));
@@ -517,6 +517,7 @@ static bool get_user_verification() {
   if (!core_scroll_page(UI_TEXT_BTC_FEE, value, btc_send_error)) {
     return false;
   }
+  set_app_flow_status(BTC_SIGN_TXN_STATUS_VERIFY);
   return true;
 }
 
@@ -557,6 +558,8 @@ static bool sign_input(scrip_sig_t *signatures) {
     // TODO: handle errors of reconstruction flow
     return status;
   }
+
+  set_app_flow_status(BTC_SIGN_TXN_STATUS_SEED_GENERATED);
 
   // populate hashes cache for segwit transaction types
   btc_segwit_init_cache(btc_txn_context);

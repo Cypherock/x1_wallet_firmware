@@ -344,7 +344,7 @@ static bool handle_sign_card_serial(auth_card_data_t *auth_card_data) {
     return false;
   }
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
+  set_app_flow_status(MANAGER_AUTH_CARD_STATUS_SERIAL_SIGNED);
 
   // Display text for challenge sign screen
   snprintf(auth_card_data->ctx.message,
@@ -362,7 +362,7 @@ static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
     return false;
   }
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
+  set_app_flow_status(MANAGER_AUTH_CARD_STATUS_CHALLENGE_SIGNED);
 
   if (auth_card_data->ctx.pair_card_required) {
     snprintf(auth_card_data->ctx.message,
@@ -395,7 +395,7 @@ static bool handle_auth_card_initiate_query(auth_card_data_t *auth_card_data) {
     }
   }
 
-  core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
+  set_app_flow_status(MANAGER_AUTH_CARD_STATUS_USER_CONFIRMED);
 
   if (!prepare_card_auth_context(auth_card_data)) {
     return false;
@@ -454,7 +454,7 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
             }
             return false;
           }
-          core_status_set_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
+          set_app_flow_status(MANAGER_AUTH_CARD_STATUS_PAIRING_DONE);
         }
 
         send_flow_complete_response(auth_card_data);

@@ -266,7 +266,7 @@ void btc_get_pub_key(btc_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
+  set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
 
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
@@ -276,6 +276,7 @@ void btc_get_pub_key(btc_query_t *query) {
     return;
   }
 
+  set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_SEED_GENERATED);
   const uint32_t *path = init_req->derivation_path;
   uint32_t path_length = init_req->derivation_path_count;
 
@@ -284,6 +285,7 @@ void btc_get_pub_key(btc_query_t *query) {
   memzero(seed, sizeof(seed));
   if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
+    set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_VERIFY);
     send_public_key(public_key);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }

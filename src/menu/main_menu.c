@@ -258,6 +258,10 @@ void main_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
    * the main menu */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
 
+  /* Reset flow status back to zero */
+  set_core_flow_status(0);
+  set_app_flow_status(0);
+
   /* Clear the context of the options rendered on the main menu */
   main_menu_reset_context();
 

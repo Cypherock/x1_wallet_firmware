@@ -256,7 +256,7 @@ static device_auth_state_e sign_serial_handler(const manager_query_t *query) {
       }
 
       /* Set flow status */
-      core_status_set_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
+      set_app_flow_status(MANAGER_AUTH_DEVICE_STATUS_USER_CONFIRMED);
       delay_scr_init(ui_text_message_device_authenticating, 100);
 
       manager_auth_device_response_t resp = sign_serial_number();

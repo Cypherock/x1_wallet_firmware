@@ -286,7 +286,7 @@ void btc_get_xpub(btc_query_t *query) {
     return;
   }
 
-  core_status_set_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
+  set_app_flow_status(BTC_GET_XPUBS_STATUS_CONFIRM);
 
   // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
   // button pressed on PIN/Passphrase entry
@@ -296,6 +296,7 @@ void btc_get_xpub(btc_query_t *query) {
     return;
   }
 
+  set_app_flow_status(BTC_GET_XPUBS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   bool status = one_shot_xpub_generate(init_req->derivation_paths,
                                        seed,
