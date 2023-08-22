@@ -250,12 +250,11 @@ void btc_get_pub_key(btc_query_t *query) {
   btc_get_public_key_intiate_request_t *init_req =
       &query->get_public_key.initiate;
 
-  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
-  // found but is invalid/locked wallet
   if (!check_which_request(query, BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_key) ||
       !get_wallet_name_by_id(query->get_xpubs.initiate.wallet_id,
-                             (uint8_t *)wallet_name)) {
+                             (uint8_t *)wallet_name,
+                             btc_send_error)) {
     return;
   }
 
@@ -268,11 +267,9 @@ void btc_get_pub_key(btc_query_t *query) {
 
   set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_CONFIRM);
 
-  // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
-  // button pressed on PIN/Passphrase entry
-  if (!reconstruct_seed_flow(query->get_xpubs.initiate.wallet_id, &seed[0])) {
+  if (!reconstruct_seed(
+          query->get_xpubs.initiate.wallet_id, &seed[0], btc_send_error)) {
     memzero(seed, sizeof(seed));
-    // TODO: Handle error case reporting to host
     return;
   }
 

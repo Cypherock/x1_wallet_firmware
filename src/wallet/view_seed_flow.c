@@ -110,7 +110,7 @@ static void view_seed_handler(const uint8_t *wallet_id) {
       break;
     }
 
-    no_of_mnemonics = reconstruct_mnemonics_flow(wallet_id, mnemonics);
+    no_of_mnemonics = reconstruct_mnemonics(wallet_id, mnemonics);
 
     if (12 != no_of_mnemonics && 18 != no_of_mnemonics &&
         24 != no_of_mnemonics) {

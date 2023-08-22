@@ -12,6 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <error.pb.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -36,6 +37,8 @@ typedef struct {
   uint8_t count;
   wallet_metadata_t wallet[MAX_WALLETS_ALLOWED];
 } wallet_list_t;
+
+typedef void(rejection_cb)(pb_size_t which_error, uint32_t error_code);
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -63,34 +66,43 @@ uint8_t get_wallet_list(const char *wallet_list[]);
 uint8_t get_valid_wallet_meta_data_list(wallet_list_t *wallet_list);
 
 /**
- * @brief This API searches for wallet on the flash using wallet_id as key if it
- * is in VALID_WALLET state and not locked.
- * @details If a VALID_WALLET is found in the flash, then this API fills the
- * wallet_name, wallet_info, wallet_id fields of the Wallet structure
+ * @brief This API searches for wallet on the flash using wallet_id as key and
+ * fills the wallet structure if it is in usable state.
+ * @details In case if the wallet is not in usable state or is not found on the
+ * device, the function executes the provided rejection callback if it exists to
+ * the host app.
  *
  * @param wallet_id The wallet_id that needs to be searched
  * @param wallet Reference to Wallet structure which will be populated by the
- * function
+ * @param reject_cb Callback to execute if wallet is not found or is not in
+ * usable state function
  * @return true If the wallet corresponding to wallet_id is found in the flash
- * and is in VALID_WALLET state and not locked.
+ * and is in usable state
  * @return false If the wallet corresponding to wallet_id is not found or is not
- * in VALID_WALLET state and/or is locked.
+ * in usable state.
  */
-bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet);
+bool get_wallet_data_by_id(const uint8_t *wallet_id,
+                           Wallet *wallet,
+                           rejection_cb *reject_cb);
 
 /**
  * @brief This API searches for wallet on the flash using wallet_id as key and
- * returns the name of the wallet if it is in VALID_WALLET state and not locked.
- * @details If a VALID_WALLET is found in the flash, then this API fills the
- * wallet_name buffer if provided.
+ * returns the name of the wallet if it is in usable state.
+ * @details In case if the wallet is not in usable state or is not found on the
+ * device, the function executes the provided rejection callback if it exists to
+ * the host app.
  *
  * @param wallet_id The wallet_id that needs to be searched
  * @param wallet_name The buffer in which wallet name will be filled or NULL if
  * wallet name is not required
+ * @param reject_cb Callback to execute if wallet is not found or is not in
+ * usable state function
  * @return true If the wallet corresponding to wallet_id is found in the flash
- * and is in VALID_WALLET state and not locked.
+ * and is in usable state
  * @return false If the wallet corresponding to wallet_id is not found or is not
- * in VALID_WALLET state and/or is locked.
+ * in usable state.
  */
-bool get_wallet_name_by_id(const uint8_t *wallet_id, uint8_t *wallet_name);
+bool get_wallet_name_by_id(const uint8_t *wallet_id,
+                           uint8_t *wallet_name,
+                           rejection_cb *reject_cb);
 #endif /* WALLET_LIST_H */

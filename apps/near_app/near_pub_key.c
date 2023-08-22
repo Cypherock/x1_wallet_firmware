@@ -384,11 +384,10 @@ void near_get_pub_keys(near_query_t *query) {
                       sizeof(near_get_public_keys_derivation_path_t)]
                      [NEAR_PUB_KEY_SIZE] = {0};
 
-  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
-  // found but is invalid/locked wallet
   if (!check_which_request(query, NEAR_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request(init_req, which_request) ||
-      !get_wallet_name_by_id(init_req->wallet_id, (uint8_t *)wallet_name)) {
+      !get_wallet_name_by_id(
+          init_req->wallet_id, (uint8_t *)wallet_name, near_send_error)) {
     return;
   }
 
@@ -399,10 +398,8 @@ void near_get_pub_keys(near_query_t *query) {
 
   set_app_flow_status(NEAR_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
-  // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
-  // button pressed on PIN/Passphrase entry
-  if (!reconstruct_seed_flow(init_req->wallet_id, &seed[0])) {
-    // TODO: Handle error case reporting to host
+  if (!reconstruct_seed(init_req->wallet_id, &seed[0], near_send_error)) {
+    memzero(seed, sizeof(seed));
     return;
   }
 

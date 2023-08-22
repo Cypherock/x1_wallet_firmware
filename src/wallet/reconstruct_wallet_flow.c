@@ -1,5 +1,5 @@
 /**
- * @file    reconstruct_seed_flow.c
+ * @file    reconstruct_seed.c
  * @author  Cypherock X1 Team
  * @brief   Source file containing logic for seed reconstruction using X1 cards
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -97,11 +97,15 @@ typedef enum {
   PIN_INPUT,
   TAP_CARD_FLOW,
   RECONSTRUCT_SEED,
-  COMPLETED,
-  COMPLETED_WITH_ERRORS,
-  TIMED_OUT,
-  EARLY_EXIT,
-  EXIT,
+  COMPLETED,             /**<This state is reached if the entropy is generated
+                            successfully*/
+  COMPLETED_WITH_ERRORS, /**<This state is reached if any card abort error is
+                            received during the card operation*/
+  ABORTED_DUE_TO_P0, /**<This state is reached if a P0 event is observed during
+                        flow */
+  EARLY_EXIT, /**<This state is reached if the user presses the cancel button on
+                 PIN or Passphrase entry screen */
+  EXIT,       /**<This state must not be returned */
 } reconstruct_state_e;
 
 /*****************************************************************************
@@ -144,10 +148,9 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
  * @return The function is expected to return a value of type
  * `reconstruct_state_e`.
  */
-static reconstruct_state_e reconstruct_wallet_secret_flow(
-    const uint8_t *wallet_id,
-    uint8_t *secret_out,
-    reconstruct_state_e init_state);
+static reconstruct_state_e reconstruct_secret(const uint8_t *wallet_id,
+                                              uint8_t *secret_out,
+                                              reconstruct_state_e init_state);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -182,8 +185,8 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
 
       input_text_init(
           PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
-      next_state =
-          get_state_on_input_scr(PASSPHRASE_CONFIRM, EARLY_EXIT, TIMED_OUT);
+      next_state = get_state_on_input_scr(
+          PASSPHRASE_CONFIRM, EARLY_EXIT, ABORTED_DUE_TO_P0);
       break;
     }
 
@@ -195,7 +198,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
           ui_text_confirm_passphrase, display, MENU_SCROLL_HORIZONTAL, false);
       memzero(display, sizeof(display));
       next_state = get_state_on_confirm_scr(
-          PASSPHRASE_CONFIRM, PASSPHRASE_INPUT, TIMED_OUT);
+          PASSPHRASE_CONFIRM, PASSPHRASE_INPUT, ABORTED_DUE_TO_P0);
 
       if (PASSPHRASE_CONFIRM == next_state) {
         snprintf(wallet_credential_data.passphrase,
@@ -218,7 +221,8 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
       }
 
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
-      next_state = get_state_on_input_scr(PIN_INPUT, EARLY_EXIT, TIMED_OUT);
+      next_state =
+          get_state_on_input_scr(PIN_INPUT, EARLY_EXIT, ABORTED_DUE_TO_P0);
 
       if (PIN_INPUT == next_state) {
         sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
@@ -286,7 +290,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
     // TODO: Manage states better to indicate error when failure occurs
     case COMPLETED:
     case COMPLETED_WITH_ERRORS:
-    case TIMED_OUT:
+    case ABORTED_DUE_TO_P0:
     case EARLY_EXIT:
     case EXIT:
     default:
@@ -296,15 +300,9 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   return next_state;
 }
 
-static reconstruct_state_e reconstruct_wallet_secret_flow(
-    const uint8_t *wallet_id,
-    uint8_t *secret_out,
-    reconstruct_state_e init_state) {
-  // Select wallet based on wallet_id
-  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
-    return EARLY_EXIT;
-  }
-
+static reconstruct_state_e reconstruct_secret(const uint8_t *wallet_id,
+                                              uint8_t *secret_out,
+                                              reconstruct_state_e init_state) {
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = init_state;
   while (1) {
@@ -323,7 +321,9 @@ static reconstruct_state_e reconstruct_wallet_secret_flow(
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
+bool reconstruct_seed(const uint8_t *wallet_id,
+                      uint8_t *seed_out,
+                      rejection_cb *reject_cb) {
   if ((NULL == wallet_id) || (NULL == seed_out)) {
     return false;
   }
@@ -333,20 +333,33 @@ bool reconstruct_seed_flow(const uint8_t *wallet_id, uint8_t *seed_out) {
 
   clear_wallet_data();
 
-  if (COMPLETED ==
-      reconstruct_wallet_secret_flow(wallet_id, secret, PASSPHRASE_INPUT)) {
+  // Select wallet based on wallet_id
+  if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
+    return false;
+  }
+
+  reconstruct_state_e flow =
+      reconstruct_secret(wallet_id, secret, PASSPHRASE_INPUT);
+
+  if (COMPLETED == flow) {
     get_seed_from_secret(secret, seed_out);
     result = true;
+  } else if (reject_cb && EARLY_EXIT == flow) {
+    // Inform the host of any rejection
+    reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+              ERROR_USER_REJECTION_CONFIRMATION);
+  } else if (reject_cb && COMPLETED_WITH_ERRORS == flow) {
+    // Inform the host of any card error
+    reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG, 0);
   }
 
   clear_wallet_data();
   return result;
 }
 
-uint8_t reconstruct_mnemonics_flow(
-    const uint8_t *wallet_id,
-    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS]
-                      [MAX_MNEMONIC_WORD_LENGTH]) {
+uint8_t reconstruct_mnemonics(const uint8_t *wallet_id,
+                              char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS]
+                                                [MAX_MNEMONIC_WORD_LENGTH]) {
   if ((NULL == wallet_id) || (NULL == mnemonic_list)) {
     return 0;
   }
@@ -356,8 +369,12 @@ uint8_t reconstruct_mnemonics_flow(
 
   clear_wallet_data();
 
-  if (COMPLETED ==
-      reconstruct_wallet_secret_flow(wallet_id, secret, PIN_INPUT)) {
+  // Select wallet based on wallet_id
+  if (!get_wallet_data_by_id(wallet_id, &wallet, NULL)) {
+    return result;
+  }
+
+  if (COMPLETED == reconstruct_secret(wallet_id, secret, PIN_INPUT)) {
     mnemonic_clear();
     const char *mnemo =
         mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);

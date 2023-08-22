@@ -139,22 +139,29 @@ uint8_t get_valid_wallet_meta_data_list(wallet_list_t *list) {
   return count;
 }
 
-bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
+bool get_wallet_data_by_id(const uint8_t *wallet_id,
+                           Wallet *wallet,
+                           rejection_cb *reject_cb) {
   if ((NULL == wallet_id) || (NULL == wallet)) {
     return false;
   }
 
   for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
     wallet_state state = INVALID_WALLET;
-    if (true != wallet_is_filled(wallet_idx, &state)) {
+    if (wallet_is_filled(wallet_idx, &state)) {
       continue;
     }
 
-    if (VALID_WALLET == state) {
-      if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
-        if (true == is_wallet_locked(wallet_idx)) {
-          return false;
+    if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
+      // Check if wallet is in usable state or not
+      if (INVALID_WALLET == state || is_wallet_locked(wallet_idx) ||
+          is_wallet_partial(wallet_idx) || is_wallet_unverified(wallet_idx) ||
+          is_wallet_share_not_present(wallet_idx)) {
+        if (reject_cb) {
+          reject_cb(ERROR_COMMON_ERROR_WALLET_PARTIAL_STATE_TAG, 0);
         }
+        return false;
+      } else {
         memcpy(wallet->wallet_id, wallet_id, WALLET_ID_SIZE);
         memcpy(wallet->wallet_name, get_wallet_name(wallet_idx), NAME_SIZE);
         wallet->wallet_info = get_wallet_info(wallet_idx);
@@ -163,22 +170,49 @@ bool get_wallet_data_by_id(const uint8_t *wallet_id, Wallet *wallet) {
     }
   }
 
+  // If control reaches here, that means `wallet_id` search failed
+  if (reject_cb) {
+    reject_cb(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG, 0);
+  }
+
   return false;
 }
 
-bool get_wallet_name_by_id(const uint8_t *wallet_id, uint8_t *wallet_name) {
+bool get_wallet_name_by_id(const uint8_t *wallet_id,
+                           uint8_t *wallet_name,
+                           rejection_cb *reject_cb) {
   if (NULL == wallet_id) {
     return false;
   }
 
-  Wallet wallet = {0};
-  if (false == get_wallet_data_by_id(wallet_id, &wallet)) {
-    return false;
+  for (uint8_t wallet_idx = 0; wallet_idx < MAX_WALLETS_ALLOWED; wallet_idx++) {
+    wallet_state state = INVALID_WALLET;
+    if (wallet_is_filled(wallet_idx, &state)) {
+      continue;
+    }
+
+    if (0 == memcmp(wallet_id, get_wallet_id(wallet_idx), WALLET_ID_SIZE)) {
+      // Check if wallet is in usable state or not
+      if (INVALID_WALLET == state || is_wallet_locked(wallet_idx) ||
+          is_wallet_partial(wallet_idx) || is_wallet_unverified(wallet_idx) ||
+          is_wallet_share_not_present(wallet_idx)) {
+        if (reject_cb) {
+          reject_cb(ERROR_COMMON_ERROR_WALLET_PARTIAL_STATE_TAG, 0);
+        }
+        return false;
+      } else {
+        if (wallet_name) {
+          memcpy(wallet_name, get_wallet_name(wallet_idx), NAME_SIZE);
+        }
+        return true;
+      }
+    }
   }
 
-  if (NULL != wallet_name) {
-    memcpy(wallet_name, wallet.wallet_name, NAME_SIZE);
+  // If control reaches here, that means `wallet_id` search failed
+  if (reject_cb) {
+    reject_cb(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG, 0);
   }
 
-  return true;
+  return false;
 }
