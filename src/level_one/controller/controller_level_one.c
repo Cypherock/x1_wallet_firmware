@@ -97,11 +97,6 @@ void level_one_controller() {
     return;
   }
 
-  if (device_auth_flag) {
-    device_auth();
-    return;
-  }
-
   if (counter.level > LEVEL_ONE) {
     level_two_controller();
     return;

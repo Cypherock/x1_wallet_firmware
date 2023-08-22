@@ -77,9 +77,6 @@ extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 extern char *HEX;
-char card_id_fetched[2 * CARD_ID_SIZE + 1];
-
-extern bool no_wallet_on_cards;
 
 void tasks_update_card_id() {
   switch (flow_level.level_three) {

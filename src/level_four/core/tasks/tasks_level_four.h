@@ -107,15 +107,6 @@ void receive_transaction_tasks_solana();
 void verify_wallet_tasks();
 
 /**
- * @brief Device authentication task handler
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void task_device_authentication();
-
-/**
  * @brief Device provision task handler
  * @details
  *
@@ -123,15 +114,6 @@ void task_device_authentication();
  * @since v1.0.0
  */
 void task_device_provision();
-
-/**
- * @brief Card verification task for initial flow (includes pairing step)
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void initial_verify_card_task();
 
 /**
  * @brief This task is executed when the name of a wallet is clicked

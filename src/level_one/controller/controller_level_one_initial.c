@@ -70,7 +70,6 @@
 
 #endif
 
-extern char card_id_fetched[];
 extern char card_version[];
 
 void level_one_controller_initial() {
@@ -107,10 +106,11 @@ void level_one_controller_initial() {
 
     case 5: {
       char msg[32] = {'\0'};
-      snprintf(msg,
-               sizeof(msg),
-               "Card #%d Tapped",
-               decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] - '0'));
+      // snprintf(msg,
+      //          sizeof(msg),
+      //          "Card #%d Tapped",
+      //          decode_card_number(card_id_fetched[2 * CARD_ID_SIZE - 1] -
+      //          '0'));
       delay_scr_init(msg, DELAY_TIME);
       reset_flow_level();
       flow_level.level_one = 6;

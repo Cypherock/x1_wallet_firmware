@@ -101,9 +101,6 @@ static void helper_get_gendig_hash(atecc_slot_define_t slot,
                                    uint8_t *data,
                                    uint8_t *digest,
                                    uint8_t *postfix);
-void __attribute__((optimize("O0"))) device_authentication_controller(void) {
-  return;
-}
 
 manager_auth_device_response_t __attribute__((optimize("O0")))
 sign_serial_number(void) {

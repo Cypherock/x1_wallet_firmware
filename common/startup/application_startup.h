@@ -94,38 +94,6 @@ void application_init();
 void check_invalid_wallets();
 
 /**
- * @brief This function is called to initiate device authentication
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void device_auth();
-
-/**
- * @brief This function controls the flow of device authentication
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void device_authentication_controller();
-
-/**
  * @brief This function should be called to check the boot count to display
  * message to users to check their cards.
  *

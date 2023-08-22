@@ -112,11 +112,6 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
-#if X1WALLET_MAIN == 1
-extern void __authentication_listener(lv_task_t *task);
-extern lv_task_t *authentication_task;
-#endif
-
 extern lv_task_t *listener_task;
 extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
@@ -215,47 +210,10 @@ void restrict_app() {
                          ui_text_start_auth_from_CySync};
   multi_instruction_init(pptr, 2, DELAY_TIME, false);
   lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
-  lv_task_set_prio(authentication_task, LV_TASK_PRIO_HIGH);
   counter.next_event_flag = false;
   CY_Reset_Not_Allow(true);
   mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
   CY_set_app_restricted(true);
-}
-
-void device_auth() {
-  if (!device_auth_flag) {
-    return;
-  }
-
-  flow_level.level_three = SIGN_SERIAL_NUMBER;
-  mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, flow_level.level_three);
-  instruction_scr_init(" ", NULL);
-  instruction_scr_change_text(ui_text_auth_process, true);
-  if (main_app_ready)
-    lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
-
-  while (device_auth_flag) {
-    if (CY_Read_Reset_Flow()) {
-      cy_exit_flow();
-      break;
-    }
-    main_app_ready = false;
-
-    device_authentication_controller();
-    mark_device_state(CY_UNUSED_STATE,
-                      counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
-    flow_level.level_three = 5;
-
-    proof_of_work_task();
-
-    lv_task_handler();
-    BSP_DelayMs(50);
-  }
-
-  // Mark device state busy for the rest of the bootup checks
-  lv_task_set_prio(authentication_task, LV_TASK_PRIO_OFF);
-  instruction_scr_destructor();
-  reset_flow_level();
 }
 #endif
 
@@ -354,8 +312,7 @@ void application_init() {
   reset_flow_level();
 #if X1WALLET_MAIN
   CY_Reset_Not_Allow(true);
-  authentication_task =
-      lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
+
 #endif
   listener_task =
       lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);

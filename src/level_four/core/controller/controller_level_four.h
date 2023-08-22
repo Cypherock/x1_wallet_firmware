@@ -142,7 +142,7 @@ void card_upgrade_controller();
  * @details This controller is used to provision the device using the desktop
  * app.
  *
- * @see task_device_authentication(), desktop_listener_task(),
+ * @see desktop_listener_task(),
  * START_DEVICE_PROVISION
  * @since v1.0.0
  */
