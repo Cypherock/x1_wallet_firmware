@@ -201,6 +201,24 @@ static bool send_public_keys(evm_query_t *query,
 static bool get_user_consent(const pb_size_t which_request,
                              const char *wallet_name);
 
+/**
+ * @brief Helper function to generate the address from the corresponding public
+ * key
+ *
+ * @param format The format for the address
+ * @param pub_key The corresponding public key
+ * @param address The character array to store the address
+ * @param address_size Maximum size of the character array
+ *
+ * @return true If the address was encoded successfully
+ * @return false If the address failed to generate
+ *
+ */
+static bool get_address(const evm_address_format_t format,
+                        const uint8_t pub_key[EVM_PUB_KEY_SIZE],
+                        char *address,
+                        const size_t address_size);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -347,13 +365,50 @@ static bool get_user_consent(const pb_size_t which_request,
   } else {
     snprintf(msg,
              sizeof(msg),
-             UI_TEXT_RECEIVE_PROMPT,
+             UI_TEXT_RECEIVE_TOKEN_PROMPT,
              g_evm_app->lunit_name,
              g_evm_app->name,
              wallet_name);
   }
 
   return core_scroll_page(NULL, msg, evm_send_error);
+}
+
+static bool get_address(const evm_address_format_t format,
+                        const uint8_t pub_key[EVM_PUB_KEY_SIZE],
+                        char *address,
+                        const size_t address_size) {
+  switch (format) {
+    // TODO: generate bech32 encoded address for harmony format
+    case EVM_HARMONY:
+    case EVM_DEFAULT: {
+      const size_t size = (ETHEREUM_ADDRESS_LENGTH * 2) + 3;
+
+      if (address_size < size) {
+        return false;
+      }
+
+      SHA3_CTX sha3_ctx = {0};
+      uint8_t hash[SHA3_256_DIGEST_LENGTH];
+
+      sha3_256_Init(&sha3_ctx);
+      sha3_Update(&sha3_ctx, pub_key + 1, EVM_PUB_KEY_SIZE - 1);
+      keccak_Final(&sha3_ctx, hash);
+
+      address = "0x";
+
+      byte_array_to_hex_string(hash + sizeof(hash) - ETHEREUM_ADDRESS_LENGTH,
+                               ETHEREUM_ADDRESS_LENGTH,
+                               address + 2,
+                               address_size - 2);
+    }
+
+    // unreachable
+    default: {
+    }
+  }
+
+  return true;
 }
 
 /*****************************************************************************
@@ -424,12 +479,18 @@ void evm_get_pub_keys(evm_query_t *query) {
 
   if (EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[100] = "";
-    byte_array_to_hex_string(
-        public_keys[0], sizeof(public_keys[0]), address, sizeof(address));
+
+    if (!get_address(
+            init_req->format, public_keys[0], address, sizeof(address))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return;
+    }
+
     if (!core_scroll_page(ui_text_receive_on, address, evm_send_error)) {
       return;
     }
-    core_status_set_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_VERIFY);
+
+    set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
   if (!send_public_keys(query,
