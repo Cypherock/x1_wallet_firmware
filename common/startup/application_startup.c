@@ -341,8 +341,9 @@ void check_invalid_wallets() {
              sizeof(msg),
              "%u card(s) not paired with device",
              (MAX_KEYSTORE_ENTRY - paired_card_count));
-    mark_core_error_screen(paired_card_count == 0 ? ui_text_error_no_card_paired
-                                                  : msg);
+    delay_scr_init(paired_card_count == 0 ? ui_text_error_no_card_paired : msg,
+                   DELAY_TIME);
+    mark_core_error_screen(ui_text_card_pairing_warning);
     return;
   }
 
