@@ -67,11 +67,11 @@ extern const char *ui_text_mnemonics_number_options[];
 
 // Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_SETTINGS 11
+#define NUMBER_OF_OPTIONS_SETTINGS 12
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_SETTINGS 10
+#define NUMBER_OF_OPTIONS_SETTINGS 11
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
@@ -120,6 +120,13 @@ extern const char *ui_text_card_health_check_error[];
 #define UI_TEXT_SYNC_WALLET_LOCKED "Wallet %s is locked"
 #define UI_TEXT_SYNC_WALLET_DONE "Syncing %s complete"
 extern const char *ui_text_syncing_complete;
+
+// Clear user data text
+extern const char *ui_text_clear_user_data_instruction;
+extern const char *ui_text_confirm_clear_user_data;
+extern const char *ui_text_erasing_user_data;
+extern const char
+    *ui_text_clear_user_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
 
 // Manager app text
 // Device authentication text

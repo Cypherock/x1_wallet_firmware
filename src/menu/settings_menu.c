@@ -90,6 +90,7 @@ typedef enum {
   VIEW_CARD_VERSION,
   VIEW_REGULATORY_INFO,
   PAIR_CARD,
+  CLEAR_USER_DATA,
 #ifdef DEV_BUILD
   TOGGLE_BUZZER,
 #endif
@@ -218,6 +219,10 @@ static void settings_menu_handler(engine_ctx_t *ctx,
       }
       case PAIR_CARD: {
         pair_x1_cards();
+        break;
+      }
+      case CLEAR_USER_DATA: {
+        clear_user_data();
         break;
       }
       default: {

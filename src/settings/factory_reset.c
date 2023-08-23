@@ -137,6 +137,21 @@ static bool filter_uncommon_wallet(bool match_found);
  * @return false If the wallets should be filtered
  */
 static bool filter_common_wallet(bool match_found);
+
+/**
+ * @brief Helper function to check whether wallet share is present in 2 X1 cards
+ * for wallets with share on the X1 vault
+ * @details An error message is displayed on the device if any share is not
+ * found in 2 X1 cards.
+ *
+ * @param wallets_in_vault
+ * @return true If wallet share is present in atleast 2 X1 cards for each wallet
+ * present on the device.
+ * @return false If wallet share is NOT present in atleast 2 X1 cards, or any
+ * error occured in the card flow
+ */
+bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -238,6 +253,42 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
   return true;
 }
 
+bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
+  wallet_list_t wallets_in_cards = {0};
+  if (!get_wallet_list_from_two_cards(&wallets_in_cards)) {
+    return false;
+  }
+
+  wallet_list_t uncommon_wallets = {0};
+  filter_wallet_list(wallets_in_vault,
+                     &wallets_in_cards,
+                     &uncommon_wallets,
+                     filter_uncommon_wallet);
+
+  if (0 < uncommon_wallets.count) {
+    // Display first wallet not present in cards - just to keep it
+    // consistent with current UX
+
+    // TODO: Update message to show ALL missing wallets instead of just one
+    // wallet
+    char msg[64];
+    const char *msg_list[3] = {
+        msg, ui_text_reset_exit[0], ui_text_reset_exit[1]};
+
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_FACTORY_RESET_ERROR,
+             uncommon_wallets.wallet[0].name);
+
+    multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
+    // Do not care about the return value from confirmation screen
+    (void)get_state_on_confirm_scr(0, 0, 0);
+    return false;
+  }
+
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -248,9 +299,7 @@ void factory_reset(void) {
     return;
   }
 
-  wallet_list_t wallets_in_cards = {0};
   wallet_list_t wallets_in_vault = {0};
-
   uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
 
   if (0 < valid_wallets &&
@@ -264,37 +313,8 @@ void factory_reset(void) {
 
   // If there is atleast one valid wallet on the device, ensure that it is
   // present in atleast 2 X1 cards
-  if (0 < valid_wallets) {
-    if (!get_wallet_list_from_two_cards(&wallets_in_cards)) {
-      return;
-    }
-
-    wallet_list_t uncommon_wallets = {0};
-    filter_wallet_list(&wallets_in_vault,
-                       &wallets_in_cards,
-                       &uncommon_wallets,
-                       filter_uncommon_wallet);
-
-    if (0 < uncommon_wallets.count) {
-      // Display first wallet not present in cards - just to keep it
-      // consistent with current UX
-
-      // TODO: Update message to show ALL missing wallets instead of just one
-      // wallet
-      char msg[64];
-      const char *msg_list[3] = {
-          msg, ui_text_reset_exit[0], ui_text_reset_exit[1]};
-
-      snprintf(msg,
-               sizeof(msg),
-               UI_TEXT_FACTORY_RESET_ERROR,
-               uncommon_wallets.wallet[0].name);
-
-      multi_instruction_init(msg_list, 3, DELAY_LONG_STRING, true);
-      // Do not care about the return value from confirmation screen
-      (void)get_state_on_confirm_scr(0, 0, 0);
-      return;
-    }
+  if (0 < valid_wallets && !safe_to_delete_wallet_share(&wallets_in_vault)) {
+    return;
   }
 
   // Safe to erase flash data
@@ -306,6 +326,47 @@ void factory_reset(void) {
 
   sec_flash_erase();
   flash_erase();
+  erase_flash_coin_specific_data();
+  logger_reset_flash();
+
+  // Reset device to apply factory reset
+  BSP_reset();
+}
+
+void clear_user_data(void) {
+  // Ensure that atleast 2 cards are paired
+  if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
+    mark_core_error_screen(ui_text_error_pair_atleast_2_cards);
+    return;
+  }
+
+  wallet_list_t wallets_in_vault = {0};
+  uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
+
+  if (0 < valid_wallets &&
+      !core_scroll_page(NULL, ui_text_clear_user_data_instruction, NULL)) {
+    return;
+  }
+
+  if (!core_scroll_page(NULL, ui_text_confirm_clear_user_data, NULL)) {
+    return;
+  }
+
+  // If there is atleast one valid wallet on the device, ensure that it is
+  // present in atleast 2 X1 cards
+  if (0 < valid_wallets && !safe_to_delete_wallet_share(&wallets_in_vault)) {
+    return;
+  }
+
+  // Safe to erase flash data
+  delay_scr_init(ui_text_erasing_user_data, DELAY_TIME);
+
+  if (LEFT_HAND_VIEW == get_display_rotation()) {
+    ui_rotate();
+  }
+
+  sec_flash_erase();
+  flash_clear_user_data();
   erase_flash_coin_specific_data();
   logger_reset_flash();
 
