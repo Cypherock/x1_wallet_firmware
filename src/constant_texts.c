@@ -438,6 +438,9 @@ const char *ui_text_start_device_verification = "Start device authentication?";
 const char *ui_text_its_a_while_check_your_cards =
     "It's been a while check if your cards are working properly";
 const char *ui_text_delete_this_wallet = "Delete this wallet";
+const char *ui_text_need_all_x1cards_to_create_wallet =
+    "You'll need all cards to create a wallet\nDo you want to "
+    "proceed?";
 const char *ui_text_need_all_x1cards_to_delete_wallet_entirely =
     "You'll need all cards to delete this wallet entirely, do you want to "
     "proceed?";
@@ -466,9 +469,10 @@ const char *ui_text_wrong_btc_transaction = "Wrong transaction formatting";
 const char *ui_text_btc_change_address_mismatch = "Change address mismatch";
 const char *ui_text_worng_eth_transaction = "Invalid transaction detected";
 const char *ui_text_error_no_card_paired = "No cards paired with device";
-const char *ui_text_error_pair_all_cards = "Pair all four cards first";
+const char *ui_text_error_pair_all_cards =
+    "Pair all four cards from Settings menu";
 const char *ui_text_error_pair_atleast_2_cards =
-    "Pair at least two cards from Settings to restore";
+    "Pair at least two cards from Settings to perform this action";
 const char *ui_text_continue_with_pairing = "Proceed with pairing?";
 const char *ui_text_device_compromised =
     "Device is compromised! Contact support";
