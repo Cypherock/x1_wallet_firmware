@@ -302,14 +302,14 @@ int update_challenge_flash(const char *name,
  * wallet was locked.
  *
  * @param wallet_name A pointer to a string representing the name of the wallet.
- * @param card_number The `card_number` represents the number of the card that
- * contains the locked wallet. It should be a value between 1 and 4 (inclusive).
+ * @param encoded_card_number Encoded locked card number. This card number is
+ * represented by the set bit in the lower nibble.
  *
  * @return an integer value. The possible return values are SUCCESS if the
  * wallet locking operation is successful, or an error code if there is an issue
  * with retrieving the flash wallet or saving the flash structure.
  */
-int set_wallet_locked(const char *wallet_name, uint8_t card_number);
+int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number);
 
 /**
  * @brief Add challenge to flash
@@ -317,15 +317,13 @@ int set_wallet_locked(const char *wallet_name, uint8_t card_number);
  * @param name Wallet name
  * @param target Target
  * @param random_number Random number
- * @param card_locked Card locked state
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Added successfully
  */
 int add_challenge_flash(const char *name,
                         const uint8_t target[SHA256_SIZE],
-                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
-                        uint8_t card_locked);
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
  * @brief Update the unlocked status of wallet and reset the nonce.
@@ -355,6 +353,7 @@ int update_time_to_unlock_flash(const char *name,
  *
  * @param wallet_index Wallet index in flash
  * @param nonce nonce byte array
+ * @param time_to_unlock_in_secs probabalistic time left to unlock the wallet
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Nonce saved successfully

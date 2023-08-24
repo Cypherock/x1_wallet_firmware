@@ -1,8 +1,8 @@
 /**
- * @file    card_utils.c
+ * @file    card_fetch_challenge.c
  * @author  Cypherock X1 Team
- * @brief   Card operations common utilities
- *
+ * @brief   Implements card operation to handle fetching of wallet challenge
+ *from X1 card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +60,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_utils.h"
+#include "card_fetch_challenge.h"
 
 #include "card_internal.h"
+#include "card_utils.h"
 #include "constant_texts.h"
-#include "controller_tap_cards.h"
-#include "events.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
+#include "flash_api.h"
+#include "nfc.h"
+#include "pow_utilities.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -100,92 +101,75 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
-                                             uint8_t acceptable_cards) {
-  NFC_connection_data nfc_data = {0};
 
-  nfc_data.acceptable_cards = acceptable_cards;
-  if (NULL != family_id) {
-    memcpy(nfc_data.family_id, family_id, FAMILY_ID_SIZE);
+card_error_type_e card_fetch_challenge(const uint8_t *wallet_name,
+                                       card_operation_frontend_t *frontend) {
+  if (NULL == wallet_name) {
+    return CARD_OPERATION_DEFAULT_INVALID;
   }
 
-  return nfc_data;
-}
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  uint8_t target[SHA256_SIZE] = {0};
+  uint8_t random_number[POW_RAND_NUMBER_SIZE] = {0};
 
-card_error_type_e indicate_card_error(const char *error_message) {
-  if (NULL == error_message) {
-    return CARD_OPERATION_SUCCESS;
-  }
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.init_session_keys = true;
 
-  buzzer_start(BUZZER_DURATION);
+  uint8_t wallet_index = 0xFF;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)wallet_name, &wallet_index));
 
-  message_scr_init(error_message);
-  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+  while (1) {
+    card_data.nfc_data.acceptable_cards = get_wallet_card_locked(wallet_index);
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.tapped_card = 0;
 
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
-  }
+    result = card_initialize_applet(&card_data);
 
-  if (true == status.ui_event.event_occured &&
-      UI_EVENT_CONFIRM == status.ui_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status =
+          nfc_get_challenge(wallet_name, target, random_number);
 
-  return CARD_OPERATION_DEFAULT_INVALID;
-}
-
-void get_card_serial(NFC_connection_data *nfc_data, uint8_t *serial) {
-  ASSERT(NULL != nfc_data && NULL != serial);
-  uint8_t card_number = 0xFF;
-
-  memcpy(serial, nfc_data->family_id, FAMILY_ID_SIZE);
-  card_number = decode_card_number(nfc_data->tapped_card);
-  serial[CARD_ID_SIZE - 1] = card_number;
-}
-
-card_error_type_e wait_for_card_removal(void) {
-  if (0 != nfc_en_wait_for_card_removal_task()) {
-    // Card not selected or removed
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  instruction_scr_change_text(ui_text_remove_card_prompt, true);
-
-  evt_status_t status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
-  if (true == status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
-  }
-
-  if (true == status.nfc_event.event_occured &&
-      NFC_EVENT_CARD_REMOVED == status.nfc_event.event_type) {
-    return CARD_OPERATION_SUCCESS;
-  }
-
-  // Shouldn't reach here
-  return CARD_OPERATION_DEFAULT_INVALID;
-}
-
-card_error_type_e handle_wallet_errors(const card_operation_data_t *card_data,
-                                       const Wallet *wallet) {
-  if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_data->error_type) {
-    card_error_status_word_e status = card_data->nfc_data.status;
-    /** Check incorrect pin error */
-    if (SW_CORRECT_LENGTH_00 == (status & 0xFF00)) {
-      char error_message[60] = "";
-      snprintf(error_message,
-               sizeof(error_message),
-               UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING,
-               (status & 0xFF));
-      return indicate_card_error(error_message);
+      if (SW_NO_ERROR == card_data.nfc_data.status) {
+        ASSERT(SUCCESS == add_challenge_flash((const char *)wallet_name,
+                                              target,
+                                              random_number));
+        log_hex_array("pow-rn: ", random_number, POW_RAND_NUMBER_SIZE);
+        LOG_CRITICAL("pow-tg n: %d", pow_count_set_bits(target));
+        buzzer_start(BUZZER_DURATION);
+        break;
+      } else if (SW_WARNING_STATE_UNCHANGED == card_data.nfc_data.status) {
+        // wallet is in unlocked state on card; update flash wallet data.
+        ASSERT(SUCCESS ==
+               update_wallet_locked_flash((const char *)wallet_name, false));
+        buzzer_start(BUZZER_DURATION);
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
     }
-  } else if (CARD_OPERATION_LOCKED_WALLET == card_data->error_type) {
-    int status = set_wallet_locked((const char *)wallet->wallet_name,
-                                   card_data->nfc_data.tapped_card);
 
-    if (SUCCESS != status) {
-      LOG_CRITICAL("xxx38: %d", status);
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type) {
+      continue;
+    } else {
+      buzzer_start(BUZZER_DURATION);
     }
+
+    if (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(frontend->msg, frontend->heading);
+        continue;
+      }
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
   }
 
-  return CARD_OPERATION_SUCCESS;
+  nfc_deselect_card();
+  return result;
 }

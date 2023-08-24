@@ -14,6 +14,7 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_delete_share.h"
+#include "card_fetch_challenge.h"
 #include "card_fetch_share.h"
 #include "card_fetch_wallet_list.h"
 #include "card_operation_typedefs.h"

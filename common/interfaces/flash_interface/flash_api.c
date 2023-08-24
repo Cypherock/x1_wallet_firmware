@@ -651,8 +651,8 @@ int update_challenge_flash(const char *name,
   return SUCCESS_;
 }
 
-int set_wallet_locked(const char *wallet_name, uint8_t card_number) {
-  ASSERT((NULL != wallet_name) && (1 <= card_number) && (4 >= card_number));
+int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number) {
+  ASSERT((NULL != wallet_name));
 
   Flash_Wallet *flash_wallet;
   int status = get_flash_wallet_by_name(wallet_name, &flash_wallet);
@@ -661,7 +661,8 @@ int set_wallet_locked(const char *wallet_name, uint8_t card_number) {
   }
 
   flash_wallet->is_wallet_locked = true;
-  flash_wallet->challenge.card_locked = card_number;
+  flash_wallet->challenge.card_locked = encoded_card_number;
+  memset(flash_wallet->challenge.nonce, 0xFF, NONCE_SIZE);
   flash_struct_save();
   return SUCCESS;
 }
@@ -677,8 +678,7 @@ int set_wallet_locked(const char *wallet_name, uint8_t card_number) {
  */
 int add_challenge_flash(const char *name,
                         const uint8_t target[SHA256_SIZE],
-                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
-                        const uint8_t card_locked) {
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE]) {
   ASSERT(name != NULL);
   ASSERT(target != NULL);
   ASSERT(random_number != NULL);
@@ -691,15 +691,15 @@ int add_challenge_flash(const char *name,
   if (ret != SUCCESS_)
     return INVALID_ARGUMENT;
 
+  if (false == flash_wallet->is_wallet_locked) {
+    return ILLEGAL;
+  }
+
   memcpy(flash_wallet->challenge.target, target, SHA256_SIZE);
   memcpy(flash_wallet->challenge.random_number,
          random_number,
          POW_RAND_NUMBER_SIZE);
   memset(flash_wallet->challenge.nonce, 0, POW_NONCE_SIZE);
-  flash_wallet->is_wallet_locked =
-      true;    // Assuming that if challenge is updated then wallet must be
-               // locked
-  flash_wallet->challenge.card_locked = card_locked;
   pow_get_approx_time_in_secs(target,
                               &flash_wallet->challenge.time_to_unlock_in_secs);
 
