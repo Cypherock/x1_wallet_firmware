@@ -91,7 +91,7 @@ typedef struct {
 
   /// remembers the allocated buffer for holding complete unsigned transaction
   uint8_t *transaction;
-  /// records the transaction size
+  /// records the transaction size; TODO: replaced by a member of init_info
   size_t transaction_size;
   /// store for decoded unsigned transaction info
   eth_unsigned_txn transaction_info;
@@ -326,13 +326,17 @@ static bool fetch_valid_transaction(evm_query_t *query) {
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
   txn_metadata dummy_metadata;
   memcpy(txn_context->transaction, chunk->bytes, chunk->size);
-  // verify the received transaction
-  eth_byte_array_to_unsigned_txn(txn_context->transaction,
-                                 txn_context->transaction_size,
-                                 &txn_context->transaction_info,
-                                 &dummy_metadata);
-  eth_validate_unsigned_txn(&txn_context->transaction_info, &dummy_metadata);
+  // decode and verify the received transaction
+  if (0 != eth_byte_array_to_unsigned_txn(txn_context->transaction,
+                                          txn_context->transaction_size,
+                                          &txn_context->transaction_info,
+                                          &dummy_metadata) ||
+      !eth_validate_unsigned_txn(&txn_context->transaction_info,
+                                 &dummy_metadata)) {
+    return status;
+  }
 
+  status = true;
   return status;
 }
 
@@ -362,7 +366,7 @@ static bool get_user_verification() {
       txn_context->transaction_info.payload_status) {
     hd_path_array_to_string(hd_path, depth, false, address, sizeof(address));
     if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
-        !core_scroll_page("Verify Derivation Path", address, evm_send_error)) {
+        !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, address, evm_send_error)) {
       return status;
     }
   }
@@ -438,7 +442,10 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
     return status;
   }
 
-  if (!derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, buffer, &node)) {
+  status =
+      derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, buffer, &node);
+  memzero(buffer, sizeof(buffer));
+  if (!status) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
   } else {
@@ -452,7 +459,6 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
     }
   }
   memzero(&node, sizeof(HDNode));
-  memzero(buffer, sizeof(buffer));
   return status;
 }
 
