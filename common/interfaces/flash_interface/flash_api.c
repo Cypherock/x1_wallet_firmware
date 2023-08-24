@@ -755,14 +755,9 @@ int update_time_to_unlock_flash(const char *name,
   return SUCCESS_;
 }
 
-/**
- * @brief
- *
- * @param name
- * @param nonce
- * @return int
- */
-int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]) {
+int save_nonce_flash(const char *name,
+                     const uint8_t nonce[POW_NONCE_SIZE],
+                     const uint32_t time_to_unlock_in_secs) {
   ASSERT(name != NULL);
   ASSERT(nonce != NULL);
 
@@ -775,6 +770,7 @@ int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]) {
     return INVALID_ARGUMENT;
 
   memcpy(flash_wallet->challenge.nonce, nonce, POW_NONCE_SIZE);
+  flash_wallet->challenge.time_to_unlock_in_secs = time_to_unlock_in_secs;
 
   flash_struct_save();
 
