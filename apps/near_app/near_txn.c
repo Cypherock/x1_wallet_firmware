@@ -254,7 +254,7 @@ static bool handle_initiate_query(const near_query_t *query) {
     return false;
   }
 
-  core_status_set_flow_status(NEAR_SIGN_TXN_STATUS_CONFIRM);
+  set_app_flow_status(NEAR_SIGN_TXN_STATUS_CONFIRM);
   memcpy(&near_txn_context->init_info,
          &query->sign_txn.initiate,
          sizeof(near_sign_txn_initiate_request_t));
@@ -312,7 +312,7 @@ static bool get_user_verification(void) {
   }
 
   if (user_verified) {
-    core_status_set_flow_status(NEAR_SIGN_TXN_STATUS_VERIFY);
+    set_app_flow_status(NEAR_SIGN_TXN_STATUS_VERIFY);
   }
 
   return user_verified;
@@ -326,7 +326,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
     return false;
   }
 
-  core_status_set_flow_status(NEAR_SIGN_TXN_STATUS_SEED_GENERATED);
+  set_app_flow_status(NEAR_SIGN_TXN_STATUS_SEED_GENERATED);
 
   uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(near_txn_context->unsigned_txn.txn.bytes,
