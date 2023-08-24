@@ -124,7 +124,8 @@ card_error_type_e card_fetch_wallet_list(
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status = nfc_list_all_wallet(response->wallet_list);
 
-      if (card_data.nfc_data.status == SW_NO_ERROR) {
+      if (card_data.nfc_data.status == SW_NO_ERROR ||
+          card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
         buzzer_start(BUZZER_DURATION);
         if (!config->operation.skip_card_removal) {
           wait_for_card_removal();
