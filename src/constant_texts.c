@@ -90,7 +90,7 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "View Card Version",
     "Regulatory Info",
     "Pair Cards",
-    "Clear User Data",
+    "Clear Wallet Data",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif
@@ -158,14 +158,13 @@ const char *ui_text_syncing_complete = "wallet(s) synced";
 
 // Clear user data text
 const char *ui_text_clear_user_data_instruction =
-    "You will need 2 cards to perform clear user data\nMake sure at least 2 "
+    "You will need 2 cards to perform clear wallet data\nMake sure at least 2 "
     "cards are accessible\nDo you want to proceed?";
-const char *ui_text_confirm_clear_user_data =
-    "This will erase all wallets from device. Confirm?";
-const char *ui_text_erasing_user_data = "User data cleared Device will restart";
+const char *ui_text_erasing_user_data =
+    "Wallet data cleared Device will restart";
 const char *ui_text_clear_user_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] =
     {
-        "Exiting without clearing user data",
+        "Exiting without clearing wallet data",
         "Press the center button to proceed",
 };
 

@@ -348,7 +348,7 @@ void clear_user_data(void) {
     return;
   }
 
-  if (!core_scroll_page(NULL, ui_text_confirm_clear_user_data, NULL)) {
+  if (!core_scroll_page(NULL, ui_text_confirm_factory_reset, NULL)) {
     return;
   }
 

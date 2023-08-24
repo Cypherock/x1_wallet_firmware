@@ -123,7 +123,6 @@ extern const char *ui_text_syncing_complete;
 
 // Clear user data text
 extern const char *ui_text_clear_user_data_instruction;
-extern const char *ui_text_confirm_clear_user_data;
 extern const char *ui_text_erasing_user_data;
 extern const char
     *ui_text_clear_user_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
