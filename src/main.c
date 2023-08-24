@@ -159,13 +159,35 @@ int main(void) {
     engine_run(main_engine_ctx);
   }
 #else /* RUN_ENGINE */
-
   while (true) {
     if (keypad_get_key() != 0)
       reset_inactivity_timer();
     proof_of_work_task();
-  }
+
+#if USE_SIMULATOR == 1
+    usbsim_continue_loop();
+
+#ifdef SDL_APPLE
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+#if USE_MOUSE != 0
+      mouse_handler(&event);
 #endif
+
+#if USE_KEYBOARD
+      keyboard_handler(&event);
+#endif
+
+#if USE_MOUSEWHEEL != 0
+      mousewheel_handler(&event);
+#endif
+    }
+#endif /*SDL_APPLE */
+  }
+#endif /* USE_SIMULATOR == 1 */
+
+#endif /* RUN_ENGINE */
   return 0;
 }
 
