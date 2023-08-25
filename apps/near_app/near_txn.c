@@ -243,7 +243,8 @@ static bool handle_initiate_query(const near_query_t *query) {
   if (!check_which_request(query, NEAR_SIGN_TXN_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->sign_txn) ||
       !get_wallet_name_by_id(query->sign_txn.initiate.wallet_id,
-                             (uint8_t *)wallet_name)) {
+                             (uint8_t *)wallet_name,
+                             near_send_error)) {
     return false;
   }
 
@@ -320,7 +321,8 @@ static bool get_user_verification(void) {
 
 static bool sign_txn(uint8_t *signature_buffer) {
   uint8_t seed[64] = {0};
-  if (!reconstruct_seed_flow(near_txn_context->init_info.wallet_id, seed)) {
+  if (!reconstruct_seed(
+          near_txn_context->init_info.wallet_id, seed, near_send_error)) {
     memzero(seed, sizeof(seed));
     // TODO: handle errors of reconstruction flow
     return false;
