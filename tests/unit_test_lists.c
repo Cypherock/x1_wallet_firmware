@@ -173,3 +173,9 @@ TEST_GROUP_RUNNER(btc_helper_test) {
   RUN_TEST_CASE(btc_helper_test, btc_helper_generate_xpub_segwit);
   RUN_TEST_CASE(btc_helper_test, btc_helper_generate_xpub_legacy);
 }
+
+TEST_GROUP_RUNNER(evm_txn_test) {
+#ifdef EVM_TXN_MANUAL_TEST
+  RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
+#endif
+}
