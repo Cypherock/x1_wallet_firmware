@@ -83,19 +83,12 @@
                             issue*/
 #include "application_startup.h"
 #include "board.h"
-#include "communication.h"
-#include "controller_main.h"
 #include "logger.h"
-#include "lv_port_indev.h"
-#include "lvgl/lvgl.h"
-#include "pow.h"
+#include "onboarding.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "sys_state.h"
-#include "tasks_level_one.h"
 #include "time.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
 #include "ui_logo.h"
 
 #define RUN_ENGINE
@@ -106,10 +99,6 @@
 #if USE_SIMULATOR == 0
 #include "cmsis_gcc.h"
 #include "main.h"
-#include "nfc.h"
-#include "ui_message.h"
-#include "usbd_core.h"
-
 #endif    // USE_SIMULATOR
 
 #if USE_SIMULATOR == 1
@@ -147,79 +136,37 @@ int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
 #endif
-
   application_init();
 
 #ifdef RUN_ENGINE
-  logo_scr_init(2000);
+#if USE_SIMULATOR == 0
+  if (fault_in_prev_boot()) {
+    handle_fault_in_prev_boot();
+  } else
+#endif /* USE_SIMULATOR == 0 */
+  {
+    logo_scr_init(2000);
+    device_provision_check();
+
+    if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
+        DEVICE_AUTHENTICATED == get_auth_state()) {
+      check_invalid_wallets();
+    }
+  }
 
   while (1) {
     engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);
   }
 #else /* RUN_ENGINE */
-
-#if USE_SIMULATOR == 0
-  if (fault_in_prev_boot()) {
-    handle_fault_in_prev_boot();
-  } else
-#endif    // USE_SIMULATOR
-  {
-    logo_scr_init(2000);
-    device_provision_check();
-    reset_flow_level();
-#if X1WALLET_MAIN
-    if (device_auth_check() == DEVICE_AUTHENTICATED)
-      check_invalid_wallets();
-#endif
-  }
-
   while (true) {
     if (keypad_get_key() != 0)
       reset_inactivity_timer();
-    // Flow
-    main_app_ready = true;
-    if (CY_Read_Reset_Flow()) {
-      if (!CY_reset_not_allowed()) {
-        cy_exit_flow();
-      } else {
-        sys_flow_cntrl_u.bits.reset_flow = false;
-      }
-    }
-
-    if (sys_flow_cntrl_u.bits.nfc_off == false) {
-      nfc_deselect_card();
-    }
-
-    if (counter.next_event_flag != 0) {
-      PRINT_FLOW_LVL();
-      mark_device_state(
-          CY_UNUSED_STATE,
-          counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
-      reset_next_event_flag();
-#if X1WALLET_MAIN
-      level_one_tasks();
-#elif X1WALLET_INITIAL
-      level_one_tasks_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
-    }
+    proof_of_work_task();
 
 #if USE_SIMULATOR == 1
     usbsim_continue_loop();
-#endif    // USE_SIMULATOR
 
-    proof_of_work_task();
-    /* Periodically call the lv_task handler.
-     * It could be done in a timer interrupt or an OS task too.*/
-    lv_task_handler();
-    BSP_DelayMs(50);
-
-    /* TODO: Update after refactor */
-    /* Remove this function call */
-    process_ui_events();
-#if USE_SIMULATOR == 1
 #ifdef SDL_APPLE
     SDL_Event event;
 
@@ -236,10 +183,11 @@ int main(void) {
       mousewheel_handler(&event);
 #endif
     }
-#endif
-#endif    // USE_SIMULATOR
+#endif /*SDL_APPLE */
   }
-#endif    /* RUN_ENGINE */
+#endif /* USE_SIMULATOR == 1 */
+
+#endif /* RUN_ENGINE */
   return 0;
 }
 

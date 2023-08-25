@@ -162,7 +162,7 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
     }
 
     case SYNC_RECONSTRUCT_SEED: {
-      instruction_scr_init(ui_text_processing, NULL);
+      delay_scr_init(ui_text_processing, DELAY_TIME);
 
       uint8_t temp_password_hash[SHA256_DIGEST_LENGTH];
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {

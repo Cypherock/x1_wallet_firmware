@@ -71,6 +71,7 @@
 
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
+#include "core_error.h"
 #include "cryptoauthlib.h"
 #include "flash_api.h"
 #include "flash_if.h"
@@ -329,7 +330,6 @@ void application_init() {
 #endif
 }
 
-#if X1WALLET_MAIN
 void check_invalid_wallets() {
   bool fix = false;
   char display[64];
@@ -341,9 +341,9 @@ void check_invalid_wallets() {
              sizeof(msg),
              "%u card(s) not paired with device",
              (MAX_KEYSTORE_ENTRY - paired_card_count));
-    tap_card_take_to_pairing();
-    mark_error_screen(paired_card_count == 0 ? ui_text_error_no_card_paired
-                                             : msg);
+    delay_scr_init(paired_card_count == 0 ? ui_text_error_no_card_paired : msg,
+                   DELAY_TIME);
+    mark_core_error_screen(ui_text_card_pairing_warning);
     return;
   }
 
@@ -393,8 +393,7 @@ void check_invalid_wallets() {
     }
   }
   if (fix)
-    mark_error_screen(ui_text_wallet_visit_to_verify);
-  reset_flow_level();
+    mark_core_error_screen(ui_text_wallet_visit_to_verify);
 }
 
 void check_boot_count() {
@@ -402,7 +401,7 @@ void check_boot_count() {
     delay_scr_init(ui_text_its_a_while_check_your_cards, DELAY_TIME);
   }
 }
-#endif
+
 void log_error_handler_faults() {
 #if USE_SIMULATOR == 0
   if (RTC->BKP1R > 1) {
@@ -450,7 +449,6 @@ void handle_fault_in_prev_boot() {
   WRITE_REG(RTC->BKP1R, 0x00);
   delay_scr_init(ui_text_something_went_wrong_contact_support_send_logs,
                  DELAY_TIME);
-  reset_flow_level();
 #endif
 }
 
@@ -490,10 +488,7 @@ void device_provision_check() {
 #if NDEBUG
   msg = ui_text_device_compromised;
 #endif
-  ui_set_event_over_cb(NULL);
   delay_scr_init(msg, DELAY_TIME);
-  ui_set_event_over_cb(&mark_event_over);
-  instruction_scr_destructor();
 #endif
 }
 
