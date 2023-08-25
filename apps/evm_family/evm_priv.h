@@ -29,6 +29,19 @@
  * TYPEDEFS
  *****************************************************************************/
 
+typedef struct {
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by handle_initiate_query()
+   */
+  evm_sign_txn_initiate_request_t init_info;
+
+  /// remembers the allocated buffer for holding complete unsigned transaction
+  uint8_t *transaction;
+  /// store for decoded unsigned transaction info
+  eth_unsigned_txn transaction_info;
+} evm_txn_context_t;
+
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/

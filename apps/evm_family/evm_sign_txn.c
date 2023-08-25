@@ -78,22 +78,14 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 
+#define STATIC
+#ifndef STATIC
+#define STATIC static
+#endif
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-
-typedef struct {
-  /**
-   * The structure holds the wallet information of the transaction.
-   * @note Populated by handle_initiate_query()
-   */
-  evm_sign_txn_initiate_request_t init_info;
-
-  /// remembers the allocated buffer for holding complete unsigned transaction
-  uint8_t *transaction;
-  /// store for decoded unsigned transaction info
-  eth_unsigned_txn transaction_info;
-} evm_txn_context_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -151,7 +143,7 @@ static void send_response(pb_size_t which_response);
  * @retval true If all the validation and user confirmation was positive
  * @retval false If any of the validation or user confirmation was negative
  */
-static bool handle_initiate_query(const evm_query_t *query);
+STATIC bool handle_initiate_query(const evm_query_t *query);
 
 /**
  * @brief Fetches complete raw transaction to be signed for verification
@@ -166,7 +158,7 @@ static bool handle_initiate_query(const evm_query_t *query);
  * @retval true If all the transaction was fetched and verified
  * @retval false If the transaction failed verification or wasn't fetched
  */
-static bool fetch_valid_transaction(evm_query_t *query);
+STATIC bool fetch_valid_transaction(evm_query_t *query);
 
 /**
  * @brief Aggregates user consent for the transaction info
@@ -179,7 +171,7 @@ static bool fetch_valid_transaction(evm_query_t *query);
  * the corresponding value.
  * @retval false Immediate return if any of the confirmation is disapproved
  */
-static bool get_user_verification();
+STATIC bool get_user_verification();
 
 /**
  * @brief Signs the user verified transaction and returns the signature.
@@ -215,7 +207,7 @@ static bool send_signature(evm_query_t *query,
  * STATIC VARIABLES
  *****************************************************************************/
 
-static evm_txn_context_t *txn_context = NULL;
+STATIC evm_txn_context_t *txn_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -250,7 +242,7 @@ static bool validate_request_data(const evm_sign_txn_request_t *request) {
    * this limit can be removed once the RLP decoder can operate on running
    * transaction buffer stream and get user confirmations on the go
    */
-  if (EVM_TRANSACTION_SIZE_CAP < txn_context->init_info.transaction_size) {
+  if (EVM_TRANSACTION_SIZE_CAP < request->initiate.transaction_size) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -264,7 +256,7 @@ static void send_response(const pb_size_t which_response) {
   evm_send_result(&result);
 }
 
-static bool handle_initiate_query(const evm_query_t *query) {
+STATIC bool handle_initiate_query(const evm_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -299,7 +291,7 @@ static bool handle_initiate_query(const evm_query_t *query) {
   return true;
 }
 
-static bool fetch_valid_transaction(evm_query_t *query) {
+STATIC bool fetch_valid_transaction(evm_query_t *query) {
   bool status = false;
 
   // TODO: stitch transactions split over multiple chunks
@@ -337,10 +329,10 @@ static bool fetch_valid_transaction(evm_query_t *query) {
   return status;
 }
 
-static bool get_user_verification() {
+STATIC bool get_user_verification() {
   bool status = false;
   char address[43] = "0x";
-  uint8_t *to_address = NULL;
+  const uint8_t *to_address = NULL;
   uint32_t *hd_path = txn_context->init_info.derivation_path;
   size_t depth = txn_context->init_info.derivation_path_count;
 
@@ -379,9 +371,9 @@ static bool get_user_verification() {
   // verify recipient address; TODO: handle harmony address encoding
   address[0] = '0';
   address[1] = 'x';
-  eth_get_to_address(&txn_context->transaction_info, to_address);
+  eth_get_to_address(&txn_context->transaction_info, &to_address);
   ethereum_address_checksum(
-      to_address, &address[2], sizeof(address) - 2, false);
+      to_address, &address[2], false, g_evm_app->chain_id);
   if (!core_scroll_page(ui_text_verify_address, address, evm_send_error)) {
     return status;
   }
@@ -391,7 +383,7 @@ static bool get_user_verification() {
   char value_string[65] = {'\0'};
   char value_decimal_string[30] = {'\0'};
   char display[100] = "";
-  uint8_t len = eth_get_value(&eth_unsigned_txn_ptr, value_string);
+  uint8_t len = eth_get_value(&txn_context->transaction_info, value_string);
   if (!convert_byte_array_to_decimal_string(len,
                                             ETH_DECIMAL,
                                             value_string,
@@ -411,8 +403,10 @@ static bool get_user_verification() {
   }
 
   // verify transaction fee
-  eth_get_fee_string(
-      &eth_unsigned_txn_ptr, value_string, sizeof(value_string), ETH_DECIMAL);
+  eth_get_fee_string(&txn_context->transaction_info,
+                     value_string,
+                     sizeof(value_string),
+                     ETH_DECIMAL);
   snprintf(display,
            sizeof(display),
            UI_TEXT_SEND_TXN_FEE,

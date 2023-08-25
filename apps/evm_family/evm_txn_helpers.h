@@ -137,7 +137,7 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
  * @retval
  */
 void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        uint8_t *address);
+                        const uint8_t **address);
 
 /**
  * @brief Get amount to be sent set in the eth_unsigned_txn instance

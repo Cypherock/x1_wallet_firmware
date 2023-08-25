@@ -363,16 +363,12 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
        PAYLOAD_CONTRACT_INVALID));    // Check if the payload status is invalid
 }
 
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
-                        uint8_t *address) {
+void eth_get_to_address(const eth_unsigned_txn *utxn_ptr,
+                        const uint8_t **address) {
   if (eth_is_token_whitelisted)
-    memcpy(address,
-           eth_unsigned_txn_ptr->payload + 16,
-           sizeof(eth_unsigned_txn_ptr->to_address));
+    *address = &utxn_ptr->payload[16];
   else
-    memcpy(address,
-           eth_unsigned_txn_ptr->to_address,
-           sizeof(eth_unsigned_txn_ptr->to_address));
+    *address = &utxn_ptr->to_address[0];
 }
 
 uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
