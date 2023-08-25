@@ -350,7 +350,7 @@ bool reconstruct_seed(const uint8_t *wallet_id,
               ERROR_USER_REJECTION_CONFIRMATION);
   } else if (reject_cb && COMPLETED_WITH_ERRORS == flow) {
     // Inform the host of any card error
-    reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG, 0);
+    reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG, ERROR_CARD_ERROR_UNKNOWN);
   }
 
   clear_wallet_data();
