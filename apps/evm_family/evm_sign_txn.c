@@ -91,8 +91,6 @@ typedef struct {
 
   /// remembers the allocated buffer for holding complete unsigned transaction
   uint8_t *transaction;
-  /// records the transaction size; TODO: replaced by a member of init_info
-  size_t transaction_size;
   /// store for decoded unsigned transaction info
   eth_unsigned_txn transaction_info;
 } evm_txn_context_t;
@@ -252,8 +250,7 @@ static bool validate_request_data(const evm_sign_txn_request_t *request) {
    * this limit can be removed once the RLP decoder can operate on running
    * transaction buffer stream and get user confirmations on the go
    */
-  // TODO: pending; currently ineffective
-  if (EVM_TRANSACTION_SIZE_CAP < txn_context->transaction_size) {
+  if (EVM_TRANSACTION_SIZE_CAP < txn_context->init_info.transaction_size) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -326,10 +323,11 @@ static bool fetch_valid_transaction(evm_query_t *query) {
   txn_metadata dummy_metadata;
   memcpy(txn_context->transaction, chunk->bytes, chunk->size);
   // decode and verify the received transaction
-  if (0 != eth_byte_array_to_unsigned_txn(txn_context->transaction,
-                                          txn_context->transaction_size,
-                                          &txn_context->transaction_info,
-                                          &dummy_metadata) ||
+  if (0 != eth_byte_array_to_unsigned_txn(
+               txn_context->transaction,
+               txn_context->init_info.transaction_size,
+               &txn_context->transaction_info,
+               &dummy_metadata) ||
       !eth_validate_unsigned_txn(&txn_context->transaction_info,
                                  &dummy_metadata)) {
     return status;
@@ -449,7 +447,9 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
                    ERROR_DATA_FLOW_INVALID_DATA);
   } else {
     status = true;
-    keccak_256(txn_context->transaction, txn_context->transaction_size, buffer);
+    keccak_256(txn_context->transaction,
+               txn_context->init_info.transaction_size,
+               buffer);
 
     if (0 != ecdsa_sign_digest(
                  curve, node.private_key, buffer, sig->r, sig->v, NULL)) {

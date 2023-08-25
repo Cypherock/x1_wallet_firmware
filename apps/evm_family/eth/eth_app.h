@@ -1,5 +1,5 @@
 /**
- * @file    eth_app.h
+ * @file    evm_app.h
  * @author  Cypherock X1 Team
  * @brief   Ethereum application configuration
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
