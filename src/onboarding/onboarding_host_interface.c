@@ -63,7 +63,8 @@
 
 #include "manager_app.h"
 #include "onboarding.h"
-#include "ui_delay.h"
+#include "status_api.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -102,9 +103,17 @@ void onboarding_host_interface(engine_ctx_t *ctx,
   /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
    * application here */
-
-  // Temporarily hardcode to manager app where we will do the onboarding
-  manager_app_main(usb_evt);
+  uint32_t applet_id = get_applet_id();
+  switch (applet_id) {
+    case 1: {
+      manager_app_main(usb_evt);
+      break;
+    }
+    default: {
+      // TODO: Send error?
+      break;
+    }
+  }
 
   /* If onboarding is complete, reset the flow as the core will now need to
    * render the main menu */

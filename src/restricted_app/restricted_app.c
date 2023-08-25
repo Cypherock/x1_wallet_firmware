@@ -1,7 +1,8 @@
 /**
- * @file    onboarding.c
+ * @file    restricted_app.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Interface to provide restricted functionalities
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,16 +60,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "onboarding.h"
+#include "restricted_app.h"
 
 #include "constant_texts.h"
 #include "core_error_priv.h"
-#include "flash_api.h"
 #include "menu_priv.h"
-#include "onboarding_host_interface.h"
-#include "onboarding_priv.h"
+#include "restricted_host_interface.h"
+#include "restricted_priv.h"
 #include "status_api.h"
-#include "ui_delay.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -81,15 +81,10 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  bool static_screen;
-  bool update_required;
-} onboarding_ctx_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
  * @brief This p0 event callback function handles clearing p0 events occured
  * while engine is waiting for other events.
@@ -108,14 +103,11 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static onboarding_ctx_t onboarding_ctx = {.static_screen = false,
-                                          .update_required = true};
-
-static const flow_step_t onboarding_flow = {
-    .step_init_cb = onboarding_initialize,
+static const flow_step_t restricted_flow = {
+    .step_init_cb = restricted_app_initialize,
     .p0_cb = ignore_p0_handler,
     .ui_cb = NULL,
-    .usb_cb = onboarding_host_interface,
+    .usb_cb = restricted_host_interface,
     .nfc_cb = NULL,
     .evt_cfg_ptr = &main_menu_evt_config,
     .flow_data_ptr = NULL};
@@ -136,97 +128,15 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void onboarding_initialize(engine_ctx_t *ctx, const void *data_ptr) {
+void restricted_app_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   handle_core_errors();
 
-  if (false == onboarding_ctx.update_required) {
-    return;
-  }
-
-  /* Set core_status to CORE_DEVICE_IDLE_STATE_IDLE as we are entering back to
-   * the onboarding menu */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
-
-  /* Reset flow status back to zero */
-  set_core_flow_status(0);
-  set_app_flow_status(0);
-
-  if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE != onboarding_get_last_step() ||
-      true == onboarding_ctx.static_screen) {
-    /* The static screen should appear if
-     * 1. at least one onboarding milestone is complete
-     * 2. in-between the onboarding milestones (only in single session)
-     * 3. any action from host other than onboarding (only in single session)
-     */
-    delay_scr_init(ui_text_onboarding[2], DELAY_TIME);
-  } else {
-    /* Since there is now way onboarding_ctx.static_screen be set to false after
-     * first time initialization, therefore welcome screen and slideshow will
-     * only be shown once to the user */
-    delay_scr_init(ui_text_onboarding_welcome, DELAY_TIME);
-    ui_text_slideshow_init(ui_text_onboarding,
-                           NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING,
-                           DELAY_TIME,
-                           false);
-  }
-
-  onboarding_ctx.update_required = false;
+  const char *pptr[2] = {ui_text_authentication_required,
+                         ui_text_start_auth_from_CySync};
+  multi_instruction_init(pptr, 2, DELAY_TIME, false);
   return;
 }
 
-void onboarding_set_static_screen(void) {
-  onboarding_ctx.static_screen = true;
-  onboarding_ctx.update_required = true;
-  return;
-}
-
-const flow_step_t *onboarding_get_step(void) {
-  return &onboarding_flow;
-}
-
-manager_onboarding_step_t onboarding_get_last_step(void) {
-  uint8_t step = get_onboarding_step();
-
-  /* First read on virgin device will fetch 0xFF, so manually enforce it to
-   * MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE */
-  if (DEFAULT_VALUE_IN_FLASH == step) {
-    return MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE;
-  }
-
-  return (manager_onboarding_step_t)step;
-}
-
-void onboarding_set_step_done(const manager_onboarding_step_t next_step) {
-  /* Validate next_step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < next_step) {
-    return;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Check for DEFAULT_VALUE_IN_FLASH to save the state in a virgin device and
-   * ensure we never go back a step */
-  if ((DEFAULT_VALUE_IN_FLASH == last_step) || (last_step < next_step)) {
-    save_onboarding_step((uint8_t)next_step);
-  }
-
-  return;
-}
-
-bool onboarding_step_allowed(const manager_onboarding_step_t step) {
-  /* Validate step */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE < step) {
-    return false;
-  }
-
-  manager_onboarding_step_t last_step = onboarding_get_last_step();
-
-  /* Only allow steps that are already completed, or the new step is just the
-   * next step */
-  if ((MANAGER_ONBOARDING_STEP_COMPLETE == last_step) ||
-      (step <= last_step + 1)) {
-    return true;
-  }
-
-  return false;
+const flow_step_t *restricted_app_get_step(void) {
+  return &restricted_flow;
 }

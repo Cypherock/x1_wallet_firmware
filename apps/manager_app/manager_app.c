@@ -100,14 +100,13 @@
 void manager_app_main(usb_event_t usb_evt) {
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
-  if (false == decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+  if (!decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
   }
 
   /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
 
   switch ((uint8_t)query.which_request) {
     case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
@@ -151,6 +150,46 @@ void manager_app_main(usb_event_t usb_evt) {
   }
 
   onboarding_set_static_screen();
+
+  return;
+}
+
+void manager_app_restricted_main(usb_event_t usb_evt) {
+  manager_query_t query = MANAGER_QUERY_INIT_ZERO;
+
+  if (!decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case MANAGER_QUERY_GET_DEVICE_INFO_TAG: {
+      get_device_info_flow(&query);
+      break;
+    }
+    case MANAGER_QUERY_AUTH_DEVICE_TAG: {
+      device_authentication_flow(&query);
+      break;
+    }
+    case MANAGER_QUERY_FIRMWARE_UPDATE_TAG: {
+      manager_confirm_firmware_update(&query);
+      break;
+    }
+    case MANAGER_QUERY_GET_WALLETS_TAG:
+    case MANAGER_QUERY_AUTH_CARD_TAG:
+    case MANAGER_QUERY_GET_LOGS_TAG:
+    case MANAGER_QUERY_TRAIN_JOYSTICK_TAG:
+    case MANAGER_QUERY_TRAIN_CARD_TAG:
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_QUERY);
+      break;
+    }
+  }
 
   return;
 }

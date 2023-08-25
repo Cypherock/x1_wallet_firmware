@@ -1,7 +1,7 @@
 /**
- * @file    manager_app.h
+ * @file    restricted_host_interface.h
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Header file for the host interface for the restricted flow
  * @details
 
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -9,19 +9,13 @@
  * target=_blank>https://mitcc.org/</a>
  *
  */
-
-#ifndef MANAGER_APP_H
-#define MANAGER_APP_H
+#ifndef RESTRICTED_HOST_INTERFACE_H
+#define RESTRICTED_HOST_INTERFACE_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <manager/core.pb.h>
-#include <manager/get_device_info.pb.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#include "events.h"
+#include "flow_engine.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -39,23 +33,17 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Entry point for the manager application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * manager app.
+ * @brief This is the USB callback called when the device core detects a valid
+ * USB event when no application is booted. This function passes control to the
+ * application, which can further communicate with the host. Control is passed
+ * back to the callback once the flow is complete in the application.
  *
- * @param usb_evt The USB event which triggered invocation of the manager app
+ * @param ctx The engine context* from which the flow is invoked
+ * @param usb_evt The USB event object which triggered the callback
+ * @param data_ptr Currently unused pointer set by the engine
  */
-void manager_app_main(usb_event_t usb_evt);
+void restricted_host_interface(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data);
 
-/**
- * @brief Restricted Entry point for the manager application of the X1 vault. It
- * is invoked by the X1 vault firmware, as soon as there is a USB request raised
- * for the manager app.
- * @note It only allows some functionality such as get device info, device
- * authentication and firmware update
- *
- * @param usb_evt The USB event which triggered invocation of the manager app
- */
-void manager_app_restricted_main(usb_event_t usb_evt);
-
-#endif /* MANAGER_APP_H */
+#endif /* RESTRICTED_HOST_INTERFACE_H */

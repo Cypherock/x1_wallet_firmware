@@ -37,7 +37,6 @@ else()
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         apps/manager_app
-        apps/manager_app/onboarding
 
         apps/btc_family
         apps/btc_family/btc
@@ -52,6 +51,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         src/
         src/menu
         src/wallet
+        src/restricted_app
+        src/onboarding
         src/settings
 
         src/card_operations
