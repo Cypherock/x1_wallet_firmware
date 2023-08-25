@@ -435,12 +435,11 @@ void evm_get_pub_keys(evm_query_t *query) {
                       sizeof(evm_get_public_keys_derivation_path_t)]
                      [EVM_PUB_KEY_SIZE] = {0};
 
-  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet ID
-  // found but is invalid/locked wallet
   if (!check_which_request(query, EVM_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_keys, which_request) ||
       !get_wallet_name_by_id(query->get_public_keys.initiate.wallet_id,
-                             (uint8_t *)wallet_name)) {
+                             (uint8_t *)wallet_name,
+                             evm_send_error)) {
     return;
   }
 
@@ -451,11 +450,9 @@ void evm_get_pub_keys(evm_query_t *query) {
 
   set_app_flow_status(EVM_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
-  // TODO: Handle rejections during wallet reconstruction flows - eg: cancel
-  // button pressed on PIN/Passphrase entry
-  if (!reconstruct_seed_flow(query->get_public_keys.initiate.wallet_id,
-                             &seed[0])) {
-    // TODO: Handle error case reporting to host
+  if (!reconstruct_seed(query->get_public_keys.initiate.wallet_id,
+                        &seed[0],
+                        evm_send_error)) {
     memzero(seed, sizeof(seed));
     return;
   }

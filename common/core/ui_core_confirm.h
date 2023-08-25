@@ -41,7 +41,7 @@ typedef void(ui_core_rejection_cb)(pb_size_t which_error, uint32_t error_code);
  * event. In case of a P0 event, the function will simply return false and do an
  * early exit. In case if the user denied the permission by selecting cancel,
  * the function executes the provided rejection callback if it exists to the
- * host manager app.
+ * host app.
  *
  * @param body Reference to the message to display against user confirmation
  * @param reject_cb Callback to execute if user rejected
@@ -60,7 +60,7 @@ bool core_confirmation(const char *body, ui_core_rejection_cb *reject_cb);
  * event. In case of a P0 event, the function will simply return false and do an
  * early exit. In case if the user denied the permission by selecting cancel,
  * the function executes the provided rejection callback if it exists to the
- * host manager app.
+ * host app.
  *
  * @param title Reference to the title for the screen
  * @param body Reference to the message to display against user confirmation
