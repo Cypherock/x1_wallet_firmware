@@ -160,8 +160,6 @@ int main(void) {
   }
 #else /* RUN_ENGINE */
   while (true) {
-    if (keypad_get_key() != 0)
-      reset_inactivity_timer();
     proof_of_work_task();
 
 #if USE_SIMULATOR == 1
