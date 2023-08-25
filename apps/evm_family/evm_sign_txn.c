@@ -293,33 +293,48 @@ STATIC bool handle_initiate_query(const evm_query_t *query) {
 
 STATIC bool fetch_valid_transaction(evm_query_t *query) {
   bool status = false;
-
-  // TODO: stitch transactions split over multiple chunks
-  if (!evm_get_query(query, EVM_QUERY_SIGN_TXN_TAG) &&
-      !check_which_request(query, EVM_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
-    return status;
-  }
+  uint32_t size = 0;
+  uint32_t total_size = txn_context->init_info.transaction_size;
   const evm_sign_txn_data_t *txn_data = &query->sign_txn.txn_data;
-  if (!txn_data->has_chunk_payload) {
+  const common_chunk_payload_t *payload = &txn_data->chunk_payload;
+  const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
+
+  // allocate memory for storing transaction
+  txn_context->transaction = (uint8_t *)malloc(total_size);
+  while (true) {
+    if (!evm_get_query(query, EVM_QUERY_SIGN_TXN_TAG) &&
+        !check_which_request(query, EVM_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
+      return status;
+    }
+    if (!txn_data->has_chunk_payload ||
+        payload->chunk_index >= payload->total_chunks ||
+        size + payload->chunk.size > total_size) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return status;
+    }
+
+    memcpy(&txn_context->transaction[size], chunk->bytes, chunk->size);
+    size += chunk->size;
+    send_response(EVM_SIGN_TXN_DATA_ACCEPTED_CHUNK_ACK_TAG);
+    if (0 == payload->remaining_size ||
+        payload->chunk_index + 1 == payload->total_chunks) {
+      break;
+    }
+  }
+
+  // make sure all chunks were received
+  if (size != total_size) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     return status;
   }
-
-  // store the received transaction
-  if (NULL == txn_context->transaction) {
-    txn_context->transaction =
-        (uint8_t *)malloc(sizeof(common_chunk_payload_chunk_t));
-  }
-  const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
   txn_metadata dummy_metadata;
-  memcpy(txn_context->transaction, chunk->bytes, chunk->size);
   // decode and verify the received transaction
-  if (0 != eth_byte_array_to_unsigned_txn(
-               txn_context->transaction,
-               txn_context->init_info.transaction_size,
-               &txn_context->transaction_info,
-               &dummy_metadata) ||
+  if (0 != eth_byte_array_to_unsigned_txn(txn_context->transaction,
+                                          total_size,
+                                          &txn_context->transaction_info,
+                                          &dummy_metadata) ||
       !eth_validate_unsigned_txn(&txn_context->transaction_info,
                                  &dummy_metadata)) {
     return status;
