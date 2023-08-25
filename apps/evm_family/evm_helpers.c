@@ -64,6 +64,7 @@
 
 #include "coin_utils.h"
 #include "evm_txn_helpers.h"
+#include "evm_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -142,6 +143,42 @@ static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth) {
          0 == path[3] && is_non_hardened(path[4]);
 }
 
+static bool evm_get_personal_data_digest(uint8_t *msg_data,
+                                         uint16_t msg_data_size,
+                                         uint8_t *digest_out) {
+  if (NULL == msg_data || NULL == digest_out || 0 == msg_data_size) {
+    return false;
+  }
+
+  char size_string[256] = {0};
+  uint8_t size_string_size = 0;
+  uint8_t *data = NULL;
+  uint16_t data_size = 0, offset = 0;
+
+  size_string_size =
+      snprintf(size_string, sizeof(size_string), "%d", msg_data_size);
+  data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + size_string_size +
+              msg_data_size;
+
+  data = malloc(data_size);
+  ASSERT(NULL != data);
+  memzero(data, data_size);
+  memcpy(data,
+         ETH_PERSONAL_SIGN_IDENTIFIER,
+         sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
+  offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
+  memcpy(data + offset, size_string, size_string_size);
+  offset += size_string_size;
+  memcpy(data + offset, msg_data, msg_data_size);
+
+  keccak_256(data, data_size, digest_out);
+
+  memzero(data, data_size);
+  free(data);
+
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -160,4 +197,24 @@ bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   }
 
   return false;
+}
+
+bool evm_get_msg_data_hash(const evm_sign_msg_context_t *ctx, uint8_t *digest) {
+  bool result = false;
+
+  switch (ctx->init.message_type) {
+    case EVM_SIGN_MSG_TYPE_ETH_SIGN:
+    case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      result = evm_get_personal_data_digest(
+          ctx->msg_data, ctx->msg_data_size, digest);
+    } break;
+
+    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
+      // TODO: Prepare typed data message hash
+      break;
+    default:
+      break;
+  }
+
+  return result;
 }

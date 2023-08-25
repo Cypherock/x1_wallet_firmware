@@ -25,6 +25,7 @@
 
 #define EVM_TRANSACTION_SIZE_CAP 20480
 
+#define MAX_MSG_DATA_SIZE 5120
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -41,6 +42,13 @@ typedef struct {
   /// store for decoded unsigned transaction info
   evm_unsigned_txn transaction_info;
 } evm_txn_context_t;
+
+typedef struct evm_sign_msg_context {
+  evm_sign_msg_initiate_request_t init;
+
+  uint8_t *msg_data;
+  size_t msg_data_size;
+} evm_sign_msg_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -70,5 +78,7 @@ void evm_get_pub_keys(evm_query_t *query);
  * @param query Reference to the decoded query struct from the host app
  */
 void evm_sign_transaction(evm_query_t *query);
+
+void evm_sign_msg(evm_query_t *query);
 
 #endif /* EVM_PRIV_H */

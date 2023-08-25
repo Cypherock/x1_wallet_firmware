@@ -144,7 +144,7 @@ extern const char *ui_text_onboarding[];
 extern const char *ui_text_onboarding_complete;
 
 // Firmware update text
-#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %ld.%ld.%ld"
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 
