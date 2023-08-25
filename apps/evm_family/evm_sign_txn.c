@@ -271,12 +271,11 @@ static bool handle_initiate_query(const evm_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
-  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet
-  // ID found but is invalid/locked wallet
   if (!check_which_request(query, EVM_SIGN_TXN_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->sign_txn) ||
       !get_wallet_name_by_id(query->sign_txn.initiate.wallet_id,
-                             (uint8_t *)wallet_name)) {
+                             (uint8_t *)wallet_name,
+                             evm_send_error)) {
     return false;
   }
 
@@ -436,9 +435,9 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
   const uint32_t *hd_path = txn_context->init_info.derivation_path;
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
 
-  if (!reconstruct_seed_flow(txn_context->init_info.wallet_id, buffer)) {
+  if (!reconstruct_seed(
+          txn_context->init_info.wallet_id, buffer, evm_send_error)) {
     memzero(buffer, sizeof(buffer));
-    // TODO: handle errors of reconstruction flow
     return status;
   }
 
