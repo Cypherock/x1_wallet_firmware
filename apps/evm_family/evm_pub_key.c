@@ -63,6 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "address.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
@@ -378,37 +379,36 @@ static bool get_address(const evm_address_format_t format,
                         const uint8_t pub_key[EVM_PUB_KEY_SIZE],
                         char *address,
                         const size_t address_size) {
+  bool status = false;
   switch (format) {
     // TODO: generate bech32 encoded address for harmony format
     case EVM_HARMONY:
     case EVM_DEFAULT: {
-      const size_t size = (ETHEREUM_ADDRESS_LENGTH * 2) + 3;
-
-      if (address_size < size) {
-        return false;
+      // check output buffer for enough space
+      if ((ETHEREUM_ADDRESS_LENGTH * 2 + 3) > address_size) {
+        break;
       }
 
-      SHA3_CTX sha3_ctx = {0};
-      uint8_t hash[SHA3_256_DIGEST_LENGTH];
+      uint8_t hash[SHA3_256_DIGEST_LENGTH] = {0};
+      address[0] = '0';
+      address[1] = 'x';
 
-      sha3_256_Init(&sha3_ctx);
-      sha3_Update(&sha3_ctx, pub_key + 1, EVM_PUB_KEY_SIZE - 1);
-      keccak_Final(&sha3_ctx, hash);
-
-      address = "0x";
-
-      byte_array_to_hex_string(hash + sizeof(hash) - ETHEREUM_ADDRESS_LENGTH,
-                               ETHEREUM_ADDRESS_LENGTH,
-                               address + 2,
-                               address_size - 2);
+      keccak_256(&pub_key[1], EVM_PUB_KEY_SIZE - 1, hash);
+      ethereum_address_checksum(&hash[sizeof(hash) - ETHEREUM_ADDRESS_LENGTH],
+                                &address[2],
+                                false,
+                                g_evm_app->chain_id);
+      status = true;
+      break;
     }
 
     // unreachable
     default: {
+      break;
     }
   }
 
-  return true;
+  return status;
 }
 
 /*****************************************************************************
