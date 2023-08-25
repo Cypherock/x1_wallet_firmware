@@ -248,7 +248,7 @@ static bool handle_initiate_query(const near_query_t *query) {
   }
 
   snprintf(
-      msg, sizeof(msg), UI_TEXT_SEND_PROMPT, near_app.lunit_name, wallet_name);
+      msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, near_app.name, wallet_name);
   // Take user consent to sign transaction for the wallet
   if (!core_confirmation(msg, near_send_error)) {
     return false;

@@ -63,6 +63,7 @@
 #include "near_txn_helpers.h"
 
 #include "coin_utils.h"
+#include "constant_texts.h"
 #include "near_context.h"
 #include "utils.h"
 
@@ -149,7 +150,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
 
       // As of now, we only support signing of create_account method
       if (0 != strncmp(utxn->action.fn_call.method_name,
-                       "create_account",
+                       ui_text_near_create_account_method,
                        utxn->action.fn_call.method_name_length)) {
         return false;
       }

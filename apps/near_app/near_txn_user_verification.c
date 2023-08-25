@@ -103,8 +103,14 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
+  char transaction[100] = "";
   char address[200] = "";
   char value[100] = "";
+
+  snprintf(transaction,
+           sizeof(transaction),
+           UI_TEXT_REVIEW_TXN_PROMPT,
+           ui_text_near_transfer_action_type);
 
   snprintf(address,
            CY_MIN(decoded_utxn->receiver_id_length + 1, sizeof(address)),
@@ -113,7 +119,8 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
 
   get_amount_string(decoded_utxn->action.transfer.amount, value, sizeof(value));
 
-  if (!core_scroll_page(ui_text_verify_address, address, near_send_error) ||
+  if (!core_scroll_page(NULL, transaction, near_send_error) ||
+      !core_scroll_page(ui_text_verify_address, address, near_send_error) ||
       !core_confirmation(value, near_send_error)) {
     return false;
   }
@@ -122,9 +129,15 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
 }
 
 bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
+  char transaction[100] = "";
   char address[200] = "";
   char account[200] = "";
   char value[100] = "";
+
+  snprintf(transaction,
+           sizeof(transaction),
+           UI_TEXT_REVIEW_TXN_PROMPT,
+           ui_text_near_create_account_method);
 
   snprintf(address,
            CY_MIN(decoded_utxn->signer_id_length, sizeof(address)),
@@ -138,7 +151,8 @@ bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
 
   get_amount_string(decoded_utxn->action.fn_call.deposit, value, sizeof(value));
 
-  if (!core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
+  if (!core_scroll_page(NULL, transaction, near_send_error) ||
+      !core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
       !core_scroll_page(
           ui_text_verify_new_account_id, account, near_send_error) ||
       !core_confirmation(value, near_send_error)) {

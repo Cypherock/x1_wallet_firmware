@@ -25,6 +25,8 @@
 #define UI_TEXT_ADD_ACCOUNT_PROMPT "Add %s to %s"
 #define UI_TEXT_RECEIVE_TOKEN_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_SEND_PROMPT "Send %s from %s"
+#define UI_TEXT_SIGN_TXN_PROMPT "Sign transaction on %s from %s"
+#define UI_TEXT_REVIEW_TXN_PROMPT "Review transaction to %s"
 #define UI_TEXT_SEND_TOKEN_PROMPT "Send %s on %s from %s"
 #define UI_TEXT_BTC_RECEIVER "Receiver #%d"
 #define UI_TEXT_BTC_FEE "Transaction fee"
@@ -256,6 +258,8 @@ extern const char *ui_text_new_account_id;
 extern const char *ui_text_new_public_key;
 extern const char *ui_text_replace_account;
 extern const char *ui_text_confirm_account;
+extern const char *ui_text_near_transfer_action_type;
+extern const char *ui_text_near_create_account_method;
 
 // headings card flow
 extern const char *ui_text_family_id_hex;

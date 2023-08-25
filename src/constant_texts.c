@@ -369,6 +369,8 @@ const char *ui_text_new_account_id = "new_account_id";
 const char *ui_text_new_public_key = "new_public_key";
 const char *ui_text_replace_account = "Replace Account";
 const char *ui_text_confirm_account = "Confirm Account";
+const char *ui_text_near_transfer_action_type = "transfer";
+const char *ui_text_near_create_account_method = "create_account";
 
 // headings X1 Card flow
 const char *ui_text_family_id_hex = "F. Id (Hex)";
