@@ -56,6 +56,8 @@ typedef struct evm_sign_msg_context {
   /// @brief  Pointer to msg data in raw format, size from init member is
   /// allocated dynamically with a max size cap of @ref MAX_MSG_DATA_SIZE
   uint8_t *msg_data;
+
+  evm_sign_typed_data_struct_t typed_data;
 } evm_sign_msg_context_t;
 
 /*****************************************************************************

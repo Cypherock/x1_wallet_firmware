@@ -60,7 +60,6 @@
 
 #include "assert_conf.h"
 #include "constant_texts.h"
-#include "eth_sign_data/eip712_utils.h"
 #include "evm_contracts.h"
 #include "int-util.h"
 #include "logger.h"
@@ -68,8 +67,6 @@
 #include "utils.h"
 
 extern const erc20_contracts_t *eth_contracts;
-
-extern ui_display_node *current_display_node;
 
 static uint8_t rlp_encode_decimal(uint64_t dec,
                                   uint8_t offset,
@@ -247,87 +244,6 @@ static uint8_t rlp_encode_decimal(const uint64_t dec,
   return meta_size;
 }
 
-static ui_display_node *eth_create_typed_data_display_nodes(
-    TypedDataStruct_TypedDataNode *root,
-    ui_display_node **display_node) {
-  queue *q = create_queue();
-  enqueue(q, root, "");
-  ui_display_node *temp = *display_node;
-  while (!is_empty(q)) {
-    int node_count = 0;
-    node_count = q->count;
-    while (node_count > 0) {
-      queue_node *node = dequeue(q);
-      TypedDataStruct_TypedDataNode *curr_node = node->tree_node;
-      char title[BUFFER_SIZE] = {0};
-      snprintf(title, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
-
-      char data[BUFFER_SIZE] = {0};
-      fill_string_with_data(curr_node, data, sizeof(data));
-
-      temp->next =
-          ui_create_display_node(title, BUFFER_SIZE, data, sizeof(data));
-      temp = temp->next;
-
-      for (int i = 0; i < curr_node->children_count; i++) {
-        char prefix[1024] = {0};
-        strcat(prefix, node->prefix);
-        strcat(prefix, node->tree_node->name);
-        strcat(prefix, ".");
-        enqueue(q, curr_node->children + i, prefix);
-      }
-      // free(node);
-      node_count--;
-    }
-  }
-
-  return temp;
-}
-
-static uint16_t get_unsigned_data_array_from_msg(const MessageData *msg_data,
-                                                 uint8_t **out) {
-  switch (msg_data->messageType) {
-    case MessageData_MessageType_ETH_SIGN:
-    case MessageData_MessageType_PERSONAL_SIGN: {
-      char size_string[256] = {0};
-      uint8_t number_of_digits_in_data_size = snprintf(
-          size_string, sizeof(size_string), "%d", msg_data->data_bytes->size);
-      uint16_t data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 +
-                           number_of_digits_in_data_size +
-                           msg_data->data_bytes->size;
-      uint16_t offset = 0;
-      *out = cy_malloc(data_size);
-      memzero(*out, data_size);
-      memcpy(*out,
-             ETH_PERSONAL_SIGN_IDENTIFIER,
-             sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
-      offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
-      memcpy(*out + offset, size_string, number_of_digits_in_data_size);
-      offset += number_of_digits_in_data_size;
-      memcpy(*out + offset,
-             msg_data->data_bytes->bytes,
-             msg_data->data_bytes->size);
-      return data_size;
-    } break;
-    case MessageData_MessageType_SIGN_TYPED_DATA: {
-      uint16_t data_size =
-          sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
-      uint16_t offset = 0;
-      *out = cy_malloc(data_size);
-      memzero(*out, data_size);
-      memcpy(*out,
-             ETH_SIGN_TYPED_DATA_IDENTIFIER,
-             sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
-      offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-      hash_struct(&msg_data->eip712data.domain, *out + offset);
-      offset += HASH_SIZE;
-      hash_struct(&msg_data->eip712data.message, *out + offset);
-      return data_size;
-    } break;
-  }
-  return 0;
-}
-
 uint64_t bendian_byte_to_dec(const uint8_t *bytes, uint8_t len) {
   uint64_t result = 0;
   uint8_t i = 0;
@@ -366,53 +282,9 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig) {
-  uint8_t *data = NULL;
-  uint16_t data_size = get_unsigned_data_array_from_msg(msg_data, &data);
-  sig_unsigned_byte_array(
-      data, data_size, transaction_metadata, mnemonics, passphrase, sig);
 }
 
 void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data) {
-  switch (msg_data->messageType) {
-    case MessageData_MessageType_ETH_SIGN: {
-      const size_t array_size = msg_data->data_bytes->size * 2 + 3;
-      char *buffer = malloc(array_size);
-      memzero(buffer, array_size);
-      snprintf(buffer, array_size, "0x");
-      size_t value_size = byte_array_to_hex_string(msg_data->data_bytes->bytes,
-                                                   msg_data->data_bytes->size,
-                                                   buffer + 2,
-                                                   array_size - 2) +
-                          2;
-      *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE,
-                                     sizeof(UI_TEXT_VERIFY_MESSAGE),
-                                     buffer,
-                                     value_size);
-      free(buffer);
-    } break;
-    case MessageData_MessageType_PERSONAL_SIGN: {
-      *node = ui_create_display_node(UI_TEXT_VERIFY_MESSAGE,
-                                     sizeof(UI_TEXT_VERIFY_MESSAGE),
-                                     (const char *)msg_data->data_bytes->bytes,
-                                     msg_data->data_bytes->size);
-    } break;
-    case MessageData_MessageType_SIGN_TYPED_DATA: {
-      *node = ui_create_display_node(UI_TEXT_VERIFY_DOMAIN,
-                                     sizeof(UI_TEXT_VERIFY_DOMAIN),
-                                     UI_TEXT_EIP712_DOMAIN_TYPE,
-                                     sizeof(UI_TEXT_EIP712_DOMAIN_TYPE));
-      ui_display_node *temp = *node;
-      temp = eth_create_typed_data_display_nodes(&msg_data->eip712data.domain,
-                                                 &temp);
-      temp->next =
-          ui_create_display_node(UI_TEXT_VERIFY_MESSAGE,
-                                 sizeof(UI_TEXT_VERIFY_MESSAGE),
-                                 msg_data->eip712data.message.struct_name,
-                                 256);
-      temp = eth_create_typed_data_display_nodes(&msg_data->eip712data.message,
-                                                 &(temp->next));
-    } break;
-  }
 }
 
 int eth_byte_array_to_msg(const uint8_t *eth_msg,
@@ -519,10 +391,11 @@ static uint8_t ETH_DetectFunction(const uint32_t functionTag,
                                           EvmFunctionSignature,
                                           strnlen(EvmFunctionSignature, 100));
 
-    if (current_display_node == NULL) {
-      current_display_node = pAbiDispNode;
+    // if (current_display_node == NULL) {
+    if (true) {
+      // current_display_node = pAbiDispNode;
     } else {
-      ui_display_node *temp = current_display_node;
+      ui_display_node *temp;    // = current_display_node;
       while (temp->next != NULL) {
         temp = temp->next;
       }
@@ -643,10 +516,11 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
     pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
     returnCode = ETH_UTXN_ABI_DECODE_OK;
 
-    if (current_display_node == NULL) {
-      current_display_node = pAbiDispNode;
+    // if (current_display_node == NULL) {
+    if (true) {
+      // current_display_node = pAbiDispNode;
     } else {
-      ui_display_node *temp = current_display_node;
+      ui_display_node *temp;    // = current_display_node;
       while (temp->next != NULL) {
         temp = temp->next;
       }

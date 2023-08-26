@@ -149,14 +149,6 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
 void eth_init_msg_data(MessageData *msg_data);
 
 /**
- * @brief Initialize Display Nodes from message data
- *
- * @param node
- * @param msg_data
- */
-void eth_init_display_nodes(ui_display_node **node, MessageData *msg_data);
-
-/**
  * @brief This function extracts Abi encoded arguments for EVM functions into UI
  * compatible nodes ui_display_node(s)
  *
