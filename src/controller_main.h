@@ -171,7 +171,7 @@ typedef struct Flow_level {
    * valid states would be accessible will be wallet operations, advanced
    * setting options, new wallet creation choices.
    *
-   * @see Screen_input, level_two_tasks(), level_two_controller(),
+   * @see Screen_input,  level_two_controller(),
    * level_two_controller_b(), LEVEL_TWO
    */
   uint8_t level_two;

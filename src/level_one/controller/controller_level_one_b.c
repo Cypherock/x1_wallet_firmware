@@ -59,7 +59,6 @@
  */
 #include "application_startup.h"
 #include "controller_level_one.h"
-#include "controller_level_two.h"
 #include "ui_instruction.h"
 
 extern uint8_t device_auth_flag;
@@ -68,11 +67,6 @@ void level_one_controller_b() {
   if (device_auth_flag) {
     instruction_scr_destructor();
     reset_flow_level();
-    return;
-  }
-
-  if (counter.level > LEVEL_ONE) {
-    level_two_controller_b();
     return;
   }
 

@@ -65,7 +65,6 @@
 #include "apdu.h"
 #include "application_startup.h"
 #include "communication.h"
-#include "controller_level_two.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"
 #include "ui_instruction.h"
@@ -94,11 +93,6 @@ void level_one_controller() {
 
   if (!main_app_ready) {
     device_auth_flag = 0;
-    return;
-  }
-
-  if (counter.level > LEVEL_ONE) {
-    level_two_controller();
     return;
   }
 

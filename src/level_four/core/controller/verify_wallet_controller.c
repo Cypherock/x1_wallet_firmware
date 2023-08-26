@@ -105,7 +105,6 @@ void verify_wallet_controller() {
     case VERIFY_WALLET_DELETE:
       mark_error_screen(ui_text_wallet_verification_failed);
       flow_level.level_three = 1;
-      flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
       break;
 
     default:

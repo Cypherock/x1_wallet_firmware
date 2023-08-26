@@ -66,9 +66,7 @@
 void level_three_old_wallet_tasks() {
   // Check if desktop sent an abort command (view seed and delete wallet are not
   // initiated by desktop, therefore excluded here)
-  if (flow_level.level_two != LEVEL_THREE_VIEW_SEED &&
-      flow_level.level_two != LEVEL_THREE_DELETE_WALLET &&
-      flow_level.level_two != LEVEL_THREE_WALLET_LOCKED &&
+  if (flow_level.level_two != LEVEL_THREE_WALLET_LOCKED &&
       flow_level.level_two != LEVEL_THREE_VERIFY_WALLET &&
       CY_Read_Reset_Flow()) {
     mark_error_screen(ui_text_aborted);
@@ -77,17 +75,6 @@ void level_three_old_wallet_tasks() {
   }
 
   switch (flow_level.level_two) {
-    case LEVEL_THREE_VIEW_SEED: {
-    } break;
-
-    case LEVEL_THREE_DELETE_WALLET: {
-      delete_wallet_task();
-    } break;
-
-    case LEVEL_THREE_ADD_COIN: {
-      add_coin_tasks();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
       send_transaction_tasks_eth();
     } break;

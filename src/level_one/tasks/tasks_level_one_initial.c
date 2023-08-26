@@ -59,7 +59,6 @@
  */
 #include "flash_struct.h"
 #include "tasks_level_one.h"
-#include "tasks_level_two.h"
 #include "tasks_tap_cards.h"
 #include "ui_confirmation.h"
 #include "ui_delay.h"
@@ -91,11 +90,6 @@ void level_one_tasks_initial() {
     // else
     //   confirm_scr_init(flow_level.confirmation_screen_text);
     // return;
-  }
-
-  if (counter.level > LEVEL_ONE) {
-    level_two_tasks();
-    return;
   }
 
   lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);

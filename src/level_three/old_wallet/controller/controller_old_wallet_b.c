@@ -64,19 +64,6 @@
 
 void level_three_old_wallet_controller_b() {
   switch (flow_level.level_two) {
-    case LEVEL_THREE_VIEW_SEED: {
-      reset_flow_level();
-      counter.next_event_flag = true;
-    } break;
-    case LEVEL_THREE_DELETE_WALLET: {
-      reset_flow_level();
-      counter.next_event_flag = true;
-    } break;
-
-    case LEVEL_THREE_ADD_COIN: {
-      add_coin_controller_b();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
       send_transaction_controller_b_eth();
     } break;

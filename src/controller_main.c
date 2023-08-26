@@ -429,8 +429,6 @@ static bool wallet_selector(uint8_t *data_array) {
 }
 #endif
 
-extern Add_Coin_Data add_coin_data;
-
 void desktop_listener_task(lv_task_t *data) {
   En_command_type_t command;
   uint8_t *data_array = NULL;
@@ -451,31 +449,6 @@ void desktop_listener_task(lv_task_t *data) {
         clear_message_received_data();
       } break;
 #endif
-      case ADD_COIN_START: {
-        if (wallet_selector(data_array)) {
-          CY_Reset_Not_Allow(false);
-
-          if (byte_array_to_add_coin_data(&add_coin_data,
-                                          data_array + WALLET_ID_SIZE,
-                                          msg_size - WALLET_ID_SIZE) == -1 ||
-              !verify_xpub_derivation_path(add_coin_data.derivation_path,
-                                           add_coin_data.derivation_depth)) {
-            comm_reject_invalid_cmd();
-            clear_message_received_data();
-            return;
-          }
-          flow_level.show_desktop_start_screen = true;
-          flow_level.level_two = LEVEL_THREE_ADD_COIN;
-          snprintf(flow_level.confirmation_screen_text,
-                   sizeof(flow_level.confirmation_screen_text),
-                   "Add %s to %s",
-                   get_coin_name(add_coin_data.derivation_path[1],
-                                 add_coin_data.network_chain_id),
-                   wallet.wallet_name);
-        }
-        clear_message_received_data();
-      } break;
-
       case SEND_TXN_START: {
         if (wallet_selector(data_array)) {
           CY_Reset_Not_Allow(false);
