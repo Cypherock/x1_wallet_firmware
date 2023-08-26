@@ -29,20 +29,4 @@
  * @since v1.0.0
  */
 void level_one_tasks();
-
-/**
- * @brief Handles initialisation of display & pre-processing for level one tasks
- * in the initial application.
- * @details The level one tasks handler is responsible for handling error
- * messages (ref Flow_level.show_error_screen, Flow_level.error_screen_text,
- * Flow_level.show_desktop_start_screen, Flow_level.confirmation_screen_text).
- * Depending on the value of Counter.level, the function either processes for
- * level one or chains to the higher level task handlers. At level one, this
- * task handler will enable desktop request handler and render appropriate
- * display based on the current level one state of the application.
- *
- * @see flow_level, counter, instruction_scr_init()
- * @since v1.0.0
- */
-void level_one_tasks_initial();
 #endif

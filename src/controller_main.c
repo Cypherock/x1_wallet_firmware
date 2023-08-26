@@ -207,13 +207,7 @@ Flash_Wallet *get_flash_wallet() {
 
 void mark_event_over() {
   counter.next_event_flag = true;
-#if X1WALLET_MAIN
   level_one_controller();
-#elif X1WALLET_INITIAL
-  level_one_controller_initial();
-#else
-#error Specify what to build (X1WALLET_INITIAL or X1WALLET_MAIN)
-#endif
 }
 
 void mark_list_choice(uint16_t list_choice) {
