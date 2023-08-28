@@ -150,8 +150,8 @@ static bool get_msg_data(evm_query_t *query);
 static bool get_user_verification();
 
 /**
- * This function generates a signature for a message using a given derivation
- * path and private key.
+ * @brief This function generates a signature for a message using a given
+ * derivation path and private key.
  *
  * @param sig The parameter `sig` is a pointer to a structure of type
  * `evm_sign_msg_signature_response_t`.
@@ -162,7 +162,7 @@ static bool get_user_verification();
 static bool get_msg_data_signature(evm_sign_msg_signature_response_t *sig);
 
 /**
- * This function sends a signature response for a sign message query.
+ * @brief This function sends a signature response for a sign message query.
  *
  * @param query A pointer to an evm_query_t struct, which contains information
  * about the query being processed.

@@ -90,8 +90,8 @@ void evm_sign_transaction(evm_query_t *query);
 void evm_sign_transaction(evm_query_t *query);
 
 /**
- * This function signs a message of type ETH Sign/Personal Sign/Typed data(TODO)
- * and sends the signature as a response.
+ * @brief This function signs a message of type ETH Sign/Personal Sign/Typed
+ * data(TODO) and sends the signature as a response.
  *
  * @param query Reference to the decoded query struct from the host app
  */

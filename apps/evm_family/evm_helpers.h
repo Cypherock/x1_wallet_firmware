@@ -62,8 +62,8 @@
 bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);
 
 /**
- * This function calculates the hash of the message data based on the message
- * type.
+ * @brief This function calculates the hash of the message data based on the
+ * message type.
  *
  * @param ctx A pointer to a structure of type @ref evm_sign_msg_context_t,
  * which contains information about the signing context.
