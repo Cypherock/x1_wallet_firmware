@@ -85,12 +85,12 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "Rotate Display",
     "Toggle Log export",
     "Toggle Passphrase Step",
+    "Clear Device Data",
     "Factory Reset",
     "Device Info",
     "View Card Version",
     "Regulatory Info",
     "Pair Cards",
-    "Clear Wallet Data",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif

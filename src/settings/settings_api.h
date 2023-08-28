@@ -106,6 +106,6 @@ void sync_with_cards(void);
  * prompted to tap two X1 cards and wallet list will be verified before
  * performing the factory reset. Onboarding data will NOT be cleared.
  */
-void clear_user_data(void);
+void clear_device_data(void);
 
 #endif /* SETTINGS_API_H */

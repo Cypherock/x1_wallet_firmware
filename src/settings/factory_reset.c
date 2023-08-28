@@ -150,7 +150,7 @@ static bool filter_common_wallet(bool match_found);
  * @return false If wallet share is NOT present in atleast 2 X1 cards, or any
  * error occured in the card flow
  */
-bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault);
+static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -253,7 +253,7 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
   return true;
 }
 
-bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
+static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
   wallet_list_t wallets_in_cards = {0};
   if (!get_wallet_list_from_two_cards(&wallets_in_cards)) {
     return false;
@@ -333,7 +333,7 @@ void factory_reset(void) {
   BSP_reset();
 }
 
-void clear_user_data(void) {
+void clear_device_data(void) {
   // Ensure that atleast 2 cards are paired
   if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
     mark_core_error_screen(ui_text_error_pair_atleast_2_cards);
@@ -370,6 +370,6 @@ void clear_user_data(void) {
   erase_flash_coin_specific_data();
   logger_reset_flash();
 
-  // Reset device to apply factory reset
+  // Reset device to apply new settings
   BSP_reset();
 }
