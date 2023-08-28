@@ -79,6 +79,22 @@ void evm_get_pub_keys(evm_query_t *query);
  */
 void evm_sign_transaction(evm_query_t *query);
 
+/**
+ * @brief Handler for signing a transaction on EVM.
+ * @details The expected request type is EVM_SIGN_TXN_REQUEST_INITIATE_TAG. The
+ * function controls the complete data exchange with host, user prompts and
+ * confirmations for signing an EVM based transaction.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void evm_sign_transaction(evm_query_t *query);
+
+/**
+ * This function signs a message of type ETH Sign/Personal Sign/Typed data(TODO)
+ * and sends the signature as a response.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
 void evm_sign_msg(evm_query_t *query);
 
 #endif /* EVM_PRIV_H */

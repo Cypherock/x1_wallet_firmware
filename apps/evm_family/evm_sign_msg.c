@@ -105,16 +105,76 @@ static bool check_which_request(const evm_query_t *query,
                                 pb_size_t which_request);
 
 /**
- * @brief Validates the message type and derivation path received in the request
- * from host
+ * @brief The function checks if the given `init_req` is a valid request for
+ * message signing and returns true if it is, otherwise it returns false and
+ * sends an error message to host.
  *
- * @param request Reference to an instance of evm_sign_msg_initiate_request_t
- * @return bool Indicating if the verification passed or failed
- * @retval true If all the derivation path entries are valid
- * @retval false If any of the derivation path entries are invalid
+ * @param init_req A pointer to a structure of type
+ * `evm_sign_msg_initiate_request_t`.
+ *
+ * @return a boolean value indicating init_req is valid or not.
+ */
+static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req);
+
+/**
+ * @brief The function handles the initiation of a query to sign a message for a
+ * specific wallet.
+ * @details It performs the following tasks in response to a valid initiate
+ * request.
+ * - Get user confirmation on the wallet and coin for which flow is requested.
+ * - Copy the init request data to sign_msg_ctx.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ *
+ * @return a boolean value.
  */
 static bool handle_initiate_query(evm_query_t *query);
 
+/**
+ * @brief This function is responsible for retrieving and assembling message
+ * data chunks for signing.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ *
+ * @return a boolean value indicating if the message data has been reconstructed
+ * from chunks correctly or not.
+ */
+static bool get_msg_data(evm_query_t *query);
+
+/**
+ * @brief This function checks the message type and displays the message data
+ * for verification.
+ *
+ * @return a boolean indicating user verification or the rejection.
+ */
+static bool get_user_verification();
+
+/**
+ * This function generates a signature for a message using a given derivation
+ * path and private key.
+ *
+ * @param sig The parameter `sig` is a pointer to a structure of type
+ * `evm_sign_msg_signature_response_t`.
+ *
+ * @return a boolean value indicating if signautre for msg data is generated
+ * correctly or not.
+ */
+static bool get_msg_data_signature(evm_sign_msg_signature_response_t *sig);
+
+/**
+ * This function sends a signature response for a sign message query.
+ *
+ * @param query A pointer to an evm_query_t struct, which contains information
+ * about the query being processed.
+ * @param sig The parameter `sig` is of type
+ * `evm_sign_msg_signature_response_t`, which is a structure containing the
+ * signature response for a sign message request.
+ *
+ * @return a boolean value indicating if the signature is sent to the host
+ * correctly or not.
+ */
+static bool send_signature(evm_query_t *query,
+                           evm_sign_msg_signature_response_t *sig);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -377,8 +437,8 @@ void evm_sign_msg(evm_query_t *query) {
     memzero(sign_msg_ctx.msg_data, sign_msg_ctx.msg_data_size);
     free(sign_msg_ctx.msg_data);
     sign_msg_ctx.msg_data = NULL;
-    sign_msg_ctx.msg_data_size = 0;
   }
+  sign_msg_ctx.msg_data_size = 0;
 
   return;
 }

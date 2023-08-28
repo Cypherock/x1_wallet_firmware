@@ -113,6 +113,20 @@ static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth);
  */
 static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth);
 
+/**
+ * @brief This function calculates the digest of ETH sign or Personal sign data
+ * using the Keccak-256 algorithm.
+ *
+ * @param[in] msg_data A pointer to the data that needs to be hashed.
+ * @param[in] msg_data_size The size of the message data in bytes.
+ * @param[out] digest_out A pointer to a buffer where the computed digest will
+ * be stored.
+ *
+ * @return bool value indicating hash calculation status.
+ */
+static bool evm_get_personal_data_digest(uint8_t *msg_data,
+                                         uint16_t msg_data_size,
+                                         uint8_t *digest_out);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
