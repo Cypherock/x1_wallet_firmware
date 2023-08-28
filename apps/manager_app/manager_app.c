@@ -178,9 +178,12 @@ void manager_app_restricted_main(usb_event_t usb_evt) {
       manager_confirm_firmware_update(&query);
       break;
     }
+    case MANAGER_QUERY_GET_LOGS_TAG: {
+      manager_get_logs(&query);
+      break;
+    }
     case MANAGER_QUERY_GET_WALLETS_TAG:
     case MANAGER_QUERY_AUTH_CARD_TAG:
-    case MANAGER_QUERY_GET_LOGS_TAG:
     case MANAGER_QUERY_TRAIN_JOYSTICK_TAG:
     case MANAGER_QUERY_TRAIN_CARD_TAG:
     default: {
