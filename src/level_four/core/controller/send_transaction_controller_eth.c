@@ -72,7 +72,7 @@ extern Wallet_credential_data wallet_credential_data;
 
 extern lv_task_t *timeout_task;
 
-eth_unsigned_txn eth_unsigned_txn_ptr = {
+evm_unsigned_txn eth_unsigned_txn_ptr = {
     .nonce_size = {0},
     .nonce = {0},
     .gas_price_size = {0},

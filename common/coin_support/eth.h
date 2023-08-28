@@ -211,5 +211,5 @@ const char *eth_get_asset_symbol(const txn_metadata *metadata_ptr);
  * @param eth_unsigned_txn_ptr Pointer to the unsigned transaction for ethereum
  * @return const char*
  */
-const char *eth_get_address_title(const eth_unsigned_txn *eth_unsigned_txn_ptr);
+const char *eth_get_address_title(const evm_unsigned_txn *eth_unsigned_txn_ptr);
 #endif

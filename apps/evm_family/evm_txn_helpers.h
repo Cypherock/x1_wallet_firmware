@@ -81,7 +81,7 @@ typedef struct {
   uint8_t dummy_s[1];
 
   PAYLOAD_STATUS payload_status;
-} eth_unsigned_txn;
+} evm_unsigned_txn;
 #pragma pack(pop)
 
 /*****************************************************************************
@@ -94,12 +94,12 @@ typedef struct {
 
 /**
  * @brief Convert byte array representation of unsigned transaction to
- * eth_unsigned_txn.
+ * evm_unsigned_txn.
  * @details
  *
  * @param [in] eth_unsigned_txn_byte_array  Byte array of unsigned transaction.
  * @param [in] byte_array_len               Length of byte array.
- * @param [out] unsigned_txn_ptr            Pointer to the eth_unsigned_txn
+ * @param [out] unsigned_txn_ptr            Pointer to the evm_unsigned_txn
  * instance to store the transaction details.
  *
  * @return Status of conversion
@@ -108,24 +108,24 @@ typedef struct {
  */
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
                                    size_t byte_array_len,
-                                   eth_unsigned_txn *unsigned_txn_ptr,
+                                   evm_unsigned_txn *unsigned_txn_ptr,
                                    txn_metadata *metadata_ptr);
 
 /**
  * @brief Verifies the unsigned transaction.
  * @details
  *
- * @param [in] eth_utxn_ptr     Pointer to the eth_unsigned_txn instance.
+ * @param [in] eth_utxn_ptr     Pointer to the evm_unsigned_txn instance.
  *
  * @return true, false
  * @retval true   If all the checks pass for the given instance
  * @retval false  If any of the checks pass for the given instance
  */
-bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
+bool eth_validate_unsigned_txn(const evm_unsigned_txn *eth_utxn_ptr,
                                txn_metadata *metadata_ptr);
 
 /**
- * @brief Get the receivers address from eth_unsigned_txn instance.
+ * @brief Get the receivers address from evm_unsigned_txn instance.
  * @details
  *
  * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction
@@ -136,11 +136,11 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
  * @return
  * @retval
  */
-void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+void eth_get_to_address(const evm_unsigned_txn *eth_unsigned_txn_ptr,
                         const uint8_t **address);
 
 /**
- * @brief Get amount to be sent set in the eth_unsigned_txn instance
+ * @brief Get amount to be sent set in the evm_unsigned_txn instance
  * @details
  *
  * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction
@@ -150,7 +150,7 @@ void eth_get_to_address(const eth_unsigned_txn *eth_unsigned_txn_ptr,
  * @return
  * @retval
  */
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+uint32_t eth_get_value(const evm_unsigned_txn *eth_unsigned_txn_ptr,
                        char *value);
 
 /**
@@ -162,7 +162,7 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
  * @param fee_decimal_string    Output decimal string of at least 30 character
  * long
  */
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr,
+void eth_get_fee_string(evm_unsigned_txn *eth_unsigned_txn_ptr,
                         char *fee_decimal_string,
                         uint8_t size,
                         uint8_t decimal);

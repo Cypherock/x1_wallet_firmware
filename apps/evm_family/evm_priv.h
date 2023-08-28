@@ -39,7 +39,7 @@ typedef struct {
   /// remembers the allocated buffer for holding complete unsigned transaction
   uint8_t *transaction;
   /// store for decoded unsigned transaction info
-  eth_unsigned_txn transaction_info;
+  evm_unsigned_txn transaction_info;
 } evm_txn_context_t;
 
 /*****************************************************************************

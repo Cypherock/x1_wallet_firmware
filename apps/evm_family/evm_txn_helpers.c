@@ -100,7 +100,7 @@ static uint64_t get_decode_length(const uint8_t *seq,
                                   seq_type *type);
 
 static PAYLOAD_STATUS eth_decode_txn_payload(
-    const eth_unsigned_txn *eth_utxn_ptr,
+    const evm_unsigned_txn *eth_utxn_ptr,
     txn_metadata *metadata_ptr);
 
 /*****************************************************************************
@@ -166,7 +166,7 @@ static uint64_t get_decode_length(const uint8_t *seq,
 }
 
 static PAYLOAD_STATUS eth_decode_txn_payload(
-    const eth_unsigned_txn *eth_utxn_ptr,
+    const evm_unsigned_txn *eth_utxn_ptr,
     txn_metadata *metadata_ptr) {
   PAYLOAD_STATUS result = PAYLOAD_ABSENT;
   eth_is_token_whitelisted = false;
@@ -207,12 +207,12 @@ static PAYLOAD_STATUS eth_decode_txn_payload(
 
 int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
                                    size_t byte_array_len,
-                                   eth_unsigned_txn *unsigned_txn_ptr,
+                                   evm_unsigned_txn *unsigned_txn_ptr,
                                    txn_metadata *metadata_ptr) {
   if (eth_unsigned_txn_byte_array == NULL || unsigned_txn_ptr == NULL ||
       metadata_ptr == NULL)
     return -1;
-  memzero(unsigned_txn_ptr, sizeof(eth_unsigned_txn));
+  memzero(unsigned_txn_ptr, sizeof(evm_unsigned_txn));
 
   seq_type type = NONE;
   int64_t offset = 0;
@@ -337,7 +337,7 @@ int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
   return (offset > 0 ? 0 : -1);
 }
 
-bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
+bool eth_validate_unsigned_txn(const evm_unsigned_txn *eth_utxn_ptr,
                                txn_metadata *metadata_ptr) {
   return !(
       (eth_utxn_ptr->chain_id_size[0] == 0 ||
@@ -363,7 +363,7 @@ bool eth_validate_unsigned_txn(const eth_unsigned_txn *eth_utxn_ptr,
        PAYLOAD_CONTRACT_INVALID));    // Check if the payload status is invalid
 }
 
-void eth_get_to_address(const eth_unsigned_txn *utxn_ptr,
+void eth_get_to_address(const evm_unsigned_txn *utxn_ptr,
                         const uint8_t **address) {
   if (eth_is_token_whitelisted)
     *address = &utxn_ptr->payload[16];
@@ -371,7 +371,7 @@ void eth_get_to_address(const eth_unsigned_txn *utxn_ptr,
     *address = &utxn_ptr->to_address[0];
 }
 
-uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
+uint32_t eth_get_value(const evm_unsigned_txn *eth_unsigned_txn_ptr,
                        char *value) {
   if (eth_is_token_whitelisted) {
     byte_array_to_hex_string(eth_unsigned_txn_ptr->payload +
@@ -390,7 +390,7 @@ uint32_t eth_get_value(const eth_unsigned_txn *eth_unsigned_txn_ptr,
   }
 }
 
-void eth_get_fee_string(eth_unsigned_txn *eth_unsigned_txn_ptr,
+void eth_get_fee_string(evm_unsigned_txn *eth_unsigned_txn_ptr,
                         char *fee_decimal_string,
                         uint8_t size,
                         uint8_t decimal) {

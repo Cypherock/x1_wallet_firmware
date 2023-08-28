@@ -680,7 +680,7 @@ uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr) {
 }
 
 const char *eth_get_address_title(
-    const eth_unsigned_txn *eth_unsigned_txn_ptr) {
+    const evm_unsigned_txn *eth_unsigned_txn_ptr) {
   return ((eth_unsigned_txn_ptr->payload_status != PAYLOAD_ABSENT &&
            !eth_is_token_whitelisted)
               ? ui_text_verify_contract
