@@ -44,10 +44,12 @@ typedef struct {
 } evm_txn_context_t;
 
 typedef struct evm_sign_msg_context {
+  /// @brief  Contains initialization data for evm sign msg received from host
   evm_sign_msg_initiate_request_t init;
 
+  /// @brief  Pointer to msg data in raw format, size from init member is
+  /// allocated dynamically with a max size cap of @ref MAX_MSG_DATA_SIZE
   uint8_t *msg_data;
-  size_t msg_data_size;
 } evm_sign_msg_context_t;
 
 /*****************************************************************************

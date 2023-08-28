@@ -207,10 +207,16 @@ static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
       // case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
 
       // TODO before PR: Verify derivation path count
-      if (evm_derivation_path_guard(init_req->derivation_path,
-                                    init_req->derivation_path_count)) {
-        return true;
+      if (!evm_derivation_path_guard(init_req->derivation_path,
+                                     init_req->derivation_path_count)) {
+        break;
       }
+      if (MAX_MSG_DATA_SIZE < init_req->total_msg_size) {
+        evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+        break;
+      }
+      return true;
       break;
 
     default:
@@ -261,13 +267,13 @@ static bool handle_initiate_query(evm_query_t *query) {
 static bool get_msg_data(evm_query_t *query) {
   bool result = false;
   evm_result_t response = init_evm_result(EVM_RESULT_SIGN_MSG_TAG);
-  uint32_t total_msg_data_size = 0;
   common_chunk_payload_t *chunk_payload = NULL;
+  uint32_t offset = 0;
 
   sign_msg_ctx.msg_data = NULL;
-  sign_msg_ctx.msg_data_size = 0;
 
   do {
+    // Get next data chunk from host
     if (!evm_get_query(query, EVM_QUERY_SIGN_MSG_TAG) ||
         !check_which_request(query, EVM_SIGN_MSG_REQUEST_MSG_DATA_TAG) ||
         false == query->sign_msg.msg_data.has_chunk_payload) {
@@ -277,48 +283,45 @@ static bool get_msg_data(evm_query_t *query) {
     chunk_payload = &(query->sign_msg.msg_data.chunk_payload);
 
     if (1 == chunk_payload->chunk_index) {
-      total_msg_data_size =
-          chunk_payload->chunk.size + chunk_payload->remaining_size;
-      if (MAX_MSG_DATA_SIZE < total_msg_data_size || total_msg_data_size == 0) {
-        evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
-        break;
-      }
-
+      // After first chunk is received, allocate sufficient memory to msg_data
+      // member of @ref sign_msg_ctx
       if (NULL == sign_msg_ctx.msg_data) {
-        sign_msg_ctx.msg_data = malloc(total_msg_data_size);
+        sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size);
+        ASSERT(NULL != sign_msg_ctx.msg_data);
       } else {
+        evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
         break;
       }
     }
 
-    if (total_msg_data_size <
+    // If chunk data is more than expected send error and break
+    if (sign_msg_ctx.init.total_msg_size <
         chunk_payload->chunk.size + chunk_payload->remaining_size) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
       break;
     }
 
-    memcpy(sign_msg_ctx.msg_data + sign_msg_ctx.msg_data_size,
+    memcpy(sign_msg_ctx.msg_data + offset,
            chunk_payload->chunk.bytes,
            chunk_payload->chunk.size);
-    sign_msg_ctx.msg_data_size += chunk_payload->chunk.size;
+    offset += chunk_payload->chunk.size;
 
-    if (total_msg_data_size ==
-        chunk_payload->chunk.size + chunk_payload->remaining_size) {
+    if (sign_msg_ctx.init.total_msg_size == offset) {
       result = true;
     }
 
+    // Send chunk ack to host
     response.sign_msg.which_response = EVM_SIGN_MSG_RESPONSE_DATA_ACCEPTED_TAG;
     response.sign_msg.data_accepted.has_chunk_ack = true;
     response.sign_msg.data_accepted.chunk_ack.chunk_index =
         chunk_payload->chunk_index;
     evm_send_result(&response);
-  } while (total_msg_data_size > sign_msg_ctx.msg_data_size &&
-           chunk_payload->chunk_index < chunk_payload->total_chunks);
+  } while (sign_msg_ctx.init.total_msg_size >= offset);
 
   if (!result) {
     free(sign_msg_ctx.msg_data);
     sign_msg_ctx.msg_data = NULL;
-    sign_msg_ctx.msg_data_size = 0;
   }
 
   return result;
@@ -328,12 +331,12 @@ static bool get_user_verification() {
   bool result = false;
   switch (sign_msg_ctx.init.message_type) {
     case EVM_SIGN_MSG_TYPE_ETH_SIGN: {
-      const size_t array_size = sign_msg_ctx.msg_data_size * 2 + 3;
+      const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
       char *buffer = malloc(array_size);
       memzero(buffer, array_size);
       snprintf(buffer, array_size, "0x");
       byte_array_to_hex_string(sign_msg_ctx.msg_data,
-                               sign_msg_ctx.msg_data_size,
+                               sign_msg_ctx.init.total_msg_size,
                                buffer + 2,
                                array_size - 2);
 
@@ -434,11 +437,11 @@ void evm_sign_msg(evm_query_t *query) {
   }
 
   if (NULL != sign_msg_ctx.msg_data) {
-    memzero(sign_msg_ctx.msg_data, sign_msg_ctx.msg_data_size);
+    memzero(sign_msg_ctx.msg_data, sign_msg_ctx.init.total_msg_size);
     free(sign_msg_ctx.msg_data);
     sign_msg_ctx.msg_data = NULL;
   }
-  sign_msg_ctx.msg_data_size = 0;
+  sign_msg_ctx.init.total_msg_size = 0;
 
   return;
 }

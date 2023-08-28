@@ -63,8 +63,8 @@
 #include "evm_helpers.h"
 
 #include "coin_utils.h"
-#include "evm_txn_helpers.h"
 #include "evm_priv.h"
+#include "evm_txn_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -220,7 +220,7 @@ bool evm_get_msg_data_hash(const evm_sign_msg_context_t *ctx, uint8_t *digest) {
     case EVM_SIGN_MSG_TYPE_ETH_SIGN:
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
       result = evm_get_personal_data_digest(
-          ctx->msg_data, ctx->msg_data_size, digest);
+          ctx->msg_data, (uint16_t)ctx->init.total_msg_size, digest);
     } break;
 
     case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
