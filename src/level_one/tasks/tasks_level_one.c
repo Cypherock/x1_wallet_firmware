@@ -61,7 +61,6 @@
 #include "apdu.h"
 #include "application_startup.h"
 #include "flash_api.h"
-#include "tasks_level_two.h"
 #include "ui_confirmation.h"
 #include "ui_menu.h"
 #include "ui_message.h"
@@ -92,11 +91,6 @@ void level_one_tasks() {
 
   if (device_auth_flag) {
     mark_event_over();
-    return;
-  }
-
-  if (counter.level > LEVEL_ONE) {
-    level_two_tasks();
     return;
   }
 

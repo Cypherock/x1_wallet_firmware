@@ -48,7 +48,6 @@ typedef enum commandType {
   USER_ENTERED_PIN = 47,     ///< Prompt sent to desktop for pin entered by user
   USER_TAPPED_CARDS = 48,    ///< Prompt sent to desktop for card tapping
 
-  ADD_COIN_START = 45,               ///< Request by desktop to fetch coin xpubs
   ADD_COIN_VERIFIED_BY_USER = 46,    ///< Prompt for add coin verified by user
   ADD_COIN_SENDING_XPUBS = 49,       ///< Response for add coin with xpubs
 

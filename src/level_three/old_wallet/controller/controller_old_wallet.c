@@ -66,17 +66,6 @@
 void level_three_old_wallet_controller() {
 #if X1WALLET_MAIN == 1
   switch (flow_level.level_two) {
-    case LEVEL_THREE_VIEW_SEED: {
-    } break;
-
-    case LEVEL_THREE_DELETE_WALLET: {
-      delete_wallet_controller();
-    } break;
-
-    case LEVEL_THREE_ADD_COIN: {
-      add_coin_controller();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_ETH: {
       send_transaction_controller_eth();
     } break;
