@@ -99,8 +99,16 @@ static uint64_t get_decode_length(const uint8_t *seq,
                                   uint64_t *decoded_len,
                                   seq_type *type);
 
+/**
+ * @brief The function identifies the payload type in the provided transaction
+ *
+ * @param eth_utxn_ptr Reference to const instance of evm_unsigned_txn
+ * @param metadata_ptr Reference to txn_metadata
+ * @return PAYLOAD_STATUS indicating the identified category of payload in the
+ * transaction
+ */
 static PAYLOAD_STATUS eth_decode_txn_payload(
-    const evm_unsigned_txn *eth_utxn_ptr,
+    const evm_unsigned_txn *evm_utxn_ptr,
     txn_metadata *metadata_ptr);
 
 /*****************************************************************************
@@ -166,13 +174,13 @@ static uint64_t get_decode_length(const uint8_t *seq,
 }
 
 static PAYLOAD_STATUS eth_decode_txn_payload(
-    const evm_unsigned_txn *eth_utxn_ptr,
+    const evm_unsigned_txn *evm_utxn_ptr,
     txn_metadata *metadata_ptr) {
   PAYLOAD_STATUS result = PAYLOAD_ABSENT;
   eth_is_token_whitelisted = false;
-  if (eth_utxn_ptr->payload_size > 0) {
-    if ((eth_utxn_ptr->payload_size >= 4) &&
-        (U32_READ_BE_ARRAY(eth_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
+  if (evm_utxn_ptr->payload_size > 0) {
+    if ((evm_utxn_ptr->payload_size >= 4) &&
+        (U32_READ_BE_ARRAY(evm_utxn_ptr->payload) == TRANSFER_FUNC_SIGNATURE) &&
         (metadata_ptr->is_token_transfer) &&
         (metadata_ptr->network_chain_id == ETHEREUM_MAINNET_CHAIN)) {
       for (int16_t i = 0; i < 0; i++) {
@@ -182,7 +190,7 @@ static PAYLOAD_STATUS eth_decode_txn_payload(
           metadata_ptr->eth_val_decimal[0] =
               g_evm_app->whitelisted_contracts[i].decimal;
           eth_is_token_whitelisted = true;
-          result = (memcmp(eth_utxn_ptr->to_address,
+          result = (memcmp(evm_utxn_ptr->to_address,
                            g_evm_app->whitelisted_contracts[i].address,
                            EVM_ADDRESS_LENGTH) == 0)
                        ? PAYLOAD_WHITELISTED
@@ -192,8 +200,8 @@ static PAYLOAD_STATUS eth_decode_txn_payload(
       }
     }
     if (!eth_is_token_whitelisted)
-      result = (ETH_ExtractArguments(eth_utxn_ptr->payload,
-                                     eth_utxn_ptr->payload_size) ==
+      result = (ETH_ExtractArguments(evm_utxn_ptr->payload,
+                                     evm_utxn_ptr->payload_size) ==
                 ETH_UTXN_ABI_DECODE_OK)
                    ? PAYLOAD_WHITELISTED
                    : PAYLOAD_SIGNATURE_NOT_WHITELISTED;
