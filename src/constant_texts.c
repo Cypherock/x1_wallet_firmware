@@ -85,6 +85,7 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "Rotate Display",
     "Toggle Log export",
     "Toggle Passphrase Step",
+    "Clear Device Data",
     "Factory Reset",
     "Device Info",
     "View Card Version",
@@ -154,6 +155,18 @@ const char *ui_text_card_health_check_error[] = {
 
 // Sync wallets with cards text
 const char *ui_text_syncing_complete = "wallet(s) synced";
+
+// Clear device data text
+const char *ui_text_clear_device_data_instruction =
+    "You will need 2 cards to perform clear device data\nMake sure at least 2 "
+    "cards are accessible\nDo you want to proceed?";
+const char *ui_text_erasing_device_data =
+    "Device data cleared Device will restart";
+const char
+    *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] = {
+        "Exiting without clearing device data",
+        "Press the center button to proceed",
+};
 
 // Manager app text
 // Device authentication text

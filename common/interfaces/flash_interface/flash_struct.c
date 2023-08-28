@@ -226,7 +226,7 @@ void flash_erase() {
   is_flash_ram_instance_loaded = false;
 }
 
-void clear_user_data(void) {
+void flash_clear_user_data(void) {
   /* Copy data to be preserved on the flash memory */
   get_flash_ram_instance();
   uint8_t last_onboarding_step = flash_ram_instance.onboarding_step;

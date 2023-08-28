@@ -99,4 +99,13 @@ void card_health_check(void);
  *
  */
 void sync_with_cards(void);
+
+/*
+ * @brief This function implements clear user data flow for the X1 vault. If
+ * there are valid wallets present in device flash memory, the user will be
+ * prompted to tap two X1 cards and wallet list will be verified before
+ * performing the factory reset. Onboarding data will NOT be cleared.
+ */
+void clear_device_data(void);
+
 #endif /* SETTINGS_API_H */
