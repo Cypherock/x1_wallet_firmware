@@ -122,10 +122,10 @@ extern const char *ui_text_card_health_check_error[];
 extern const char *ui_text_syncing_complete;
 
 // Clear user data text
-extern const char *ui_text_clear_user_data_instruction;
-extern const char *ui_text_erasing_user_data;
+extern const char *ui_text_clear_device_data_instruction;
+extern const char *ui_text_erasing_device_data;
 extern const char
-    *ui_text_clear_user_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
+    *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
 
 // Manager app text
 // Device authentication text

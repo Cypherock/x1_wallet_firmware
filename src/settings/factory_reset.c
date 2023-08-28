@@ -344,7 +344,7 @@ void clear_device_data(void) {
   uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
 
   if (0 < valid_wallets &&
-      !core_scroll_page(NULL, ui_text_clear_user_data_instruction, NULL)) {
+      !core_scroll_page(NULL, ui_text_clear_device_data_instruction, NULL)) {
     return;
   }
 
@@ -359,7 +359,7 @@ void clear_device_data(void) {
   }
 
   // Safe to erase flash data
-  delay_scr_init(ui_text_erasing_user_data, DELAY_TIME);
+  delay_scr_init(ui_text_erasing_device_data, DELAY_TIME);
 
   if (LEFT_HAND_VIEW == get_display_rotation()) {
     ui_rotate();

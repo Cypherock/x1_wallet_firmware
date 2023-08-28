@@ -156,15 +156,15 @@ const char *ui_text_card_health_check_error[] = {
 // Sync wallets with cards text
 const char *ui_text_syncing_complete = "wallet(s) synced";
 
-// Clear user data text
-const char *ui_text_clear_user_data_instruction =
-    "You will need 2 cards to perform clear wallet data\nMake sure at least 2 "
+// Clear device data text
+const char *ui_text_clear_device_data_instruction =
+    "You will need 2 cards to perform clear device data\nMake sure at least 2 "
     "cards are accessible\nDo you want to proceed?";
-const char *ui_text_erasing_user_data =
-    "Wallet data cleared Device will restart";
-const char *ui_text_clear_user_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] =
-    {
-        "Exiting without clearing wallet data",
+const char *ui_text_erasing_device_data =
+    "Device data cleared Device will restart";
+const char
+    *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] = {
+        "Exiting without clearing device data",
         "Press the center button to proceed",
 };
 
