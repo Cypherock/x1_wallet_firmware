@@ -118,6 +118,10 @@ void evm_main(usb_event_t usb_evt, const evm_config_t *app) {
       evm_get_pub_keys(&query);
       break;
     }
+    case EVM_QUERY_SIGN_TXN_TAG: {
+      evm_sign_transaction(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

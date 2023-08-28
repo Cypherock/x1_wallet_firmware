@@ -481,7 +481,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1) {
   };
   txn_ctx.inputs = (btc_txn_input_t *)malloc(sizeof(btc_txn_input_t));
   txn_ctx.outputs =
-      (btc_sign_txn_output_t *)malloc(sizeof(btc_sign_txn_output_t));
+      (btc_sign_txn_output_t *)malloc(2 * sizeof(btc_sign_txn_output_t));
 
   /* FIX: store the size for witnesses here due to the absence of designated
    * struct fields */

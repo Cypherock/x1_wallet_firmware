@@ -29,7 +29,7 @@
 #define TRANSFER_FUNC_SIGNATURE 0xa9059cbb
 
 /// Length of Ethereum public addresses in bytes
-#define ETHEREUM_ADDRESS_LENGTH 20
+#define EVM_ADDRESS_LENGTH 20
 
 /**
  * @brief An expected limit on length of Ethereum based ERC20 token symbols.
@@ -57,7 +57,7 @@
  */
 typedef struct erc20_contracts {
   /// 20-byte hex coded public address of the contract
-  const uint8_t address[ETHEREUM_ADDRESS_LENGTH];
+  const uint8_t address[EVM_ADDRESS_LENGTH];
   /// Symbol (short alphabetical representation) of the contract token
   const char *symbol;
   /// Decimal value used to display the amount in token transfer in token units

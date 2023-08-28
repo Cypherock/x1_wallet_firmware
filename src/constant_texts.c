@@ -338,7 +338,8 @@ const char *ui_text_confirm_passphrase = "Confirm passphrase";
 const char *ui_text_receive_on = "Receive on";
 const char *ui_text_verify_address = "Verify address";
 const char *ui_text_verify_contract = "Verify contract";
-const char *ui_text_unverified_contract = "Warning!\nUnverified contract";
+const char *ui_text_unverified_contract =
+    LV_SYMBOL_WARNING " Warning!\nUnverified contract";
 const char *ui_text_confirm_wallet_name = "Confirm wallet name";
 const char *ui_text_enter_data = "Enter data";
 const char *ui_text_confirm_data = "Confirm data";

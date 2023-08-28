@@ -192,7 +192,6 @@ void send_transaction_tasks_eth() {
           var_send_transaction_data.transaction_metadata.is_harmony_address;
 
       instruction_scr_destructor();
-      eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
       if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN))
         byte_array_to_hex_string(address_bytes,
                                  sizeof(address_bytes),

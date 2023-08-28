@@ -63,7 +63,7 @@
 #include "evm_helpers.h"
 
 #include "coin_utils.h"
-#include "eth.h"
+#include "evm_txn_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

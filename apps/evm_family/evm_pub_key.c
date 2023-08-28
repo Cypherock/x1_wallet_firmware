@@ -385,7 +385,7 @@ static bool get_address(const evm_address_format_t format,
     case EVM_HARMONY:
     case EVM_DEFAULT: {
       // check output buffer for enough space
-      if ((ETHEREUM_ADDRESS_LENGTH * 2 + 3) > address_size) {
+      if ((EVM_ADDRESS_LENGTH * 2 + 3) > address_size) {
         break;
       }
 
@@ -394,7 +394,7 @@ static bool get_address(const evm_address_format_t format,
       address[1] = 'x';
 
       keccak_256(&pub_key[1], EVM_PUB_KEY_SIZE - 1, hash);
-      ethereum_address_checksum(&hash[sizeof(hash) - ETHEREUM_ADDRESS_LENGTH],
+      ethereum_address_checksum(&hash[sizeof(hash) - EVM_ADDRESS_LENGTH],
                                 &address[2],
                                 false,
                                 g_evm_app->chain_id);

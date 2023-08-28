@@ -19,7 +19,7 @@
 #include "eth.h"
 #include "tasks.h"
 
-extern eth_unsigned_txn eth_unsigned_txn_ptr;
+extern evm_unsigned_txn eth_unsigned_txn_ptr;
 extern uint8_t challenge_no[32];
 
 /**
