@@ -59,11 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "onboarding_host_interface.h"
+#include "restricted_host_interface.h"
 
 #include "manager_app.h"
-#include "onboarding.h"
-#include "ui_delay.h"
+#include "status_api.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -96,22 +96,32 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void onboarding_host_interface(engine_ctx_t *ctx,
+void restricted_host_interface(engine_ctx_t *ctx,
                                usb_event_t usb_evt,
                                const void *data) {
   /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
    * application here */
 
-  // Temporarily hardcode to manager app where we will do the onboarding
-  manager_app_main(usb_evt);
+  /* A USB request was detected by the core, but it was the first time
+   * this request came in, therefore, we will pass control to the required
+   * application here */
+  uint32_t applet_id = get_applet_id();
+  switch (applet_id) {
+    case 1: {
+      manager_app_restricted_main(usb_evt);
+      break;
+    }
+    default: {
+      // TODO: Send error?
+      break;
+    }
+  }
 
-  /* If onboarding is complete, reset the flow as the core will now need to
-   * render the main menu */
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
-    // this is an ideally good place to show congratulation message upon
-    // onboarding completion
-    delay_scr_init(ui_text_onboarding_complete, DELAY_TIME);
+  /* Device authentication is complete, reset the flow as the core will now need
+   * to render the main menu */
+  if (DEVICE_AUTHENTICATED == get_auth_state()) {
+    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
     engine_reset_flow(ctx);
   }
 

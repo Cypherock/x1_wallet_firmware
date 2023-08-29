@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    onboarding_host_interface.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Source file for the onboarding host interface
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,11 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
+#include "onboarding_host_interface.h"
 
-#include "main_menu.h"
+#include "manager_app.h"
 #include "onboarding.h"
-#include "restricted_app.h"
+#include "status_api.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -72,7 +73,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -81,13 +81,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -104,27 +97,32 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  // TODO: Set onboarding status for in-field devices
-  // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  // }
-
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-    return &core_step_engine_ctx;
+void onboarding_host_interface(engine_ctx_t *ctx,
+                               usb_event_t usb_evt,
+                               const void *data) {
+  /* A USB request was detected by the core, but it was the first time
+   * this request came in, therefore, we will pass control to the required
+   * application here */
+  uint32_t applet_id = get_applet_id();
+  switch (applet_id) {
+    case 1: {
+      manager_app_main(usb_evt);
+      break;
+    }
+    default: {
+      // TODO: Send error?
+      break;
+    }
   }
 
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
+  /* If onboarding is complete, reset the flow as the core will now need to
+   * render the main menu */
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == onboarding_get_last_step()) {
+    // this is an ideally good place to show congratulation message upon
+    // onboarding completion
+    delay_scr_init(ui_text_onboarding_complete, DELAY_TIME);
+    engine_reset_flow(ctx);
   }
 
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+  return;
 }
