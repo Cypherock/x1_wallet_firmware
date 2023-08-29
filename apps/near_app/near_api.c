@@ -173,7 +173,7 @@ void near_send_result(const near_result_t *result) {
   uint8_t buffer[1700] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_near_result(result, buffer, sizeof(buffer), &bytes_encoded));
-  usb_send_msg(&buffer[0], bytes_encoded);
+  send_response_to_host(&buffer[0], bytes_encoded);
 }
 
 bool near_get_query(near_query_t *query, pb_size_t exp_query_tag) {
