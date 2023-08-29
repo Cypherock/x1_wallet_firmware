@@ -121,8 +121,6 @@ void restricted_host_interface(engine_ctx_t *ctx,
   /* Device authentication is complete, reset the flow as the core will now need
    * to render the main menu */
   if (DEVICE_AUTHENTICATED == get_auth_state()) {
-    // this is an ideally good place to show congratulation message upon
-    // onboarding completion
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
     engine_reset_flow(ctx);
   }
