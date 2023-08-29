@@ -64,6 +64,7 @@
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
+#include "evm_user_verification.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -73,6 +74,9 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
+
+extern bool evm_is_token_whitelisted;
+extern ui_display_node *current_display_node;
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -289,11 +293,14 @@ STATIC bool handle_initiate_query(const evm_query_t *query) {
 STATIC bool fetch_valid_transaction(evm_query_t *query) {
   bool status = false;
   uint32_t size = 0;
+  evm_result_t result = init_evm_result(EVM_RESULT_SIGN_TXN_TAG);
   uint32_t total_size = txn_context->init_info.transaction_size;
   const evm_sign_txn_data_t *txn_data = &query->sign_txn.txn_data;
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  result.sign_txn.which_response = EVM_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG;
+  result.sign_txn.data_accepted.has_chunk_ack = true;
   // allocate memory for storing transaction
   txn_context->transaction = (uint8_t *)malloc(total_size);
   while (true) {
@@ -311,7 +318,8 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
 
     memcpy(&txn_context->transaction[size], chunk->bytes, chunk->size);
     size += chunk->size;
-    send_response(EVM_SIGN_TXN_DATA_ACCEPTED_CHUNK_ACK_TAG);
+    result.sign_txn.data_accepted.chunk_ack.chunk_index = payload->chunk_index;
+    evm_send_result(&result);
     if (0 == payload->remaining_size ||
         payload->chunk_index + 1 == payload->total_chunks) {
       break;
@@ -324,14 +332,10 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     return status;
   }
-  txn_metadata dummy_metadata;
   // decode and verify the received transaction
-  if (0 != eth_byte_array_to_unsigned_txn(txn_context->transaction,
-                                          total_size,
-                                          &txn_context->transaction_info,
-                                          &dummy_metadata) ||
-      !eth_validate_unsigned_txn(&txn_context->transaction_info,
-                                 &dummy_metadata)) {
+  if (0 != evm_byte_array_to_unsigned_txn(
+               txn_context->transaction, total_size, txn_context) ||
+      !evm_validate_unsigned_txn(txn_context)) {
     return status;
   }
 
@@ -341,91 +345,33 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
 
 STATIC bool get_user_verification() {
   bool status = false;
-  char address[43] = "0x";
-  const uint8_t *to_address = NULL;
-  uint32_t *hd_path = txn_context->init_info.derivation_path;
-  size_t depth = txn_context->init_info.derivation_path_count;
+  switch (txn_context->transaction_info.payload_status) {
+    case PAYLOAD_ABSENT:
+      status = evm_verify_eth_transfer(txn_context);
+      break;
 
-  // show warning for not-whitelisted contracts; take user consent
-  if (PAYLOAD_CONTRACT_NOT_WHITELISTED ==
-      txn_context->transaction_info.payload_status) {
-    to_address = txn_context->transaction_info.to_address;
-    byte_array_to_hex_string(
-        to_address, EVM_ADDRESS_LENGTH, &address[2], sizeof(address) - 2);
-    delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
+    case PAYLOAD_WHITELISTED:
+      if (evm_is_token_whitelisted) {
+        status = evm_verify_eth_transfer(txn_context);
+      } else {
+        status = evm_verify_clear_signing(txn_context);
+      }
+      break;
 
-    if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
-      return status;
-    }
+    case PAYLOAD_SIGNATURE_NOT_WHITELISTED:
+      // TODO: link with wallet setting
+      status = evm_verify_blind_signing(txn_context);
+      break;
+
+    case PAYLOAD_CONTRACT_NOT_WHITELISTED:
+      status = evm_verify_clear_signing(txn_context);
+      break;
+
+    case PAYLOAD_CONTRACT_INVALID:
+    default:
+      // cannot reach; should be caught already
+      break;
   }
-
-  // TODO: decide on handling blind signing
-  // show warning for unknown EVM function; take user consent
-  if (PAYLOAD_SIGNATURE_NOT_WHITELISTED ==
-      txn_context->transaction_info.payload_status) {
-    hd_path_array_to_string(hd_path, depth, false, address, sizeof(address));
-    if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
-        !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, address, evm_send_error)) {
-      return status;
-    }
-  }
-
-  // TODO: verify transaction nonce; this is pending on settings option
-#if 0
-  // TODO: convert byte to value
-  if (!core_scroll_page("Verify nonce", address, evm_send_error)) {
-    return status;
-  }
-#endif
-
-  // verify recipient address; TODO: handle harmony address encoding
-  address[0] = '0';
-  address[1] = 'x';
-  eth_get_to_address(&txn_context->transaction_info, &to_address);
-  ethereum_address_checksum(
-      to_address, &address[2], false, g_evm_app->chain_id);
-  if (!core_scroll_page(ui_text_verify_address, address, evm_send_error)) {
-    return status;
-  }
-
-  // verify recipient amount
-  // TODO: handle contract transactions
-  char value_string[65] = {'\0'};
-  char value_decimal_string[30] = {'\0'};
-  char display[100] = "";
-  uint8_t len = eth_get_value(&txn_context->transaction_info, value_string);
-  if (!convert_byte_array_to_decimal_string(len,
-                                            ETH_DECIMAL,
-                                            value_string,
-                                            value_decimal_string,
-                                            sizeof(value_decimal_string))) {
-    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    return status;
-  }
-
-  snprintf(display,
-           sizeof(display),
-           UI_TEXT_VERIFY_AMOUNT,
-           value_decimal_string,
-           g_evm_app->lunit_name);
-  if (!core_confirmation(display, evm_send_error)) {
-    return status;
-  }
-
-  // verify transaction fee
-  eth_get_fee_string(&txn_context->transaction_info,
-                     value_string,
-                     sizeof(value_string),
-                     ETH_DECIMAL);
-  snprintf(display,
-           sizeof(display),
-           UI_TEXT_SEND_TXN_FEE,
-           value_string,
-           g_evm_app->lunit_name);
-  if (!core_confirmation(display, evm_send_error)) {
-    return status;
-  }
-  status = true;
   return status;
 }
 
@@ -489,6 +435,7 @@ void evm_sign_transaction(evm_query_t *query) {
   txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
   memzero(txn_context, sizeof(evm_txn_context_t));
   evm_sign_txn_signature_response_t sig = {0};
+  current_display_node = NULL;
 
   if (handle_initiate_query(query) && fetch_valid_transaction(query) &&
       get_user_verification() && sign_transaction(&sig) &&

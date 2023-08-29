@@ -131,7 +131,7 @@ const Abi_Type_e EVM_transferDataType[EVM_transfer_NUM_ARGS] = {Abi_address_e,
 const char *EVM_transfer_Title = "Function: transfer";
 const char *EVM_transfer_Signature = "transfer(address,uint256)";
 
-extern bool eth_is_token_whitelisted;
+extern bool evm_is_token_whitelisted;
 
 /**
  * @brief
@@ -268,13 +268,6 @@ uint64_t hex2dec(const char *source) {
   }
 
   return sum;
-}
-
-const char *eth_get_asset_symbol(const txn_metadata *metadata_ptr) {
-  if (eth_is_token_whitelisted)
-    return metadata_ptr->token_name;
-  else
-    return get_coin_symbol(ETHEREUM, metadata_ptr->network_chain_id);
 }
 
 void eth_sign_msg_data(const MessageData *msg_data,
@@ -529,34 +522,4 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
   }
 
   return returnCode;
-}
-void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr,
-                                   char *output,
-                                   const size_t out_len) {
-  const uint32_t path[] = {
-      BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->purpose_index),
-      BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index),
-      BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->account_index),
-      BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].change_index),
-      BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->input[0].address_index)};
-  FUNC_RETURN_CODES code =
-      hd_path_array_to_string(path, 5, false, output, out_len);
-  if (code != FRC_SUCCESS) {
-    LOG_ERROR("DP-ETH:%d", code);
-    ASSERT(false);
-  }
-}
-
-uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr) {
-  return txn_metadata_ptr->is_token_transfer
-             ? txn_metadata_ptr->eth_val_decimal[0]
-             : ETH_DECIMAL;
-}
-
-const char *eth_get_address_title(
-    const evm_unsigned_txn *eth_unsigned_txn_ptr) {
-  return ((eth_unsigned_txn_ptr->payload_status != PAYLOAD_ABSENT &&
-           !eth_is_token_whitelisted)
-              ? ui_text_verify_contract
-              : ui_text_verify_address);
 }

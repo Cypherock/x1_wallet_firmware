@@ -141,10 +141,6 @@ void send_transaction_tasks_eth() {
           PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
         char display[125] = {0};
         char path[128] = {0};
-        eth_derivation_path_to_string(
-            &var_send_transaction_data.transaction_metadata,
-            path,
-            sizeof(path));
         instruction_scr_destructor();
         snprintf(display, sizeof(display), "Verify Derivation Path\n%s", path);
         confirm_scr_init(display);
@@ -234,9 +230,7 @@ void send_transaction_tasks_eth() {
       bool pre_dec_digit = false, post_dec_digit = false;
       uint8_t offset = 0;
       log_hex_array("eth value: ", (uint8_t *)amount_string, len);
-      uint8_t point_index =
-          dec_val_len -
-          eth_get_decimal(&var_send_transaction_data.transaction_metadata);
+      uint8_t point_index = dec_val_len - 0;
       i = 0;
       j = dec_val_len - 1;
 
@@ -276,12 +270,6 @@ void send_transaction_tasks_eth() {
       }
 
       instruction_scr_destructor();
-      snprintf(display,
-               sizeof(display),
-               UI_TEXT_VERIFY_AMOUNT,
-               amount_decimal_string,
-               eth_get_asset_symbol(
-                   &var_send_transaction_data.transaction_metadata));
       confirm_scr_init(display);
     } break;
 
