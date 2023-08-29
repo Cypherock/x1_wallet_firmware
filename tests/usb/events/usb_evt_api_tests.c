@@ -149,7 +149,7 @@ TEST(usb_evt_api_test, consume_and_respond) {
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
 
   // send response over USB
-  usb_send_msg(data, 1);
+  usb_send_msg(core_msg, 1, data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }
 
@@ -189,7 +189,7 @@ TEST(usb_evt_api_test, api_interference_1) {
   usb_event_t usb_evt;
 
   // 1. responding without getting event
-  usb_send_msg(data, 1);
+  usb_send_msg(core_msg, 1, data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
   TEST_usb_evt_api_test_SETUP();
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
