@@ -468,13 +468,13 @@ void desktop_listener_task(lv_task_t *data) {
             flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
-                     UI_TEXT_SEND_PROMPT,
+                     UI_TEXT_SEND_TOKEN_PROMPT,
                      var_send_transaction_data.transaction_metadata.token_name,
                      get_coin_name(coin_index,
                                    var_send_transaction_data
                                        .transaction_metadata.network_chain_id),
                      wallet.wallet_name);
-          } else if (coin_index == NEAR_COIN_INDEX) {
+          } else if (false) {
             flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
             if (var_send_transaction_data.transaction_metadata
                     .network_chain_id == 1) {
@@ -490,7 +490,7 @@ void desktop_listener_task(lv_task_t *data) {
               snprintf(
                   flow_level.confirmation_screen_text,
                   sizeof(flow_level.confirmation_screen_text),
-                  UI_TEXT_SEND_PROMPT,
+                  UI_TEXT_SEND_TOKEN_PROMPT,
                   get_coin_symbol(coin_index,
                                   receive_transaction_data.network_chain_id),
                   get_coin_name(coin_index,
@@ -502,7 +502,7 @@ void desktop_listener_task(lv_task_t *data) {
             flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
-                     UI_TEXT_SEND_PROMPT,
+                     UI_TEXT_SEND_TOKEN_PROMPT,
                      get_coin_symbol(coin_index,
                                      receive_transaction_data.network_chain_id),
                      get_coin_name(coin_index,
@@ -587,8 +587,7 @@ void desktop_listener_task(lv_task_t *data) {
           uint32_t coin_index =
               BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
-          if (coin_index == NEAR_COIN_INDEX &&
-              receive_transaction_data.near_account_type == 1) {
+          if (false && receive_transaction_data.near_account_type == 1) {
             memcpy(&receive_transaction_data.near_registered_account,
                    data_array + offset,
                    65);
@@ -603,7 +602,7 @@ void desktop_listener_task(lv_task_t *data) {
                      get_coin_name(coin_index,
                                    receive_transaction_data.network_chain_id),
                      wallet.wallet_name);
-          } else if (coin_index == NEAR_COIN_INDEX) {
+          } else if (false) {
             flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
@@ -674,7 +673,7 @@ void desktop_listener_task(lv_task_t *data) {
         uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
                             U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR),
-                            U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
+                            // U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_SOLANA),
                             U32_SWAP_ENDIANNESS(SOL_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_POLYGON),

@@ -115,6 +115,10 @@ void near_main(usb_event_t usb_evt) {
       near_get_pub_keys(&query);
       break;
     }
+    case NEAR_QUERY_SIGN_TXN_TAG: {
+      near_sign_transaction(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

@@ -387,8 +387,6 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
         }
       }
     }
-    case NEAR_COIN_INDEX:
-      return NEAR_TOKEN_SYMBOL;
     case SOLANA:
       return "SOL";
     default: {
@@ -436,8 +434,6 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
         }
       }
     }
-    case NEAR_COIN_INDEX:
-      return NEAR_TOKEN_NAME;
     case SOLANA:
       return "Solana";
     default: {

@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "near.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -45,5 +47,32 @@
  * @return false If the derivation path is NOT as expected
  */
 bool near_derivation_path_guard(const uint32_t *path, uint8_t levels);
+
+/**
+ * @brief Extracts `account_id` field from the arguments of `create_account`
+ * method call in case of NEAR_FUNCTION_CALL actions.
+ *
+ * @param args Constant reference to buffer containing the argument
+ * @param args_len Length of the total argument
+ * @param account_id Reference to char buffer where the `account_id` string will
+ * be populated
+ */
+void near_get_new_account_id_from_fn_args(const char *args,
+                                          uint32_t args_len,
+                                          char *account_id);
+
+/**
+ * @brief Get the amount string from hex bytes of the NEAR unsigned transaction.
+ * The lunit_name is also concatinated with the amount string
+ * @note It is expected that the bytes are in LE order
+ *
+ * @param amount Constant reference to buffer containing hex bytes of amount
+ * @param string Reference to char buffer where the amount string can be
+ * populated
+ * @param size_of_string Maximum size of the char buffer
+ */
+void get_amount_string(const uint8_t *amount,
+                       char *string,
+                       size_t size_of_string);
 
 #endif /* NEAR_HELPERS_H */

@@ -1,7 +1,7 @@
 /**
- * @file    near_helpers.c
+ * @file    near_txn_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Helper functions for the NEAR app
+ * @brief   Helper functions for the NEAR app for txn signing flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,8 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_helpers.h"
+#include "near_txn_helpers.h"
 
+#include "coin_utils.h"
 #include "constant_texts.h"
 #include "near_context.h"
 #include "utils.h"
@@ -97,57 +98,94 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+bool near_parse_transaction(const uint8_t *byte_array,
+                            uint16_t byte_array_size,
+                            near_unsigned_txn *utxn) {
+  if (byte_array == NULL || utxn == NULL)
+    return;
+  memzero(utxn, sizeof(near_unsigned_txn));
 
-bool near_derivation_path_guard(const uint32_t *path, uint8_t levels) {
-  bool status = false;
-  if (NEAR_IMPLICIT_ACCOUNT_DEPTH != levels) {
-    return status;
+  uint16_t offset = 0;
+
+  utxn->signer_id_length = U32_READ_LE_ARRAY(byte_array);
+  offset += 4;
+  utxn->signer = (byte_array + offset);
+  offset += utxn->signer_id_length;
+  utxn->signer_key.key_type = byte_array[offset++];
+  utxn->signer_key.key = (byte_array + offset);
+  offset += 32;
+  memcpy(utxn->nonce, byte_array + offset, sizeof(utxn->nonce));
+  offset += 8;
+  utxn->receiver_id_length = U32_READ_LE_ARRAY(byte_array + offset);
+  offset += 4;
+  utxn->receiver = (byte_array + offset);
+  offset += utxn->receiver_id_length;
+  utxn->blockhash = (byte_array + offset);
+  offset += 32;
+  utxn->action_count = U32_READ_LE_ARRAY(byte_array + offset);
+  offset += 4;
+  utxn->actions_type = byte_array[offset++];
+
+  // Currently, our decoder only supports 1 action
+  if (1 < utxn->action_count) {
+    return false;
   }
 
-  uint32_t purpose = path[0], coin = path[1], account = path[2],
-           change = path[3], address = path[4];
+  switch (utxn->actions_type) {
+    case NEAR_ACTION_TRANSFER: {
+      memcpy(utxn->action.transfer.amount,
+             byte_array + offset,
+             sizeof(utxn->action.transfer.amount));
+      cy_reverse_byte_array(utxn->action.transfer.amount,
+                            sizeof(utxn->action.transfer.amount));
+      break;
+    }
 
-  // m/44'/397'/0'/0'/i'
-  status = (NEAR_PURPOSE_INDEX == purpose && NEAR_COIN_INDEX == coin &&
-            NEAR_ACCOUNT_INDEX == account && NEAR_CHANGE_INDEX == change &&
-            is_hardened(address));
+    case NEAR_ACTION_FUNCTION_CALL: {
+      utxn->action.fn_call.method_name_length =
+          U32_READ_LE_ARRAY(byte_array + offset);
+      offset += 4;
+      utxn->action.fn_call.method_name = (char *)(byte_array + offset);
+      offset += utxn->action.fn_call.method_name_length;
 
-  return status;
-}
+      // As of now, we only support signing of create_account method
+      if (0 != strncmp(utxn->action.fn_call.method_name,
+                       ui_text_near_create_account_method,
+                       utxn->action.fn_call.method_name_length)) {
+        return false;
+      }
 
-void near_get_new_account_id_from_fn_args(const char *args,
-                                          uint32_t args_len,
-                                          char *account_id) {
-  // length of '{"new_account_id":"'
-  const int start = 19;
+      utxn->action.fn_call.args_length = U32_READ_LE_ARRAY(byte_array + offset);
+      offset += 4;
+      utxn->action.fn_call.args = (byte_array + offset);
+      offset += utxn->action.fn_call.args_length;
+      memcpy(utxn->action.fn_call.gas,
+             byte_array + offset,
+             sizeof(utxn->action.fn_call.gas));
+      cy_reverse_byte_array(utxn->action.fn_call.gas,
+                            sizeof(utxn->action.fn_call.gas));
+      offset += 8;
+      memcpy(utxn->action.fn_call.deposit,
+             byte_array + offset,
+             sizeof(utxn->action.fn_call.deposit));
+      cy_reverse_byte_array(utxn->action.fn_call.deposit,
+                            sizeof(utxn->action.fn_call.deposit));
+      break;
+    }
 
-  // length of '","new_public_key":"ed25519:..."}'
-  const int end = args_len - 74;
+    default: {
+      return false;
+      break;
+    }
+  }
 
-  memcpy(account_id, args + start, end - start);
-  account_id[end - start] = '\0';
+  // Reverse byte order
+  cy_reverse_byte_array(utxn->nonce, sizeof(utxn->nonce));
 
-  return;
-}
+  // TODO: Offset validation should occur at every read
+  if (offset <= byte_array_size) {
+    return true;
+  }
 
-void get_amount_string(const uint8_t *amount,
-                       char *string,
-                       size_t size_of_string) {
-  char amount_string[40] = "";
-  char amount_decimal_string[40] = "";
-  byte_array_to_hex_string(
-      amount, NEAR_DEPOSIT_SIZE_BYTES, amount_string, sizeof(amount_string));
-
-  convert_byte_array_to_decimal_string(NEAR_DEPOSIT_SIZE_BYTES * 2,
-                                       NEAR_DECIMAL,
-                                       amount_string,
-                                       amount_decimal_string,
-                                       sizeof(amount_decimal_string));
-
-  snprintf(string,
-           size_of_string,
-           UI_TEXT_VERIFY_AMOUNT,
-           amount_decimal_string,
-           near_app.lunit_name);
-  return;
+  return false;
 }

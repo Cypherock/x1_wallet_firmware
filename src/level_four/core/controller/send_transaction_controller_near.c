@@ -66,11 +66,6 @@
 extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
 
-static uint8_t *near_unsigned_txn_byte_array;
-static uint16_t near_unsigned_txn_len = 0;
-
-near_unsigned_txn near_utxn;
-
 void send_transaction_controller_near() {
   switch (flow_level.level_three) {
     case SEND_TXN_VERIFY_COIN_NEAR: {
@@ -79,27 +74,8 @@ void send_transaction_controller_near() {
       flow_level.level_three = SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_NEAR;
     } break;
 
-    case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_NEAR: {
-      uint8_t *data_array = NULL;
-      uint16_t msg_size = 0;
-      if (get_usb_msg_by_cmd_type(
-              SEND_TXN_UNSIGNED_TXN, &data_array, &msg_size)) {
-        near_unsigned_txn_byte_array = (uint8_t *)cy_malloc(msg_size);
-        near_unsigned_txn_len = msg_size;
-        memcpy(near_unsigned_txn_byte_array, data_array, msg_size);
-
-        near_byte_array_to_unsigned_txn(
-            near_unsigned_txn_byte_array, near_unsigned_txn_len, &near_utxn);
-
-        clear_message_received_data();
-        if (near_utxn.actions_type == NEAR_ACTION_FUNCTION_CALL) {
-          flow_level.level_three = SEND_TXN_VERIFY_SENDER_ADDRESS_NEAR;
-        } else {
-          flow_level.level_three =
-              SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR;    // skip nonce verify
-        }
-      }
-    } break;
+    case SEND_TXN_UNSIGNED_TXN_WAIT_SCREEN_NEAR:
+      break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_NEAR: {
       flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_NEAR;
@@ -191,35 +167,6 @@ void send_transaction_controller_near() {
       break;
 
     case SEND_TXN_SIGN_TXN_NEAR: {
-      uint8_t secret[BLOCK_SIZE];
-      if (WALLET_IS_PIN_SET(wallet.wallet_info))
-        decrypt_shares();
-      recover_secret_from_shares(BLOCK_SIZE,
-                                 MINIMUM_NO_OF_SHARES,
-                                 wallet_shamir_data.mnemonic_shares,
-                                 wallet_shamir_data.share_x_coords,
-                                 secret);
-      mnemonic_clear();
-      const char *mnemo =
-          mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-      ASSERT(mnemo != NULL);
-
-      uint8_t sig[64];
-      near_sig_unsigned_byte_array(
-          near_unsigned_txn_byte_array,
-          near_unsigned_txn_len,
-          (const txn_metadata *)&var_send_transaction_data.transaction_metadata,
-          mnemo,
-          wallet_credential_data.passphrase,
-          sig);
-      transmit_data_to_app(SEND_TXN_SENDING_SIGNED_TXN, sig, 64);
-      mnemonic_clear();
-      memzero(secret, sizeof(secret));
-      memzero(wallet_shamir_data.mnemonic_shares,
-              sizeof(wallet_shamir_data.mnemonic_shares));
-      memzero(wallet_credential_data.passphrase,
-              sizeof(wallet_credential_data.passphrase));
-
       reset_flow_level();
     } break;
 

@@ -1,7 +1,9 @@
 /**
- * @file    near_helpers.c
+ * @file    near_txn_user_verification.c
  * @author  Cypherock X1 Team
- * @brief   Helper functions for the NEAR app
+ * @brief   Source file to handle user confirmation flow during txn signing for
+ *          NEAR protocol
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +62,14 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "near_helpers.h"
+#include <stdint.h>
 
 #include "constant_texts.h"
+#include "near_api.h"
 #include "near_context.h"
-#include "utils.h"
+#include "near_helpers.h"
+#include "near_priv.h"
+#include "ui_core_confirm.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,15 +84,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -97,57 +102,62 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
+  char transaction[100] = "";
+  char address[200] = "";
+  char value[100] = "";
 
-bool near_derivation_path_guard(const uint32_t *path, uint8_t levels) {
-  bool status = false;
-  if (NEAR_IMPLICIT_ACCOUNT_DEPTH != levels) {
-    return status;
+  snprintf(transaction,
+           sizeof(transaction),
+           UI_TEXT_REVIEW_TXN_PROMPT,
+           ui_text_near_transfer_action_type);
+
+  snprintf(address,
+           CY_MIN(decoded_utxn->receiver_id_length + 1, sizeof(address)),
+           "%s",
+           decoded_utxn->receiver);
+
+  get_amount_string(decoded_utxn->action.transfer.amount, value, sizeof(value));
+
+  if (!core_scroll_page(NULL, transaction, near_send_error) ||
+      !core_scroll_page(ui_text_verify_address, address, near_send_error) ||
+      !core_confirmation(value, near_send_error)) {
+    return false;
   }
 
-  uint32_t purpose = path[0], coin = path[1], account = path[2],
-           change = path[3], address = path[4];
-
-  // m/44'/397'/0'/0'/i'
-  status = (NEAR_PURPOSE_INDEX == purpose && NEAR_COIN_INDEX == coin &&
-            NEAR_ACCOUNT_INDEX == account && NEAR_CHANGE_INDEX == change &&
-            is_hardened(address));
-
-  return status;
+  return true;
 }
 
-void near_get_new_account_id_from_fn_args(const char *args,
-                                          uint32_t args_len,
-                                          char *account_id) {
-  // length of '{"new_account_id":"'
-  const int start = 19;
+bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
+  char transaction[100] = "";
+  char address[200] = "";
+  char account[200] = "";
+  char value[100] = "";
 
-  // length of '","new_public_key":"ed25519:..."}'
-  const int end = args_len - 74;
+  snprintf(transaction,
+           sizeof(transaction),
+           UI_TEXT_REVIEW_TXN_PROMPT,
+           ui_text_near_create_account_method);
 
-  memcpy(account_id, args + start, end - start);
-  account_id[end - start] = '\0';
+  snprintf(address,
+           CY_MIN(decoded_utxn->signer_id_length, sizeof(address)),
+           "%s",
+           decoded_utxn->signer);
 
-  return;
-}
+  near_get_new_account_id_from_fn_args(
+      (const char *)decoded_utxn->action.fn_call.args,
+      decoded_utxn->action.fn_call.args_length,
+      account);
 
-void get_amount_string(const uint8_t *amount,
-                       char *string,
-                       size_t size_of_string) {
-  char amount_string[40] = "";
-  char amount_decimal_string[40] = "";
-  byte_array_to_hex_string(
-      amount, NEAR_DEPOSIT_SIZE_BYTES, amount_string, sizeof(amount_string));
+  get_amount_string(decoded_utxn->action.fn_call.deposit, value, sizeof(value));
 
-  convert_byte_array_to_decimal_string(NEAR_DEPOSIT_SIZE_BYTES * 2,
-                                       NEAR_DECIMAL,
-                                       amount_string,
-                                       amount_decimal_string,
-                                       sizeof(amount_decimal_string));
+  if (!core_scroll_page(NULL, transaction, near_send_error) ||
+      !core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
+      !core_scroll_page(
+          ui_text_verify_new_account_id, account, near_send_error) ||
+      !core_confirmation(value, near_send_error)) {
+    return false;
+  }
 
-  snprintf(string,
-           size_of_string,
-           UI_TEXT_VERIFY_AMOUNT,
-           amount_decimal_string,
-           near_app.lunit_name);
-  return;
+  return true;
 }
