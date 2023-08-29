@@ -94,7 +94,7 @@
  * @details The function performs the check on the request type and if the check
  * fails, then it will send an error to the host bitcoin app and return false.
  *
- * @param query Reference to an instance of btc_query_t containing query
+ * @param query Reference to an instance of near_query_t containing query
  * received from host app
  * @param which_request The expected request type enum
  *
