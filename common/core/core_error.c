@@ -81,6 +81,12 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  char core_error_msg[60]; /**< Buffer to store the error message that needs to
+                              be displayed */
+  bool ring_buzzer; /**< Configuration parameter to record if buzzer is required
+                       while the error is being displayed */
+} error_screen_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -101,7 +107,8 @@ static void display_core_error();
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static char core_error_msg[60] = {0};
+static error_screen_t error_screen = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -110,37 +117,47 @@ static char core_error_msg[60] = {0};
  * STATIC FUNCTIONS
  *****************************************************************************/
 static void display_core_error() {
-  if (0 == strnlen(core_error_msg, sizeof(core_error_msg)))
+  if (0 ==
+      strnlen(error_screen.core_error_msg, sizeof(error_screen.core_error_msg)))
     return;
 
   evt_status_t status = {0};
-  message_scr_init(core_error_msg);
+  message_scr_init(error_screen.core_error_msg);
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_DEVICE);
+
+  if (error_screen.ring_buzzer) {
+    buzzer_start(BUZZER_DURATION);
+  }
 
   do {
     status = get_events(EVENT_CONFIG_UI, INFINITE_WAIT_TIMEOUT);
     p0_reset_evt();
   } while (true != status.ui_event.event_occured);
 
-  memzero(core_error_msg, sizeof(core_error_msg));
+  clear_core_error_screen();
   return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void mark_core_error_screen(const char *error_msg) {
+void mark_core_error_screen(const char *error_msg, bool ring_buzzer) {
   if (NULL == error_msg) {
     return;
   }
 
   // Return if an error message is already set
-  if (0 != strnlen(core_error_msg, sizeof(core_error_msg))) {
+  if (0 != strnlen(error_screen.core_error_msg,
+                   sizeof(error_screen.core_error_msg))) {
     return;
   }
 
-  snprintf(core_error_msg, sizeof(core_error_msg), "%s", error_msg);
+  snprintf(error_screen.core_error_msg,
+           sizeof(error_screen.core_error_msg),
+           "%s",
+           error_msg);
+
+  error_screen.ring_buzzer = ring_buzzer;
   return;
 }
 
@@ -155,7 +172,7 @@ void handle_core_errors() {
       send_core_error_msg_to_host(CORE_APP_TIMEOUT_OCCURRED);
     }
 
-    mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
+    mark_core_error_screen(ui_text_process_reset_due_to_inactivity, false);
     p0_reset_evt();
   }
 
@@ -173,6 +190,6 @@ void ignore_p0_event() {
 }
 
 void clear_core_error_screen(void) {
-  memzero(core_error_msg, sizeof(core_error_msg));
+  memzero(&error_screen, sizeof(error_screen_t));
   return;
 }
