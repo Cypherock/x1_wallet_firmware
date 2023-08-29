@@ -62,8 +62,11 @@
 
 #include "host_interface.h"
 
+#include <core.pb.h>
+
 #include "btc_app.h"
 #include "btc_main.h"
+#include "core_api.h"
 #include "dash_app.h"
 #include "doge_app.h"
 #include "eth_app.h"
@@ -150,7 +153,7 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       break;
     }
     default: {
-      // TODO: send core error about invalid applet id
+      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
       break;
     }
   }

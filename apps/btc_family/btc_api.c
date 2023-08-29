@@ -66,6 +66,7 @@
 #include <pb_encode.h>
 
 #include "common_error.h"
+#include "core_api.h"
 #include "events.h"
 
 /*****************************************************************************

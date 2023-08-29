@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "restricted_host_interface.h"
 
+#include "core_api.h"
 #include "manager_app.h"
 #include "status_api.h"
 #include "ui_screens.h"
@@ -102,10 +103,6 @@ void restricted_host_interface(engine_ctx_t *ctx,
   /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
    * application here */
-
-  /* A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
   uint32_t applet_id = get_applet_id();
   switch (applet_id) {
     case 1: {
@@ -113,7 +110,7 @@ void restricted_host_interface(engine_ctx_t *ctx,
       break;
     }
     default: {
-      // TODO: Send error?
+      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
       break;
     }
   }

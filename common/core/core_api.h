@@ -42,4 +42,11 @@
  */
 void send_response_to_host(const uint8_t *msg, const uint32_t size);
 
+/**
+ * @brief Helper API for core to send core error messages to the USB host.
+ *
+ * @param which_error The enum type of the error which needs to be sent
+ */
+void send_core_error_msg_to_host(uint32_t which_error);
+
 #endif /* CORE_API_H */

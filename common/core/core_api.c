@@ -64,8 +64,9 @@
 
 #include <core.pb.h>
 
-#include "assert.h"
+#include "assert_conf.h"
 #include "pb_encode.h"
+#include "status_api.h"
 #include "usb_api.h"
 
 /*****************************************************************************
@@ -100,9 +101,10 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void send_response_to_host(const uint8_t *msg, const uint32_t size) {
-  // encode msg-context directly into payload buffer
   core_msg_t core_msg = CORE_MSG_INIT_ZERO;
   core_msg.which_type = CORE_MSG_CMD_TAG;
+
+  // TODO: Move applet_id management to core
   core_msg.cmd.applet_id = get_applet_id();
 
   uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
@@ -113,4 +115,17 @@ void send_response_to_host(const uint8_t *msg, const uint32_t size) {
 
   usb_send_msg(encoded_buffer, stream.bytes_written, msg, size);
   return;
+}
+
+void send_core_error_msg_to_host(uint32_t core_error_type) {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+  core_msg.which_type = CORE_MSG_ERROR_TAG;
+  core_msg.error.type = (core_error_type_t)core_error_type;
+
+  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
+  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
+
+  usb_send_msg(encoded_buffer, stream.bytes_written, NULL, 0);
 }
