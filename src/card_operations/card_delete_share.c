@@ -62,6 +62,7 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_delete_share.h"
+
 #include "card_internal.h"
 #include "card_utils.h"
 #include "constant_texts.h"
@@ -161,12 +162,6 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
       } else {
         card_handle_errors(&card_data);
       }
-    }
-
-    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type) {
-      continue;
-    } else {
-      buzzer_start(BUZZER_DURATION);
     }
 
     if (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {

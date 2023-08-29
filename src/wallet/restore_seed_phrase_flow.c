@@ -399,7 +399,7 @@ restore_wallet_state_e restore_wallet_state_handler(
       mnemonic_clear();
 
       if (!result) {
-        mark_core_error_screen(ui_text_incorrect_mnemonics);
+        mark_core_error_screen(ui_text_incorrect_mnemonics, false);
         next_state = EARLY_EXIT;
         break;
       }
@@ -408,7 +408,7 @@ restore_wallet_state_e restore_wallet_state_handler(
       calculate_wallet_id(temp_wallet_id, single_line_mnemonics);
       if (get_first_matching_index_by_id(temp_wallet_id, &wallet_index) ==
           SUCCESS_) {
-        mark_core_error_screen(ui_text_wallet_with_same_mnemo_exists);
+        mark_core_error_screen(ui_text_wallet_with_same_mnemo_exists, false);
         next_state = EARLY_EXIT;
         break;
       }
@@ -513,7 +513,7 @@ restore_wallet_state_e restore_wallet_state_handler(
     }
 
     case COMPLETED_WITH_ERRORS: {
-      mark_core_error_screen(ui_text_creation_failed_delete_wallet);
+      mark_core_error_screen(ui_text_creation_failed_delete_wallet, false);
       next_state = EXIT;
       break;
     }
@@ -533,7 +533,7 @@ void restore_seed_phrase_flow(void) {
 
   // Ensure that atleast 4 cards are paired
   if (get_keystore_used_count() < MAX_KEYSTORE_ENTRY) {
-    mark_core_error_screen(ui_text_error_pair_all_cards);
+    mark_core_error_screen(ui_text_error_pair_all_cards, false);
     return;
   }
 

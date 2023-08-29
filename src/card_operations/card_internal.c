@@ -103,7 +103,7 @@
 
 #define NFC_RETURN_ABORT_ERROR(card_data, msg)                                 \
   do {                                                                         \
-    mark_core_error_screen(msg);                                               \
+    mark_core_error_screen(msg, true);                                         \
     (card_data)->error_type = CARD_OPERATION_ABORT_OPERATION;                  \
     return (card_data)->error_type;                                            \
   } while (0)
@@ -283,7 +283,7 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
         // TODO: Fix error message stacking by giving control to either the
         // operation or the application
         if (1 == card_data->nfc_data.recovery_mode) {
-          mark_core_error_screen(ui_critical_card_health_migrate_data);
+          mark_core_error_screen(ui_critical_card_health_migrate_data, true);
         }
 
         /* Check if pairing is required */
@@ -381,7 +381,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
     default:
       switch (card_data->nfc_data.status & 0xFF00) {
         case POW_SW_WALLET_LOCKED:
-          mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
+          mark_core_error_screen(ui_text_wrong_wallet_is_now_locked, true);
           NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
           break;
 

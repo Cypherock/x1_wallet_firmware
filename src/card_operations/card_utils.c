@@ -113,10 +113,11 @@ NFC_connection_data init_nfc_connection_data(const uint8_t *family_id,
 }
 
 card_error_type_e indicate_card_error(const char *error_message) {
-  if (NULL == error_message) {
+  if (!error_message) {
     return CARD_OPERATION_SUCCESS;
   }
 
+  buzzer_start(BUZZER_DURATION);
   message_scr_init(error_message);
   evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
 

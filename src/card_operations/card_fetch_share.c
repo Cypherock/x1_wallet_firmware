@@ -173,12 +173,6 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
       }
     }
 
-    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type) {
-      continue;
-    } else {
-      buzzer_start(BUZZER_DURATION);
-    }
-
     if (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
