@@ -172,6 +172,7 @@ TEST_GROUP_RUNNER(btc_helper_test) {
 TEST_GROUP_RUNNER(evm_txn_test) {
 #ifdef EVM_TXN_MANUAL_TEST
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
+  RUN_TEST_CASE(evm_txn_test, evm_txn_usdt_transfer);
 #endif
 }
 
