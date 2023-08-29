@@ -153,7 +153,7 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       near_main(usb_evt);
       break;
     }
-    case 9: {
+    case 10: {
       solana_main(usb_evt);
       break;
     }
