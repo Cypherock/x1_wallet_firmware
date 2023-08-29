@@ -109,6 +109,8 @@ TEST(evm_txn_test, evm_txn_eth_transfer) {
                        .wallet_id = {},
                        .address_format = EVM_DEFAULT,
                        .transaction_size = 44,
+                       .token_symbol = "",
+                       .is_token_transfer = false,
                    }}};
   evm_query_t query1 = {.which_request = 2,
                         .sign_txn = {.which_request = 2,
@@ -148,6 +150,8 @@ TEST(evm_txn_test, evm_txn_usdt_transfer) {
                        .wallet_id = {},
                        .address_format = EVM_DEFAULT,
                        .transaction_size = 109,
+                       .token_symbol = "USDT",
+                       .is_token_transfer = true,
                    }}};
   evm_query_t query1 = {.which_request = 2,
                         .sign_txn = {.which_request = 2,
