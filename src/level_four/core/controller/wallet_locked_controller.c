@@ -106,8 +106,9 @@ card_error_type_e card_unlock_wallet(const Wallet *wallet) {
   card_operation_data_t card_data = {0};
 
   char heading[50] = "";
-  uint8_t wallet_index;
-  get_index_by_name((const char *)wallet->wallet_name, &wallet_index);
+  uint8_t wallet_index = 0xFF;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)wallet->wallet_name, &wallet_index));
 
   snprintf(heading,
            sizeof(heading),
@@ -159,6 +160,13 @@ card_error_type_e card_unlock_wallet(const Wallet *wallet) {
       }
     }
 
+    /**
+     * @brief For errors which lead to challenge failure or incorrect pin, we
+     * have to refetch the challenge which is performed subsequently in the same
+     * card tap session by the caller from user's perspective, so only for the
+     * condiion of `CARD_OPERATION_LOCKED_WALLET` we don't sound the buzzer as
+     * the card tap session has not completed.
+     */
     if (CARD_OPERATION_LOCKED_WALLET != card_data.error_type) {
       buzzer_start(BUZZER_DURATION);
     }
