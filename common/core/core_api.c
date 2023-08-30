@@ -1,7 +1,8 @@
 /**
- * @file    evm_api.c
+ * @file    core_api.c
  * @author  Cypherock X1 Team
- * @brief   Defines helpers apis for EVM app.
+ * @brief   Helper functions for the application layer
+ *
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,15 +60,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "core_api.h"
 
-#include "evm_api.h"
+#include <core.pb.h>
 
 #include "assert_conf.h"
-#include "common_error.h"
-#include "core_api.h"
-#include "events.h"
-#include "pb_decode.h"
 #include "pb_encode.h"
+#include "status_api.h"
+#include "usb_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,15 +82,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -100,98 +100,32 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool decode_evm_query(const uint8_t *data,
-                      uint16_t data_size,
-                      evm_query_t *query_out) {
-  if (NULL == data || NULL == query_out || 0 == data_size) {
-    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
-    return false;
-  }
+void send_response_to_host(const uint8_t *msg, const uint32_t size) {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+  core_msg.which_type = CORE_MSG_CMD_TAG;
 
-  // zeroise for safety from garbage in the query reference
-  memzero(query_out, sizeof(evm_query_t));
+  // TODO: Move applet_id management to core
+  core_msg.cmd.applet_id = get_applet_id();
 
-  /* Create a stream that reads from the buffer. */
-  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
 
-  /* Now we are ready to decode the message. */
-  bool status = pb_decode(&stream, EVM_QUERY_FIELDS, query_out);
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
+  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
 
-  /* Send error to host if status is false*/
-  if (false == status) {
-    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
-  }
-
-  return status;
+  usb_send_msg(encoded_buffer, stream.bytes_written, msg, size);
+  return;
 }
 
-bool encode_evm_result(const evm_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
-    return false;
+void send_core_error_msg_to_host(uint32_t core_error_type) {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+  core_msg.which_type = CORE_MSG_ERROR_TAG;
+  core_msg.error.type = (core_error_type_t)core_error_type;
 
-  /* Create a stream that will write to our buffer. */
-  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
+  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
 
-  /* Now we are ready to encode the message! */
-  bool status = pb_encode(&stream, EVM_RESULT_FIELDS, result);
-
-  if (true == status) {
-    *bytes_written_out = stream.bytes_written;
-  }
-
-  return status;
-}
-
-bool check_evm_query(const evm_query_t *query, pb_size_t exp_query_tag) {
-  if ((NULL == query) || (exp_query_tag != query->which_request)) {
-    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_QUERY);
-    return false;
-  }
-  return true;
-}
-
-evm_result_t init_evm_result(pb_size_t result_tag) {
-  evm_result_t result = EVM_RESULT_INIT_ZERO;
-  result.which_response = result_tag;
-  return result;
-}
-
-void evm_send_error(pb_size_t which_error, uint32_t error_code) {
-  evm_result_t result = init_evm_result(EVM_RESULT_COMMON_ERROR_TAG);
-  result.common_error = init_common_error(which_error, error_code);
-  evm_send_result(&result);
-}
-
-void evm_send_result(const evm_result_t *result) {
-  // TODO: Eventually 1700 will be replaced by EVM_RESULT_SIZE when all
-  // option files for EVM app are complete
-  uint8_t buffer[1700] = {0};
-  size_t bytes_encoded = 0;
-  ASSERT(encode_evm_result(result, buffer, sizeof(buffer), &bytes_encoded));
-  send_response_to_host(&buffer[0], bytes_encoded);
-}
-
-bool evm_get_query(evm_query_t *query, pb_size_t exp_query_tag) {
-  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
-
-  if (true == event.p0_event.flag) {
-    return false;
-  }
-
-  if (!decode_evm_query(
-          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
-    return false;
-  }
-
-  if (!check_evm_query(query, exp_query_tag)) {
-    return false;
-  }
-
-  return true;
+  usb_send_msg(encoded_buffer, stream.bytes_written, NULL, 0);
 }

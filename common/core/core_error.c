@@ -64,10 +64,12 @@
 
 #include "buzzer.h"
 #include "constant_texts.h"
+#include "core_api.h"
 #include "events.h"
 #include "p0_events.h"
 #include "status_api.h"
-#include "ui_message.h"
+#include "ui_screens.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -149,9 +151,13 @@ void handle_core_errors() {
   p0_get_evt(&evt);
 
   if (true == evt.inactivity_evt) {
+    // Send response to the host before proceeding further
+    if (CORE_DEVICE_IDLE_STATE_USB == get_core_status().device_idle_state) {
+      send_core_error_msg_to_host(CORE_APP_TIMEOUT_OCCURRED);
+    }
+
     mark_core_error_screen(ui_text_process_reset_due_to_inactivity);
     p0_reset_evt();
-    /* TODO: Send message to host if P0 occured if core status is set to usb */
   }
 
   if (true == evt.abort_evt) {

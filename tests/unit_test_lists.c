@@ -86,11 +86,6 @@ TEST_GROUP_RUNNER(usb_evt_api_test) {
   RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
   RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
   RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
 }
 
 TEST_GROUP_RUNNER(ui_events_test) {

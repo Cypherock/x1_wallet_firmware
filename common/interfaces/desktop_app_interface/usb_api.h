@@ -100,19 +100,10 @@ void usb_clear_event();
  * usb_clear_event() respectively.
  * </li><li>
  * Invalid data: <br/> Respond with error code or Send error packet. See
- * usb_send_msg(), usb_send_error() respectively.
+ * usb_send_msg()
  * </li></ol>
  */
 bool usb_get_event(usb_event_t *evt);
-
-/**
- * @brief
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void usb_send_error(const uint8_t *msg, uint32_t size);
 
 /**
  * @brief Sends data stream to the host application over usb.
@@ -122,14 +113,20 @@ void usb_send_error(const uint8_t *msg, uint32_t size);
  * should make sure that any existing usb events are consumed before sending any
  * data.
  *
- * @param msg  Reference to the buffer of serialized data to be sent to the host
- * application.
- * @param size  Size of the message length to be sent to the host application.
- *
- * @see
- * @since v1.0.0
+ * @param core_msg Reference to the buffer of encoded data to be sent to the
+ * host application at the core msg layer.
+ * @param core_msg_size Size of the message length to be sent to the host
+ * application at the core msg layer.
+ * @param app_msg Reference to the buffer of encoded data to be sent to the
+ * host application at the app msg layer.
+ * @param app_msg_size Size of the message length to be sent to the host
+ * application at the core msg layer.
  */
-void usb_send_msg(const uint8_t *msg, uint32_t size);
+void usb_send_msg(const uint8_t *core_msg,
+                  uint32_t core_msg_size,
+                  const uint8_t *app_msg,
+                  uint32_t app_msg_size);
+
 // TODO: Update after refactor; remove the following
 void usb_send_data(uint32_t cmd, const uint8_t *data, uint32_t size);
 

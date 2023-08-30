@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "onboarding_host_interface.h"
 
+#include "core_api.h"
 #include "manager_app.h"
 #include "onboarding.h"
 #include "status_api.h"
@@ -110,7 +111,7 @@ void onboarding_host_interface(engine_ctx_t *ctx,
       break;
     }
     default: {
-      // TODO: Send error?
+      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
       break;
     }
   }
