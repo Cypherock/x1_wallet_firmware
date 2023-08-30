@@ -709,13 +709,6 @@ int add_challenge_flash(const char *name,
   return SUCCESS_;
 }
 
-/**
- * @brief
- *
- * @param name
- * @param is_wallet_locked
- * @return int
- */
 int update_wallet_locked_flash(const char *name, const bool is_wallet_locked) {
   ASSERT(name != NULL);
 
@@ -727,8 +720,22 @@ int update_wallet_locked_flash(const char *name, const bool is_wallet_locked) {
   if (ret != SUCCESS_)
     return INVALID_ARGUMENT;
 
+  if (false == flash_wallet->is_wallet_locked) {
+    /**
+     * @brief Can only udpate lock status if wallet is already locked, else card
+     * locked can be lost. To set wallet to locked for the first time, use @ref
+     * set_wallet_locked.
+     */
+    return INCONSISTENT_STATE;
+  }
+
   flash_wallet->is_wallet_locked = is_wallet_locked;
 
+  /**
+   * @brief If wallet is still in locked case, initialize the challenge values
+   * similar to @ref set_wallet_locked. If wallet is unlocked, zeroise complete
+   * @ref Flash_Pow object.
+   */
   if (is_wallet_locked) {
     // Reset previous challenge
     memzero(flash_wallet->challenge.random_number, POW_RAND_NUMBER_SIZE);
