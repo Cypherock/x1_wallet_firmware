@@ -27,33 +27,6 @@
 #include "tasks.h"
 
 /**
- * @brief Task to generate new wallet
- * @details This function will guide the user to generate a new wallet and store
- * it in the X1Cards. The task handler helps take the user input for wallet
- * configuration. Based on the settings of the device, the option to
- * enable/disable the passphrase will be displayed. The task handler is also
- * responsible for a quick check to make sure the user has temporary knowledge
- * of the seed phrase to aid in double check of the validity of data on cards.
- *
- * @see GENERATE_WALLET_TASKS, tap_cards_for_write_flow(),
- * generate_wallet_random_word()
- * @since v1.0.0
- */
-void tasks_add_new_wallet();
-
-/**
- * @brief Task to restore wallet
- * @details This function will guide the user to restore a wallet from the
- * X1Cards. The task handler helps take the user input for wallet configuration.
- * Based on the settings of the device, the option to enable/disable the
- * passphrase will be displayed.
- *
- * @see
- * @since v1.0.0
- */
-void tasks_restore_wallet();
-
-/**
  * @brief Task to create a wallet to add arbitrary data
  * @details
  *

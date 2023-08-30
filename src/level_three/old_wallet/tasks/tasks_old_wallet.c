@@ -83,10 +83,6 @@ void level_three_old_wallet_tasks() {
       sign_message_tasks_eth();
     } break;
 
-    case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
-      send_transaction_tasks_near();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
       send_transaction_tasks_solana();
     } break;
