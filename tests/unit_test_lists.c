@@ -192,3 +192,8 @@ TEST_GROUP_RUNNER(near_txn_user_verification_test) {
   RUN_TEST_CASE(near_txn_user_verification_test,
                 near_txn_user_verification_function_call_explicit_account);
 }
+
+TEST_GROUP_RUNNER(utils_tests) {
+  RUN_TEST_CASE(utils_tests, der_to_sig_1);
+  RUN_TEST_CASE(utils_tests, der_to_sig_2);
+}
