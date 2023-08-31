@@ -174,6 +174,7 @@ TEST_GROUP_RUNNER(evm_txn_test) {
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_usdt_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_haka_transfer);
+  RUN_TEST_CASE(evm_txn_test, evm_txn_blind_signing);
 #endif
 }
 

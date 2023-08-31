@@ -74,7 +74,7 @@ bool get_user_verification();
 extern evm_txn_context_t *txn_context;
 
 static const uint8_t core_msg[] = {10, 2, 8, 1};
-uint8_t buffer[1024] = {0};
+uint8_t buffer[2048] = {0};
 pb_ostream_t ostream;
 
 /**
@@ -232,3 +232,89 @@ TEST(evm_txn_test, evm_txn_haka_transfer) {
   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
   TEST_ASSERT_TRUE(get_user_verification());
 }
+
+TEST(evm_txn_test, evm_txn_blind_signing) {
+  evm_query_t query = {
+      .which_request = 2,
+      .sign_txn = {.which_request = 1,
+                   .initiate = {
+                       .chain_id = 1,
+                       .derivation_path_count = 5,
+                       .derivation_path = {NON_SEGWIT, ETHEREUM, BITCOIN, 0, 0},
+                       .wallet_id = {},
+                       .address_format = EVM_DEFAULT,
+                       .transaction_size = 1489,
+                       .token_symbol = "",
+                       .is_token_transfer = false,
+                   }}};
+  evm_query_t query1 = {.which_request = 2,
+                        .sign_txn = {.which_request = 2,
+                                     .txn_data = {.has_chunk_payload = true,
+                                                  .chunk_payload = {
+                                                      .chunk =
+                                                          {
+                                                              .size = 1489,
+                                                          },
+                                                      .remaining_size = 0,
+                                                      .chunk_index = 0,
+                                                      .total_chunks = 1,
+                                                  }}}};
+  // raw Txn:
+  // https://etherscan.io/getRawTx?tx=0x906cdfccc6374f6417af58b57b2887301c202d39cbc6d53c630cf3b499fc44bc
+  hex_string_to_byte_array(
+      "f905ce830e261c8502b176b8b8831e848094a9d1e08c7793af67e9d92fe308d5697fb81d"
+      "3e4380b905a4ca350aa60000000000000000000000000000000000000000000000000000"
+      "000000000040000000000000000000000000000000000000000000000000000000000003"
+      "d090000000000000000000000000000000000000000000000000000000000000000e0000"
+      "00000000000000000000a0246c9032bc3a600820415ae600c6388619a14d000000000000"
+      "000000000000fd2b2cd6356af9ac539a32def78c825341524cda00000000000000000000"
+      "00000000000000000000000000014e4359a7f4433400000000000000000000000000dac1"
+      "7f958d2ee523a2206206994597c13d831ec7000000000000000000000000002c780123c4"
+      "5ebb4e5697a84bde870fef1b6a9b00000000000000000000000000000000000000000000"
+      "0000000000000203e686000000000000000000000000dac17f958d2ee523a22062069945"
+      "97c13d831ec7000000000000000000000000fdd1aa08da011f1c0f049770f86324d2ff71"
+      "13450000000000000000000000000000000000000000000000000000000002ed7c5b0000"
+      "00000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000"
+      "00000000000057116aad440de463b5f772bef16c19b5c9346c3e00000000000000000000"
+      "00000000000000000000000000000000000007e1807d000000000000000000000000dac1"
+      "7f958d2ee523a2206206994597c13d831ec700000000000000000000000067f75b045420"
+      "f946844212a47c51523adf64451300000000000000000000000000000000000000000000"
+      "0000000000000b52a9fd000000000000000000000000dac17f958d2ee523a22062069945"
+      "97c13d831ec7000000000000000000000000f3e6b30dc2a5ebc27334addd3b6ee4b4b55a"
+      "24ec0000000000000000000000000000000000000000000000000000000013c876c30000"
+      "00000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000"
+      "000000000000aa16ffae31dafaa639a0a99e59e5e50fc93cef4800000000000000000000"
+      "0000000000000000000000000000000000003b278f37000000000000000000000000dac1"
+      "7f958d2ee523a2206206994597c13d831ec7000000000000000000000000aea6291cb48d"
+      "9675b120f74e2f0b0de01db47a0000000000000000000000000000000000000000000000"
+      "0000000000bc97add5e600000000000000000000000095ad61b0a150d79219dcf64e1e6c"
+      "c01f0b64c4ce00000000000000000000000037bab29ec945191f1d6cbea89a7f10414876"
+      "a9d6000000000000000000000000000000000000000000001bd6924a7a73d57624000000"
+      "0000000000000000000095ad61b0a150d79219dcf64e1e6cc01f0b64c4ce000000000000"
+      "000000000000150ebc67bb51c439a851c80f47eae0b4b057774900000000000000000000"
+      "0000000000000000000000005254fb6f5f0fd22d8400000000000000000000000000961c"
+      "8c0b1aad0c0b10a51fef6a867e3091bcef1700000000000000000000000081153f0889ab"
+      "398c4acb42cb58b565a5392bba9500000000000000000000000000000000000000000000"
+      "00896381378fa22fbc00000000000000000000000000961c8c0b1aad0c0b10a51fef6a86"
+      "7e3091bcef17000000000000000000000000c5d4ec9300be6da89a3db305c415c7cd3cbb"
+      "7e8e0000000000000000000000000000000000000000000001f8eabe252e1a0da0000000"
+      "000000000000000000007c84e62859d0715eb77d1b1c4154ecd6abb21bec000000000000"
+      "0000000000000a84d9d308f3b7d63cd54c16d600b3526aabd1df00000000000000000000"
+      "000000000000000000000000001e4b8dbfe83b90a8000000000000000000000000007420"
+      "b4b9a0110cdc71fb720908340c03f9bc03ec0000000000000000000000007f39c294312b"
+      "e3134e03154ab41d9b61cba0345100000000000000000000000000000000000000000000"
+      "010d1db684112aeb2c00018080",
+      2978,
+      query1.sign_txn.txn_data.chunk_payload.chunk.bytes);
+  txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
+  memzero(txn_context, sizeof(evm_txn_context_t));
+  memcpy(&txn_context->init_info,
+         &query.sign_txn.initiate,
+         sizeof(evm_sign_txn_initiate_request_t));
+  TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
+  usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
+  TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+  TEST_ASSERT_TRUE(get_user_verification());
+}
+// large transaction test
+// https://etherscan.io/getRawTx?tx=0x2d6a7b0f6adeff38423d4c62cd8b6ccb708ddad85da5d3d06756ad4d8a04a6a2
