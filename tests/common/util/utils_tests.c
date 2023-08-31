@@ -1,7 +1,7 @@
 /**
- * @file    unit_tests_main.c
+ * @file    utils_tests.c
  * @author  Cypherock X1 Team
- * @brief   MMain file to handle execution of all unit tests
+ * @brief   Unit tests for utility functions
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,95 +56,62 @@
  ******************************************************************************
  */
 
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain"       \
-                            issue*/
-#include "application_startup.h"
 #include "unity_fixture.h"
+#include "utils.h"
 
-#if USE_SIMULATOR == 1
-#ifdef _WIN32
-#define main SDL_main
-#endif
-#include "sim_usb.h"
-extern lv_indev_t *indev_keypad;
+TEST_GROUP(utils_tests);
 
-/*On OSX SDL needs different handling*/
-#if defined(__APPLE__) && defined(TARGET_OS_MAC)
-#if __APPLE__ && TARGET_OS_MAC
-#define SDL_APPLE
-#endif
-#endif
-#endif /* USE_SIMULATOR == 1 */
-
-void RunAllTests(void) {
-  RUN_TEST_GROUP(event_getter_test);
-  RUN_TEST_GROUP(p0_events_test);
-  RUN_TEST_GROUP(ui_events_test);
-  RUN_TEST_GROUP(usb_evt_api_test);
-  RUN_TEST_GROUP(nfc_events_test);
-#ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
-  RUN_TEST_GROUP(nfc_events_manual_test);
-#endif
-  RUN_TEST_GROUP(xpub);
-  RUN_TEST_GROUP(array_lists_tests);
-  RUN_TEST_GROUP(flow_engine_tests);
-  RUN_TEST_GROUP(manager_api_test);
-  RUN_TEST_GROUP(btc_txn_helper_test);
-  RUN_TEST_GROUP(btc_helper_test);
-  RUN_TEST_GROUP(evm_txn_test);
-  RUN_TEST_GROUP(near_helper_test);
-#ifdef NEAR_FLOW_MANUAL_TEST
-  RUN_TEST_GROUP(near_txn_user_verification_test);
-#endif
-  RUN_TEST_GROUP(utils_tests);
+TEST_SETUP(utils_tests) {
+  return;
 }
 
-/**
- * @brief  The entry point to the unit test framework
- * This entry point is a parallel entry point to the int main(void) of the
- * actual firmware.
- */
-int main(void) {
-  application_init();
-
-  UnityBegin("unit_tests_main.c");
-  RunAllTests();
-  UnityEnd();
+TEST_TEAR_DOWN(utils_tests) {
+  return;
 }
 
-#if USE_SIMULATOR == 0
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1) {
-  }
-  /* USER CODE END Error_Handler_Debug */
+TEST(utils_tests, der_to_sig_1) {
+  uint8_t der_encoded_signature[300] = {0};
+  uint8_t expected_signature[64] = {0};
+
+  // DER signature reference: https://asecuritysite.com/digitalcert/sigs5
+  hex_string_to_byte_array("3046022100e4e87c417196c6e5cd63f93e94929ccda6d04fc0a"
+                           "7446922baf3070e854ec4f4022100a1ecd098008329de9bc93f"
+                           "b2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
+                           144,
+                           der_encoded_signature);
+
+  hex_string_to_byte_array(
+      "e4e87c417196c6e5cd63f93e94929ccda6d04fc0a7446922baf3070e854ec4f4a1ecd098"
+      "008329de9bc93fb2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
+      128,
+      expected_signature);
+
+  uint8_t signature[64] = {0};
+  der_to_sig(der_encoded_signature, signature);
+
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_signature, signature, sizeof(expected_signature));
 }
 
-/**
- * @brief Function to transmit data in real-time over SWV channel
- * @param file unused
- * @param *ptr string pointer for data to send
- * @param len  length of data to send
- *
- * @ret len of data transmitted
- */
-int _write(int file, char *ptr, int len) {
-#ifndef NDEBUG    // Disable printf in release mode
-  int DataIdx;
-  for (DataIdx = 0; DataIdx < len; DataIdx++) {
-    ITM_SendChar(*ptr++);
-  }
-  return len;
-#endif
-}
+TEST(utils_tests, der_to_sig_2) {
+  uint8_t der_encoded_signature[300] = {0};
+  uint8_t expected_signature[64] = {0};
 
-#endif /* USE_SIMULATOR == 0 */
+  hex_string_to_byte_array(
+      "3044022100b259cf6021d099b43efe4b58c939dfb8be33c5dce38a783ec37a144f08bf00"
+      "ce021f513db69c8c3763b58e5f1c8925f11e16206fb15829abe684b9a765721165b8",
+      140,
+      der_encoded_signature);
+
+  hex_string_to_byte_array(
+      "b259cf6021d099b43efe4b58c939dfb8be33c5dce38a783ec37a144f08bf00ce00513db6"
+      "9c8c3763b58e5f1c8925f11e16206fb15829abe684b9a765721165b8",
+      128,
+      expected_signature);
+
+  uint8_t signature[64] = {0};
+  der_to_sig(der_encoded_signature, signature);
+
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_signature, signature, sizeof(expected_signature));
+}
