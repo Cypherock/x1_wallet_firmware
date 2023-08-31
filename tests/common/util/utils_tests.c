@@ -97,16 +97,15 @@ TEST(utils_tests, der_to_sig_2) {
   uint8_t der_encoded_signature[300] = {0};
   uint8_t expected_signature[64] = {0};
 
-  // Modified len: 2-bytes from r segment and 1-byte from s segment
   hex_string_to_byte_array(
-      "3046021F007c417196c6e5cd63f93e94929ccda6d04fc0a7446922baf3070e854ec4f402"
-      "2000ecd098008329de9bc93fb2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
-      138,
+      "3044022100b259cf6021d099b43efe4b58c939dfb8be33c5dce38a783ec37a144f08bf00"
+      "ce021f513db69c8c3763b58e5f1c8925f11e16206fb15829abe684b9a765721165b8",
+      140,
       der_encoded_signature);
 
   hex_string_to_byte_array(
-      "00007c417196c6e5cd63f93e94929ccda6d04fc0a7446922baf3070e854ec4f400ecd098"
-      "008329de9bc93fb2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
+      "b259cf6021d099b43efe4b58c939dfb8be33c5dce38a783ec37a144f08bf00ce00513db6"
+      "9c8c3763b58e5f1c8925f11e16206fb15829abe684b9a765721165b8",
       128,
       expected_signature);
 
