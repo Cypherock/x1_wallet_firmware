@@ -190,38 +190,6 @@ void wallet_locked_controller();
 void wallet_locked_controller_b();
 
 /**
- * @brief This controller is executed for adding xpub to the device.
- * @details This controller is used to add xpub to the desktop app for the coins
- * requested by desktop from a list of supported coins.
- *
- * @see add_coin_tasks(), desktop_listener_task(), ADD_COIN_START
- * @since v1.0.0
- */
-void add_coin_controller();
-
-/**
- * @brief Back button controller for add coin flow.
- * @details This controller is used to handle back button events during adding
- * xpub to the device.
- *
- * @see add_coin_controller(), add_coin_tasks(), ADD_COIN_START
- * @since v1.0.0
- */
-void add_coin_controller_b();
-
-/**
- * @brief Next button controller is executed for processing and signing unsigned
- * transaction.
- */
-void send_transaction_controller_near();
-
-/**
- * @brief Back button controller is executed for handling cancellation of the
- * ongoing process.
- */
-void send_transaction_controller_near_b();
-
-/**
  * @brief Next button controller is executed for processing and signing unsigned
  * transaction of Ethereum.
  * @details This controller is used to process and sign the unsigned transaction
@@ -355,8 +323,8 @@ void receive_transaction_controller_b_solana();
  * the device and cards.
  *
  * @see verify_wallet_controller_b(), verify_wallet_tasks(),
- * generate_wallet_controller(), tasks_add_new_wallet(),
- * restore_wallet_controller(), tasks_restore_wallet()
+ * generate_wallet_controller(),
+ * restore_wallet_controller(),
  * @since v1.0.0
  */
 void verify_wallet_controller();
@@ -367,8 +335,8 @@ void verify_wallet_controller();
  * verification of newly added wallet.
  *
  * @see verify_wallet_controller(), verify_wallet_tasks(),
- * generate_wallet_controller(), tasks_add_new_wallet(),
- * restore_wallet_controller(), tasks_restore_wallet()
+ * generate_wallet_controller(),
+ * restore_wallet_controller(),
  * @since v1.0.0
  */
 void verify_wallet_controller_b();

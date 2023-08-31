@@ -76,7 +76,6 @@ extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 extern char *PASSPHRASE;
 
-extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
 
 extern Receive_Transaction_Data receive_transaction_data;

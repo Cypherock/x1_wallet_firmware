@@ -22,8 +22,8 @@
  * such as view seed, delete/unlock/verify wallet and other desktop triggered
  * operations such export wallet, send/receive transactions.
  *
- * @see view_seed_task(), delete_wallet_task(), wallet_locked_task(),
- * verify_wallet_task(), export_wallet_task(), add_coin_tasks(),
+ * @see view_seed_task(), wallet_locked_task(),
+ * verify_wallet_task(),
  * send_transaction_tasks_eth(), receive_transaction_tasks_eth(),
  * LEVEL_THREE_OLD_WALLET_TASKS, Flow_level.level_two,
  * level_three_old_wallet_controller_b() level_three_old_wallet_controller()
@@ -31,14 +31,4 @@
  */
 void level_three_old_wallet_tasks();
 
-/**
- * @brief Handles the pre-processing & display rendering of delete wallet
- * operation.
- * @details This function handles the pre-processing of delete wallet operation.
- *
- * @see DELETE_WALLET_TASKS, tap_cards_for_delete_flow(), wallet.h,
- * delete_wallet_controller()
- * @since v1.0.0
- */
-void delete_wallet_task();
 #endif
