@@ -14,6 +14,7 @@
         "rand.h": "c",
         "atca_helpers.h": "c",
         "atca_crypto_sw_sha2.h": "c",
-        "ui_instruction.h": "c"
+        "ui_instruction.h": "c",
+        "eth_app.h": "c"
     }
 }

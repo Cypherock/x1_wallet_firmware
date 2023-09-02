@@ -64,23 +64,24 @@
 
 #include <core.pb.h>
 
+#include "arbitrum_app.h"
+#include "avalanche_app.h"
+#include "bsc_app.h"
 #include "btc_app.h"
 #include "btc_main.h"
 #include "core_api.h"
 #include "dash_app.h"
 #include "doge_app.h"
 #include "eth_app.h"
-#include "polygon_app.h"
-#include "bsc_app.h"
-#include "fantom_app.h"
-#include "avalanche_app.h"
-#include "optimism_app.h"
-#include "arbitrum_app.h"
 #include "evm_main.h"
+#include "fantom_app.h"
+#include "fantom_app.h"
 #include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"
 #include "near_main.h"
+#include "optimism_app.h"
+#include "polygon_app.h"
 #include "status_api.h"
 
 /*****************************************************************************
