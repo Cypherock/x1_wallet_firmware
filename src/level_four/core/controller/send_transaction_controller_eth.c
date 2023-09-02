@@ -82,8 +82,8 @@ evm_unsigned_txn eth_unsigned_txn_ptr = {
     .to_address = {0},
     .value_size = {0},
     .value = {0},
-    .payload_size = 0,
-    .payload = NULL,
+    .data_size = 0,
+    .data = NULL,
     .chain_id_size = {0},
     .chain_id = {0},
     .dummy_r = {0},
@@ -117,14 +117,6 @@ void send_transaction_controller_eth() {
       }
     } break;
 
-    case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-      if (eth_unsigned_txn_ptr.payload_status ==
-          PAYLOAD_CONTRACT_NOT_WHITELISTED)
-        flow_level.level_three = SEND_TXN_VERIFY_CONTRACT_ADDRESS;
-      else
-        flow_level.level_three = SEND_TXN_VERIFY_BLIND_SIGNING_ETH;
-    } break;
-
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
       flow_level.level_three = SEND_TXN_VERIFY_DERIVATION_PATH;
     } break;
@@ -143,16 +135,6 @@ void send_transaction_controller_eth() {
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
       flow_level.level_three = SEND_TXN_CALCULATE_AMOUNT_ETH;
-    } break;
-
-    case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-      if ((!evm_is_token_whitelisted) &&
-          (eth_unsigned_txn_ptr.payload_status != PAYLOAD_ABSENT) &&
-          (is_zero(eth_unsigned_txn_ptr.value,
-                   eth_unsigned_txn_ptr.value_size[0])))
-        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_FEES_ETH;
-      else
-        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {

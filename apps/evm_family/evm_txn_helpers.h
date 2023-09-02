@@ -30,23 +30,22 @@
  * TYPEDEFS
  *****************************************************************************/
 
-/**
- * @brief Enum used to represent the status of payload field in a transaction.
- *
- */
 typedef enum {
-  PAYLOAD_ABSENT = 0x0,                 // No payload present in the transaction
-  PAYLOAD_SIGNATURE_NOT_WHITELISTED,    // Payload function signature is not
-                                        // recognized [Blind Signing]
-  PAYLOAD_CONTRACT_NOT_WHITELISTED,     // [OBSOLETE] Payload function signature
-                                        // is whitelisted but contract is not
-                                        // (for Transfer function) [Unverified
-                                        // Contract] [OBSOLETE]
-  PAYLOAD_CONTRACT_INVALID,    // Payload function signature and contract both
-                               // are whitelisted but doesn't match [Invalid
-                               // Transaction]
-  PAYLOAD_WHITELISTED,    // Payload is completely recognized [Clear Signing]
-} PAYLOAD_STATUS;
+  /// No data present in the transaction
+  EVM_TXN_NO_DATA = 0x0,
+
+  /// Data present in the transaction is invalid
+  EVM_TXN_INVALID_DATA,
+
+  /// Function signature in data is not recognized
+  EVM_TXN_UNKNOWN_FUNC_SIG,
+
+  /// Data is for token transfer function
+  EVM_TXN_TRANSFER_FUNC,
+
+  /// Function signature is known; decode function params to display
+  EVM_TXN_KNOWN_FUNC_SIG,
+} EVM_TRANSACTION_TYPE;
 
 /**
  * @brief Struct to store Unsigned Ethereum Transaction details.
@@ -73,16 +72,14 @@ typedef struct {
   uint8_t value_size[1];
   uint8_t value[ETH_VALUE_SIZE_BYTES];
 
-  uint64_t payload_size;
-  const uint8_t *payload;
+  uint64_t data_size;
+  const uint8_t *data;
 
   uint8_t chain_id_size[1];
   uint8_t chain_id[8];
 
   uint8_t dummy_r[1];
   uint8_t dummy_s[1];
-
-  PAYLOAD_STATUS payload_status;
 } evm_unsigned_txn;
 #pragma pack(pop)
 
@@ -95,10 +92,17 @@ typedef struct {
 
   /// remembers the allocated buffer for holding complete unsigned transaction
   uint8_t *transaction;
+
   /// store for decoded unsigned transaction info
   evm_unsigned_txn transaction_info;
+
   /// whitelisted contract in the transaction
   const erc20_contracts_t *contract;
+
+  EVM_TRANSACTION_TYPE txn_type;
+
+  /// pointer to maintain a list of display nodes
+  ui_display_node *display_node;
 } evm_txn_context_t;
 
 /*****************************************************************************
@@ -123,9 +127,9 @@ typedef struct {
  * @retval 0 Success
  * @retval -1 Failure
  */
-int evm_byte_array_to_unsigned_txn(const uint8_t *evm_utxn_byte_array,
-                                   size_t byte_array_len,
-                                   evm_txn_context_t *txn_context);
+int evm_decode_unsigned_txn(const uint8_t *evm_utxn_byte_array,
+                            size_t byte_array_len,
+                            evm_txn_context_t *txn_context);
 
 /**
  * @brief Verifies the unsigned transaction.
@@ -151,7 +155,7 @@ bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context);
  * @return
  * @retval
  */
-void eth_get_to_address(const evm_unsigned_txn *utxn_ptr,
+void eth_get_to_address(const evm_txn_context_t *txn_context,
                         const uint8_t **address);
 
 /**
@@ -165,7 +169,7 @@ void eth_get_to_address(const evm_unsigned_txn *utxn_ptr,
  * @return
  * @retval
  */
-uint32_t eth_get_value(const evm_unsigned_txn *utxn_ptr, char *value);
+uint32_t eth_get_value(const evm_txn_context_t *txn_context, char *value);
 
 /**
  * @brief Return the string representation of decimal value of transaction fee
@@ -196,14 +200,5 @@ uint8_t evm_get_decimal(const evm_txn_context_t *txn_context);
  * @return const char*
  */
 const char *evm_get_asset_symbol(const evm_txn_context_t *txn_context);
-
-/**
- * @brief Returns the title for address verification in ethereum send flow
- *        Contract address is verified when sending data with payload except for
- * whitelisted tokens
- * @param utxn_ptr Pointer to the unsigned transaction for ethereum
- * @return const char*
- */
-const char *eth_get_address_title(const evm_unsigned_txn *utxn_ptr);
 
 #endif

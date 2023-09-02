@@ -73,8 +73,6 @@
  * EXTERN VARIABLES
  *****************************************************************************/
 
-extern ui_display_node *current_display_node;
-
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -107,11 +105,10 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
   bool status = false;
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
-  const char *unit = NULL;
+  const char *unit = evm_get_asset_symbol(txn_context);
   char value[34] = {'\0'};
   char hex_str[30] = {'\0'};
-  char display[40] = "";
-  const char *title = eth_get_address_title(&txn_context->transaction_info);
+  char display[80] = "";
 
   // TODO: verify transaction nonce; this is pending on settings option
 #if 0
@@ -122,22 +119,24 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
 #endif
 
   // verify recipient address; TODO: handle harmony address encoding
-  eth_get_to_address(&txn_context->transaction_info, &to_address);
+  eth_get_to_address(txn_context, &to_address);
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
-  if (!core_scroll_page(title, address, evm_send_error)) {
+  snprintf(
+      display, sizeof(display), UI_TEXT_BTC_SEND_PROMPT, unit, g_evm_app->name);
+  if (!core_scroll_page(NULL, display, evm_send_error) ||
+      !core_scroll_page(ui_text_verify_address, address, evm_send_error)) {
     return status;
   }
 
   // verify recipient amount
-  uint8_t len = eth_get_value(&txn_context->transaction_info, hex_str);
+  uint8_t len = eth_get_value(txn_context, hex_str);
   if (!convert_byte_array_to_decimal_string(
           len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
     evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     return status;
   }
 
-  unit = evm_get_asset_symbol(txn_context);
   snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, unit);
   if (!core_confirmation(display, evm_send_error)) {
     return status;
@@ -180,14 +179,19 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
     return false;
   }
 
-  while (NULL != current_display_node) {
-    if (!core_scroll_page(current_display_node->title,
-                          current_display_node->value,
-                          evm_send_error)) {
+  ui_display_node *ui_node = txn_context->display_node;
+  while (NULL != ui_node) {
+    if (!core_scroll_page(ui_node->title, ui_node->value, evm_send_error)) {
       return false;
     }
-    current_display_node = current_display_node->next;
+    ui_node = ui_node->next;
   }
+  /**
+   * The function ETH_ExtractArguments prepares the list of display nodes
+   * containing presentable strings. The function reserves heap memory for the
+   * list elements. This is the earliest safe point to free the memory.
+   */
+  cy_free();
   return true;
 }
 

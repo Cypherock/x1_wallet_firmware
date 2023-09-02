@@ -92,6 +92,20 @@ extern const erc20_contracts_t arbitrum_contracts[];
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Checks if the provided token address is whitelisted and return the
+ * matching contract instance.
+ *
+ * @param address Reference to the buffer containing the token address
+ * @param contract Pointer to store the matched contract address instance
+ *
+ * @return bool Indicating if the provided token address is whitelisted
+ * @return true If the address matches to an entry in the whitelist
+ * @return false If the address does not match to an entry in the whitelist
+ */
+static bool is_token_whitelisted(const uint8_t *address,
+                                 const erc20_contracts_t **contract);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -102,8 +116,7 @@ static const evm_config_t arbitrum_app_config = {
     .chain_id = 42161,
 
     // whitelisted contracts
-    .whitelisted_contracts = NULL,
-    .whitelist_count = ARBITRUM_WHITELISTED_CONTRACTS_COUNT,
+    .is_token_whitelisted = is_token_whitelisted,
 };
 
 static const cy_app_desc_t arbitrum_app_desc = {
@@ -123,6 +136,14 @@ static const cy_app_desc_t arbitrum_app_desc = {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static bool is_token_whitelisted(const uint8_t *address,
+                                 const erc20_contracts_t **contract) {
+  if (NULL != contract) {
+    *contract = NULL;
+  }
+  return false;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
