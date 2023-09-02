@@ -96,7 +96,7 @@ extern const erc20_contracts_t avalanche_contracts[];
 
 static const evm_config_t avalanche_app = {
     .lunit_name = "AVAX",
-    .name = "Avalanche CChain",
+    .name = "Avalanche (C-Chain)",
     .chain_id = 43114,
 
     // whitelisted contracts
