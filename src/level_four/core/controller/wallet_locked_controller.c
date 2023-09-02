@@ -1,8 +1,7 @@
 /**
  * @file    wallet_locked_controller.c
  * @author  Cypherock X1 Team
- * @brief   Wallet unlock next controller.
- *          Handles post event (only next events) operations for unlock wallet.
+ * @brief   Wallet unlock flow controller.
  * @copyright Copyright (c) 2022 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -56,123 +55,132 @@
  *
  ******************************************************************************
  */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include "card_internal.h"
+#include "card_unlock_wallet.h"
+#include "card_utils.h"
 #include "constant_texts.h"
-#include "controller_level_four.h"
-#include "controller_tap_cards.h"
+#include "core_error.h"
 #include "nfc.h"
 #include "pow.h"
 #include "pow_utilities.h"
-#include "sha2.h"
-#include "ui_instruction.h"
-#include "ui_message.h"
-#include "ui_text_slideshow.h"
+#include "ui_screens.h"
 
-extern Flow_level flow_level;
-extern Counter counter;
-extern Wallet wallet;
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
 
-static void _wallet_locked_tap_card();
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
 
-void wallet_locked_controller() {
-  switch (flow_level.level_three) {
-    case WALLET_LOCKED_MESSAGE:
-      lv_obj_clean(lv_scr_act());
-      tap_card_data.desktop_control = false;
-      flow_level.level_three = WALLET_LOCKED_ENTER_PIN;
-      break;
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
 
-    case WALLET_LOCKED_ENTER_PIN:
-      sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
-                 strnlen(flow_level.screen_input.input_text,
-                         sizeof(flow_level.screen_input.input_text)),
-                 wallet.password_double_hash);
-      sha256_Raw(wallet.password_double_hash,
-                 SHA256_DIGEST_LENGTH,
-                 wallet.password_double_hash);
-      memzero(flow_level.screen_input.input_text,
-              sizeof(flow_level.screen_input.input_text));
-      flow_level.level_three = WALLET_LOCKED_TAP_CARD_FRONTEND;
-      break;
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
 
-    case WALLET_LOCKED_TAP_CARD_FRONTEND:
-      flow_level.level_three = WALLET_LOCKED_TAP_CARD_BACKEND;
-      break;
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
 
-    case WALLET_LOCKED_TAP_CARD_BACKEND:
-      _wallet_locked_tap_card();
-      break;
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
 
-    case WALLET_LOCKED_SUCCESS:
-      reset_flow_level();
-      break;
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
 
-    default:
-      message_scr_init(ui_text_something_went_wrong);
-      break;
-  }
-}
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 
-static void _wallet_locked_tap_card() {
-  uint8_t wallet_index;
+card_error_type_e card_unlock_wallet(const Wallet *wallet) {
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  card_operation_data_t card_data = {0};
 
-  get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
-  memcpy(tap_card_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-  tap_card_data.retries = 5;
+  char heading[50] = "";
+  uint8_t wallet_index = 0xFF;
+  ASSERT(SUCCESS ==
+         get_index_by_name((const char *)wallet->wallet_name, &wallet_index));
+
+  snprintf(heading,
+           sizeof(heading),
+           UI_TEXT_TAP_CARD,
+           decode_card_number(get_wallet_card_locked(wallet_index)));
+  instruction_scr_init(ui_text_place_card_below, heading);
+
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.init_session_keys = true;
   while (1) {
-    tap_card_data.acceptable_cards = get_wallet_card_locked(wallet_index);
-    tap_card_data.lvl3_retry_point = WALLET_LOCKED_TAP_CARD_FRONTEND;
-    tap_card_data.tapped_card = 0;
-    if (!tap_card_applet_connection())
-      return;
-    tap_card_data.lvl3_retry_point = WALLET_LOCKED_ENTER_PIN;
-    tap_card_data.status = nfc_verify_challenge(wallet.wallet_name,
-                                                get_proof_of_work_nonce(),
-                                                wallet.password_double_hash);
+    card_data.nfc_data.acceptable_cards = get_wallet_card_locked(wallet_index);
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    card_data.nfc_data.tapped_card = 0;
 
-    if (tap_card_data.status == SW_NO_ERROR ||
-        tap_card_data.status == SW_WARNING_STATE_UNCHANGED) {
-      update_wallet_locked_flash((const char *)wallet.wallet_name, false);
-      flow_level.level_three = WALLET_LOCKED_SUCCESS;
-      buzzer_start(BUZZER_DURATION);
-      instruction_scr_destructor();
-      break;
-    } else if (tap_card_data.status == POW_SW_CHALLENGE_FAILED) {
-      uint8_t target[SHA256_SIZE], random_number[POW_RAND_NUMBER_SIZE];
-      char log[122] = {0}, offset = 0;
-      for (int i = 0; i < POW_NONCE_SIZE; i++) {
-        offset += snprintf(log + offset,
-                           sizeof(log) - offset,
-                           "%02X",
-                           get_proof_of_work_nonce()[i]);
-      }
-      LOG_CRITICAL("nonce: %s", log);
-      tap_card_data.status =
-          nfc_get_challenge(wallet.wallet_name, target, random_number);
-      if (tap_card_data.status == SW_NO_ERROR) {
-        if (memcmp(get_wallet_by_index(wallet_index)->challenge.random_number,
-                   random_number,
-                   POW_RAND_NUMBER_SIZE) != 0)
-          LOG_CRITICAL("E: pow-rand");
-        if (memcmp(get_wallet_by_index(wallet_index)->challenge.target,
-                   target,
-                   SHA256_SIZE) != 0) {
-          int old_lvl = pow_count_set_bits(
-              get_wallet_by_index(wallet_index)->challenge.target);
-          int new_lvl = pow_count_set_bits(target);
-          LOG_CRITICAL("E: pow-tg (o: %d, n: %d)", old_lvl, new_lvl);
-        }
-        instruction_scr_destructor();
-        mark_error_screen(ui_text_pow_challenge_failed);
-        // add_challenge_flash((const char *)wallet.wallet_name,
-        //                     target,
-        //                     random_number,
-        //                     tap_card_data.tapped_card);
-        reset_flow_level();
+    result = card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status =
+          nfc_verify_challenge(wallet->wallet_name,
+                               get_proof_of_work_nonce(),
+                               wallet->password_double_hash);
+
+      if (card_data.nfc_data.status == SW_NO_ERROR ||
+          card_data.nfc_data.status == SW_WARNING_STATE_UNCHANGED) {
+        update_wallet_locked_flash((const char *)wallet->wallet_name, false);
         buzzer_start(BUZZER_DURATION);
         break;
+      } else {
+        card_handle_errors(&card_data);
+        if (POW_SW_CHALLENGE_FAILED == card_data.nfc_data.status) {
+          uint16_t bits = pow_count_set_bits(
+              get_wallet_by_index(wallet_index)->challenge.target);
+          LOG_CRITICAL("ex-pow-tg n: %d", bits);
+          log_hex_array(
+              "ex-pow-rn: ",
+              get_wallet_by_index(wallet_index)->challenge.random_number,
+              POW_RAND_NUMBER_SIZE);
+        }
       }
-    } else if (tap_card_handle_applet_errors()) {
+    }
+
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, heading);
+        continue;
+      }
+    }
+
+    /**
+     * @brief For errors which lead to challenge failure or incorrect pin, we
+     * have to refetch the challenge which is performed subsequently in the same
+     * card tap session by the caller from user's perspective, so only for the
+     * condiion of `CARD_OPERATION_LOCKED_WALLET` we don't sound the buzzer as
+     * the card tap session has not completed.
+     */
+    if (CARD_OPERATION_LOCKED_WALLET != card_data.error_type) {
+      buzzer_start(BUZZER_DURATION);
+    }
+
+    result = handle_wallet_errors(&card_data, wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
       break;
     }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
   }
+
+  nfc_deselect_card();
+  return result;
 }

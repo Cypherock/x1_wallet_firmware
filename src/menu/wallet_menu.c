@@ -69,6 +69,7 @@
 #include "ui_screens.h"
 #include "view_seed_flow.h"
 #include "wallet_list.h"
+#include "wallet_unlock_flow.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -223,7 +224,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
     }
   } else if (UI_EVENT_CONFIRM == ui_event.event_type) {
     if (1 == wallet_ptr->is_wallet_locked) {
-      // TODO: Implement is_wallet_locked wallet flow
+      wallet_unlock_flow(wallet_ptr);
     } else if (0x0f != wallet_ptr->cards_states) {
       delete_wallet_flow(wallet_ptr);
     } else {

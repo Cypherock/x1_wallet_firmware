@@ -359,7 +359,6 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_card_is_full);
       break;
     case SW_RECORD_NOT_FOUND:
-      card_data->nfc_data.active_cmd_type = WALLET_DOES_NOT_EXISTS_ON_CARD;
       NFC_RETURN_ABORT_ERROR(card_data,
                              ui_text_wallet_doesnt_exists_on_this_card);
       break;
@@ -377,6 +376,9 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       break;
     case SW_INS_BLOCKED:
       NFC_RETURN_ABORT_ERROR(card_data, ui_critical_card_health_migrate_data);
+    case POW_SW_CHALLENGE_FAILED:
+      mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
+      NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
       break;
     default:
       switch (card_data->nfc_data.status & 0xFF00) {
