@@ -45,7 +45,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/btc_family/ltc
         apps/evm_family
         apps/evm_family/eth
-
+        apps/evm_family/polygon
+        apps/evm_family/bsc
+        apps/evm_family/fantom
+        apps/evm_family/avalanche
+        apps/evm_family/optimism
+        apps/evm_family/arbitrum
         apps/near_app
 
         src/
