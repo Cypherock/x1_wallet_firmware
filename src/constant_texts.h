@@ -42,6 +42,8 @@
 #define UI_TEXT_VERIFY_MESSAGE "Verify Message"
 #define UI_TEXT_VERIFY_DOMAIN "Verify Domain"
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
+#define UI_TEXT_WALLET_UNLOCKED "Correct PIN! %s is now unlocked"
+#define UI_TEXT_UNLOCK_WARNING "Multiple incorrect attempts may block %s"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
   "Incorrect PIN!\n%d attempt(s) remaining"
 #define UI_TEXT_BLIND_SIGNING_WARNING                                          \
@@ -193,6 +195,7 @@ extern const char *ui_text_invalid_card_contact_cypherock;
 extern const char *ui_text_wrong_card_sequence;
 extern const char *ui_text_wallet_doesnt_exists_on_this_card;
 extern const char *ui_text_wrong_wallet_is_now_locked;
+extern const char *ui_text_wallet_already_unlocked;
 extern const char *ui_text_wallet_verification_failed;
 
 extern const char *ui_text_invalid_card_tap_card[];

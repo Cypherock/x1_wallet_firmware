@@ -64,6 +64,9 @@
 
 #include <core.pb.h>
 
+#include "arbitrum_app.h"
+#include "avalanche_app.h"
+#include "bsc_app.h"
 #include "btc_app.h"
 #include "btc_main.h"
 #include "core_api.h"
@@ -71,10 +74,13 @@
 #include "doge_app.h"
 #include "eth_app.h"
 #include "evm_main.h"
+#include "fantom_app.h"
 #include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"
 #include "near_main.h"
+#include "optimism_app.h"
+#include "polygon_app.h"
 #include "solana_main.h"
 #include "status_api.h"
 
@@ -153,8 +159,32 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       near_main(usb_evt);
       break;
     }
+    case 9: {
+      evm_main(usb_evt, get_polygon_app());
+      break;
+    }
     case 10: {
       solana_main(usb_evt);
+      break;
+    }
+    case 11: {
+      evm_main(usb_evt, get_bsc_app());
+      break;
+    }
+    case 12: {
+      evm_main(usb_evt, get_fantom_app());
+      break;
+    }
+    case 13: {
+      evm_main(usb_evt, get_avalanche_app());
+      break;
+    }
+    case 14: {
+      evm_main(usb_evt, get_optimism_app());
+      break;
+    }
+    case 17: {
+      evm_main(usb_evt, get_arbitrum_app());
       break;
     }
     default: {

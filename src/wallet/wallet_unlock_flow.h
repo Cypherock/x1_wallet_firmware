@@ -1,31 +1,21 @@
 /**
- * @file    card_operations.h
+ * @file    wallet_unlock_flow.h
  * @author  Cypherock X1 Team
- * @brief   Header file exporting card operations
- *
+ * @brief   Header file for wallet unlock flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CARD_OPERATIONS_H
-#define CARD_OPERATIONS_H
+#ifndef WALLET_UNLOCK_FLOW_H
+#define WALLET_UNLOCK_FLOW_H
 
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_delete_share.h"
-#include "card_fetch_challenge.h"
-#include "card_fetch_share.h"
-#include "card_fetch_wallet_list.h"
-#include "card_operation_typedefs.h"
-#include "card_pair.h"
-#include "card_read_verify_share.h"
-#include "card_sign.h"
-#include "card_unlock_wallet.h"
-#include "card_write_share.h"
-#include "check_pairing.h"
-#include "read_card_version.h"
+#include <stdbool.h>
+#include <stdint.h>
 
+#include "flash_struct.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -41,5 +31,17 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
-#endif /* CARD_OPERATIONS_H */
+/**
+ * @brief The function `wallet_unlock_flow` unlocks a wallet by fetching a
+ * challenge and handling the unlocking process. Wallet unlock is performed in
+ * the following steps:
+ * 1. Fetch challenge from card
+ * 2. Solve challenge by finding correct nonce for acheiving the target hash
+ * 3. Ask user to enter the pin
+ * 4. Unlock wallet on card
+ *
+ * @param flash_wallet A pointer to a structure of type Flash_Wallet, which
+ * contains information about a wallet stored in flash memory.
+ */
+void wallet_unlock_flow(const Flash_Wallet *flash_wallet);
+#endif /* WALLET_UNLOCK_FLOW_H */

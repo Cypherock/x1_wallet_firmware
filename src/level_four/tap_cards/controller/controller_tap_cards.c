@@ -226,12 +226,12 @@ bool tap_card_handle_applet_errors() {
             nfc_get_challenge(wallet.wallet_name, target, random_number);
 
         mark_error_screen(ui_text_wrong_wallet_is_now_locked);
-        if (tap_card_data.status == SW_NO_ERROR)
-          // add_challenge_flash((const char *)wallet.wallet_name,
-          //                     target,
-          //                     random_number,
-          //                     tap_card_data.tapped_card);
-          tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
+        // if (tap_card_data.status == SW_NO_ERROR)
+        //   add_challenge_flash((const char *)wallet.wallet_name,
+        //                       target,
+        //                       random_number,
+        //                       tap_card_data.tapped_card);
+        tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
         flow_level.level_one = LEVEL_TWO_OLD_WALLET;
         flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
         decrease_level_counter();
