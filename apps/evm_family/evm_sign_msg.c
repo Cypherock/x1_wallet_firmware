@@ -319,11 +319,17 @@ static bool get_msg_data(evm_query_t *query) {
   }
   
   if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
-    pb_istream_t istream = pb_istream_from_buffer(sign_msg_ctx.msg_data,
-                                                  total_size);
+    pb_istream_t istream =
+        pb_istream_from_buffer(sign_msg_ctx.msg_data, total_size);
     bool result = pb_decode(&istream,
-                       EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
-                       &(sign_msg_ctx.typed_data));
+                            EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
+                            &(sign_msg_ctx.typed_data));
+
+    if (!result) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
   }
 
   return true;
@@ -362,9 +368,13 @@ static bool get_user_verification() {
       evm_init_typed_data_display_node(&display_node,
                                        &(sign_msg_ctx.typed_data));
       while (NULL != display_node) {
-        core_scroll_page(
+        result = core_scroll_page(
             display_node->title, display_node->value, evm_send_error);
         display_node = display_node->next;
+
+        if (!result) {
+          break;
+        }
       }
     } break;
 
