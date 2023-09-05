@@ -170,7 +170,7 @@ static bool evm_get_personal_data_digest(uint8_t *msg_data,
   uint32_t data_size = 0, offset = 0;
 
   size_string_size =
-      snprintf(size_string, sizeof(size_string), "%d", msg_data_size);
+      snprintf(size_string, sizeof(size_string), "%ld", msg_data_size);
   data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + size_string_size +
               msg_data_size;
 

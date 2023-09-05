@@ -206,11 +206,13 @@ static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
       // TODO: Add evm typed data struct message signing
       // case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
 
-      // TODO before PR: Verify derivation path count
       if (!evm_derivation_path_guard(init_req->derivation_path,
                                      init_req->derivation_path_count)) {
         break;
       }
+
+      // TODO: Replace macro with EVM_TRANSACTION_SIZE_CAP upon fixing the issue
+      // with double allocation of typed data
       if (MAX_MSG_DATA_SIZE < init_req->total_msg_size) {
         evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_DATA);
@@ -246,6 +248,7 @@ static bool handle_initiate_query(evm_query_t *query) {
            g_evm_app->lunit_name,
            g_evm_app->name,
            wallet_name);
+
   // Take user consent to sign message for the wallet
   if (!core_confirmation(msg, evm_send_error)) {
     return false;
@@ -265,61 +268,50 @@ static bool handle_initiate_query(evm_query_t *query) {
 }
 
 static bool get_msg_data(evm_query_t *query) {
-  bool result = false;
   evm_result_t response = init_evm_result(EVM_RESULT_SIGN_MSG_TAG);
-  common_chunk_payload_t *chunk_payload = NULL;
-  uint32_t offset = 0;
+  uint32_t total_size = sign_msg_ctx.init.total_msg_size;
+  const evm_sign_msg_data_t *msg_data = &query->sign_msg.msg_data;
+  const common_chunk_payload_t *payload = &(msg_data->chunk_payload);
+  const common_chunk_payload_chunk_t *chunk = &(payload->chunk);
 
-  sign_msg_ctx.msg_data = NULL;
+  uint32_t size = 0;
 
-  do {
+  sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size);
+  ASSERT(NULL != sign_msg_ctx.msg_data);
+
+  while (1) {
     // Get next data chunk from host
     if (!evm_get_query(query, EVM_QUERY_SIGN_MSG_TAG) ||
         !check_which_request(query, EVM_SIGN_MSG_REQUEST_MSG_DATA_TAG) ||
         false == query->sign_msg.msg_data.has_chunk_payload) {
-      break;
+      return false;
     }
 
-    chunk_payload = &(query->sign_msg.msg_data.chunk_payload);
-
-    if (1 == chunk_payload->chunk_index) {
-      // After first chunk is received, allocate sufficient memory to msg_data
-      // member of @ref sign_msg_ctx
-      if (NULL == sign_msg_ctx.msg_data) {
-        sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size);
-        ASSERT(NULL != sign_msg_ctx.msg_data);
-      } else {
-        evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
-        break;
-      }
-    }
-
-    // If chunk data is more than expected send error and break
-    if (sign_msg_ctx.init.total_msg_size <
-        chunk_payload->chunk.size + chunk_payload->remaining_size) {
+    if (!msg_data->has_chunk_payload ||
+        payload->chunk_index >= payload->total_chunks ||
+        size + chunk->size > total_size) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
-      break;
+      return false;
     }
 
-    memcpy(sign_msg_ctx.msg_data + offset,
-           chunk_payload->chunk.bytes,
-           chunk_payload->chunk.size);
-    offset += chunk_payload->chunk.size;
-
-    if (sign_msg_ctx.init.total_msg_size == offset) {
-      result = true;
-    }
+    memcpy(sign_msg_ctx.msg_data + size, chunk->bytes, chunk->size);
+    size += chunk->size;
 
     // Send chunk ack to host
     response.sign_msg.which_response = EVM_SIGN_MSG_RESPONSE_DATA_ACCEPTED_TAG;
     response.sign_msg.data_accepted.has_chunk_ack = true;
     response.sign_msg.data_accepted.chunk_ack.chunk_index =
-        chunk_payload->chunk_index;
+        payload->chunk_index;
     evm_send_result(&response);
-  } while (sign_msg_ctx.init.total_msg_size >= offset);
 
-  return result;
+    // If no data remaining to be received from the host, then exit
+    if (0 == payload->remaining_size ||
+        payload->chunk_index + 1 == payload->total_chunks) {
+      break;
+    }
+  }
+  return true;
 }
 
 static bool get_user_verification() {
@@ -372,7 +364,6 @@ static bool get_msg_data_signature(evm_sign_msg_signature_response_t *sig) {
 
   if (!reconstruct_seed(sign_msg_ctx.init.wallet_id, buffer, evm_send_error)) {
     memzero(buffer, sizeof(buffer));
-    // TODO: handle errors of reconstruction flow
     return status;
   }
 
