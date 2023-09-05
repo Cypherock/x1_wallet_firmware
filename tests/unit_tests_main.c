@@ -95,6 +95,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(btc_txn_helper_test);
   RUN_TEST_GROUP(btc_helper_test);
   RUN_TEST_GROUP(evm_txn_test);
+  RUN_TEST_GROUP(evm_sign_msg_test);
 }
 
 /**

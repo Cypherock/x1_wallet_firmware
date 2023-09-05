@@ -179,3 +179,9 @@ TEST_GROUP_RUNNER(evm_txn_test) {
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
 #endif
 }
+
+TEST_GROUP_RUNNER(evm_sign_msg_test) {
+  RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_typed_data_hash);
+  RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_personal_sign_hash);
+  RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_eth_sign_hash);
+}

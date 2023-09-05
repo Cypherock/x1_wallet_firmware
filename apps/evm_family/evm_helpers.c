@@ -206,9 +206,9 @@ static bool evm_get_typed_struct_data_digest(
          sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
 
   offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-  eip712_status = hash_struct(&typed_data->domain, data + offset);
+  eip712_status = hash_struct(&(typed_data->domain), data + offset);
   offset += HASH_SIZE;
-  eip712_status |= hash_struct(&typed_data->message, data + offset);
+  eip712_status |= hash_struct(&(typed_data->message), data + offset);
 
   if (EIP712_OK == eip712_status) {
     keccak_256(data, data_size, digest_out);
