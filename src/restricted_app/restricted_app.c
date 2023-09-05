@@ -131,6 +131,14 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 void restricted_app_initialize(engine_ctx_t *ctx, const void *data_ptr) {
   handle_core_errors();
 
+  /* Set core_status to CORE_DEVICE_IDLE_STATE_IDLE as we are entering back to
+   * the onboarding menu */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_IDLE);
+
+  /* Reset flow status back to zero */
+  set_core_flow_status(0);
+  set_app_flow_status(0);
+
   const char *pptr[2] = {ui_text_authentication_required,
                          ui_text_start_auth_from_CySync};
   multi_instruction_init(pptr, 2, DELAY_TIME, false);

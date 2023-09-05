@@ -193,6 +193,15 @@ void main_menu_host_interface(engine_ctx_t *ctx,
     }
   }
 
+  /* Device is unauthenticated (this can happen if auth failed when triggered by
+   * cySync settings) or onboarding incomplete (this is unlikely but keep for
+   * completeness), reset the flow as the core will now need to render the
+   * appropriate app (onboarding app or restricted app) */
+  if (MANAGER_ONBOARDING_STEP_COMPLETE != get_onboarding_step() ||
+      DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
+    engine_reset_flow(ctx);
+  }
+
   main_menu_set_update_req(true);
   return;
 }

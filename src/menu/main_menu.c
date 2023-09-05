@@ -65,6 +65,7 @@
 #include "core_error_priv.h"
 #include "create_wallet_menu.h"
 #include "host_interface.h"
+#include "manager/get_device_info.pb.h"
 #include "menu_priv.h"
 #include "settings_menu.h"
 #include "status_api.h"
@@ -345,6 +346,15 @@ void main_menu_handler(engine_ctx_t *ctx,
        * Therefore fall through of case is intentional. */
       break;
     }
+  }
+
+  /* Device is unauthenticated (this can happen if auth failed when triggered by
+   * cySync settings) or onboarding incomplete (this is unlikely but keep for
+   * completeness), reset the flow as the core will now need to render the
+   * appropriate app (onboarding app or restricted app) */
+  if (MANAGER_ONBOARDING_STEP_COMPLETE != get_onboarding_step() ||
+      DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
+    engine_reset_flow(ctx);
   }
 
   return;
