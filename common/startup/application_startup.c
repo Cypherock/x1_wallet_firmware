@@ -340,7 +340,7 @@ void check_invalid_wallets() {
              (MAX_KEYSTORE_ENTRY - paired_card_count));
     delay_scr_init(paired_card_count == 0 ? ui_text_error_no_card_paired : msg,
                    DELAY_TIME);
-    mark_core_error_screen(ui_text_card_pairing_warning);
+    mark_core_error_screen(ui_text_card_pairing_warning, false);
     return;
   }
 
@@ -390,7 +390,7 @@ void check_invalid_wallets() {
     }
   }
   if (fix)
-    mark_core_error_screen(ui_text_wallet_visit_to_verify);
+    mark_core_error_screen(ui_text_wallet_visit_to_verify, false);
 }
 
 void check_boot_count() {

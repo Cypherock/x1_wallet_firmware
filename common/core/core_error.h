@@ -12,6 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include <stdbool.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -36,8 +37,10 @@
  * empty. Error is displayed when @ref handle_core_errors function is called.
  *
  * @param error_msg The error description message to be shown to user
+ * @param ring_buzzer Boolean to indicate if buzzer sound is required while
+ * displaying the message
  */
-void mark_core_error_screen(const char *error_msg);
+void mark_core_error_screen(const char *error_msg, bool ring_buzzer);
 
 /**
  * @brief This function clears the message buffer of the core error screen

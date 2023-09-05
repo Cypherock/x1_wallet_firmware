@@ -62,6 +62,7 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_delete_share.h"
+
 #include "card_internal.h"
 #include "card_utils.h"
 #include "constant_texts.h"

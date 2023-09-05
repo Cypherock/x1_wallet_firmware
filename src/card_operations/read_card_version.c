@@ -118,12 +118,10 @@ bool read_card_version(uint8_t *card_version,
       buzzer_start(BUZZER_DURATION);
       result = true;
       break;
-    } else {
-      card_handle_errors(&card_data);
     }
 
-    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
-        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen

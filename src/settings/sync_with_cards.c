@@ -195,14 +195,14 @@ bool sync_with_card_eligibility(void) {
 
 #ifndef DEV_BUILD
   if (get_wallet_count() != valid_wallets) {
-    mark_core_error_screen(ui_text_wallet_partial_fix);
+    mark_core_error_screen(ui_text_wallet_partial_fix, false);
     return false;
   }
 #endif
 
   // Ensure that atleast 2 cards are paired
   if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
-    mark_core_error_screen(ui_text_error_pair_atleast_2_cards);
+    mark_core_error_screen(ui_text_error_pair_atleast_2_cards, false);
     return false;
   }
 
@@ -231,7 +231,7 @@ void sync_with_cards(void) {
 
   // Return if no wallets are found in the card
   if (0 == wallets_in_card.count) {
-    mark_core_error_screen(ui_text_wallet_not_found_on_x1card);
+    mark_core_error_screen(ui_text_wallet_not_found_on_x1card, false);
     return;
   }
 
@@ -241,7 +241,7 @@ void sync_with_cards(void) {
 
   if (!sync_wallets_in_flash(&wallets_in_card, &tapped_card)) {
     mark_core_error_screen(
-        ui_text_something_went_wrong_contact_support_send_logs);
+        ui_text_something_went_wrong_contact_support_send_logs, false);
     return;
   }
 
