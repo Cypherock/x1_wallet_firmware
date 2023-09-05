@@ -326,7 +326,8 @@ static bool get_user_verification() {
                                sign_msg_ctx.init.total_msg_size,
                                buffer + 2,
                                array_size - 2);
-
+      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
+      // and split message into multiple confirmations accordingly
       result = core_scroll_page(
           UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
       memzero(buffer, array_size);
@@ -334,6 +335,8 @@ static bool get_user_verification() {
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
+      // and split message into multiple confirmations accordingly
       result = core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
                                 (const char *)sign_msg_ctx.msg_data,
                                 evm_send_error);
