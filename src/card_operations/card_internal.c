@@ -377,7 +377,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
     case SW_INS_BLOCKED:
       NFC_RETURN_ABORT_ERROR(card_data, ui_critical_card_health_migrate_data);
     case POW_SW_CHALLENGE_FAILED:
-      mark_core_error_screen(ui_text_wrong_wallet_is_now_locked);
+      mark_core_error_screen(ui_text_wrong_wallet_is_now_locked, true);
       NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_LOCKED_WALLET);
       break;
     default:

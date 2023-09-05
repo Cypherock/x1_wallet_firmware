@@ -185,7 +185,7 @@ static wallet_unlock_state_e wallet_unlock_handler(
       switch (error) {
         case CARD_OPERATION_SUCCESS:
           if (false == flash_wallet->is_wallet_locked) {
-            mark_core_error_screen(ui_text_wallet_already_unlocked);
+            mark_core_error_screen(ui_text_wallet_already_unlocked, true);
             next_state = WALLET_UNLOCK_COMPLETED;
             break;
           } else {
