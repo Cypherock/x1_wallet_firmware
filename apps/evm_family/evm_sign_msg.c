@@ -319,11 +319,6 @@ static bool get_msg_data(evm_query_t *query) {
     evm_send_result(&response);
   } while (sign_msg_ctx.init.total_msg_size >= offset);
 
-  if (!result) {
-    free(sign_msg_ctx.msg_data);
-    sign_msg_ctx.msg_data = NULL;
-  }
-
   return result;
 }
 
