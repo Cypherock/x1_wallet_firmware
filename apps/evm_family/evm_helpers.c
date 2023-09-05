@@ -129,6 +129,61 @@ static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth);
 static bool evm_get_personal_data_digest(uint8_t *msg_data,
                                          uint32_t msg_data_size,
                                          uint8_t *digest_out);
+
+/**
+ * @brief The function calculates the digest of a typed data structure using the
+ * EIP712 hashing algorithm.
+ *
+ * @param typed_data A pointer to a structure of type
+ * `evm_sign_typed_data_struct_t` which contains the typed data to be hashed.
+ * @param digest_out A pointer to a buffer where the computed digest will be
+ * stored. The buffer should have enough space to store the digest, which is
+ * typically 32 bytes.
+ *
+ * @return a boolean value.
+ */
+static bool evm_get_typed_struct_data_digest(
+    const evm_sign_typed_data_struct_t *typed_data,
+    uint8_t *digest_out);
+
+/**
+ * @brief The function creates a display node with a given title and value.
+ *
+ * @param title A string representing the title of the display node.
+ * @param title_size The parameter `title_size` represents the maximum size of
+ * the `title` string. It is used to ensure that the `title` string does not
+ * exceed its allocated memory size.
+ * @param value The "value" parameter is a pointer to a character array that
+ * represents the value to be displayed. It is assumed that the array is
+ * null-terminated, meaning it ends with a null character
+ * ('\0'). The "value_size" parameter is the maximum number of characters to be
+ * considered from the "value
+ * @param value_size The parameter `value_size` represents the maximum size of
+ * the `value` string. It is used to ensure that the `value` string is not
+ * copied beyond its allocated memory.
+ *
+ * @return a pointer to a `ui_display_node` structure.
+ */
+static ui_display_node *evm_ui_create_display_node(const char *title,
+                                                   const size_t title_size,
+                                                   const char *value,
+                                                   const size_t value_size);
+
+/**
+ * @brief The function creates display nodes for a tree of typed data, using a
+ * breadth-first search approach.
+ *
+ * @param root A pointer to the root node of the evm_sign_typed_data_node_t tree
+ * structure.
+ * @param display_node A pointer to a pointer of a `ui_display_node` object.
+ * This is used to keep track of the current display node while traversing the
+ * tree.
+ *
+ * @return a pointer to the last created `ui_display_node` in the linked list.
+ */
+static ui_display_node *evm_create_typed_data_display_nodes(
+    evm_sign_typed_data_node_t *root,
+    ui_display_node **display_node);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
