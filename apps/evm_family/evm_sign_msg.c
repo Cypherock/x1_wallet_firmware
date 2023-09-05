@@ -361,11 +361,11 @@ static bool get_user_verification() {
       ui_display_node *display_node = NULL;
       evm_init_typed_data_display_node(&display_node,
                                        &(sign_msg_ctx.typed_data));
-      ASSERT(NULL != display_node->next);
-      do {
+      while (NULL != display_node) {
         core_scroll_page(
             display_node->title, display_node->value, evm_send_error);
-      } while (NULL != display_node->next);
+        display_node = display_node->next;
+      }
     } break;
 
     default:
