@@ -1,5 +1,5 @@
 /**
- * @file    evm_priv.h
+ * @file    solana_priv.h
  * @author  Cypherock X1 Team
  * @brief   Support for evm app internal operations
  *          This file is defined to separate EVM's internal use functions,
@@ -26,6 +26,5 @@
  * @param query object for address public key query
  */
 void solana_get_pub_keys(solana_query_t *query);
-
 
 #endif /* NEAR_PRIV_H */

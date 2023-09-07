@@ -1,5 +1,5 @@
 /**
- * @file    evm_helpers.c
+ * @file    solana_helpers.c
  * @author  Cypherock X1 Team
  * @brief   Utilities specific to EVM chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -108,8 +108,8 @@ bool solana_derivation_path_guard(const uint32_t *path, uint8_t levels) {
 
     case 3: {    // m/44'/501'/i'
       uint32_t account = path[2];
-      status =
-          (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX && is_hardened(account));
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX &&
+                is_hardened(account));
     } break;
 
     case 4: {    // m/44'/501'/i'/0'

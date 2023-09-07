@@ -1,5 +1,5 @@
 /**
- * @file    evm_pub_key.c
+ * @file    solana_pub_key.c
  * @author  Cypherock X1 Team
  * @brief   Generates public key for EVM derivations.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -153,10 +153,11 @@ static bool get_public_key(const uint8_t *seed,
  * @retval false If the public key derivation failed. This could be due to
  * invalid derivation path.
  */
-static bool fill_public_keys(const solana_get_public_keys_derivation_path_t *paths,
-                             const uint8_t *seed,
-                             uint8_t public_keys[][SOLANA_PUB_KEY_SIZE],
-                             pb_size_t count);
+static bool fill_public_keys(
+    const solana_get_public_keys_derivation_path_t *paths,
+    const uint8_t *seed,
+    uint8_t public_keys[][SOLANA_PUB_KEY_SIZE],
+    pb_size_t count);
 
 /**
  * @brief The function sends public keys for the requested batch
@@ -215,7 +216,7 @@ static bool check_which_request(const solana_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_REQUEST);
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
@@ -229,7 +230,7 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
   if (0 == request->initiate.derivation_paths_count) {
     // request does not have any derivation paths, invalid request
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_DATA);
+                      ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -238,7 +239,7 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
     // `EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
     // one derivation path which is not expected
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_DATA);
+                      ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -248,7 +249,7 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
     path = &request->initiate.derivation_paths[index];
     if (!solana_derivation_path_guard(path->path, path->path_count)) {
       solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_DATA);
+                        ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
       break;
     }
@@ -278,10 +279,11 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool fill_public_keys(const solana_get_public_keys_derivation_path_t *path,
-                             const uint8_t *seed,
-                             uint8_t public_key_list[][SOLANA_PUB_KEY_SIZE],
-                             pb_size_t count) {
+static bool fill_public_keys(
+    const solana_get_public_keys_derivation_path_t *path,
+    const uint8_t *seed,
+    uint8_t public_key_list[][SOLANA_PUB_KEY_SIZE],
+    pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const solana_get_public_keys_derivation_path_t *current = &path[index];
     if (!get_public_key(
@@ -337,11 +339,8 @@ static bool get_user_consent(const pb_size_t which_request,
   char msg[100] = "";
 
   if (SOLANA_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    snprintf(msg,
-             sizeof(msg),
-             UI_TEXT_ADD_ACCOUNT_PROMPT,
-             "Solana",
-             wallet_name);
+    snprintf(
+        msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, "Solana", wallet_name);
   } else {
     snprintf(msg,
              sizeof(msg),
@@ -365,7 +364,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void solana_get_pub_keys(solana_query_t * query){
+void solana_get_pub_keys(solana_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};
 
@@ -385,7 +384,8 @@ void solana_get_pub_keys(solana_query_t * query){
                       sizeof(solana_get_public_keys_derivation_path_t)]
                      [SOLANA_PUB_KEY_SIZE] = {0};
 
-  if (!check_which_request(query, SOLANA_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
+  if (!check_which_request(query,
+                           SOLANA_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_keys, which_request) ||
       !get_wallet_name_by_id(query->get_public_keys.initiate.wallet_id,
                              (uint8_t *)wallet_name,
@@ -414,7 +414,7 @@ void solana_get_pub_keys(solana_query_t * query){
                                  seed,
                                  public_keys,
                                  init_req->derivation_paths_count);
-                              
+
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
 
@@ -427,15 +427,10 @@ void solana_get_pub_keys(solana_query_t * query){
   if (SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[100] = "";
 
-
     size_t public_key_size = sizeof(address);
-    if(!b58enc(address,
-            &public_key_size,
-            (char *)(public_keys[0] + 1),
-            32)){
-              solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-      };
-
+    if (!b58enc(address, &public_key_size, (char *)(public_keys[0] + 1), 32)) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    };
 
     if (!core_scroll_page(ui_text_receive_on, address, solana_send_error)) {
       return;
@@ -453,5 +448,4 @@ void solana_get_pub_keys(solana_query_t * query){
   }
 
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-
-  }
+}
