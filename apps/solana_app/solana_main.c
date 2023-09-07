@@ -110,11 +110,11 @@ void solana_main(usb_event_t usb_evt) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   switch ((uint8_t)query.which_request) {
-    case SOLANA_QUERY_GET_PUBLIC_KEYS_TAG: 
+    case SOLANA_QUERY_GET_PUBLIC_KEYS_TAG:
     case SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
       solana_get_pub_keys(&query);
       break;
-    } 
+    }
 
     default: {
       /* In case we ever encounter invalid query, convey to the host app */

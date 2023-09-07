@@ -58,4 +58,4 @@
  */
 bool solana_derivation_path_guard(const uint32_t *path, uint8_t levels);
 
-#endif
+#endif    // SOLANA_HELPERS_H
