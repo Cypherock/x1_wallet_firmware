@@ -1,7 +1,7 @@
 /**
- * @file    solana_main.c
+ * @file    evm_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Solana coin actions supported.
+ * @brief   Utilities specific to EVM chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "solana_main.h"
-
-#include "solana_api.h"
-#include "solana_priv.h"
-#include "status_api.h"
+#include "solana_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,15 +75,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -98,30 +94,34 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void solana_main(usb_event_t usb_evt) {
-  solana_query_t query = SOLANA_QUERY_INIT_DEFAULT;
+bool solana_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels < 2)
+    return status;
 
-  if (false == decode_solana_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
+  uint32_t purpose = path[0], coin = path[1];
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case SOLANA_QUERY_GET_PUBLIC_KEYS_TAG: 
-    case SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      solana_get_pub_keys(&query);
+  switch (levels) {
+    case 2:    // m/44'/501'
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX);
       break;
-    } 
 
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_QUERY);
+    case 3: {    // m/44'/501'/i'
+      uint32_t account = path[2];
+      status =
+          (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX && is_hardened(account));
     } break;
+
+    case 4: {    // m/44'/501'/i'/0'
+      uint32_t change = path[3];
+      uint32_t account = path[2];
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX &&
+                is_hardened(account) && change == SOLANA_CHANGE_INDEX);
+    } break;
+
+    default:
+      break;
   }
 
-  return;
+  return status;
 }
