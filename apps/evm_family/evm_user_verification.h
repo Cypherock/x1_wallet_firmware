@@ -39,7 +39,7 @@
  * @retval true If all the values and prompts were confirmed by the user
  * @retval false If any of the prompt was rejected by the user
  */
-bool evm_verify_eth_transfer(const evm_txn_context_t *txn_context);
+bool evm_verify_transfer(const evm_txn_context_t *txn_context);
 
 /**
  * @brief User verification for non-whitelisted token transfer and clear signing

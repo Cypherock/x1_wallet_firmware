@@ -205,6 +205,8 @@ static PAYLOAD_STATUS evm_decode_txn_payload(
       }
     }
     if (!evm_is_token_whitelisted) {
+      // TODO: detecting clear sign or blind sign transaction using the function
+      // tag value along with function signature
       result =
           (ETH_ExtractArguments(utxn_ptr->payload, utxn_ptr->payload_size) ==
            ETH_UTXN_ABI_DECODE_OK)

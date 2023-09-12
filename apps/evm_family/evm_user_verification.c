@@ -103,7 +103,7 @@ extern ui_display_node *current_display_node;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-bool evm_verify_eth_transfer(const evm_txn_context_t *txn_context) {
+bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
   bool status = false;
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
@@ -156,7 +156,6 @@ bool evm_verify_eth_transfer(const evm_txn_context_t *txn_context) {
 }
 
 bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
-  bool status = false;
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
   const char *unit = g_evm_app->lunit_name;
@@ -170,7 +169,7 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
 
   if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
-    return status;
+    return false;
   }
 
   // verify transaction fee
@@ -178,14 +177,14 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
       &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
-    return status;
+    return false;
   }
 
   while (NULL != current_display_node) {
     if (!core_scroll_page(current_display_node->title,
                           current_display_node->value,
                           evm_send_error)) {
-      return status;
+      return false;
     }
     current_display_node = current_display_node->next;
   }

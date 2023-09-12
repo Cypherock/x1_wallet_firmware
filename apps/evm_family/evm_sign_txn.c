@@ -267,7 +267,7 @@ STATIC bool handle_initiate_query(const evm_query_t *query) {
     return false;
   }
 
-  // TODO: need to show token symbol for token transactions
+  // TODO: handle prompts for different transaction types
   snprintf(msg,
            sizeof(msg),
            UI_TEXT_SEND_PROMPT,
@@ -347,12 +347,12 @@ STATIC bool get_user_verification() {
   bool status = false;
   switch (txn_context->transaction_info.payload_status) {
     case PAYLOAD_ABSENT:
-      status = evm_verify_eth_transfer(txn_context);
+      status = evm_verify_transfer(txn_context);
       break;
 
     case PAYLOAD_WHITELISTED:
       if (evm_is_token_whitelisted) {
-        status = evm_verify_eth_transfer(txn_context);
+        status = evm_verify_transfer(txn_context);
       } else {
         status = evm_verify_clear_signing(txn_context);
       }
