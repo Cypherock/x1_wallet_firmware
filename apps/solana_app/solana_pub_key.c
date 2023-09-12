@@ -154,7 +154,7 @@ STATIC bool get_public_key(const uint8_t *seed,
  * @retval false If the public key derivation failed. This could be due to
  * invalid derivation path.
  */
-STATIC bool sol_fill_public_keys(
+STATIC bool fill_public_keys(
     const solana_get_public_keys_derivation_path_t *paths,
     const uint8_t *seed,
     uint8_t public_keys[][SOLANA_PUB_KEY_SIZE],
@@ -411,10 +411,10 @@ void solana_get_pub_keys(solana_query_t *query) {
   set_app_flow_status(SOLANA_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  bool status = sol_fill_public_keys(init_req->derivation_paths,
-                                     seed,
-                                     public_keys,
-                                     init_req->derivation_paths_count);
+  bool status = fill_public_keys(init_req->derivation_paths,
+                                 seed,
+                                 public_keys,
+                                 init_req->derivation_paths_count);
 
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
