@@ -193,6 +193,11 @@ TEST_GROUP_RUNNER(near_txn_user_verification_test) {
                 near_txn_user_verification_function_call_explicit_account);
 }
 
+TEST_GROUP_RUNNER(solana_txn_test) {
+  RUN_TEST_CASE(solana_txn_test, solana_validate_req_action);
+  RUN_TEST_CASE(solana_txn_test, solana_get_addr_action);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);

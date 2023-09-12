@@ -56,7 +56,6 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/evm_family/optimism
         apps/evm_family/arbitrum
         apps/near_app
-
         apps/solana_app
 
         src/
@@ -179,6 +178,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/btc_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
         )
 
 target_compile_options(${EXECUTABLE} PRIVATE
