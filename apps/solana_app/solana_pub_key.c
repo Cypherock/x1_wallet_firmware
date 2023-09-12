@@ -1,7 +1,7 @@
 /**
  * @file    solana_pub_key.c
  * @author  Cypherock X1 Team
- * @brief   Generates public key for EVM derivations.
+ * @brief   Generates public key for Solana derivations.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -90,9 +90,9 @@
 /**
  * @brief Checks if the provided query contains expected request.
  * @details The function performs the check on the request type and if the check
- * fails, then it will send an error to the host EVM app and return false.
+ * fails, then it will send an error to the host SOLANA app and return false.
  *
- * @param query Reference to an instance of evm_query_t containing query
+ * @param query Reference to an instance of solana_query_t containing query
  * received from host app
  * @param which_request The expected request type enum
  *
@@ -100,7 +100,7 @@
  * @retval true If the query contains the expected request
  * @retval false If the query does not contain the expected request
  */
-static bool check_which_request(const solana_query_t *query,
+STATIC bool check_which_request(const solana_query_t *query,
                                 pb_size_t which_request);
 /**
  * @brief Validates all the derivation paths received in the request from host
@@ -108,12 +108,12 @@ static bool check_which_request(const solana_query_t *query,
  * invalid path is detected, the function will send an error to the host and
  * return false.
  *
- * @param request Reference to an instance of evm_get_public_keys_request_t
+ * @param request Reference to an instance of solana_get_public_keys_request_t
  * @return bool Indicating if the verification passed or failed
  * @retval true If all the derivation path entries are valid
  * @retval false If any of the derivation path entries are invalid
  */
-static bool validate_request_data(solana_get_public_keys_request_t *request,
+STATIC bool validate_request_data(solana_get_public_keys_request_t *request,
                                   const pb_size_t which_request);
 /**
  * @details The function provides a public key. It accepts NULL for output
@@ -130,7 +130,7 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
  *
  * @retval false If derivation failed
  */
-static bool get_public_key(const uint8_t *seed,
+STATIC bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
                            uint8_t *public_key);
@@ -141,7 +141,8 @@ static bool get_public_key(const uint8_t *seed,
  * @details The function expects the size of list for derivation paths and
  * location for storing derived public keys to be a match with provided count.
  *
- * @param paths Reference to the list of evm_get_public_keys_derivation_path_t
+ * @param paths Reference to the list of
+ * solana_get_public_keys_derivation_path_t
  * @param count Number of derivation paths in the list and consequently,
  * sufficient space in memory for storing derived public keys.
  * @param seed Reference to a const array containing the seed
@@ -153,7 +154,7 @@ static bool get_public_key(const uint8_t *seed,
  * @retval false If the public key derivation failed. This could be due to
  * invalid derivation path.
  */
-static bool fill_public_keys(
+STATIC bool sol_fill_public_keys(
     const solana_get_public_keys_derivation_path_t *paths,
     const uint8_t *seed,
     uint8_t public_keys[][SOLANA_PUB_KEY_SIZE],
@@ -212,7 +213,7 @@ static bool get_user_consent(const pb_size_t which_request,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool check_which_request(const solana_query_t *query,
+STATIC bool check_which_request(const solana_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -223,7 +224,7 @@ static bool check_which_request(const solana_query_t *query,
   return true;
 }
 
-static bool validate_request_data(solana_get_public_keys_request_t *request,
+STATIC bool validate_request_data(solana_get_public_keys_request_t *request,
                                   const pb_size_t which_request) {
   bool status = true;
 
@@ -236,8 +237,8 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
 
   if (SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request &&
       1 < request->initiate.derivation_paths_count) {
-    // `EVM_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
-    // one derivation path which is not expected
+    // `SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more
+    // than one derivation path which is not expected
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -258,7 +259,7 @@ static bool validate_request_data(solana_get_public_keys_request_t *request,
   return status;
 }
 
-static bool get_public_key(const uint8_t *seed,
+STATIC bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
                            uint8_t *public_key) {
@@ -279,7 +280,7 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool fill_public_keys(
+STATIC bool fill_public_keys(
     const solana_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t public_key_list[][SOLANA_PUB_KEY_SIZE],
@@ -410,10 +411,10 @@ void solana_get_pub_keys(solana_query_t *query) {
   set_app_flow_status(SOLANA_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  bool status = fill_public_keys(init_req->derivation_paths,
-                                 seed,
-                                 public_keys,
-                                 init_req->derivation_paths_count);
+  bool status = sol_fill_public_keys(init_req->derivation_paths,
+                                     seed,
+                                     public_keys,
+                                     init_req->derivation_paths_count);
 
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
@@ -428,7 +429,7 @@ void solana_get_pub_keys(solana_query_t *query) {
     char address[100] = "";
 
     size_t public_key_size = sizeof(address);
-    if (!b58enc(address, &public_key_size, (char *)(public_keys[0] + 1), 32)) {
+    if (!b58enc(address, &public_key_size, (char *)(public_keys[0]), 32)) {
       solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     };
 

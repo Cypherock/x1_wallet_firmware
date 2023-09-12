@@ -23,6 +23,9 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 
+// Derivation path reference :
+// https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
+// Taking 3 levels of depth similar to ledger
 #define SOLANA_PUB_KEY_SIZE 33
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX 0x800001F5
@@ -45,9 +48,9 @@
  * @brief Verifies the derivation path.
  * @details The function supports checking derivation paths for HD wallets
  * Types of derivations:
- * legacy        : m/44'/60'/0'/x
- * bip44         : m/44'/60'/0'/0/x
- * account model : m/44'/60'/x'/0/0
+ * address: m/44'/501'
+ * address: m/44'/501'/i'
+ * address: m/44'/501'/i'/0'
  *
  * @param[in] path      The derivation path as an uint32 array
  * @param[in] depth     The number of levels in the derivation path

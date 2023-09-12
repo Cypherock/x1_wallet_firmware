@@ -1,7 +1,7 @@
 /**
  * @file    solana_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to EVM chains
+ * @brief   Utilities specific to Solana chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
