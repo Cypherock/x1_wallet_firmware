@@ -22,11 +22,12 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-
+#define SOLANA_NAME "Solana"
+#define SOLANA_LUNIT "SOL"
+#define SOLANA_PUB_KEY_SIZE 32
 // Derivation path reference :
 // https://docs.solana.com/wallet-guide/paper-wallet#hierarchical-derivation
 // Taking 3 levels of depth similar to ledger
-#define SOLANA_PUB_KEY_SIZE 33
 #define SOLANA_PURPOSE_INDEX 0x8000002C
 #define SOLANA_COIN_INDEX 0x800001F5
 #define SOLANA_ACCOUNT_INDEX 0x80000000
