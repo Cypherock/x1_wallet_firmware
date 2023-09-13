@@ -1,7 +1,7 @@
 /**
- * @file    solana_txn_tests.c.c
+ * @file    solana_add_account_tests.c
  * @author  Cypherock X1 Team
- * @brief   Unit tests for Solana txn helper functions
+ * @brief   Unit tests for Solana Add Account Flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -69,16 +69,16 @@ bool fill_public_keys(const solana_get_public_keys_derivation_path_t *paths,
                       uint8_t public_keys[][SOLANA_PUB_KEY_SIZE],
                       pb_size_t count);
 
-TEST_GROUP(solana_txn_test);
+TEST_GROUP(solana_add_account_test);
 
-TEST_SETUP(solana_txn_test) {
+TEST_SETUP(solana_add_account_test) {
 }
 
-TEST_TEAR_DOWN(solana_txn_test) {
+TEST_TEAR_DOWN(solana_add_account_test) {
   return;
 }
 
-TEST(solana_txn_test, solana_validate_req_action) {
+TEST(solana_add_account_test, solana_validate_req_action) {
   solana_query_t query = {
       .which_request = 1,
       .get_public_keys = {
@@ -97,7 +97,7 @@ TEST(solana_txn_test, solana_validate_req_action) {
       validate_request_data(&query.get_public_keys, which_request));
 }
 
-TEST(solana_txn_test, solana_get_addr_action) {
+TEST(solana_add_account_test, solana_get_addr_action) {
   solana_query_t query = {
       .which_request = 1,
       .get_public_keys = {
