@@ -346,8 +346,8 @@ static bool get_user_consent(const pb_size_t which_request,
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_RECEIVE_TOKEN_PROMPT,
-             "SOL",
-             "Solana",
+             SOLANA_LUNIT,
+             SOLANA_NAME,
              wallet_name);
   }
 
@@ -429,8 +429,10 @@ void solana_get_pub_keys(solana_query_t *query) {
     char address[100] = "";
 
     size_t public_key_size = sizeof(address);
-    if (!b58enc(address, &public_key_size, (char *)(public_keys[0]), 32)) {
+    if (!b58enc(
+            address, &public_key_size, public_keys[0], SOLANA_PUB_KEY_SIZE)) {
       solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+      return;
     };
 
     if (!core_scroll_page(ui_text_receive_on, address, solana_send_error)) {
