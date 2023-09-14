@@ -80,27 +80,27 @@ extern lv_indev_t *indev_keypad;
 #endif /* USE_SIMULATOR == 1 */
 
 void RunAllTests(void) {
-  // RUN_TEST_GROUP(event_getter_test);
-  // RUN_TEST_GROUP(p0_events_test);
-  // RUN_TEST_GROUP(ui_events_test);
-  // RUN_TEST_GROUP(usb_evt_api_test);
-  // RUN_TEST_GROUP(nfc_events_test);
+  RUN_TEST_GROUP(event_getter_test);
+  RUN_TEST_GROUP(p0_events_test);
+  RUN_TEST_GROUP(ui_events_test);
+  RUN_TEST_GROUP(usb_evt_api_test);
+  RUN_TEST_GROUP(nfc_events_test);
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
   RUN_TEST_GROUP(nfc_events_manual_test);
 #endif
-  // RUN_TEST_GROUP(xpub);
-  // RUN_TEST_GROUP(array_lists_tests);
-  // RUN_TEST_GROUP(flow_engine_tests);
-  // RUN_TEST_GROUP(manager_api_test);
-  // RUN_TEST_GROUP(btc_txn_helper_test);
-  // RUN_TEST_GROUP(btc_helper_test);
-  // RUN_TEST_GROUP(evm_txn_test);
-  // RUN_TEST_GROUP(near_helper_test);
+  RUN_TEST_GROUP(xpub);
+  RUN_TEST_GROUP(array_lists_tests);
+  RUN_TEST_GROUP(flow_engine_tests);
+  RUN_TEST_GROUP(manager_api_test);
+  RUN_TEST_GROUP(btc_txn_helper_test);
+  RUN_TEST_GROUP(btc_helper_test);
+  RUN_TEST_GROUP(evm_txn_test);
+  RUN_TEST_GROUP(near_helper_test);
   RUN_TEST_GROUP(solana_add_account_test);
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
-  //  RUN_TEST_GROUP(utils_tests);
+  RUN_TEST_GROUP(utils_tests);
 }
 
 /**
