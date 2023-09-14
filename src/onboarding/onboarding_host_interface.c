@@ -103,17 +103,16 @@ void onboarding_host_interface(engine_ctx_t *ctx,
                                const void *data) {
   /* A USB request was detected by the core, but it was the first time
    * this request came in, therefore, we will pass control to the required
-   * application here */
+   * application here.
+   * In case of onboarding, only manager app is supported by the device so any
+   * other applet id would be rejected */
   uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
-      break;
-    }
+  const cy_app_desc_t *desc = get_manager_app_desc();
+
+  if (NULL != desc && applet_id == desc->id) {
+    desc->app(usb_evt, desc->app_config);
+  } else {
+    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
   }
 
   /* If onboarding is complete, reset the flow as the core will now need to

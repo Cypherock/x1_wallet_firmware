@@ -44,4 +44,8 @@
  */
 engine_ctx_t *get_core_flow_ctx(void);
 
+/**
+ * @brief The function adds various app descriptions to the app registry.
+ */
+void core_init_app_registry();
 #endif /* CORE_FLOW_INIT_H */

@@ -18,9 +18,9 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "events.h"
 #include "solana_context.h"
-
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -36,13 +36,11 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Entry point for the SOLANA application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * Solana app.
- *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
- */
-void solana_main(usb_event_t usb_evt);
 
+/**
+ * @brief Returns the config for Solana chain app descriptors
+ *
+ * @return A const reference to cy_app_desc_t
+ */
+const cy_app_desc_t *get_solana_app_desc();
 #endif /* SOLANA_MAIN_H */

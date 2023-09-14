@@ -78,26 +78,38 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Entry point for the SOLANA application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * Solana app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the bitcoin app
+ */
+void solana_main(usb_event_t usb_evt, const void *app_config);
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static const cy_app_desc_t solana_app_desc = {.id = 10,
+                                              .version =
+                                                  {
+                                                      .major = 1,
+                                                      .minor = 0,
+                                                      .patch = 0,
+                                                  },
+                                              .app = solana_main,
+                                              .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-void solana_main(usb_event_t usb_evt) {
+void solana_main(usb_event_t usb_evt, const void *app_config) {
   solana_query_t query = SOLANA_QUERY_INIT_DEFAULT;
 
   if (false == decode_solana_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -125,4 +137,11 @@ void solana_main(usb_event_t usb_evt) {
   }
 
   return;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+const cy_app_desc_t *get_solana_app_desc() {
+  return &solana_app_desc;
 }

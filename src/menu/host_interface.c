@@ -64,24 +64,10 @@
 
 #include <core.pb.h>
 
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
+#include "app_registry.h"
 #include "core_api.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"
-#include "near_main.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "solana_main.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -124,73 +110,12 @@ void main_menu_host_interface(engine_ctx_t *ctx,
    * application here */
 
   uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_main(usb_evt);
-      break;
-    }
-    case 2: {
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 3: {
-      // TODO: We might conditionally allow support Bitcoin testnet
-      // TODO: fetch & provide Bitcoin testnet chain
-      btc_main(usb_evt, get_btc_app());
-      break;
-    }
-    case 4: {
-      btc_main(usb_evt, get_ltc_app());
-      break;
-    }
-    case 5: {
-      btc_main(usb_evt, get_doge_app());
-      break;
-    }
-    case 6: {
-      btc_main(usb_evt, get_dash_app());
-      break;
-    }
-    case 7: {
-      evm_main(usb_evt, get_eth_app());
-      break;
-    }
-    case 8: {
-      near_main(usb_evt);
-      break;
-    }
-    case 9: {
-      evm_main(usb_evt, get_polygon_app());
-      break;
-    }
-    case 10: {
-      solana_main(usb_evt);
-      break;
-    }
-    case 11: {
-      evm_main(usb_evt, get_bsc_app());
-      break;
-    }
-    case 12: {
-      evm_main(usb_evt, get_fantom_app());
-      break;
-    }
-    case 13: {
-      evm_main(usb_evt, get_avalanche_app());
-      break;
-    }
-    case 14: {
-      evm_main(usb_evt, get_optimism_app());
-      break;
-    }
-    case 17: {
-      evm_main(usb_evt, get_arbitrum_app());
-      break;
-    }
-    default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
-      break;
-    }
+  const cy_app_desc_t *desc = registry_get_app_desc(applet_id);
+
+  if (NULL != desc) {
+    desc->app(usb_evt, desc->app_config);
+  } else {
+    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
   }
 
   /* Device is unauthenticated (this can happen if auth failed when triggered by

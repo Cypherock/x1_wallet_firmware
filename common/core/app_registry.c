@@ -1,7 +1,7 @@
 /**
- * @file    optimism_app.c
+ * @file    app_registry.c
  * @author  Cypherock X1 Team
- * @brief   Optimism application configuration and helpers
+ * @brief   App descriptor registry for maintaining apps.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,25 +60,16 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "optimism_app.h"
+#include "app_registry.h"
 
 #include <stddef.h>
+#include <string.h>
 
-#include "evm_main.h"
+#include "assert_conf.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-
-/**
- * @brief Whitelisted contracts with respective token symbol
- * @details A map of Ethereum contract addresses with their token symbols. These
- * will enable the device to verify the ERC20 token transaction in a
- * user-friendly manner.
- *
- * @see erc20_contracts_t
- */
-extern const erc20_contracts_t optimism_contracts[];
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -89,36 +80,17 @@ extern const erc20_contracts_t optimism_contracts[];
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t optimism_app_config = {
-    .lunit_name = "ETH",
-    .name = "Optimism",
-    .chain_id = 10,
-
-    // whitelisted contracts
-    .whitelisted_contracts = NULL,
-    .whitelist_count = OPTIMISM_WHITELISTED_CONTRACTS_COUNT,
-};
-
-static const cy_app_desc_t optimism_app_desc = {
-    .id = 14,
-    .version =
-        {
-            .major = 1,
-            .minor = 0,
-            .patch = 0,
-        },
-    .app = evm_main,
-    .app_config = &optimism_app_config};
+static const cy_app_desc_t *descriptors[REGISTRY_MAX_APPS] = {0};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -129,6 +101,31 @@ static const cy_app_desc_t optimism_app_desc = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const cy_app_desc_t *get_optimism_app_desc() {
-  return &optimism_app_desc;
+bool registry_add_app(const cy_app_desc_t *app_desc) {
+  bool status = false;
+
+  if (NULL == app_desc) {
+    return status;
+  }
+
+  // ensure app-id collision safety among descriptor list
+  if (NULL != registry_get_app_desc(app_desc->id)) {
+    return status;
+  }
+
+  // ensure registry storage does not overflow
+  LOG_INFO("Id: %d", app_desc->id);
+  ASSERT(app_desc->id < REGISTRY_MAX_APPS);
+
+  descriptors[app_desc->id] = app_desc;
+  status = true;
+  return status;
+}
+
+const cy_app_desc_t *registry_get_app_desc(uint32_t app_id) {
+  return descriptors[app_id];
+}
+
+const cy_app_desc_t **registry_get_app_list() {
+  return descriptors;
 }

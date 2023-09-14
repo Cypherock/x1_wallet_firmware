@@ -99,9 +99,9 @@ const evm_config_t *g_evm_app = NULL;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void evm_main(usb_event_t usb_evt, const evm_config_t *app) {
+void evm_main(usb_event_t usb_evt, const void *app_config) {
   evm_query_t query = EVM_QUERY_INIT_DEFAULT;
-  g_evm_app = app;
+  g_evm_app = (evm_config_t *)app_config;
 
   if (false == decode_evm_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;

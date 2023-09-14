@@ -62,6 +62,8 @@
 
 #include "eth_app.h"
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -92,7 +94,7 @@ extern const erc20_contracts_t eth_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t eth_app = {
+static const evm_config_t eth_app_config = {
     .lunit_name = "ETH",
     .name = "Ethereum",
     .chain_id = 1,
@@ -101,6 +103,16 @@ static const evm_config_t eth_app = {
     .whitelisted_contracts = eth_contracts,
     .whitelist_count = ETH_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t eth_app_desc = {.id = 7,
+                                           .version =
+                                               {
+                                                   .major = 1,
+                                                   .minor = 0,
+                                                   .patch = 0,
+                                               },
+                                           .app = evm_main,
+                                           .app_config = &eth_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -114,6 +126,6 @@ static const evm_config_t eth_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_eth_app() {
-  return &eth_app;
+const cy_app_desc_t *get_eth_app_desc() {
+  return &eth_app_desc;
 }

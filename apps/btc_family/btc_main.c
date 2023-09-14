@@ -100,9 +100,9 @@ const btc_config_t *g_btc_app = NULL;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void btc_main(usb_event_t usb_evt, const btc_config_t *app) {
+void btc_main(usb_event_t usb_evt, const void *app_config) {
   btc_query_t query = BTC_QUERY_INIT_DEFAULT;
-  g_btc_app = app;
+  g_btc_app = (btc_config_t *)app_config;
 
   if (false == decode_btc_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;

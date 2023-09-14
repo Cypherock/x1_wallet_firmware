@@ -15,6 +15,8 @@
  *****************************************************************************/
 #include <stdint.h>
 
+#include "core.pb.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -49,4 +51,13 @@ void send_response_to_host(const uint8_t *msg, const uint32_t size);
  */
 void send_core_error_msg_to_host(uint32_t which_error);
 
+/**
+ * @brief Helper API for core to send a response containing a list of
+ * application versions to host.
+ *
+ * @param version_resp A pointer to a structure of type
+ * core_app_version_result_response_t.
+ */
+void send_app_version_list_to_host(
+    core_app_version_result_response_t *version_resp);
 #endif /* CORE_API_H */

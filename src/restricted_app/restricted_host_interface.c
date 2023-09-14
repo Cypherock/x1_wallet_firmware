@@ -104,15 +104,12 @@ void restricted_host_interface(engine_ctx_t *ctx,
    * this request came in, therefore, we will pass control to the required
    * application here */
   uint32_t applet_id = get_applet_id();
-  switch (applet_id) {
-    case 1: {
-      manager_app_restricted_main(usb_evt);
-      break;
-    }
-    default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
-      break;
-    }
+  const cy_app_desc_t *desc = get_manager_app_desc();
+
+  if (NULL != desc && applet_id == desc->id) {
+    desc->app(usb_evt, desc->app_config);
+  } else {
+    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
   }
 
   /* Device authentication is complete, reset the flow as the core will now need

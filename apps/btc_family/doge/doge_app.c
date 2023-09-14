@@ -63,6 +63,7 @@
 #include "doge_app.h"
 
 #include "btc_helpers.h"
+#include "btc_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -102,7 +103,7 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * Secondary reference for aggregated coin info:
  * https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/common/defs/bitcoin/dogecoin.json
  */
-const btc_config_t doge_app = {
+const btc_config_t doge_app_config = {
     .coin_type = COIN_DOGE,
     .p2pkh_addr_ver = 0x1e,
     .p2sh_addr_ver = 0x16,
@@ -117,6 +118,16 @@ const btc_config_t doge_app = {
 
     .is_purpose_supported = is_purpose_supported,
 };
+
+static const cy_app_desc_t doge_app_desc = {.id = 5,
+                                            .version =
+                                                {
+                                                    .major = 1,
+                                                    .minor = 0,
+                                                    .patch = 0,
+                                                },
+                                            .app = btc_main,
+                                            .app_config = &doge_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -137,6 +148,6 @@ static bool is_purpose_supported(uint32_t purpose_index) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const btc_config_t *get_doge_app() {
-  return &doge_app;
+const cy_app_desc_t *get_doge_app_desc() {
+  return &doge_app_desc;
 }

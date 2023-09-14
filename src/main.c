@@ -154,6 +154,8 @@ int main(void) {
     }
   }
 
+  core_init_app_registry();
+
   while (1) {
     engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);

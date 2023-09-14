@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "app_registry.h"
 #include "events.h"
 
 /*****************************************************************************
@@ -39,23 +40,18 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Entry point for the manager application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * manager app.
+ * The function returns a pointer to the "manager_desc" variable of type
+ * "cy_app_desc_t".
  *
- * @param usb_evt The USB event which triggered invocation of the manager app
+ * @return a pointer to a constant structure of type `cy_app_desc_t`.
  */
-void manager_app_main(usb_event_t usb_evt);
+const cy_app_desc_t *get_manager_app_desc();
 
 /**
- * @brief Restricted Entry point for the manager application of the X1 vault. It
- * is invoked by the X1 vault firmware, as soon as there is a USB request raised
- * for the manager app.
- * @note It only allows some functionality such as get device info, device
- * authentication and firmware update
+ * The function returns a pointer to the "manager_restricted_desc"
+ * object.
  *
- * @param usb_evt The USB event which triggered invocation of the manager app
+ * @return a pointer to a constant structure of type `cy_app_desc_t`.
  */
-void manager_app_restricted_main(usb_event_t usb_evt);
-
+const cy_app_desc_t *get_restricted_manager_app_desc();
 #endif /* MANAGER_APP_H */

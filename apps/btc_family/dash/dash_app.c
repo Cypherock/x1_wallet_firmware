@@ -63,6 +63,7 @@
 #include "dash_app.h"
 
 #include "btc_helpers.h"
+#include "btc_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -105,7 +106,7 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * Secondary reference for aggregated coin info:
  * https://github.com/trezor/trezor-firmware/blob/f5983e7843f381423f30b8bc2ffc46e496775e5a/common/defs/bitcoin/dash.json
  */
-const btc_config_t dash_app = {
+const btc_config_t dash_app_config = {
     .coin_type = COIN_DASH,
     .p2pkh_addr_ver = 0x4c,
     .p2sh_addr_ver = 0x10,
@@ -120,6 +121,16 @@ const btc_config_t dash_app = {
 
     .is_purpose_supported = is_purpose_supported,
 };
+
+static const cy_app_desc_t dash_app_desc = {.id = 6,
+                                            .version =
+                                                {
+                                                    .major = 1,
+                                                    .minor = 0,
+                                                    .patch = 0,
+                                                },
+                                            .app = btc_main,
+                                            .app_config = &dash_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -140,6 +151,6 @@ static bool is_purpose_supported(uint32_t purpose_index) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const btc_config_t *get_dash_app() {
-  return &dash_app;
+const cy_app_desc_t *get_dash_app_desc() {
+  return &dash_app_desc;
 }

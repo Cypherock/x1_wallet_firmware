@@ -13,6 +13,7 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "evm_context.h"
 
 /*****************************************************************************
@@ -35,10 +36,10 @@
  *****************************************************************************/
 
 /**
- * @brief Returns the config for Fantom chain app
+ * @brief Returns the config for Fantom chin app descriptor
  *
- * @return A const reference to evm_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const evm_config_t *get_fantom_app();
+const cy_app_desc_t *get_fantom_app_desc();
 
 #endif    // FANTOM_APP_H

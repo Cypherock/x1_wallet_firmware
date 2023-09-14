@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t fantom_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t fantom_app = {
+static const evm_config_t fantom_app_config = {
     .lunit_name = "FTM",
     .name = "Fantom Opera",
     .chain_id = 250,
@@ -103,6 +105,16 @@ static const evm_config_t fantom_app = {
     .whitelisted_contracts = NULL,
     .whitelist_count = FANTOM_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t fantom_app_desc = {.id = 12,
+                                              .version =
+                                                  {
+                                                      .major = 1,
+                                                      .minor = 0,
+                                                      .patch = 0,
+                                                  },
+                                              .app = evm_main,
+                                              .app_config = &fantom_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,6 +128,6 @@ static const evm_config_t fantom_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_fantom_app() {
-  return &fantom_app;
+const cy_app_desc_t *get_fantom_app_desc() {
+  return &fantom_app_desc;
 }

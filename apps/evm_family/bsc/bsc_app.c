@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t bsc_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t bsc_app = {
+static const evm_config_t bsc_app_config = {
     .lunit_name = "BNB",
     .name = "BNB Smart Chain",
     .chain_id = 56,
@@ -103,6 +105,16 @@ static const evm_config_t bsc_app = {
     .whitelisted_contracts = NULL,
     .whitelist_count = BSC_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t bsc_app_desc = {.id = 11,
+                                           .version =
+                                               {
+                                                   .major = 1,
+                                                   .minor = 0,
+                                                   .patch = 0,
+                                               },
+                                           .app = evm_main,
+                                           .app_config = &bsc_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,6 +128,6 @@ static const evm_config_t bsc_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_bsc_app() {
-  return &bsc_app;
+const cy_app_desc_t *get_bsc_app_desc() {
+  return &bsc_app_desc;
 }

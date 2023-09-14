@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t arbitrum_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t arbitrum_app = {
+static const evm_config_t arbitrum_app_config = {
     .lunit_name = "ETH",
     .name = "Arbitrum",
     .chain_id = 42161,
@@ -104,6 +106,16 @@ static const evm_config_t arbitrum_app = {
     .whitelist_count = ARBITRUM_WHITELISTED_CONTRACTS_COUNT,
 };
 
+static const cy_app_desc_t arbitrum_app_desc = {
+    .id = 17,
+    .version =
+        {
+            .major = 1,
+            .minor = 0,
+            .patch = 0,
+        },
+    .app = evm_main,
+    .app_config = &arbitrum_app_config};
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -116,6 +128,6 @@ static const evm_config_t arbitrum_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_arbitrum_app() {
-  return &arbitrum_app;
+const cy_app_desc_t *get_arbitrum_app_desc() {
+  return &arbitrum_app_desc;
 }
