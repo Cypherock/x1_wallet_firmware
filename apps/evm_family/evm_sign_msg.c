@@ -67,6 +67,7 @@
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
+#include "evm_typed_data_helper.h"
 #include "pb_decode.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"

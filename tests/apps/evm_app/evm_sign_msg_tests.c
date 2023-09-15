@@ -193,8 +193,6 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_personal_sign_hash) {
   hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
   TEST_ASSERT_TRUE(evm_get_msg_data_hash(&ctx, digest));
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
-
-  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
 }
 
 TEST(evm_sign_msg_test, evm_sign_msg_test_eth_sign_hash) {
@@ -228,6 +226,4 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_eth_sign_hash) {
   hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
   TEST_ASSERT_TRUE(evm_get_msg_data_hash(&ctx, digest));
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
-
-  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
 }
