@@ -166,30 +166,20 @@ static bool evm_get_personal_data_digest(uint8_t *msg_data,
 
   char size_string[256] = {0};
   uint8_t size_string_size = 0;
-  uint8_t *data = NULL;
-  uint32_t data_size = 0, offset = 0;
+  SHA3_CTX ctx = {0};
+
+  keccak_256_Init(&ctx);
 
   size_string_size =
       snprintf(size_string, sizeof(size_string), "%ld", msg_data_size);
-  data_size = sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1 + size_string_size +
-              msg_data_size;
 
-  data = malloc(data_size);
-  ASSERT(NULL != data);
-  memzero(data, data_size);
-  memcpy(data,
-         ETH_PERSONAL_SIGN_IDENTIFIER,
-         sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
-  offset += sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1;
-  memcpy(data + offset, size_string, size_string_size);
-  offset += size_string_size;
-  memcpy(data + offset, msg_data, msg_data_size);
+  keccak_Update(&ctx,
+                (const uint8_t *)ETH_PERSONAL_SIGN_IDENTIFIER,
+                sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
+  keccak_Update(&ctx, (const uint8_t *)size_string, size_string_size);
+  keccak_Update(&ctx, (const uint8_t *)msg_data, msg_data_size);
 
-  keccak_256(data, data_size, digest_out);
-
-  memzero(data, data_size);
-  free(data);
-
+  keccak_Final(&ctx, digest_out);
   return true;
 }
 
@@ -213,7 +203,8 @@ bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   return false;
 }
 
-bool evm_get_msg_data_hash(const evm_sign_msg_context_t *ctx, uint8_t *digest) {
+bool evm_get_msg_data_digest(const evm_sign_msg_context_t *ctx,
+                             uint8_t *digest) {
   bool result = false;
 
   switch (ctx->init.message_type) {

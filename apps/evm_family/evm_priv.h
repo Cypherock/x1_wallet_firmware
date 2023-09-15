@@ -25,6 +25,12 @@
 
 #define EVM_TRANSACTION_SIZE_CAP 20480
 
+/**
+ * TODO: update the size of msg data same as EVM_TRANSACTION_SIZE_CAP.
+ * Constraints : The LVGL buffer cannot handle more than 3Kb data size which
+ * puts a limit on how much data can be displayed on the device. Possible fix is
+ * to show the long messages in chunks in line with max LVGL buffer size.
+ */
 #define MAX_MSG_DATA_SIZE 5120
 /*****************************************************************************
  * TYPEDEFS

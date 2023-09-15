@@ -287,8 +287,7 @@ static bool get_msg_data(evm_query_t *query) {
       return false;
     }
 
-    if (!msg_data->has_chunk_payload ||
-        payload->chunk_index >= payload->total_chunks ||
+    if (payload->chunk_index >= payload->total_chunks ||
         size + chunk->size > total_size) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -335,6 +334,12 @@ static bool get_user_verification() {
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      size_t data_size = sign_msg_ctx.init.total_msg_size;
+      if ('\0' != sign_msg_ctx.msg_data[data_size - 1]) {
+        evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+      }
+
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
       result = core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
@@ -383,7 +388,7 @@ static bool get_msg_data_signature(evm_sign_msg_signature_response_t *sig) {
                    ERROR_DATA_FLOW_INVALID_DATA);
   } else {
     status = true;
-    if (!evm_get_msg_data_hash(&sign_msg_ctx, buffer) ||
+    if (!evm_get_msg_data_digest(&sign_msg_ctx, buffer) ||
         (0 != ecdsa_sign_digest(
                   curve, node.private_key, buffer, sig->r, sig->v, NULL))) {
       evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);

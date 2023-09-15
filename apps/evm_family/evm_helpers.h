@@ -73,5 +73,6 @@ bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);
  * @return a boolean value indicating if digest of the msg data was computed
  * correctly or not
  */
-bool evm_get_msg_data_hash(const evm_sign_msg_context_t *ctx, uint8_t *digest);
+bool evm_get_msg_data_digest(const evm_sign_msg_context_t *ctx,
+                             uint8_t *digest);
 #endif /* EVM_HELPERS_H */
