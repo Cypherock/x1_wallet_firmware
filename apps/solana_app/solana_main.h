@@ -41,7 +41,7 @@
  * by the X1 vault firmware, as soon as there is a USB request raised for the
  * Solana app.
  *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
+ * @param usb_evt The USB event which triggered invocation of the solana app
  */
 void solana_main(usb_event_t usb_evt);
 
