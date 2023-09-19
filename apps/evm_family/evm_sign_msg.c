@@ -276,18 +276,19 @@ static bool get_msg_data(evm_query_t *query) {
 
   uint32_t size = 0;
 
-  sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size);
+  sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size + 1);
   ASSERT(NULL != sign_msg_ctx.msg_data);
+  sign_msg_ctx.msg_data[sign_msg_ctx.init.total_msg_size] = '\0';
 
   while (1) {
     // Get next data chunk from host
     if (!evm_get_query(query, EVM_QUERY_SIGN_MSG_TAG) ||
-        !check_which_request(query, EVM_SIGN_MSG_REQUEST_MSG_DATA_TAG) ||
-        false == query->sign_msg.msg_data.has_chunk_payload) {
+        !check_which_request(query, EVM_SIGN_MSG_REQUEST_MSG_DATA_TAG)) {
       return false;
     }
 
-    if (payload->chunk_index >= payload->total_chunks ||
+    if (false == query->sign_msg.msg_data.has_chunk_payload ||
+        payload->chunk_index >= payload->total_chunks ||
         size + chunk->size > total_size) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
@@ -310,6 +311,13 @@ static bool get_msg_data(evm_query_t *query) {
       break;
     }
   }
+
+  if (total_size != size) {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   return true;
 }
 
@@ -334,12 +342,6 @@ static bool get_user_verification() {
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
-      size_t data_size = sign_msg_ctx.init.total_msg_size;
-      if ('\0' != sign_msg_ctx.msg_data[data_size - 1]) {
-        evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
-      }
-
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
       result = core_scroll_page(UI_TEXT_VERIFY_MESSAGE,

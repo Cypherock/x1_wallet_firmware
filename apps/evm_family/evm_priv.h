@@ -31,7 +31,7 @@
  * puts a limit on how much data can be displayed on the device. Possible fix is
  * to show the long messages in chunks in line with max LVGL buffer size.
  */
-#define MAX_MSG_DATA_SIZE 5120
+#define MAX_MSG_DATA_SIZE 3072
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
