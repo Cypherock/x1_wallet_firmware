@@ -78,7 +78,7 @@ TEST_GROUP(btc_txn_helper_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(btc_txn_helper_test) {
-  g_btc_app = get_btc_app();
+  g_btc_app = get_btc_app_desc()->app_config;
 }
 
 /**
