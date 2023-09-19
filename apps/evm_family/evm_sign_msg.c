@@ -202,8 +202,11 @@ static bool check_which_request(const evm_query_t *query,
 }
 
 static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
+  uint32_t size_limit = MAX_MSG_DATA_SIZE;
+
   switch (init_req->message_type) {
     case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
+      size_limit = MAX_MSG_DATA_TYPED_DATA_SIZE;
     case EVM_SIGN_MSG_TYPE_ETH_SIGN:
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN:
 
@@ -318,7 +321,7 @@ static bool get_msg_data(evm_query_t *query) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
-  
+
   if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
     pb_istream_t istream =
         pb_istream_from_buffer(sign_msg_ctx.msg_data, total_size);
@@ -459,13 +462,21 @@ void evm_sign_msg(evm_query_t *query) {
   }
 
   if (NULL != sign_msg_ctx.msg_data) {
-    pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(sign_msg_ctx.typed_data));
     memzero(sign_msg_ctx.msg_data, sign_msg_ctx.init.total_msg_size);
     free(sign_msg_ctx.msg_data);
     sign_msg_ctx.msg_data = NULL;
   }
+
   sign_msg_ctx.init.total_msg_size = 0;
 
+  /**
+   * The tyepd data struct fields are of FT_POINTER type which means memory for
+   * typed data is dynamically allocated. The dynamic allocated data needs to be
+   * cleared before we exit the app here.
+   */
+  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(sign_msg_ctx.typed_data));
+
+  // Clear the dynamic allocation done for UI purposes using cy_malloc
   cy_free();
   return;
 }
