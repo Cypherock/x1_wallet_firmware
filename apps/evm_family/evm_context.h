@@ -24,8 +24,8 @@
 
 /// this makes length of 7 with a termination NULL byte
 #define EVM_SHORT_NAME_MAX_SIZE 8
-/// this makes length of 15 with a termination NULL byte
-#define EVM_LONG_NAME_MAX_SIZE 16
+/// this makes length of 19 with a termination NULL byte
+#define EVM_LONG_NAME_MAX_SIZE 20
 
 /*****************************************************************************
  * TYPEDEFS

@@ -145,6 +145,6 @@ void flash_erase();
  * For now, the only thing preserved is the onboarding_step
  *
  */
-void clear_user_data(void);
+void flash_clear_user_data(void);
 
 #endif

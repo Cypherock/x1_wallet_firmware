@@ -23,29 +23,6 @@ extern evm_unsigned_txn eth_unsigned_txn_ptr;
 extern uint8_t challenge_no[32];
 
 /**
- * @brief This task is executed for exporting wallet on device
- * @details
- *
- * @see EXPORT_WALLET_TASKS,
- * @since v1.0.0
- */
-void export_wallet_task();
-
-/**
- * @brief This task is executed for adding xpub to the device.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void add_coin_tasks();
-
-/**
- * @brief This task is executed for processing and signing unsigned transaction.
- */
-void send_transaction_tasks_near();
-
-/**
  * @brief This task is executed for processing and signing unsigned transaction
  *  of Ethereum.
  * @details

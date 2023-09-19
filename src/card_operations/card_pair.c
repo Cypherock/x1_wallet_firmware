@@ -188,7 +188,7 @@ static uint32_t pair_card_preprocess(card_pairing_data_t *pair_data) {
              invalid_self_keypath,
              sizeof(invalid_self_keypath)) == 0) {
     /* Device is not provisioned */
-    mark_core_error_screen(ui_text_device_compromised);
+    mark_core_error_screen(ui_text_device_compromised, false);
     return EXCEPTION_INVALID_PROVISION_DATA;
   }
 
@@ -238,7 +238,7 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
     LOG_CRITICAL("xxec %d:%d", EXCEPTION_CARD_NOT_VERIFIED + status, __LINE__);
     log_hex_array("resp", pair_data->data, 128);
     log_hex_array("sig", buffer, sizeof(buffer));
-    mark_core_error_screen(ui_text_cannot_verify_card_contact_support);
+    mark_core_error_screen(ui_text_cannot_verify_card_contact_support, false);
     return EXCEPTION_CARD_NOT_VERIFIED + status;
   }
 
@@ -248,7 +248,7 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
   status = atecc_nfc_ecdh(&public_key_uncompressed[1], pair_data->data + 45);
   if (ATCA_SUCCESS != status) {
     LOG_CRITICAL("xxec %d:%d", ATECC_ERROR_BASE + status, __LINE__);
-    mark_core_error_screen(ui_text_unknown_error_contact_support);
+    mark_core_error_screen(ui_text_unknown_error_contact_support, false);
     return ATECC_ERROR_BASE + status;
   }
 
@@ -336,7 +336,6 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       error_status = handle_pairing_success(&card_data, &pair_data);
-      buzzer_start(BUZZER_DURATION);
       break;
     }
 
@@ -345,6 +344,7 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
     }
   }
 
+  buzzer_start(BUZZER_DURATION);
   nfc_deselect_card();
 
   if (NULL != status) {
@@ -385,8 +385,8 @@ card_error_type_e card_pair_operation(uint8_t card_number,
       break;
     }
 
-    if ((CARD_OPERATION_CARD_REMOVED == card_data.error_type) ||
-        (CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type)) {
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen

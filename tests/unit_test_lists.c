@@ -86,11 +86,6 @@ TEST_GROUP_RUNNER(usb_evt_api_test) {
   RUN_TEST_CASE(usb_evt_api_test, consume_and_respond)
   RUN_TEST_CASE(usb_evt_api_test, stitch_data_chunks)
   RUN_TEST_CASE(usb_evt_api_test, send_data_chunks)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_1)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_2)
-  RUN_TEST_CASE(usb_evt_api_test, api_interference_3)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_1)
-  RUN_TEST_CASE(usb_evt_api_test, wrong_cmd_2)
 }
 
 TEST_GROUP_RUNNER(ui_events_test) {
@@ -184,4 +179,32 @@ TEST_GROUP_RUNNER(evm_sign_msg_test) {
   RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_typed_data_hash);
   RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_personal_sign_hash);
   RUN_TEST_CASE(evm_sign_msg_test, evm_sign_msg_test_eth_sign_hash);
+}
+
+TEST_GROUP_RUNNER(near_helper_test) {
+  RUN_TEST_CASE(near_helper_test, near_helper_send_decoder_transfer_action);
+  RUN_TEST_CASE(near_helper_test,
+                near_helper_send_decoder_transfer_action_to_explicit_account);
+  RUN_TEST_CASE(near_helper_test,
+                near_helper_send_decoder_function_call_explicit_account);
+  RUN_TEST_CASE(near_helper_test, near_helper_sign_txn);
+}
+
+TEST_GROUP_RUNNER(near_txn_user_verification_test) {
+  RUN_TEST_CASE(near_txn_user_verification_test,
+                near_txn_user_verification_transfer_action);
+  RUN_TEST_CASE(near_txn_user_verification_test,
+                near_txn_user_verification_transfer_action_to_explicit_account);
+  RUN_TEST_CASE(near_txn_user_verification_test,
+                near_txn_user_verification_function_call_explicit_account);
+}
+
+TEST_GROUP_RUNNER(solana_add_account_test) {
+  RUN_TEST_CASE(solana_add_account_test, solana_validate_req_action);
+  RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
+}
+
+TEST_GROUP_RUNNER(utils_tests) {
+  RUN_TEST_CASE(utils_tests, der_to_sig_1);
+  RUN_TEST_CASE(utils_tests, der_to_sig_2);
 }

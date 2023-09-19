@@ -47,4 +47,15 @@
  */
 void manager_app_main(usb_event_t usb_evt);
 
+/**
+ * @brief Restricted Entry point for the manager application of the X1 vault. It
+ * is invoked by the X1 vault firmware, as soon as there is a USB request raised
+ * for the manager app.
+ * @note It only allows some functionality such as get device info, device
+ * authentication and firmware update
+ *
+ * @param usb_evt The USB event which triggered invocation of the manager app
+ */
+void manager_app_restricted_main(usb_event_t usb_evt);
+
 #endif /* MANAGER_APP_H */

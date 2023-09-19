@@ -66,6 +66,7 @@
 #include <pb_encode.h>
 
 #include "common_error.h"
+#include "core_api.h"
 #include "events.h"
 
 /*****************************************************************************
@@ -173,7 +174,7 @@ void btc_send_result(const btc_result_t *result) {
   uint8_t buffer[1700] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_btc_result(result, buffer, sizeof(buffer), &bytes_encoded));
-  usb_send_msg(&buffer[0], bytes_encoded);
+  send_response_to_host(&buffer[0], bytes_encoded);
 }
 
 bool btc_get_query(btc_query_t *query, pb_size_t exp_query_tag) {

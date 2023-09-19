@@ -189,21 +189,6 @@ void comm_reject_request(En_command_type_t command_type, uint8_t byte) {
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
-void usb_send_error(const uint8_t *msg, uint32_t size) {
-  comm_status_t *comm_status = get_comm_status();
-  uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  NVIC_DisableIRQ(OTG_FS_IRQn);
-  usb_send_msg(msg, size);
-  // Imp: Should be updated after clearing the buffer
-  comm_status->curr_cmd_state = CMD_STATE_INVALID_REQ;
-  comm_status->app_busy_status = CY_APP_IDLE | CY_APP_IDLE_TASK;
-  // App state is set to idle here, so new command is allowed from any
-  // interfaces
-  comm_reset_interface();
-  if (usb_irq_enable == true)
-    NVIC_EnableIRQ(OTG_FS_IRQn);
-}
-
 void usb_send_byte(const uint32_t command_type, const uint8_t byte) {
   uint8_t arr[1] = {byte};
   transmit_data_to_app(command_type, arr, 1);
@@ -215,43 +200,43 @@ void usb_send_data(const uint32_t command_type,
   return;
 }
 
-void usb_send_msg(const uint8_t *msg, const uint32_t size) {
+void usb_send_msg(const uint8_t *core_msg,
+                  uint32_t core_msg_size,
+                  const uint8_t *app_msg,
+                  uint32_t app_msg_size) {
   uint8_t usb_irq_enable = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  LOG_SWV("%s: %ld\n", __func__, size);
 
   NVIC_DisableIRQ(OTG_FS_IRQn);
   usb_clear_event();
   get_comm_status()->curr_cmd_state = CMD_STATE_DONE;
 
-  // TODO: get core_msg_t from core
-  // encode msg-context directly into payload buffer
-  core_msg_t core_msg = {.which_type = CORE_MSG_CMD_TAG,
-                         .cmd.applet_id = get_applet_id()};
-  pb_ostream_t stream =
-      pb_ostream_from_buffer(comm_io_buffer + COMM_SZ_RESERVED_SPACE,
-                             COMM_BUFFER_SIZE - COMM_SZ_RESERVED_SPACE);
-  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
   // catch the buffer overflow situation
-  ASSERT((COMM_SZ_RESERVED_SPACE + stream.bytes_written + size) <=
+  ASSERT((COMM_SZ_RESERVED_SPACE + core_msg_size + app_msg_size) <=
          COMM_BUFFER_SIZE);
-  comm_set_payload_struct(stream.bytes_written, size);
+  comm_set_payload_struct(core_msg_size, app_msg_size);
 
   // write stream lengths into payload buffer as follows
   // core_msg_len (2-bytes) : app_msg_len (2-bytes) : core_msg : app_msg
   // write core msg length into payload buffer
-  comm_io_buffer[0] = (stream.bytes_written >> 8) & 0xFF;
-  comm_io_buffer[1] = stream.bytes_written & 0xFF;
+  comm_io_buffer[0] = (core_msg_size >> 8) & 0xFF;
+  comm_io_buffer[1] = core_msg_size & 0xFF;
   // write app msg length into payload buffer
-  comm_io_buffer[2] = (size >> 8) & 0xFF;
-  comm_io_buffer[3] = size & 0xFF;
+  comm_io_buffer[2] = (app_msg_size >> 8) & 0xFF;
+  comm_io_buffer[3] = app_msg_size & 0xFF;
 
-  if (0 < size && NULL != msg) {
+  if (0 < core_msg_size && NULL != core_msg) {
+    // copy core message into payload buffer after COMM_SZ_RESERVED_SPACE
+    memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE, core_msg, core_msg_size);
+  }
+
+  if (0 < app_msg_size && NULL != app_msg) {
     // copy app message into payload buffer after core-msg
     // COMM_SZ_RESERVED_SPACE + core_msg_len
-    memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE + stream.bytes_written,
-           msg,
-           size);
+    memcpy(comm_io_buffer + COMM_SZ_RESERVED_SPACE + core_msg_size,
+           app_msg,
+           app_msg_size);
   }
+
   if (usb_irq_enable == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 }

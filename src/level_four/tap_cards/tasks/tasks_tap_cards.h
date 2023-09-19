@@ -31,22 +31,6 @@
 void tap_cards_for_write_flow();
 
 /**
- * @brief Task to delete wallet from all the cards
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_cards_for_delete_flow();
-
-/**
  * @brief Task for verification of the card
  * @details
  *

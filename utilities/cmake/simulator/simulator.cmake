@@ -37,7 +37,6 @@ else()
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         apps/manager_app
-        apps/manager_app/onboarding
 
         apps/btc_family
         apps/btc_family/btc
@@ -46,12 +45,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/btc_family/ltc
         apps/evm_family
         apps/evm_family/eth
-
+        apps/evm_family/polygon
+        apps/evm_family/bsc
+        apps/evm_family/fantom
+        apps/evm_family/avalanche
+        apps/evm_family/optimism
+        apps/evm_family/arbitrum
         apps/near_app
+
+        apps/solana_app
 
         src/
         src/menu
         src/wallet
+        src/restricted_app
+        src/onboarding
         src/settings
 
         src/card_operations
@@ -145,6 +153,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/manager_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/btc_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
         )
 
 IF(UNIT_TESTS_SWITCH)

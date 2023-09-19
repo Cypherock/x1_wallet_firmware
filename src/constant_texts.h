@@ -26,6 +26,9 @@
 #define UI_TEXT_RECEIVE_TOKEN_PROMPT "Receive %s on %s in %s"
 #define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
 #define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_SIGN_TXN_PROMPT "Sign transaction on %s from %s"
+#define UI_TEXT_REVIEW_TXN_PROMPT "Review transaction to %s"
+#define UI_TEXT_SEND_TOKEN_PROMPT "Send %s on %s from %s"
 #define UI_TEXT_BTC_RECEIVER "Receiver #%d"
 #define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
@@ -39,6 +42,8 @@
 #define UI_TEXT_VERIFY_MESSAGE "Verify Message"
 #define UI_TEXT_VERIFY_DOMAIN "Verify Domain"
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
+#define UI_TEXT_WALLET_UNLOCKED "Correct PIN! %s is now unlocked"
+#define UI_TEXT_UNLOCK_WARNING "Multiple incorrect attempts may block %s"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
   "Incorrect PIN!\n%d attempt(s) remaining"
 #define UI_TEXT_BLIND_SIGNING_WARNING                                          \
@@ -70,11 +75,11 @@ extern const char *ui_text_mnemonics_number_options[];
 
 // Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_SETTINGS 11
+#define NUMBER_OF_OPTIONS_SETTINGS 12
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_SETTINGS 10
+#define NUMBER_OF_OPTIONS_SETTINGS 11
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
@@ -123,6 +128,12 @@ extern const char *ui_text_card_health_check_error[];
 #define UI_TEXT_SYNC_WALLET_LOCKED "Wallet %s is locked"
 #define UI_TEXT_SYNC_WALLET_DONE "Syncing %s complete"
 extern const char *ui_text_syncing_complete;
+
+// Clear user data text
+extern const char *ui_text_clear_device_data_instruction;
+extern const char *ui_text_erasing_device_data;
+extern const char
+    *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
 
 // Manager app text
 // Device authentication text
@@ -184,6 +195,7 @@ extern const char *ui_text_invalid_card_contact_cypherock;
 extern const char *ui_text_wrong_card_sequence;
 extern const char *ui_text_wallet_doesnt_exists_on_this_card;
 extern const char *ui_text_wrong_wallet_is_now_locked;
+extern const char *ui_text_wallet_already_unlocked;
 extern const char *ui_text_wallet_verification_failed;
 
 extern const char *ui_text_invalid_card_tap_card[];
@@ -233,6 +245,7 @@ extern const char *ui_text_enter_passphrase;
 extern const char *ui_text_confirm_passphrase;
 extern const char *ui_text_receive_on;
 extern const char *ui_text_verify_address;
+extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_confirm_wallet_name;
@@ -249,6 +262,8 @@ extern const char *ui_text_new_account_id;
 extern const char *ui_text_new_public_key;
 extern const char *ui_text_replace_account;
 extern const char *ui_text_confirm_account;
+extern const char *ui_text_near_transfer_action_type;
+extern const char *ui_text_near_create_account_method;
 
 // headings card flow
 extern const char *ui_text_family_id_hex;

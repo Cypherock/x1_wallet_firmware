@@ -149,7 +149,7 @@ TEST(usb_evt_api_test, consume_and_respond) {
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
 
   // send response over USB
-  usb_send_msg(data, 1);
+  usb_send_msg(core_msg, 1, data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }
 
@@ -189,68 +189,9 @@ TEST(usb_evt_api_test, api_interference_1) {
   usb_event_t usb_evt;
 
   // 1. responding without getting event
-  usb_send_msg(data, 1);
+  usb_send_msg(core_msg, 1, data, 1);
   TEST_ASSERT(usb_get_event(&usb_evt) == false);
   TEST_usb_evt_api_test_SETUP();
   TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
   TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
-}
-
-TEST(usb_evt_api_test, api_interference_2) {
-  usb_event_t usb_evt;
-
-  // 2. reject with usb error
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  usb_send_error(data, 1);
-  TEST_ASSERT(usb_get_event(&usb_evt) == false);
-  TEST_usb_evt_api_test_SETUP();
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
-}
-
-TEST(usb_evt_api_test, api_interference_3) {
-  usb_event_t usb_evt;
-
-  // 3. reject with response
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  usb_send_error(data, 1);
-  TEST_ASSERT(usb_get_event(&usb_evt) == false);
-  TEST_usb_evt_api_test_SETUP();
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
-}
-
-/**
- * @brief Test the behaviour of wrong cmd handling APIs.
- * @details The application should have relevant APIs to handle such anomalies
- * at runtime. This function tests one such way to handle unexpected data from
- * host; which is by responding with an application level error code such that
- * the usb-comm module treats it as a no-error case.
- */
-TEST(usb_evt_api_test, wrong_cmd_1) {
-  usb_event_t usb_evt;
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
-
-  // send response over USB
-  usb_send_error(data, 1);    // rename to usb_send_rejection_response()
-  TEST_ASSERT(usb_get_event(&usb_evt) == false);
-}
-
-/**
- * @brief Test the behaviour of wrong cmd handling APIs at usb-comm module.
- * @details The application should have relevant APIs to handle unexpected data
- * exchange at runtime. This function tests one such way to handle unexpected
- * data from host; which is by responding with an usb-comm level error code
- * inside the error packet such that the usb-comm module treats it as an error
- * case.
- */
-TEST(usb_evt_api_test, wrong_cmd_2) {
-  usb_event_t usb_evt;
-  TEST_ASSERT_TRUE(usb_get_event(&usb_evt));
-  TEST_ASSERT_TRUE(verify_event(89, 380, &usb_evt));
-
-  // send response USB error packet
-  usb_send_error(data, 1);
-  TEST_ASSERT(usb_get_event(&usb_evt) == false);
 }

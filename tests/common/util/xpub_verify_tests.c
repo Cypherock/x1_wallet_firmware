@@ -9,6 +9,7 @@
 #include "near.h"
 #include "near_helpers.h"
 #include "solana.h"
+#include "solana_helpers.h"
 #include "unity_fixture.h"
 
 const uint32_t paths[][7] = {
@@ -188,7 +189,7 @@ TEST(xpub, derivation_path_tests) {
         status = near_derivation_path_guard(&paths[i][2], depth);
         break;
       case SOLANA:
-        status = sol_verify_derivation_path(&paths[i][2], depth);
+        status = solana_derivation_path_guard(&paths[i][2], depth);
         break;
       default:
         status = verify_xpub_derivation_path(&paths[i][2], depth);

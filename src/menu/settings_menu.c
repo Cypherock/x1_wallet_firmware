@@ -85,6 +85,7 @@ typedef enum {
   ROTATE_DISPLAY,
   TOGGLE_LOG_EXPORT,
   TOGGLE_PASSPHRASE,
+  CLEAR_DEVICE_DATA,
   FACTORY_RESET_DEVICE,
   VIEW_DEVICE_INFO,
   VIEW_CARD_VERSION,
@@ -198,6 +199,10 @@ static void settings_menu_handler(engine_ctx_t *ctx,
       }
       case TOGGLE_PASSPHRASE: {
         toggle_passphrase();
+        break;
+      }
+      case CLEAR_DEVICE_DATA: {
+        clear_device_data();
         break;
       }
       case FACTORY_RESET_DEVICE: {

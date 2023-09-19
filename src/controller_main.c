@@ -93,7 +93,6 @@
 #include "communication.h"
 #include "constant_texts.h"
 #include "controller_level_four.h"
-#include "controller_level_one.h"
 #include "cryptoauthlib.h"
 #include "etc.h"
 #include "eth.h"
@@ -106,17 +105,6 @@
 #include "rfc7539.h"
 #include "ui_events.h"
 #include "ui_instruction.h"
-
-/**
- * @brief A task declared to periodically execute a callback which checks for a
- * success from the desktop.
- *
- * This task is called when the user is prompted to wait while an action is
- * being performed in background. It executes the callback function
- * _success_listener periodically which checks for a success/abort from the
- * desktop.
- */
-lv_task_t *success_task;
 
 /**
  * @brief A task declared to execute a callback after a timeout.
@@ -181,24 +169,6 @@ Flash_Wallet wallet_for_flash;
 MessageData msg_data;
 ui_display_node *current_display_node = NULL;
 
-Flow_level *get_flow_level() {
-  ASSERT((&flow_level) != NULL);
-
-  return &flow_level;
-}
-
-Counter *get_counter() {
-  ASSERT((&counter) != NULL);
-
-  return &counter;
-}
-
-Wallet *get_wallet() {
-  ASSERT((&wallet) != NULL);
-
-  return &wallet;
-}
-
 Flash_Wallet *get_flash_wallet() {
   ASSERT((&wallet_for_flash) != NULL);
 
@@ -207,7 +177,6 @@ Flash_Wallet *get_flash_wallet() {
 
 void mark_event_over() {
   counter.next_event_flag = true;
-  level_one_controller();
 }
 
 void mark_list_choice(uint16_t list_choice) {
@@ -216,7 +185,6 @@ void mark_list_choice(uint16_t list_choice) {
 
 void mark_event_cancel() {
   counter.next_event_flag = true;
-  level_one_controller_b();
 }
 
 void reset_flow_level() {
@@ -317,36 +285,10 @@ void reset_flow_level_greater_than(enum LEVEL level) {
   }
 }
 
-void _success_listener(lv_task_t *task) {
-  uint8_t *msg = NULL;
-  uint16_t msg_len = 1;
-  if (get_usb_msg_by_cmd_type(STATUS_PACKET, &msg, &msg_len)) {
-    switch (msg[0]) {
-      case STATUS_CMD_ABORT:
-        mark_error_screen(ui_text_operation_has_been_cancelled);
-        reset_flow_level();
-        lv_task_del(success_task);
-        lv_task_del(timeout_task);
-        break;
-
-      case STATUS_CMD_SUCCESS:
-        mark_event_over();
-        lv_task_del(success_task);
-        lv_task_del(timeout_task);
-        break;
-      default:
-        break;
-    }
-    clear_message_received_data();
-  }
-}
-
 void _timeout_listener(lv_task_t *task) {
   mark_error_screen(ui_text_no_response_from_desktop);
   instruction_scr_destructor();
   reset_flow_level();
-  if (success_task != NULL)
-    lv_task_del(success_task);
 }
 
 #if X1WALLET_MAIN
@@ -468,14 +410,14 @@ void desktop_listener_task(lv_task_t *data) {
             flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_ETH;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
-                     UI_TEXT_SEND_PROMPT,
+                     UI_TEXT_SEND_TOKEN_PROMPT,
                      var_send_transaction_data.transaction_metadata.token_name,
                      get_coin_name(coin_index,
                                    var_send_transaction_data
                                        .transaction_metadata.network_chain_id),
                      wallet.wallet_name);
-          } else if (coin_index == NEAR_COIN_INDEX) {
-            flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
+          } else if (false) {
+            // flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_NEAR;
             if (var_send_transaction_data.transaction_metadata
                     .network_chain_id == 1) {
               snprintf(
@@ -490,7 +432,7 @@ void desktop_listener_task(lv_task_t *data) {
               snprintf(
                   flow_level.confirmation_screen_text,
                   sizeof(flow_level.confirmation_screen_text),
-                  UI_TEXT_SEND_PROMPT,
+                  UI_TEXT_SEND_TOKEN_PROMPT,
                   get_coin_symbol(coin_index,
                                   receive_transaction_data.network_chain_id),
                   get_coin_name(coin_index,
@@ -502,7 +444,7 @@ void desktop_listener_task(lv_task_t *data) {
             flow_level.level_two = LEVEL_THREE_SEND_TRANSACTION_SOLANA;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
-                     UI_TEXT_SEND_PROMPT,
+                     UI_TEXT_SEND_TOKEN_PROMPT,
                      get_coin_symbol(coin_index,
                                      receive_transaction_data.network_chain_id),
                      get_coin_name(coin_index,
@@ -587,8 +529,7 @@ void desktop_listener_task(lv_task_t *data) {
           uint32_t coin_index =
               BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index);
 
-          if (coin_index == NEAR_COIN_INDEX &&
-              receive_transaction_data.near_account_type == 1) {
+          if (false && receive_transaction_data.near_account_type == 1) {
             memcpy(&receive_transaction_data.near_registered_account,
                    data_array + offset,
                    65);
@@ -603,7 +544,7 @@ void desktop_listener_task(lv_task_t *data) {
                      get_coin_name(coin_index,
                                    receive_transaction_data.network_chain_id),
                      wallet.wallet_name);
-          } else if (coin_index == NEAR_COIN_INDEX) {
+          } else if (false) {
             flow_level.level_two = LEVEL_THREE_RECEIVE_TRANSACTION_NEAR;
             snprintf(flow_level.confirmation_screen_text,
                      sizeof(flow_level.confirmation_screen_text),
@@ -674,7 +615,7 @@ void desktop_listener_task(lv_task_t *data) {
         uint32_t coins[] = {U32_SWAP_ENDIANNESS(COIN_TYPE_ETHEREUM),
                             U32_SWAP_ENDIANNESS(ETH_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_NEAR),
-                            U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
+                            // U32_SWAP_ENDIANNESS(NEAR_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_SOLANA),
                             U32_SWAP_ENDIANNESS(SOL_COIN_VERSION),
                             U32_SWAP_ENDIANNESS(COIN_TYPE_POLYGON),

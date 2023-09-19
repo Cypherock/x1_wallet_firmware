@@ -63,6 +63,7 @@
 
 #include "main_menu.h"
 #include "onboarding.h"
+#include "restricted_app.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -111,15 +112,19 @@ engine_ctx_t *get_core_flow_ctx(void) {
   //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
   // }
 
-  /* If onboarding is not complete, invoke onboarding flow from the manager app
-   */
+  /// Check if onboarding is complete or not
   if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
     engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+    return &core_step_engine_ctx;
   }
 
-  // TODO: Check device authentication status
+  // Check if device needs to go to restricted state or not
+  if (DEVICE_AUTHENTICATED != get_auth_state()) {
+    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
+    return &core_step_engine_ctx;
+  }
 
+  // Finally enable all flows from the user
   engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-
   return &core_step_engine_ctx;
 }

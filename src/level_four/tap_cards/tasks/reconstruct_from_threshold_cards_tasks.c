@@ -68,28 +68,4 @@ extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 
 void tap_threshold_cards_for_reconstruction() {
-  switch (flow_level.level_four) {
-    case TAP_CARD_ONE_FRONTEND:
-      instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
-      mark_event_over();
-      break;
-
-    case TAP_CARD_ONE_BACKEND:
-      mark_event_over();
-      break;
-
-    case TAP_CARD_TWO_FRONTEND:
-
-      instruction_scr_init(ui_text_place_card_below, ui_text_tap_2_2_cards);
-      mark_event_over();
-      break;
-
-    case TAP_CARD_TWO_BACKEND:
-      mark_event_over();
-      break;
-
-    default:
-      message_scr_init(ui_text_something_went_wrong);
-      break;
-  }
 }

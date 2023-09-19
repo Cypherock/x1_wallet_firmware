@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/near/sign_txn.proto
+near.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+near.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_length:true
+near.SignTxnUnsignedTxn.txn type:FT_STATIC max_size:2048 fixed_length:false
+near.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true

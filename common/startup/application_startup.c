@@ -114,7 +114,6 @@ static void memory_monitor(lv_task_t *param);
 #endif
 
 extern lv_task_t *listener_task;
-extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
 extern lv_indev_t *indev_keypad;
 
@@ -315,8 +314,6 @@ void application_init() {
   CY_Reset_Not_Allow(true);
 
 #endif
-  listener_task =
-      lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
   nfc_set_device_key_id(get_perm_self_key_id());
   pow_init_hash_rate();
   if (get_first_boot_on_update() == true) {
@@ -343,7 +340,7 @@ void check_invalid_wallets() {
              (MAX_KEYSTORE_ENTRY - paired_card_count));
     delay_scr_init(paired_card_count == 0 ? ui_text_error_no_card_paired : msg,
                    DELAY_TIME);
-    mark_core_error_screen(ui_text_card_pairing_warning);
+    mark_core_error_screen(ui_text_card_pairing_warning, false);
     return;
   }
 
@@ -393,7 +390,7 @@ void check_invalid_wallets() {
     }
   }
   if (fix)
-    mark_core_error_screen(ui_text_wallet_visit_to_verify);
+    mark_core_error_screen(ui_text_wallet_visit_to_verify, false);
 }
 
 void check_boot_count() {

@@ -62,6 +62,7 @@
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
+#include "near_context.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
 #include "ui_confirmation.h"
@@ -77,9 +78,7 @@ void receive_transaction_controller_near() {
     case RECV_TXN_FIND_XPUB_NEAR: {
       receive_transaction_data.near_acc_found = false;
 
-      if (BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index) ==
-              NEAR_COIN_INDEX &&
-          receive_transaction_data.near_account_type == 1) {
+      if (false && receive_transaction_data.near_account_type == 1) {
         coin_specific_data.coin_type = COIN_TYPE_NEAR;
         memcpy(coin_specific_data.wallet_id,
                receive_transaction_data.wallet_id,

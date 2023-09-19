@@ -398,7 +398,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
     }
 
     case COMPLETED_WITH_ERRORS: {
-      mark_core_error_screen(ui_text_creation_failed_delete_wallet);
+      mark_core_error_screen(ui_text_creation_failed_delete_wallet, false);
       next_state = EXIT;
       break;
     }
@@ -420,7 +420,7 @@ void create_new_wallet_flow(void) {
 
   // Ensure that atleast 4 cards are paired
   if (get_keystore_used_count() < MAX_KEYSTORE_ENTRY) {
-    mark_core_error_screen(ui_text_error_pair_all_cards);
+    mark_core_error_screen(ui_text_error_pair_all_cards, false);
     return;
   }
 

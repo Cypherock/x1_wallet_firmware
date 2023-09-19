@@ -128,8 +128,8 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
   status = card_initialize_applet(&operation_data);
   nfc_deselect_card();
 
+  buzzer_start(100);
   if (CARD_OPERATION_SUCCESS == status) {
-    buzzer_start(100);
     result->card_number =
         decode_card_number(operation_data.nfc_data.tapped_card);
     memcpy(

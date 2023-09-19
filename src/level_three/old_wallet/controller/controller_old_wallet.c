@@ -74,10 +74,6 @@ void level_three_old_wallet_controller() {
       sign_message_controller_eth();
     } break;
 
-    case LEVEL_THREE_SEND_TRANSACTION_NEAR: {
-      send_transaction_controller_near();
-    } break;
-
     case LEVEL_THREE_SEND_TRANSACTION_SOLANA: {
       send_transaction_controller_solana();
     } break;
@@ -95,7 +91,7 @@ void level_three_old_wallet_controller() {
     } break;
 
     case LEVEL_THREE_WALLET_LOCKED: {
-      wallet_locked_controller();
+      // wallet_locked_controller();
     } break;
 
     case LEVEL_THREE_VERIFY_WALLET: {

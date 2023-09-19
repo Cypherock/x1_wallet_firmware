@@ -280,6 +280,10 @@ static bool get_msg_data(evm_query_t *query) {
 
   uint32_t size = 0;
 
+  /**
+   * Allocate required memory for message size +1. Extra byte is used to add a
+   * NULL character at the end of the msg data in case it'll be used as a string
+   */
   sign_msg_ctx.msg_data = malloc(sign_msg_ctx.init.total_msg_size + 1);
   ASSERT(NULL != sign_msg_ctx.msg_data);
   sign_msg_ctx.msg_data[sign_msg_ctx.init.total_msg_size] = '\0';

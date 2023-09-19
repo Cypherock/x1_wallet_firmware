@@ -62,16 +62,26 @@
 
 #include "host_interface.h"
 
+#include <core.pb.h>
+
+#include "arbitrum_app.h"
+#include "avalanche_app.h"
+#include "bsc_app.h"
 #include "btc_app.h"
 #include "btc_main.h"
+#include "core_api.h"
 #include "dash_app.h"
 #include "doge_app.h"
 #include "eth_app.h"
 #include "evm_main.h"
+#include "fantom_app.h"
 #include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"
 #include "near_main.h"
+#include "optimism_app.h"
+#include "polygon_app.h"
+#include "solana_main.h"
 #include "status_api.h"
 
 /*****************************************************************************
@@ -149,10 +159,47 @@ void main_menu_host_interface(engine_ctx_t *ctx,
       near_main(usb_evt);
       break;
     }
-    default: {
-      // TODO: send core error about invalid applet id
+    case 9: {
+      evm_main(usb_evt, get_polygon_app());
       break;
     }
+    case 10: {
+      solana_main(usb_evt);
+      break;
+    }
+    case 11: {
+      evm_main(usb_evt, get_bsc_app());
+      break;
+    }
+    case 12: {
+      evm_main(usb_evt, get_fantom_app());
+      break;
+    }
+    case 13: {
+      evm_main(usb_evt, get_avalanche_app());
+      break;
+    }
+    case 14: {
+      evm_main(usb_evt, get_optimism_app());
+      break;
+    }
+    case 17: {
+      evm_main(usb_evt, get_arbitrum_app());
+      break;
+    }
+    default: {
+      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+      break;
+    }
+  }
+
+  /* Device is unauthenticated (this can happen if auth failed when triggered by
+   * cySync settings) or onboarding incomplete (this is unlikely but keep for
+   * completeness), reset the flow as the core will now need to render the
+   * appropriate app (onboarding app or restricted app) */
+  if (MANAGER_ONBOARDING_STEP_COMPLETE != get_onboarding_step() ||
+      DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
+    engine_reset_flow(ctx);
   }
 
   main_menu_set_update_req(true);
