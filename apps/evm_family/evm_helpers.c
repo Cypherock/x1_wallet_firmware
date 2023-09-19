@@ -63,6 +63,7 @@
 #include "evm_helpers.h"
 
 #include "coin_utils.h"
+#include "evm_priv.h"
 #include "evm_txn_helpers.h"
 
 /*****************************************************************************
@@ -112,6 +113,20 @@ static inline bool is_bip44_hd_path(const uint32_t *path, uint32_t depth);
  */
 static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth);
 
+/**
+ * @brief This function calculates the digest of ETH sign or Personal sign data
+ * using the Keccak-256 algorithm.
+ *
+ * @param[in] msg_data A pointer to the data that needs to be hashed.
+ * @param[in] msg_data_size The size of the message data in bytes.
+ * @param[out] digest_out A pointer to a buffer where the computed digest will
+ * be stored.
+ *
+ * @return bool value indicating hash calculation status.
+ */
+static bool evm_get_personal_data_digest(uint8_t *msg_data,
+                                         uint32_t msg_data_size,
+                                         uint8_t *digest_out);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -142,6 +157,32 @@ static inline bool is_account_hd_path(const uint32_t *path, uint32_t depth) {
          0 == path[3] && is_non_hardened(path[4]);
 }
 
+static bool evm_get_personal_data_digest(uint8_t *msg_data,
+                                         uint32_t msg_data_size,
+                                         uint8_t *digest_out) {
+  if (NULL == msg_data || NULL == digest_out || 0 == msg_data_size) {
+    return false;
+  }
+
+  char size_string[256] = {0};
+  uint8_t size_string_size = 0;
+  SHA3_CTX ctx = {0};
+
+  keccak_256_Init(&ctx);
+
+  size_string_size =
+      snprintf(size_string, sizeof(size_string), "%ld", msg_data_size);
+
+  keccak_Update(&ctx,
+                (const uint8_t *)ETH_PERSONAL_SIGN_IDENTIFIER,
+                sizeof(ETH_PERSONAL_SIGN_IDENTIFIER) - 1);
+  keccak_Update(&ctx, (const uint8_t *)size_string, size_string_size);
+  keccak_Update(&ctx, (const uint8_t *)msg_data, msg_data_size);
+
+  keccak_Final(&ctx, digest_out);
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -160,4 +201,25 @@ bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   }
 
   return false;
+}
+
+bool evm_get_msg_data_digest(const evm_sign_msg_context_t *ctx,
+                             uint8_t *digest) {
+  bool result = false;
+
+  switch (ctx->init.message_type) {
+    case EVM_SIGN_MSG_TYPE_ETH_SIGN:
+    case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      result = evm_get_personal_data_digest(
+          ctx->msg_data, ctx->init.total_msg_size, digest);
+    } break;
+
+    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
+      // TODO: Prepare typed data message hash
+      break;
+    default:
+      break;
+  }
+
+  return result;
 }
