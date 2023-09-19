@@ -13,6 +13,7 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "btc_context.h"
 
 /*****************************************************************************
@@ -34,10 +35,10 @@
  *****************************************************************************/
 
 /**
- * @brief Returns the config for Litecoin chain app
+ * @brief Returns the config for Litecoin chin app descriptor
  *
- * @return A const reference to btc_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const btc_config_t *get_ltc_app();
+const cy_app_desc_t *get_ltc_app_desc();
 
 #endif

@@ -84,7 +84,7 @@ pb_ostream_t ostream;
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(evm_txn_test) {
-  g_evm_app = get_eth_app();
+  g_evm_app = get_eth_app_desc()->app_config;
   ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 }
 

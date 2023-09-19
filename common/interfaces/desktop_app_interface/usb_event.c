@@ -62,7 +62,9 @@
  *****************************************************************************/
 #include <string.h>
 
+#include "app_registry.h"
 #include "core.pb.h"
+#include "core_api.h"
 #include "memzero.h"
 #include "pb_decode.h"
 #include "usb_api.h"
@@ -103,13 +105,19 @@ static uint32_t applet_id = 0;
  *****************************************************************************/
 
 /**
- * @brief Validates that the received usb event is valid in the current context
- * of the application/OS.
+ * Thid function decodes a USB core message and returns the type of the message
+ * and any associated errors.
  *
- * @param evt The captured usb event usb_event_t
- * @param msg The received encoded context buffer
+ * @param msg The parameter `msg` is of type `usb_core_msg_t`, which is a
+ * structure containing a buffer and its size. It is used to hold the message
+ * data that needs to be decoded.
+ * @param request_type A pointer to a variable of type `size_t` where the
+ * request type will be stored.
+ *
+ * @return a value of type `core_error_type_t`.
  */
-static core_error_type_t validate_msg_context(usb_core_msg_t msg);
+static core_error_type_t get_core_req_type(usb_core_msg_t msg,
+                                           size_t *request_type);
 
 /**
  * @brief Clear the fields of core_msg by setting default values
@@ -125,6 +133,18 @@ static void clear_msg_context();
  */
 static void reset_event_obj(usb_event_t *evt);
 
+/**
+ * @brief This function populates a response structure with the versions of all
+ * registered apps.
+ *
+ * @param response A pointer to a structure of type
+ * `core_app_version_result_response_t`. This structure contains an array
+ * `app_versions` of type `core_app_version_t`, which represents the list of app
+ * versions. The structure also contains an integer `app_versions_count` to
+ * store the count of app versions.
+ */
+static void populate_version_list(core_app_version_result_response_t *response);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -139,30 +159,61 @@ static void clear_msg_context() {
   core_msg.buffer = NULL;
 }
 
-static core_error_type_t validate_msg_context(usb_core_msg_t msg) {
+static core_error_type_t get_core_req_type(usb_core_msg_t msg,
+                                           size_t *request_type) {
   core_msg_t core_msg_p = CORE_MSG_INIT_ZERO;
   pb_istream_t stream = pb_istream_from_buffer(msg.buffer, msg.size);
-
+  core_error_type_t status = CORE_INVALID_MSG;
   // invalid buffer ref, 0 size & decode failure are error situation
   if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
-      NULL == msg.buffer || 0 == msg.size ||
-      CORE_MSG_CMD_TAG != core_msg_p.which_type) {
-    return CORE_INVALID_MSG;
+      NULL == msg.buffer || 0 == msg.size) {
+    return status;
   }
 
-  // store applet id
-  applet_id = core_msg_p.cmd.applet_id;
+  switch (core_msg_p.which_type) {
+    case CORE_MSG_CMD_TAG: {
+      // store applet id
+      applet_id = core_msg_p.cmd.applet_id;
+      status = CORE_NO_ERROR;
+    } break;
 
-  // TODO: verify if the core_msg_p.type.cmd.applet_id is valid one ref PR #235
-  // const cy_app_desc_t *app_desc =
-  // registry_get_app_desc(core_msg_p.type.cmd.applet_id);
+    case CORE_MSG_APP_VERSION_TAG: {
+      if (CORE_APP_VERSION_CMD_REQUEST_TAG ==
+          core_msg_p.app_version.which_cmd) {
+        status = CORE_NO_ERROR;
+      }
+    } break;
 
-  // if (NULL == app_desc) {
-  //   return CORE_ERROR_TYPE_UNKNOWN_APP;
-  // }
+    default:
+      break;
+  }
 
-  // TODO: verify with core context, if applet is invokable/active
-  return CORE_NO_ERROR;
+  if (NULL != request_type) {
+    *request_type = core_msg_p.which_type;
+  }
+
+  return status;
+}
+
+static void populate_version_list(
+    core_app_version_result_response_t *response) {
+  const cy_app_desc_t **desc_list = registry_get_app_list();
+  uint8_t app_count = 0;
+
+  for (int i = 0; i < REGISTRY_MAX_APPS; i++) {
+    if (NULL == desc_list[i]) {
+      continue;
+    }
+
+    response->app_versions[app_count].id = desc_list[i]->id;
+    response->app_versions[app_count].has_version = true;
+    memcpy(&(response->app_versions[app_count].version),
+           &(desc_list[i]->version),
+           sizeof(common_version_t));
+    app_count++;
+  }
+
+  response->app_versions_count = app_count;
 }
 
 /*****************************************************************************
@@ -197,17 +248,36 @@ bool usb_get_event(usb_event_t *evt) {
     return false;
   }
 
+  size_t request_type = 0;
   reset_event_obj(evt);
 
   if (usb_event.flag) {
-    core_error_type_t status = validate_msg_context(core_msg);
+    core_error_type_t status = get_core_req_type(core_msg, &request_type);
     if (CORE_NO_ERROR != status) {
       // now clear event as it is not supposed to reach the app
       usb_clear_event();
-      // TODO: send an error to host
+      send_core_error_msg_to_host(status);
     } else {
-      memcpy(evt, &usb_event, sizeof(usb_event_t));
-      usb_set_state_executing();
+      if (CORE_MSG_CMD_TAG == request_type) {
+        memcpy(evt, &usb_event, sizeof(usb_event_t));
+        usb_set_state_executing();
+      } else if (CORE_MSG_APP_VERSION_TAG == request_type) {
+        /**
+         * The applet verison list request is processed only when @ref
+         * usb_get_event api is called, limitation of this implementation is
+         * that if device is not actively looking for usb events then the host
+         * will not be able to receive version response until @ref usb_get_event
+         * is called. An alternate approach is to process the version request
+         * when calling the @ref usb_set_event api, so it is processed through
+         * within the interrupt thread and the version request is processed at
+         * any time, regardless of device operation or state.
+         */
+
+        core_app_version_result_response_t resp;
+        populate_version_list(&resp);
+        send_app_version_list_to_host(&resp);
+        reset_event_obj(&usb_event);
+      }
     }
   }
   return evt->flag;

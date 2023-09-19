@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t optimism_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t optimism_app = {
+static const evm_config_t optimism_app_config = {
     .lunit_name = "ETH",
     .name = "Optimism",
     .chain_id = 10,
@@ -103,6 +105,17 @@ static const evm_config_t optimism_app = {
     .whitelisted_contracts = NULL,
     .whitelist_count = OPTIMISM_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t optimism_app_desc = {
+    .id = 14,
+    .version =
+        {
+            .major = 1,
+            .minor = 0,
+            .patch = 0,
+        },
+    .app = evm_main,
+    .app_config = &optimism_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,6 +129,6 @@ static const evm_config_t optimism_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_optimism_app() {
-  return &optimism_app;
+const cy_app_desc_t *get_optimism_app_desc() {
+  return &optimism_app_desc;
 }

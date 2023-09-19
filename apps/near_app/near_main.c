@@ -79,26 +79,39 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Entry point for the NEAR application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * Near app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the bitcoin app
+ */
+void near_main(usb_event_t usb_evt, const void *near_app_config);
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+static const cy_app_desc_t near_app_desc = {.id = 8,
+                                            .version =
+                                                {
+                                                    .major = 1,
+                                                    .minor = 0,
+                                                    .patch = 0,
+                                                },
+                                            .app = near_main,
+                                            .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-void near_main(usb_event_t usb_evt) {
+void near_main(usb_event_t usb_evt, const void *near_app_config) {
   near_query_t query = NEAR_QUERY_INIT_DEFAULT;
 
   if (false == decode_near_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -128,4 +141,11 @@ void near_main(usb_event_t usb_evt) {
   }
 
   return;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+const cy_app_desc_t *get_near_app_desc() {
+  return &near_app_desc;
 }

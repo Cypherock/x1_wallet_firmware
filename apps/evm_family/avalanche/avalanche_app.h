@@ -13,8 +13,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "evm_context.h"
-
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -35,10 +35,10 @@
  *****************************************************************************/
 
 /**
- * @brief Returns the config for Avalanche chain app
+ * @brief Returns the config for Avalanche chin app descriptor
  *
- * @return A const reference to evm_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const evm_config_t *get_avalanche_app();
+const cy_app_desc_t *get_avalanche_app_desc();
 
 #endif    // AVALANCHE_APP_H

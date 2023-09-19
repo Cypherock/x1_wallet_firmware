@@ -63,6 +63,7 @@
 #include "btc_app.h"
 
 #include "btc_helpers.h"
+#include "btc_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -118,6 +119,16 @@ const btc_config_t btc_app = {
     .is_purpose_supported = is_purpose_supported,
 };
 
+static const cy_app_desc_t btc_app_desc = {.id = 2,
+                                           .version =
+                                               {
+                                                   .major = 1,
+                                                   .minor = 0,
+                                                   .patch = 0,
+                                               },
+                                           .app = btc_main,
+                                           .app_config = &btc_app};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -138,6 +149,6 @@ static bool is_purpose_supported(uint32_t purpose_index) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const btc_config_t *get_btc_app() {
-  return &btc_app;
+const cy_app_desc_t *get_btc_app_desc() {
+  return &btc_app_desc;
 }

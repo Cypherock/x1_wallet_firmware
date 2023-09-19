@@ -13,8 +13,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "evm_context.h"
-
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -35,10 +35,10 @@
  *****************************************************************************/
 
 /**
- * @brief Returns the config for Arbitrum chain app
+ * @brief Returns the config for Arbitrum chin app descriptor
  *
- * @return A const reference to evm_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const evm_config_t *get_arbitrum_app();
+const cy_app_desc_t *get_arbitrum_app_desc();
 
 #endif    // ARBITRUM_APP_H

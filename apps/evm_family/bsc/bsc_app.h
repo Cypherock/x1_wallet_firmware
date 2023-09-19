@@ -13,6 +13,7 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "evm_context.h"
 
 /*****************************************************************************
@@ -35,10 +36,10 @@
  *****************************************************************************/
 
 /**
- * @brief Returns the config for Binance Smart Chain chain app
+ * @brief Returns the config for Binance Smart Chain chin app descriptor
  *
- * @return A const reference to evm_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const evm_config_t *get_bsc_app();
+const cy_app_desc_t *get_bsc_app_desc();
 
 #endif    // BSC_APP_H

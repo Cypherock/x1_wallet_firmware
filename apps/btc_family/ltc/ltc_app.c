@@ -63,6 +63,7 @@
 #include "ltc_app.h"
 
 #include "btc_helpers.h"
+#include "btc_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -102,7 +103,7 @@ static bool is_purpose_supported(uint32_t purpose_index);
  * Secondary reference for aggregated coin info:
  * https://github.com/trezor/trezor-firmware/blob/a4034097d6386fd938a23e888fc85b7d2ca13df3/common/defs/bitcoin/litecoin.json
  */
-const btc_config_t ltc_app = {
+const btc_config_t ltc_app_config = {
     .coin_type = COIN_LTC,
     .p2pkh_addr_ver = 0x30,
     .p2sh_addr_ver = 0x32,
@@ -117,6 +118,16 @@ const btc_config_t ltc_app = {
 
     .is_purpose_supported = is_purpose_supported,
 };
+
+static const cy_app_desc_t ltc_app_desc = {.id = 4,
+                                           .version =
+                                               {
+                                                   .major = 1,
+                                                   .minor = 0,
+                                                   .patch = 0,
+                                               },
+                                           .app = btc_main,
+                                           .app_config = &ltc_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -138,6 +149,6 @@ static bool is_purpose_supported(uint32_t purpose_index) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const btc_config_t *get_ltc_app() {
-  return &ltc_app;
+const cy_app_desc_t *get_ltc_app_desc() {
+  return &ltc_app_desc;
 }

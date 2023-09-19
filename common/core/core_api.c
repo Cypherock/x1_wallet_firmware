@@ -84,7 +84,19 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
+/**
+ * The function encodes a `core_msg_t` structure using Protocol Buffers and
+ * sends it over USB along with a message.
+ *
+ * @param core_msg A pointer to a structure of type `core_msg_t`. This structure
+ * contains the data that needs to be encoded and sent.
+ * @param msg The `msg` parameter is a pointer to an array of `uint8_t` type,
+ * which represents the message data to be sent.
+ * @param msg_size Size of the messsage to be sent.
+ */
+static void send_core_msg(core_msg_t *core_msg,
+                          const uint8_t *msg,
+                          uint32_t msg_size);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -96,6 +108,16 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void send_core_msg(core_msg_t *core_msg,
+                          const uint8_t *msg,
+                          uint32_t msg_size) {
+  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
+  pb_ostream_t stream =
+      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
+  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, core_msg));
+
+  usb_send_msg(encoded_buffer, stream.bytes_written, msg, msg_size);
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -107,13 +129,7 @@ void send_response_to_host(const uint8_t *msg, const uint32_t size) {
   // TODO: Move applet_id management to core
   core_msg.cmd.applet_id = get_applet_id();
 
-  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
-
-  pb_ostream_t stream =
-      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
-  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
-
-  usb_send_msg(encoded_buffer, stream.bytes_written, msg, size);
+  send_core_msg(&core_msg, msg, size);
   return;
 }
 
@@ -122,10 +138,21 @@ void send_core_error_msg_to_host(uint32_t core_error_type) {
   core_msg.which_type = CORE_MSG_ERROR_TAG;
   core_msg.error.type = (core_error_type_t)core_error_type;
 
-  uint8_t encoded_buffer[CORE_MSG_SIZE] = {0};
-  pb_ostream_t stream =
-      pb_ostream_from_buffer(encoded_buffer, sizeof(encoded_buffer));
-  ASSERT(pb_encode(&stream, CORE_MSG_FIELDS, &core_msg));
+  send_core_msg(&core_msg, NULL, 0);
+  return;
+}
 
-  usb_send_msg(encoded_buffer, stream.bytes_written, NULL, 0);
+void send_app_version_list_to_host(
+    const core_app_version_result_response_t *version_resp) {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+  core_msg.which_type = CORE_MSG_APP_VERSION_TAG;
+  core_msg.app_version.which_cmd = CORE_APP_VERSION_CMD_RESPONSE_TAG;
+  core_msg.app_version.response.which_response =
+      CORE_APP_VERSION_RESPONSE_RESULT_TAG;
+  memcpy(&(core_msg.app_version.response.result),
+         version_resp,
+         sizeof(core_app_version_result_response_t));
+
+  send_core_msg(&core_msg, NULL, 0);
+  return;
 }

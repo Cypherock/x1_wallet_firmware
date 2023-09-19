@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "manager_app.h"
 
+#include "app_registry.h"
 #include "manager_api.h"
 #include "manager_app_priv.h"
 #include "onboarding.h"
@@ -73,13 +74,11 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-
+// Macro used to populate manager app descriptor with id and version pre-defined
+#define MANAGER_APP_DESCRIPTOR(app, app_config)                                \
+  { 1, {1, 0, 0}, app, app_config }
 /*****************************************************************************
  * PRIVATE TYPEDEFS
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -89,15 +88,39 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Entry point for the manager application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * manager app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the manager app
+ */
+void manager_app_main(usb_event_t usb_evt, const void *app_config);
+
+/**
+ * @brief Restricted Entry point for the manager application of the X1 vault. It
+ * is invoked by the X1 vault firmware, as soon as there is a USB request raised
+ * for the manager app.
+ * @note It only allows some functionality such as get device info, device
+ * authentication and firmware update
+ *
+ * @param usb_evt The USB event which triggered invocation of the manager app
+ */
+void manager_app_restricted_main(usb_event_t usb_evt, const void *app_config);
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static const cy_app_desc_t manager_desc =
+    MANAGER_APP_DESCRIPTOR(manager_app_main, NULL);
+
+static const cy_app_desc_t manager_restricted_desc =
+    MANAGER_APP_DESCRIPTOR(manager_app_restricted_main, NULL);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-void manager_app_main(usb_event_t usb_evt) {
+void manager_app_main(usb_event_t usb_evt, const void *app_config) {
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
   if (!decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -154,7 +177,7 @@ void manager_app_main(usb_event_t usb_evt) {
   return;
 }
 
-void manager_app_restricted_main(usb_event_t usb_evt) {
+void manager_app_restricted_main(usb_event_t usb_evt, const void *app_config) {
   manager_query_t query = MANAGER_QUERY_INIT_ZERO;
 
   if (!decode_manager_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -195,4 +218,15 @@ void manager_app_restricted_main(usb_event_t usb_evt) {
   }
 
   return;
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+const cy_app_desc_t *get_manager_app_desc() {
+  return &manager_desc;
+}
+
+const cy_app_desc_t *get_restricted_manager_app_desc() {
+  return &manager_restricted_desc;
 }

@@ -1,7 +1,7 @@
 /**
- * @file    onboarding_host_interface.c
+ * @file    app_registry.c
  * @author  Cypherock X1 Team
- * @brief   Source file for the onboarding host interface
+ * @brief   App descriptor registry for maintaining apps.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,12 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "restricted_host_interface.h"
 
-#include "core_api.h"
-#include "manager_app.h"
-#include "status_api.h"
-#include "ui_screens.h"
+#include "app_registry.h"
+
+#include <stddef.h>
+#include <string.h>
+
+#include "assert_conf.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,6 +83,8 @@
  * STATIC VARIABLES
  *****************************************************************************/
 
+static const cy_app_desc_t *descriptors[REGISTRY_MAX_APPS] = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -97,27 +100,31 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void restricted_host_interface(engine_ctx_t *ctx,
-                               usb_event_t usb_evt,
-                               const void *data) {
-  /* A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-  uint32_t applet_id = get_applet_id();
-  const cy_app_desc_t *desc = get_restricted_manager_app_desc();
 
-  if (NULL != desc && applet_id == desc->id) {
-    desc->app(usb_evt, desc->app_config);
-  } else {
-    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+bool registry_add_app(const cy_app_desc_t *app_desc) {
+  bool status = false;
+
+  if (NULL == app_desc) {
+    return status;
   }
 
-  /* Device authentication is complete, reset the flow as the core will now need
-   * to render the main menu */
-  if (DEVICE_AUTHENTICATED == get_auth_state()) {
-    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-    engine_reset_flow(ctx);
+  // ensure app-id collision safety among descriptor list
+  if (NULL != registry_get_app_desc(app_desc->id)) {
+    return status;
   }
 
-  return;
+  // ensure registry storage does not overflow
+  ASSERT(app_desc->id < REGISTRY_MAX_APPS);
+
+  descriptors[app_desc->id] = app_desc;
+  status = true;
+  return status;
+}
+
+const cy_app_desc_t *registry_get_app_desc(uint32_t app_id) {
+  return descriptors[app_id];
+}
+
+const cy_app_desc_t **registry_get_app_list() {
+  return descriptors;
 }

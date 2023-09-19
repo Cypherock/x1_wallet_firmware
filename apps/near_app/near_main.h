@@ -17,9 +17,9 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "events.h"
 #include "near_context.h"
-
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -36,12 +36,9 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Entry point for the NEAR application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * Near app.
+ * @brief Returns the config for NEAR chain app descriptor
  *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
+ * @return A const reference to cy_app_desc_t
  */
-void near_main(usb_event_t usb_evt);
-
+const cy_app_desc_t *get_near_app_desc();
 #endif /* NEAR_MAIN_H */

@@ -170,19 +170,19 @@ TEST(xpub, derivation_path_tests) {
     bool status = false;
     switch (paths[i][3]) {
       case BITCOIN:
-        g_btc_app = get_btc_app();
+        g_btc_app = get_btc_app_desc()->app_config;
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case DASH:
-        g_btc_app = get_dash_app();
+        g_btc_app = get_dash_app_desc()->app_config;
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case LITCOIN:
-        g_btc_app = get_ltc_app();
+        g_btc_app = get_ltc_app_desc()->app_config;
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case DOGE:
-        g_btc_app = get_doge_app();
+        g_btc_app = get_doge_app_desc()->app_config;
         status = btc_derivation_path_guard(&paths[i][2], depth);
         break;
       case NEAR:

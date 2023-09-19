@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t polygon_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t polygon_app = {
+static const evm_config_t polygon_app_config = {
     .lunit_name = "MATIC",
     .name = "Polygon",
     .chain_id = 137,
@@ -103,6 +105,17 @@ static const evm_config_t polygon_app = {
     .whitelisted_contracts = NULL,
     .whitelist_count = POLYGON_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t polygon_app_desc = {
+    .id = 9,
+    .version =
+        {
+            .major = 1,
+            .minor = 0,
+            .patch = 0,
+        },
+    .app = evm_main,
+    .app_config = &polygon_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,6 +129,6 @@ static const evm_config_t polygon_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_polygon_app() {
-  return &polygon_app;
+const cy_app_desc_t *get_polygon_app_desc() {
+  return &polygon_app_desc;
 }

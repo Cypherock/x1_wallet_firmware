@@ -64,6 +64,8 @@
 
 #include <stddef.h>
 
+#include "evm_main.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -94,7 +96,7 @@ extern const erc20_contracts_t avalanche_contracts[];
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const evm_config_t avalanche_app = {
+static const evm_config_t avalanche_app_config = {
     .lunit_name = "AVAX",
     .name = "Avalanche (C-Chain)",
     .chain_id = 43114,
@@ -103,6 +105,17 @@ static const evm_config_t avalanche_app = {
     .whitelisted_contracts = NULL,
     .whitelist_count = AVALANCHE_WHITELISTED_CONTRACTS_COUNT,
 };
+
+static const cy_app_desc_t avalanche_app_desc = {
+    .id = 13,
+    .version =
+        {
+            .major = 1,
+            .minor = 0,
+            .patch = 0,
+        },
+    .app = evm_main,
+    .app_config = &avalanche_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,6 +129,6 @@ static const evm_config_t avalanche_app = {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const evm_config_t *get_avalanche_app() {
-  return &avalanche_app;
+const cy_app_desc_t *get_avalanche_app_desc() {
+  return &avalanche_app_desc;
 }

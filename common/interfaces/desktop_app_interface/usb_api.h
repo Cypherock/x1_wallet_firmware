@@ -87,6 +87,10 @@ void usb_clear_event();
  * @brief Getter for USB event object.
  * @details The function is a simple getter to return a valid USB Event object
  * if and when a USB event is available and ready to dispatch at the USB module.
+ * In case the event received was a core request, a response is returned to the
+ * host and false is returned to the caller.
+ *
+ * NOTE:
  * Event receiver is expected to show a necessary action to the usb module.
  * This is majorly due to the shared reference to the static buffer of usb
  * module. It is important to note that when an usb event is available, it is
@@ -102,6 +106,9 @@ void usb_clear_event();
  * Invalid data: <br/> Respond with error code or Send error packet. See
  * usb_send_msg()
  * </li></ol>
+ *
+ * @return true if USB event occured with CORE_MSG_CMD_TAG tag, false if no
+ * event or core request was processed.
  */
 bool usb_get_event(usb_event_t *evt);
 

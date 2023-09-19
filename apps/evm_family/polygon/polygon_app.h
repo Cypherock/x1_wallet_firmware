@@ -13,6 +13,7 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_registry.h"
 #include "evm_context.h"
 
 /*****************************************************************************
@@ -33,12 +34,11 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Returns the config for Polygon chain app
+ * @brief Returns the config for Polygon chain app descriptor
  *
- * @return A const reference to evm_config_t
+ * @return A const reference to cy_app_desc_t
  */
-const evm_config_t *get_polygon_app();
+const cy_app_desc_t *get_polygon_app_desc();
 
 #endif    // POLYGON_APP_H

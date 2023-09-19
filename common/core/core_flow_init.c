@@ -61,9 +61,26 @@
  *****************************************************************************/
 #include "core_flow_init.h"
 
+#include "app_registry.h"
+#include "arbitrum_app.h"
+#include "avalanche_app.h"
+#include "bsc_app.h"
+#include "btc_app.h"
+#include "btc_main.h"
+#include "dash_app.h"
+#include "doge_app.h"
+#include "eth_app.h"
+#include "evm_main.h"
+#include "fantom_app.h"
+#include "ltc_app.h"
 #include "main_menu.h"
+#include "manager_app.h"
+#include "near_main.h"
 #include "onboarding.h"
+#include "optimism_app.h"
+#include "polygon_app.h"
 #include "restricted_app.h"
+#include "solana_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -127,4 +144,21 @@ engine_ctx_t *get_core_flow_ctx(void) {
   // Finally enable all flows from the user
   engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
   return &core_step_engine_ctx;
+}
+
+void core_init_app_registry() {
+  registry_add_app(get_manager_app_desc());
+  registry_add_app(get_btc_app_desc());
+  registry_add_app(get_ltc_app_desc());
+  registry_add_app(get_doge_app_desc());
+  registry_add_app(get_dash_app_desc());
+  registry_add_app(get_eth_app_desc());
+  registry_add_app(get_near_app_desc());
+  registry_add_app(get_polygon_app_desc());
+  registry_add_app(get_solana_app_desc());
+  registry_add_app(get_bsc_app_desc());
+  registry_add_app(get_fantom_app_desc());
+  registry_add_app(get_avalanche_app_desc());
+  registry_add_app(get_optimism_app_desc());
+  registry_add_app(get_arbitrum_app_desc());
 }
