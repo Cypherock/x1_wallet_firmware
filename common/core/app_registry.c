@@ -114,7 +114,6 @@ bool registry_add_app(const cy_app_desc_t *app_desc) {
   }
 
   // ensure registry storage does not overflow
-  LOG_INFO("Id: %d", app_desc->id);
   ASSERT(app_desc->id < REGISTRY_MAX_APPS);
 
   descriptors[app_desc->id] = app_desc;

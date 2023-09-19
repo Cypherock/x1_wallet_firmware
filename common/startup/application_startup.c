@@ -72,6 +72,7 @@
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
 #include "core_error.h"
+#include "core_flow_init.h"
 #include "cryptoauthlib.h"
 #include "flash_api.h"
 #include "flash_if.h"
@@ -83,11 +84,7 @@
 #include "sec_flash.h"
 #include "sys_state.h"
 #include "systick_timer.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "ui_logo.h"
-#include "ui_message.h"
-#include "ui_multi_instruction.h"
+#include "ui_screens.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -325,6 +322,7 @@ void application_init() {
   buzzer_disabled = true;
 #endif
 #endif
+  core_init_app_registry();
 }
 
 void check_invalid_wallets() {

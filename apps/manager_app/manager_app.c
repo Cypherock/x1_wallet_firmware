@@ -74,7 +74,9 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-
+// Macro used to populate manager app descriptor with id and version pre-defined
+#define MANAGER_APP_DESCRIPTOR(app, app_config)                                \
+  { 1, {1, 0, 0}, app, app_config }
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -109,26 +111,11 @@ void manager_app_restricted_main(usb_event_t usb_evt, const void *app_config);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const cy_app_desc_t manager_desc = {.id = 1,
-                                           .version =
-                                               {
-                                                   .major = 1,
-                                                   .minor = 0,
-                                                   .patch = 0,
-                                               },
-                                           .app = manager_app_main,
-                                           .app_config = NULL};
+static const cy_app_desc_t manager_desc =
+    MANAGER_APP_DESCRIPTOR(manager_app_main, NULL);
 
-static const cy_app_desc_t manager_restricted_desc = {
-    .id = 1,
-    .version =
-        {
-            .major = 1,
-            .minor = 0,
-            .patch = 0,
-        },
-    .app = manager_app_restricted_main,
-    .app_config = NULL};
+static const cy_app_desc_t manager_restricted_desc =
+    MANAGER_APP_DESCRIPTOR(manager_app_restricted_main, NULL);
 
 /*****************************************************************************
  * STATIC FUNCTIONS

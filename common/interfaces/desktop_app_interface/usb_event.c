@@ -174,16 +174,6 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     case CORE_MSG_CMD_TAG: {
       // store applet id
       applet_id = core_msg_p.cmd.applet_id;
-
-      // TODO: verify if the core_msg_p.type.cmd.applet_id is valid one ref PR
-      // #235 const cy_app_desc_t *app_desc =
-      // registry_get_app_desc(core_msg_p.type.cmd.applet_id);
-
-      // if (NULL == app_desc) {
-      //   return CORE_ERROR_TYPE_UNKNOWN_APP;
-      // }
-
-      // TODO: verify with core context, if applet is invokable/active
       status = CORE_NO_ERROR;
     } break;
 
@@ -266,7 +256,7 @@ bool usb_get_event(usb_event_t *evt) {
     if (CORE_NO_ERROR != status) {
       // now clear event as it is not supposed to reach the app
       usb_clear_event();
-      // TODO: send an error to host
+      send_core_error_msg_to_host(status);
     } else {
       if (CORE_MSG_CMD_TAG == request_type) {
         memcpy(evt, &usb_event, sizeof(usb_event_t));

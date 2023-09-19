@@ -59,5 +59,5 @@ void send_core_error_msg_to_host(uint32_t which_error);
  * core_app_version_result_response_t.
  */
 void send_app_version_list_to_host(
-    core_app_version_result_response_t *version_resp);
+    const core_app_version_result_response_t *version_resp);
 #endif /* CORE_API_H */
