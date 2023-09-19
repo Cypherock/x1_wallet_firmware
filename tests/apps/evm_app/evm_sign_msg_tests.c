@@ -156,7 +156,7 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_typed_data_hash) {
 #endif
 
   TEST_ASSERT_TRUE(result);
-  TEST_ASSERT_TRUE(evm_get_msg_data_hash(&ctx, digest));
+  TEST_ASSERT_TRUE(evm_get_msg_data_digest(&ctx, digest));
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
 
   pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
@@ -173,7 +173,7 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_personal_sign_hash) {
                        .message_type = EVM_SIGN_MSG_TYPE_PERSONAL_SIGN,
                        .total_msg_size = 40}}};
   uint8_t buffer[1024];
-  uint32_t digest[SHA256_DIGEST_LENGTH] = {0};
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
   uint8_t expected_digest[SHA256_DIGEST_LENGTH] = {0};
 
   hex_string_to_byte_array(
@@ -191,7 +191,7 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_personal_sign_hash) {
                  "3383938333735353631";
   ctx.msg_data = buffer;
   hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
-  TEST_ASSERT_TRUE(evm_get_msg_data_hash(&ctx, digest));
+  TEST_ASSERT_TRUE(evm_get_msg_data_digest(&ctx, digest));
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
 }
 
@@ -224,6 +224,6 @@ TEST(evm_sign_msg_test, evm_sign_msg_test_eth_sign_hash) {
                  "3383938343031363333";
   ctx.msg_data = buffer;
   hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
-  TEST_ASSERT_TRUE(evm_get_msg_data_hash(&ctx, digest));
+  TEST_ASSERT_TRUE(evm_get_msg_data_digest(&ctx, digest));
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
 }
