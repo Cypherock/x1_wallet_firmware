@@ -1,7 +1,7 @@
 /**
- * @file    solana_main.c
+ * @file    solana_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Solana coin actions supported.
+ * @brief   Utilities specific to Solana chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "solana_main.h"
-
-#include "solana_api.h"
-#include "solana_priv.h"
-#include "status_api.h"
+#include "solana_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,68 +75,53 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Entry point for the SOLANA application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * Solana app.
- *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
- */
-void solana_main(usb_event_t usb_evt, const void *app_config);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const cy_app_desc_t solana_app_desc = {.id = 10,
-                                              .version =
-                                                  {
-                                                      .major = 1,
-                                                      .minor = 0,
-                                                      .patch = 0,
-                                                  },
-                                              .app = solana_main,
-                                              .app_config = NULL};
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void solana_main(usb_event_t usb_evt, const void *app_config) {
-  solana_query_t query = SOLANA_QUERY_INIT_DEFAULT;
-
-  if (false == decode_solana_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case SOLANA_QUERY_GET_PUBLIC_KEYS_TAG:
-    case SOLANA_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      solana_get_pub_keys(&query);
-      break;
-    }
-
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_QUERY);
-    } break;
-  }
-
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const cy_app_desc_t *get_solana_app_desc() {
-  return &solana_app_desc;
+
+bool solana_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels < 2)
+    return status;
+
+  uint32_t purpose = path[0], coin = path[1];
+
+  switch (levels) {
+    case 2:    // m/44'/501'
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX);
+      break;
+
+    case 3: {    // m/44'/501'/i'
+      uint32_t account = path[2];
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX &&
+                is_hardened(account));
+    } break;
+
+    case 4: {    // m/44'/501'/i'/0'
+      uint32_t change = path[3];
+      uint32_t account = path[2];
+      status = (purpose == SOLANA_PURPOSE_INDEX && coin == SOLANA_COIN_INDEX &&
+                is_hardened(account) && change == SOLANA_CHANGE_INDEX);
+    } break;
+
+    default:
+      break;
+  }
+
+  return status;
 }
