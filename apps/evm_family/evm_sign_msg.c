@@ -217,7 +217,7 @@ static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
 
       // TODO: Replace macro with EVM_TRANSACTION_SIZE_CAP upon fixing the issue
       // with double allocation of typed data
-      if (MAX_MSG_DATA_SIZE < init_req->total_msg_size) {
+      if (size_limit < init_req->total_msg_size) {
         evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_DATA);
         break;
