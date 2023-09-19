@@ -32,6 +32,18 @@
  * to show the long messages in chunks in line with max LVGL buffer size.
  */
 #define MAX_MSG_DATA_SIZE 3072
+
+/**
+ * TODO: Update the size of typed data msg same as EVM_TRANSACTION_SIZE_CAP.
+ * Constraints : For typed data implementation we use dynamic allocation for raw
+ * data and then decode using nanopb, which again dynamically allocates data
+ * leading to double allocation. Also multiple strings are allocated space for
+ * display. To safely perform sign operation, need to analyze the size
+ * requirement and find alternatives to the double allocation issue.
+ * One possible solution for double allocation is to use field callbacks when
+ * decoding typed struct data.
+ */
+#define MAX_MSG_DATA_TYPED_DATA_SIZE 5120
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -56,6 +68,8 @@ typedef struct evm_sign_msg_context {
   /// @brief  Pointer to msg data in raw format, size from init member is
   /// allocated dynamically with a max size cap of @ref MAX_MSG_DATA_SIZE
   uint8_t *msg_data;
+
+  evm_sign_typed_data_struct_t typed_data;
 } evm_sign_msg_context_t;
 
 /*****************************************************************************

@@ -62,9 +62,10 @@
 
 #include "evm_helpers.h"
 
-#include "coin_utils.h"
+#include "eth.h"
 #include "evm_priv.h"
 #include "evm_txn_helpers.h"
+#include "evm_typed_data_helper.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -182,7 +183,6 @@ static bool evm_get_personal_data_digest(uint8_t *msg_data,
   keccak_Final(&ctx, digest_out);
   return true;
 }
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -214,9 +214,9 @@ bool evm_get_msg_data_digest(const evm_sign_msg_context_t *ctx,
           ctx->msg_data, ctx->init.total_msg_size, digest);
     } break;
 
-    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
-      // TODO: Prepare typed data message hash
-      break;
+    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA: {
+      result = evm_get_typed_struct_data_digest(&(ctx->typed_data), digest);
+    } break;
     default:
       break;
   }

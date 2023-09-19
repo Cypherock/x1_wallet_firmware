@@ -67,6 +67,8 @@
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
+#include "evm_typed_data_helper.h"
+#include "pb_decode.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -200,11 +202,13 @@ static bool check_which_request(const evm_query_t *query,
 }
 
 static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
+  uint32_t size_limit = MAX_MSG_DATA_SIZE;
+
   switch (init_req->message_type) {
+    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
+      size_limit = MAX_MSG_DATA_TYPED_DATA_SIZE;
     case EVM_SIGN_MSG_TYPE_ETH_SIGN:
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN:
-      // TODO: Add evm typed data struct message signing
-      // case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
 
       if (!evm_derivation_path_guard(init_req->derivation_path,
                                      init_req->derivation_path_count)) {
@@ -213,7 +217,7 @@ static bool validate_initiate_query(evm_sign_msg_initiate_request_t *init_req) {
 
       // TODO: Replace macro with EVM_TRANSACTION_SIZE_CAP upon fixing the issue
       // with double allocation of typed data
-      if (MAX_MSG_DATA_SIZE < init_req->total_msg_size) {
+      if (size_limit < init_req->total_msg_size) {
         evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_DATA);
         break;
@@ -322,6 +326,20 @@ static bool get_msg_data(evm_query_t *query) {
     return false;
   }
 
+  if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
+    pb_istream_t istream =
+        pb_istream_from_buffer(sign_msg_ctx.msg_data, total_size);
+    bool result = pb_decode(&istream,
+                            EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
+                            &(sign_msg_ctx.typed_data));
+
+    if (!result) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -353,9 +371,20 @@ static bool get_user_verification() {
                                 evm_send_error);
     } break;
 
-    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA:
-      // TODO: Display typed data and get verification
-      break;
+    case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA: {
+      ui_display_node *display_node = NULL;
+      evm_init_typed_data_display_node(&display_node,
+                                       &(sign_msg_ctx.typed_data));
+      while (NULL != display_node) {
+        result = core_scroll_page(
+            display_node->title, display_node->value, evm_send_error);
+        display_node = display_node->next;
+
+        if (!result) {
+          break;
+        }
+      }
+    } break;
 
     default:
       break;
@@ -441,7 +470,17 @@ void evm_sign_msg(evm_query_t *query) {
     free(sign_msg_ctx.msg_data);
     sign_msg_ctx.msg_data = NULL;
   }
+
   sign_msg_ctx.init.total_msg_size = 0;
 
+  /**
+   * The tyepd data struct fields are of FT_POINTER type which means memory for
+   * typed data is dynamically allocated. The dynamic allocated data needs to be
+   * cleared before we exit the app here.
+   */
+  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(sign_msg_ctx.typed_data));
+
+  // Clear the dynamic allocation done for UI purposes using cy_malloc
+  cy_free();
   return;
 }

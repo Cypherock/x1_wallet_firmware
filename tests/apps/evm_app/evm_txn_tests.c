@@ -1,7 +1,7 @@
 /**
  * @file    evm_txn_tests.c
  * @author  Cypherock X1 Team
- * @brief   Unit tests for Bitcoin helper functions
+ * @brief   Unit tests for EVM txn helper functions
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
