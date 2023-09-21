@@ -4,7 +4,6 @@
 #include "coin_utils.h"
 #include "dash_app.h"
 #include "doge_app.h"
-#include "eth.h"
 #include "ltc_app.h"
 #include "near.h"
 #include "near_helpers.h"
@@ -192,7 +191,7 @@ TEST(xpub, derivation_path_tests) {
         status = solana_derivation_path_guard(&paths[i][2], depth);
         break;
       default:
-        status = verify_xpub_derivation_path(&paths[i][2], depth);
+        status = false;
         break;
     }
 

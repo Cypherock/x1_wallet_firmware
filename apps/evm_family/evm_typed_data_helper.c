@@ -64,7 +64,6 @@
 
 #include "coin_utils.h"
 #include "eip712_utils.h"
-#include "eth.h"
 #include "evm_priv.h"
 
 /*****************************************************************************

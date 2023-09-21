@@ -62,7 +62,6 @@
 #include "avalanche.h"
 #include "bsc.h"
 #include "etc.h"
-#include "eth.h"
 #include "fantom.h"
 #include "harmony.h"
 #include "near.h"
@@ -206,10 +205,6 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array,
            token_name_len,
            &offset);
 
-  txn_metadata_ptr->is_token_transfer = strncmp(txn_metadata_ptr->token_name,
-                                                ETHEREUM_TOKEN_SYMBOL,
-                                                token_name_len) != 0;
-
   if (offset + sizeof(txn_metadata_ptr->network_chain_id) > size)
     return -1;
   txn_metadata_ptr->network_chain_id =
@@ -217,11 +212,7 @@ int64_t byte_array_to_txn_metadata(const uint8_t *metadata_byte_array,
   offset += sizeof(txn_metadata_ptr->network_chain_id);
 
   txn_metadata_ptr->is_token_transfer =
-      strncmp(
-          txn_metadata_ptr->token_name,
-          get_coin_symbol(BYTE_ARRAY_TO_UINT32(txn_metadata_ptr->coin_index),
-                          txn_metadata_ptr->network_chain_id),
-          token_name_len) != 0;
+      strncmp(txn_metadata_ptr->token_name, "xyz", token_name_len) != 0;
 
   if (offset + 1 <= size)
     txn_metadata_ptr->is_harmony_address = metadata_byte_array[offset++];
@@ -350,214 +341,6 @@ void get_address_node(const txn_metadata *txn_metadata_ptr,
   memzero(bip39seed, sizeof(bip39seed));
 }
 
-const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
-  switch (coin_index) {
-    case 0x80000000U:
-    case 0x80000001:
-      return "BTC";
-    case 0x80000002:
-      return "LTC";
-    case 0x80000003:
-      return "DOGE";
-    case 0x80000005:
-      return "DASH";
-    case ETHEREUM: {
-      switch (chain_id) {
-        case ETHEREUM_MAINNET_CHAIN:
-          return ETHEREUM_TOKEN_SYMBOL;
-        case POLYGON_MAINNET_CHAIN:
-          return POLYGON_TOKEN_SYMBOL;
-        case BSC_MAINNET_CHAIN:
-          return BSC_TOKEN_SYMBOL;
-        case FANTOM_MAINNET_CHAIN:
-          return FANTOM_TOKEN_SYMBOL;
-        case AVALANCHE_MAINNET_CHAIN:
-          return AVALANCHE_TOKEN_SYMBOL;
-        case OPTIMISM_MAINNET_CHAIN:
-          return OPTIMISM_TOKEN_SYMBOL;
-        case ETC_MAINNET_CHAIN:
-          return ETC_TOKEN_SYMBOL;
-        case HARMONY_MAINNET_CHAIN:
-          return HARMONY_TOKEN_SYMBOL;
-        case ARBITRUM_MAINNET_CHAIN:
-          return ARBITRUM_TOKEN_SYMBOL;
-        default: {
-          ASSERT(false);
-          return "invalid";
-        }
-      }
-    }
-    case SOLANA:
-      return "SOL";
-    default: {
-      ASSERT(false);
-      return "invalid";
-    }
-  }
-}
-
-const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
-  switch (coin_index) {
-    case 0x80000000:
-      return "Bitcoin";
-    case 0x80000001:
-      return "Bitcoin Testnet";
-    case 0x80000002:
-      return "Litecoin";
-    case 0x80000003:
-      return "Dogecoin";
-    case 0x80000005:
-      return "Dash";
-    case ETHEREUM: {
-      switch (chain_id) {
-        case ETHEREUM_MAINNET_CHAIN:
-          return ETHEREUM_MAINNET_NAME;
-        case POLYGON_MAINNET_CHAIN:
-          return POLYGON_MAINNET_NAME;
-        case BSC_MAINNET_CHAIN:
-          return BSC_MAINNET_NAME;
-        case FANTOM_MAINNET_CHAIN:
-          return FANTOM_MAINNET_NAME;
-        case AVALANCHE_MAINNET_CHAIN:
-          return AVALANCHE_MAINNET_NAME;
-        case OPTIMISM_MAINNET_CHAIN:
-          return OPTIMISM_MAINNET_NAME;
-        case ETC_MAINNET_CHAIN:
-          return ETC_MAINNET_NAME;
-        case HARMONY_MAINNET_CHAIN:
-          return HARMONY_MAINNET_NAME;
-        case ARBITRUM_MAINNET_CHAIN:
-          return ARBITRUM_MAINNET_NAME;
-        default: {
-          ASSERT(false);
-          return "invalid";
-        }
-      }
-    }
-    case SOLANA:
-      return "Solana";
-    default: {
-      ASSERT(false);
-      return "invalid";
-    }
-  }
-}
-
-void get_version(const uint32_t purpose_id,
-                 const uint32_t coin_index,
-                 uint8_t *address_version,
-                 uint32_t *pub_version) {
-  uint8_t assigned_add_version = 0x0;
-  uint32_t assigned_pub_version = 0x0;
-
-  switch (purpose_id) {
-    case NATIVE_SEGWIT:
-      switch (coin_index) {
-        case BTC_TEST:
-          assigned_pub_version = 0x045f1cf6;
-          assigned_add_version = 0x6f;
-          break;
-        case BITCOIN:
-          assigned_pub_version = 0x04b24746;
-          assigned_add_version = 0x00;
-          break;
-        case LITCOIN:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x30;
-          break;
-        case DOGE:
-          assigned_pub_version = 0x02facafd;
-          assigned_add_version = 0x1E;
-          break;
-        case DASH:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x4c;
-          break;
-        default:
-          break;
-      }
-      break;
-
-    case NON_SEGWIT:
-      switch (coin_index) {
-        case BTC_TEST:
-          assigned_pub_version = 0x043587cf;
-          assigned_add_version = 0x6f;
-          break;
-        case BITCOIN:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x00;
-          break;
-        case LITCOIN:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x30;
-          break;
-        case DOGE:
-          assigned_pub_version = 0x02facafd;
-          assigned_add_version = 0x1E;
-          break;
-        case DASH:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x4c;
-          break;
-        case ETHEREUM:
-        case NEAR:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x00;
-          break;
-        case SOLANA:
-          assigned_pub_version = 0x0488b21e;
-          assigned_add_version = 0x00;
-          break;
-        default:
-          break;
-      }
-      break;
-
-    default:
-      break;
-  }
-
-  if (address_version) {
-    *address_version = assigned_add_version;
-  }
-
-  if (pub_version) {
-    *pub_version = assigned_pub_version;
-  }
-}
-
-bool validate_txn_metadata(const txn_metadata *mdata_ptr) {
-  if (mdata_ptr->purpose_index[0] < 0x80 || mdata_ptr->coin_index[0] < 0x80 ||
-      mdata_ptr->account_index[0] < 0x80)
-    return false;
-  if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
-      (BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == NEAR ||
-       BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == SOLANA)) {
-    if (mdata_ptr->input_count[0] > 0 &&
-        (mdata_ptr->input->change_index[0] < 0x80 ||
-         mdata_ptr->input->address_index[0] < 0x80))
-      return false;
-    return true;
-  }
-  if (mdata_ptr->input_count[0] > 0 &&
-      (mdata_ptr->input->change_index[0] >= 0x80 ||
-       mdata_ptr->input->address_index[0] >= 0x80))
-    return false;
-  if (mdata_ptr->output_count[0] > 0 &&
-      (mdata_ptr->output->change_index[0] >= 0x80 ||
-       mdata_ptr->output->address_index[0] >= 0x80))
-    return false;
-  if (mdata_ptr->change_count[0] > 0 &&
-      (mdata_ptr->change->change_index[0] >= 0x80 ||
-       mdata_ptr->change->address_index[0] >= 0x80))
-    return false;
-  if (BYTE_ARRAY_TO_UINT32(mdata_ptr->purpose_index) == NON_SEGWIT &&
-      BYTE_ARRAY_TO_UINT32(mdata_ptr->coin_index) == ETHEREUM &&
-      mdata_ptr->token_name[0] == '\0')
-    return false;
-  return true;
-}
 ui_display_node *ui_create_display_node(const char *title,
                                         const size_t title_size,
                                         const char *value,
@@ -587,89 +370,6 @@ void bech32_addr_encode(char *output,
   size_t datalen = 0;
   convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
   bech32_encode(output, hrp, data, datalen);
-}
-
-bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
-  bool status = false;
-
-  if (depth < 2)
-    return status;
-
-  uint32_t purpose = path[0], coin = path[1];
-
-  switch (coin) {
-    case NEAR:
-      status = false;
-      break;
-
-    case SOLANA:
-      status = sol_verify_derivation_path(path, depth);
-      break;
-
-    case LITCOIN:
-    case DOGE:
-    case DASH:        // m/44'/5'  /i'
-    case ETHEREUM:    // m/44'/60' /i'
-      status = (purpose == NON_SEGWIT && depth == XPUB_DEFAULT_DEPTH &&
-                is_hardened(path[2]));
-      break;
-
-    case BTC_TEST:    // m/44'/1'  /i'
-    case BITCOIN:     // m/44'/0'  /i'
-      status = (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) &&
-               (depth == XPUB_DEFAULT_DEPTH) && is_hardened(path[2]);
-      break;
-
-    default:
-      break;
-  }
-
-  return status;
-}
-
-bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
-  bool status = false;
-
-  if (depth < 2)
-    return status;
-
-  uint32_t purpose = path[0], coin = path[1];
-
-  switch (coin) {
-    case NEAR:
-      status = false;
-      break;
-
-    case SOLANA:    // m/44'/501'/i'/j'
-      status = sol_verify_derivation_path(path, depth);
-      break;
-
-    case LITCOIN:
-    case DOGE:
-    case DASH:    // m/44'/5'  /i'/0 /j
-      status = (depth == ADDR_DEFAULT_DEPTH) && (purpose == NON_SEGWIT) &&
-               is_hardened(path[2]) && (path[3] == 0) &&
-               is_non_hardened(path[4]);
-      break;
-
-    case ETHEREUM:    // m/44'/60' /i'/0 /0
-      status = (depth == ADDR_DEFAULT_DEPTH) && (purpose == NON_SEGWIT) &&
-               is_hardened(path[2]) && (path[3] == 0) && (path[4] == 0);
-      break;
-
-    case BTC_TEST:
-    case BITCOIN:    // m/44'/0'  /i'/0 /j
-      status = (depth == ADDR_DEFAULT_DEPTH) &&
-               (purpose == NON_SEGWIT || purpose == NATIVE_SEGWIT) &&
-               is_hardened(path[2]) && (path[3] == 0) &&
-               is_non_hardened(path[4]);
-      break;
-
-    default:
-      break;
-  }
-
-  return status;
 }
 
 FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
