@@ -82,7 +82,7 @@ static const uint8_t core_msg[] = {10, 2, 8, 1};
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(evm_sign_msg_test) {
-  g_evm_app = get_eth_app();
+  g_evm_app = get_eth_app_desc()->app_config;
 }
 
 /**
