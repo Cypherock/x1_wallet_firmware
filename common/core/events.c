@@ -110,13 +110,13 @@ evt_status_t get_events(uint8_t event_config, uint32_t timeout) {
     }
 
     if (EVENT_CONFIG_UI == (event_config & EVENT_CONFIG_UI)) {
-      lv_task_handler();
-      p1_evt_occurred |= ui_get_and_reset_event(&(status.ui_event));
-
       if (keypad_get_key()) {
         // Refresh the timeout as a user activity is detected on the joystick
         p0_ctx_init(timeout);
       }
+
+      lv_task_handler();
+      p1_evt_occurred |= ui_get_and_reset_event(&(status.ui_event));
     }
 
     if (EVENT_CONFIG_USB == (event_config & EVENT_CONFIG_USB)) {
