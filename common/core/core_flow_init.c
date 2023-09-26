@@ -124,10 +124,11 @@ engine_ctx_t core_step_engine_ctx = {
 engine_ctx_t *get_core_flow_ctx(void) {
   engine_reset_flow(&core_step_engine_ctx);
 
-  // TODO: Set onboarding status for in-field devices
-  // if ((wallet_count > 0) || (cards_paired > 0)) {
-  //   onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  // }
+  // Skip onbaording for infield devices with pairing and/or wallets count is
+  // greater than zero
+  if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
+    onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
+  }
 
   /// Check if onboarding is complete or not
   if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
