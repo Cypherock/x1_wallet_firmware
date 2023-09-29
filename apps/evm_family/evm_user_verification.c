@@ -123,7 +123,7 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
   snprintf(
-      display, sizeof(display), UI_TEXT_BTC_SEND_PROMPT, unit, g_evm_app->name);
+      display, sizeof(display), UI_TEXT_SEND_PROMPT, unit, g_evm_app->name);
   if (!core_scroll_page(NULL, display, evm_send_error) ||
       !core_scroll_page(ui_text_verify_address, address, evm_send_error)) {
     return status;

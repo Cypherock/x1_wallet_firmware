@@ -343,7 +343,7 @@ STATIC bool get_user_verification() {
   bool status = false;
   switch (txn_context->txn_type) {
     case EVM_TXN_NO_DATA:
-    case EVM_TXN_TRANSFER_FUNC:
+    case EVM_TXN_TOKEN_TRANSFER_FUNC:
       status = evm_verify_transfer(txn_context);
       break;
 

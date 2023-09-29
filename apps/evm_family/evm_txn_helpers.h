@@ -41,7 +41,7 @@ typedef enum {
   EVM_TXN_UNKNOWN_FUNC_SIG,
 
   /// Data is for token transfer function
-  EVM_TXN_TRANSFER_FUNC,
+  EVM_TXN_TOKEN_TRANSFER_FUNC,
 
   /// Function signature is known; decode function params to display
   EVM_TXN_KNOWN_FUNC_SIG,

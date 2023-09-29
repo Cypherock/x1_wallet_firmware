@@ -183,7 +183,7 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
   if (EVM_transfer_TAG == function_tag &&
       g_evm_app->is_token_whitelisted(txn_context->transaction_info.to_address,
                                       &txn_context->contract)) {
-    return EVM_TXN_TRANSFER_FUNC;
+    return EVM_TXN_TOKEN_TRANSFER_FUNC;
   }
 
   if (EVM_swap_TAG == function_tag || EVM_uniswapV3Swap_TAG == function_tag ||
@@ -194,6 +194,12 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
         ETH_ExtractArguments(txn_context->transaction_info.data,
                              txn_context->transaction_info.data_size,
                              &txn_context->display_node)) {
+      /**
+       * this could mean that the parameters to the function (provided in the
+       * transaction.data) are invalid. This means either of the following: the
+       * argument count mismatch, arguments are in the wrong order, or the
+       * arguments are of wrong type
+       */
       return EVM_TXN_INVALID_DATA;
     } else {
       return EVM_TXN_KNOWN_FUNC_SIG;
@@ -348,11 +354,11 @@ bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context) {
       (cy_read_be(utxn_ptr->chain_id, utxn_ptr->chain_id_size[0]) !=
        g_evm_app->chain_id) ||
       // ensure token transfer is triggered with zero ETH amount
-      (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type &&
+      (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type &&
        !is_zero(utxn_ptr->value, utxn_ptr->value_size[0])) ||
       // Check if token transfer is triggered with whitelisted token; ensure
       // reference is valid
-      (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type &&
+      (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type &&
        NULL == txn_context->contract) ||
       // ensure the payload status is valid
       (txn_context->txn_type == EVM_TXN_INVALID_DATA));
@@ -361,7 +367,7 @@ bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context) {
 void eth_get_to_address(const evm_txn_context_t *txn_context,
                         const uint8_t **address) {
   const uint8_t *addr = NULL;
-  if (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type) {
+  if (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type) {
     addr = &txn_context->transaction_info.data[16];
   } else {
     addr = &txn_context->transaction_info.to_address[0];
@@ -374,7 +380,7 @@ void eth_get_to_address(const evm_txn_context_t *txn_context,
 
 uint32_t eth_get_value(const evm_txn_context_t *txn_context, char *value) {
   const evm_unsigned_txn *utxn_ptr = &txn_context->transaction_info;
-  if (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type) {
+  if (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type) {
     byte_array_to_hex_string(utxn_ptr->data + EVM_FUNC_SIGNATURE_LENGTH +
                                  EVM_FUNC_PARAM_BLOCK_LENGTH,
                              EVM_FUNC_PARAM_BLOCK_LENGTH,
@@ -422,14 +428,14 @@ void eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
 }
 
 uint8_t evm_get_decimal(const evm_txn_context_t *txn_context) {
-  if (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type) {
+  if (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type) {
     return txn_context->contract->decimal;
   }
   return ETH_DECIMAL;
 }
 
 const char *evm_get_asset_symbol(const evm_txn_context_t *txn_context) {
-  if (EVM_TXN_TRANSFER_FUNC == txn_context->txn_type) {
+  if (EVM_TXN_TOKEN_TRANSFER_FUNC == txn_context->txn_type) {
     return txn_context->contract->symbol;
   }
   return g_evm_app->lunit_name;
