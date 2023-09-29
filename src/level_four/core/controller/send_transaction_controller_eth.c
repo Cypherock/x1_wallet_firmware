@@ -93,7 +93,7 @@ uint8_t *eth_unsigned_txn_byte_array = NULL;
 uint16_t eth_unsigned_txn_len;
 
 extern ui_display_node *current_display_node;
-extern bool eth_is_token_whitelisted;
+extern bool evm_is_token_whitelisted;
 
 void send_transaction_controller_eth() {
   switch (flow_level.level_three) {
@@ -112,22 +112,8 @@ void send_transaction_controller_eth() {
         eth_unsigned_txn_len = msg_size;
         memcpy(eth_unsigned_txn_byte_array, data_array, msg_size);
 
-        eth_byte_array_to_unsigned_txn(
-            eth_unsigned_txn_byte_array,
-            eth_unsigned_txn_len,
-            &eth_unsigned_txn_ptr,
-            &var_send_transaction_data.transaction_metadata);
-
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
-        if (!eth_validate_unsigned_txn(
-                &eth_unsigned_txn_ptr,
-                &var_send_transaction_data.transaction_metadata)) {
-          instruction_scr_destructor();
-          mark_error_screen(ui_text_worng_eth_transaction);
-          comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-          reset_flow_level();
-        }
       }
     } break;
 
@@ -160,7 +146,7 @@ void send_transaction_controller_eth() {
     } break;
 
     case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-      if ((!eth_is_token_whitelisted) &&
+      if ((!evm_is_token_whitelisted) &&
           (eth_unsigned_txn_ptr.payload_status != PAYLOAD_ABSENT) &&
           (is_zero(eth_unsigned_txn_ptr.value,
                    eth_unsigned_txn_ptr.value_size[0])))

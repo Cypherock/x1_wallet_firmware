@@ -14,6 +14,8 @@
  *****************************************************************************/
 
 #include "coin_utils.h"
+#include "evm/sign_txn.pb.h"
+#include "evm_contracts.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -72,7 +74,7 @@ typedef struct {
   uint8_t value[ETH_VALUE_SIZE_BYTES];
 
   uint64_t payload_size;
-  uint8_t *payload;
+  const uint8_t *payload;
 
   uint8_t chain_id_size[1];
   uint8_t chain_id[8];
@@ -83,6 +85,21 @@ typedef struct {
   PAYLOAD_STATUS payload_status;
 } evm_unsigned_txn;
 #pragma pack(pop)
+
+typedef struct {
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by handle_initiate_query()
+   */
+  evm_sign_txn_initiate_request_t init_info;
+
+  /// remembers the allocated buffer for holding complete unsigned transaction
+  uint8_t *transaction;
+  /// store for decoded unsigned transaction info
+  evm_unsigned_txn transaction_info;
+  /// whitelisted contract in the transaction
+  const erc20_contracts_t *contract;
+} evm_txn_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -97,7 +114,7 @@ typedef struct {
  * evm_unsigned_txn.
  * @details
  *
- * @param [in] eth_unsigned_txn_byte_array  Byte array of unsigned transaction.
+ * @param [in] evm_utxn_byte_array  Byte array of unsigned transaction.
  * @param [in] byte_array_len               Length of byte array.
  * @param [out] unsigned_txn_ptr            Pointer to the evm_unsigned_txn
  * instance to store the transaction details.
@@ -106,29 +123,27 @@ typedef struct {
  * @retval 0 Success
  * @retval -1 Failure
  */
-int eth_byte_array_to_unsigned_txn(const uint8_t *eth_unsigned_txn_byte_array,
+int evm_byte_array_to_unsigned_txn(const uint8_t *evm_utxn_byte_array,
                                    size_t byte_array_len,
-                                   evm_unsigned_txn *unsigned_txn_ptr,
-                                   txn_metadata *metadata_ptr);
+                                   evm_txn_context_t *txn_context);
 
 /**
  * @brief Verifies the unsigned transaction.
  * @details
  *
- * @param [in] eth_utxn_ptr     Pointer to the evm_unsigned_txn instance.
+ * @param [in] txn_context     Pointer to the evm_unsigned_txn instance.
  *
  * @return true, false
  * @retval true   If all the checks pass for the given instance
  * @retval false  If any of the checks pass for the given instance
  */
-bool eth_validate_unsigned_txn(const evm_unsigned_txn *eth_utxn_ptr,
-                               txn_metadata *metadata_ptr);
+bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context);
 
 /**
  * @brief Get the receivers address from evm_unsigned_txn instance.
  * @details
  *
- * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction
+ * @param [in] utxn_ptr     Pointer to Unsigned transaction
  * instance.
  * @param [in] address                  Byte array of receiver's address.
  * @param [in] metadata_ptr             Pointer to metadata instance
@@ -136,35 +151,59 @@ bool eth_validate_unsigned_txn(const evm_unsigned_txn *eth_utxn_ptr,
  * @return
  * @retval
  */
-void eth_get_to_address(const evm_unsigned_txn *eth_unsigned_txn_ptr,
+void eth_get_to_address(const evm_unsigned_txn *utxn_ptr,
                         const uint8_t **address);
 
 /**
  * @brief Get amount to be sent set in the evm_unsigned_txn instance
  * @details
  *
- * @param [in] eth_unsigned_txn_ptr     Pointer to Unsigned transaction
+ * @param [in] utxn_ptr     Pointer to Unsigned transaction
  * instance.
  * @param [in] value                    char array to store value.
  *
  * @return
  * @retval
  */
-uint32_t eth_get_value(const evm_unsigned_txn *eth_unsigned_txn_ptr,
-                       char *value);
+uint32_t eth_get_value(const evm_unsigned_txn *utxn_ptr, char *value);
 
 /**
  * @brief Return the string representation of decimal value of transaction fee
  * in ETH.
  *
- * @param eth_unsigned_txn_ptr  The unsigned transaction containing gas_limit
+ * @param utxn_ptr  The unsigned transaction containing gas_limit
  * and gas_price
  * @param fee_decimal_string    Output decimal string of at least 30 character
  * long
  */
-void eth_get_fee_string(evm_unsigned_txn *eth_unsigned_txn_ptr,
+void eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
                         char *fee_decimal_string,
                         uint8_t size,
                         uint8_t decimal);
+
+/**
+ * @brief Returns the decimal value of ethereum asset from metadata
+ *
+ * @param txn_context Pointer to transaction context
+ * @return uint8_t Decimal value of current asset
+ */
+uint8_t evm_get_decimal(const evm_txn_context_t *txn_context);
+
+/**
+ * @brief Returns the asset symbol which is currently being used in the flow
+ *
+ * @param txn_context Pointer to transaction context
+ * @return const char*
+ */
+const char *evm_get_asset_symbol(const evm_txn_context_t *txn_context);
+
+/**
+ * @brief Returns the title for address verification in ethereum send flow
+ *        Contract address is verified when sending data with payload except for
+ * whitelisted tokens
+ * @param utxn_ptr Pointer to the unsigned transaction for ethereum
+ * @return const char*
+ */
+const char *eth_get_address_title(const evm_unsigned_txn *utxn_ptr);
 
 #endif

@@ -168,40 +168,4 @@ void eth_sign_msg_data(const MessageData *msg_data,
                        const char *mnemonics,
                        const char *passphrase,
                        uint8_t *sig);
-/**
- * @brief Return the string representation of the derivation path received in
- * transaction metadata for ethereum transaction.
- *
- * @param txn_metadata_ptr      Pointer to transaction metadata
- * @param output                Pointer to the output string
- * @param out_len               Maximum length of output string
- */
-void eth_derivation_path_to_string(const txn_metadata *txn_metadata_ptr,
-                                   char *output,
-                                   const size_t out_len);
-
-/**
- * @brief Returns the decimal value of ethereum asset from metadata
- *
- * @param txn_metadata_ptr Pointer to transaction metadata
- * @return uint8_t Decimal value of current asset
- */
-uint8_t eth_get_decimal(const txn_metadata *txn_metadata_ptr);
-
-/**
- * @brief Returns the asset symbol which is currently being used in the flow
- *
- * @param metadata_ptr Pointer to transaction metadata
- * @return const char*
- */
-const char *eth_get_asset_symbol(const txn_metadata *metadata_ptr);
-
-/**
- * @brief Returns the title for address verification in ethereum send flow
- *        Contract address is verified when sending data with payload except for
- * whitelisted tokens
- * @param eth_unsigned_txn_ptr Pointer to the unsigned transaction for ethereum
- * @return const char*
- */
-const char *eth_get_address_title(const evm_unsigned_txn *eth_unsigned_txn_ptr);
 #endif
