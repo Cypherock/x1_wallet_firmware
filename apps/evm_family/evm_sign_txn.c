@@ -75,9 +75,6 @@
  * EXTERN VARIABLES
  *****************************************************************************/
 
-extern bool evm_is_token_whitelisted;
-extern ui_display_node *current_display_node;
-
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -268,12 +265,8 @@ STATIC bool handle_initiate_query(const evm_query_t *query) {
   }
 
   // TODO: handle prompts for different transaction types
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_SEND_PROMPT,
-           g_evm_app->lunit_name,
-           g_evm_app->name,
-           wallet_name);
+  snprintf(
+      msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, g_evm_app->name, wallet_name);
   // Take user consent to sign the transaction for the wallet
   if (!core_confirmation(msg, evm_send_error)) {
     return false;
@@ -333,9 +326,12 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
     return status;
   }
   // decode and verify the received transaction
-  if (0 != evm_byte_array_to_unsigned_txn(
+  if (0 != evm_decode_unsigned_txn(
                txn_context->transaction, total_size, txn_context) ||
+      EVM_TXN_INVALID_DATA == txn_context->txn_type ||
       !evm_validate_unsigned_txn(txn_context)) {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
     return status;
   }
 
@@ -345,29 +341,22 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
 
 STATIC bool get_user_verification() {
   bool status = false;
-  switch (txn_context->transaction_info.payload_status) {
-    case PAYLOAD_ABSENT:
+  switch (txn_context->txn_type) {
+    case EVM_TXN_NO_DATA:
+    case EVM_TXN_TOKEN_TRANSFER_FUNC:
       status = evm_verify_transfer(txn_context);
       break;
 
-    case PAYLOAD_WHITELISTED:
-      if (evm_is_token_whitelisted) {
-        status = evm_verify_transfer(txn_context);
-      } else {
-        status = evm_verify_clear_signing(txn_context);
-      }
+    case EVM_TXN_KNOWN_FUNC_SIG:
+      status = evm_verify_clear_signing(txn_context);
       break;
 
-    case PAYLOAD_SIGNATURE_NOT_WHITELISTED:
+    case EVM_TXN_UNKNOWN_FUNC_SIG:
       // TODO: link with wallet setting
       status = evm_verify_blind_signing(txn_context);
       break;
 
-    case PAYLOAD_CONTRACT_NOT_WHITELISTED:
-      status = evm_verify_clear_signing(txn_context);
-      break;
-
-    case PAYLOAD_CONTRACT_INVALID:
+    case EVM_TXN_INVALID_DATA:
     default:
       // cannot reach; should be caught already
       break;
@@ -435,7 +424,6 @@ void evm_sign_transaction(evm_query_t *query) {
   txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
   memzero(txn_context, sizeof(evm_txn_context_t));
   evm_sign_txn_signature_response_t sig = {0};
-  current_display_node = NULL;
 
   if (handle_initiate_query(query) && fetch_valid_transaction(query) &&
       get_user_verification() && sign_transaction(&sig) &&

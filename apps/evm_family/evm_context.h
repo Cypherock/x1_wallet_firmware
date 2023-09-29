@@ -44,8 +44,8 @@ typedef struct {
    * https://github.com/ethereum/EIPs/blob/830708a049fc982fd595cb0c4dca703aebefd003/EIPS/eip-2294.md
    */
   const uint64_t chain_id;
-  const erc20_contracts_t *whitelisted_contracts;
-  const uint16_t whitelist_count;
+  bool (*is_token_whitelisted)(const uint8_t *address,
+                               const erc20_contracts_t **contract);
 } evm_config_t;
 
 /*****************************************************************************
