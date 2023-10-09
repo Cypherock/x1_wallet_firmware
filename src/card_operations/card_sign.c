@@ -126,10 +126,21 @@ static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
          NULL != signature);
 
   uint8_t sign_data_inout[ECDSA_SIGNATURE_SIZE] = {0};
-  uint16_t sign_data_size_inout = sign_data_size;
+  uint16_t sign_data_size_inout = 0;
   card_error_status_word_e status = DEFAULT_UINT32_IN_FLASH_ENUM;
-  memcpy(sign_data_inout, sign_data, sign_data_size);
-  status = nfc_ecdsa(sign_data_inout, &sign_data_size_inout);
+
+  /**
+   * @brief This retry attempt has been added to avoid exceptions occuring due
+   * to incorrect signature length received from card. In a rare case the X1
+   * Card would send a incorrect signature with as the size would be one byte
+   * less than expected. When such a case is encountered, we do a retry attempt
+   * to
+   */
+  do {
+    sign_data_size_inout = sign_data_size;
+    memcpy(sign_data_inout, sign_data, sign_data_size);
+    status = nfc_ecdsa(sign_data_inout, &sign_data_size_inout);
+  } while (CARD_SIGNATURE_INCORRECT_LEN == status);
 
   if (SW_NO_ERROR == status) {
     memcpy(signature, sign_data_inout, ECDSA_SIGNATURE_SIZE);

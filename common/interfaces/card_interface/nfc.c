@@ -454,11 +454,16 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
 
   if (err_code != STM_SUCCESS) {
     return err_code;
-  } else {
-    status_word = (recv_apdu[recv_len - 2] * 256);
-    status_word += recv_apdu[recv_len - 1];
+  }
 
-    if (status_word == SW_NO_ERROR && recv_len == ECDSA_EXPECTED_LENGTH) {
+  status_word = (recv_apdu[recv_len - 2] * 256);
+  status_word += recv_apdu[recv_len - 1];
+
+  if (status_word == SW_NO_ERROR) {
+    if (recv_len != ECDSA_EXPECTED_LENGTH) {
+      status_word = CARD_SIGNATURE_INCORRECT_LEN;
+      LOG_ERROR("Card error: %04x", status_word);
+    } else {
       // Extracting Data from APDU
       *length_inOut = recv_apdu[1];
       memcpy(data_inOut, recv_apdu + 2, recv_apdu[1]);
