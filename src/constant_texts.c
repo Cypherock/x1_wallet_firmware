@@ -239,8 +239,7 @@ const char *ui_text_operation_has_been_cancelled =
     "Operation has been cancelled!";
 const char *ui_text_wallet_name_exists =
     "Name already exists Pick a different name";
-const char *ui_text_pin_incorrect_re_enter =
-    "Incorrect PIN!\nEnter correct pin";
+const char *ui_text_pin_incorrect_re_enter = "Wrong PIN!\nEnter correct pin";
 const char *ui_text_wallet_with_same_mnemo_exists =
     "Wallet already present on device";
 const char *ui_text_incorrect_mnemonics = "Incorrect mnemonics";
