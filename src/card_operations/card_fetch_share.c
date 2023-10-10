@@ -176,6 +176,16 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
+
+      /**
+       * In case the same card as before is tapped, the user should be told to
+       * tap a different card instead of the default message "Wrong card
+       * sequence"
+       */
+      if (SW_CONDITIONS_NOT_SATISFIED == card_data.nfc_data.status) {
+        error_msg = ui_text_tap_another_card_already_tapped;
+      }
+
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
         instruction_scr_init(config->frontend.msg, config->frontend.heading);
