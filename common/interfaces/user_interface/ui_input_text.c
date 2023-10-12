@@ -136,7 +136,7 @@ void ui_input_text(const char *input_list,
     data->current_text[0] = input_list[data->current_index];
     data->current_display_index = 0;
     data->current_text[1] = '\0';
-    data->max_input_size = max_input_size - 1;
+    data->max_input_size = max_input_size;
     strncpy(data->entered_text, "", 1);
     data->data_type = data_type;
     strncpy(data->password_text, "", 1);
@@ -338,9 +338,10 @@ static void character_event_handler(lv_obj_t *character,
       // average width of a pixel
       char first_char_current_text = data->current_text[0];
       if (get_entered_text_px_width() + 10 <= 98 &&
-          strnlen(data->entered_text, MAX_ARRAY_SIZE) <= data->max_input_size) {
+          (strnlen(data->entered_text, MAX_ARRAY_SIZE) + 1) <=
+              data->max_input_size) {
         if (data->data_type == DATA_TYPE_PIN &&
-            strnlen(data->entered_text, MAX_ARRAY_SIZE) < MAX_PIN_SIZE) {
+            (strnlen(data->entered_text, MAX_ARRAY_SIZE) + 1) <= MAX_PIN_SIZE) {
           strncat(data->entered_text, &first_char_current_text, 1);
           strncat(data->password_text, "*", 2);
           lv_label_set_text(lv_obj_get_child(obj->text_entered, NULL),
@@ -363,7 +364,7 @@ static void character_event_handler(lv_obj_t *character,
                             data->entered_text);
         }
         hide_unhide_ok();
-      } else if (strnlen(data->entered_text, MAX_ARRAY_SIZE) <=
+      } else if ((strnlen(data->entered_text, MAX_ARRAY_SIZE) + 1) <=
                  data->max_input_size) {
         if (data->data_type != DATA_TYPE_PIN) {
           strncat(data->entered_text, &first_char_current_text, 1);
@@ -548,8 +549,10 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       /* As of now, all text is stored in the buffer data->entered_text,
        * therefore we must copy data from here into the buffer which the
        * application can access */
-      ui_fill_text(
-          data->entered_text, data->input_text_ptr, data->max_input_size);
+      ui_fill_text(data->entered_text,
+                   data->input_text_ptr,
+                   data->max_input_size +
+                       1);    // Extra 1 byte for NULL character in size
       ui_set_text_input_event(data->input_text_ptr);
       input_text_destructor();
       break;

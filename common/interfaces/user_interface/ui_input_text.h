@@ -81,7 +81,8 @@ struct Input_Text_Object {
  * @param initial_heading Input heading text
  * @param min_input_size Mininum input text size
  * @param data_type data type PASSWORD, PASSPHRASE or TEXT
- * @param max_input_size Maximum input text size
+ * @param max_input_size Maximum input text size(this is text limit not buffer
+ * size, buffer size should be greater than this to accomodate max text)
  */
 void ui_input_text(const char *input_list,
                    char *input_text_ptr,
@@ -101,7 +102,8 @@ void ui_input_text(const char *input_list,
  * @param initial_heading Input heading text
  * @param min_input_size Mininum input text size
  * @param data_type data type PASSWORD, PASSPHRASE or TEXT
- * @param max_input_size Maximum input text size
+ * @param max_input_size Maximum input text size(this is text limit not buffer
+ * size, buffer size should be greater than this to accomodate max text)
  *
  * @return
  * @retval
