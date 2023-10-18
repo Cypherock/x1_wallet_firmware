@@ -132,9 +132,9 @@ static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
   /**
    * @brief This retry attempt has been added to avoid exceptions occuring due
    * to incorrect signature length received from card. In a rare case the X1
-   * Card would send a incorrect signature with as the size would be one byte
-   * less than expected. When such a case is encountered, we do a retry attempt
-   * to
+   * Card would send a incorrect signature with as the size would be less than
+   * expected of 64-bytes. When such a case is encountered, we do a retry
+   * attempt to
    */
   do {
     sign_data_size_inout = sign_data_size;
