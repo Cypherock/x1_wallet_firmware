@@ -95,7 +95,8 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
+card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold,
+                                               uint32_t *error_status_OUT) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
 
   // Validate threshold
@@ -146,5 +147,8 @@ card_error_type_e card_flow_reconstruct_wallet(uint8_t threshold) {
     }
   }
 
+  if (NULL != error_status_OUT) {
+    *error_status_OUT = response.card_info.status;
+  }
   return result;
 }

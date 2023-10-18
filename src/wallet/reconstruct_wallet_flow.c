@@ -62,6 +62,7 @@
 #include "reconstruct_wallet_flow.h"
 
 #include "card_flow_reconstruct_wallet.h"
+#include "common_error.h"
 #include "constant_texts.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
@@ -129,10 +130,13 @@ static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
  * @param state The current state of the flow which needs to be executed
  * @param secret_out Pointer to buffer which needs to be populated with the
  * wallet secret
+ * @param reject_cb Callback to execute if there is any rejection during PIN or
+ * passphrase input occurs, or a card abort error occurs
  * @return reconstruct_state_e The next state of the flow
  */
 static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
-                                                      uint8_t *secret_out);
+                                                      uint8_t *secret_out,
+                                                      rejection_cb *reject_cb);
 
 /**
  * @brief The function takes a wallet ID, a pointer to an output buffer, and an
@@ -144,13 +148,15 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
  * will be stored.
  * @param init_state The initial state of the secret reconstruction flow. It
  * determines where the flow should start from.
+ * @param reject_cb Callback to execute if there is any rejection during PIN or
+ * passphrase input occurs, or a card abort error occurs
  *
  * @return The function is expected to return a value of type
  * `reconstruct_state_e`.
  */
-static reconstruct_state_e reconstruct_secret(const uint8_t *wallet_id,
-                                              uint8_t *secret_out,
-                                              reconstruct_state_e init_state);
+static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
+                                              reconstruct_state_e init_state,
+                                              rejection_cb *reject_cb);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -173,7 +179,8 @@ static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
 }
 
 static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
-                                                      uint8_t *secret_out) {
+                                                      uint8_t *secret_out,
+                                                      rejection_cb *reject_cb) {
   reconstruct_state_e next_state = EXIT;
   switch (state) {
     case PASSPHRASE_INPUT: {
@@ -241,7 +248,9 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
     }
 
     case TAP_CARD_FLOW: {
-      card_error_type_e card_status = card_flow_reconstruct_wallet(1);
+      uint32_t card_error_code;
+      card_error_type_e card_status =
+          card_flow_reconstruct_wallet(1, &card_error_code);
 
       if (CARD_OPERATION_SUCCESS == card_status) {
         set_core_flow_status(COMMON_SEED_GENERATION_STATUS_PIN_CARD);
@@ -256,6 +265,8 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
          * These error codes are non-recoverable from this flow. Error message
          * will be displayed to the user before the main menu
          */
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  get_card_error_from_nfc_status(card_error_code));
         next_state = COMPLETED_WITH_ERRORS;
       }
 
@@ -300,14 +311,14 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   return next_state;
 }
 
-static reconstruct_state_e reconstruct_secret(const uint8_t *wallet_id,
-                                              uint8_t *secret_out,
-                                              reconstruct_state_e init_state) {
+static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
+                                              reconstruct_state_e init_state,
+                                              rejection_cb *reject_cb) {
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = init_state;
   while (1) {
     reconstruct_state_e next_state =
-        reconstruct_wallet_handler(current_state, secret_out);
+        reconstruct_wallet_handler(current_state, secret_out, reject_cb);
 
     current_state = next_state;
     if (COMPLETED <= current_state) {
@@ -339,7 +350,7 @@ bool reconstruct_seed(const uint8_t *wallet_id,
   }
 
   reconstruct_state_e flow =
-      reconstruct_secret(wallet_id, secret, PASSPHRASE_INPUT);
+      reconstruct_secret(secret, PASSPHRASE_INPUT, reject_cb);
 
   if (COMPLETED == flow) {
     get_seed_from_secret(secret, seed_out);
@@ -348,11 +359,7 @@ bool reconstruct_seed(const uint8_t *wallet_id,
     // Inform the host of any rejection
     reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
               ERROR_USER_REJECTION_CONFIRMATION);
-  } else if (reject_cb && COMPLETED_WITH_ERRORS == flow) {
-    // Inform the host of any card error
-    reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG, ERROR_CARD_ERROR_UNKNOWN);
   }
-
   clear_wallet_data();
   return result;
 }
@@ -374,7 +381,7 @@ uint8_t reconstruct_mnemonics(const uint8_t *wallet_id,
     return result;
   }
 
-  if (COMPLETED == reconstruct_secret(wallet_id, secret, PIN_INPUT)) {
+  if (COMPLETED == reconstruct_secret(secret, PIN_INPUT, NULL)) {
     mnemonic_clear();
     const char *mnemo =
         mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
