@@ -513,7 +513,6 @@ restore_wallet_state_e restore_wallet_state_handler(
     }
 
     case COMPLETED_WITH_ERRORS: {
-      mark_core_error_screen(ui_text_creation_failed_delete_wallet, false);
       next_state = EXIT;
       break;
     }
@@ -528,7 +527,7 @@ restore_wallet_state_e restore_wallet_state_handler(
   return next_state;
 }
 
-void restore_seed_phrase_flow(void) {
+bool restore_seed_phrase_flow(char *wallet_name) {
   restore_wallet_state_e current_state = NAME_INPUT;
 
   // Ensure that atleast 4 cards are paired
@@ -556,6 +555,8 @@ void restore_seed_phrase_flow(void) {
     current_state = next_state;
   }
 
+  snprintf(wallet_name, NAME_SIZE, "%s", wallet.wallet_name);
+
   clear_wallet_data();
-  return;
+  return (current_state == COMPLETED);
 }

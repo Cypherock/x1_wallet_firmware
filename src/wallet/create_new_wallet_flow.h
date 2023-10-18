@@ -12,7 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
+#include "stdbool.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -34,7 +34,12 @@
  * @details This function generate random mnemonics, takes user inputs for
  * wallet configuration, writes the wallet shares on the X1 vault flash and X1
  * cards and verifies each share
+ *
+ * @param wallet_name buffer to copy wallet name of the created wallet. Can be
+ * used to handle wallet creation failure by the caller
+ *
+ * @return true if wallet creation was completed successfully else false
  */
-void create_new_wallet_flow(void);
+bool create_new_wallet_flow(char *wallet_name);
 
 #endif /* CREATE_NEW_WALLET_FLOW_H */
