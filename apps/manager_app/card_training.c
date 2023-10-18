@@ -61,6 +61,7 @@
  *****************************************************************************/
 
 #include "check_pairing.h"
+#include "common_error.h"
 #include "flash_api.h"
 #include "manager_api.h"
 #include "onboarding.h"
@@ -143,7 +144,8 @@ void manager_card_training(manager_query_t *query) {
   card_error_type_e status = card_check_pairing(&pair_result);
   if (CARD_OPERATION_SUCCESS != status) {
     LOG_SWV("%s (%d)\n", __func__, __LINE__);
-    manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG, 1);
+    manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                       get_card_error_from_nfc_status(status));
     return;
   }
   result.result.card_paired = pair_result.is_paired;
