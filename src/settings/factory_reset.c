@@ -293,12 +293,6 @@ static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void factory_reset(void) {
-  // Ensure that atleast 2 cards are paired
-  if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
-    mark_core_error_screen(ui_text_error_pair_atleast_2_cards, false);
-    return;
-  }
-
   wallet_list_t wallets_in_vault = {0};
   uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
 
@@ -334,12 +328,6 @@ void factory_reset(void) {
 }
 
 void clear_device_data(void) {
-  // Ensure that atleast 2 cards are paired
-  if (get_keystore_used_count() < MINIMUM_NO_OF_SHARES) {
-    mark_core_error_screen(ui_text_error_pair_atleast_2_cards, false);
-    return;
-  }
-
   wallet_list_t wallets_in_vault = {0};
   uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
 
