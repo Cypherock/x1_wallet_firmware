@@ -527,7 +527,7 @@ restore_wallet_state_e restore_wallet_state_handler(
   return next_state;
 }
 
-bool restore_seed_phrase_flow(char *wallet_name) {
+Flash_Wallet *restore_seed_phrase_flow() {
   restore_wallet_state_e current_state = NAME_INPUT;
 
   // Ensure that atleast 4 cards are paired
@@ -555,8 +555,9 @@ bool restore_seed_phrase_flow(char *wallet_name) {
     current_state = next_state;
   }
 
-  snprintf(wallet_name, NAME_SIZE, "%s", wallet.wallet_name);
+  Flash_Wallet *flash_wallet = NULL;
+  get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
 
   clear_wallet_data();
-  return (current_state == COMPLETED);
+  return flash_wallet;
 }

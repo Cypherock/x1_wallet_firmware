@@ -12,7 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "stdbool.h"
+#include "flash_struct.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -35,11 +35,9 @@
  * wallet configuration, writes the wallet shares on the X1 vault flash and X1
  * cards and verifies each share
  *
- * @param wallet_name buffer to copy wallet name of the created wallet. Can be
- * used to handle wallet creation failure by the caller
- *
- * @return true if wallet creation was completed successfully else false
+ * @return NULL if wallet was not created, else pointer to the ram instance of
+ * wallet created.
  */
-bool restore_seed_phrase_flow(char *wallet_name);
+Flash_Wallet *restore_seed_phrase_flow();
 
 #endif /* RESTORE_SEED_PHRASE_FLOW_H */

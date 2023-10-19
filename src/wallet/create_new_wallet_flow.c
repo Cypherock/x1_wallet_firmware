@@ -414,7 +414,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-bool create_new_wallet_flow(char *wallet_name) {
+Flash_Wallet *create_new_wallet_flow() {
   new_wallet_state_e current_state = NAME_INPUT;
 
   // Ensure that atleast 4 cards are paired
@@ -441,8 +441,9 @@ bool create_new_wallet_flow(char *wallet_name) {
     current_state = next_state;
   }
 
-  snprintf(wallet_name, NAME_SIZE, "%s", wallet.wallet_name);
+  Flash_Wallet *flash_wallet = NULL;
+  get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
 
   clear_wallet_data();
-  return (current_state == COMPLETED);
+  return flash_wallet;
 }

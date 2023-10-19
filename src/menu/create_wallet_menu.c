@@ -132,10 +132,10 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
  * @brief This function handles the failure of wallet creation by deleting the
  * wallet if it was written on flash and cards.
  *
- * @param wallet_name A string representing the name of the wallet that failed
- * to be created.
+ * @param flash_wallet pointer to the ram instance of the wallet that failed
+ * during creation.
  */
-void handle_wallet_creation_failure(const char *wallet_name);
+void handle_wallet_creation_failure(Flash_Wallet *falsh_wallet);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -173,17 +173,16 @@ static void create_wallet_menu_initialize(engine_ctx_t *ctx,
 static void create_wallet_menu_handler(engine_ctx_t *ctx,
                                        ui_event_t ui_event,
                                        const void *data_ptr) {
-  bool result = 0xFF;    // default value
-  char wallet_name[NAME_SIZE] = "";
+  Flash_Wallet *flash_wallet = NULL;    // default value
 
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case GENERATE_NEW_WALLET: {
-        result = create_new_wallet_flow(wallet_name);
+        flash_wallet = create_new_wallet_flow();
         break;
       }
       case RESTORE_FROM_SEED: {
-        result = restore_seed_phrase_flow(wallet_name);
+        flash_wallet = restore_seed_phrase_flow();
         break;
       }
       default: {
@@ -194,8 +193,9 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
     // UI_EVENT_LIST_REJECTION handled below already
   }
 
-  if (false == result) {
-    handle_wallet_creation_failure(wallet_name);
+  if (NULL != flash_wallet && ((VALID_WALLET != flash_wallet->state) ||
+                               (0x0F != flash_wallet->cards_states))) {
+    handle_wallet_creation_failure(flash_wallet);
   }
 
   /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
@@ -205,19 +205,12 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
   return;
 }
 
-void handle_wallet_creation_failure(const char *wallet_name) {
-  if (NULL == wallet_name || '\0' == wallet_name[0]) {
+void handle_wallet_creation_failure(Flash_Wallet *flash_wallet) {
+  if (NULL == flash_wallet) {
     return;
   }
 
   if (!show_errors_if_p0_not_occured()) {
-    return;
-  }
-
-  Flash_Wallet *flash_wallet = NULL;
-  // If wallet was written on flash, only then should we proceed to delete.
-  if (SUCCESS_ !=
-      get_flash_wallet_by_name((const char *)wallet_name, &flash_wallet)) {
     return;
   }
 
