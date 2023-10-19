@@ -183,7 +183,7 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
        * sequence"
        */
       if (SW_CONDITIONS_NOT_SATISFIED == card_data.nfc_data.status) {
-        error_msg = ui_text_tap_another_card_already_tapped;
+        error_msg = ui_text_tap_another_card;
       }
 
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
