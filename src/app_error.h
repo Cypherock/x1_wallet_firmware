@@ -23,6 +23,7 @@
 #define NFC_ERROR_BASE          0x10000UL
 #define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
 #define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
+#define CARD_EXCEPTION_BASE     (NFC_ERROR_BASE + 0x3000)   ///< Base error code for errors occured due to exception on cards
 
 #define RNG_ERROR_BASE          0x20000UL
 #define RNG_MCU_ERROR_BASE      (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
@@ -105,6 +106,17 @@
 #define PN532_TG_IN_MISMATCH            (PN532_ERROR_BASE + 0x2C)    ///< Mismatch between the NFCID3 initiator and the NFCID3 target in DEP 212/424 kbps passive.
 #define PN532_OVER_CURRENT              (PN532_ERROR_BASE + 0x2D)    ///< An over-current event has been detected
 #define PN532_NAD_MISSING               (PN532_ERROR_BASE + 0x2E)    ///< NAD missing in DEP frame
+/** @}
+ *
+ * @defgroup card_exception_error_codes CARD exception error codes
+ * @brief Macros related to the error codes for exception detected from card.
+ *
+ * @ingroup app_error
+ *
+ * @{
+ */
+#define CARD_SIGNATURE_INCORRECT_LEN    (CARD_EXCEPTION_BASE + 0x01) ///< Length of signature not same as expected from X1 Card
+
 /** @}
  *
  * @defgroup Exception cases occuring in device
