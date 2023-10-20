@@ -39,6 +39,7 @@ typedef enum {
 struct Input_Text_Data {
   const char *input_list;
   char *input_text_ptr;
+  uint8_t input_text_buffer_size;
   uint8_t input_list_size;
   char *initial_heading;
   int current_index;
@@ -86,6 +87,7 @@ struct Input_Text_Object {
  */
 void ui_input_text(const char *input_list,
                    char *input_text_ptr,
+                   uint8_t input_text_buffer_size,
                    const char *initial_heading,
                    const uint8_t min_input_size,
                    const INPUT_DATA_TYPE data_type,
