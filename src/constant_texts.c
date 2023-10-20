@@ -264,6 +264,7 @@ const char *ui_text_start_auth_from_CySync =
 const char *ui_text_invalid_card_contact_cypherock =
     "Authentication failed Contact Cypherock";
 const char *ui_text_wrong_card_sequence = "Wrong card sequence";
+const char *ui_text_tap_another_card = "Tap another card";
 const char *ui_text_wallet_doesnt_exists_on_this_card =
     "Wallet does not exist on this card";
 const char *ui_text_wallet_verification_failed =

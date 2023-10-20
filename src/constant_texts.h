@@ -194,6 +194,7 @@ extern const char *ui_text_invalid_transaction;
 // errors card flows
 extern const char *ui_text_invalid_card_contact_cypherock;
 extern const char *ui_text_wrong_card_sequence;
+extern const char *ui_text_tap_another_card;
 extern const char *ui_text_wallet_doesnt_exists_on_this_card;
 extern const char *ui_text_wrong_wallet_is_now_locked;
 extern const char *ui_text_wallet_already_unlocked;
