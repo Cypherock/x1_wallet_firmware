@@ -159,7 +159,7 @@ void input_text_init(const char *input_list,
                      const INPUT_DATA_TYPE data_type,
                      const uint8_t max_input_size) {
   /* In order to support current calls to input_text_init, set the argument
-   * `input_text_ptr` as NULL*/
+   * `input_text_ptr` as NULL and `input_text_buffer_size` as 0*/
   ui_input_text(input_list,
                 NULL,
                 0,
