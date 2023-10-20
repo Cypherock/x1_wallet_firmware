@@ -185,6 +185,20 @@ void handle_core_errors() {
   return;
 }
 
+bool show_errors_if_p0_not_occured() {
+  /* Check P0 events */
+  p0_evt_t evt = {0};
+  p0_get_evt(&evt);
+
+  // Display errors if there's no p0 event, else it'll be handled by
+  // handle_core_errors
+  if (false == evt.flag) {
+    display_core_error();
+  }
+
+  return !evt.flag;
+}
+
 void ignore_p0_event() {
   p0_reset_evt();
 }

@@ -12,7 +12,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
+#include "flash_struct.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -34,7 +34,10 @@
  * @details This function inputs seed phrase from user, takes user inputs for
  * wallet configuration, writes the wallet shares on the X1 vault flash and X1
  * cards and verifies each share
+ *
+ * @return NULL if wallet was not created, else pointer to the ram instance of
+ * wallet created.
  */
-void restore_seed_phrase_flow(void);
+Flash_Wallet *restore_seed_phrase_flow();
 
 #endif /* RESTORE_SEED_PHRASE_FLOW_H */

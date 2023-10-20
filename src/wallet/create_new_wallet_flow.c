@@ -398,7 +398,6 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
     }
 
     case COMPLETED_WITH_ERRORS: {
-      mark_core_error_screen(ui_text_creation_failed_delete_wallet, false);
       next_state = EXIT;
       break;
     }
@@ -415,7 +414,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void create_new_wallet_flow(void) {
+Flash_Wallet *create_new_wallet_flow() {
   new_wallet_state_e current_state = NAME_INPUT;
 
   // Ensure that atleast 4 cards are paired
@@ -442,6 +441,9 @@ void create_new_wallet_flow(void) {
     current_state = next_state;
   }
 
+  Flash_Wallet *flash_wallet = NULL;
+  get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
+
   clear_wallet_data();
-  return;
+  return flash_wallet;
 }

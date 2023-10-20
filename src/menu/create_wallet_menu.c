@@ -62,11 +62,14 @@
 #include "create_wallet_menu.h"
 
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_error_priv.h"
 #include "create_new_wallet_flow.h"
+#include "delete_wallet_flow.h"
 #include "menu_priv.h"
 #include "restore_seed_phrase_flow.h"
 #include "ui_screens.h"
+#include "ui_state_machine.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -124,6 +127,15 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
 static void ignore_p0_handler(engine_ctx_t *ctx,
                               p0_evt_t p0_evt,
                               const void *data_ptr);
+
+/**
+ * @brief This function handles the failure of wallet creation by deleting the
+ * wallet if it was written on flash and cards.
+ *
+ * @param flash_wallet pointer to the ram instance of the wallet that failed
+ * during creation.
+ */
+void handle_wallet_creation_failure(Flash_Wallet *falsh_wallet);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -161,14 +173,16 @@ static void create_wallet_menu_initialize(engine_ctx_t *ctx,
 static void create_wallet_menu_handler(engine_ctx_t *ctx,
                                        ui_event_t ui_event,
                                        const void *data_ptr) {
+  Flash_Wallet *flash_wallet = NULL;    // default value
+
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
       case GENERATE_NEW_WALLET: {
-        create_new_wallet_flow();
+        flash_wallet = create_new_wallet_flow();
         break;
       }
       case RESTORE_FROM_SEED: {
-        restore_seed_phrase_flow();
+        flash_wallet = restore_seed_phrase_flow();
         break;
       }
       default: {
@@ -179,11 +193,29 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
     // UI_EVENT_LIST_REJECTION handled below already
   }
 
+  if (NULL != flash_wallet && ((VALID_WALLET != flash_wallet->state) ||
+                               (0x0F != flash_wallet->cards_states))) {
+    handle_wallet_creation_failure(flash_wallet);
+  }
+
   /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
    * detected, or a create wallet flow was executed */
   engine_delete_current_flow_step(ctx);
 
   return;
+}
+
+void handle_wallet_creation_failure(Flash_Wallet *flash_wallet) {
+  if (!show_errors_if_p0_not_occured()) {
+    return;
+  }
+
+  message_scr_init(ui_text_creation_failed_delete_wallet);
+  if (0 != get_state_on_confirm_scr(0, 1, 2)) {
+    return;
+  }
+
+  delete_wallet_flow(flash_wallet);
 }
 
 /*****************************************************************************

@@ -43,6 +43,14 @@
 void mark_core_error_screen(const char *error_msg, bool ring_buzzer);
 
 /**
+ * @brief The function checks for a p0 event and displays core errors if it has
+ * not occurred.
+ *
+ * @return returns true p0 event flag is false and vice versa
+ */
+bool show_errors_if_p0_not_occured();
+
+/**
  * @brief This function clears the message buffer of the core error screen
  *
  * @note It will potentially clear a message set by an operation in the flow.
