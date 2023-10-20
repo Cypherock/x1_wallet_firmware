@@ -102,6 +102,7 @@ int get_entered_text_px_width() {
 
 void ui_input_text(const char *input_list,
                    char *input_text_ptr,
+                   uint8_t input_text_buffer_size,
                    const char *initial_heading,
                    const uint8_t min_input_size,
                    const INPUT_DATA_TYPE data_type,
@@ -125,8 +126,10 @@ void ui_input_text(const char *input_list,
      * we shall remove below check once refactor is complete */
     if (input_text_ptr == NULL) {
       data->input_text_ptr = flow_level.screen_input.input_text;
+      data->input_text_buffer_size = sizeof(flow_level.screen_input.input_text);
     } else {
       data->input_text_ptr = input_text_ptr;
+      data->input_text_buffer_size = input_text_buffer_size;
     }
 
     data->input_list_size = strnlen(input_list, MAX_CHARACTER_INPUT_LIST);
@@ -156,9 +159,10 @@ void input_text_init(const char *input_list,
                      const INPUT_DATA_TYPE data_type,
                      const uint8_t max_input_size) {
   /* In order to support current calls to input_text_init, set the argument
-   * `input_text_ptr` as NULL*/
+   * `input_text_ptr` as NULL and `input_text_buffer_size` as 0*/
   ui_input_text(input_list,
                 NULL,
+                0,
                 initial_heading,
                 min_input_size,
                 data_type,
@@ -548,8 +552,9 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
       /* As of now, all text is stored in the buffer data->entered_text,
        * therefore we must copy data from here into the buffer which the
        * application can access */
-      ui_fill_text(
-          data->entered_text, data->input_text_ptr, data->max_input_size);
+      ui_fill_text(data->entered_text,
+                   data->input_text_ptr,
+                   data->input_text_buffer_size);
       ui_set_text_input_event(data->input_text_ptr);
       input_text_destructor();
       break;

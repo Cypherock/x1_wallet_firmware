@@ -39,6 +39,7 @@ typedef enum {
 struct Input_Text_Data {
   const char *input_list;
   char *input_text_ptr;
+  uint8_t input_text_buffer_size;
   uint8_t input_list_size;
   char *initial_heading;
   int current_index;
@@ -81,10 +82,12 @@ struct Input_Text_Object {
  * @param initial_heading Input heading text
  * @param min_input_size Mininum input text size
  * @param data_type data type PASSWORD, PASSPHRASE or TEXT
- * @param max_input_size Maximum input text size
+ * @param max_input_size Maximum input text size(this is text limit not buffer
+ * size, buffer size should be greater than this to accomodate max text)
  */
 void ui_input_text(const char *input_list,
                    char *input_text_ptr,
+                   uint8_t input_text_buffer_size,
                    const char *initial_heading,
                    const uint8_t min_input_size,
                    const INPUT_DATA_TYPE data_type,
@@ -101,7 +104,8 @@ void ui_input_text(const char *input_list,
  * @param initial_heading Input heading text
  * @param min_input_size Mininum input text size
  * @param data_type data type PASSWORD, PASSPHRASE or TEXT
- * @param max_input_size Maximum input text size
+ * @param max_input_size Maximum input text size(this is text limit not buffer
+ * size, buffer size should be greater than this to accomodate max text)
  *
  * @return
  * @retval
