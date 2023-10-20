@@ -206,10 +206,6 @@ static void create_wallet_menu_handler(engine_ctx_t *ctx,
 }
 
 void handle_wallet_creation_failure(Flash_Wallet *flash_wallet) {
-  if (NULL == flash_wallet) {
-    return;
-  }
-
   if (!show_errors_if_p0_not_occured()) {
     return;
   }
@@ -220,7 +216,6 @@ void handle_wallet_creation_failure(Flash_Wallet *flash_wallet) {
   }
 
   delete_wallet_flow(flash_wallet);
-  flash_wallet = NULL;
 }
 
 /*****************************************************************************
