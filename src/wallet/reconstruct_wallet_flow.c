@@ -257,13 +257,15 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
         next_state = RECONSTRUCT_SEED;
       } else if (CARD_OPERATION_INCORRECT_PIN_ENTERED == card_status) {
         next_state = PIN_INPUT;
+      } else if (CARD_OPERATION_P0_OCCURED == card_status) {
+        next_state = ABORTED_DUE_TO_P0;
       } else {
         /* In case of other status code returned by the card operation:
          * CARD_OPERATION_LOCKED_WALLET,
-         * CARD_OPERATION_P0_OCCURED,
          * CARD_OPERATION_ABORT_OPERATION
-         * These error codes are non-recoverable from this flow. Error message
-         * will be displayed to the user before the main menu
+         *
+         * we need to inform the host on the type of card error due to which
+         * operation was aborted, as these are non-recoverable.
          */
         reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                   get_card_error_from_nfc_status(card_error_code));
