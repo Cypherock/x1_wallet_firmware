@@ -141,7 +141,7 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
     }
 
     case SYNC_TAP_CARD_FLOW: {
-      card_error_type_e card_status = card_flow_reconstruct_wallet(2);
+      card_error_type_e card_status = card_flow_reconstruct_wallet(2, NULL);
 
       if (CARD_OPERATION_SUCCESS == card_status) {
         next_state = SYNC_RECONSTRUCT_SEED;
