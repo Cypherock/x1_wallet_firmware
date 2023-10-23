@@ -138,14 +138,14 @@ void manager_card_training(manager_query_t *query) {
 
   instruction_scr_init(UI_TEXT_TAP_CARD_TO_TEST, NULL);
 
-  check_pairing_result_t pair_result = {false, 0, {0}};
+  check_pairing_result_t pair_result = {false, 0, {0}, 0};
   manager_train_card_response_t result = MANAGER_TRAIN_CARD_RESPONSE_INIT_ZERO;
   result.which_response = MANAGER_TRAIN_CARD_RESPONSE_RESULT_TAG;
   card_error_type_e status = card_check_pairing(&pair_result);
   if (CARD_OPERATION_SUCCESS != status) {
     LOG_SWV("%s (%d)\n", __func__, __LINE__);
     manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
-                       get_card_error_from_nfc_status(status));
+                       get_card_error_from_nfc_status(pair_result.error_code));
     return;
   }
   result.result.card_paired = pair_result.is_paired;

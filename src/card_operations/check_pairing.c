@@ -141,5 +141,8 @@ card_error_type_e card_check_pairing(check_pairing_result_t *result) {
       result->is_paired = true;
     }
   }
+
+  result->error_code = operation_data.nfc_data.status;
+
   return status;
 }
