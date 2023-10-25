@@ -105,10 +105,6 @@
 void main_menu_host_interface(engine_ctx_t *ctx,
                               usb_event_t usb_evt,
                               const void *data) {
-  /* TODO: A USB request was detected by the core, but it was the first time
-   * this request came in, therefore, we will pass control to the required
-   * application here */
-
   uint32_t applet_id = get_applet_id();
   const cy_app_desc_t *desc = registry_get_app_desc(applet_id);
 
