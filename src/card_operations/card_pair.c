@@ -381,7 +381,9 @@ card_error_type_e card_pair_operation(uint8_t card_number,
       }
 
       buzzer_start(BUZZER_DURATION);
-      wait_for_card_removal();
+      if (4 != card_number) {
+        wait_for_card_removal();
+      }
       break;
     }
 
