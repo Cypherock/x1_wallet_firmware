@@ -361,6 +361,10 @@ STATIC bool get_user_verification() {
       // cannot reach; should be caught already
       break;
   }
+
+  if (status) {
+    set_app_flow_status(EVM_SIGN_TXN_STATUS_VERIFY);
+  }
   return status;
 }
 
@@ -377,6 +381,8 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
     memzero(buffer, sizeof(buffer));
     return status;
   }
+
+  set_app_flow_status(EVM_SIGN_TXN_STATUS_SEED_GENERATED);
 
   status =
       derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, buffer, &node);
