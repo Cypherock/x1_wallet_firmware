@@ -111,8 +111,13 @@ void main_menu_host_interface(engine_ctx_t *ctx,
   if (NULL != desc) {
     desc->app(usb_evt, desc->app_config);
 
-    // Only set main menu update true when an app is triggered. Else no display
-    // change is made, so no need to rerender the menu
+    /**
+     * Only set main menu update true when an app is triggered. Else no display
+     * change is made, so no need to rerender the menu. Although when an app is
+     * called and exits without any display update, then also the menu will be
+     * rerendered.
+     *
+     */
     main_menu_set_update_req(true);
   } else {
     send_core_error_msg_to_host(CORE_UNKNOWN_APP);
