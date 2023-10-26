@@ -267,8 +267,10 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
          * we need to inform the host on the type of card error due to which
          * operation was aborted, as these are non-recoverable.
          */
-        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
-                  get_card_error_from_nfc_status(card_error_code));
+        if (reject_cb) {
+          reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                    get_card_error_from_nfc_status(card_error_code));
+        }
         next_state = COMPLETED_WITH_ERRORS;
       }
 
