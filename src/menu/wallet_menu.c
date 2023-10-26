@@ -67,6 +67,8 @@
 #include "menu_priv.h"
 #include "sync_wallets_flow.h"
 #include "ui_screens.h"
+#include "ui_state_machine.h"
+#include "verify_wallet_flow.h"
 #include "view_seed_flow.h"
 #include "wallet_list.h"
 #include "wallet_unlock_flow.h"
@@ -238,7 +240,18 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
           break;
 
         case UNVERIFIED_VALID_WALLET:
-          // TODO: Handle verify wallet
+          verify_wallet_flow(wallet_ptr);
+
+          // If post verification, the wallet state was updated to INVALID,
+          // proceed to delete that wallet
+          if (INVALID_WALLET == wallet_ptr->state) {
+            message_scr_init(ui_text_wallet_verification_failed);
+            if (0 != get_state_on_confirm_scr(0, 1, 2)) {
+              return;
+            }
+
+            delete_wallet_flow(wallet_ptr);
+          }
           break;
 
         default:
