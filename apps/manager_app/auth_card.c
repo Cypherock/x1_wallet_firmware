@@ -372,7 +372,7 @@ static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
   } else {
     snprintf(auth_card_data->ctx.message,
              sizeof(auth_card_data->ctx.message),
-             "...");
+             ui_text_processing);
   }
 
   instruction_scr_init(auth_card_data->ctx.message,
