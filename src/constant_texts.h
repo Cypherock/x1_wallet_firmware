@@ -46,7 +46,7 @@
 #define UI_TEXT_WALLET_UNLOCKED "Correct PIN! %s is now unlocked"
 #define UI_TEXT_UNLOCK_WARNING "Multiple incorrect attempts may block %s"
 #define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
-  "Wrong PIN!\n%d attempt(s) remaining"
+  "Wrong PIN!\n%d attempt(s) left"
 #define UI_TEXT_BLIND_SIGNING_WARNING                                          \
   LV_SYMBOL_WARNING " Blind Signing\nProceed at your own risk!"
 #define UI_TEXT_VERIFY_HD_PATH "Verify Derivation Path"
