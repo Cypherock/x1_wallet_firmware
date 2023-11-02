@@ -247,7 +247,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
           if (INVALID_WALLET == wallet_ptr->state) {
             message_scr_init(ui_text_wallet_verification_failed);
             if (0 != get_state_on_confirm_scr(0, 1, 2)) {
-              return;
+              break;
             }
 
             delete_wallet_flow(wallet_ptr);

@@ -6,8 +6,8 @@
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
  */
-#ifndef CREATE_NEW_WALLET_FLOW_H
-#define CREATE_NEW_WALLET_FLOW_H
+#ifndef VERIFY_WALLET_FLOW_H
+#define VERIFY_WALLET_FLOW_H
 
 /*****************************************************************************
  * INCLUDES

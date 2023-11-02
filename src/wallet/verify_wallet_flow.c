@@ -140,9 +140,6 @@ verify_wallet_state_e verify_wallet_state_handler(
         break;
       }
 
-      WALLET_SET_PIN(wallet_for_flash.wallet_info);
-      WALLET_SET_PIN(wallet.wallet_info);
-
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_INPUT, EARLY_EXIT, TIMED_OUT);
 
