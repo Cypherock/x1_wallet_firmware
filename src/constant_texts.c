@@ -268,7 +268,7 @@ const char *ui_text_tap_another_card = "Tap another card";
 const char *ui_text_wallet_doesnt_exists_on_this_card =
     "Wallet does not exist on this card";
 const char *ui_text_wallet_verification_failed =
-    "Wallet not created Proceeding for deletion";
+    "Wallet not created Proceed for deletion";
 const char *ui_text_no_response_from_desktop =
     "No response from the cySync app!\nTry again";
 

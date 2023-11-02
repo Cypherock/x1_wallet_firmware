@@ -171,6 +171,8 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
       }
     }
 
+    (void)handle_wallet_errors(&card_data, &wallet);
+
     // If control reached here, it is an unrecoverable error, so break
     result = false;
     break;
