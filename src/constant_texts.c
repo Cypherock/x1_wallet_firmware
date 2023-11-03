@@ -112,7 +112,7 @@ const char *ui_text_options_logging_export[] = {
 const char *ui_text_pair_card_confirm =
     "Do you want to proceed with card pairing?";
 const char *ui_text_card_pairing_success = "All cards are paired";
-const char *ui_text_card_pairing_warning = "Pair all cards from settings";
+const char *ui_text_card_pairing_warning = "Pair all cards from Settings";
 
 #if DEV_BUILD
 const char *ui_text_options_buzzer_adjust[] = {
@@ -488,8 +488,7 @@ const char *ui_text_wrong_btc_transaction = "Wrong transaction formatting";
 const char *ui_text_btc_change_address_mismatch = "Change address mismatch";
 const char *ui_text_worng_eth_transaction = "Invalid transaction detected";
 const char *ui_text_error_no_card_paired = "No cards paired with device";
-const char *ui_text_error_pair_all_cards =
-    "Pair all four cards from Settings menu";
+const char *ui_text_error_pair_all_cards = "Pair all four cards from Settings";
 const char *ui_text_error_pair_atleast_2_cards =
     "Pair at least two cards from Settings";
 const char *ui_text_continue_with_pairing = "Proceed with pairing?";
