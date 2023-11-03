@@ -61,8 +61,9 @@
 #include "events.h"
 #include "ui_multi_instruction.h"
 
+LV_IMG_DECLARE(cypherock_logo);
+
 void logo_scr_init(const uint16_t delay_in_ms) {
-  LV_IMG_DECLARE(cypherock_logo);
   instruction_content_t logo_content = {
       .img = &cypherock_logo,
       .img_x_offset = (128 - (cypherock_logo.header.w)) >> 1,
