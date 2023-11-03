@@ -420,13 +420,13 @@ Flash_Wallet *create_new_wallet_flow() {
   // Ensure that atleast 4 cards are paired
   if (get_keystore_used_count() < MAX_KEYSTORE_ENTRY) {
     mark_core_error_screen(ui_text_error_pair_all_cards, false);
-    return;
+    return NULL;
   }
 
   // Confirm that all 4 cards are needed
   if (!core_scroll_page(
           NULL, ui_text_need_all_x1cards_to_create_wallet, NULL)) {
-    return;
+    return NULL;
   }
 
   clear_wallet_data();
