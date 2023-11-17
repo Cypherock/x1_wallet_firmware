@@ -57,6 +57,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/evm_family/arbitrum
         apps/near_app
         apps/solana_app
+        apps/mpc_poc
 
         src/
         src/menu

@@ -1,0 +1,2 @@
+# Options for file common/cypherock-common/proto/mpc_poc/get_random_nonce.proto
+mpc_poc.GetRandomNonceResultResponse.nonce type:FT_STATIC max_size:32 fixed_length:true

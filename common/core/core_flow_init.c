@@ -81,6 +81,7 @@
 #include "polygon_app.h"
 #include "restricted_app.h"
 #include "solana_main.h"
+#include "mpc_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -162,4 +163,5 @@ void core_init_app_registry() {
   registry_add_app(get_avalanche_app_desc());
   registry_add_app(get_optimism_app_desc());
   registry_add_app(get_arbitrum_app_desc());
+  registry_add_app(get_mpc_app_desc());
 }

@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/mpc_poc/entity_info.proto
+mpc_poc.EntityInfo.random_nonce type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.EntityInfo.device_id type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.EntityInfo.pub_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.EntityInfo.wallet_id type:FT_STATIC max_size:32 fixed_length:true

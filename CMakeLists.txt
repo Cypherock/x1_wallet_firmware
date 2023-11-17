@@ -18,7 +18,7 @@ project(${PROJECT})
 # python is needed for compiling proto files using nanopb
 # also for generating & appending firmware signature headers
 find_package( Python3 REQUIRED COMPONENTS Interpreter )
-execute_process(COMMAND sh utilities/proto/generate-protob.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND_ERROR_IS_FATAL ANY )
+execute_process(COMMAND sh utilities/proto/generate-protob.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 # Populate version.c
 include(utilities/cmake/version.cmake)
