@@ -102,7 +102,7 @@ void level_one_tasks_initial() {
 
   switch (flow_level.level_one) {
     case 1: {
-      delay_scr_init("WELCOME", DELAY_TIME);
+      mark_event_over();
     } break;
 
     case 2: {

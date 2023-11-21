@@ -336,11 +336,16 @@ void device_provision_controller() {
         } else if (provision_status == provision_incomplete) {
           get_device_serial();
         } else {
+          transmit_one_byte_confirm(CONFIRM_PROVISION);
+          if (usb_irq_enable_on_entry == true)
+            NVIC_EnableIRQ(OTG_FS_IRQn);
           lv_obj_clean(lv_scr_act());
-          mark_error_screen(ui_text_device_already_provisioned);
+          instruction_scr_init(ui_text_device_already_provisioned, NULL);
+          lv_task_handler();
+          BSP_DelayMs(2000);
+          instruction_scr_destructor();
           reset_flow_level();
           flow_level.level_one = 6;
-          flow_level.show_error_screen = true;
           return;
         }
       } while ((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));

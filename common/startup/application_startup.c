@@ -348,9 +348,7 @@ void application_init() {
   BSP_I2C1_Init();
   BSP_RNG_Init();
   atecc_mode_detect();
-#if X1WALLET_MAIN
   libusb_init();
-#endif
   // Timer3 interrupt
   BSP_TIM3_Base_Start_IT();
   BSP_App_Timer_Init();
