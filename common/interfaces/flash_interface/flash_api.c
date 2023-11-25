@@ -160,7 +160,8 @@ int add_wallet_to_flash(const Flash_Wallet *fwallet, uint32_t *index_OUT) {
 
 int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
                                   uint32_t *index_OUT,
-                                  const uint8_t *wallet_share) {
+                                  const uint8_t *wallet_share,
+                                  const uint8_t *wallet_nonce) {
   get_flash_ram_instance();    // to load
   get_sec_flash_ram_instance();
   if (flash_ram_instance.wallet_count == MAX_WALLETS_ALLOWED)
@@ -190,6 +191,9 @@ int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
   memcpy(sec_flash_instance.wallet_share_data[*index_OUT].wallet_share,
          wallet_share,
          BLOCK_SIZE);
+  memcpy(sec_flash_instance.wallet_share_data[*index_OUT].wallet_nonce,
+         wallet_nonce,
+         NONCE_SIZE);
   sec_flash_struct_save();
   return SUCCESS_;
 }
@@ -230,7 +234,8 @@ int put_wallet_flash(const uint8_t index, const Flash_Wallet *wallet) {
 }
 
 int put_wallet_share_sec_flash(const uint8_t index,
-                               const uint8_t *wallet_share) {
+                               const uint8_t *wallet_share,
+                               const uint8_t *wallet_nonce) {
   get_flash_ram_instance();    // to load
   get_sec_flash_ram_instance();
   if (index >= MAX_WALLETS_ALLOWED)
@@ -246,6 +251,9 @@ int put_wallet_share_sec_flash(const uint8_t index,
   memcpy(sec_flash_instance.wallet_share_data[index].wallet_share,
          wallet_share,
          BLOCK_SIZE);
+  memcpy(sec_flash_instance.wallet_share_data[index].wallet_nonce,
+         wallet_nonce,
+         NONCE_SIZE);
   sec_flash_struct_save();
   flash_ram_instance.wallets[index].state = VALID_WALLET;
   flash_struct_save();
@@ -524,6 +532,42 @@ int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share) {
       }
       memcpy(wallet_share,
              sec_flash_instance.wallet_share_data[walletIndex].wallet_share,
+             BLOCK_SIZE);
+      return SUCCESS_;
+    }
+  }
+  return DOESNT_EXIST;
+}
+
+int get_flash_wallet_nonce_by_name(const char *name, uint8_t *wallet_nonce) {
+  ASSERT(name != NULL);
+  ASSERT(wallet_nonce != NULL);
+
+  get_flash_ram_instance();    // to load
+  get_sec_flash_ram_instance();
+  size_t name_len = strnlen(name, NAME_SIZE);
+  if (name_len == 0 || name_len >= NAME_SIZE)
+    return INVALID_ARGUMENT;
+  uint8_t walletIndex = 0;
+  for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+    if (!_wallet_is_filled(walletIndex))
+      continue;
+    if (!strcmp(
+            (const char *)flash_ram_instance.wallets[walletIndex].wallet_name,
+            name)) {
+      if (is_wallet_share_not_present(walletIndex))
+        return DOESNT_EXIST;
+      for (int i = 0; i < WALLET_ID_SIZE; i++) {
+        if (flash_ram_instance.wallets[walletIndex].wallet_id[i] !=
+            sec_flash_instance.wallet_share_data[walletIndex].wallet_id[i]) {
+          flash_ram_instance.wallets[walletIndex].state =
+              VALID_WALLET_WITHOUT_DEVICE_SHARE;
+          flash_struct_save();
+          return DOESNT_EXIST;
+        }
+      }
+      memcpy(wallet_nonce,
+             sec_flash_instance.wallet_share_data[walletIndex].wallet_nonce,
              BLOCK_SIZE);
       return SUCCESS_;
     }

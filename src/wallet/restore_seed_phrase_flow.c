@@ -427,8 +427,18 @@ restore_wallet_state_e restore_wallet_state_handler(
                         wallet.minimum_number_of_shares,
                         wallet_shamir_data.mnemonic_shares);
       memzero(secret, sizeof(secret));
-      if (WALLET_IS_PIN_SET(wallet.wallet_info))
+
+      uint8_t wallet_nonce[NONCE_SIZE] = {0};
+      random_generate(wallet_nonce, 12);
+
+      for (int i = 0; i < TOTAL_NUMBER_OF_SHARES; i++) {
+        memcpy(wallet_shamir_data.share_encryption_data[i], wallet_nonce, 12);
+        wallet_shamir_data.share_encryption_data[i][15] = 0x01;
+      }
+
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         encrypt_shares();
+      }
       derive_beneficiary_key(wallet.beneficiary_key,
                              wallet.iv_for_beneficiary_key,
                              single_line_mnemonics);
@@ -458,7 +468,10 @@ restore_wallet_state_e restore_wallet_state_handler(
       uint32_t index;
       wallet_for_flash.state = DEFAULT_VALUE_IN_FLASH;
       add_wallet_share_to_sec_flash(
-          &wallet_for_flash, &index, wallet_shamir_data.mnemonic_shares[4]);
+          &wallet_for_flash,
+          &index,
+          wallet_shamir_data.mnemonic_shares[4],
+          wallet_shamir_data.share_encryption_data[4]);
       next_state = TAP_CARD_FLOW;
       break;
     }

@@ -73,7 +73,7 @@
 #include "utils.h"
 
 #define SEC_FLASH_STRUCT_TLV_SIZE                                              \
-  (6 + 3 + (MAX_WALLETS_ALLOWED * (9 + sizeof(Wallet_Share_Data))) + 3 +       \
+  (6 + 3 + (MAX_WALLETS_ALLOWED * (12 + sizeof(Wallet_Share_Data))) + 3 +      \
    (MAX_KEYSTORE_ENTRY * ((4 * 3) + sizeof(Card_Keystore))))
 
 #define FLASH_WRITE_PERM_STRUCTURE_SIZE sizeof(Flash_Perm_Struct) / 4
@@ -85,6 +85,7 @@ typedef enum Sec_Flash_tlv_tags {
   TAG_SEC_FLASH_WALLET_SHARE_STRUCT = 0x11,
   TAG_SEC_FLASH_WALLET_ID = 0x12,
   TAG_SEC_FLASH_WALLET_SHARE = 0x13,
+  TAG_SEC_FLASH_WALLET_NONCE = 0x14,
 
   TAG_SEC_FLASH_KEYSTORE = 0x30,
   TAG_SEC_FLASH_KEYSTORE_USED = 0x31,
@@ -551,6 +552,11 @@ static void serialize_sec_fs_wallet(uint8_t *array,
                    TAG_SEC_FLASH_WALLET_SHARE,
                    BLOCK_SIZE,
                    sec_fs->wallet_share_data[wallet_index].wallet_share);
+    fill_flash_tlv(array,
+                   starting_index,
+                   TAG_SEC_FLASH_WALLET_NONCE,
+                   NONCE_SIZE,
+                   sec_fs->wallet_share_data[wallet_index].wallet_nonce);
 
     array[len_index] = (*starting_index) - len_index - 2;
     array[len_index + 1] = ((*starting_index) - len_index - 2) >> 8;
@@ -707,6 +713,11 @@ static void deserialize_sec_fs_wallet(Wallet_Share_Data *wallet_share_data,
     switch (tag) {
       case TAG_SEC_FLASH_WALLET_SHARE: {
         memcpy(wallet_share_data->wallet_share, tlv + index + 2, size);
+        break;
+      }
+
+      case TAG_SEC_FLASH_WALLET_NONCE: {
+        memcpy(wallet_share_data->wallet_nonce, tlv + index + 2, size);
         break;
       }
 

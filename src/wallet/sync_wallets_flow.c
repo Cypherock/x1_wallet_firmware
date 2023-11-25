@@ -199,7 +199,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
       get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
       memcpy(&wallet_for_flash, flash_wallet, sizeof(Flash_Wallet));
       put_wallet_share_sec_flash(wallet_index,
-                                 wallet_shamir_data.mnemonic_shares[4]);
+                                 wallet_shamir_data.mnemonic_shares[4],
+                                 wallet_shamir_data.share_encryption_data[0]);
 
       next_state = SYNC_COMPLETED;
       break;
