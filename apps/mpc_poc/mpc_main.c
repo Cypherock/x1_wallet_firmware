@@ -9,6 +9,7 @@
 #include "mpc_get_random_nonce.h"
 #include "mpc_verify_entity_info.h"
 #include "mpc_sign_entity_info.h"
+#include "mpc_wrapper.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -66,6 +67,10 @@ void mpc_main(usb_event_t usb_evt, const void *app_config) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   switch ((uint8_t)query.which_request) {
+    case MPC_POC_QUERY_INIT_APPLICATION_TAG: {
+      mpc_init(&query);
+      break;
+    }
     case MPC_POC_QUERY_GET_RANDOM_NONCE_TAG: {
       get_random_nonce_flow(&query);
       break;
@@ -76,6 +81,14 @@ void mpc_main(usb_event_t usb_evt, const void *app_config) {
     }
     case MPC_POC_QUERY_SIGN_ENTITY_INFO_TAG: {
       sign_entity_info_flow(&query);
+      break;
+    }
+    case MPC_POC_QUERY_EXIT_APPLICATION_TAG: {
+      mpc_exit(&query);
+      break;
+    }
+    case MPC_POC_QUERY_GET_PUBLIC_KEY_TAG: {
+      get_public_key_flow(&query);
       break;
     }
     default: {

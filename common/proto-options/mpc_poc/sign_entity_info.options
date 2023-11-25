@@ -1,4 +1,3 @@
 # Options for file common/cypherock-common/proto/mpc_poc/sign_entity_info.proto
-mpc_poc.SignEntityInfoInitiateRequest.dev_priv_key type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.SignEntityInfoInitiateRequest.fingerprint type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.SignEntityInfoResultResponse.signature type:FT_STATIC max_size:64 fixed_length:true

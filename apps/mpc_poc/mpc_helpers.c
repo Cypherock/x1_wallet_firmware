@@ -40,3 +40,14 @@ void bytes_to_hex(const uint8_t *data, size_t data_len, char *out, size_t out_le
         out[out_len - 1] = '\0';
     }
 }
+
+void priv_key_from_seed(const uint8_t *seed, uint8_t *priv_key) {
+    for (int i = 0; i < 32; i++) {
+        priv_key[i] = seed[i];
+    }
+}
+
+void pub_key33_from_priv_key(const uint8_t *priv_key, uint8_t *pub_key) {
+    const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
+    ecdsa_get_public_key33(curve, priv_key, pub_key);
+}
