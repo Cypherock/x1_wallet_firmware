@@ -65,7 +65,7 @@ int fetch_priv_key_from_flash(const uint8_t *wallet_id, uint8_t *priv_key) {
     memcpy(coin_specific_data.wallet_id, wallet_id, WALLET_ID_SIZE);
     coin_specific_data.coin_data = priv_key;
 
-    if (get_coin_data(&coin_specific_data, sizeof(priv_key), &len_read) != 0 || 
+    if (get_coin_data(&coin_specific_data, PRIV_KEY_LEN, &len_read) != 0 || 
         len_read != PRIV_KEY_LEN) {
 
         memzero(priv_key, sizeof(priv_key));
