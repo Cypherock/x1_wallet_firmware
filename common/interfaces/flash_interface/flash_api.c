@@ -631,7 +631,9 @@ int delete_from_kth_card_flash(const uint8_t index, const uint8_t card_number) {
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  flash_ram_instance.wallets[index].cards_states &= ~(1 << (card_number - 1));
+  uint8_t encoded_card_number = encode_card_number(card_number);
+  flash_ram_instance.wallets[index].cards_states &=
+      ~(encoded_card_number | encoded_card_number << 4);
   flash_struct_save();
   return SUCCESS_;
 }
@@ -651,9 +653,10 @@ bool card_already_deleted_flash(const uint8_t index,
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  return !(
-      ((flash_ram_instance.wallets[index].cards_states) >> (card_number - 1)) &
-      1);
+  uint8_t card_state =
+      (flash_ram_instance.wallets[index].cards_states & 0x0F) |
+      (flash_ram_instance.wallets[index].cards_states >> 4 & 0x0F);
+  return !(0x01 == (0x01 & (card_state >> (card_number - 1))));
 }
 
 /**
