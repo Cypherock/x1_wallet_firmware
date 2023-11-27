@@ -11,6 +11,8 @@
 #include "mpc_sign_entity_info.h"
 #include "mpc_wrapper.h"
 
+#include "mpc_dummy.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -89,6 +91,10 @@ void mpc_main(usb_event_t usb_evt, const void *app_config) {
     }
     case MPC_POC_QUERY_GET_PUBLIC_KEY_TAG: {
       get_public_key_flow(&query);
+      break;
+    }
+    case MPC_POC_QUERY_DUMMY_TAG: {
+      dummy_flow(&query);
       break;
     }
     default: {
