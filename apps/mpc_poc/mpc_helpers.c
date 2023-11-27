@@ -5,6 +5,9 @@
 #include "bip32.h"
 #include "coin_specific_data.h"
 
+#include "ui_delay.h"
+#include "ui_events_priv.h"
+
 #include <stdio.h>
 
 void mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key) {
@@ -93,4 +96,25 @@ void priv_key_from_seed(const uint8_t *seed, uint8_t *priv_key) {
 void pub_key33_from_priv_key(const uint8_t *priv_key, uint8_t *pub_key) {
     const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
     ecdsa_get_public_key33(curve, priv_key, pub_key);
+}
+
+void display_msg_on_screen(const char *msg) {
+  static lv_obj_t *instruction;
+  lv_obj_clean(lv_scr_act());
+
+  instruction = lv_label_create(lv_scr_act(), NULL);
+
+  ui_paragraph(
+      instruction,
+      msg,
+      LV_LABEL_ALIGN_CENTER);    // Creates task to print text on screen
+  lv_obj_align(instruction, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_label_set_text(instruction, msg);
+
+  lv_task_handler();
+}
+
+void stop_msg_display() {
+  if (ui_mark_event_over)
+    (*ui_mark_event_over)();
 }
