@@ -270,7 +270,7 @@ const char *ui_text_wallet_doesnt_exists_on_this_card =
 const char *ui_text_wallet_verification_failed_in_creation =
     "Wallet not created Proceed for deletion";
 const char *ui_text_wallet_verification_failed_in_reconstruction =
-    "Wallet verification failed during reconstruction";
+    "Verification failed.\n Contact support.";
 const char *ui_text_no_response_from_desktop =
     "No response from the cySync app!\nTry again";
 
