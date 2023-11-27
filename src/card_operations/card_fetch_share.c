@@ -224,7 +224,8 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
         remaining_cards = card_data.nfc_data.acceptable_cards;
         if (!_handle_retrieve_wallet_success(config->xcor)) {
           card_data.error_type = CARD_OPERATION_VERIFICATION_FAILED;
-          mark_core_error_screen("Wallet verification failed", true);
+          mark_core_error_screen(
+              ui_text_wallet_verification_failed_in_reconstruction, true);
           break;
         }
 
