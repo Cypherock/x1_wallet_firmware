@@ -38,6 +38,9 @@ typedef enum card_errors_type {
   CARD_OPERATION_RETAP_BY_USER_REQUIRED, /** Errors that occur due to user
                                             mistakes, like wrong card number or
                                             card of wrong family tapped */
+  CARD_OPERATION_VERIFICATION_FAILED, /** Error occuring when wallet present on
+                                         card is different from the wallet
+                                         expected*/
   CARD_OPERATION_ABORT_OPERATION, /** Error occurring due to internal handling
                                      of NFC or card communication. These errors
                                      can be associated to @ref
