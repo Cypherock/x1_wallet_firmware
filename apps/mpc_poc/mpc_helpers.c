@@ -14,10 +14,10 @@
 
 #include <stdio.h>
 
-void mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key) {
+int mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key) {
     uint8_t pby;
     const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
-    ecdsa_sign(curve, HASHER_SHA2D, priv_key, message, message_len, sig, &pby, NULL);
+    return ecdsa_sign(curve, HASHER_SHA2D, priv_key, message, message_len, sig, &pby, NULL);
 }
 
 bool mpc_verify_signature(const uint8_t *message, size_t message_len, const uint8_t *sig, const uint8_t *pub_key) {
@@ -127,11 +127,11 @@ void mpc_init_screen() {
     display_msg_on_screen("MPC application is running...\nCheck CLI for more info.");
 }
 
-// void mpc_delay_scr_init(const char message[], const uint32_t delay_in_ms) {
-//     stop_msg_display();
-//     delay_scr_init(message, delay_in_ms);
-//     mpc_init_screen();
-// }
+void mpc_delay_scr_init(const char message[], const uint32_t delay_in_ms) {
+    stop_msg_display();
+    delay_scr_init(message, delay_in_ms);
+    mpc_init_screen();
+}
 
 bool mpc_core_confirmation(const char *body, ui_core_rejection_cb *reject_cb) {
     stop_msg_display();
@@ -178,6 +178,20 @@ int construct_mpc_key(const pb_byte_t* wallet_id, uint8_t* priv_key) {
 
     priv_key_from_seed(seed, priv_key);
     memzero(seed, sizeof(seed));
+
+    status = true;
+    return status;
+}
+
+int initiate_application(const pb_byte_t* wallet_id, uint8_t* priv_key, uint8_t* pub_key) {
+    bool status = false;
+    mpc_init_screen();
+    
+    if (!construct_mpc_key(wallet_id, priv_key)) {
+        return status;
+    }
+
+    pub_key33_from_priv_key(priv_key, pub_key);
 
     status = true;
     return status;
