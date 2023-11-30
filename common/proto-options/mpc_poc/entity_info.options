@@ -4,4 +4,4 @@ mpc_poc.ParticipantDeviceInfo.device_id type:FT_STATIC max_size:32 fixed_length:
 mpc_poc.ParticipantDeviceInfo.pub_key type:FT_STATIC max_size:33 fixed_length:true
 mpc_poc.ParticipantDeviceInfo.wallet_id type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.ParticipantInfo.fingerprint type:FT_STATIC max_size:32 fixed_length:true
-mpc_poc.GroupInfo.participants type:FT_STATIC max_count:100 fixed_length:true  # Maximum participants in a a group can be 100
+mpc_poc.GroupInfo.participants type:FT_STATIC max_count:5 fixed_length:true 

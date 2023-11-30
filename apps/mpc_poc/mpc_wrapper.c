@@ -25,7 +25,7 @@ static int get_public_key(const pb_byte_t* wallet_id, mpc_poc_get_public_key_res
     memcpy(result->pub_key, pub_key, 33);
 
     memzero(priv_key, sizeof(priv_key));
-    // memzero(pub_key, sizeof(pub_key));
+    memzero(pub_key, sizeof(pub_key));
 
     return 0;
 }

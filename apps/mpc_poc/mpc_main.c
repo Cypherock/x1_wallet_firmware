@@ -9,6 +9,7 @@
 #include "mpc_wrapper.h"
 #include "mpc_helpers.h"
 
+#include "ui_screens.h"
 #include "mpc_dummy.h"
 
 /*****************************************************************************
@@ -66,27 +67,18 @@ void mpc_main(usb_event_t usb_evt, const void *app_config) {
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
-  // mpc_init_screen();
+  mpc_init_screen();
 
   switch ((uint8_t)query.which_request) {
-    // case MPC_POC_QUERY_GET_RANDOM_NONCE_TAG: {
-    //   get_random_nonce_flow(&query);
-    //   break;
-    // }
-    // case MPC_POC_QUERY_VERIFY_ENTITY_INFO_TAG: {
-    //   verify_entity_info_flow(&query);
-    //   break;
-    // }
-    // case MPC_POC_QUERY_SIGN_ENTITY_INFO_TAG: {
-    //   sign_entity_info_flow(&query);
-    //   break;
-    // }
     case MPC_POC_QUERY_GET_PUBLIC_KEY_TAG: {
       get_public_key_flow(&query);
       break;
     }
     case MPC_POC_QUERY_DUMMY_TAG: {
       dummy_flow(&query);
+      break;
+    }
+    case MPC_POC_QUERY_GROUP_SETUP_TAG: {
       break;
     }
     default: {
@@ -96,7 +88,7 @@ void mpc_main(usb_event_t usb_evt, const void *app_config) {
     } break;
   }
 
-  // stop_msg_display();
+  stop_msg_display();
 
   return;
 }

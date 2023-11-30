@@ -29,12 +29,12 @@ void dummy_flow(mpc_poc_query_t *query) {
     mpc_poc_dummy_response_t response = MPC_POC_DUMMY_RESPONSE_INIT_ZERO;
     response.which_response = MPC_POC_DUMMY_RESPONSE_FIRST_RESPONSE_TAG;
 
-    response.first_response.num = 6969;
+    response.first_response.num = 1234;
 
     result.dummy = response;
     mpc_send_result(&result);
 
-    delay_scr_init("6969 sent.", DELAY_TIME);
+    delay_scr_init("1234 sent.", DELAY_TIME);
 
     if (!mpc_get_query(query, MPC_POC_QUERY_DUMMY_TAG) ||
         !check_which_request(query, MPC_POC_DUMMY_REQUEST_NEXT_TAG)) {

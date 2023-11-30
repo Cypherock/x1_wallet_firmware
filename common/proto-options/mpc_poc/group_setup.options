@@ -1,4 +1,4 @@
 # Options for file common/cypherock-common/proto/mpc_poc/group_setup.proto
-mpc_poc.GroupSetupVerifyParticipantInfoListRequest.participant_info_list type:FT_STATIC max_count:99 fixed_length:true
+mpc_poc.GroupSetupVerifyParticipantInfoListRequest.participant_info_list type:FT_STATIC max_count:4 fixed_length:true
 mpc_poc.GroupSetupGetGroupIDResponse.group_id type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.GroupSetupGetGroupIDResponse.signature type:FT_STATIC max_size:64 fixed_length:true

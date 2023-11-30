@@ -165,14 +165,16 @@ int construct_mpc_key(const pb_byte_t* wallet_id, uint8_t* priv_key) {
 
     snprintf(msg, sizeof(msg), "Use the MPC key of the %s wallet?", wallet_name);
 
-    if (!core_confirmation(msg, mpc_send_error)) {
+    if (!mpc_core_confirmation(msg, mpc_send_error)) {
         return status;
     }
 
+    stop_msg_display();
     if (!reconstruct_seed(wallet_id, &seed[0], mpc_send_error)) {
       memzero(seed, sizeof(seed));
       return status;
     }
+    mpc_init_screen();
 
     priv_key_from_seed(seed, priv_key);
     memzero(seed, sizeof(seed));
