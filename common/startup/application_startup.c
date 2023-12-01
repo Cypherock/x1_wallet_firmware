@@ -539,7 +539,9 @@ void device_provision_check() {
 #if USE_SIMULATOR == 0
   const char *msg = NULL;
 
-  switch (check_provision_status()) {
+  provision_status_t status = check_provision_status();
+
+  switch (status) {
     default:
     case provision_empty:
       msg = ui_text_device_compromised_not_provisioned;
@@ -562,6 +564,7 @@ void device_provision_check() {
 #if NDEBUG
   msg = ui_text_device_compromised;
 #endif
+  LOG_INFO("Provision status: %d", status);
   ui_set_event_over_cb(NULL);
   delay_scr_init(msg, DELAY_TIME);
   ui_set_event_over_cb(&mark_event_over);

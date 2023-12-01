@@ -169,9 +169,19 @@ provision_status_t check_provision_status() {
                    0x00) {    // NFC private key slot not locked
       return provision_v1_complete;
     } else {
+      LOG_INFO("cfg bytes\n86:%02x, 87:%02x, 88:%02x, 89:%02x",
+               cfg[86],
+               cfg[87],
+               cfg[88],
+               cfg[89]);
       return provision_empty;
     }
   } else {
+    LOG_INFO("cfg bytes\n86:%02x, 87:%02x, 88:%02x, 89:%02x",
+             cfg[86],
+             cfg[87],
+             cfg[88],
+             cfg[89]);
     return provision_empty;
   }
 }
@@ -453,7 +463,7 @@ void device_provision_controller() {
       } else {
         comm_reject_request(CONFIRM_PROVISION, 0);
         flow_level.level_three = PROVISION_UNSUCCESSFUL;
-        LOG_ERROR("PERR2-KEY");
+        LOG_ERROR("PERR6-KEY");
         break;
       }
       reset_flow_level();
