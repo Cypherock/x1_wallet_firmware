@@ -896,14 +896,11 @@ void desktop_listener_task(lv_task_t *data) {
 #endif
       case START_FIRMWARE_UPGRADE: {
         CY_Reset_Not_Allow(false);
-        snprintf(flow_level.confirmation_screen_text,
-                 sizeof(flow_level.confirmation_screen_text),
-                 "Update firmware to version %d.%d.%d",
-                 data_array[0],
-                 data_array[1],
-                 (uint16_t)(data_array[3] | ((uint16_t)data_array[2] << 8)));
+        reset_flow_level();
+        CY_Set_External_Triggered(true);
+        counter.level = LEVEL_THREE;
+        lv_obj_clean(lv_scr_act());
         flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-        flow_level.show_desktop_start_screen = true;
         flow_level.level_two = LEVEL_THREE_RESET_DEVICE_CONFIRM;
         clear_message_received_data();
       } break;

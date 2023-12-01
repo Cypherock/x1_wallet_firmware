@@ -93,7 +93,7 @@ void level_one_controller_initial() {
   switch (flow_level.level_one) {
     case 1:
     case 2: {
-      flow_level.level_one++;
+      flow_level.level_one = 6;
     } break;
 
     case 3: {

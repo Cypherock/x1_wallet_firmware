@@ -169,9 +169,19 @@ provision_status_t check_provision_status() {
                    0x00) {    // NFC private key slot not locked
       return provision_v1_complete;
     } else {
+      LOG_INFO("cfg bytes\n86:%02x, 87:%02x, 88:%02x, 89:%02x",
+               cfg[86],
+               cfg[87],
+               cfg[88],
+               cfg[89]);
       return provision_empty;
     }
   } else {
+    LOG_INFO("cfg bytes\n86:%02x, 87:%02x, 88:%02x, 89:%02x",
+             cfg[86],
+             cfg[87],
+             cfg[88],
+             cfg[89]);
     return provision_empty;
   }
 }
@@ -336,11 +346,16 @@ void device_provision_controller() {
         } else if (provision_status == provision_incomplete) {
           get_device_serial();
         } else {
+          transmit_one_byte_confirm(CONFIRM_PROVISION);
+          if (usb_irq_enable_on_entry == true)
+            NVIC_EnableIRQ(OTG_FS_IRQn);
           lv_obj_clean(lv_scr_act());
-          mark_error_screen(ui_text_device_already_provisioned);
+          instruction_scr_init(ui_text_device_already_provisioned, NULL);
+          lv_task_handler();
+          BSP_DelayMs(2000);
+          instruction_scr_destructor();
           reset_flow_level();
           flow_level.level_one = 6;
-          flow_level.show_error_screen = true;
           return;
         }
       } while ((atecc_data.status != ATCA_SUCCESS) && (--atecc_data.retries));
@@ -448,7 +463,7 @@ void device_provision_controller() {
       } else {
         comm_reject_request(CONFIRM_PROVISION, 0);
         flow_level.level_three = PROVISION_UNSUCCESSFUL;
-        LOG_ERROR("PERR2-KEY");
+        LOG_ERROR("PERR6-KEY");
         break;
       }
       reset_flow_level();
