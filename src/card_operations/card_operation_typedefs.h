@@ -54,11 +54,13 @@ typedef struct {
   uint8_t acceptable_cards;
   bool skip_card_removal;
   const uint8_t *expected_family_id;
+  bool buzzer_on_success;
 } card_operation_config_t;
 
 typedef struct {
   const char *heading;
   const char *msg;
+  const char *unexpected_card_error;
 } card_operation_frontend_t;
 
 typedef struct {
