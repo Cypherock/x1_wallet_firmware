@@ -10,6 +10,7 @@
 #define ENTITY_INFO_BUFFER_SIZE 512
 #define GROUP_INFO_BUFFER_SIZE 2048
 #define SHARE_DATA_BUFFER_SIZE 2048
+#define GROUP_KEY_INFO_BUFFER_SIZE 256
 
 int mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key);
 bool mpc_verify_signature(const uint8_t *message, size_t message_len, const uint8_t *sig, const uint8_t *pub_key);
@@ -39,4 +40,18 @@ void evaluate_polynomial(const ecdsa_curve* curve,
 int mpc_aes_encrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
 int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
 
+void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
+                                        const curve_point* point,
+                                        const uint64_t x_cord,
+                                        const uint64_t interpolate_point,
+                                        const uint64_t threshold,
+                                        curve_point* result);
+
+
+void lagarange_exp_interpolate(const ecdsa_curve* curve,
+                               const curve_point** points,
+                               const uint32_t* x_cords,
+                               const uint32_t interpolate_point,
+                               const uint32_t threshold,
+                               curve_point* result);
 #endif

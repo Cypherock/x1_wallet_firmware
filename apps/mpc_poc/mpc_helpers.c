@@ -237,3 +237,48 @@ int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out,
     free(dec_buf);
     return 0;
 }
+
+void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
+                                        const curve_point* point,
+                                        const uint64_t x_cord,
+                                        const uint64_t interpolate_point,
+                                        const uint64_t threshold,
+                                        curve_point* result) {
+    bignum256 lambda = {0}, zero_val = {0}, temp = {0};
+    int64_t num = 1, den = 1;
+
+    for (uint64_t m = 0; m <= threshold; m++) {
+        if (m + 1 == x_cord)
+            continue;
+
+        num *= (int64_t)(m + 1 - interpolate_point);
+        den *= (int64_t)(m + 1 - x_cord);
+    }
+
+    assert(num % den == 0);
+    num /= den;
+
+    bn_zero(&zero_val);
+    bn_read_uint32(num < 0 ? num * -1 : num, &lambda);
+    bn_copy(&lambda, &temp);
+    if (num < 0)
+        bn_subtractmod(&zero_val, &temp, &lambda, &curve->order);
+    bn_mod(&lambda, &curve->order);
+    point_multiply(curve, &lambda, point, result);
+}
+
+void lagarange_exp_interpolate(const ecdsa_curve* curve,
+                               const curve_point** points,
+                               const uint32_t* x_cords,
+                               const uint32_t interpolate_point,
+                               const uint32_t threshold,
+                               curve_point* result) {
+    curve_point term = {0};
+
+    point_set_infinity(result);
+    for (int i = 0; i < threshold; i++) {
+        evaluate_exp_lagarange_term(curve, points[i], x_cords[i],
+                                    interpolate_point, threshold, &term);
+        point_add(curve, &term, result);
+    }
+}
