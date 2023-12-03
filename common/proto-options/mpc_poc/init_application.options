@@ -1,3 +1,0 @@
-# Options for file common/cypherock-common/proto/mpc_poc/init_application.proto
-mpc_poc.InitApplicationRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
-mpc_poc.InitApplicationResponse.pub_key type:FT_STATIC max_size:33 fixed_length:true

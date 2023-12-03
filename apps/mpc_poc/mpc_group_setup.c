@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "controller_level_four.h"
 #include "string.h"
+#include "bignum.h"
 
 const uint8_t (*global_fingerprints)[32];
 
@@ -324,7 +325,8 @@ bool group_setup_get_group_id(mpc_poc_query_t *query,
                               uint16_t threshold, uint16_t total_participants,
                               mpc_poc_entity_info_t *entity_info_list,
                               uint8_t (*fingerprint_list)[32],
-                              uint8_t *priv_key) {
+                              uint8_t *priv_key,
+                              mpc_poc_group_info_t *group_info) {
     if (!mpc_get_query(query, MPC_POC_QUERY_GROUP_SETUP_TAG) ||
       !check_which_request(query, MPC_POC_GROUP_SETUP_REQUEST_GET_GROUP_ID_TAG)) {
       return false;
@@ -332,14 +334,13 @@ bool group_setup_get_group_id(mpc_poc_query_t *query,
 
     uint8_t group_id[32] = {0};
     uint8_t signature[64] = {0};
-    mpc_poc_group_info_t group_info = MPC_POC_GROUP_INFO_INIT_ZERO;
     
     if (!compute_group_id(threshold,
                           total_participants,
                           &entity_info_list[0],
                           &fingerprint_list[0],
                           &group_id[0],
-                          &group_info)) {
+                          group_info)) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -366,6 +367,288 @@ bool group_setup_get_group_id(mpc_poc_query_t *query,
     return true;
 }
 
+bool index_to_pub_key(const mpc_poc_group_info_t *group_info, uint32_t index, uint8_t *pub_key) {
+  if (index >= group_info->participants_count) {
+    return false;
+  }
+
+  memcpy(pub_key, group_info->participants[index].pub_key, 33);
+  return true;
+}
+
+bool pub_key_to_index(const mpc_poc_group_info_t *group_info, const uint8_t *pub_key, uint32_t *index) {
+  for (int i = 0; i < group_info->participants_count; i++) {
+    if (memcmp(group_info->participants[i].pub_key, pub_key, 33) == 0) {
+      *index = i;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool group_setup_get_share_data(mpc_poc_query_t *query, 
+                                    mpc_poc_group_info_t *group_info, 
+                                    uint8_t *pub_key, 
+                                    uint8_t *priv_key,
+                                    bignum256 *secret_share) {
+  if (!mpc_get_query(query, MPC_POC_QUERY_GROUP_SETUP_TAG) ||
+      !check_which_request(query, MPC_POC_GROUP_SETUP_REQUEST_GET_SHARE_DATA_TAG)) {
+    return false;
+  }
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  mpc_poc_result_t result = init_mpc_result(MPC_POC_RESULT_GROUP_SETUP_TAG);
+
+  mpc_poc_group_setup_response_t response = MPC_POC_GROUP_SETUP_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_GROUP_SETUP_RESPONSE_GET_SHARE_DATA_TAG;
+
+  uint8_t coeff_count = group_info->threshold;
+  bignum256 *coeff = malloc(coeff_count * sizeof(bignum256));
+  uint8_t rand_coeff[32] = {0};
+
+  for (int i = 0; i < coeff_count; i++) {
+    random_generate(rand_coeff, 32);
+    bn_read_be(rand_coeff, &coeff[i]);
+  }
+
+  uint32_t my_index = 0;
+  if (!pub_key_to_index(group_info, pub_key, &my_index)) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  mpc_poc_share_data_t share_data = MPC_POC_SHARE_DATA_INIT_ZERO;
+  share_data.index = my_index;
+  share_data.data_count = group_info->total_participants - 1; 
+  int ind = 0;
+
+  for (int i = 0; i < group_info->total_participants; ++i) {
+    bignum256 x = {0};
+    bn_read_uint32(i, &x);
+    
+    if (i == my_index) {
+      evaluate_polynomial(curve, coeff, coeff_count, &x, secret_share);
+      continue;
+    }
+
+    mpc_poc_share_t share = MPC_POC_SHARE_INIT_ZERO;
+    share.index = i;
+
+    bignum256 fx = {0};
+
+    evaluate_polynomial(curve, coeff, coeff_count, &x, &fx);
+
+    uint8_t fx_bytes[32] = {0};
+    bn_write_be(&fx, fx_bytes);
+
+    curve_point *cp = malloc(sizeof(curve_point));
+    ecdsa_read_pubkey(curve, group_info->participants[i].pub_key, cp);
+
+    curve_point *sk = malloc(sizeof(curve_point));
+
+    bignum256 k;
+    bn_read_be(priv_key, &k);
+
+    point_multiply(curve, &k, cp, sk);
+
+    uint8_t sk_bytes[33] = {0};
+
+    sk_bytes[0] = 0x02 | (sk->y.val[0] & 0x01);
+    bn_write_be(&sk->x, sk_bytes + 1);
+
+    uint8_t sk_hash[32] = {0};
+    Hasher hasher;
+    hasher_Init(&hasher, HASHER_SHA2);
+    hasher_Update(&hasher, sk_bytes, 33);
+    hasher_Final(&hasher, sk_hash);
+
+    if (mpc_aes_encrypt(fx_bytes, 32, share.enc_share, sk_hash) != 0) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    share.original_length = 32;
+
+    share_data.data[ind] = share;
+    ind++;
+  }
+
+  // encode share data
+  uint8_t *share_data_bytes = malloc(SHARE_DATA_BUFFER_SIZE * sizeof(uint8_t));
+  size_t share_data_bytes_len = 0;
+
+  pb_ostream_t stream = pb_ostream_from_buffer(share_data_bytes, SHARE_DATA_BUFFER_SIZE);
+
+  if (!pb_encode(&stream, MPC_POC_SHARE_DATA_FIELDS, &share_data)) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  share_data_bytes_len = stream.bytes_written;
+
+  // sign share data
+  uint8_t signature[64] = {0};
+  if (mpc_sign_message(share_data_bytes, share_data_bytes_len, signature, priv_key) != 0) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  mpc_poc_signed_share_data_t signed_share_data = MPC_POC_SIGNED_SHARE_DATA_INIT_ZERO;
+  signed_share_data.has_share_data = true;
+  signed_share_data.share_data = share_data;
+  memcpy(signed_share_data.signature, signature, 64);
+
+  response.get_share_data.has_signed_share_data = true;
+  response.get_share_data.signed_share_data = signed_share_data;
+
+  result.group_setup = response;
+  mpc_send_result(&result);
+
+  free(coeff);
+
+  return true;
+}
+
+bool group_setup_get_group_public_key(mpc_poc_query_t *query, 
+                                    mpc_poc_group_info_t *group_info, 
+                                    uint8_t *pub_key, 
+                                    uint8_t *priv_key,
+                                    bignum256 *secret_share) {
+  if (!mpc_get_query(query, MPC_POC_QUERY_GROUP_SETUP_TAG) ||
+      !check_which_request(query, MPC_POC_GROUP_SETUP_REQUEST_GET_GROUP_PUBLIC_KEY_TAG)) {
+    return false;
+  }
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  mpc_poc_result_t result = init_mpc_result(MPC_POC_RESULT_GROUP_SETUP_TAG);
+
+  mpc_poc_group_setup_response_t response = MPC_POC_GROUP_SETUP_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_GROUP_SETUP_RESPONSE_GET_GROUP_PUBLIC_KEY_TAG;
+
+  //
+  if (query->group_setup.get_group_public_key.share_data_list_count != group_info->total_participants - 1) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  uint32_t my_index = 0;
+  if (!pub_key_to_index(group_info, pub_key, &my_index)) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  for (int i = 0; i < group_info->total_participants - 1; ++i) {
+    mpc_poc_signed_share_data_t signed_share_data = 
+      query->group_setup.get_group_public_key.share_data_list[i];
+
+    if (signed_share_data.has_share_data == false) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    mpc_poc_share_data_t share_data = signed_share_data.share_data;
+
+    uint8_t *share_data_bytes = malloc(SHARE_DATA_BUFFER_SIZE * sizeof(uint8_t));
+    size_t share_data_bytes_len = 0;
+
+    pb_ostream_t stream = pb_ostream_from_buffer(share_data_bytes, SHARE_DATA_BUFFER_SIZE);
+
+    if (!pb_encode(&stream, MPC_POC_SHARE_DATA_FIELDS, &share_data)) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    share_data_bytes_len = stream.bytes_written;
+
+    if (!mpc_verify_signature(share_data_bytes, share_data_bytes_len, signed_share_data.signature, pub_key)) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    if (share_data.data_count != group_info->total_participants - 1) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+
+    if (!index_to_pub_key(group_info, share_data.index, participant_pub_key)) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    mpc_poc_share_t my_share;
+    bool share_found = false;
+    
+    for (int j = 0; j < share_data.data_count; ++j) {
+      if (share_data.data[j].index == my_index) {
+        share_found = true;
+        my_share = share_data.data[j];
+        break;
+      }
+    } 
+
+    if (share_found == false) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    curve_point *cp = malloc(sizeof(curve_point));
+    ecdsa_read_pubkey(curve, participant_pub_key, cp);
+
+    curve_point *sk = malloc(sizeof(curve_point));
+
+    bignum256 k;
+    bn_read_be(priv_key, &k);
+
+    point_multiply(curve, &k, cp, sk);
+
+    uint8_t sk_bytes[33] = {0};
+
+    sk_bytes[0] = 0x02 | (sk->y.val[0] & 0x01);
+    bn_write_be(&sk->x, sk_bytes + 1);
+
+    uint8_t sk_hash[32] = {0};
+    Hasher hasher;
+    hasher_Init(&hasher, HASHER_SHA2);
+    hasher_Update(&hasher, sk_bytes, 33);
+    hasher_Final(&hasher, sk_hash);
+
+    uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
+
+    if (mpc_aes_decrypt(my_share.enc_share, 32, dec_share, sk_hash) != 0) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    bignum256 bn_share;
+    bn_read_be(dec_share, &bn_share);
+
+    bn_addmod(secret_share, &bn_share, &curve->order);
+  }
+  
+  //
+
+  result.group_setup = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
 void group_setup_flow(mpc_poc_query_t *query) {
   if (MPC_POC_GROUP_SETUP_REQUEST_INITIATE_TAG !=
       query->group_setup.which_request) {
@@ -388,12 +671,17 @@ void group_setup_flow(mpc_poc_query_t *query) {
     mpc_poc_entity_info_t *entity_info = malloc(sizeof(mpc_poc_entity_info_t));
     uint8_t *fingerprint = malloc(32 * sizeof(uint8_t));
 
-    if (!group_setup_get_entity_info(query, wallet_id, pub_key, &threshold, &total_participants, entity_info, fingerprint)) {
+    if (!group_setup_get_entity_info(query, wallet_id, pub_key, 
+                                     &threshold, &total_participants, 
+                                     entity_info, fingerprint)) {
       return;
     }
 
-    mpc_poc_entity_info_t *entity_info_list = malloc(total_participants * sizeof(mpc_poc_entity_info_t));
-    uint8_t (*fingerprint_list)[32] = malloc(total_participants * sizeof(*fingerprint_list));
+    mpc_poc_entity_info_t *entity_info_list = 
+                  malloc(total_participants * sizeof(mpc_poc_entity_info_t));
+
+    uint8_t (*fingerprint_list)[32] = 
+                  malloc(total_participants * sizeof(*fingerprint_list));
 
     if (!entity_info_list || !fingerprint_list) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -408,21 +696,35 @@ void group_setup_flow(mpc_poc_query_t *query) {
     free(fingerprint);
 
     free(wallet_id);
-    free(pub_key);
 
-
-    if (!group_setup_verify(query, threshold, total_participants, entity_info_list, fingerprint_list)) {
+    if (!group_setup_verify(query, threshold, total_participants, 
+                            entity_info_list, fingerprint_list)) {
       return;
     }
 
-    if (!group_setup_get_group_id(query, threshold, total_participants, entity_info_list, fingerprint_list, priv_key)) {
+    mpc_poc_group_info_t group_info = MPC_POC_GROUP_INFO_INIT_ZERO;
+
+    if (!group_setup_get_group_id(query, threshold, total_participants, 
+                                  entity_info_list, fingerprint_list, 
+                                  priv_key, &group_info)) {
       return;
     }
 
-    free(priv_key);
     free(entity_info_list);
     free(fingerprint_list);
+
+    bignum256 secret_share;
+
+    if (!group_setup_get_share_data(query, &group_info, pub_key, priv_key, &secret_share)) {
+      return;
+    }
+
+    if (!group_setup_get_group_public_key(query, &group_info, pub_key, priv_key, &secret_share)) {
+      return;
+    }
                                   
+    free(pub_key);
+    free(priv_key);
     stop_msg_display();
   }
 }

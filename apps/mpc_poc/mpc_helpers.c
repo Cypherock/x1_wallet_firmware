@@ -13,6 +13,7 @@
 #include "reconstruct_wallet_flow.h"
 
 #include <stdio.h>
+#include "aes/aes.h"
 
 int mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key) {
     uint8_t pby;
@@ -48,39 +49,6 @@ void bytes_to_hex(const uint8_t *data, size_t data_len, char *out, size_t out_le
         out[out_len - 1] = '\0';
     }
 }
-
-// int fetch_pub_key_from_flash(const uint8_t *wallet_id, uint8_t *pub_key) {
-//     uint8_t priv_key[32] = {0};
-
-//     if (fetch_priv_key_from_flash(wallet_id, priv_key) != 0) {
-//         memzero(priv_key, sizeof(priv_key));
-//         return 1;
-//     }
-
-//     pub_key33_from_priv_key(priv_key, pub_key);
-//     memzero(priv_key, sizeof(priv_key));
-    
-//     return 0;
-// }
-
-// int fetch_priv_key_from_flash(const uint8_t *wallet_id, uint8_t *priv_key) {
-//     const uint16_t PRIV_KEY_LEN = 32;
-//     uint16_t len_read = 0;
-//     Coin_Specific_Data_Struct coin_specific_data;
-
-//     coin_specific_data.coin_type = MPC_APP;
-//     memcpy(coin_specific_data.wallet_id, wallet_id, WALLET_ID_SIZE);
-//     coin_specific_data.coin_data = priv_key;
-
-//     if (get_coin_data(&coin_specific_data, PRIV_KEY_LEN, &len_read) != 0 || 
-//         len_read != PRIV_KEY_LEN) {
-
-//         memzero(priv_key, sizeof(priv_key));
-//         return 1;
-//     }
-
-//     return 0;
-// }
 
 void priv_key_from_seed(const uint8_t *seed, uint8_t *priv_key) {
     const size_t SEED_LEN = 64;
@@ -195,4 +163,77 @@ int initiate_application(const pb_byte_t* wallet_id, uint8_t* priv_key, uint8_t*
 
     status = true;
     return status;
+}
+
+void evaluate_polynomial(const ecdsa_curve* curve,
+                         const bignum256* coeff,
+                         const uint8_t coeff_count,
+                         const bignum256* x,
+                         bignum256* fx) {
+    assert(curve != NULL && coeff != NULL && x != NULL && fx != NULL);
+    bignum256 term = {0}, x_pow_i = {0};
+
+    bn_one(&x_pow_i);
+    bn_zero(fx);
+
+    for (int i = 0; i <= coeff_count; i++) {
+        // fx += ( ai * (x ^ (i+1)) )
+        bn_copy(&coeff[i], &term);
+        bn_multiply(&x_pow_i, &term, &curve->order);
+        bn_addmod(fx, &term, &curve->order);
+
+        // calculate next power of x (i.e. x_pow_i = x_pow_i * x)
+        bn_multiply(x, &x_pow_i, &curve->order);
+    }
+}
+
+void pad_data(uint8_t *padded_data, const uint8_t *data, int original_len, int padded_len) {
+    memcpy(padded_data, data, original_len);
+    memset(padded_data + original_len, 0, padded_len - original_len);
+}
+
+int mpc_aes_encrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
+    size_t padded_len = ((original_data_len + 15) / 16) * 16;
+    uint8_t *padded_data = malloc(padded_len);
+    pad_data(padded_data, data, original_data_len, padded_len);
+
+    uint8_t iv[16]; // AES block size is 16 bytes
+    memset(iv, 0, sizeof(iv));
+
+    aes_encrypt_ctx enc_ctx;
+
+    // Initialize encryption context with the key
+    if (aes_encrypt_key256(key, &enc_ctx) != EXIT_SUCCESS) {
+        free(padded_data);
+        return 1;
+    }
+
+    // Encrypt the data
+    return aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+}
+
+int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
+    size_t padded_len = ((original_data_len + 15) / 16) * 16;
+    uint8_t *dec_buf = malloc(padded_len);
+
+    uint8_t iv[16]; // AES block size is 16 bytes
+    memset(iv, 0, sizeof(iv));
+
+    aes_decrypt_ctx dec_ctx;
+
+    // Initialize decryption context with the key
+    if (aes_decrypt_key256(key, &dec_ctx) != EXIT_SUCCESS) {
+        return 1;
+    }
+
+    // Decrypt the data
+    if (aes_cbc_decrypt(data, dec_buf, padded_len, iv, &dec_ctx) != EXIT_SUCCESS) {
+        return 1;
+    }
+
+    // Copy the original data to the output buffer
+    memcpy(out, dec_buf, original_data_len);
+
+    free(dec_buf);
+    return 0;
 }

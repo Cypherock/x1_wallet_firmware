@@ -3,15 +3,17 @@
 
 #include <mpc_poc/core.pb.h>
 #include "ui_core_confirm.h"
+#include "ecdsa.h"
+#include "aes/aes.h"
+#include "bignum.h"
 
 #define ENTITY_INFO_BUFFER_SIZE 512
 #define GROUP_INFO_BUFFER_SIZE 2048
+#define SHARE_DATA_BUFFER_SIZE 2048
 
 int mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, const uint8_t *priv_key);
 bool mpc_verify_signature(const uint8_t *message, size_t message_len, const uint8_t *sig, const uint8_t *pub_key);
 void bytes_to_hex(const uint8_t *data, size_t data_len, char *out, size_t out_len);
-// int fetch_pub_key_from_flash(const uint8_t *wallet_id, uint8_t *pub_key);
-// int fetch_priv_key_from_flash(const uint8_t *wallet_id, uint8_t *priv_key);
 void priv_key_from_seed(const uint8_t *seed, uint8_t *priv_key);
 void pub_key33_from_priv_key(const uint8_t *priv_key, uint8_t *pub_key);
 
@@ -28,5 +30,13 @@ bool mpc_core_scroll_page(const char *title,
 int construct_mpc_key(const pb_byte_t* wallet_id, uint8_t* priv_key);
 
 int initiate_application(const pb_byte_t* wallet_id, uint8_t* priv_key, uint8_t* pub_key);
+void evaluate_polynomial(const ecdsa_curve* curve,
+                         const bignum256* coeff,
+                         const uint8_t coeff_count,
+                         const bignum256* x,
+                         bignum256* fx);
+
+int mpc_aes_encrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
+int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
 
 #endif
