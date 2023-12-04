@@ -368,18 +368,18 @@ bool group_setup_get_group_id(mpc_poc_query_t *query,
 }
 
 bool index_to_pub_key(const mpc_poc_group_info_t *group_info, uint32_t index, uint8_t *pub_key) {
-  if (index >= group_info->participants_count) {
+  if (index > group_info->participants_count) {
     return false;
   }
 
-  memcpy(pub_key, group_info->participants[index].pub_key, 33);
+  memcpy(pub_key, group_info->participants[index-1].pub_key, 33);
   return true;
 }
 
 bool pub_key_to_index(const mpc_poc_group_info_t *group_info, const uint8_t *pub_key, uint32_t *index) {
   for (int i = 0; i < group_info->participants_count; i++) {
     if (memcmp(group_info->participants[i].pub_key, pub_key, 33) == 0) {
-      *index = i;
+      *index = i+1;
       return true;
     }
   }
@@ -424,7 +424,7 @@ bool group_setup_get_share_data(mpc_poc_query_t *query,
   share_data.data_count = group_info->total_participants - 1; 
   int ind = 0;
 
-  for (int i = 0; i < group_info->total_participants; ++i) {
+  for (int i = 1; i <= group_info->total_participants; ++i) {
     bignum256 x = {0};
     bn_read_uint32(i, &x);
     
@@ -444,7 +444,7 @@ bool group_setup_get_share_data(mpc_poc_query_t *query,
     bn_write_be(&fx, fx_bytes);
 
     curve_point *cp = malloc(sizeof(curve_point));
-    ecdsa_read_pubkey(curve, group_info->participants[i].pub_key, cp);
+    ecdsa_read_pubkey(curve, group_info->participants[i-1].pub_key, cp);
 
     curve_point *sk = malloc(sizeof(curve_point));
 
@@ -533,6 +533,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
 
   //
   if (query->group_setup.get_individual_public_key.share_data_list_count != group_info->total_participants - 1) {
+    mpc_delay_scr_init("Invalid request", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -540,6 +541,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
 
   uint32_t my_index = 0;
   if (!pub_key_to_index(group_info, pub_key, &my_index)) {
+    mpc_delay_scr_init("Can't convert pub key to index", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -550,6 +552,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
       query->group_setup.get_individual_public_key.share_data_list[i];
 
     if (signed_share_data.has_share_data == false) {
+      mpc_delay_scr_init("Doesn't have the share data.", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -563,6 +566,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
     pb_ostream_t stream = pb_ostream_from_buffer(share_data_bytes, SHARE_DATA_BUFFER_SIZE);
 
     if (!pb_encode(&stream, MPC_POC_SHARE_DATA_FIELDS, &share_data)) {
+      mpc_delay_scr_init("Error while encoding", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -570,21 +574,23 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
 
     share_data_bytes_len = stream.bytes_written;
 
-    if (!mpc_verify_signature(share_data_bytes, share_data_bytes_len, signed_share_data.signature, pub_key)) {
+    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+    if (index_to_pub_key(group_info, share_data.index, participant_pub_key) == false) {
+      mpc_delay_scr_init("error while converting index to public key", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    if (!mpc_verify_signature(share_data_bytes, share_data_bytes_len, signed_share_data.signature, participant_pub_key)) {
+      mpc_delay_scr_init("signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
     }
 
     if (share_data.data_count != group_info->total_participants - 1) {
-      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_REQUEST);
-      return false;
-    }
-
-    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
-
-    if (!index_to_pub_key(group_info, share_data.index, participant_pub_key)) {
+      mpc_delay_scr_init("Invalid data count", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -602,6 +608,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
     } 
 
     if (share_found == false) {
+      mpc_delay_scr_init("my share is not present.", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -631,6 +638,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
     uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
 
     if (mpc_aes_decrypt(my_share.enc_share, 32, dec_share, sk_hash) != 0) {
+      mpc_delay_scr_init("error while decryption", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -662,8 +670,6 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
   memcpy(response.get_individual_public_key.signed_pub_key.signature, signature, 64);
   response.get_individual_public_key.signed_pub_key.index = my_index;
 
-  free(pub_key_point);
-
   result.group_setup = response;
   mpc_send_result(&result);
 
@@ -689,6 +695,7 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
 
   //
   if (query->group_setup.get_group_public_key.signed_pub_key_list_count != group_info->total_participants - 1) {
+    mpc_delay_scr_init("Invalid request", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -696,6 +703,7 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
 
   uint32_t my_index = 0;
   if (!pub_key_to_index(group_info, pub_key, &my_index)) {
+    mpc_delay_scr_init("Can't convert pub key to index", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -708,19 +716,25 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
   uint32_t xcords[group_info->threshold];
   int ind = 0;
 
-  for (int i = 0; i < group_info->threshold; ++i) {
+  for (int i = 0; i < query->group_setup.get_group_public_key.signed_pub_key_list_count; ++i) {
     mpc_poc_signed_public_key_t signed_pub_key = 
       query->group_setup.get_group_public_key.signed_pub_key_list[i];
 
     xcords[ind] = signed_pub_key.index;
 
+    char msg[50] = {0};
+    snprintf(msg, sizeof(msg), "my index: %ld, Participant %ld", my_index, signed_pub_key.index);
+    mpc_delay_scr_init(msg, DELAY_TIME);
+
     if (index_to_pub_key(group_info, signed_pub_key.index, participant_pub_key) == false) {
+      mpc_delay_scr_init("error while converting index to public key", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
     }
 
     if (mpc_verify_signature(signed_pub_key.pub_key, 33, signed_pub_key.signature, participant_pub_key) == false) {
+      mpc_delay_scr_init("signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -736,15 +750,23 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
   curve_point Qj;
   curve_point Qi_point;
 
-  if (ecdsa_read_pubkey(curve, Qi, &Qi_point) != 0) {
+  if (ecdsa_read_pubkey(curve, Qi, &Qi_point) == 0) {
+    mpc_delay_scr_init("error while reading Qi", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
+  if (ind != group_info->threshold) {
+    points[ind] = &Qi_point;
+    xcords[ind] = my_index;
+    ind++;
+  }
+
   lagarange_exp_interpolate(curve, points, xcords, my_index, group_info->threshold, &Qj);
 
   if (!point_is_equal(&Qj, &Qi_point)) {
+    mpc_delay_scr_init("Qi is not equal to Qj", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -769,6 +791,7 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
   bn_write_be(secret_share, fx_bytes);
 
   if (mpc_aes_encrypt(fx_bytes, 32, share.enc_share, priv_key) != 0) {
+    mpc_delay_scr_init("error while encryption", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -782,6 +805,7 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
   pb_ostream_t stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
 
   if (!pb_encode(&stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info)) {
+    mpc_delay_scr_init("error while encoding", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -791,6 +815,7 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
 
   uint8_t signature[64] = {0};
   if (mpc_sign_message(group_key_info_bytes, group_key_info_bytes_len, signature, priv_key) != 0) {
+    mpc_delay_scr_init("error while signing", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
