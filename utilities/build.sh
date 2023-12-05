@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source $(pwd)/python-venv/bin/activate
+
 usage () {
     echo -e "USAGE: $0 [-c] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
     echo -e "Parameters are optional and assumes 'main debug device' if not provided"
@@ -114,7 +116,7 @@ fi
 
 "${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
             -DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}"            \
-            -DSIGN_BINARY=ON                                    \
+            -DSIGN_BINARY=OFF                                   \
             -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"           \
             -DFIRMWARE_TYPE="${ACTIVE_TYPE}"                    \
             -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON             \
