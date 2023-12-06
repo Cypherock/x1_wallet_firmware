@@ -175,6 +175,8 @@ card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
     if (CARD_OPERATION_SUCCESS != error_code) {
       if (CARD_OPERATION_ABORT_OPERATION == error_code &&
           SW_RECORD_NOT_FOUND == response.card_info.status) {
+        // In case wallet is not found on card, consider it as a success case as
+        // wallet is already deleted or not created on the card.
         clear_core_error_screen();
       } else {
         break;

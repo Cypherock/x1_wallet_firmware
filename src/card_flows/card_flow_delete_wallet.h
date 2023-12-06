@@ -33,8 +33,8 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This functions executes a sequential card flow to delete wallet on
- * each of the 4 X1 cards
+ * @brief This functions executes a sequential card flow to fetch(for
+ * verification) and delete wallet on each of the 4 X1 cards
  *
  * @return true If the flow completed successfully and wallet share was written
  * and read back from all 4 cards
