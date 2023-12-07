@@ -257,7 +257,7 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
 
   snprintf(msg,
            sizeof(msg),
-           UI_TEXT_SEND_PROMPT,
+           UI_TEXT_SEND_TOKEN_PROMPT,
            SOLANA_LUNIT,
            SOLANA_NAME,
            wallet_name);
