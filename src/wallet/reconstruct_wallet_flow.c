@@ -145,7 +145,8 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
  * @return The function is expected to return a value of type
  * `reconstruct_state_e`.
  */
-static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
+static reconstruct_state_e reconstruct_wallet(const uint8_t *wallet_id,
+                                              const char *mnemo_out,
                                               reconstruct_state_e init_state,
                                               rejection_cb *reject_cb);
 
@@ -164,27 +165,10 @@ static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
  *
  * @return a uint8_t value, which represents the result of the operation.
  */
-uint8_t verify_wallet_and_generate_mnemonics(
-    const uint8_t *wallet_id,
-    uint8_t *secret,
-    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]);
+static bool generate_mnemonics_and_verify_wallet(uint8_t *secret,
+                                                 const uint8_t *wallet_id,
+                                                 const char *mnemo_out);
 
-/**
- * The function verifies a wallet ID and secret, generates a seed, and returns
- * true if the verification is successful.
- *
- * @param wallet_id A pointer to the wallet ID, which is a uint8_t array.
- * @param secret The `secret` parameter is a pointer to an array of `uint8_t`
- * data type. It is used as input to generate a mnemonic phrase.
- * @param seed_out The `seed_out` parameter is a pointer to a buffer where the
- * generated seed will be stored. The seed is a sequence of bytes that can be
- * used to derive cryptographic keys for a wallet.
- *
- * @return a boolean value.
- */
-bool verify_wallet_and_generate_seed(const uint8_t *wallet_id,
-                                     const uint8_t *secret,
-                                     uint8_t *seed_out);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -334,14 +318,38 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   return next_state;
 }
 
-static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
+static bool generate_mnemonics_and_verify_wallet(uint8_t *secret,
+                                                 const uint8_t *wallet_id,
+                                                 const char *mnemo_out) {
+  mnemo_out = mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+  ASSERT(mnemo_out != NULL);
+
+  if (true == verify_wallet_id(wallet_id, mnemo_out)) {
+    return true;
+  } else {
+    mark_core_error_screen(ui_text_wallet_verification_failed_in_reconstruction,
+                           false);
+    mnemo_out = NULL;
+    return false;
+  }
+}
+
+static reconstruct_state_e reconstruct_wallet(const uint8_t *wallet_id,
+                                              const char *mnemo_out,
                                               reconstruct_state_e init_state,
                                               rejection_cb *reject_cb) {
+  uint8_t secret[BLOCK_SIZE] = {0};
+
+  // Select wallet based on wallet_id
+  if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
+    return EXIT;
+  }
+
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = init_state;
   while (1) {
     reconstruct_state_e next_state =
-        reconstruct_wallet_handler(current_state, secret_out, reject_cb);
+        reconstruct_wallet_handler(current_state, secret, reject_cb);
 
     current_state = next_state;
     if (COMPLETED <= current_state) {
@@ -349,51 +357,13 @@ static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
     }
   }
 
+  if (COMPLETED == current_state) {
+    if (!generate_mnemonics_and_verify_wallet(secret, wallet_id, mnemo_out)) {
+      current_state = COMPLETED_WITH_ERRORS;
+    }
+  }
+
   return current_state;
-}
-
-uint8_t verify_wallet_and_generate_mnemonics(
-    const uint8_t *wallet_id,
-    uint8_t *secret,
-    char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS]
-                      [MAX_MNEMONIC_WORD_LENGTH]) {
-  uint8_t result = 0;
-  mnemonic_clear();
-  const char *mnemo =
-      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-  ASSERT(mnemo != NULL);
-  if (true == verify_wallet_id(wallet_id, mnemo)) {
-    uint16_t len =
-        strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
-    __single_to_multi_line(mnemo, len, mnemonic_list);
-    result = wallet.number_of_mnemonics;
-  } else {
-    mark_core_error_screen(ui_text_wallet_verification_failed_in_reconstruction,
-                           false);
-    result = 0;
-  }
-  mnemonic_clear();
-
-  return result;
-}
-
-bool verify_wallet_and_generate_seed(const uint8_t *wallet_id,
-                                     const uint8_t *secret,
-                                     uint8_t *seed_out) {
-  mnemonic_clear();
-
-  const char *mnemo =
-      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-  ASSERT(mnemo != NULL);
-
-  if (true == verify_wallet_id(wallet_id, mnemo)) {
-    mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed_out, NULL);
-    return true;
-  } else {
-    mark_core_error_screen(ui_text_wallet_verification_failed_in_reconstruction,
-                           false);
-    return false;
-  }
 }
 
 /*****************************************************************************
@@ -406,26 +376,25 @@ bool reconstruct_seed(const uint8_t *wallet_id,
     return false;
   }
 
-  uint8_t secret[BLOCK_SIZE] = {0};
+  const char *mnemo = NULL;
   uint8_t result = false;
 
   clear_wallet_data();
-
-  // Select wallet based on wallet_id
-  if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
-    return false;
-  }
+  mnemonic_clear();
 
   reconstruct_state_e flow =
-      reconstruct_secret(secret, PASSPHRASE_INPUT, reject_cb);
+      reconstruct_wallet(wallet_id, mnemo, PASSPHRASE_INPUT, reject_cb);
 
   if (COMPLETED == flow) {
-    result = verify_wallet_and_generate_seed(wallet_id, secret, seed_out);
+    mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed_out, NULL);
+    result = true;
   } else if (reject_cb && EARLY_EXIT == flow) {
     // Inform the host of any rejection
     reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
               ERROR_USER_REJECTION_CONFIRMATION);
   }
+
+  mnemonic_clear();
   clear_wallet_data();
   return result;
 }
@@ -437,21 +406,20 @@ uint8_t reconstruct_mnemonics(const uint8_t *wallet_id,
     return 0;
   }
 
-  uint8_t secret[BLOCK_SIZE] = {0};
+  const char *mnemo = NULL;
   uint8_t result = 0;
 
   clear_wallet_data();
+  mnemonic_clear();
 
-  // Select wallet based on wallet_id
-  if (!get_wallet_data_by_id(wallet_id, &wallet, NULL)) {
-    return result;
+  if (COMPLETED == reconstruct_wallet(wallet_id, mnemo, PIN_INPUT, NULL)) {
+    uint16_t len =
+        strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
+    __single_to_multi_line(mnemo, len, mnemonic_list);
+    result = wallet.number_of_mnemonics;
   }
 
-  if (COMPLETED == reconstruct_secret(secret, PIN_INPUT, NULL)) {
-    result =
-        verify_wallet_and_generate_mnemonics(wallet_id, secret, mnemonic_list);
-  }
-
+  mnemonic_clear();
   clear_wallet_data();
   return result;
 }
