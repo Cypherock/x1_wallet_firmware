@@ -130,39 +130,36 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
                                                       rejection_cb *reject_cb);
 
 /**
- * @brief The function takes a wallet ID, a pointer to an output buffer, and an
- * initial state, and runs a flow to reconstruct a secret based on the wallet
- * ID.
+ * @brief This function takes wallet ID, an initial state, and a rejection
+ * callback function as input, and reconstructs a wallet by running a series of
+ * handlers until it reaches a completion state, returning the generated
+ * mnemonics if successful.
  *
- * @param wallet_id A pointer to a uint8_t array that represents the wallet id.
- * @param secret_out A pointer to a uint8_t array where the reconstructed secret
- * will be stored.
- * @param init_state The initial state of the secret reconstruction flow. It
- * determines where the flow should start from.
+ * @param wallet_id A pointer to the wallet ID, which is an array of uint8_t
+ * (unsigned 8-bit integers).
+ * @param init_state The initial state of the wallet reconstruction process. It
+ * determines where the reconstruction process should start from.
  * @param reject_cb Callback to execute if there is any rejection during PIN or
  * passphrase input occurs, or a card abort error occurs
  *
- * @return The function is expected to return a value of type
- * `reconstruct_state_e`.
+ * @return a pointer to a constant character mnemonics string (const char *).
  */
 static const char *reconstruct_wallet(const uint8_t *wallet_id,
                                       reconstruct_state_e init_state,
                                       rejection_cb *reject_cb);
 
 /**
- * The function generates mnemonic words from a secret and verifies a wallet ID,
- * returning the number of mnemonic words if successful.
+ * @brief The function generates mnemonics from a secret and verifies a wallet
+ * ID using those mnemonics.
  *
- * @param wallet_id A pointer to a uint8_t array representing the wallet ID.
- * @param mnemonic_list A 2-dimensional array of characters that will store the
- * generated mnemonics. Each row of the array represents a single mnemonic word,
- * and the maximum number of mnemonic words is defined by
- * MAX_NUMBER_OF_MNEMONIC_WORDS. The maximum length of each mnemonic word is
- * defined by MAX_MNEMON
- * @param secret The `secret` parameter is a pointer to a uint8_t array that
- * contains the secret data used to generate the mnemonic words.
+ * @param secret A pointer to an array of uint8_t, which represents the secret
+ * data used to generate the mnemonics.
+ * @param wallet_id The `wallet_id` parameter is a pointer to a constant array
+ * of `uint8_t` (unsigned 8-bit integers). wallet_id is compared against the
+ * wallet id generated from mnemonics, if same wallet id is generated, then
+ * wallet is verified.
  *
- * @return a uint8_t value, which represents the result of the operation.
+ * @return a pointer to a constant character mnemonics string (const char *).
  */
 static const char *generate_mnemonics_and_verify_wallet(
     uint8_t *secret,
@@ -359,8 +356,8 @@ static const char *reconstruct_wallet(const uint8_t *wallet_id,
     mnemonics = generate_mnemonics_and_verify_wallet(secret, wallet_id);
     if (NULL == mnemonics) {
       if (reject_cb) {
-        reject_cb(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
-                  ERROR_WALLET_NOT_FOUND_ON_CARD);
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  ERROR_CARD_ERROR_SW_RECORD_NOT_FOUND);
       }
       current_state = COMPLETED_WITH_ERRORS;
     }
