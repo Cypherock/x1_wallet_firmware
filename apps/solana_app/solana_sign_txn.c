@@ -278,8 +278,8 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
 }
 
 STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
-  bool status = false;
   uint32_t size = 0;
+  solana_result_t response = init_solana_result(SOLANA_RESULT_SIGN_TXN_TAG);
   uint32_t total_size = solana_txn_context->init_info.transaction_size;
   const solana_sign_txn_data_t *txn_data = &query->sign_txn.txn_data;
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
@@ -287,10 +287,10 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
 
   // allocate memory for storing transaction
   solana_txn_context->transaction = (uint8_t *)malloc(total_size);
-  while (true) {
+  while (1) {
     if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) &&
         !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
-      return status;
+      return false;
     }
 
     if (!txn_data->has_chunk_payload ||
@@ -298,12 +298,19 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
         size + payload->chunk.size > total_size) {
       solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_DATA);
-      return status;
+      return false;
     }
 
     memcpy(&solana_txn_context->transaction[size], chunk->bytes, chunk->size);
     size += chunk->size;
-    send_response(SOLANA_SIGN_TXN_DATA_ACCEPTED_CHUNK_ACK_TAG);
+    // Send chunk ack to host
+    response.sign_txn.which_response =
+        SOLANA_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG;
+    response.sign_txn.data_accepted.has_chunk_ack = true;
+    response.sign_txn.data_accepted.chunk_ack.chunk_index =
+        payload->chunk_index;
+    solana_send_result(&response);
+
     if (0 == payload->remaining_size ||
         payload->chunk_index + 1 == payload->total_chunks) {
       break;
@@ -314,7 +321,7 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   if (size != total_size) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
-    return status;
+    return false;
   }
 
   // decode and verify the received transaction
@@ -324,15 +331,13 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
                     &solana_txn_context->transaction_info) ||
       SOL_OK !=
           solana_validate_unsigned_txn(&solana_txn_context->transaction_info)) {
-    return status;
+    return false;
   }
 
-  status = true;
-  return status;
+  return true;
 }
 
 STATIC bool solana_get_user_verification() {
-  bool status = false;
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
@@ -343,11 +348,11 @@ STATIC bool solana_get_user_verification() {
                   .recipient_account,
               SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
     solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    return status;
+    return false;
   }
 
   if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
-    return status;
+    return false;
   }
 
   // verify recipient amount
@@ -369,7 +374,7 @@ STATIC bool solana_get_user_verification() {
                                             amount_decimal_string,
                                             sizeof(amount_decimal_string))) {
     solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    return status;
+    return false;
   }
 
   snprintf(display,
@@ -378,36 +383,34 @@ STATIC bool solana_get_user_verification() {
            amount_decimal_string,
            SOLANA_LUNIT);
   if (!core_confirmation(display, solana_send_error)) {
-    return status;
+    return false;
   }
 
-  status = true;
-  return status;
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
 }
 
 STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
-  bool status = false;
   if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) &&
       !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_VERIFY_TAG)) {
-    return status;
+    return false;
   }
 
   if (!reconstruct_seed(solana_txn_context->init_info.wallet_id,
                         seed_out,
                         solana_send_error)) {
     memzero(seed_out, sizeof(seed_out));
-    return status;
+    return false;
   }
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_SEED_GENERATED);
   send_response(SOLANA_SIGN_TXN_RESPONSE_VERIFY_TAG);
-  status = true;
-  return status;
+  return true;
 }
 
 static bool send_signature(solana_query_t *query,
                            uint8_t *seed,
                            solana_sign_txn_signature_response_t *sig) {
-  bool status = false;
-  HDNode hdnode;
+  HDNode hdnode = {0};
   const size_t depth = solana_txn_context->init_info.derivation_path_count;
   const uint32_t *hd_path = solana_txn_context->init_info.derivation_path;
 
@@ -415,7 +418,7 @@ static bool send_signature(solana_query_t *query,
   result.sign_txn.which_response = SOLANA_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
   if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
-    return status;
+    return false;
   }
 
   // recieve latest blockhash
@@ -428,11 +431,11 @@ static bool send_signature(solana_query_t *query,
   int update_status = solana_update_blockhash_in_byte_array(
       solana_txn_context->transaction, solana_latest_blockhash);
   if (update_status != SOL_OK)
-    return status;
+    return false;
 
   // sign updated transaction
   if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode))
-    return status;
+    return false;
 
   ed25519_sign(solana_txn_context->transaction,
                solana_txn_context->init_info.transaction_size,
@@ -448,9 +451,7 @@ static bool send_signature(solana_query_t *query,
          sizeof(solana_sign_txn_signature_response_t));
 
   solana_send_result(&result);
-
-  status = true;
-  return status;
+  return true;
 }
 
 /*****************************************************************************
@@ -469,6 +470,8 @@ void solana_sign_transaction(solana_query_t *query) {
       fetch_seed(query, seed) && send_signature(query, seed, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
+
+  memzero(seed, sizeof(seed));
 
   if (NULL != solana_txn_context->transaction) {
     free(solana_txn_context->transaction);
