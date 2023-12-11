@@ -161,6 +161,7 @@ static bool verify_fetched_wallet(uint8_t xcor) {
 
 static bool _handle_retrieve_wallet_success(uint8_t xcor) {
   if (!verify_fetched_wallet(xcor)) {
+    LOG_ERROR("Verification failed xxx39");
     return false;
   }
 
@@ -224,6 +225,7 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
         remaining_cards = card_data.nfc_data.acceptable_cards;
         if (!_handle_retrieve_wallet_success(config->xcor)) {
           card_data.error_type = CARD_OPERATION_VERIFICATION_FAILED;
+          card_data.nfc_data.status = SW_RECORD_NOT_FOUND;
           mark_core_error_screen(
               ui_text_wallet_verification_failed_in_reconstruction, true);
           break;
