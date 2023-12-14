@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/mpc_poc/get_child_key.proto
+mpc_poc.GetChildPublicKeyRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.GetChildPublicKeyRequest.derivation_path type:FT_STATIC max_count:5 fixed_length: true
+mpc_poc.GetChildPublicKeyResponse.public_key type:FT_STATIC max_size:33 fixed_length:true
