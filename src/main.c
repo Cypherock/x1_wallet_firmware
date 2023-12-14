@@ -147,11 +147,6 @@ int main(void) {
   {
     logo_scr_init(2000);
     device_provision_check();
-
-    if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-        DEVICE_AUTHENTICATED == get_auth_state()) {
-      check_invalid_wallets();
-    }
   }
 
   while (1) {
