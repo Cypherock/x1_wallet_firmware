@@ -27,6 +27,16 @@
 #include "wallet.h"
 
 /**
+ * @brief Verify wallet id with wallet id generated from mnemonics
+ *
+ * @return true if all wallet id matches the wallet id generated from mnemonics,
+ * else false
+ *
+ */
+bool verify_wallet_id(const uint8_t wallet_id[WALLET_ID_SIZE],
+                      const char *mnemonics);
+
+/**
  * @brief Calculate wallet id from mnemonics
  * @details
  *

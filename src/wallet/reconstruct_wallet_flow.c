@@ -64,12 +64,14 @@
 #include "card_flow_reconstruct_wallet.h"
 #include "common_error.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
 #include "status_api.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_list.h"
+#include "wallet_utilities.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -112,17 +114,6 @@ typedef enum {
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief The function takes a 32 byte secret and generates the seed using a
- * mnemonic and passphrase.
- *
- * @param secret The `secret` parameter is a pointer to a uint8_t array
- * containing wallet secret data.
- * @param seed_out The `seed_out` parameter is a pointer to a uint8_t array
- * where the generated seed will be stored. The size of the array should be >=
- * 64bytes to accommodate the seed.
- */
-static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out);
 
 /**
  * @brief This function handles different states of the reconstruct wallet flow
@@ -139,24 +130,40 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
                                                       rejection_cb *reject_cb);
 
 /**
- * @brief The function takes a wallet ID, a pointer to an output buffer, and an
- * initial state, and runs a flow to reconstruct a secret based on the wallet
- * ID.
+ * @brief This function takes wallet ID, an initial state, and a rejection
+ * callback function as input, and reconstructs a wallet by running a series of
+ * handlers until it reaches a completion state, returning the generated
+ * mnemonics if successful.
  *
- * @param wallet_id A pointer to a uint8_t array that represents the wallet id.
- * @param secret_out A pointer to a uint8_t array where the reconstructed secret
- * will be stored.
- * @param init_state The initial state of the secret reconstruction flow. It
- * determines where the flow should start from.
+ * @param wallet_id A pointer to the wallet ID, which is an array of uint8_t
+ * (unsigned 8-bit integers).
+ * @param init_state The initial state of the wallet reconstruction process. It
+ * determines where the reconstruction process should start from.
  * @param reject_cb Callback to execute if there is any rejection during PIN or
  * passphrase input occurs, or a card abort error occurs
  *
- * @return The function is expected to return a value of type
- * `reconstruct_state_e`.
+ * @return a pointer to a constant character mnemonics string (const char *).
  */
-static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
-                                              reconstruct_state_e init_state,
-                                              rejection_cb *reject_cb);
+static const char *reconstruct_wallet(const uint8_t *wallet_id,
+                                      reconstruct_state_e init_state,
+                                      rejection_cb *reject_cb);
+
+/**
+ * @brief The function generates mnemonics from a secret and verifies a wallet
+ * ID using those mnemonics.
+ *
+ * @param secret A pointer to an array of uint8_t, which represents the secret
+ * data used to generate the mnemonics.
+ * @param wallet_id A pointer to an array uint8_t with wallet id, wallet_id  is
+ * compared against the wallet id generated from mnemonics, if same wallet id is
+ * generated, then wallet is verified.
+ *
+ * @return a pointer to a constant character mnemonics string (const char *).
+ */
+static const char *generate_mnemonics_and_verify_wallet(
+    const uint8_t *secret,
+    const uint8_t *wallet_id);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -168,15 +175,6 @@ static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void get_seed_from_secret(uint8_t *secret, uint8_t *seed_out) {
-  mnemonic_clear();
-  const char *mnemo =
-      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-
-  ASSERT(mnemo != NULL);
-  mnemonic_to_seed(mnemo, wallet_credential_data.passphrase, seed_out, NULL);
-  mnemonic_clear();
-}
 
 static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
                                                       uint8_t *secret_out,
@@ -315,14 +313,37 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
   return next_state;
 }
 
-static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
-                                              reconstruct_state_e init_state,
-                                              rejection_cb *reject_cb) {
+static const char *generate_mnemonics_and_verify_wallet(
+    const uint8_t *secret,
+    const uint8_t *wallet_id) {
+  const char *mnemonics =
+      mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+  ASSERT(mnemonics != NULL);
+
+  if (!verify_wallet_id(wallet_id, mnemonics)) {
+    mark_core_error_screen(ui_text_wallet_verification_failed_in_reconstruction,
+                           false);
+    mnemonics = NULL;
+  }
+  return mnemonics;
+}
+
+static const char *reconstruct_wallet(const uint8_t *wallet_id,
+                                      reconstruct_state_e init_state,
+                                      rejection_cb *reject_cb) {
+  uint8_t secret[BLOCK_SIZE] = {0};
+  const char *mnemonics = NULL;
+
+  // Select wallet based on wallet_id
+  if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
+    return NULL;
+  }
+
   // Run flow till it reaches a completion state
   reconstruct_state_e current_state = init_state;
   while (1) {
     reconstruct_state_e next_state =
-        reconstruct_wallet_handler(current_state, secret_out, reject_cb);
+        reconstruct_wallet_handler(current_state, secret, reject_cb);
 
     current_state = next_state;
     if (COMPLETED <= current_state) {
@@ -330,7 +351,23 @@ static reconstruct_state_e reconstruct_secret(uint8_t *secret_out,
     }
   }
 
-  return current_state;
+  if (COMPLETED == current_state) {
+    mnemonics = generate_mnemonics_and_verify_wallet(secret, wallet_id);
+    if (NULL == mnemonics) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  ERROR_CARD_ERROR_SW_RECORD_NOT_FOUND);
+      }
+      current_state = COMPLETED_WITH_ERRORS;
+    }
+  } else if (reject_cb && EARLY_EXIT == current_state) {
+    // Inform the host of any rejection
+    reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+              ERROR_USER_REJECTION_CONFIRMATION);
+  }
+
+  memzero(secret, sizeof(secret));
+  return mnemonics;
 }
 
 /*****************************************************************************
@@ -343,27 +380,21 @@ bool reconstruct_seed(const uint8_t *wallet_id,
     return false;
   }
 
-  uint8_t secret[BLOCK_SIZE] = {0};
   uint8_t result = false;
 
   clear_wallet_data();
+  mnemonic_clear();
 
-  // Select wallet based on wallet_id
-  if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
-    return false;
-  }
+  const char *mnemonics =
+      reconstruct_wallet(wallet_id, PASSPHRASE_INPUT, reject_cb);
 
-  reconstruct_state_e flow =
-      reconstruct_secret(secret, PASSPHRASE_INPUT, reject_cb);
-
-  if (COMPLETED == flow) {
-    get_seed_from_secret(secret, seed_out);
+  if (NULL != mnemonics) {
+    mnemonic_to_seed(
+        mnemonics, wallet_credential_data.passphrase, seed_out, NULL);
     result = true;
-  } else if (reject_cb && EARLY_EXIT == flow) {
-    // Inform the host of any rejection
-    reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-              ERROR_USER_REJECTION_CONFIRMATION);
   }
+
+  mnemonic_clear();
   clear_wallet_data();
   return result;
 }
@@ -375,30 +406,21 @@ uint8_t reconstruct_mnemonics(const uint8_t *wallet_id,
     return 0;
   }
 
-  uint8_t secret[BLOCK_SIZE] = {0};
   uint8_t result = 0;
 
   clear_wallet_data();
+  mnemonic_clear();
 
-  // Select wallet based on wallet_id
-  if (!get_wallet_data_by_id(wallet_id, &wallet, NULL)) {
-    return result;
-  }
+  const char *mnemonics = reconstruct_wallet(wallet_id, PIN_INPUT, NULL);
 
-  if (COMPLETED == reconstruct_secret(secret, PIN_INPUT, NULL)) {
-    mnemonic_clear();
-    const char *mnemo =
-        mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
-    ASSERT(mnemo != NULL);
-
-    uint16_t len =
-        strnlen(mnemo, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
-    __single_to_multi_line(mnemo, len, mnemonic_list);
-    mnemonic_clear();
-
+  if (NULL != mnemonics) {
+    uint16_t len = strnlen(
+        mnemonics, MAX_NUMBER_OF_MNEMONIC_WORDS * MAX_MNEMONIC_WORD_LENGTH);
+    __single_to_multi_line(mnemonics, len, mnemonic_list);
     result = wallet.number_of_mnemonics;
   }
 
+  mnemonic_clear();
   clear_wallet_data();
   return result;
 }

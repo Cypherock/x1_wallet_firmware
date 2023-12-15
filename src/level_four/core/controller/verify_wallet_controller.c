@@ -103,7 +103,7 @@ void verify_wallet_controller() {
       break;
 
     case VERIFY_WALLET_DELETE:
-      mark_error_screen(ui_text_wallet_verification_failed);
+      mark_error_screen(ui_text_wallet_verification_failed_in_creation);
       flow_level.level_three = 1;
       break;
 
