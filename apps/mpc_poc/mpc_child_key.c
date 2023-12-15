@@ -167,5 +167,9 @@ void get_child_key_flow(mpc_poc_query_t *query) {
     if (!get_child_key_process(query, pub_key)) {
       return;
     }
+
+    free(priv_key);
+    free(pub_key);
+    free(wallet_id);
   }
 }
