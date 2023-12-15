@@ -154,15 +154,14 @@ static const char *reconstruct_wallet(const uint8_t *wallet_id,
  *
  * @param secret A pointer to an array of uint8_t, which represents the secret
  * data used to generate the mnemonics.
- * @param wallet_id The `wallet_id` parameter is a pointer to a constant array
- * of `uint8_t` (unsigned 8-bit integers). wallet_id is compared against the
- * wallet id generated from mnemonics, if same wallet id is generated, then
- * wallet is verified.
+ * @param wallet_id A pointer to an array uint8_t with wallet id, wallet_id  is
+ * compared against the wallet id generated from mnemonics, if same wallet id is
+ * generated, then wallet is verified.
  *
  * @return a pointer to a constant character mnemonics string (const char *).
  */
 static const char *generate_mnemonics_and_verify_wallet(
-    uint8_t *secret,
+    const uint8_t *secret,
     const uint8_t *wallet_id);
 
 /*****************************************************************************
@@ -315,7 +314,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
 }
 
 static const char *generate_mnemonics_and_verify_wallet(
-    uint8_t *secret,
+    const uint8_t *secret,
     const uint8_t *wallet_id) {
   const char *mnemonics =
       mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
@@ -367,6 +366,7 @@ static const char *reconstruct_wallet(const uint8_t *wallet_id,
               ERROR_USER_REJECTION_CONFIRMATION);
   }
 
+  memzero(secret, sizeof(secret));
   return mnemonics;
 }
 
