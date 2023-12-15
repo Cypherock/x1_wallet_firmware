@@ -63,4 +63,8 @@ void lagarange_exp_interpolate(const ecdsa_curve* curve,
                                const uint32_t interpolate_point,
                                const uint32_t threshold,
                                curve_point* result);
+
+bool index_to_pub_key(const mpc_poc_group_info_t *group_info, uint32_t index, uint8_t *pub_key);
+bool pub_key_to_index(const mpc_poc_group_info_t *group_info, const uint8_t *pub_key, uint32_t *index);
+
 #endif

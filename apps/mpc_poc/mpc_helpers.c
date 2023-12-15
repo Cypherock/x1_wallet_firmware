@@ -319,3 +319,23 @@ void lagarange_exp_interpolate(const ecdsa_curve* curve,
         point_add(curve, &term, result);
     }
 }
+
+bool index_to_pub_key(const mpc_poc_group_info_t *group_info, uint32_t index, uint8_t *pub_key) {
+  if (index > group_info->participants_count) {
+    return false;
+  }
+
+  memcpy(pub_key, group_info->participants[index-1].pub_key, 33);
+  return true;
+}
+
+bool pub_key_to_index(const mpc_poc_group_info_t *group_info, const uint8_t *pub_key, uint32_t *index) {
+  for (int i = 0; i < group_info->participants_count; i++) {
+    if (memcmp(group_info->participants[i].pub_key, pub_key, 33) == 0) {
+      *index = i+1;
+      return true;
+    }
+  }
+
+  return false;
+}
