@@ -267,43 +267,6 @@ int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr,
                                     size_t size);
 
 /**
- * @brief Converts byte array represented transaction metadata to struct
- * txn_metadata.
- * @details
- *
- * @param [in] txn_metadata_byte_array  Transaction metadata byte array to be
- * converted.
- * @param [in] size                     Size of the byte array
- * txn_metadata_byte_array
- * @param [out] txn_metadata_ptr        Pointer to the txn_metadata instance to
- * store the field values.
- *
- * @return Offset used in conversion
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array,
-                                   uint32_t size,
-                                   txn_metadata *txn_metadata_ptr);
-
-/**
- * @brief Deserialize byte array to receive transaction data
- *
- * @param [out] txn_data_ptr            Pointer to the receive transaction data
- * instance
- * @param [in] data_byte_array          Byte array to be deserialized
- * @param [in] size                     Size of the byte array data_byte_array
- * @return int32_t Offset used in conversion
- */
-int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
-                                    const uint8_t *data_byte_array,
-                                    const uint32_t size);
-
-/**
  * @brief Generates the node from provided seed at the requested path
  * @details The function performs hardened derivation of the nodes at the
  * specified derivation path.
@@ -324,31 +287,6 @@ bool derive_hdnode_from_path(const uint32_t *path,
                              const char *curve,
                              const uint8_t *seed,
                              HDNode *hdnode);
-
-/**
- * @brief Get the address from HDNode.
- * @details
- *
- * @param [in] txn_metadata_ptr     Pointer to txn_metadata instance.
- * @param [in] index                Input index.
- * @param [in] mnemonic             char array storing mnemonics.
- * @param [in] passphrase           char array storing passphrase.
- * @param [out] hdnode              Pointer to HDNode instance used to derive
- * the address.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void get_address_node(const txn_metadata *txn_metadata_ptr,
-                      const int16_t index,
-                      const char *mnemonic,
-                      const char *passphrase,
-                      HDNode *hdnode);
 
 void bech32_addr_encode(char *output,
                         char *hrp,
