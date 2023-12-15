@@ -6,6 +6,7 @@
 #include "bip32.h"
 #include "coin_specific_data.h"
 
+#include "pb_encode.h"
 #include "ui_delay.h"
 #include "ui_events_priv.h"
 #include "ui_core_confirm.h"
@@ -24,6 +25,42 @@ int mpc_sign_message(const uint8_t *message, size_t message_len, uint8_t *sig, c
 bool mpc_verify_signature(const uint8_t *message, size_t message_len, const uint8_t *sig, const uint8_t *pub_key) {
     const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
     return (ecdsa_verify(curve, HASHER_SHA2D, pub_key, sig, message, message_len) == 0);
+}
+
+bool mpc_sign_struct(const void *src_struct, size_t buffer_size,
+                    const pb_msgdesc_t *fields, uint8_t *sig, 
+                    const uint8_t *priv_key) {
+
+  uint8_t *struct_bytes = malloc(buffer_size * sizeof(uint8_t));
+  size_t struct_bytes_len = 0;
+
+  pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
+
+  if (!pb_encode(&stream, fields, &src_struct)) {
+    return false;
+  }
+
+  struct_bytes_len = stream.bytes_written;
+
+  return (mpc_sign_message(struct_bytes, struct_bytes_len, sig, priv_key) == 0);
+}
+
+bool mpc_verify_struct_sig(const void *src_struct, size_t buffer_size, 
+                          const pb_msgdesc_t *fields, const uint8_t *sig, 
+                          const uint8_t *pub_key) {
+
+    uint8_t *struct_bytes = malloc(buffer_size * sizeof(uint8_t));
+    size_t struct_bytes_len = 0;
+
+    pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
+
+    if (!pb_encode(&stream, fields, &src_struct)) {
+      return false;
+    }
+
+    struct_bytes_len = stream.bytes_written;
+
+    return (mpc_verify_signature(struct_bytes, struct_bytes_len, sig, pub_key));
 }
 
 void bytes_to_hex(const uint8_t *data, size_t data_len, char *out, size_t out_len) {

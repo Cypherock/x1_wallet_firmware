@@ -476,23 +476,8 @@ bool group_setup_get_share_data(mpc_poc_query_t *query,
     ind++;
   }
 
-  // encode share data
-  uint8_t *share_data_bytes = malloc(SHARE_DATA_BUFFER_SIZE * sizeof(uint8_t));
-  size_t share_data_bytes_len = 0;
-
-  pb_ostream_t stream = pb_ostream_from_buffer(share_data_bytes, SHARE_DATA_BUFFER_SIZE);
-
-  if (!pb_encode(&stream, MPC_POC_SHARE_DATA_FIELDS, &share_data)) {
-    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_REQUEST);
-    return false;
-  }
-
-  share_data_bytes_len = stream.bytes_written;
-
-  // sign share data
   uint8_t signature[64] = {0};
-  if (mpc_sign_message(share_data_bytes, share_data_bytes_len, signature, priv_key) != 0) {
+  if (!mpc_sign_struct(&share_data, SHARE_DATA_BUFFER_SIZE, MPC_POC_SHARE_DATA_FIELDS, signature, priv_key)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -557,19 +542,6 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
 
     mpc_poc_share_data_t share_data = signed_share_data.share_data;
 
-    uint8_t *share_data_bytes = malloc(SHARE_DATA_BUFFER_SIZE * sizeof(uint8_t));
-    size_t share_data_bytes_len = 0;
-
-    pb_ostream_t stream = pb_ostream_from_buffer(share_data_bytes, SHARE_DATA_BUFFER_SIZE);
-
-    if (!pb_encode(&stream, MPC_POC_SHARE_DATA_FIELDS, &share_data)) {
-      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_REQUEST);
-      return false;
-    }
-
-    share_data_bytes_len = stream.bytes_written;
-
     uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
     if (index_to_pub_key(group_info, share_data.index, participant_pub_key) == false) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -577,7 +549,8 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
       return false;
     }
 
-    if (!mpc_verify_signature(share_data_bytes, share_data_bytes_len, signed_share_data.signature, participant_pub_key)) {
+    if (!mpc_verify_struct_sig(&share_data, SHARE_DATA_BUFFER_SIZE, MPC_POC_SHARE_DATA_FIELDS, 
+                               signed_share_data.signature, participant_pub_key)) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
@@ -778,20 +751,8 @@ bool group_setup_get_group_public_key(mpc_poc_query_t *query,
   group_key_info.has_group_share = true;
   group_key_info.group_share = share;
 
-  uint8_t *group_key_info_bytes = malloc(GROUP_KEY_INFO_BUFFER_SIZE * sizeof(uint8_t));
-
-  pb_ostream_t stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
-
-  if (!pb_encode(&stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info)) {
-    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_REQUEST);
-    return false;
-  }
-
-  size_t group_key_info_bytes_len = stream.bytes_written;
-
   uint8_t signature[64] = {0};
-  if (mpc_sign_message(group_key_info_bytes, group_key_info_bytes_len, signature, priv_key) != 0) {
+  if (!mpc_sign_struct(&group_key_info, GROUP_KEY_INFO_BUFFER_SIZE, MPC_POC_GROUP_KEY_INFO_FIELDS, signature, priv_key)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
