@@ -127,6 +127,10 @@ void solana_main(usb_event_t usb_evt, const void *app_config) {
       solana_get_pub_keys(&query);
       break;
     }
+    case SOLANA_QUERY_SIGN_TXN_TAG: {
+      solana_sign_transaction(&query);
+      break;
+    }
 
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
