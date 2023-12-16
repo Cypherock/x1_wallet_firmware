@@ -176,13 +176,6 @@ void receive_transaction_controller_eth() {
       hdnode_private_ckd(
           &node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index));
 
-      uint32_t version;
-      uint8_t address_version;
-      get_version(BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
-                  BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
-                  &address_version,
-                  &version);
-
       hdnode_fill_public_key(&node);
 
       hdnode_public_ckd(
