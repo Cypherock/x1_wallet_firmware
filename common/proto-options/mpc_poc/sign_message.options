@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/mpc_poc/sign_message.options
+mpc_poc.ApproveMessageRequest.msg type:FT_STATIC max_size:256 fixed_length:false
+mpc_poc.ApproveMessageRequest.group_id type:FT_STATIC max_size:32 fixed_length:true
+# mpc_poc.PostGroupInfoRequest.group_info_sig type:FT_STATIC max_size:64 fixed_length:true
+# mpc_poc.PostGroupInfoRequest.group_key_info_sig type:FT_STATIC max_size:64 fixed_length:true
