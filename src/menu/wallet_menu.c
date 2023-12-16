@@ -245,7 +245,7 @@ static void wallet_menu_handler(engine_ctx_t *ctx,
           // If post verification, the wallet state was updated to INVALID,
           // proceed to delete that wallet
           if (INVALID_WALLET == wallet_ptr->state) {
-            message_scr_init(ui_text_wallet_verification_failed);
+            message_scr_init(ui_text_wallet_verification_failed_in_creation);
             if (0 != get_state_on_confirm_scr(0, 1, 2)) {
               break;
             }

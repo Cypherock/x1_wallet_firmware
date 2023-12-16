@@ -62,6 +62,7 @@
 #include "core_flow_init.h"
 
 #include "app_registry.h"
+#include "application_startup.h"
 #include "arbitrum_app.h"
 #include "avalanche_app.h"
 #include "bsc_app.h"
@@ -124,22 +125,27 @@ engine_ctx_t core_step_engine_ctx = {
 engine_ctx_t *get_core_flow_ctx(void) {
   engine_reset_flow(&core_step_engine_ctx);
 
-  // Skip onbaording for infield devices with pairing and/or wallets count is
-  // greater than zero
-  if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-    onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-  }
-
   /// Check if onboarding is complete or not
   if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-    return &core_step_engine_ctx;
+    // Skip onbaording for infield devices with pairing and/or wallets count is
+    // greater than zero
+    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
+      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
+    } else {
+      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
+      return &core_step_engine_ctx;
+    }
   }
 
   // Check if device needs to go to restricted state or not
   if (DEVICE_AUTHENTICATED != get_auth_state()) {
     engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
     return &core_step_engine_ctx;
+  }
+
+  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
+      DEVICE_AUTHENTICATED == get_auth_state()) {
+    check_invalid_wallets();
   }
 
   // Finally enable all flows from the user

@@ -198,7 +198,8 @@ extern const char *ui_text_tap_another_card;
 extern const char *ui_text_wallet_doesnt_exists_on_this_card;
 extern const char *ui_text_wrong_wallet_is_now_locked;
 extern const char *ui_text_wallet_already_unlocked;
-extern const char *ui_text_wallet_verification_failed;
+extern const char *ui_text_wallet_verification_failed_in_creation;
+extern const char *ui_text_wallet_verification_failed_in_reconstruction;
 
 extern const char *ui_text_invalid_card_tap_card[];
 extern const char *ui_text_device_authenticating[];
