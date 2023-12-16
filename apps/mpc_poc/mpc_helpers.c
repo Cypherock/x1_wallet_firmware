@@ -36,7 +36,7 @@ bool mpc_sign_struct(const void *src_struct, size_t buffer_size,
 
   pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
 
-  if (!pb_encode(&stream, fields, &src_struct)) {
+  if (!pb_encode(&stream, fields, src_struct)) {
     return false;
   }
 
@@ -54,7 +54,7 @@ bool mpc_verify_struct_sig(const void *src_struct, size_t buffer_size,
 
     pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
 
-    if (!pb_encode(&stream, fields, &src_struct)) {
+    if (!pb_encode(&stream, fields, src_struct)) {
       return false;
     }
 
