@@ -7,12 +7,15 @@
 #include "mpc_context.h"
 
 bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info, 
+                                    uint32_t *participants_indices,
+                                    size_t participants_len,
                                     uint8_t *pub_key,
                                     bignum256 *secret_share,
                                     uint8_t *priv_key,
                                     mpc_poc_signed_share_data_t *signed_share_data);
 
 bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
+                                   size_t participants_len,
                                    uint8_t *pub_key,
                                    uint8_t *priv_key,
                                    bignum256 *secret_share,

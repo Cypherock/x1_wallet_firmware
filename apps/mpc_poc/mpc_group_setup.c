@@ -384,7 +384,15 @@ bool group_setup_get_share_data(mpc_poc_query_t *query,
   response.which_response = MPC_POC_GROUP_SETUP_RESPONSE_GET_SHARE_DATA_TAG;
 
   mpc_poc_signed_share_data_t signed_share_data = MPC_POC_SIGNED_SHARE_DATA_INIT_ZERO;
-  if (!dkg_generate_signed_share_data(group_info, pub_key, secret_share, priv_key, &signed_share_data)) {
+
+  uint32_t participant_indices[group_info->total_participants];
+  for (int i = 1; i <= group_info->total_participants; ++i) {
+    participant_indices[i-1] = i;
+  }
+
+  if (!dkg_generate_signed_share_data(group_info, participant_indices, 
+                                      group_info->total_participants, pub_key, 
+                                      secret_share, priv_key, &signed_share_data)) {
     return false;
   }
 
@@ -416,7 +424,7 @@ bool group_setup_get_individual_public_key(mpc_poc_query_t *query,
   uint8_t signature[64] = {0};
   uint32_t my_index = 0;
 
-  if (!dkg_get_individual_public_key(group_info, pub_key, priv_key, secret_share, 
+  if (!dkg_get_individual_public_key(group_info, group_info->total_participants - 1, pub_key, priv_key, secret_share, 
                                      query->group_setup.get_individual_public_key.share_data_list, 
                                      query->group_setup.get_individual_public_key.share_data_list_count, 
                                      Qi, signature, &my_index)) {

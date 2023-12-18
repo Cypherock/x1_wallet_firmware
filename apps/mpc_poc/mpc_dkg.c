@@ -8,6 +8,8 @@
 #include "ui_delay.h"
 
 bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info, 
+                                    uint32_t *participants_indices,
+                                    size_t participants_len,
                                     uint8_t *pub_key,
                                     bignum256 *secret_share,
                                     uint8_t *priv_key,
@@ -25,6 +27,7 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
     bn_read_be(rand_coeff, &coeff[i]);
   }
 
+  // get my sequence index in the group
   uint32_t my_index = 0;
   if (!pub_key_to_index(group_info, pub_key, &my_index)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -39,7 +42,9 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
   share_data.data_count = group_info->total_participants - 1; 
   int ind = 0;
 
-  for (int i = 1; i <= group_info->total_participants; ++i) {
+  for (int _ = 0; _ < participants_len; ++_) {
+    int i = participants_indices[_];
+
     bignum256 x = {0};
     bn_read_uint32(i, &x);
     
@@ -111,6 +116,7 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
 
 
 bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
+                                   size_t participants_len,
                                    uint8_t *pub_key,
                                    uint8_t *priv_key,
                                    bignum256 *secret_share,
@@ -122,7 +128,7 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
-  if (share_data_list_count != group_info->total_participants - 1) {
+  if (share_data_list_count != participants_len) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -134,8 +140,8 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
     return false;
   }
 
-  for (int i = 0; i < group_info->total_participants - 1; ++i) {
-    mpc_poc_signed_share_data_t signed_share_data = share_data_list[i];
+  for (int _ = 0; _ < participants_len; ++_) {
+    mpc_poc_signed_share_data_t signed_share_data = share_data_list[_];
 
     if (signed_share_data.has_share_data == false) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -250,7 +256,7 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
-  if (signed_pub_key_list_count != group_info->total_participants - 1) {
+  if (signed_pub_key_list_count < group_info->threshold - 1) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -269,8 +275,12 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   uint32_t xcords[group_info->threshold];
   int ind = 0;
 
-  for (int i = 0; i < signed_pub_key_list_count; ++i) {
-    mpc_poc_signed_public_key_t signed_pub_key = signed_pub_key_list[i];
+  for (int _ = 0; _ < signed_pub_key_list_count; ++_) {
+    if (ind == group_info->threshold) {
+        break;
+    }
+
+    mpc_poc_signed_public_key_t signed_pub_key = signed_pub_key_list[_];
 
     xcords[ind] = signed_pub_key.index;
 
@@ -295,13 +305,14 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     ind++;
   }
 
+  free(participant_pub_key);
+
   curve_point Qj;
   curve_point Qi_point;
 
   if (ecdsa_read_pubkey(curve, Qi, &Qi_point) == 0) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(participant_pub_key);
     return false;
   }
 
@@ -311,12 +322,17 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     ind++;
   }
 
+  if (ind != group_info->threshold) {
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
   lagarange_exp_interpolate(curve, points, xcords, my_index, group_info->threshold, &Qj);
 
   if (!point_is_equal(&Qj, &Qi_point)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(participant_pub_key);
     return false;
   }
 
@@ -340,7 +356,6 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   if (mpc_aes_encrypt(fx_bytes, 32, share.enc_share, priv_key) != 0) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(participant_pub_key);
     free(group_pub_key);
     return false;
   }
@@ -351,12 +366,10 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   if (!mpc_sign_struct(group_key_info, GROUP_KEY_INFO_BUFFER_SIZE, MPC_POC_GROUP_KEY_INFO_FIELDS, signature, priv_key)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(participant_pub_key);
     free(group_pub_key);
     return false;
   }
 
-  free(participant_pub_key);
   free(group_pub_key);
 
   return true;
