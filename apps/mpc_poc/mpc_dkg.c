@@ -173,7 +173,7 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
       return false;
     }
 
-    if (share_data.data_count != group_info->total_participants - 1) {
+    if (share_data.data_count != participants_len) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;

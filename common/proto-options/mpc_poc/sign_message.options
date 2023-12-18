@@ -3,3 +3,7 @@ mpc_poc.ApproveMessageRequest.msg type:FT_STATIC max_size:256 fixed_length:false
 mpc_poc.ApproveMessageRequest.group_id type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.PostGroupInfoRequest.group_info_sig type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.PostGroupInfoRequest.group_key_info_sig type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.PostSequenceIndicesRequest.sequence_indices type:FT_STATIC max_count:5 fixed_length:true
+mpc_poc.GetQIRequest.share_data_list type:FT_STATIC max_count:4 fixed_length:true
+mpc_poc.GetGroupKeyRequest.signed_pub_key_list type:FT_STATIC max_count:4 fixed_length: true
+mpc_poc.GetGroupKeyResponse.signature type:FT_STATIC max_size:64 fixed_length:true

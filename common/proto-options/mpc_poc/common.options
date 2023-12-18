@@ -11,3 +11,5 @@ mpc_poc.Share.enc_share type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.ShareData.data type:FT_STATIC max_count:4 fixed_length:true 
 mpc_poc.SignedShareData.signature type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.GroupKeyInfo.group_pub_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.SignedPublicKey.pub_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.SignedPublicKey.signature type:FT_STATIC max_size:64 fixed_length:true
