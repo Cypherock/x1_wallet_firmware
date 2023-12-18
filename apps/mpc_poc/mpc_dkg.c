@@ -8,6 +8,7 @@
 #include "ui_delay.h"
 
 bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info, 
+                                    bool zero_polynomial,
                                     uint32_t *participants_indices,
                                     size_t participants_len,
                                     uint8_t *pub_key,
@@ -24,6 +25,13 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
 
   for (int i = 0; i < coeff_count; i++) {
     random_generate(rand_coeff, 32);
+
+    if (i == 0) {
+      if (zero_polynomial) {
+        memzero(rand_coeff, 32);
+      }
+    }
+
     bn_read_be(rand_coeff, &coeff[i]);
   }
 

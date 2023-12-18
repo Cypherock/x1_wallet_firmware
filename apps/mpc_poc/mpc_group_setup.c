@@ -390,7 +390,7 @@ bool group_setup_get_share_data(mpc_poc_query_t *query,
     participant_indices[i-1] = i;
   }
 
-  if (!dkg_generate_signed_share_data(group_info, participant_indices, 
+  if (!dkg_generate_signed_share_data(group_info, false, participant_indices, 
                                       group_info->total_participants, pub_key, 
                                       secret_share, priv_key, &signed_share_data)) {
     return false;

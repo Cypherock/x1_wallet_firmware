@@ -7,6 +7,7 @@
 #include "mpc_context.h"
 
 bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info, 
+                                    bool zero_polynomial,
                                     uint32_t *participants_indices,
                                     size_t participants_len,
                                     uint8_t *pub_key,
