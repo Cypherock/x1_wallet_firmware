@@ -87,6 +87,61 @@ bool approve_message(mpc_poc_query_t *query) {
     return true;
 }
 
+bool get_group_info(mpc_poc_query_t *query, uint8_t *pub_key, 
+                    mpc_poc_group_info_t *group_info_arg,
+                    mpc_poc_group_key_info_t *group_key_info_arg) {
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_POST_GROUP_INFO_TAG)) {
+        return false;
+    }
+
+    mpc_poc_result_t result =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+    
+    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_POST_GROUP_INFO_TAG;
+
+    if (!query->sign_message.post_group_info.has_group_info ||
+        !query->sign_message.post_group_info.has_group_key_info) {
+          
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
+    mpc_poc_group_info_t group_info = query->sign_message.post_group_info.group_info;
+    mpc_poc_group_key_info_t group_key_info = query->sign_message.post_group_info.group_key_info;
+
+    if (!mpc_verify_struct_sig(&group_info, GROUP_INFO_BUFFER_SIZE, 
+                               MPC_POC_GROUP_INFO_FIELDS, 
+                               query->sign_message.post_group_info.group_info_sig, 
+                               pub_key)) {
+
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
+    if (!mpc_verify_struct_sig(&group_key_info, GROUP_KEY_INFO_BUFFER_SIZE, 
+                               MPC_POC_GROUP_KEY_INFO_FIELDS, 
+                               query->sign_message.post_group_info.group_key_info_sig, 
+                               pub_key)) {
+
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
+    memcpy(group_info_arg, &group_info, sizeof(mpc_poc_group_info_t));
+    memcpy(group_key_info_arg, &group_key_info, sizeof(mpc_poc_group_key_info_t));
+
+    response.post_group_info.success = true;
+    result.sign_message = response;
+    mpc_send_result(&result);
+
+    return true;
+}
+
 void sign_message_flow(mpc_poc_query_t *query) {
   if (MPC_POC_SIGN_MESSAGE_REQUEST_INITIATE_TAG !=
       query->sign_message.which_request) {
@@ -98,6 +153,9 @@ void sign_message_flow(mpc_poc_query_t *query) {
     uint8_t *pub_key = malloc(33 * sizeof(uint8_t));
     uint8_t *wallet_id = malloc(32 * sizeof(uint8_t));
 
+    mpc_poc_group_info_t group_info;
+    mpc_poc_group_key_info_t group_key_info;
+
     if (!sign_message_initiate(query, wallet_id, priv_key, pub_key)) {
       return;
     }
@@ -108,7 +166,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return;
     }
 
-    mpc_delay_scr_init("Waiting for other participants to come online...", DELAY_LONG_STRING);
-    mpc_delay_scr_init("Getting things ready...", DELAY_LONG_STRING);
+    if (!get_group_info(query, pub_key, &group_info, &group_key_info)) {
+      return;
+    }
   }
 }
