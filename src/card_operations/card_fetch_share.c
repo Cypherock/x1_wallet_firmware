@@ -91,6 +91,9 @@ extern Wallet_shamir_data wallet_shamir_data;
  * with the values of a `flash_wallet` object and returns a boolean indicating
  * whether they are equal.
  *
+ * @param xcor The x-coordinate of the wallet share, this variable represents
+ * the share index fetched from the last tapped card.
+ *
  * @return a boolean value, which indicates whether the fetched wallet matches
  * the expected values.
  */
@@ -100,7 +103,8 @@ static bool verify_fetched_wallet(uint8_t xcor);
  * @brief Helper function that copies wallet share retrieved from X1 card onto
  * the RAM
  *
- * @param xcor The x-coordinate of the wallet share
+ * @param xcor The x-coordinate of the wallet share, this variable represents
+ * the share index fetched from the last tapped card.
  */
 static bool _handle_retrieve_wallet_success(uint8_t xcor);
 
@@ -124,7 +128,7 @@ static bool verify_fetched_wallet(uint8_t xcor) {
 
   ASSERT(SUCCESS == status && NULL != flash_wallet);
 
-  bool compare_status = compare_status =
+  bool compare_status =
       (0 == memcmp(wallet.wallet_id, flash_wallet->wallet_id, WALLET_ID_SIZE));
   compare_status &=
       (0 == memcmp(wallet.wallet_name, flash_wallet->wallet_name, NAME_SIZE));
