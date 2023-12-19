@@ -327,13 +327,7 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
                         wallet.minimum_number_of_shares,
                         wallet_shamir_data.mnemonic_shares);
 
-      uint8_t wallet_nonce[NONCE_SIZE] = {0};
-      random_generate(wallet_nonce, 12);
-
-      for (int i = 0; i < TOTAL_NUMBER_OF_SHARES; i++) {
-        memcpy(wallet_shamir_data.share_encryption_data[i], wallet_nonce, 12);
-        wallet_shamir_data.share_encryption_data[i][15] = 0x01;
-      }
+      derive_wallet_nonce(wallet_shamir_data.share_encryption_data);
 
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         encrypt_shares();

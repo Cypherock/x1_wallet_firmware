@@ -66,8 +66,8 @@ typedef struct Wallet_share {
   uint8_t wallet_id[WALLET_ID_SIZE];    ///< Wallet ID derived from seed
   uint8_t
       wallet_share[BLOCK_SIZE];    ///< Device's (5th) share derived from seed
-  uint8_t wallet_nonce[NONCE_SIZE];    ///< Wallet's nonce including IV and
-                                       ///< version data
+  uint8_t wallet_nonce[PADDED_NONCE_SIZE];    ///< Wallet's nonce including IV
+                                              ///< and version data
 } Wallet_Share_Data;
 #pragma pack(pop)
 

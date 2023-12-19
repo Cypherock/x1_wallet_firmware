@@ -282,7 +282,7 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
                                      wallet_shamir_data.mnemonic_shares[1]);
       memcpy(wallet_shamir_data.share_encryption_data[1],
              wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
+             PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
 
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         decrypt_shares();

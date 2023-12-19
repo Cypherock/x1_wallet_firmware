@@ -165,11 +165,11 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
       delay_scr_init(ui_text_processing, DELAY_TIME);
 
       uint8_t temp_password_hash[SHA256_DIGEST_LENGTH] = {0};
-      uint8_t wallet_nonce[NONCE_SIZE] = {0};
+      uint8_t wallet_nonce[PADDED_NONCE_SIZE] = {0};
 
       memcpy(wallet_nonce,
              wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE);
+             PADDED_NONCE_SIZE);
 
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         memcpy(temp_password_hash,
@@ -188,7 +188,7 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         memcpy(wallet_shamir_data.share_encryption_data[4],
                wallet_nonce,
-               NONCE_SIZE);
+               PADDED_NONCE_SIZE);
         memcpy(wallet_credential_data.password_single_hash,
                temp_password_hash,
                SHA256_DIGEST_LENGTH);

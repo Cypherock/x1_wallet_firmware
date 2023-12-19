@@ -117,7 +117,7 @@ static void _handle_retrieve_wallet_success(uint8_t xcor) {
            BLOCK_SIZE);
   memcpy(wallet_shamir_data.share_encryption_data[xcor],
          wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
-         NONCE_SIZE + WALLET_MAC_SIZE);
+         PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
   memzero(wallet.arbitrary_data_share, sizeof(wallet.arbitrary_data_share));
   memzero(wallet.wallet_share_with_mac_and_nonce,
           sizeof(wallet.wallet_share_with_mac_and_nonce));

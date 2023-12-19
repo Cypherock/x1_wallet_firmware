@@ -87,7 +87,7 @@ typedef struct Flash_Wallet {
   uint8_t wallet_name[NAME_SIZE];
   uint8_t wallet_info;
   uint8_t
-      wallet_share_with_mac_and_nonce[BLOCK_SIZE + NONCE_SIZE +
+      wallet_share_with_mac_and_nonce[BLOCK_SIZE + PADDED_NONCE_SIZE +
                                       WALLET_MAC_SIZE];    // does not include
                                                            // MAC and nonce
 

@@ -178,3 +178,18 @@ Card_Data_errors_t validate_wallet(Wallet *wallet) {
     return INVALID_WALLET_ID;
   return VALID_DATA;
 }
+
+void derive_wallet_nonce(
+    uint8_t share_encryption_data[TOTAL_NUMBER_OF_SHARES]
+                                 [PADDED_NONCE_SIZE + WALLET_MAC_SIZE]) {
+  uint8_t wallet_nonce[NONCE_SIZE] = {0};
+  random_generate(wallet_nonce, 12);
+
+  for (int i = 0; i < TOTAL_NUMBER_OF_SHARES; i++) {
+    // First 12 bytes of share_encryption_data are wallet nonce.
+    memcpy(share_encryption_data[i], wallet_nonce, 12);
+    // Skip next 3 bytes as RFU
+    // Version byte
+    share_encryption_data[i][15] = 0x01;
+  }
+}

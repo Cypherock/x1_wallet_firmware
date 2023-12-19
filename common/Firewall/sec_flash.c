@@ -555,7 +555,7 @@ static void serialize_sec_fs_wallet(uint8_t *array,
     fill_flash_tlv(array,
                    starting_index,
                    TAG_SEC_FLASH_WALLET_NONCE,
-                   NONCE_SIZE,
+                   PADDED_NONCE_SIZE,
                    sec_fs->wallet_share_data[wallet_index].wallet_nonce);
 
     array[len_index] = (*starting_index) - len_index - 2;

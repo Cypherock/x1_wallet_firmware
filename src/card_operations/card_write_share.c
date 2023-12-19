@@ -124,7 +124,7 @@ static void write_card_pre_process(uint8_t card_num) {
            BLOCK_SIZE);
   memcpy(wallet.wallet_share_with_mac_and_nonce + BLOCK_SIZE,
          wallet_shamir_data.share_encryption_data[card_num - 1],
-         NONCE_SIZE + WALLET_MAC_SIZE);
+         PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
   return;
 }
 
