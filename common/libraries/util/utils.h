@@ -60,6 +60,11 @@
 #define UTIL_OUT_OF_BOUNDS (0x22)
 #define UTIL_IN_BOUNDS (0xAA)
 
+#define IS_Ith_BIT_SET(x, i) (((x) & (1 << (i))) != 0)
+#define IS_Ith_BIT_RESET(x, i) (((x) & (1 << (i))) == 0)
+#define SET_Ith_BIT(x, i) ((x) |= (1 << (i)))
+#define RESET_Ith_BIT(x, i) ((x) &= ~(1 << (i)))
+
 /**
  * @brief Generic return codes for functions
  */

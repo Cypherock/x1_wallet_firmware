@@ -281,8 +281,8 @@ int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share);
 int get_flash_wallet_nonce_by_name(const char *name, uint8_t *wallet_nonce);
 
 /**
- * @brief Update the card states for the wallet at specified index (on deletion
- * of the wallet from the given card number)
+ * @brief Update the card states(write and attempt states) for the wallet at
+ * specified index (on deletion of the wallet from the given card number)
  *
  * @param index Wallet index in flash
  * @param card_number Card number to delete
@@ -293,6 +293,9 @@ int delete_from_kth_card_flash(uint8_t index, uint8_t card_number);
 /**
  * @brief Tells if the wallet at specified index is already deleted from the
  * given card number
+ *
+ * @details This function checks the write state and attempt state of the wallet
+ * to be deleted.
  *
  * @param index Wallet index in flash
  * @param card_number Card number to check

@@ -139,13 +139,16 @@ static void write_card_pre_process(uint8_t card_num) {
 
 static void record_card_write_attempt_on_flash(uint8_t card_num) {
   Flash_Wallet *wallet_for_flash = get_flash_wallet();
-  uint8_t temp = encode_card_number(card_num) << 4;
+  uint8_t attempt_card_state = encode_card_number(card_num) << 4;
 
-  if (temp == (temp & wallet_for_flash->cards_states)) {
+  if (attempt_card_state ==
+      (attempt_card_state & wallet_for_flash->cards_states)) {
+    // Attempt card state already recorded on flash, no need to write to flash
+    // again. Reached here probably due to retry attempt on same card.
     return;
   }
 
-  wallet_for_flash->cards_states |= temp;
+  wallet_for_flash->cards_states |= attempt_card_state;
   if (card_num == 1) {
     wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
     add_wallet_to_flash(wallet_for_flash, &wallet_index);
