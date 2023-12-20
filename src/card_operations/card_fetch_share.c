@@ -235,7 +235,9 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
           break;
         }
 
-        buzzer_start(BUZZER_DURATION);
+        if (config->operation.buzzer_on_success) {
+          buzzer_start(BUZZER_DURATION);
+        }
 
         if (false == config->operation.skip_card_removal) {
           wait_for_card_removal();
@@ -257,7 +259,7 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
        * sequence"
        */
       if (SW_CONDITIONS_NOT_SATISFIED == card_data.nfc_data.status) {
-        error_msg = ui_text_tap_another_card;
+        error_msg = config->frontend.unexpected_card_error;
       }
 
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {

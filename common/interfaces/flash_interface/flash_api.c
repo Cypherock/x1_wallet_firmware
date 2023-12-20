@@ -619,41 +619,35 @@ bool is_wallet_locked(const uint8_t wallet_index) {
 }
 
 // TODO: return codes for illegal and all
-/**
- * @brief Update the card states for the wallet at specified index (on deletion
- * of the wallet from the given card number)
- *
- * @param index
- * @param card_number
- * @return int
- */
 int delete_from_kth_card_flash(const uint8_t index, const uint8_t card_number) {
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  flash_ram_instance.wallets[index].cards_states &= ~(1 << (card_number - 1));
+
+  // Reset card write state
+  RESET_Ith_BIT(flash_ram_instance.wallets[index].cards_states,
+                card_number - 1);
+  // Reset card write attempt state
+  RESET_Ith_BIT(flash_ram_instance.wallets[index].cards_states,
+                card_number - 1 + 4);
+
   flash_struct_save();
   return SUCCESS_;
 }
 
 // TODO: check for illegal arguments and all
-/**
- * @brief Tells if the wallet at specified index is already deleted from the
- * given card number
- *
- * @param index
- * @param card_number
- * @return true
- * @return false
- */
 bool card_already_deleted_flash(const uint8_t index,
                                 const uint8_t card_number) {
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  return !(
-      ((flash_ram_instance.wallets[index].cards_states) >> (card_number - 1)) &
-      1);
+
+  bool wallet_found_on_card = IS_Ith_BIT_SET(
+      flash_ram_instance.wallets[index].cards_states, card_number - 1);
+  bool write_attempted_on_card = IS_Ith_BIT_SET(
+      flash_ram_instance.wallets[index].cards_states, card_number - 1 + 4);
+
+  return !(wallet_found_on_card | write_attempted_on_card);
 }
 
 /**

@@ -130,8 +130,6 @@ card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
 
   snprintf(
       heading, sizeof(heading), UI_TEXT_TAP_CARD, delete_config->card_number);
-  instruction_scr_init(ui_text_place_card_below, heading);
-
   card_data.error_type = CARD_OPERATION_DEFAULT_INVALID;
   card_data.nfc_data.retries = 5;
 

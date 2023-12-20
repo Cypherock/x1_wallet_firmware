@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "card_operations.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "nfc.h"
 #include "ui_instruction.h"
 
@@ -144,7 +145,22 @@ card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
   card_delete_share_cfg_t cfg = {.wallet = selected_wallet, .card_number = 0};
   card_error_type_e error_code = 0;
 
+  card_fetch_share_config_t configuration = {0};
+  card_fetch_share_response_t response = {0};
+  char heading[MAX_HEADING_LEN] = "";
+  configuration.xcor = 0;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.msg = ui_text_place_card_below;
+  configuration.frontend.heading = heading;
+  configuration.frontend.unexpected_card_error = ui_text_wrong_card_sequence;
+  configuration.operation.skip_card_removal = true;
+  configuration.operation.buzzer_on_success = false;
+  response.card_info.tapped_family_id = NULL;
+
   for (int i = 1; i <= 4; i++) {
+    snprintf(heading, MAX_HEADING_LEN, UI_TEXT_TAP_CARD, i);
+    configuration.operation.acceptable_cards = encode_card_number(i);
+
     error_code = CARD_OPERATION_DEFAULT_INVALID;
     cfg.card_number = i;
 
@@ -152,6 +168,19 @@ card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
     if (true == check_wallet_already_deleted_on_card(&cfg)) {
       error_code = CARD_OPERATION_SUCCESS;
       continue;
+    }
+
+    error_code = card_fetch_share(&configuration, &response);
+
+    if (CARD_OPERATION_SUCCESS != error_code) {
+      if (CARD_OPERATION_ABORT_OPERATION == error_code &&
+          SW_RECORD_NOT_FOUND == response.card_info.status) {
+        // In case wallet is not found on card, consider it as a success case as
+        // wallet is already deleted or not created on the card.
+        clear_core_error_screen();
+      } else {
+        break;
+      }
     }
 
     // Operation to delete wallet from card and update card state on flash

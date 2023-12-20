@@ -92,6 +92,15 @@ extern Wallet_shamir_data wallet_shamir_data;
 static void write_card_pre_process(uint8_t card_num);
 
 /**
+ * @brief The function records a card write attempt on the flash memory and
+ * updates the state of the flash wallet accordingly.
+ *
+ * @param card_num represents the number of the card on which write operation is
+ * being attempted.
+ */
+static void record_card_write_attempt_on_flash(uint8_t card_num);
+
+/**
  * @brief Handles post-processing required during the wallet share write
  * operation on the X1 card.
  *
@@ -128,16 +137,34 @@ static void write_card_pre_process(uint8_t card_num) {
   return;
 }
 
-static void write_card_share_post_process(uint8_t card_num) {
+static void record_card_write_attempt_on_flash(uint8_t card_num) {
   Flash_Wallet *wallet_for_flash = get_flash_wallet();
-  wallet_for_flash->cards_states = (1 << card_num) - 1;
+  uint8_t attempt_card_state = encode_card_number(card_num) << 4;
 
+  if (attempt_card_state ==
+      (attempt_card_state & wallet_for_flash->cards_states)) {
+    // Attempt card state already recorded on flash, no need to write to flash
+    // again. Reached here probably due to retry attempt on same card.
+    return;
+  }
+
+  wallet_for_flash->cards_states |= attempt_card_state;
   if (card_num == 1) {
     wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
     add_wallet_to_flash(wallet_for_flash, &wallet_index);
   } else {
     put_wallet_flash(wallet_index, wallet_for_flash);
   }
+  return;
+}
+
+static void write_card_share_post_process(uint8_t card_num) {
+  Flash_Wallet *wallet_for_flash = get_flash_wallet();
+
+  wallet_for_flash->cards_states &= 0x0F;
+  wallet_for_flash->cards_states |= encode_card_number(card_num);
+
+  put_wallet_flash(wallet_index, wallet_for_flash);
 
   if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
     memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
@@ -153,6 +180,7 @@ static void write_card_share_post_process(uint8_t card_num) {
              (card_num - 1) * wallet.arbitrary_data_size,
          0,
          wallet.arbitrary_data_size);
+  return;
 }
 
 /*****************************************************************************
@@ -180,6 +208,7 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      record_card_write_attempt_on_flash(card_num);
       card_data.nfc_data.status = nfc_add_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {

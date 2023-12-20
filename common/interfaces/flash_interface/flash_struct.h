@@ -93,8 +93,11 @@ typedef struct Flash_Wallet {
 
   uint8_t state;    // if DEFAULT_VALUE_IN_FLASH then not valid. If equal to
                     // VALID_WALLET then valid
-  uint8_t cards_states;        // ith from right ((cards_states>>i)&1) bit tells
-                               // whether card (i+1) has the share or not.
+  uint8_t cards_states;    // ith bit from right ((cards_states>>i)&1) bit tells
+                           // whether card (i+1) has the share or not.
+                           // Attempt state is also recorded on the left nibble,
+                           // recorded before card write operation is attempted
+                           // and cleared when successful.
   uint8_t is_wallet_locked;    // 1 if wallet if locked
   Flash_Pow challenge;
 } Flash_Wallet;
