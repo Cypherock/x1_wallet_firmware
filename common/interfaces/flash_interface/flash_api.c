@@ -642,14 +642,12 @@ bool card_already_deleted_flash(const uint8_t index,
 
   get_flash_ram_instance();    // to load
 
-  // If both write state and attempt state for the card number are clear, then
-  // wallet is already deleted
-  bool is_already_deleted = IS_Ith_BIT_RESET(
+  bool wallet_found_on_card = IS_Ith_BIT_SET(
       flash_ram_instance.wallets[index].cards_states, card_number - 1);
-  is_already_deleted &= IS_Ith_BIT_RESET(
+  bool write_attempted_on_card = IS_Ith_BIT_SET(
       flash_ram_instance.wallets[index].cards_states, card_number - 1 + 4);
 
-  return is_already_deleted;
+  return !(wallet_found_on_card | write_attempted_on_card);
 }
 
 /**
