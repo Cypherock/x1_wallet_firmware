@@ -250,7 +250,6 @@ void sig_unsigned_byte_array(const uint8_t *eth_unsigned_txn_byte_array,
   keccak_256(eth_unsigned_txn_byte_array, eth_unsigned_txn_len, digest);
   uint8_t recid;
   HDNode hdnode;
-  get_address_node(transaction_metadata, 0, mnemonics, passphrase, &hdnode);
   ecdsa_sign_digest(&secp256k1, hdnode.private_key, digest, sig, &recid, NULL);
   memcpy(sig + 64, &recid, 1);
 }
