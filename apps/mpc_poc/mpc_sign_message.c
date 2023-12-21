@@ -451,9 +451,132 @@ bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
   return true;
 }
 
+bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
+                           mpc_poc_group_info_t *group_info,
+                           uint32_t index,
+                           uint32_t *participant_indices,
+                           uint32_t sender_times,
+                           uint8_t *priv_key,
+                           uint8_t *s_values,
+                           uint8_t *ot_sender_sk_lists) {
+
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  for (int i = 0; i < sender_times; ++i) {
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_GET_PK_INITIATE_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta snd pk initiate)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_PK_INITIATE_TAG;
+
+    response.mta_snd_get_pk_initiate.to = participant_indices[index + 1 + i];
+    response.mta_snd_get_pk_initiate.length = NUMBER_OF_OTS;
+
+    result.sign_message = response;
+    mpc_send_result(&result);
+
+    Hasher hasher_verify;
+    hasher_Init(&hasher_verify, HASHER_SHA2);
+
+    Hasher hasher;
+    hasher_Init(&hasher, HASHER_SHA2);  
+
+    uint8_t to_party = participant_indices[index + 1 + i];
+    hasher_Update(&hasher, &to_party, 1);
+    hasher_Update(&hasher_verify, &to_party, 1);
+
+    random_generate(&s_values[i * 16], 16);
+
+    for (int j = 0; j < NUMBER_OF_OTS; ++j) {
+      if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+          !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_GET_PK_TAG)) {
+          mpc_delay_scr_init("Error: wrong query (mta snd pk)", DELAY_TIME);
+          return false;
+      }
+
+      mpc_poc_result_t result =
+          init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+      mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+      response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_PK_TAG;
+
+      random_generate(&ot_sender_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], 32);
+
+      bignum256 ot_sender_sk;
+      bn_read_be(&ot_sender_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], &ot_sender_sk);
+
+      curve_point ot_sender_pk;
+      scalar_multiply(curve, &ot_sender_sk, &ot_sender_pk);
+
+      curve_point ot_receiver_pk;
+      ecdsa_read_pubkey(curve, query->sign_message.mta_snd_get_pk.public_key, &ot_receiver_pk);
+      hasher_Update(&hasher_verify, query->sign_message.mta_snd_get_pk.public_key, 33);
+
+      uint8_t mask = 1 << (j % 8);
+      if (s_values[(i * 16) + (j / 8)] & mask) {
+        point_add(curve, &ot_receiver_pk, &ot_sender_pk);
+      }
+
+      response.mta_snd_get_pk.public_key[0] = 0x02 | ( ot_sender_pk.y.val[0] & 0x01);
+      bn_write_be(&ot_sender_pk.x, response.mta_snd_get_pk.public_key + 1);
+
+      hasher_Update(&hasher, response.mta_snd_get_pk.public_key, 33);
+
+      result.sign_message = response;
+      mpc_send_result(&result);
+    }
+
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_GET_PK_SIG_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta snd pk finish)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result2 =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response2 = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response2.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_PK_SIG_TAG;
+
+    uint8_t hash[32] = {0};
+    uint8_t hash_verify[32] = {0};
+
+    hasher_Final(&hasher, hash);
+    hasher_Final(&hasher_verify, hash_verify);
+
+    uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!index_to_pub_key(group_info, participant_indices[index + 1 + i], verify_pub_key)) {
+      mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
+      return false;
+    }
+
+    if (!mpc_verify_signature(hash_verify, 32, query->sign_message.mta_snd_get_pk_sig.signature, verify_pub_key)) {
+      mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
+      return false;
+    }
+
+    if (!mpc_sign_message(hash, 32, response2.mta_snd_get_pk_sig.signature, priv_key)) {
+      mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+      return false;
+    }
+
+    result2.sign_message = response2;
+    mpc_send_result(&result2);
+  }
+
+  return true;
+}
+
 bool start_mta(mpc_poc_query_t *query, 
+               mpc_poc_group_info_t *group_info,
                const uint32_t my_index, 
-              uint32_t *participant_indices, 
+               uint32_t *participant_indices, 
                const uint32_t threshold,
                bignum256 *secret_share_list,
                uint8_t *priv_key_share,
@@ -502,7 +625,7 @@ bool start_mta(mpc_poc_query_t *query,
   uint8_t *ot_receiver_sk_lists;
 
   if (sender_times > 0) {
-    s_values = malloc(sender_times * 32 * sizeof(uint8_t));
+    s_values = malloc(sender_times * 16 * sizeof(uint8_t));
     ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
     q_dash_matrices = malloc(sender_times * NUMBER_OF_OTS * 128 * sizeof(uint8_t)); 
   }
@@ -533,6 +656,12 @@ bool start_mta(mpc_poc_query_t *query,
 
   if (!mta_send_rcv_pub_keys(query, participant_indices, receiver_times, 
                              priv_key, ot_receiver_sk_lists)) {
+    return false;
+  }
+
+  if (!mta_send_snd_pub_keys(query, group_info, index, 
+                             participant_indices, sender_times, priv_key, s_values, 
+                             ot_sender_sk_lists)) {
     return false;
   }
 
@@ -613,7 +742,10 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return false;
     }
 
-    if (!start_mta(query, my_index, participant_indices, group_info.threshold, secret_share_list, dec_share, priv_key)) {
+    if (!start_mta(query, &group_info, 
+                   my_index, participant_indices, 
+                   group_info.threshold, secret_share_list, 
+                   dec_share, priv_key)) {
       return;
     }
   }

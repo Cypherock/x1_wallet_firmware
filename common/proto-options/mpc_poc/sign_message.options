@@ -9,3 +9,7 @@ mpc_poc.GetGroupKeyRequest.signed_pub_key_list type:FT_STATIC max_count:4 fixed_
 mpc_poc.GetGroupKeyResponse.signature type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.MTARcvGetPKResponse.public_key type:FT_STATIC max_size:33 fixed_length:true
 mpc_poc.MTARcvGetPKSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTASndGetPKRequest.public_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.MTASndGetPKResponse.public_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.MTASndGetPKSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTASndGetPKSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
