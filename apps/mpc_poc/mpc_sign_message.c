@@ -23,6 +23,7 @@ const uint8_t POLYNOMIAL_A_INDEX = ZERO_POLYNOMIALS + 0;
 const uint8_t POLYNOMIAL_K_INDEX = ZERO_POLYNOMIALS + 1;
 const uint8_t POLYNOMIAL_P_INDEX = ZERO_POLYNOMIALS + 2;
 
+const uint8_t NUMBER_OF_OTS = 128;
 
 static bool check_which_request(const mpc_poc_query_t *query,
                                 pb_size_t which_request) {
@@ -359,12 +360,104 @@ int compare_uint32(const void *a, const void *b) {
   return (*(uint32_t *)a - *(uint32_t *)b);
 }
 
+bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
+                           uint32_t *participant_indices,
+                           uint32_t receiver_times,
+                           uint8_t *priv_key,
+                           uint8_t *ot_receiver_sk_lists) {
+
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  for (int i = 0; i < receiver_times; ++i) {
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_PK_INITIATE_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta rcv pk initiate)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_PK_INITIATE_TAG;
+
+    response.mta_rcv_get_pk_initiate.to = participant_indices[i];
+    response.mta_rcv_get_pk_initiate.length = NUMBER_OF_OTS;
+
+    result.sign_message = response;
+    mpc_send_result(&result);
+
+    Hasher hasher;
+    hasher_Init(&hasher, HASHER_SHA2);  
+
+    uint8_t to_party = participant_indices[i];
+    hasher_Update(&hasher, &to_party, 1);
+
+    for (int j = 0; j < NUMBER_OF_OTS; ++j) {
+      if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+          !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_PK_TAG)) {
+          mpc_delay_scr_init("Error: wrong query (mta rcv pk)", DELAY_TIME);
+          return false;
+      }
+
+      mpc_poc_result_t result =
+          init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+      mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+      response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_PK_TAG;
+
+      random_generate(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], 32);
+
+      bignum256 ot_receiver_sk;
+      bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], &ot_receiver_sk);
+
+      curve_point ot_receiver_pk;
+      scalar_multiply(curve, &ot_receiver_sk, &ot_receiver_pk);
+
+      response.mta_rcv_get_pk.public_key[0] = 0x02 | (ot_receiver_pk.y.val[0] & 0x01);
+      bn_write_be(&ot_receiver_pk.x, response.mta_rcv_get_pk.public_key + 1);
+
+      hasher_Update(&hasher, response.mta_rcv_get_pk.public_key, 33);
+
+      result.sign_message = response;
+      mpc_send_result(&result);
+    }
+
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_PK_SIG_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta rcv pk finish)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result2 =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response2 = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response2.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_PK_SIG_TAG;
+
+    uint8_t hash[32] = {0};
+
+    hasher_Final(&hasher, hash);
+
+    if (!mpc_sign_message(hash, 32, response2.mta_rcv_get_pk_sig.signature, priv_key)) {
+      mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+      return false;
+    }
+
+    result2.sign_message = response2;
+    mpc_send_result(&result2);
+  }
+
+  return true;
+}
+
 bool start_mta(mpc_poc_query_t *query, 
                const uint32_t my_index, 
               uint32_t *participant_indices, 
                const uint32_t threshold,
                bignum256 *secret_share_list,
-               uint8_t *priv_key_share) {
+               uint8_t *priv_key_share,
+               uint8_t *priv_key) {
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
       !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_START_MTA_TAG)) {
       mpc_delay_scr_init("Error: wrong query (startmta)", DELAY_TIME);
@@ -410,8 +503,8 @@ bool start_mta(mpc_poc_query_t *query,
 
   if (sender_times > 0) {
     s_values = malloc(sender_times * 32 * sizeof(uint8_t));
-    ot_sender_sk_lists = malloc(sender_times * 128 * 32 * sizeof(uint8_t));
-    q_dash_matrices = malloc(sender_times * 128 * 128 * sizeof(uint8_t)); 
+    ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
+    q_dash_matrices = malloc(sender_times * NUMBER_OF_OTS * 128 * sizeof(uint8_t)); 
   }
 
   if (receiver_times > 0) {
@@ -426,8 +519,8 @@ bool start_mta(mpc_poc_query_t *query,
     b_value_ptr += 32;
     bn_write_be(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
 
-    t_matrices = malloc(receiver_times * 1024 * 16 * sizeof(uint8_t));
-    ot_receiver_sk_lists = malloc(receiver_times * 128 * 32 * sizeof(uint8_t));
+    t_matrices = malloc(receiver_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t));
+    ot_receiver_sk_lists = malloc(receiver_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
   }
 
   response.start_mta.sender_times = sender_times;
@@ -437,6 +530,11 @@ bool start_mta(mpc_poc_query_t *query,
   mpc_send_result(&result);
 
   mpc_delay_scr_init("Everthing initialised", DELAY_TIME);
+
+  if (!mta_send_rcv_pub_keys(query, participant_indices, receiver_times, 
+                             priv_key, ot_receiver_sk_lists)) {
+    return false;
+  }
 
   return true;  
 }
@@ -515,7 +613,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return false;
     }
 
-    if (!start_mta(query, my_index, participant_indices, group_info.threshold, secret_share_list, dec_share)) {
+    if (!start_mta(query, my_index, participant_indices, group_info.threshold, secret_share_list, dec_share, priv_key)) {
       return;
     }
   }
