@@ -14,7 +14,14 @@
 #include "bignum.h"
 
 const uint8_t ZERO_POLYNOMIALS = 2;
-const uint8_t POLYNOMIALS_COUNT = ZERO_POLYNOMIALS + 2;
+const uint8_t POLYNOMIALS_COUNT = ZERO_POLYNOMIALS + 3;
+
+const uint8_t POLYNOMIAL_D_INDEX = 0;
+const uint8_t POLYNOMIAL_E_INDEX = 1;
+
+const uint8_t POLYNOMIAL_A_INDEX = ZERO_POLYNOMIALS + 0;
+const uint8_t POLYNOMIAL_K_INDEX = ZERO_POLYNOMIALS + 1;
+const uint8_t POLYNOMIAL_P_INDEX = ZERO_POLYNOMIALS + 2;
 
 
 static bool check_which_request(const mpc_poc_query_t *query,
@@ -31,14 +38,12 @@ static bool check_which_request(const mpc_poc_query_t *query,
   return true;
 }
 
-bool sign_message_initiate(mpc_poc_query_t *query, uint8_t *wallet_id, uint8_t *priv_key, uint8_t *pub_key) {
+bool sign_message_initiate(mpc_poc_query_t *query, uint8_t *priv_key, uint8_t *pub_key) {
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
 
     mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
     response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_INITIATE_TAG;
-
-    memcpy(wallet_id, query->sign_message.initiate.wallet_id, 32);
 
     if (!initiate_application(query->sign_message.initiate.wallet_id, priv_key, pub_key)) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -166,7 +171,8 @@ bool get_group_info(mpc_poc_query_t *query, uint8_t *pub_key,
 }
 
 bool get_participant_indices(mpc_poc_query_t *query, uint8_t *pub_key,
-                             mpc_poc_group_info_t *group_info, uint32_t *participant_indices) {
+                             mpc_poc_group_info_t *group_info, uint32_t *participant_indices,
+                             uint32_t *my_index) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_POST_SEQUENCE_INDICES_TAG)) {
 
@@ -188,8 +194,7 @@ bool get_participant_indices(mpc_poc_query_t *query, uint8_t *pub_key,
     }
 
     // convert pub_key to my_index
-    uint32_t my_index = 0;
-    if (!pub_key_to_index(group_info, pub_key, &my_index)) {
+    if (!pub_key_to_index(group_info, pub_key, my_index)) {
         mpc_delay_scr_init("Error: error converting my pubkey to index", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_REQUEST);
@@ -199,7 +204,7 @@ bool get_participant_indices(mpc_poc_query_t *query, uint8_t *pub_key,
     // check that my_index is in the sequence_indices
     bool found_my_index = false;
     for (uint8_t i = 0; i < group_info->threshold; i++) {
-      if (query->sign_message.post_sequence_indices.sequence_indices[i] == my_index) {
+      if (query->sign_message.post_sequence_indices.sequence_indices[i] == *my_index) {
         found_my_index = true;
         break;
       }
@@ -350,6 +355,92 @@ bool get_group_key(mpc_poc_query_t *query,
   return true;
 }
 
+int compare_uint32(const void *a, const void *b) {
+  return (*(uint32_t *)a - *(uint32_t *)b);
+}
+
+bool start_mta(mpc_poc_query_t *query, 
+               const uint32_t my_index, 
+              uint32_t *participant_indices, 
+               const uint32_t threshold,
+               bignum256 *secret_share_list,
+               uint8_t *priv_key_share) {
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_START_MTA_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (startmta)", DELAY_TIME);
+      return false;
+  }
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_START_MTA_TAG;
+
+  uint32_t sender_times = 0;
+  uint32_t receiver_times = 0;
+
+  // sort participant indices in place using qsort
+  qsort(participant_indices, threshold, sizeof(uint32_t), compare_uint32);
+
+  // find index of my_index in participant_indices
+  uint32_t index = 0;
+  for (uint32_t i = 0; i < threshold; i++) {
+    if (participant_indices[i] == my_index) {
+      index = i;
+      break;
+    }
+  }
+
+  receiver_times = index;
+  sender_times = threshold - index - 1;
+
+  uint8_t *s_values;
+  uint8_t *ot_sender_sk_lists;
+  uint8_t *q_dash_matrices;
+
+  // a B value of size 128 bytes created by concatenating the last three shares of secret_share_list
+  uint8_t *b_value;
+
+  // an array called t_matrices of size receiver_times where each t_matrix contains 1024 t_values, each of size 16 bytes
+  uint8_t *t_matrices;
+
+  // an array called ot_receiver_sk_lists of size receiver_times where each ot_receiver_sk_list contains 128 ot_receiver_sks, each of size 32 bytes
+  uint8_t *ot_receiver_sk_lists;
+
+  if (sender_times > 0) {
+    s_values = malloc(sender_times * 32 * sizeof(uint8_t));
+    ot_sender_sk_lists = malloc(sender_times * 128 * 32 * sizeof(uint8_t));
+    q_dash_matrices = malloc(sender_times * 128 * 128 * sizeof(uint8_t)); 
+  }
+
+  if (receiver_times > 0) {
+    b_value = malloc(128 * sizeof(uint8_t));
+    uint8_t *b_value_ptr = b_value;
+
+    bn_write_be(&secret_share_list[POLYNOMIAL_K_INDEX], b_value_ptr);
+    b_value_ptr += 32;
+    bn_write_be(&secret_share_list[POLYNOMIAL_A_INDEX], b_value_ptr);
+    b_value_ptr += 32;
+    memcpy(b_value_ptr, priv_key_share, 32);
+    b_value_ptr += 32;
+    bn_write_be(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
+
+    t_matrices = malloc(receiver_times * 1024 * 16 * sizeof(uint8_t));
+    ot_receiver_sk_lists = malloc(receiver_times * 128 * 32 * sizeof(uint8_t));
+  }
+
+  response.start_mta.sender_times = sender_times;
+  response.start_mta.receiver_times = receiver_times;
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  mpc_delay_scr_init("Everthing initialised", DELAY_TIME);
+
+  return true;  
+}
+
 void sign_message_flow(mpc_poc_query_t *query) {
   if (MPC_POC_SIGN_MESSAGE_REQUEST_INITIATE_TAG !=
       query->sign_message.which_request) {
@@ -359,14 +450,13 @@ void sign_message_flow(mpc_poc_query_t *query) {
   } else {
     uint8_t *priv_key = malloc(32 * sizeof(uint8_t));
     uint8_t *pub_key = malloc(33 * sizeof(uint8_t));
-    uint8_t *wallet_id = malloc(32 * sizeof(uint8_t));
 
     mpc_poc_group_info_t group_info;
     mpc_poc_group_key_info_t group_key_info;
 
     bignum256 secret_share_list[POLYNOMIALS_COUNT];
 
-    if (!sign_message_initiate(query, wallet_id, priv_key, pub_key)) {
+    if (!sign_message_initiate(query, priv_key, pub_key)) {
       return;
     }
 
@@ -383,10 +473,11 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     uint32_t participant_indices[group_info.threshold];
+    uint32_t my_index = 0;
 
     mpc_delay_scr_init("Getting indices.", DELAY_SHORT);
 
-    if (!get_participant_indices(query, pub_key, &group_info, participant_indices)) {
+    if (!get_participant_indices(query, pub_key, &group_info, participant_indices, &my_index)) {
       return;
     }
 
@@ -415,5 +506,17 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     mpc_delay_scr_init("DKG successfully finished.", DELAY_SHORT);
 
+    // decrypt group_key_info's share
+
+    uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
+    if (mpc_aes_decrypt(group_key_info.group_share.enc_share, 32, dec_share, priv_key) != 0) {
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    if (!start_mta(query, my_index, participant_indices, group_info.threshold, secret_share_list, dec_share)) {
+      return;
+    }
   }
 }
