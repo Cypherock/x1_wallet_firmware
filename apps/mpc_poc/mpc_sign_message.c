@@ -378,7 +378,7 @@ void compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t par
       bn_inverse(&bn_i_minus_j, &curve->order);
       bn_multiply(&bn_i, &bn_i_minus_j, &curve->order);
 
-      bn_addmod(lambda, &bn_i_minus_j, &curve->order);
+      bn_multiply(&bn_i_minus_j, lambda, &curve->order);
     }
   }
 }
