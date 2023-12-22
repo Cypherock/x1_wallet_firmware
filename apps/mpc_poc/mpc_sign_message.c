@@ -360,6 +360,30 @@ int compare_uint32(const void *a, const void *b) {
   return (*(uint32_t *)a - *(uint32_t *)b);
 }
 
+void compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  bn_one(lambda);
+
+  for (int i = 0; i < participants_len; ++i) {
+    if (i != index) {
+      bignum256 bn_i;
+      bn_read_uint32(participant_indices[i], &bn_i);
+
+      bignum256 bn_j;
+      bn_read_uint32(participant_indices[index], &bn_j);
+
+      bignum256 bn_i_minus_j;
+
+      bn_subtractmod(&bn_i, &bn_j, &bn_i_minus_j, &curve->order);
+      bn_inverse(&bn_i_minus_j, &curve->order);
+      bn_multiply(&bn_i, &bn_i_minus_j, &curve->order);
+
+      bn_addmod(lambda, &bn_i_minus_j, &curve->order);
+    }
+  }
+}
+
+
 bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
                            uint32_t *participant_indices,
                            uint32_t receiver_times,
@@ -905,6 +929,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
                     uint32_t index,
                     uint32_t *participant_indices,
                     uint32_t sender_times,
+                    uint32_t threshold,
                     uint8_t *s_values,
                     uint8_t *q_matrices,
                     uint8_t *priv_key,
@@ -1009,6 +1034,13 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
 
       result.sign_message = response;
       mpc_send_result(&result);
+    }
+
+    bignum256 lambda;
+    compute_lambda(&lambda, participant_indices, threshold, index + 1 + i);
+
+    for (int k = 0; k < 4; ++k) {
+      bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
     }
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -1133,6 +1165,13 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       mpc_send_result(&result);
     }
 
+    bignum256 lambda;
+    compute_lambda(&lambda, participant_indices, group_info->threshold, i);
+
+    for (int k = 0; k < 4; ++k) {
+      bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
+    }
+
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_POST_MASCOT_SIG_TAG)) {
         mpc_delay_scr_init("Error: wrong query (mta rcv mascot finish)", DELAY_TIME);
@@ -1175,7 +1214,9 @@ bool start_mta(mpc_poc_query_t *query,
                const uint32_t threshold,
                bignum256 *secret_share_list,
                uint8_t *priv_key_share,
-               uint8_t *priv_key) {
+               uint8_t *priv_key,
+               bignum256 *additive_shares_list) {
+
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
       !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_START_MTA_TAG)) {
       mpc_delay_scr_init("Error: wrong query (startmta)", DELAY_TIME);
@@ -1229,12 +1270,6 @@ bool start_mta(mpc_poc_query_t *query,
     q_matrices = malloc(sender_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t)); 
 
     ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * sizeof(curve_point));
-    sender_additive_shares_list = malloc(sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
-
-    // make all sender additive shares zero
-    for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
-      bn_zero(&sender_additive_shares_list[i]);
-    }
   }
 
   if (receiver_times > 0) {
@@ -1251,12 +1286,6 @@ bool start_mta(mpc_poc_query_t *query,
 
     t_matrices = malloc(receiver_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t));
     ot_receiver_sk_lists = malloc(receiver_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
-    receiver_additive_shares_list = malloc(receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
-
-    // make all receiver additive shares zero
-    for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
-      bn_zero(&receiver_additive_shares_list[i]);
-    }
   }
 
   response.start_mta.sender_times = sender_times;
@@ -1288,16 +1317,42 @@ bool start_mta(mpc_poc_query_t *query,
     return false;
   }
 
+  free(ot_receiver_sk_lists);
+  free(ot_sender_sk_lists);
+  free(ot_sender_received_pks);
 
-  if (!mta_mascot_snd(query, index, participant_indices, sender_times,
+  if (sender_times > 0) {
+    sender_additive_shares_list = malloc(sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+
+    for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
+      bn_zero(&sender_additive_shares_list[i]);
+    }
+  }
+
+  if (!mta_mascot_snd(query, index, participant_indices, sender_times, group_info->threshold,
                       s_values, q_matrices, priv_key, secret_share_list,
                       priv_key_share, sender_additive_shares_list)) {
     return false;
   }
 
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  bignum256 lambda;
+  compute_lambda(&lambda, participant_indices, threshold, index);
+
   for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
     bn_subtractmod(&curve->order, &sender_additive_shares_list[i], &sender_additive_shares_list[i], &curve->order);
+    bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
+  }
+
+  memcpy(additive_shares_list, sender_additive_shares_list, sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+
+  if (receiver_times > 0) {
+    receiver_additive_shares_list = malloc(receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+
+    for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
+      bn_zero(&receiver_additive_shares_list[i]);
+    }
   }
 
   if (!mta_mascot_rcv(query, group_info, index, participant_indices, receiver_times,
@@ -1305,7 +1360,40 @@ bool start_mta(mpc_poc_query_t *query,
     return false;
   }
 
+  for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
+    bn_multiply(&lambda, &receiver_additive_shares_list[i], &curve->order);
+  }
+
+  memcpy(&additive_shares_list[sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1)], 
+         receiver_additive_shares_list, receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+
+  free(s_values);
+  free(q_matrices);
+  free(t_matrices);
+  free(b_value);
+  free(receiver_additive_shares_list);
+  free(sender_additive_shares_list);
+
   return true;  
+}
+
+void compute_self_product(bignum256 *self_product1, bignum256 *self_product2, 
+                          bignum256 *secret_share_list, uint8_t *dec_share,
+                          uint32_t threshold, uint32_t index, uint32_t *participant_indices) {
+  const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  bignum256 lambda;
+  compute_lambda(&lambda, participant_indices, threshold, index);
+
+  bn_multiply(&secret_share_list[POLYNOMIAL_K_INDEX], self_product1, &curve->order);
+  bn_multiply(&secret_share_list[POLYNOMIAL_A_INDEX], self_product1, &curve->order);
+  bn_multiply(&lambda, self_product1, &curve->order);
+  bn_multiply(&lambda, self_product1, &curve->order);
+
+  bn_read_be(dec_share, self_product2);
+  bn_multiply(&secret_share_list[POLYNOMIAL_P_INDEX], self_product2, &curve->order);
+  bn_multiply(&lambda, self_product2, &curve->order);
+  bn_multiply(&lambda, self_product2, &curve->order);
 }
 
 void sign_message_flow(mpc_poc_query_t *query) {
@@ -1373,8 +1461,6 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     mpc_delay_scr_init("DKG successfully finished.", DELAY_SHORT);
 
-    // decrypt group_key_info's share
-
     uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
     if (mpc_aes_decrypt(group_key_info.group_share.enc_share, 32, dec_share, priv_key) != 0) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -1382,10 +1468,29 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return false;
     }
 
+    bignum256 *additive_shares_list = malloc((group_info.threshold - 1) * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+
+    bignum256 self_product1;
+    bignum256 self_product2;
+
+    bn_one(&self_product1);
+    bn_one(&self_product2);
+
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < group_info.threshold; i++) {
+      if (participant_indices[i] == my_index) {
+        index = i;
+        break;
+      }
+    }
+
+    compute_self_product(&self_product1, &self_product2, secret_share_list, dec_share, 
+                         group_info.threshold, index, participant_indices);
+
     if (!start_mta(query, &group_info, 
                    my_index, participant_indices, 
                    group_info.threshold, secret_share_list, 
-                   dec_share, priv_key)) {
+                   dec_share, priv_key, additive_shares_list)) {
       return;
     }
   }
