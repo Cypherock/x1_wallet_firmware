@@ -49,6 +49,9 @@ void evaluate_polynomial(const ecdsa_curve* curve,
 int mpc_aes_encrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
 int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
 
+int mpc_aes_encrypt128(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
+int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key);
+
 void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
                                         const curve_point* point,
                                         const uint64_t x_cord,

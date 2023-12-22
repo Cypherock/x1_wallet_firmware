@@ -122,6 +122,9 @@ void bn_multiply(const bignum256 *k, bignum256 *x, const bignum256 *prime);
 
 void bn_fast_mod(bignum256 *x, const bignum256 *prime);
 
+void bn_power_mod(const bignum256 *x, const bignum256 *e,
+                  const bignum256 *prime, bignum256 *res);
+                  
 void bn_sqrt(bignum256 *x, const bignum256 *prime);
 
 void bn_inverse(bignum256 *x, const bignum256 *prime);

@@ -275,6 +275,52 @@ int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out,
     return 0;
 }
 
+int mpc_aes_encrypt128(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
+    size_t padded_len = ((original_data_len + 15) / 16) * 16;
+    uint8_t *padded_data = malloc(padded_len);
+    pad_data(padded_data, data, original_data_len, padded_len);
+
+    uint8_t iv[16]; // AES block size is 16 bytes
+    memset(iv, 0, sizeof(iv));
+
+    aes_encrypt_ctx enc_ctx;
+
+    // Initialize encryption context with the key
+    if (aes_encrypt_key128(key, &enc_ctx) != EXIT_SUCCESS) {
+        free(padded_data);
+        return 1;
+    }
+
+    // Encrypt the data
+    return aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+}
+
+int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
+    size_t padded_len = ((original_data_len + 15) / 16) * 16;
+    uint8_t *dec_buf = malloc(padded_len);
+
+    uint8_t iv[16]; // AES block size is 16 bytes
+    memset(iv, 0, sizeof(iv));
+
+    aes_decrypt_ctx dec_ctx;
+
+    // Initialize decryption context with the key
+    if (aes_decrypt_key128(key, &dec_ctx) != EXIT_SUCCESS) {
+        return 1;
+    }
+
+    // Decrypt the data
+    if (aes_cbc_decrypt(data, dec_buf, padded_len, iv, &dec_ctx) != EXIT_SUCCESS) {
+        return 1;
+    }
+
+    // Copy the original data to the output buffer
+    memcpy(out, dec_buf, original_data_len);
+
+    free(dec_buf);
+    return 0;
+}
+
 void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
                                         const curve_point* point,
                                         const uint64_t x_cord,

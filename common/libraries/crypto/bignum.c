@@ -487,6 +487,50 @@ void bn_fast_mod(bignum256 *x, const bignum256 *prime) {
   }
 }
 
+// res = x**e % prime
+// Assumes both x and e are normalized, x < 2**259
+// Guarantees res is normalized and partly reduced modulo prime
+// Works properly even if &x == &res
+// Assumes prime is normalized, 2**256 - 2**224 <= prime <= 2**256
+// The function doesn't have neither constant control flow nor constant memory
+//  access flow with regard to e
+void bn_power_mod(const bignum256 *x, const bignum256 *e,
+                  const bignum256 *prime, bignum256 *res) {
+  // Uses iterative right-to-left exponentiation by squaring, see
+  // https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
+
+  bignum256 acc = {0};
+  bn_copy(x, &acc);
+
+  bn_one(res);
+  for (int i = 0; i < 9; i++) {
+    uint32_t limb = e->val[i];
+
+    for (int j = 0; j < 30; j++) {
+      // Break if the following bits of the last limb are zero
+      if (i == 9 - 1 && limb == 0) break;
+
+      if (limb & 1)
+        // acc * res < 2**519
+        // Proof:
+        //   acc * res <= max(2**259 - 1, 2 * prime) * (2 * prime)
+        //     == max(2**259 - 1, 2**257) * 2**257 < 2**259 * 2**257
+        //     == 2**516 < 2**519
+        bn_multiply(&acc, res, prime);
+
+      limb >>= 1;
+      // acc * acc < 2**519
+      // Proof:
+      //   acc * acc <= max(2**259 - 1, 2 * prime)**2
+      //     <= (2**259)**2 == 2**518 < 2**519
+      bn_multiply(&acc, &acc, prime);
+    }
+    // acc == x**(e[:i + 1]) % prime
+  }
+
+  memzero(&acc, sizeof(acc));
+}
+
 // square root of x = x^((p+1)/4)
 // http://en.wikipedia.org/wiki/Quadratic_residue#Prime_or_prime_power_modulus
 // assumes    x is normalized but not necessarily reduced.

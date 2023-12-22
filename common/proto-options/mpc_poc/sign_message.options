@@ -21,3 +21,9 @@ mpc_poc.MTARcvGetEncSigResponse.signature type:FT_STATIC max_size:64 fixed_lengt
 mpc_poc.MTASndPostEncRequest.enc_m0 type:FT_STATIC max_size:128 fixed_length:true
 mpc_poc.MTASndPostEncRequest.enc_m1 type:FT_STATIC max_size:128 fixed_length:true
 mpc_poc.MTASndPostEncSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTASndGetMASCOTResponse.enc_m0 type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.MTASndGetMASCOTResponse.enc_m1 type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.MTASndGetMASCOTSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTARcvPostMASCOTRequest.enc_m0 type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.MTARcvPostMASCOTRequest.enc_m1 type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.MTARcvPostMASCOTSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
