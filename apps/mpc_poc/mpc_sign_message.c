@@ -488,8 +488,10 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
     hasher_Init(&hasher, HASHER_SHA2);  
 
     uint8_t to_party = participant_indices[index + 1 + i];
+    uint8_t my_index = participant_indices[index];
+
     hasher_Update(&hasher, &to_party, 1);
-    hasher_Update(&hasher_verify, &to_party, 1);
+    hasher_Update(&hasher_verify, &my_index, 1); // my_index
 
     random_generate(&s_values[i * 16], 16);
 
@@ -562,6 +564,198 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
     }
 
     if (!mpc_sign_message(hash, 32, response2.mta_snd_get_pk_sig.signature, priv_key)) {
+      mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+      return false;
+    }
+
+    result2.sign_message = response2;
+    mpc_send_result(&result2);
+  }
+
+  return true;
+}
+
+void store_t_value_in_matrix(uint8_t *t_value, uint8_t *t_matrix, int index) {
+  // t_matrix is a 1024 * (NUMBER_OF_OTS / 8) matrix
+  // store t_value in the index column of the matrix
+
+  for (int i = 0; i < 1024; ++i) {
+    uint8_t mask = 1 << (i % 8);
+    if (t_value[i / 8] & mask) {
+      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] |= (1 << (index % 8));
+    } else {
+      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] &= ~(1 << (index % 8));
+    }
+  }
+}
+
+bool mta_send_rcv_enc(mpc_poc_query_t *query,
+                      mpc_poc_group_info_t *group_info,
+                      uint32_t index,
+                      uint32_t *participant_indices,
+                      uint32_t receiver_times,
+                      uint8_t *priv_key,
+                      uint8_t *ot_receiver_sk_lists,
+                      uint8_t *b_value,
+                      uint8_t *t_matrices) {
+
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  for (int i = 0; i < receiver_times; ++i) {
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_INITIATE_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta rcv enc initiate)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_INITIATE_TAG;
+
+    response.mta_rcv_get_enc_initiate.to = participant_indices[i];
+    response.mta_rcv_get_enc_initiate.length = NUMBER_OF_OTS;
+
+    result.sign_message = response;
+    mpc_send_result(&result);
+
+    Hasher hasher;
+    Hasher hasher_verify;
+
+    hasher_Init(&hasher_verify, HASHER_SHA2);
+    hasher_Init(&hasher, HASHER_SHA2);  
+
+    uint8_t to_party = participant_indices[i];
+    uint8_t my_index = participant_indices[index];
+
+    hasher_Update(&hasher, &to_party, 1);
+    hasher_Update(&hasher_verify, &my_index, 1); // my_index
+
+    for (int j = 0; j < NUMBER_OF_OTS; ++j) {
+      if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+          !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_TAG)) {
+          mpc_delay_scr_init("Error: wrong query (mta rcv enc)", DELAY_TIME);
+          return false;
+      }
+
+      mpc_poc_result_t result =
+          init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+      mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+      response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_TAG;
+
+      uint8_t *t_value = malloc(128 * sizeof(uint8_t));
+      random_generate(t_value, 128);
+
+      store_t_value_in_matrix(t_value, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
+
+      bignum256 ot_receiver_sk;
+      bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], &ot_receiver_sk);
+
+      curve_point ot_receiver_pk;
+      scalar_multiply(curve, &ot_receiver_sk, &ot_receiver_pk);
+
+      curve_point ot_sender_pk;
+      ecdsa_read_pubkey(curve, query->sign_message.mta_rcv_get_enc.public_key, &ot_sender_pk);
+
+      hasher_Update(&hasher_verify, query->sign_message.mta_rcv_get_enc.public_key, 33);
+
+      curve_point k0;
+      point_multiply(curve, &ot_receiver_sk, &ot_sender_pk, &k0);
+
+      curve_point ot_receiver_pk_neg;
+      bn_copy(&(ot_receiver_pk.x), &(ot_receiver_pk_neg.x));
+      bn_subtractmod(&(curve->prime), &(ot_receiver_pk.y), &(ot_receiver_pk_neg.y), &(curve->prime));
+
+      point_add(curve, &ot_sender_pk, &ot_receiver_pk_neg);
+
+      curve_point k1;
+      point_multiply(curve, &ot_receiver_sk, &ot_receiver_pk_neg, &k1);
+
+      uint8_t *key_hash = malloc(32 * sizeof(uint8_t));
+      uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
+
+      Hasher hasher_key0;
+      hasher_Init(&hasher_key0, HASHER_SHA2);
+
+      bn_write_be(&(k0.x), key_coordinate);
+
+      hasher_Update(&hasher_key0, key_coordinate, 32);
+      bn_write_be(&(k0.y), key_coordinate);
+      hasher_Update(&hasher_key0, key_coordinate, 32);
+
+      hasher_Final(&hasher_key0, key_hash);
+
+      if (!mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m0, key_hash)) {
+
+        mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
+      Hasher hasher_key1;
+      hasher_Init(&hasher_key1, HASHER_SHA2);
+
+      bn_write_be(&(k1.x), key_coordinate);
+
+      hasher_Update(&hasher_key1, key_coordinate, 32);
+      bn_write_be(&(k1.y), key_coordinate);
+      hasher_Update(&hasher_key1, key_coordinate, 32);
+
+      hasher_Final(&hasher_key1, key_hash);
+
+      // xor t_value with b_value
+      for (int k = 0; k < 128; ++k) {
+        t_value[k] ^= b_value[k];
+      }
+
+      if (!mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m1, key_hash)) {
+
+        mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
+      hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m0, 128);
+      hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m1, 128);
+
+      result.sign_message = response;
+      mpc_send_result(&result);
+    }
+
+    if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+        !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_SIG_TAG)) {
+        mpc_delay_scr_init("Error: wrong query (mta rcv enc finish)", DELAY_TIME);
+        return false;
+    }
+
+    mpc_poc_result_t result2 =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response2 = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response2.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_SIG_TAG;
+
+    uint8_t hash[32] = {0};
+    uint8_t hash_verify[32] = {0};
+
+    hasher_Final(&hasher, hash);
+    hasher_Final(&hasher_verify, hash_verify);
+
+    uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!index_to_pub_key(group_info, participant_indices[i], verify_pub_key)) {
+      mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
+      return false;
+    }
+
+    if (!mpc_verify_signature(hash_verify, 32, query->sign_message.mta_rcv_get_enc_sig.signature, verify_pub_key)) {
+      mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
+      return false;
+    }
+
+    if (!mpc_sign_message(hash, 32, response2.mta_rcv_get_enc_sig.signature, priv_key)) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
       return false;
     }
@@ -662,6 +856,11 @@ bool start_mta(mpc_poc_query_t *query,
   if (!mta_send_snd_pub_keys(query, group_info, index, 
                              participant_indices, sender_times, priv_key, s_values, 
                              ot_sender_sk_lists)) {
+    return false;
+  }
+
+  if (!mta_send_rcv_enc(query, group_info, index, participant_indices, receiver_times, 
+                        priv_key, ot_receiver_sk_lists, b_value, t_matrices)) {
     return false;
   }
 

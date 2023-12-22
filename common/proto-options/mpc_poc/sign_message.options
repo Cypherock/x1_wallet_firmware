@@ -13,3 +13,8 @@ mpc_poc.MTASndGetPKRequest.public_key type:FT_STATIC max_size:33 fixed_length:tr
 mpc_poc.MTASndGetPKResponse.public_key type:FT_STATIC max_size:33 fixed_length:true
 mpc_poc.MTASndGetPKSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.MTASndGetPKSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTARcvGetEncRequest.public_key type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.MTARcvGetEncResponse.enc_m0 type:FT_STATIC max_size:128 fixed_length:true
+mpc_poc.MTARcvGetEncResponse.enc_m1 type:FT_STATIC max_size:128 fixed_length:true
+mpc_poc.MTARcvGetEncSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.MTARcvGetEncSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
