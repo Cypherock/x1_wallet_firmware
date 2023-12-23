@@ -1778,6 +1778,78 @@ bool get_sig_share(mpc_poc_query_t *query,
   return true;
 }
 
+bool compute_sig(mpc_poc_query_t *query,
+                 mpc_poc_group_info_t *group_info,
+                 uint32_t *participant_indices,
+                 uint32_t threshold,
+                 uint32_t index,
+                 bignum256 *r,
+                 bignum256 *my_sig_share,
+                 uint8_t *final_signature) {
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_COMPUTE_SIG_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (compute sig)", DELAY_TIME);
+      return false;
+  }
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_COMPUTE_SIG_TAG;
+
+  if (query->sign_message.compute_sig.signed_sig_share_list_count != threshold - 1) {
+    mpc_delay_scr_init("Error: wrong length of signed sig share list", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  int k = 0;
+  for (int i = 0; i < threshold; ++i) {
+    if (i == index) {
+      continue;
+    }
+
+    mpc_poc_signed_sig_share_t signed_sig_share = 
+      query->sign_message.compute_sig.signed_sig_share_list[k];
+
+    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+
+    if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
+      mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+    if (!mpc_verify_signature(signed_sig_share.sig_share, 32, signed_sig_share.signature, participant_pub_key)) {
+      mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    bignum256 sig_share;
+    bn_read_be(signed_sig_share.sig_share, &sig_share);
+
+    bn_addmod(my_sig_share, &sig_share, &curve->order);
+
+    k++;
+  }
+
+  bn_write_be(r, final_signature);
+  bn_write_be(my_sig_share, final_signature + 32);
+
+  memcpy(response.compute_sig.signature, final_signature, 64);
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
 void compute_self_product(bignum256 *self_product1, bignum256 *self_product2, 
                           bignum256 *secret_share_list, uint8_t *dec_share,
                           uint32_t threshold, uint32_t index, uint32_t *participant_indices) {
@@ -1862,6 +1934,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     mpc_delay_scr_init("DKG successfully finished.", DELAY_SHORT);
+    display_msg_on_screen("MTA process started.");
 
     uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
     if (mpc_aes_decrypt(group_key_info.group_share.enc_share, 32, dec_share, priv_key) != 0) {
@@ -1895,6 +1968,9 @@ void sign_message_flow(mpc_poc_query_t *query) {
                    dec_share, priv_key, additive_shares_list)) {
       return;
     }
+
+    mpc_delay_scr_init("MTA successfully finished.", DELAY_SHORT);
+    display_msg_on_screen("Generating signature...");
 
     uint8_t *my_small_w_share = malloc(32 * sizeof(uint8_t));
     uint8_t *my_big_w_share = malloc(33 * sizeof(uint8_t));
@@ -1940,6 +2016,22 @@ void sign_message_flow(mpc_poc_query_t *query) {
                        participant_indices, group_info.threshold, index, 
                        additive_shares_list, &self_product2, &(R.x), msg_hash,
                        &secret_share_list[POLYNOMIAL_D_INDEX], &secret_share_list[POLYNOMIAL_E_INDEX])) {
+      return;
+    }
+
+    uint8_t *final_signature = malloc(64 * sizeof(uint8_t));
+
+    if (!compute_sig(query, &group_info, participant_indices, group_info.threshold, 
+                     index, &R.x, &sig_share, final_signature)) {
+      return;
+    }
+
+    mpc_delay_scr_init("Signature successfully generated.", DELAY_SHORT);
+
+    char msg[130];
+    byte_array_to_hex_string(final_signature, 64, msg, 130);
+
+    if (!mpc_core_scroll_page("Match the signature", msg, mpc_send_error)) {
       return;
     }
   }
