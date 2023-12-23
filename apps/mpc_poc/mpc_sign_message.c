@@ -1377,6 +1377,72 @@ bool start_mta(mpc_poc_query_t *query,
   return true;  
 }
 
+bool sig_get_authenticator(mpc_poc_query_t *query,
+                           bignum256 *additive_shares_list,
+                           size_t length,
+                           bignum256 *self_product1,
+                           bignum256 *a_share,
+                           mpc_poc_group_key_info_t *group_key_info,
+                           uint8_t *priv_key) {
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_GET_AUTHENTICATOR_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (get authenticator)", DELAY_TIME);
+      return false;
+  }
+
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_SIG_GET_AUTHENTICATOR_TAG;
+
+  bignum256 small_w_share_bn;
+  bn_copy(self_product1, &small_w_share_bn);
+
+  for (int i = 0; i < length; ++i) {
+    bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 0], &curve->order);
+    bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 1], &curve->order);
+  }
+
+  curve_point r_value;
+  ecdsa_read_pubkey(curve, group_key_info->group_pub_key, &r_value);
+
+  curve_point big_w_share_point;
+  point_multiply(curve, a_share, &r_value, &big_w_share_point);
+
+  mpc_poc_authenticator_data_t authenticator_data = MPC_POC_AUTHENTICATOR_DATA_INIT_ZERO;
+  bn_write_be(&small_w_share_bn, authenticator_data.small_w_share);
+
+  authenticator_data.big_w_share[0] = 0x02 | (big_w_share_point.y.val[0] & 0x01);
+  bn_write_be(&big_w_share_point.x, authenticator_data.big_w_share + 1);
+
+  const uint8_t AUTHENTICATOR_DATA_BUFFER_SIZE = 70;
+
+  mpc_poc_signed_authenticator_data_t signed_authenticator_data = MPC_POC_SIGNED_AUTHENTICATOR_DATA_INIT_ZERO;
+  signed_authenticator_data.has_authenticator_data = true;
+  signed_authenticator_data.authenticator_data = authenticator_data;
+
+  // sign authenticator data
+  if (!mpc_sign_struct(&authenticator_data, AUTHENTICATOR_DATA_BUFFER_SIZE, 
+                       MPC_POC_AUTHENTICATOR_DATA_FIELDS, signed_authenticator_data.signature, priv_key)) {
+    mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  response.sig_get_authenticator.has_signed_authenticator_data = true;
+  response.sig_get_authenticator.signed_authenticator_data = signed_authenticator_data;
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
 void compute_self_product(bignum256 *self_product1, bignum256 *self_product2, 
                           bignum256 *secret_share_list, uint8_t *dec_share,
                           uint32_t threshold, uint32_t index, uint32_t *participant_indices) {
@@ -1491,6 +1557,13 @@ void sign_message_flow(mpc_poc_query_t *query) {
                    my_index, participant_indices, 
                    group_info.threshold, secret_share_list, 
                    dec_share, priv_key, additive_shares_list)) {
+      return;
+    }
+
+    if (!sig_get_authenticator(query, additive_shares_list, group_info.threshold, 
+                               &self_product1, &secret_share_list[POLYNOMIAL_A_INDEX],
+                               &group_key_info_list[POLYNOMIAL_A_INDEX], priv_key)) {
+
       return;
     }
   }
