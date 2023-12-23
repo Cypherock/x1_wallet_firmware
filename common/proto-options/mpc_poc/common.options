@@ -13,3 +13,6 @@ mpc_poc.SignedShareData.signature type:FT_STATIC max_size:64 fixed_length:true
 mpc_poc.GroupKeyInfo.group_pub_key type:FT_STATIC max_size:33 fixed_length:true
 mpc_poc.SignedPublicKey.pub_key type:FT_STATIC max_size:33 fixed_length:true
 mpc_poc.SignedPublicKey.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.AuthenticatorData.big_w_share type:FT_STATIC max_size:33 fixed_length:true
+mpc_poc.AuthenticatorData.small_w_share type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.SignedAuthenticatorData.signature type:FT_STATIC max_size:64 fixed_length:true

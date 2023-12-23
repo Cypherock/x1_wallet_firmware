@@ -27,3 +27,8 @@ mpc_poc.MTASndGetMASCOTSigResponse.signature type:FT_STATIC max_size:64 fixed_le
 mpc_poc.MTARcvPostMASCOTRequest.enc_m0 type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.MTARcvPostMASCOTRequest.enc_m1 type:FT_STATIC max_size:32 fixed_length:true
 mpc_poc.MTARcvPostMASCOTSigRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.SigComputeAuthenticatorRequest.signed_authenticator_data_list type:FT_STATIC max_count:4 fixed_length:true
+mpc_poc.SignedSigShare.sig_share type:FT_STATIC max_size:32 fixed_length:true
+mpc_poc.SignedSigShare.signature type:FT_STATIC max_size:64 fixed_length:true
+mpc_poc.ComputeSigRequest.signed_sig_share_list type:FT_STATIC max_count:4 fixed_length:true
+mpc_poc.ComputeSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
