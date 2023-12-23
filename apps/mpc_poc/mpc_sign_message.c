@@ -25,6 +25,8 @@ const uint8_t POLYNOMIAL_P_INDEX = ZERO_POLYNOMIALS + 2;
 
 const uint8_t NUMBER_OF_OTS = 128;
 
+const uint8_t AUTHENTICATOR_DATA_BUFFER_SIZE = 70;
+
 static bool check_which_request(const mpc_poc_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_message.which_request) {
@@ -1383,7 +1385,9 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
                            bignum256 *self_product1,
                            bignum256 *a_share,
                            mpc_poc_group_key_info_t *group_key_info,
-                           uint8_t *priv_key) {
+                           uint8_t *priv_key,
+                           uint8_t *my_small_w_share,
+                           uint8_t *my_big_w_share) {
 
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
       !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_GET_AUTHENTICATOR_TAG)) {
@@ -1419,7 +1423,8 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
   authenticator_data.big_w_share[0] = 0x02 | (big_w_share_point.y.val[0] & 0x01);
   bn_write_be(&big_w_share_point.x, authenticator_data.big_w_share + 1);
 
-  const uint8_t AUTHENTICATOR_DATA_BUFFER_SIZE = 70;
+  memcpy(my_small_w_share, authenticator_data.small_w_share, 32);
+  memcpy(my_big_w_share, authenticator_data.big_w_share, 33);
 
   mpc_poc_signed_authenticator_data_t signed_authenticator_data = MPC_POC_SIGNED_AUTHENTICATOR_DATA_INIT_ZERO;
   signed_authenticator_data.has_authenticator_data = true;
@@ -1436,6 +1441,117 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
 
   response.sig_get_authenticator.has_signed_authenticator_data = true;
   response.sig_get_authenticator.signed_authenticator_data = signed_authenticator_data;
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
+bool sig_compute_authenticator(mpc_poc_query_t *query,
+                               mpc_poc_group_info_t *group_info,
+                               uint32_t *participant_indices,
+                               uint32_t index,
+                               size_t length,
+                               uint8_t *my_small_w_share,
+                               uint8_t *my_big_w_share,
+                               bignum256 *w_bn,
+                               uint8_t *W) {
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_COMPUTE_AUTHENTICATOR_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (compute authenticator)", DELAY_TIME);
+      return false;
+  }
+
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_SIG_COMPUTE_AUTHENTICATOR_TAG;
+
+  if (query->sign_message.sig_compute_authenticator.signed_authenticator_data_list_count != length - 1) {
+    mpc_delay_scr_init("Error: wrong length of signed authenticator data list", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  bn_read_be(my_small_w_share, w_bn);
+
+  const curve_point* points[length];
+  uint32_t xcords[length];
+
+  xcords[0] = participant_indices[index];
+
+  curve_point my_point;
+  ecdsa_read_pubkey(curve, my_big_w_share, &my_point);
+
+  points[0] = &my_point;
+
+  int ind = 1;
+
+  int k = 0;
+  for (int i = 0; i < length; ++i) {
+    if (i == index) {
+      continue;
+    }
+
+    mpc_poc_signed_authenticator_data_t signed_authenticator_data = 
+      query->sign_message.sig_compute_authenticator.signed_authenticator_data_list[k];
+
+    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+
+    if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
+      mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    if (!mpc_verify_struct_sig(&signed_authenticator_data.authenticator_data, AUTHENTICATOR_DATA_BUFFER_SIZE,
+                           MPC_POC_AUTHENTICATOR_DATA_FIELDS, signed_authenticator_data.signature, 
+                           participant_pub_key)) {
+      mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    bignum256 small_w_share_bn;
+    bn_read_be(signed_authenticator_data.authenticator_data.small_w_share, &small_w_share_bn);
+
+    bn_addmod(w_bn, &small_w_share_bn, &curve->order);
+
+    xcords[ind] = participant_indices[i];
+
+    curve_point point;
+    ecdsa_read_pubkey(curve, signed_authenticator_data.authenticator_data.big_w_share, &point);
+
+    points[ind] = &point;
+
+    ind++;
+    k++;
+  }
+
+  curve_point W_point;
+  lagarange_exp_interpolate(curve, points, xcords, 0, length, &W_point);
+
+  W[0] = 0x02 | (W_point.y.val[0] & 0x01);
+  bn_write_be(&W_point.x, W + 1);
+
+  // check if w.G = W
+  curve_point wG;
+  scalar_multiply(curve, w_bn, &wG);
+
+  if (!point_is_equal(&wG, &W_point)) {
+    mpc_delay_scr_init("Error: w.G != W", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
   result.sign_message = response;
   mpc_send_result(&result);
@@ -1560,10 +1676,23 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return;
     }
 
+    uint8_t *my_small_w_share = malloc(32 * sizeof(uint8_t));
+    uint8_t *my_big_w_share = malloc(33 * sizeof(uint8_t));
+
     if (!sig_get_authenticator(query, additive_shares_list, group_info.threshold, 
                                &self_product1, &secret_share_list[POLYNOMIAL_A_INDEX],
-                               &group_key_info_list[POLYNOMIAL_A_INDEX], priv_key)) {
+                               &group_key_info_list[POLYNOMIAL_K_INDEX], priv_key,
+                               my_small_w_share, my_big_w_share)) {
 
+      return;
+    }
+
+    bignum256 w;
+    uint8_t *W = malloc(33 * sizeof(uint8_t));
+
+    if (!sig_compute_authenticator(query, &group_info, participant_indices, index, 
+                                   group_info.threshold, my_small_w_share, my_big_w_share, 
+                                   &w, W)) {
       return;
     }
   }
