@@ -1564,7 +1564,10 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
                       bignum256 *k_share,
                       bignum256 *a_share,
                       uint8_t *priv_key,
-                      bignum256 *my_ka_share) {
+                      bignum256 *my_ka_share,
+                      uint32_t *participant_indices,
+                      uint32_t threshold,
+                      uint32_t index) {
   
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
@@ -1590,6 +1593,11 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
   bn_copy(&k_inv_share, &ka_share);
   bn_addmod(&ka_share, a_share, &curve->order);
 
+  bignum256 lambda;
+  compute_lambda(&lambda, participant_indices, threshold, index);
+
+  bn_multiply(&lambda, &ka_share, &curve->order);
+
   mpc_poc_signed_ka_share_t signed_ka_share = MPC_POC_SIGNED_KA_SHARE_INIT_ZERO;
   bn_write_be(&ka_share, signed_ka_share.ka_share);
 
@@ -1604,6 +1612,71 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
 
   response.sig_get_ka_share.has_signed_ka_share = true;
   response.sig_get_ka_share.signed_ka_share = signed_ka_share;
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
+bool sig_compute_ka(mpc_poc_query_t *query,
+                    mpc_poc_group_info_t *group_info,
+                    uint32_t *participant_indices,
+                    uint32_t threshold,
+                    uint32_t index,
+                    bignum256 *k_inv_plus_p) {
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_COMPUTE_KA_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (compute ka)", DELAY_TIME);
+      return false;
+  }
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_SIG_COMPUTE_KA_TAG;
+
+  if (query->sign_message.sig_compute_ka.signed_ka_share_list_count != threshold - 1) {
+    mpc_delay_scr_init("Error: wrong length of signed ka share list", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  int k = 0;
+  for (int i = 0; i < threshold; ++i) {
+    if (i == index) {
+      continue;
+    }
+
+    mpc_poc_signed_ka_share_t signed_ka_share = 
+      query->sign_message.sig_compute_ka.signed_ka_share_list[k];
+
+    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+
+    if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
+      mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    if (!mpc_verify_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, participant_pub_key)) {
+      mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    bignum256 ka_share;
+    bn_read_be(signed_ka_share.ka_share, &ka_share);
+
+    bn_addmod(k_inv_plus_p, &ka_share, &curve->order);
+    k++;
+  }
 
   result.sign_message = response;
   mpc_send_result(&result);
@@ -1750,8 +1823,16 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     bignum256 my_ka_share;
     if (!sig_get_ka_share(query, &w, &secret_share_list[POLYNOMIAL_K_INDEX], 
-                          &secret_share_list[POLYNOMIAL_P_INDEX], priv_key, &my_ka_share)) {
+                          &secret_share_list[POLYNOMIAL_P_INDEX], priv_key, &my_ka_share,
+                          participant_indices, group_info.threshold, index)) {
       return;
     }
+
+    if (!sig_compute_ka(query, &group_info, participant_indices, group_info.threshold, 
+                        index, &my_ka_share)) {
+      return;
+    }
+
+
   }
 }
