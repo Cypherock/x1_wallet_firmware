@@ -230,7 +230,7 @@ bool get_participant_indices(mpc_poc_query_t *query, uint8_t *pub_key,
     memcpy(participant_indices, query->sign_message.post_sequence_indices.sequence_indices, 
            group_info->threshold * sizeof(uint32_t));
     
-    response.post_sequence_indices.success = true;
+    response.post_sequence_indices.my_index = *my_index;
     result.sign_message = response;
 
     mpc_send_result(&result);
