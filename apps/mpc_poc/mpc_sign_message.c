@@ -1559,6 +1559,58 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
   return true;
 }
 
+bool sig_get_ka_share(mpc_poc_query_t *query,
+                      bignum256 *w,
+                      bignum256 *k_share,
+                      bignum256 *a_share,
+                      uint8_t *priv_key,
+                      bignum256 *my_ka_share) {
+  
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_GET_KA_SHARE_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (get ka share)", DELAY_TIME);
+      return false;
+  }
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_SIG_GET_KA_SHARE_TAG;
+
+  bignum256 ka_share;
+  bignum256 k_inv_share;
+
+  bn_copy(w, &k_inv_share);
+  bn_inverse(&k_inv_share, &curve->order);
+  bn_multiply(k_share, &k_inv_share, &curve->order);
+
+  bn_copy(&k_inv_share, &ka_share);
+  bn_addmod(&ka_share, a_share, &curve->order);
+
+  mpc_poc_signed_ka_share_t signed_ka_share = MPC_POC_SIGNED_KA_SHARE_INIT_ZERO;
+  bn_write_be(&ka_share, signed_ka_share.ka_share);
+
+  memcpy(my_ka_share, &ka_share, sizeof(bignum256));
+
+  if (!mpc_sign_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, priv_key)) {
+    mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  response.sig_get_ka_share.has_signed_ka_share = true;
+  response.sig_get_ka_share.signed_ka_share = signed_ka_share;
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
 void compute_self_product(bignum256 *self_product1, bignum256 *self_product2, 
                           bignum256 *secret_share_list, uint8_t *dec_share,
                           uint32_t threshold, uint32_t index, uint32_t *participant_indices) {
@@ -1693,6 +1745,12 @@ void sign_message_flow(mpc_poc_query_t *query) {
     if (!sig_compute_authenticator(query, &group_info, participant_indices, index, 
                                    group_info.threshold, my_small_w_share, my_big_w_share, 
                                    &w, W)) {
+      return;
+    }
+
+    bignum256 my_ka_share;
+    if (!sig_get_ka_share(query, &w, &secret_share_list[POLYNOMIAL_K_INDEX], 
+                          &secret_share_list[POLYNOMIAL_P_INDEX], priv_key, &my_ka_share)) {
       return;
     }
   }
