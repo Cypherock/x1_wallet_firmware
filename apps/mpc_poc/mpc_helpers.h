@@ -55,6 +55,7 @@ int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *o
 void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
                                         const curve_point* point,
                                         const uint64_t x_cord,
+                                        const uint32_t* x_cords,
                                         const uint64_t interpolate_point,
                                         const uint64_t threshold,
                                         curve_point* result);

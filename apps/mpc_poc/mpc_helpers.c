@@ -331,12 +331,13 @@ void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
     bignum256 lambda = {0}, zero_val = {0}, temp = {0};
     int64_t num = 1, den = 1;
 
-    for (uint64_t m = 0; m < threshold; m++) {
-        if (m + 1 == x_cord)
+    for (uint64_t i = 0; i < threshold; i++) {
+        int m = x_cords[i];
+        if (m == x_cord)
             continue;
 
-        num *= (int64_t)(m + 1 - interpolate_point);
-        den *= (int64_t)(m + 1 - x_cord);
+        num *= (int64_t)(m - interpolate_point);
+        den *= (int64_t)(m - x_cord);
     }
 
     assert(num % den == 0);
