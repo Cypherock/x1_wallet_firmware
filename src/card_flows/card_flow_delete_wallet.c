@@ -64,7 +64,7 @@
 #include "constant_texts.h"
 #include "core_error.h"
 #include "nfc.h"
-#include "ui_instruction.h"
+#include "ui_screens.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -131,6 +131,7 @@ static void check_card_state_and_delete_wallet(const char *wallet_name) {
   if (0 == get_wallet_card_state(flash_wallet_index)) {
     ASSERT(SUCCESS_ == delete_wallet_share_from_sec_flash(flash_wallet_index));
     ASSERT(SUCCESS_ == delete_wallet_from_flash(flash_wallet_index));
+    delay_scr_init(ui_text_wallet_deleted_successfully, DELAY_TIME);
   }
   return;
 }
@@ -197,20 +198,33 @@ card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
     error_code = card_fetch_share(&fetch_cfg, &response);
 
     if (CARD_OPERATION_SUCCESS != error_code) {
-      if ((SW_RECORD_NOT_FOUND == response.card_info.status) &&
-          (CARD_OPERATION_ABORT_OPERATION == error_code ||
-           CARD_OPERATION_VERIFICATION_FAILED == error_code)) {
-        // In case wallet is not found on card or wallet verification fails,
-        // consider it as a success case as wallet is already deleted, not
-        // created on card or wallet on card does not match with the required
-        // verification.
+      if (CARD_OPERATION_ABORT_OPERATION == error_code &&
+          SW_RECORD_NOT_FOUND == response.card_info.status) {
+        // In case wallet is not found on card, consider it as a success case as
+        // wallet is already deleted or not created on the card.
+        clear_core_error_screen();
+        // Let it pass to wallet delete flow as the card operation will get
+        // completed there.
+      } else if (CARD_OPERATION_VERIFICATION_FAILED == error_code) {
+        // In case wallet verification fails, consider it as a success case
+        // wallet on card does not match with the required verification.
         clear_core_error_screen();
         handle_wallet_deleted_from_card(&delete_cfg);
+
+        // NOTE: When this case occurs, we are skipping card removal. This is
+        // because it is not possible to detect card's presence after desection.
+        // Card deselection is performed in fetch_card_share in this case.
         buzzer_start(BUZZER_DURATION);
+        // TODO: Inform user that wallets with same name but failed verification
+        // might exist.
         continue;
       } else {
         break;
       }
+    }
+
+    if (STM_SUCCESS != nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME)) {
+      instruction_scr_change_text(ui_text_card_removed_fast, true);
     }
 
     // Operation to delete wallet from card and update card state on flash
