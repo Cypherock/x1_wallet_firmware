@@ -324,13 +324,14 @@ int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *o
 void evaluate_exp_lagarange_term(const ecdsa_curve* curve,
                                         const curve_point* point,
                                         const uint64_t x_cord,
+                                        const uint32_t* x_cords,
                                         const uint64_t interpolate_point,
                                         const uint64_t threshold,
                                         curve_point* result) {
     bignum256 lambda = {0}, zero_val = {0}, temp = {0};
     int64_t num = 1, den = 1;
 
-    for (uint64_t m = 0; m <= threshold; m++) {
+    for (uint64_t m = 0; m < threshold; m++) {
         if (m + 1 == x_cord)
             continue;
 
@@ -360,7 +361,7 @@ void lagarange_exp_interpolate(const ecdsa_curve* curve,
 
     point_set_infinity(result);
     for (int i = 0; i < threshold; i++) {
-        evaluate_exp_lagarange_term(curve, points[i], x_cords[i],
+        evaluate_exp_lagarange_term(curve, points[i], x_cords[i], x_cords,
                                     interpolate_point, threshold, &term);
         point_add(curve, &term, result);
     }
