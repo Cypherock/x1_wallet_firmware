@@ -62,7 +62,7 @@ bool sign_message_initiate(mpc_poc_query_t *query, uint8_t *priv_key, uint8_t *p
     return true;
 }
 
-bool approve_message(mpc_poc_query_t *query) {
+bool approve_message(mpc_poc_query_t *query, uint8_t *msg_hash) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_APPROVE_MESSAGE_TAG)) {
         return false;
@@ -90,6 +90,13 @@ bool approve_message(mpc_poc_query_t *query) {
       free(msg);
       return false;
     }
+
+    Hasher hasher;
+    hasher_Init(&hasher, HASHER_SHA2D);
+    hasher_Update(&hasher, query->sign_message.approve_message.msg.bytes, 
+                  query->sign_message.approve_message.msg.size);
+    
+    hasher_Final(&hasher, msg_hash);
 
     free(msg);
     
@@ -1406,7 +1413,7 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
   bignum256 small_w_share_bn;
   bn_copy(self_product1, &small_w_share_bn);
 
-  for (int i = 0; i < length; ++i) {
+  for (int i = 0; i < length - 1; ++i) {
     bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 0], &curve->order);
     bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 1], &curve->order);
   }
@@ -1567,7 +1574,8 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
                       bignum256 *my_ka_share,
                       uint32_t *participant_indices,
                       uint32_t threshold,
-                      uint32_t index) {
+                      uint32_t index,
+                      bignum256 *k_inv_share) {
   
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
@@ -1584,13 +1592,12 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
   response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_SIG_GET_KA_SHARE_TAG;
 
   bignum256 ka_share;
-  bignum256 k_inv_share;
 
-  bn_copy(w, &k_inv_share);
-  bn_inverse(&k_inv_share, &curve->order);
-  bn_multiply(k_share, &k_inv_share, &curve->order);
+  bn_copy(w, k_inv_share);
+  bn_inverse(k_inv_share, &curve->order);
+  bn_multiply(k_share, k_inv_share, &curve->order);
 
-  bn_copy(&k_inv_share, &ka_share);
+  bn_copy(k_inv_share, &ka_share);
   bn_addmod(&ka_share, a_share, &curve->order);
 
   bignum256 lambda;
@@ -1663,8 +1670,7 @@ bool sig_compute_ka(mpc_poc_query_t *query,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
     }
-
-    if (!mpc_verify_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, participant_pub_key)) {
+    if (!mpc_verify_signature(signed_ka_share.ka_share, 32, signed_ka_share.signature, participant_pub_key)) {
       mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
@@ -1677,6 +1683,94 @@ bool sig_compute_ka(mpc_poc_query_t *query,
     bn_addmod(k_inv_plus_p, &ka_share, &curve->order);
     k++;
   }
+
+  result.sign_message = response;
+  mpc_send_result(&result);
+
+  return true;
+}
+
+bool get_sig_share(mpc_poc_query_t *query,
+                   bignum256 *k_inv_plus_p,
+                   bignum256 *k_inv,
+                   uint8_t *priv_key_share,
+                   uint8_t *priv_key,
+                   bignum256 *sig_share,
+                   uint32_t *participant_indices,
+                   uint32_t threshold,
+                   uint32_t index,
+                   bignum256 *additive_shares_list,
+                   bignum256 *self_product2,
+                   bignum256 *r,
+                   uint8_t *message_hash,
+                   bignum256 *d_share,
+                   bignum256 *e_share) {
+  const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  
+  bignum256 pi_bn;
+  bn_copy(self_product2, &pi_bn);
+
+  for (int i = 0; i < threshold - 1; ++i) {
+    bn_addmod(&pi_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 2], &curve->order);
+    bn_addmod(&pi_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 3], &curve->order);
+  }
+
+  if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
+      !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_GET_SIG_SHARE_TAG)) {
+      mpc_delay_scr_init("Error: wrong query (get sig share)", DELAY_TIME);
+      return false;
+  }
+
+  mpc_poc_result_t result =
+      init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+  mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+  response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_GET_SIG_SHARE_TAG;
+
+  bignum256 vi;
+  bignum256 si;
+  bignum256 xi;
+
+  bn_read_be(priv_key_share, &xi);
+
+  bn_multiply(k_inv_plus_p, &xi, &curve->order);
+
+  bignum256 lambda;
+  compute_lambda(&lambda, participant_indices, threshold, index);
+
+  bn_multiply(&lambda, &xi, &curve->order);
+  bn_subtractmod(&xi, &pi_bn, &vi, &curve->order);
+
+  bignum256 mi;
+  bn_read_be(message_hash, &mi);
+
+  bn_copy(k_inv, &si);
+  bn_multiply(&mi, &si, &curve->order);
+
+  bn_multiply(d_share, &mi, &curve->order);
+  bn_addmod(&si, &mi, &curve->order);
+
+  bn_addmod(&si, e_share, &curve->order);
+
+  bn_multiply(&lambda, &si, &curve->order);
+
+  bn_multiply(r, &vi, &curve->order);
+  bn_addmod(&si, &vi, &curve->order);
+
+  bn_copy(&si, sig_share);
+
+  mpc_poc_signed_sig_share_t signed_sig_share = MPC_POC_SIGNED_SIG_SHARE_INIT_ZERO;
+  bn_write_be(sig_share, signed_sig_share.sig_share);
+
+  if (!mpc_sign_message(signed_sig_share.sig_share, 32, signed_sig_share.signature, priv_key)) {
+    mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  response.get_sig_share.has_signed_sig_share = true;
+  response.get_sig_share.signed_sig_share = signed_sig_share;
 
   result.sign_message = response;
   mpc_send_result(&result);
@@ -1724,7 +1818,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     mpc_delay_scr_init("App initiated.", DELAY_SHORT);
 
-    if (!approve_message(query)) {
+    uint8_t *msg_hash = malloc(32 * sizeof(uint8_t));
+    if (!approve_message(query, msg_hash)) {
       return;
     }
 
@@ -1813,6 +1908,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     bignum256 w;
+    bignum256 k_inv;
+
     uint8_t *W = malloc(33 * sizeof(uint8_t));
 
     if (!sig_compute_authenticator(query, &group_info, participant_indices, index, 
@@ -1824,7 +1921,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
     bignum256 my_ka_share;
     if (!sig_get_ka_share(query, &w, &secret_share_list[POLYNOMIAL_K_INDEX], 
                           &secret_share_list[POLYNOMIAL_P_INDEX], priv_key, &my_ka_share,
-                          participant_indices, group_info.threshold, index)) {
+                          participant_indices, group_info.threshold, index, &k_inv)) {
       return;
     }
 
@@ -1832,7 +1929,18 @@ void sign_message_flow(mpc_poc_query_t *query) {
                         index, &my_ka_share)) {
       return;
     }
+    
+    curve_point R;
 
+    const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+    ecdsa_read_pubkey(curve, group_key_info_list[POLYNOMIAL_K_INDEX].group_pub_key, &R);
 
+    bignum256 sig_share;
+    if (!get_sig_share(query, &my_ka_share, &k_inv, dec_share, priv_key, &sig_share, 
+                       participant_indices, group_info.threshold, index, 
+                       additive_shares_list, &self_product2, &(R.x), msg_hash,
+                       &secret_share_list[POLYNOMIAL_D_INDEX], &secret_share_list[POLYNOMIAL_E_INDEX])) {
+      return;
+    }
   }
 }
