@@ -472,7 +472,7 @@ bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
 
     hasher_Final(&hasher, hash);
 
-    if (!mpc_sign_message(hash, 32, response2.mta_rcv_get_pk_sig.signature, priv_key)) {
+    if (mpc_sign_message(hash, 32, response2.mta_rcv_get_pk_sig.signature, priv_key) != 0) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
       return false;
     }
@@ -599,7 +599,7 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
       return false;
     }
 
-    if (!mpc_sign_message(hash, 32, response2.mta_snd_get_pk_sig.signature, priv_key)) {
+    if (mpc_sign_message(hash, 32, response2.mta_snd_get_pk_sig.signature, priv_key) != 0) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
       return false;
     }
@@ -791,7 +791,7 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       return false;
     }
 
-    if (!mpc_sign_message(hash, 32, response2.mta_rcv_get_enc_sig.signature, priv_key)) {
+    if (mpc_sign_message(hash, 32, response2.mta_rcv_get_enc_sig.signature, priv_key) != 0) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
       return false;
     }
@@ -1067,7 +1067,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
     uint8_t hash[32] = {0};
     hasher_Final(&hasher, hash);
 
-    if (!mpc_sign_message(hash, 32, response2.mta_snd_get_mascot_sig.signature, priv_key)) {
+    if (mpc_sign_message(hash, 32, response2.mta_snd_get_mascot_sig.signature, priv_key) != 0) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
       return false;
     }
@@ -1610,7 +1610,7 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
 
   memcpy(my_ka_share, &ka_share, sizeof(bignum256));
 
-  if (!mpc_sign_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, priv_key)) {
+  if (mpc_sign_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, priv_key) != 0) {
     mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
@@ -1762,7 +1762,7 @@ bool get_sig_share(mpc_poc_query_t *query,
   mpc_poc_signed_sig_share_t signed_sig_share = MPC_POC_SIGNED_SIG_SHARE_INIT_ZERO;
   bn_write_be(sig_share, signed_sig_share.sig_share);
 
-  if (!mpc_sign_message(signed_sig_share.sig_share, 32, signed_sig_share.signature, priv_key)) {
+  if (mpc_sign_message(signed_sig_share.sig_share, 32, signed_sig_share.signature, priv_key) != 0) {
     mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
