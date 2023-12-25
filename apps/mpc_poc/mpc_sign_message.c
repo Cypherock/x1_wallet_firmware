@@ -668,18 +668,18 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
     hasher_Update(&hasher, &to_party, 1);
     hasher_Update(&hasher_verify, &my_index, 1); // my_index
 
+    mpc_poc_result_t result =
+        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+
+    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
+    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_TAG;
+
     for (int j = 0; j < NUMBER_OF_OTS; ++j) {
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
           !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_TAG)) {
           mpc_delay_scr_init("Error: wrong query (mta rcv enc)", DELAY_TIME);
           return false;
       }
-
-      mpc_poc_result_t result =
-          init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
-
-      mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
-      response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_TAG;
 
       uint8_t *t_value = malloc(128 * sizeof(uint8_t));
 
@@ -755,6 +755,8 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       hasher_Update(&hasher_key1, key_coordinate, 32);
       hasher_Final(&hasher_key1, key_hash);
 
+      free(key_coordinate);
+
       // xor t_value with b_value
       for (int k = 0; k < 128; ++k) {
         t_value[k] ^= b_value[k];
@@ -769,6 +771,7 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       }
 
       free(t_value);
+      free(key_hash);
 
       hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m0, 128);
       hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m1, 128);
@@ -805,6 +808,8 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
       return false;
     }
+
+    free(verify_pub_key);
 
     if (mpc_sign_message(hash, 32, response2.mta_rcv_get_enc_sig.signature, priv_key) != 0) {
       mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
