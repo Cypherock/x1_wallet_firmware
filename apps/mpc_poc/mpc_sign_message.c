@@ -682,32 +682,41 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_TAG;
 
       uint8_t *t_value = malloc(128 * sizeof(uint8_t));
-      random_generate(t_value, 128);
+
+      random_generate(t_value, 32);
+      random_generate(t_value + 32, 32);
+      random_generate(t_value + 64, 32);
+      random_generate(t_value + 96, 32);
 
       store_value_in_matrix(t_value, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
 
-      bignum256 ot_receiver_sk;
-      bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], &ot_receiver_sk);
+      bignum256 *ot_receiver_sk = malloc(sizeof(bignum256));
+      bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_receiver_sk);
 
-      curve_point ot_receiver_pk;
-      scalar_multiply(curve, &ot_receiver_sk, &ot_receiver_pk);
+      curve_point *ot_receiver_pk = malloc(sizeof(curve_point));
+      scalar_multiply(curve, ot_receiver_sk, ot_receiver_pk);
 
-      curve_point ot_sender_pk;
-      ecdsa_read_pubkey(curve, query->sign_message.mta_rcv_get_enc.public_key, &ot_sender_pk);
+      curve_point *ot_sender_pk = malloc(sizeof(curve_point));
+      ecdsa_read_pubkey(curve, query->sign_message.mta_rcv_get_enc.public_key, ot_sender_pk);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_rcv_get_enc.public_key, 33);
 
-      curve_point k0;
-      point_multiply(curve, &ot_receiver_sk, &ot_sender_pk, &k0);
+      curve_point *k0 = malloc(sizeof(curve_point));
+      point_multiply(curve, ot_receiver_sk, ot_sender_pk, k0);
 
-      curve_point ot_receiver_pk_neg;
-      bn_copy(&(ot_receiver_pk.x), &(ot_receiver_pk_neg.x));
-      bn_subtractmod(&(curve->prime), &(ot_receiver_pk.y), &(ot_receiver_pk_neg.y), &(curve->prime));
+      curve_point *ot_receiver_pk_neg = malloc(sizeof(curve_point));
+      bn_copy(&(ot_receiver_pk->x), &(ot_receiver_pk_neg->x));
+      bn_subtractmod(&(curve->prime), &(ot_receiver_pk->y), &(ot_receiver_pk_neg->y), &(curve->prime));
 
-      point_add(curve, &ot_sender_pk, &ot_receiver_pk_neg);
+      free(ot_receiver_pk);
+      point_add(curve, ot_sender_pk, ot_receiver_pk_neg);
+      free(ot_sender_pk);
 
-      curve_point k1;
-      point_multiply(curve, &ot_receiver_sk, &ot_receiver_pk_neg, &k1);
+      curve_point *k1 = malloc(sizeof(curve_point));
+      point_multiply(curve, ot_receiver_sk, ot_receiver_pk_neg, k1);
+
+      free(ot_receiver_sk);
+      free(ot_receiver_pk_neg);
 
       uint8_t *key_hash = malloc(32 * sizeof(uint8_t));
       uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
@@ -715,15 +724,17 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       Hasher hasher_key0;
       hasher_Init(&hasher_key0, HASHER_SHA2);
 
-      bn_write_be(&(k0.x), key_coordinate);
+      bn_write_be(&(k0->x), key_coordinate);
 
       hasher_Update(&hasher_key0, key_coordinate, 32);
-      bn_write_be(&(k0.y), key_coordinate);
-      hasher_Update(&hasher_key0, key_coordinate, 32);
+      bn_write_be(&(k0->y), key_coordinate);
 
+      free(k0);
+
+      hasher_Update(&hasher_key0, key_coordinate, 32);
       hasher_Final(&hasher_key0, key_hash);
 
-      if (!mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m0, key_hash)) {
+      if (mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m0, key_hash) != 0) {
 
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -734,12 +745,14 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       Hasher hasher_key1;
       hasher_Init(&hasher_key1, HASHER_SHA2);
 
-      bn_write_be(&(k1.x), key_coordinate);
+      bn_write_be(&(k1->x), key_coordinate);
 
       hasher_Update(&hasher_key1, key_coordinate, 32);
-      bn_write_be(&(k1.y), key_coordinate);
-      hasher_Update(&hasher_key1, key_coordinate, 32);
+      bn_write_be(&(k1->y), key_coordinate);
 
+      free(k1);
+
+      hasher_Update(&hasher_key1, key_coordinate, 32);
       hasher_Final(&hasher_key1, key_hash);
 
       // xor t_value with b_value
@@ -747,13 +760,15 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
         t_value[k] ^= b_value[k];
       }
 
-      if (!mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m1, key_hash)) {
+      if (mpc_aes_encrypt(t_value, 128, response.mta_rcv_get_enc.enc_m1, key_hash) != 0) {
 
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
         return false;
       }
+
+      free(t_value);
 
       hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m0, 128);
       hasher_Update(&hasher, response.mta_rcv_get_enc.enc_m1, 128);
@@ -879,12 +894,12 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
 
       uint8_t mask = 1 << (j % 8);
       if (s_values[(i * 16) + (j / 8)] & mask) {
-        if (!mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m0, 128, dec_m, dec_key)) {
+        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m0, 128, dec_m, dec_key) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           return false;
         }
       } else {
-        if (!mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m1, 128, dec_m, dec_key)) {
+        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m1, 128, dec_m, dec_key) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           return false;
         }  
@@ -1020,7 +1035,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
         bn_read_be(priv_key_share, &share_bn);
       }
 
-      if (!mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m0, q_value)) {
+      if (mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m0, q_value) != 0) {
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         return false;
       }
@@ -1033,7 +1048,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
         q_value[k] ^= s_values[sender_times * 16 + k];
       }
 
-      if (!mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m1, q_value)) {
+      if (mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m1, q_value) != 0) {
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         return false;
       }
@@ -1137,14 +1152,14 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       uint8_t *dec_m = malloc(32 * sizeof(uint8_t));
 
       if (b_bit) {
-        if (!mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
-                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)])) {
+        if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
+                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)]) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           return false;
         }
       } else {
-        if (!mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m1, 32, 
-                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)])) {
+        if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m1, 32, 
+                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)]) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           return false;
         }
