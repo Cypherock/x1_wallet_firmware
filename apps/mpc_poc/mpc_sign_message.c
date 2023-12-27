@@ -1024,7 +1024,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
     response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_MASCOT_INITIATE_TAG;
 
     response.mta_snd_get_mascot_initiate.to = participant_indices[index + 1 + i];
-    response.mta_snd_get_mascot_initiate.length = NUMBER_OF_OTS;
+    response.mta_snd_get_mascot_initiate.length = 1024;
 
     result.sign_message = response;
     mpc_send_result(&result);
@@ -1172,7 +1172,7 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
     response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_POST_MASCOT_INITIATE_TAG;
 
     response.mta_rcv_post_mascot_initiate.to = participant_indices[i];
-    response.mta_rcv_post_mascot_initiate.length = NUMBER_OF_OTS;
+    response.mta_rcv_post_mascot_initiate.length = 1024;
 
     result.sign_message = response;
     mpc_send_result(&result);
@@ -1180,8 +1180,8 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
     Hasher hasher_verify;
     hasher_Init(&hasher_verify, HASHER_SHA2);
 
-    uint8_t to_party = participant_indices[i];
-    hasher_Update(&hasher_verify, &to_party, 1);
+    uint8_t my_index = participant_indices[index];
+    hasher_Update(&hasher_verify, &my_index, 1);
 
     for (int j = 0; j < 1024; ++j) {
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
