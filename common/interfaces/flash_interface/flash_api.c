@@ -117,6 +117,29 @@ bool wallet_is_filled(uint8_t index, wallet_state *state_output) {
   return false;
 }
 
+bool wallet_is_filled_with_share(uint8_t index) {
+  if (MAX_WALLETS_ALLOWED <= index) {
+    return false;
+  }
+
+  /* Make sure that we always work on the latest RAM instance */
+  get_flash_ram_instance();
+
+  wallet_state state = flash_ram_instance.wallets[index].state;
+  // Read card states without write attempt state
+  uint8_t cards_states = flash_ram_instance.wallets[index].cards_states & 0x0F;
+
+  // If wallet state state is where share is present on device and card state is
+  // not zero, then wallet is filled
+  if (((UNVERIFIED_VALID_WALLET == state) || (VALID_WALLET == state) ||
+       (INVALID_WALLET == state)) &&
+      (0x00 != cards_states)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * @brief Save a new wallet on the flash
  *
