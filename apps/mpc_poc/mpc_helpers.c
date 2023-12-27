@@ -246,7 +246,10 @@ int mpc_aes_encrypt(const uint8_t *data, size_t original_data_len, uint8_t *out,
     }
 
     // Encrypt the data
-    return aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+    int ret = aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+    free(padded_data);
+
+    return ret;
 }
 
 int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
@@ -260,11 +263,13 @@ int mpc_aes_decrypt(const uint8_t *data, size_t original_data_len, uint8_t *out,
 
     // Initialize decryption context with the key
     if (aes_decrypt_key256(key, &dec_ctx) != EXIT_SUCCESS) {
+        free(dec_buf);
         return 1;
     }
 
     // Decrypt the data
     if (aes_cbc_decrypt(data, dec_buf, padded_len, iv, &dec_ctx) != EXIT_SUCCESS) {
+        free(dec_buf);
         return 1;
     }
 
@@ -292,7 +297,10 @@ int mpc_aes_encrypt128(const uint8_t *data, size_t original_data_len, uint8_t *o
     }
 
     // Encrypt the data
-    return aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+    int ret = aes_cbc_encrypt(padded_data, out, padded_len, iv, &enc_ctx);
+    free(padded_data);
+
+    return ret;
 }
 
 int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *out, const uint8_t *key) {
@@ -306,11 +314,13 @@ int mpc_aes_decrypt128(const uint8_t *data, size_t original_data_len, uint8_t *o
 
     // Initialize decryption context with the key
     if (aes_decrypt_key128(key, &dec_ctx) != EXIT_SUCCESS) {
+        free(dec_buf);
         return 1;
     }
 
     // Decrypt the data
     if (aes_cbc_decrypt(data, dec_buf, padded_len, iv, &dec_ctx) != EXIT_SUCCESS) {
+        free(dec_buf);
         return 1;
     }
 
