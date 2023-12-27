@@ -37,6 +37,17 @@
 bool wallet_is_filled(uint8_t index, wallet_state *state_output);
 
 /**
+ * @brief The function checks if a wallet is filled with a share based on its
+ * index.
+ *
+ * @param index The index required to be checked for wallet existance
+ *
+ * @return a boolean value. It returns true if the wallet at the given index is
+ * filled with a share, and false otherwise.
+ */
+bool wallet_is_filled_with_share(uint8_t index);
+
+/**
  * Update auth state and first_boot_on_update variables in firewall
  */
 int set_auth_state(device_auth_state);
