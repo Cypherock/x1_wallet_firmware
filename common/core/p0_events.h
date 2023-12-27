@@ -30,7 +30,7 @@
 #define INFINITE_WAIT_TIMEOUT 0xFFFFFFFF
 
 #define MAX_INACTIVITY_TIMEOUT                                                 \
-  (300 * 1000) /* As of now, there exists a maximum of 5 minutes of inactivity \
+  (3000 * 1000) /* As of now, there exists a maximum of 5 minutes of inactivity \
                   timeout */
 
 /*****************************************************************************
