@@ -213,7 +213,7 @@ void evaluate_polynomial(const ecdsa_curve* curve,
     bn_one(&x_pow_i);
     bn_zero(fx);
 
-    for (int i = 0; i <= coeff_count; i++) {
+    for (int i = 0; i < coeff_count; i++) {
         // fx += ( ai * (x ^ (i+1)) )
         bn_copy(&coeff[i], &term);
         bn_multiply(&x_pow_i, &term, &curve->order);
