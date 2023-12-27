@@ -366,7 +366,7 @@ bool get_group_key(mpc_poc_query_t *query,
 }
 
 int compare_uint32(const void *a, const void *b) {
-  return (*(uint32_t *)a - *(uint32_t *)b);
+  return (*(uint32_t *)b - *(uint32_t *)a);
 }
 
 void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
@@ -492,7 +492,7 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
                            uint8_t *priv_key,
                            uint8_t *s_values,
                            uint8_t *ot_sender_sk_lists,
-                           curve_point *ot_sender_received_pks) {
+                           uint8_t *ot_sender_received_pks) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
@@ -552,7 +552,7 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
 
       curve_point ot_receiver_pk;
       ecdsa_read_pubkey(curve, query->sign_message.mta_snd_get_pk.public_key, &ot_receiver_pk);
-      memcpy(&ot_sender_received_pks[i * NUMBER_OF_OTS + j], &ot_receiver_pk, sizeof(curve_point));
+      memcpy(&ot_sender_received_pks[i * NUMBER_OF_OTS * 33 + j * 33], query->sign_message.mta_snd_get_pk.public_key, 33);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_get_pk.public_key, 33);
 
@@ -690,6 +690,15 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
           !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_TAG)) {
           mpc_delay_scr_init("Error: wrong query (mta rcv enc)", DELAY_TIME);
+          free(t_value);
+          free(ot_receiver_sk);
+          free(ot_receiver_pk);
+          free(ot_sender_pk);
+          free(k0);
+          free(k1);
+          free(ot_receiver_pk_neg);
+          free(key_hash);
+          free(key_coordinate);
           return false;
       }
 
@@ -732,6 +741,15 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+        free(t_value);
+        free(ot_receiver_sk);
+        free(ot_receiver_pk);
+        free(ot_sender_pk);
+        free(k0);
+        free(k1);
+        free(ot_receiver_pk_neg);
+        free(key_hash);
+        free(key_coordinate);
         return false;
       }
 
@@ -757,6 +775,15 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+        free(t_value);
+        free(ot_receiver_sk);
+        free(ot_receiver_pk);
+        free(ot_sender_pk);
+        free(k0);
+        free(k1);
+        free(ot_receiver_pk_neg);
+        free(key_hash);
+        free(key_coordinate);
         return false;
       }
 
@@ -830,7 +857,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
                       uint32_t sender_times,
                       uint8_t *s_values,
                       uint8_t *ot_sender_sk_lists,
-                      curve_point *ot_sender_received_pks,
+                      uint8_t *ot_sender_received_pks,
                       uint8_t *q_matrices) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
@@ -845,13 +872,11 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
 
-    mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
-    response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_INITIATE_TAG;
+    result.sign_message.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_INITIATE_TAG;
 
-    response.mta_snd_post_enc_initiate.to = participant_indices[index + 1 + i];
-    response.mta_snd_post_enc_initiate.length = NUMBER_OF_OTS;
+    result.sign_message.mta_snd_post_enc_initiate.to = participant_indices[index + 1 + i];
+    result.sign_message.mta_snd_post_enc_initiate.length = NUMBER_OF_OTS;
 
-    result.sign_message = response;
     mpc_send_result(&result);
 
     Hasher hasher_verify;
@@ -860,44 +885,43 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
     uint8_t my_index = participant_indices[index];
     hasher_Update(&hasher_verify, &my_index, 1); // my_index
 
+    uint8_t *dec_m = malloc(128 * sizeof(uint8_t));
+    uint8_t *dec_key = malloc(32 * sizeof(uint8_t));
+
+    bignum256 *ot_sender_sk = malloc(sizeof(bignum256));
+    curve_point *ot_receiver_pk = malloc(sizeof(curve_point));
+    curve_point *kc = malloc(sizeof(curve_point));
+    uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
+
     for (int j = 0; j < NUMBER_OF_OTS; ++j) {
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
           !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_POST_ENC_TAG)) {
           mpc_delay_scr_init("Error: wrong query (mta snd post enc)", DELAY_TIME);
+          free(dec_m);
+          free(dec_key);
+          free(ot_sender_sk);
+          free(kc);
+          free(key_coordinate);
           return false;
       }
 
-      mpc_poc_result_t result =
-          init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
+      result.sign_message.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_TAG;
 
-      mpc_poc_sign_message_response_t response = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
-      response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_TAG;
+      bn_read_be(&ot_sender_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_sender_sk);
+      ecdsa_read_pubkey(curve, &ot_sender_received_pks[i * NUMBER_OF_OTS * 33 + j * 33], ot_receiver_pk);
+      point_multiply(curve, ot_sender_sk, ot_receiver_pk, kc);
 
-      uint8_t *dec_m = malloc(128 * sizeof(uint8_t));
-      uint8_t *dec_key = malloc(32 * sizeof(uint8_t));
+      Hasher *hasher_key = malloc(sizeof(Hasher));
+      hasher_Init(hasher_key, HASHER_SHA2);
 
-      bignum256 ot_sender_sk;
-      bn_read_be(&ot_sender_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], &ot_sender_sk);
+      bn_write_be(&(kc->x), key_coordinate);
+      hasher_Update(hasher_key, key_coordinate, 32);
 
-      curve_point kc;
-      point_multiply(curve, &ot_sender_sk, &ot_sender_received_pks[i * NUMBER_OF_OTS + j], &kc);
+      bn_write_be(&(kc->y), key_coordinate);
+      hasher_Update(hasher_key, key_coordinate, 32);
 
-      Hasher hasher_key;
-      hasher_Init(&hasher_key, HASHER_SHA2);
-
-      uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
-
-      bn_write_be(&(kc.x), key_coordinate);
-
-      hasher_Update(&hasher_key, key_coordinate, 32);
-      bn_write_be(&(kc.y), key_coordinate);
-
-      hasher_Update(&hasher_key, key_coordinate, 32);
-
-      free(key_coordinate);
-
-      hasher_Final(&hasher_key, dec_key);
-
+      hasher_Final(hasher_key, dec_key);
+      free(hasher_key);
 
       uint8_t mask = 1 << (j % 8);
       if (s_values[(i * 16) + (j / 8)] & mask) {
@@ -905,6 +929,10 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           free(dec_key);
+          free(ot_sender_sk);
+          free(ot_receiver_pk);
+          free(kc);
+          free(key_coordinate);
           return false;
         }
       } else {
@@ -912,22 +940,28 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           free(dec_key);
+          free(ot_sender_sk);
+          free(ot_receiver_pk);
+          free(kc);
+          free(key_coordinate);
           return false;
         }  
       }
 
-      free(dec_key);
-
       store_value_in_matrix(dec_m, &q_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
-      free(dec_m);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m0, 128);
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m1, 128);
 
-      result.sign_message = response;
       mpc_send_result(&result);
-
     }
+
+    free(dec_m);
+    free(dec_key);
+    free(ot_sender_sk);
+    free(ot_receiver_pk);
+    free(kc);
+    free(key_coordinate);
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_POST_ENC_SIG_TAG)) {
@@ -935,11 +969,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
         return false;
     }
 
-    mpc_poc_result_t result2 =
-        init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
-
-    mpc_poc_sign_message_response_t response2 = MPC_POC_SIGN_MESSAGE_RESPONSE_INIT_ZERO;
-    response2.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_SIG_TAG;
+    result.sign_message.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_SIG_TAG;
 
     uint8_t hash_verify[32] = {0};
     hasher_Final(&hasher_verify, hash_verify);
@@ -960,8 +990,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
     
     free(verify_pub_key);
 
-    result2.sign_message = response2;
-    mpc_send_result(&result2);
+    mpc_send_result(&result);
   }
 
   return true;
@@ -1307,7 +1336,7 @@ bool __attribute__((optimize("O0"))) start_mta(mpc_poc_query_t *query,
   uint8_t *ot_sender_sk_lists;
   uint8_t *q_matrices;
 
-  curve_point *ot_sender_received_pks;
+  uint8_t *ot_sender_received_pks;
   bignum256 *sender_additive_shares_list;
 
   // a B value of size 128 bytes created by concatenating the last three shares of secret_share_list
@@ -1325,7 +1354,7 @@ bool __attribute__((optimize("O0"))) start_mta(mpc_poc_query_t *query,
     ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
     q_matrices = malloc(sender_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t)); 
 
-    ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * sizeof(curve_point));
+    ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * 33 * sizeof(uint8_t));
   }
 
   if (receiver_times > 0) {
