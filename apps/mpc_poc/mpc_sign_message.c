@@ -369,7 +369,7 @@ int compare_uint32(const void *a, const void *b) {
   return (*(uint32_t *)a - *(uint32_t *)b);
 }
 
-void compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
+void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   bn_one(lambda);
 
@@ -1132,7 +1132,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
   return true;
 }
 
-bool mta_mascot_rcv(mpc_poc_query_t *query,
+bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
                     mpc_poc_group_info_t *group_info,
                     uint32_t index,
                     uint32_t *participant_indices,
@@ -1276,7 +1276,7 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
   return true;
 }
 
-bool start_mta(mpc_poc_query_t *query, 
+bool __attribute__((optimize("O0"))) start_mta(mpc_poc_query_t *query, 
                mpc_poc_group_info_t *group_info,
                const uint32_t my_index, 
                uint32_t *participant_indices, 
@@ -1386,13 +1386,16 @@ bool start_mta(mpc_poc_query_t *query,
                           s_values, ot_sender_sk_lists, ot_sender_received_pks, q_matrices)) {
       return false;
     }
+    
+    free(ot_sender_sk_lists);
+    free(ot_sender_received_pks);
   }
 
   LOG_SWV("after sender function\n");
 
-  free(ot_receiver_sk_lists);
-  free(ot_sender_sk_lists);
-  free(ot_sender_received_pks);
+  if (receiver_times > 0) {
+    free(ot_receiver_sk_lists);
+  }
 
   LOG_SWV("after freeing\n");
 
@@ -1418,6 +1421,7 @@ bool start_mta(mpc_poc_query_t *query,
 
   bignum256 lambda;
   LOG_SWV("before lambda function\n");
+  
   compute_lambda(&lambda, participant_indices, threshold, index);
   LOG_SWV("after lambda function\n");
 
@@ -1440,6 +1444,8 @@ bool start_mta(mpc_poc_query_t *query,
   }
   LOG_SWV("outside sender function\n");
 
+  LOG_SWV("before calling mascot rcv function\n");
+
   if (!mta_mascot_rcv(query, group_info, index, participant_indices, receiver_times,
                       t_matrices, receiver_additive_shares_list, b_value)) {
     return false;
@@ -1454,12 +1460,17 @@ bool start_mta(mpc_poc_query_t *query,
           receiver_additive_shares_list, receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
   }
 
-  free(s_values);
-  free(q_matrices);
-  free(t_matrices);
-  free(b_value);
-  free(receiver_additive_shares_list);
-  free(sender_additive_shares_list);
+  if (sender_times > 0) {
+    free(s_values);
+    free(q_matrices);
+    free(sender_additive_shares_list);
+  }
+
+  if (receiver_times > 0) {
+    free(t_matrices);
+    free(b_value);
+    free(receiver_additive_shares_list);
+  }
 
   return true;  
 }
