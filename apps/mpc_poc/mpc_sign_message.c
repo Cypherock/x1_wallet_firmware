@@ -672,7 +672,6 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
 
     result.sign_message.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_RCV_GET_ENC_TAG;
 
-    // uint8_t *enc_msgs = malloc(128*128*2 * sizeof(uint8_t));
     uint8_t *t_value = malloc(128 * sizeof(uint8_t));
 
     bignum256 *ot_receiver_sk = malloc(sizeof(bignum256));
@@ -713,30 +712,22 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
       bn_copy(&(ot_receiver_pk->x), &(ot_receiver_pk_neg->x));
       bn_subtractmod(&(curve->prime), &(ot_receiver_pk->y), &(ot_receiver_pk_neg->y), &(curve->prime));
 
-      // free(ot_receiver_pk);
       point_add(curve, ot_sender_pk, ot_receiver_pk_neg);
-      // free(ot_sender_pk);
       point_multiply(curve, ot_receiver_sk, ot_receiver_pk_neg, k1);
 
-      // free(ot_receiver_sk);
-      // free(ot_receiver_pk_neg);
-
-      // Hasher *hasher_key0 = malloc(sizeof(Hasher));
-      // hasher_Init(hasher_key0, HASHER_SHA2);
+      Hasher *hasher_key0 = malloc(sizeof(Hasher));
+      hasher_Init(hasher_key0, HASHER_SHA2);
 
       bn_write_be(&(k0->x), key_coordinate);
+      hasher_Update(hasher_key0, key_coordinate, 32);
 
-      // hasher_Update(hasher_key0, key_coordinate, 32);
-      // bn_write_be(&(k0->y), key_coordinate);
+      bn_write_be(&(k0->y), key_coordinate);
+      hasher_Update(hasher_key0, key_coordinate, 32);
 
-      // free(k0);
+      hasher_Final(hasher_key0, key_hash);
+      free(hasher_key0);
 
-      // hasher_Update(hasher_key0, key_coordinate, 32);
-      // hasher_Final(hasher_key0, key_hash);
-
-      // free(hasher_key0);
-
-      if (mpc_aes_encrypt(t_value, 128, result.sign_message.mta_rcv_get_enc.enc_m0, key_coordinate) != 0) {
+      if (mpc_aes_encrypt(t_value, 128, result.sign_message.mta_rcv_get_enc.enc_m0, key_hash) != 0) {
 
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -744,28 +735,24 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
         return false;
       }
 
-      // Hasher *hasher_key1 = malloc(sizeof(Hasher));
-      // hasher_Init(hasher_key1, HASHER_SHA2);
+      Hasher *hasher_key1 = malloc(sizeof(Hasher));
+      hasher_Init(hasher_key1, HASHER_SHA2);
 
       bn_write_be(&(k1->x), key_coordinate);
+      hasher_Update(hasher_key1, key_coordinate, 32);
 
-      // hasher_Update(hasher_key1, key_coordinate, 32);
-      // bn_write_be(&(k1->y), key_coordinate);
+      bn_write_be(&(k1->y), key_coordinate);
+      hasher_Update(hasher_key1, key_coordinate, 32);
 
-      // free(k1);
-
-      // hasher_Update(hasher_key1, key_coordinate, 32);
-      // hasher_Final(hasher_key1, key_hash);
-
-      // free(hasher_key1);
-      // free(key_coordinate);
+      hasher_Final(hasher_key1, key_hash);
+      free(hasher_key1);
 
       // xor t_value with b_value
       for (int k = 0; k < 128; ++k) {
         t_value[k] ^= b_value[k];
       }
 
-      if (mpc_aes_encrypt(t_value, 128, result.sign_message.mta_rcv_get_enc.enc_m1, key_coordinate) != 0) {
+      if (mpc_aes_encrypt(t_value, 128, result.sign_message.mta_rcv_get_enc.enc_m1, key_hash) != 0) {
 
         mpc_delay_scr_init("Error: aes encrypt failed", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
