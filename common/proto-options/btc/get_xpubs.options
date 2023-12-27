@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/btc/get_xpubs.proto
+btc.GetXpubDerivationPath.path type:FT_STATIC max_count:3 fixed_length:true
+btc.GetXpubsIntiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+btc.GetXpubsIntiateRequest.derivation_paths type:FT_STATIC max_count:100 fixed_length:true
+btc.GetXpubsResultResponse.xpubs type:FT_STATIC max_size:113 max_count:10 fixed_length:true

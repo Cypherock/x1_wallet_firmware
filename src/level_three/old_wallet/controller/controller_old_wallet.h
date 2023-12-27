@@ -17,21 +17,6 @@
 #include "controller_main.h"
 
 /**
- * @brief Controller to Constructs wallet seed  flow
- * @details This controller handles the post request processing of the view seed
- * flow. Based on the wallet configuration, it will skip some cases such as
- * PIN/passphrase entering and directly regenerate the wallet seed to view
- * mnemonics ti the user.
- *
- * @see VIEW_SEED_TASKS,
- * tap_threshold_cards_for_reconstruction_flow_controller(), view_seed_task()
- * @since v1.0.0
- *
- * @note
- */
-void view_seed_controller();
-
-/**
  * @brief Controller to handle post event processing of the delete wallet flow.
  * @details The function deletes the wallet from the device removing both the
  * basic information along with the device's share.
@@ -55,11 +40,9 @@ void delete_wallet_controller();
  *
  * @see LEVEL_THREE_OLD_WALLET_TASKS, view_seed_controller(),
  * delete_wallet_controller(), export_wallet_controller(),
- * add_coin_controller(), send_transaction_controller(),
- * send_transaction_controller_eth(), receive_transaction_controller_eth(),
- * receive_transaction_controller(), wallet_locked_controller(),
- * verify_wallet_controller(), sync_cards_controller(),
- * level_three_old_wallet_tasks()
+ * add_coin_controller(),  send_transaction_controller_eth(),
+ * receive_transaction_controller_eth(), wallet_locked_controller(),
+ * verify_wallet_controller(), level_three_old_wallet_tasks()
  * @since v1.0.0
  */
 void level_three_old_wallet_controller();
@@ -70,10 +53,10 @@ void level_three_old_wallet_controller();
  * application state and processing the exact active flow. No actual processing
  * is done here.
  *
- * @see LEVEL_THREE_OLD_WALLET_TASKS, sync_cards_controller_b(),
+ * @see LEVEL_THREE_OLD_WALLET_TASKS,
  * verify_wallet_controller_b(), wallet_locked_controller_b(),
- * receive_transaction_controller_b_eth(), receive_transaction_controller_b(),
- * send_transaction_controller_b_eth(), send_transaction_controller_b(),
+ * receive_transaction_controller_b_eth(),
+ * send_transaction_controller_b_eth(),
  * level_three_old_wallet_tasks()
  * @since v1.0.0
  */

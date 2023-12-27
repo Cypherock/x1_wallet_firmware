@@ -102,7 +102,7 @@ void sign_message_controller_eth() {
           reset_flow_level();
         }
 
-        eth_init_display_nodes(&current_display_node, &msg_data);
+        // eth_init_display_nodes(&current_display_node, &msg_data);
         ASSERT(current_display_node != NULL);
       }
     } break;
@@ -176,7 +176,7 @@ void sign_message_controller_eth() {
                                      wallet_shamir_data.mnemonic_shares[1]);
       memcpy(wallet_shamir_data.share_encryption_data[1],
              wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
+             PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
       flow_level.level_three = SIGN_MSG_SIGN_TXN_ETH;
       break;
 

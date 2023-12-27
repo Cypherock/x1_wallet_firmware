@@ -58,8 +58,8 @@
  ******************************************************************************
  */
 #include "bip39.h"
-#include "bip39_english.h"
 #include "card_action_controllers.h"
+#include "card_flow_create_wallet.h"
 #include "constant_texts.h"
 #include "controller_add_wallet.h"
 #include "controller_main.h"
@@ -85,7 +85,7 @@ static void restore_wallet_enter_mnemonics_flow_controller() {
         wallet_credential_data.mnemonics[flow_level.level_four - 1],
         sizeof(wallet_credential_data.mnemonics[flow_level.level_four - 1]),
         "%s",
-        wordlist[flow_level.screen_input.list_choice]);
+        mnemonic_get_word(flow_level.screen_input.list_choice));
     flow_level.level_four++;
   } else {
     flow_level.level_three++;
@@ -216,7 +216,7 @@ void arbitrary_data_controller() {
     } break;
 
     case ARBITRARY_DATA_TAP_CARDS:
-      tap_cards_for_write_and_verify_flow_controller();
+      card_flow_create_wallet();
       break;
 
     case ARBITRARY_DATA_VERIFY_SHARES:
@@ -240,7 +240,6 @@ void arbitrary_data_controller() {
 
     case ARBITRARY_DATA_FAILED_MESSAGE:
       flow_level.level_one = LEVEL_TWO_OLD_WALLET;
-      flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
       flow_level.level_three = 1;
       flow_level.level_four = 1;
       break;

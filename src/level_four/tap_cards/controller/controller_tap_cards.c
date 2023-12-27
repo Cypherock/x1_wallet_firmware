@@ -111,10 +111,9 @@ bool tap_card_applet_connection() {
 
     if (tap_card_data.status == SW_NO_ERROR) {
 #if X1WALLET_MAIN
-      tap_card_data.keystore_index = is_paired(tap_card_data.card_key_id);
-      if (flow_level.level_two != LEVEL_THREE_PAIR_CARD &&
-          flow_level.level_two != LEVEL_THREE_VERIFY_CARD &&
-          tap_card_data.keystore_index == -1) {
+      tap_card_data.keystore_index =
+          get_paired_card_index(tap_card_data.card_key_id);
+      if (false) {
         tap_card_take_to_pairing();
         return false;
       }
@@ -227,11 +226,11 @@ bool tap_card_handle_applet_errors() {
             nfc_get_challenge(wallet.wallet_name, target, random_number);
 
         mark_error_screen(ui_text_wrong_wallet_is_now_locked);
-        if (tap_card_data.status == SW_NO_ERROR)
-          add_challenge_flash((const char *)wallet.wallet_name,
-                              target,
-                              random_number,
-                              tap_card_data.tapped_card);
+        // if (tap_card_data.status == SW_NO_ERROR)
+        //   add_challenge_flash((const char *)wallet.wallet_name,
+        //                       target,
+        //                       random_number,
+        //                       tap_card_data.tapped_card);
         tap_card_data.lvl3_retry_point = WALLET_LOCKED_MESSAGE;
         flow_level.level_one = LEVEL_TWO_OLD_WALLET;
         flow_level.level_two = LEVEL_THREE_WALLET_LOCKED;
@@ -299,7 +298,6 @@ void tap_card_take_to_pairing() {
   reset_flow_level();
   counter.level = LEVEL_THREE;
   flow_level.level_one = LEVEL_TWO_ADVANCED_SETTINGS;
-  flow_level.level_two = LEVEL_THREE_PAIR_CARD;
   if (tap_card_data.desktop_control)
     comm_reject_request(tap_card_data.active_cmd_type, 0);
   instruction_scr_destructor();

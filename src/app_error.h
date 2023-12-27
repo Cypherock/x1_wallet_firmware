@@ -19,13 +19,22 @@
  * @{
  */
 // clang-format off
+
 #define NFC_ERROR_BASE          0x10000UL
 #define NFC_APP_ERROR_BASE      (NFC_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by NFC module
 #define PN532_ERROR_BASE        (NFC_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by PN532 chip
+#define CARD_EXCEPTION_BASE     (NFC_ERROR_BASE + 0x3000)   ///< Base error code for errors occured due to exception on cards
 
 #define RNG_ERROR_BASE          0x20000UL
-#define RNG_MCU_ERROR_BASE       (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
-#define RNG_ATECC_ERROR_BASE     (RNG_ERROR_BASE + 0x2000)   ///< Base error code for errors thrown by ATECC
+#define RNG_MCU_ERROR_BASE      (RNG_ERROR_BASE + 0x1000)   ///< Base error code for errors thrown by MCU RNG Module
+
+#define FLASH_ERROR_BASE        0x30000UL
+
+#define ATECC_ERROR_BASE        0x40000UL
+
+#define EXCEPTION_BASE                          0x50000UL
+#define EXCEPTION_DEVICE_COMPROMISED_BASE       (EXCEPTION_BASE | 0x01) /// Error code bases for device compromised exceptions
+#define EXCEPTION_CARD_COMPROMISED_BASE         (EXCEPTION_BASE | 0x02) /// Error code bases for device compromised exceptions
 
 /**
  * @defgroup nfc_error_codes NFC Error codes
@@ -57,6 +66,7 @@
 #define NFC_SC_DEC_KEY_ERROR    (NFC_APP_ERROR_BASE +  0x17)    ///< NFC Secure Channel AES decryption key initialization error
 #define NFC_SC_DEC_ERROR        (NFC_APP_ERROR_BASE +  0x18)    ///< NFC Secure Channel AES decryption error
 #define NFC_NULL_PTR_ERROR      (NFC_APP_ERROR_BASE +  0x19)    ///< NFC null pointer exception had occured in this card and is in recovery mode
+#define NFC_RESP_NOT_READY      (NFC_APP_ERROR_BASE +  0x1A)    ///< A command has been sent to PN532 and response is not ready
 /** @}
  *
  * @defgroup pn532_error_codes PN532 Error codes
@@ -96,11 +106,59 @@
 #define PN532_TG_IN_MISMATCH            (PN532_ERROR_BASE + 0x2C)    ///< Mismatch between the NFCID3 initiator and the NFCID3 target in DEP 212/424 kbps passive.
 #define PN532_OVER_CURRENT              (PN532_ERROR_BASE + 0x2D)    ///< An over-current event has been detected
 #define PN532_NAD_MISSING               (PN532_ERROR_BASE + 0x2E)    ///< NAD missing in DEP frame
+/** @}
+ *
+ * @defgroup card_exception_error_codes CARD exception error codes
+ * @brief Macros related to the error codes for exception detected from card.
+ *
+ * @ingroup app_error
+ *
+ * @{
+ */
+#define CARD_SIGNATURE_INCORRECT_LEN    (CARD_EXCEPTION_BASE + 0x01) ///< Length of signature not same as expected from X1 Card
+
+/** @}
+ *
+ * @defgroup Exception cases occuring in device
+ *
+ * @ingroup app_error
+ *
+ * @{
+ */
+
+#define EXCEPTION_INVALID_PROVISION_DATA  (EXCEPTION_DEVICE_COMPROMISED_BASE | 0x01)   ///< Invalid provision data on permanent storage of secure flash.
+
+#define EXCEPTION_CARD_NOT_VERIFIED       (EXCEPTION_CARD_COMPROMISED_BASE | 0x02)     ///< Card signature not verified exception
 /** @} */
 
 /**
  * @}
  */
+
+
+typedef enum card_status_word {
+  SW_INCOMPATIBLE_APPLET = 0x1000,
+  SW_WARNING_STATE_UNCHANGED = 0x6200,
+  SW_NULL_POINTER_EXCEPTION = 0x6281,
+  SW_TRANSACTION_EXCEPTION = 0x6900,
+  SW_SECURITY_CONDITIONS_NOT_SATISFIED = 0x6982,
+  SW_FILE_INVALID = 0x6983,
+  SW_CONDITIONS_NOT_SATISFIED = 0x6985,
+  SW_WRONG_DATA = 0x6A80,
+  SW_FILE_NOT_FOUND = 0x6A82,
+  SW_RECORD_NOT_FOUND = 0x6A83,
+  SW_FILE_FULL = 0x6A84,
+  POW_SW_CHALLENGE_FAILED = 0x6A88,
+  SW_CORRECT_LENGTH_00 = 0x6C00,
+  SW_INVALID_INS = 0x6D00,
+  SW_NOT_PAIRED = 0x7985,
+  SW_CRYPTO_EXCEPTION = 0x7C00,
+  POW_SW_WALLET_LOCKED = 0x7D00,
+  SW_INS_BLOCKED = 0x7E00,
+  SW_NO_ERROR = 0x9000,
+  SW_OUT_OF_BOUNDARY = 0x91BE,
+  DEFAULT_UINT32_IN_FLASH_ENUM = 0xFFFFFFFFUL
+} card_error_status_word_e;
 
 // clang-format on
 

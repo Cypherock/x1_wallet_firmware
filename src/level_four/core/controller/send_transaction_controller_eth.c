@@ -72,7 +72,7 @@ extern Wallet_credential_data wallet_credential_data;
 
 extern lv_task_t *timeout_task;
 
-eth_unsigned_txn eth_unsigned_txn_ptr = {
+evm_unsigned_txn eth_unsigned_txn_ptr = {
     .nonce_size = {0},
     .nonce = {0},
     .gas_price_size = {0},
@@ -82,8 +82,8 @@ eth_unsigned_txn eth_unsigned_txn_ptr = {
     .to_address = {0},
     .value_size = {0},
     .value = {0},
-    .payload_size = 0,
-    .payload = NULL,
+    .data_size = 0,
+    .data = NULL,
     .chain_id_size = {0},
     .chain_id = {0},
     .dummy_r = {0},
@@ -93,7 +93,7 @@ uint8_t *eth_unsigned_txn_byte_array = NULL;
 uint16_t eth_unsigned_txn_len;
 
 extern ui_display_node *current_display_node;
-extern bool eth_is_token_whitelisted;
+extern bool evm_is_token_whitelisted;
 
 void send_transaction_controller_eth() {
   switch (flow_level.level_three) {
@@ -112,31 +112,9 @@ void send_transaction_controller_eth() {
         eth_unsigned_txn_len = msg_size;
         memcpy(eth_unsigned_txn_byte_array, data_array, msg_size);
 
-        eth_byte_array_to_unsigned_txn(
-            eth_unsigned_txn_byte_array,
-            eth_unsigned_txn_len,
-            &eth_unsigned_txn_ptr,
-            &var_send_transaction_data.transaction_metadata);
-
         clear_message_received_data();
         flow_level.level_three = SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH;
-        if (!eth_validate_unsigned_txn(
-                &eth_unsigned_txn_ptr,
-                &var_send_transaction_data.transaction_metadata)) {
-          instruction_scr_destructor();
-          mark_error_screen(ui_text_worng_eth_transaction);
-          comm_reject_request(SEND_TXN_USER_VERIFIES_ADDRESS, 0);
-          reset_flow_level();
-        }
       }
-    } break;
-
-    case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-      if (eth_unsigned_txn_ptr.payload_status ==
-          PAYLOAD_CONTRACT_NOT_WHITELISTED)
-        flow_level.level_three = SEND_TXN_VERIFY_CONTRACT_ADDRESS;
-      else
-        flow_level.level_three = SEND_TXN_VERIFY_BLIND_SIGNING_ETH;
     } break;
 
     case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
@@ -157,16 +135,6 @@ void send_transaction_controller_eth() {
 
     case SEND_TXN_VERIFY_RECEIPT_ADDRESS_ETH: {
       flow_level.level_three = SEND_TXN_CALCULATE_AMOUNT_ETH;
-    } break;
-
-    case SEND_TXN_CALCULATE_AMOUNT_ETH: {
-      if ((!eth_is_token_whitelisted) &&
-          (eth_unsigned_txn_ptr.payload_status != PAYLOAD_ABSENT) &&
-          (is_zero(eth_unsigned_txn_ptr.value,
-                   eth_unsigned_txn_ptr.value_size[0])))
-        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_FEES_ETH;
-      else
-        flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH;
     } break;
 
     case SEND_TXN_VERIFY_RECEIPT_AMOUNT_ETH: {
@@ -246,7 +214,7 @@ void send_transaction_controller_eth() {
                                      wallet_shamir_data.mnemonic_shares[1]);
       memcpy(wallet_shamir_data.share_encryption_data[1],
              wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
+             PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
       flow_level.level_three = SEND_TXN_SIGN_TXN_ETH;
       break;
 

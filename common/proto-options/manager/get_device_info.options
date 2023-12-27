@@ -1,0 +1,3 @@
+# Options for file common/cypherock-common/proto/manager/get_device_info.proto
+manager.GetDeviceInfoResultResponse.device_serial type:FT_STATIC max_size:32 fixed_length:true
+manager.GetDeviceInfoResultResponse.applet_list type:FT_STATIC max_count:15 fixed_length:true

@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/manager/train_card.proto
+manager.ExistingWalletItem.id type:FT_STATIC max_size:32 fixed_length:true
+manager.ExistingWalletItem.name type:FT_STATIC max_size:16 fixed_length:true
+manager.TrainCardResult.wallet_list type:FT_STATIC max_count:4 fixed_length:true

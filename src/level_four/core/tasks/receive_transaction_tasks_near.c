@@ -61,6 +61,7 @@
 #include "constant_texts.h"
 #include "controller_level_four.h"
 #include "flash_api.h"
+#include "near_context.h"
 #include "tasks_level_four.h"
 #include "tasks_tap_cards.h"
 #include "ui_address.h"
@@ -75,7 +76,6 @@ extern char *ALPHA_NUMERIC;
 extern char *NUMBERS;
 extern char *PASSPHRASE;
 
-extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
 
 extern Receive_Transaction_Data receive_transaction_data;
@@ -110,7 +110,7 @@ void receive_transaction_tasks_near() {
     case RECV_TXN_ENTER_PIN_NEAR: {
       // TODO: Redundant check
       if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-        flow_level.level_three = RECV_TXN_CHECK_PIN;
+        flow_level.level_three = RECV_TXN_CHECK_PIN_NEAR;
         break;
       }
       input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);

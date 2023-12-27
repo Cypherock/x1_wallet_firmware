@@ -267,247 +267,31 @@ int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr,
                                     size_t size);
 
 /**
- * @brief Converts byte array represented transaction metadata to struct
- * txn_metadata.
- * @details
- *
- * @param [in] txn_metadata_byte_array  Transaction metadata byte array to be
- * converted.
- * @param [in] size                     Size of the byte array
- * txn_metadata_byte_array
- * @param [out] txn_metadata_ptr        Pointer to the txn_metadata instance to
- * store the field values.
- *
- * @return Offset used in conversion
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-int64_t byte_array_to_txn_metadata(const uint8_t *txn_metadata_byte_array,
-                                   uint32_t size,
-                                   txn_metadata *txn_metadata_ptr);
-
-/**
- * @brief Deserialize byte array to receive transaction data
- *
- * @param [out] txn_data_ptr            Pointer to the receive transaction data
- * instance
- * @param [in] data_byte_array          Byte array to be deserialized
- * @param [in] size                     Size of the byte array data_byte_array
- * @return int32_t Offset used in conversion
- */
-int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
-                                    const uint8_t *data_byte_array,
-                                    const uint32_t size);
-
-/**
- * @brief Generates xpub for the passed purpose id, coin id and account id.
- *
- * @param [in] path             Path of the node to derive xpub uses fingerprint
- * of second last node. and assumes first two nodes are purpose and coin index.
- * @param [in] path_length      Length of the given path.
- * @param [in] curve            Curve to be used.
- * @param [in] seed             Seed to generate the master node.
- * @param [out] str              String to store the xpub.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   char *str);
-
-/**
- * @brief Get the hdnode at given path from seed.
- * @details
+ * @brief Generates the node from provided seed at the requested path
+ * @details The function performs hardened derivation of the nodes at the
+ * specified derivation path.
  *
  * @param [in] path                 Path to derive the hdnode.
  * @param [in] path_length          Length of the path.
  * @param [in] curve                Curve name.
- * @param [in] seed                 Seed to derive the hdnode.
+ * @param [in] seed                 Seed to derive the hdnode of 64 bytes
  * @param [out] hdnode              Pointer to the HDNode instance used to store
  * the derived hdnode.
  *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded.
+ * @retval false If the node derivation failed.
  */
-void derive_hdnode_from_path(const uint32_t *path,
-                             const size_t path_length,
+bool derive_hdnode_from_path(const uint32_t *path,
+                             size_t path_length,
                              const char *curve,
                              const uint8_t *seed,
                              HDNode *hdnode);
-
-/**
- * @brief Get the address from HDNode.
- * @details
- *
- * @param [in] txn_metadata_ptr     Pointer to txn_metadata instance.
- * @param [in] index                Input index.
- * @param [in] mnemonic             char array storing mnemonics.
- * @param [in] passphrase           char array storing passphrase.
- * @param [out] hdnode              Pointer to HDNode instance used to derive
- * the address.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void get_address_node(const txn_metadata *txn_metadata_ptr,
-                      const int16_t index,
-                      const char *mnemonic,
-                      const char *passphrase,
-                      HDNode *hdnode);
-/**
- * @brief Get the coin name for the passed coin index and chain id.
- * @details
- *
- * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between different
- * EVM chains)
- *
- * @return [const] char array of name of the coin.
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-const char *get_coin_name(uint32_t coin_index, uint64_t chain_id);
-
-/**
- * @brief Get the coin symbol for the passed coin index and chain id
- * @details
- *
- * @param [in] coin_index   Coin index
- * @param [in] chain_id     Chain ID (Passed to distinguish between different
- * EVM chains)
- *
- * @return [const] char array of symbol of the coin
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id);
-
-/**
- * @brief Get the version address and public key for segwit and non segwit
- * coins.
- * @details
- *
- * @param [in] purpose_id           Purpose Id of the coin.
- * @param [in] coin_index           Coin index of the coin.
- * @param [out] address_version     Pointer to uint8_t instance to store the
- * addres version.
- * @param [out] pub_version         Pointer to uint32_t to instance store the
- * public key version.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void get_version(uint32_t purpose_id,
-                 uint32_t coin_index,
-                 uint8_t *address_version,
-                 uint32_t *pub_version);
-
-/**
- * @brief
- * @details
- *
- * @param [in] txn_metadata_ptr
- *
- * @return bool
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-bool validate_txn_metadata(const txn_metadata *txn_metadata_ptr);
-
-/**
- * @brief Validates transaction metadata for near coin.
- * @details
- *
- * @param [in] metadata_ptr
- *
- * @return bool
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-bool validate_txn_metadata_near(const txn_metadata *mdata_ptr);
 
 void bech32_addr_encode(char *output,
                         char *hrp,
                         uint8_t *address_bytes,
                         uint8_t byte_len);
-
-/**
- * @brief Verifies the derivation path for xpub during coin export step
- * The function verifies all the indices for exact match of purpose_id, coin_id,
- * and other relevant indices. The hardness of the derivation index in the path
- * is also checked for validity. If the depth of derivation does not match the
- * supported derivation paths or any of the above checks do not pass for a given
- * coin, this function will return false.
- *
- * @param[in] path          The address derivation path to be checked
- * @param[in] depth         The number of levels in the derivation path
- *
- * @return bool     true if the path values are valid. False otherwise.
- *
- * @since v1.0.0
- */
-bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth);
-
-/**
- * @brief Verifies if the specified derivation path is valid based on checks
- * on intermediate values.
- * The function verifies all the indices for exact match of purpose_id, coin_id,
- * and other relevant indices. The hardness of the derivation index in the path
- * is also checked for validity. If the depth of derivation does not match the
- * supported derivation paths or any of the above checks do not pass for a given
- * coin, this function will return false.
- *
- * @param[in] path          The address derivation path to be checked
- * @param[in] depth         The number of levels in the derivation path
- *
- * @return bool     Returns true if the path values are valid. False otherwise.
- *
- * @since v1.0.0
- */
-bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
 
 /**
  * @brief Generates an user readable derivation path from a uint32_t path array.
@@ -522,11 +306,11 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
  * @param output            Pointer to the character array to be used for output
  * @param out_len           Maximum length of the output character array
  */
-FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
-                                                  const size_t path_length,
-                                                  const bool harden_all,
-                                                  char *output,
-                                                  const size_t out_len);
+FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
+                                          const size_t path_length,
+                                          const bool harden_all,
+                                          char *output,
+                                          const size_t out_len);
 
 /**
  * @brief Create a new display node and return its pointer

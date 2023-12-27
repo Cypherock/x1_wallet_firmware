@@ -58,6 +58,8 @@
  */
 #include "ui_text_slideshow.h"
 
+#include "ui_events_priv.h"
+
 static struct Text_Slideshow_Data *data;
 static lv_task_t *slideshow_task = NULL;
 static lv_obj_t *text;
@@ -103,8 +105,6 @@ void ui_text_slideshow_destructor() {
     slideshow_task = NULL;
   }
 
-  lv_obj_clean(lv_scr_act());
-
   if (data != NULL) {
     memzero(data, sizeof(struct Text_Slideshow_Data));
     free(data);
@@ -128,23 +128,15 @@ void ui_text_slideshow_destructor() {
  * @note
  */
 static void event_handler(lv_obj_t *obj, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
-    case LV_EVENT_CLICKED:
+    case LV_EVENT_CLICKED: {
       if (data->one_cycle_completed && data->destruct_on_click) {
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
-        ui_text_slideshow_destructor();
+        ui_set_confirm_event();
       }
       break;
+    }
     case LV_EVENT_DELETE: {
-      if (slideshow_task != NULL) {
-        lv_task_set_prio(slideshow_task, LV_TASK_PRIO_OFF);
-        lv_task_del(slideshow_task);
-        slideshow_task = NULL;
-      }
+      ui_text_slideshow_destructor();
       break;
     }
     default:
@@ -157,6 +149,8 @@ void ui_text_slideshow_init(const char *arr[MAX_NUM_OF_CHARS_IN_A_SLIDE],
                             const uint16_t delay_in_ms,
                             const bool destruct_on_click) {
   ASSERT(arr != NULL);
+
+  lv_obj_clean(lv_scr_act());
 
   if (count > MAX_NUM_OF_SLIDESHOWS)
     return;

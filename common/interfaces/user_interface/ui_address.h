@@ -64,22 +64,6 @@ void address_scr_init(const char text[],
                       bool hide_buttons);
 
 /**
- * @brief Create address screen
- * @details
- *
- * @param hide_buttons hide the next and cancel buttons
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void address_scr_create(bool hide_buttons);
-
-/**
  * @brief Add focus on cancel button on screen.
  * @details
  *

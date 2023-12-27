@@ -118,13 +118,24 @@ jobs:
         path: arm-gcc
         key: arm-gcc
 
+    - name: Restore proto-tools
+      id: cache-proto-tools
+      uses: actions/cache@v3
+      with:
+        path: proto-tools
+        key: proto-tools
+
     - name: Install target dependencies
       if: matrix.platform == 'device'
       env:
         CACHED: ${{ steps.cache-arm-gcc.outputs.cache-hit }}
+        PROTO_CACHED: ${{ steps.cache-proto-tools.outputs.cache-hit }}
       run: |
         if [ ! "${CACHED}" = "true" ]; then
           bash ./utilities/ci/setup-arm-gcc.sh;
+        fi
+        if [ ! "${PROTO_CACHED}" = "true" ]; then
+          bash ./utilities/ci/setup-protoc.sh;
         fi
         pip install -r utilities/script/requirements.txt
 
@@ -139,7 +150,8 @@ jobs:
         if [ ! "${CACHED}" = "true" ]; then
           bash ./utilities/ci/setup-build-tools.sh;
         fi
-        PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin"
+        pip install -r vendor/nanopb/extra/requirements.txt
+        PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin:$(pwd)/proto-tools/bin"
         ./utilities/build.sh -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
 
   run-unit-tests:
@@ -176,6 +188,7 @@ jobs:
           bash ./utilities/ci/setup-build-tools.sh;
         fi
         PATH="$PATH:$(pwd)/build-tools"
+        pip install -r vendor/nanopb/extra/requirements.txt
         # Ignore any non-zero exits from simulator run using '|| true'
         bash ./utilities/run_unit_tests.sh -f ${{ matrix.firmware }} -p ${{ matrix.platform }} > test_results.txt || true
         cat test_results.txt

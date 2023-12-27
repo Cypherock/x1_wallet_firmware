@@ -90,6 +90,20 @@ void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE],
   sha256_Raw(wallet_id, SHA256_DIGEST_LENGTH, wallet_id);
 }
 
+bool verify_wallet_id(const uint8_t wallet_id[WALLET_ID_SIZE],
+                      const char *mnemonics) {
+  uint8_t generated_wallet_id[WALLET_ID_SIZE] = {0};
+
+  calculate_wallet_id(generated_wallet_id, mnemonics);
+  if (0 == memcmp(wallet_id, generated_wallet_id, WALLET_ID_SIZE)) {
+    return true;
+  } else {
+    log_hex_array("Expected wallet id: ", wallet_id, WALLET_ID_SIZE);
+    log_hex_array("Generated wallet id: ", generated_wallet_id, WALLET_ID_SIZE);
+    return false;
+  }
+}
+
 void derive_beneficiary_key(
     uint8_t beneficiary_key[BENEFICIARY_KEY_SIZE],
     uint8_t iv_for_beneficiary_key[IV_FOR_BENEFICIARY_KEY_SIZE],
@@ -163,4 +177,19 @@ Card_Data_errors_t validate_wallet(Wallet *wallet) {
   if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id)))
     return INVALID_WALLET_ID;
   return VALID_DATA;
+}
+
+void derive_wallet_nonce(
+    uint8_t share_encryption_data[TOTAL_NUMBER_OF_SHARES]
+                                 [PADDED_NONCE_SIZE + WALLET_MAC_SIZE]) {
+  uint8_t wallet_nonce[NONCE_SIZE] = {0};
+  random_generate(wallet_nonce, NONCE_SIZE);
+
+  for (int i = 0; i < TOTAL_NUMBER_OF_SHARES; i++) {
+    // First 12 bytes of share_encryption_data are wallet nonce.
+    memcpy(share_encryption_data[i], wallet_nonce, NONCE_SIZE);
+    // Skip next 3 bytes as RFU
+    // Version byte
+    share_encryption_data[i][15] = 0x01;
+  }
 }

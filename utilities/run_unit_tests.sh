@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 usage () {
     echo -e "\tUSAGE: $0 -f <main|initial> -p <device|simulator>"

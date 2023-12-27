@@ -27,6 +27,16 @@
 #include "wallet.h"
 
 /**
+ * @brief Verify wallet id with wallet id generated from mnemonics
+ *
+ * @return true if all wallet id matches the wallet id generated from mnemonics,
+ * else false
+ *
+ */
+bool verify_wallet_id(const uint8_t wallet_id[WALLET_ID_SIZE],
+                      const char *mnemonics);
+
+/**
  * @brief Calculate wallet id from mnemonics
  * @details
  *
@@ -102,5 +112,18 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics);
  * @note
  */
 Card_Data_errors_t validate_wallet(Wallet *wallet);
+
+/**
+ * @brief The function `derive_wallet_nonce` generates a random wallet nonce and
+ * assigns it to each share. On the share_encryption_data 2-D array, the wallet
+ * nonce is stored at the first 12 bytes and next 4 bytes contain RFU bytes + 1
+ * version byte.
+ *
+ * @param share_encryption_data This 2-D array is used to store the share
+ * encryption data for each share.
+ */
+void derive_wallet_nonce(
+    uint8_t share_encryption_data[TOTAL_NUMBER_OF_SHARES]
+                                 [PADDED_NONCE_SIZE + WALLET_MAC_SIZE]);
 
 #endif

@@ -56,11 +56,8 @@
  *
  ******************************************************************************
  */
-#include "btc.h"
 #include "constant_texts.h"
-#include "contracts.h"
 #include "controller_level_four.h"
-#include "eth.h"
 #include "int-util.h"
 #include "math.h"
 #include "tasks_level_four.h"

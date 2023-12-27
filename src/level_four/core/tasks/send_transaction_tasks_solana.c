@@ -56,9 +56,7 @@
  *
  ******************************************************************************
  */
-#include "btc.h"
 #include "constant_texts.h"
-#include "contracts.h"
 #include "controller_level_four.h"
 #include "int-util.h"
 #include "math.h"
@@ -144,15 +142,11 @@ void send_transaction_tasks_solana() {
                                                 sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();
-      snprintf(
-          display,
-          sizeof(display),
-          UI_TEXT_VERIFY_AMOUNT,
-          amount_decimal_string,
-          get_coin_symbol(
-              BYTE_ARRAY_TO_UINT32(
-                  var_send_transaction_data.transaction_metadata.coin_index),
-              0));
+      snprintf(display,
+               sizeof(display),
+               UI_TEXT_VERIFY_AMOUNT,
+               amount_decimal_string,
+               "");
       confirm_scr_init(display);
     } break;
 
@@ -178,15 +172,11 @@ void send_transaction_tasks_solana() {
                                                 sizeof(amount_decimal_string)))
         break;
       instruction_scr_destructor();
-      snprintf(
-          display,
-          sizeof(display),
-          UI_TEXT_VERIFY_AMOUNT,
-          amount_decimal_string,
-          get_coin_symbol(
-              BYTE_ARRAY_TO_UINT32(
-                  var_send_transaction_data.transaction_metadata.coin_index),
-              0));
+      snprintf(display,
+               sizeof(display),
+               UI_TEXT_VERIFY_AMOUNT,
+               amount_decimal_string,
+               "");
       confirm_scr_init(display);
     } break;
 

@@ -31,22 +31,6 @@
 void tap_cards_for_write_flow();
 
 /**
- * @brief Task to delete wallet from all the cards
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_cards_for_delete_flow();
-
-/**
  * @brief Task for verification of the card
  * @details
  *
@@ -79,38 +63,6 @@ void tap_cards_for_verification_flow();
 void tap_threshold_cards_for_reconstruction();
 
 /**
- * @brief Task to sync card with device
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_a_card_and_sync_task();
-
-/**
- * @brief reads card id from a card
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tasks_read_card_id();
-
-/**
  * @brief Task to update card id
  * @details
  *
@@ -141,21 +93,5 @@ void tasks_update_card_id();
  * @note
  */
 void retrieve_key_from_card();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_card_pair_card_tasks();
 
 #endif

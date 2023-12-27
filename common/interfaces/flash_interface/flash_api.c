@@ -94,6 +94,52 @@ static bool _wallet_is_filled(uint8_t index) {
   return false;
 }
 
+bool wallet_is_filled(uint8_t index, wallet_state *state_output) {
+  if (MAX_WALLETS_ALLOWED <= index) {
+    return false;
+  }
+
+  /* Make sure that we always work on the latest RAM instance */
+  get_flash_ram_instance();
+
+  wallet_state state = flash_ram_instance.wallets[index].state;
+
+  if (NULL != state_output) {
+    *state_output = state;
+  }
+
+  if ((UNVERIFIED_VALID_WALLET == state) || (VALID_WALLET == state) ||
+      (INVALID_WALLET == state) ||
+      (VALID_WALLET_WITHOUT_DEVICE_SHARE == state)) {
+    return true;
+  }
+
+  return false;
+}
+
+bool wallet_is_filled_with_share(uint8_t index) {
+  if (MAX_WALLETS_ALLOWED <= index) {
+    return false;
+  }
+
+  /* Make sure that we always work on the latest RAM instance */
+  get_flash_ram_instance();
+
+  wallet_state state = flash_ram_instance.wallets[index].state;
+  // Read card states without write attempt state
+  uint8_t cards_states = flash_ram_instance.wallets[index].cards_states & 0x0F;
+
+  // If wallet state state is where share is present on device and card state is
+  // not zero, then wallet is filled
+  if (((UNVERIFIED_VALID_WALLET == state) || (VALID_WALLET == state) ||
+       (INVALID_WALLET == state)) &&
+      (0x00 != cards_states)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * @brief Save a new wallet on the flash
  *
@@ -137,7 +183,8 @@ int add_wallet_to_flash(const Flash_Wallet *fwallet, uint32_t *index_OUT) {
 
 int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
                                   uint32_t *index_OUT,
-                                  const uint8_t *wallet_share) {
+                                  const uint8_t *wallet_share,
+                                  const uint8_t *wallet_nonce) {
   get_flash_ram_instance();    // to load
   get_sec_flash_ram_instance();
   if (flash_ram_instance.wallet_count == MAX_WALLETS_ALLOWED)
@@ -167,6 +214,9 @@ int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
   memcpy(sec_flash_instance.wallet_share_data[*index_OUT].wallet_share,
          wallet_share,
          BLOCK_SIZE);
+  memcpy(sec_flash_instance.wallet_share_data[*index_OUT].wallet_nonce,
+         wallet_nonce,
+         PADDED_NONCE_SIZE);
   sec_flash_struct_save();
   return SUCCESS_;
 }
@@ -207,7 +257,8 @@ int put_wallet_flash(const uint8_t index, const Flash_Wallet *wallet) {
 }
 
 int put_wallet_share_sec_flash(const uint8_t index,
-                               const uint8_t *wallet_share) {
+                               const uint8_t *wallet_share,
+                               const uint8_t *wallet_nonce) {
   get_flash_ram_instance();    // to load
   get_sec_flash_ram_instance();
   if (index >= MAX_WALLETS_ALLOWED)
@@ -223,6 +274,9 @@ int put_wallet_share_sec_flash(const uint8_t index,
   memcpy(sec_flash_instance.wallet_share_data[index].wallet_share,
          wallet_share,
          BLOCK_SIZE);
+  memcpy(sec_flash_instance.wallet_share_data[index].wallet_nonce,
+         wallet_nonce,
+         PADDED_NONCE_SIZE);
   sec_flash_struct_save();
   flash_ram_instance.wallets[index].state = VALID_WALLET;
   flash_struct_save();
@@ -508,6 +562,42 @@ int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share) {
   return DOESNT_EXIST;
 }
 
+int get_flash_wallet_nonce_by_name(const char *name, uint8_t *wallet_nonce) {
+  ASSERT(name != NULL);
+  ASSERT(wallet_nonce != NULL);
+
+  get_flash_ram_instance();    // to load
+  get_sec_flash_ram_instance();
+  size_t name_len = strnlen(name, NAME_SIZE);
+  if (name_len == 0 || name_len >= NAME_SIZE)
+    return INVALID_ARGUMENT;
+  uint8_t walletIndex = 0;
+  for (; walletIndex < MAX_WALLETS_ALLOWED; walletIndex++) {
+    if (!_wallet_is_filled(walletIndex))
+      continue;
+    if (!strcmp(
+            (const char *)flash_ram_instance.wallets[walletIndex].wallet_name,
+            name)) {
+      if (is_wallet_share_not_present(walletIndex))
+        return DOESNT_EXIST;
+      for (int i = 0; i < WALLET_ID_SIZE; i++) {
+        if (flash_ram_instance.wallets[walletIndex].wallet_id[i] !=
+            sec_flash_instance.wallet_share_data[walletIndex].wallet_id[i]) {
+          flash_ram_instance.wallets[walletIndex].state =
+              VALID_WALLET_WITHOUT_DEVICE_SHARE;
+          flash_struct_save();
+          return DOESNT_EXIST;
+        }
+      }
+      memcpy(wallet_nonce,
+             sec_flash_instance.wallet_share_data[walletIndex].wallet_nonce,
+             BLOCK_SIZE);
+      return SUCCESS_;
+    }
+  }
+  return DOESNT_EXIST;
+}
+
 /**
  * @brief Tells if wallet is in partial state
  *
@@ -552,41 +642,35 @@ bool is_wallet_locked(const uint8_t wallet_index) {
 }
 
 // TODO: return codes for illegal and all
-/**
- * @brief Update the card states for the wallet at specified index (on deletion
- * of the wallet from the given card number)
- *
- * @param index
- * @param card_number
- * @return int
- */
 int delete_from_kth_card_flash(const uint8_t index, const uint8_t card_number) {
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  flash_ram_instance.wallets[index].cards_states &= ~(1 << (card_number - 1));
+
+  // Reset card write state
+  RESET_Ith_BIT(flash_ram_instance.wallets[index].cards_states,
+                card_number - 1);
+  // Reset card write attempt state
+  RESET_Ith_BIT(flash_ram_instance.wallets[index].cards_states,
+                card_number - 1 + 4);
+
   flash_struct_save();
   return SUCCESS_;
 }
 
 // TODO: check for illegal arguments and all
-/**
- * @brief Tells if the wallet at specified index is already deleted from the
- * given card number
- *
- * @param index
- * @param card_number
- * @return true
- * @return false
- */
 bool card_already_deleted_flash(const uint8_t index,
                                 const uint8_t card_number) {
   ASSERT(index < MAX_WALLETS_ALLOWED);
 
   get_flash_ram_instance();    // to load
-  return !(
-      ((flash_ram_instance.wallets[index].cards_states) >> (card_number - 1)) &
-      1);
+
+  bool wallet_found_on_card = IS_Ith_BIT_SET(
+      flash_ram_instance.wallets[index].cards_states, card_number - 1);
+  bool write_attempted_on_card = IS_Ith_BIT_SET(
+      flash_ram_instance.wallets[index].cards_states, card_number - 1 + 4);
+
+  return !(wallet_found_on_card | write_attempted_on_card);
 }
 
 /**
@@ -628,6 +712,23 @@ int update_challenge_flash(const char *name,
   return SUCCESS_;
 }
 
+int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number) {
+  ASSERT((NULL != wallet_name));
+
+  Flash_Wallet *flash_wallet;
+  int status = get_flash_wallet_by_name(wallet_name, &flash_wallet);
+  if (SUCCESS != status) {
+    return status;
+  }
+
+  flash_wallet->is_wallet_locked = true;
+  memzero(&(flash_wallet->challenge), sizeof(flash_wallet->challenge));
+  flash_wallet->challenge.card_locked = encoded_card_number;
+  memset(flash_wallet->challenge.nonce, 0xFF, PADDED_NONCE_SIZE);
+  flash_struct_save();
+  return SUCCESS;
+}
+
 /**
  * @brief
  *
@@ -639,8 +740,7 @@ int update_challenge_flash(const char *name,
  */
 int add_challenge_flash(const char *name,
                         const uint8_t target[SHA256_SIZE],
-                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
-                        const uint8_t card_locked) {
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE]) {
   ASSERT(name != NULL);
   ASSERT(target != NULL);
   ASSERT(random_number != NULL);
@@ -653,15 +753,15 @@ int add_challenge_flash(const char *name,
   if (ret != SUCCESS_)
     return INVALID_ARGUMENT;
 
+  if (false == flash_wallet->is_wallet_locked) {
+    return ILLEGAL;
+  }
+
   memcpy(flash_wallet->challenge.target, target, SHA256_SIZE);
   memcpy(flash_wallet->challenge.random_number,
          random_number,
          POW_RAND_NUMBER_SIZE);
   memset(flash_wallet->challenge.nonce, 0, POW_NONCE_SIZE);
-  flash_wallet->is_wallet_locked =
-      true;    // Assuming that if challenge is updated then wallet must be
-               // locked
-  flash_wallet->challenge.card_locked = card_locked;
   pow_get_approx_time_in_secs(target,
                               &flash_wallet->challenge.time_to_unlock_in_secs);
 
@@ -670,13 +770,6 @@ int add_challenge_flash(const char *name,
   return SUCCESS_;
 }
 
-/**
- * @brief
- *
- * @param name
- * @param is_wallet_locked
- * @return int
- */
 int update_wallet_locked_flash(const char *name, const bool is_wallet_locked) {
   ASSERT(name != NULL);
 
@@ -688,10 +781,34 @@ int update_wallet_locked_flash(const char *name, const bool is_wallet_locked) {
   if (ret != SUCCESS_)
     return INVALID_ARGUMENT;
 
+  if (false == flash_wallet->is_wallet_locked) {
+    /**
+     * @brief Can only udpate lock status if wallet is already locked, else card
+     * locked can be lost. To set wallet to locked for the first time, use @ref
+     * set_wallet_locked.
+     */
+    return INCONSISTENT_STATE;
+  }
+
   flash_wallet->is_wallet_locked = is_wallet_locked;
 
-  // Reset nonce to all zero
-  memset(flash_wallet->challenge.nonce, 0, POW_NONCE_SIZE);
+  /**
+   * @brief If wallet is still in locked case, initialize the challenge values
+   * similar to @ref set_wallet_locked. If wallet is unlocked, zeroise complete
+   * @ref Flash_Pow object.
+   */
+  if (is_wallet_locked) {
+    // Reset previous challenge
+    memzero(flash_wallet->challenge.random_number, POW_RAND_NUMBER_SIZE);
+    memzero(flash_wallet->challenge.target, SHA256_SIZE);
+    flash_wallet->challenge.time_to_unlock_in_secs = 0;
+
+    // Reset nonce to 0xFF as challenge is not fetched
+    memset(flash_wallet->challenge.nonce, 0xFF, PADDED_NONCE_SIZE);
+  } else {
+    // Wallet unlocked, reset challenge
+    memzero(&(flash_wallet->challenge), sizeof(flash_wallet->challenge));
+  }
 
   flash_struct_save();
 
@@ -717,14 +834,9 @@ int update_time_to_unlock_flash(const char *name,
   return SUCCESS_;
 }
 
-/**
- * @brief
- *
- * @param name
- * @param nonce
- * @return int
- */
-int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]) {
+int save_nonce_flash(const char *name,
+                     const uint8_t nonce[POW_NONCE_SIZE],
+                     const uint32_t time_to_unlock_in_secs) {
   ASSERT(name != NULL);
   ASSERT(nonce != NULL);
 
@@ -737,6 +849,7 @@ int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]) {
     return INVALID_ARGUMENT;
 
   memcpy(flash_wallet->challenge.nonce, nonce, POW_NONCE_SIZE);
+  flash_wallet->challenge.time_to_unlock_in_secs = time_to_unlock_in_secs;
 
   flash_struct_save();
 
@@ -869,7 +982,7 @@ int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys) {
   return INCONSISTENT_STATE;
 }
 
-int is_paired(const uint8_t *card_key_id) {
+int get_paired_card_index(const uint8_t *card_key_id) {
   ASSERT(card_key_id != NULL);
 
   get_sec_flash_ram_instance();
@@ -923,6 +1036,17 @@ int set_logging_config(log_config state, flash_save_mode save_mode) {
   if (save_mode == FLASH_SAVE_NOW)
     flash_struct_save();
   return STM_SUCCESS;
+}
+
+void save_onboarding_step(const uint8_t onboarding_step) {
+  get_flash_ram_instance();
+  flash_ram_instance.onboarding_step = onboarding_step;
+  flash_struct_save();
+}
+
+uint8_t get_onboarding_step(void) {
+  get_flash_ram_instance();
+  return flash_ram_instance.onboarding_step;
 }
 
 const uint8_t *get_perm_self_key_id() {

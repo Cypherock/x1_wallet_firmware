@@ -1,0 +1,11 @@
+# Options for file common/cypherock-common/proto/evm/sign_msg.proto
+evm.SignTypedDataNode.name type:FT_POINTER
+evm.SignTypedDataNode.struct_name type:FT_POINTER
+evm.SignTypedDataNode.children type:FT_POINTER
+evm.SignTypedDataNode.data type:FT_POINTER
+evm.SignTypedDataNode.type_hash type:FT_POINTER
+evm.SignMsgInitiateRequest.walletId type:FT_STATIC max_size:32 fixed_length:true
+evm.SignMsgInitiateRequest.derivationPath type:FT_STATIC max_count:5 fixed_length:true
+evm.SignMsgSignatureResponse.r type:FT_STATIC max_size:32 fixed_length:true
+evm.SignMsgSignatureResponse.s type:FT_STATIC max_size:32 fixed_length:true
+evm.SignMsgSignatureResponse.v type:FT_STATIC max_size:1 fixed_length:true

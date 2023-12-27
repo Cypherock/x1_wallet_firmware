@@ -96,6 +96,12 @@ Wallet_shamir_data CONFIDENTIAL wallet_shamir_data = {
     .share_x_coords = {0},
     .share_encryption_data = {{0}}};
 
+void clear_wallet_data() {
+  memzero(&wallet, sizeof(wallet));
+  memzero(&wallet_shamir_data, sizeof(wallet_shamir_data));
+  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
+}
+
 bool encrypt_shares() {
   uint8_t share[BLOCK_SIZE];
   chacha20poly1305_ctx ctx;
@@ -108,7 +114,8 @@ bool encrypt_shares() {
         &ctx, wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     chacha20poly1305_finish(
         &ctx,
-        (uint8_t *)(wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
+        (uint8_t *)(wallet_shamir_data.share_encryption_data[i] +
+                    PADDED_NONCE_SIZE));
     memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
   }
 
@@ -128,7 +135,8 @@ bool decrypt_shares() {
         &ctx, wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
     chacha20poly1305_finish(
         &ctx,
-        (uint8_t *)(wallet_shamir_data.share_encryption_data[i] + NONCE_SIZE));
+        (uint8_t *)(wallet_shamir_data.share_encryption_data[i] +
+                    PADDED_NONCE_SIZE));
     // TODO: Add mac comparison for decryption verification
     memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
   }

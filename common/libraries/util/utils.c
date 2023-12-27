@@ -356,7 +356,8 @@ void der_to_sig(const uint8_t *der, uint8_t *sig) {
     offset++;
     len--;
   }
-  memcpy(sig, der + offset, len);    // Copy the r component of signature
+  // Copy the r component of signature prepending 0's
+  memcpy(sig + (32 - len), der + offset, len);
   offset += len;
   if (der[offset++] != 0x02)
     return;               // Verify the marker byte is 0x02
@@ -365,7 +366,8 @@ void der_to_sig(const uint8_t *der, uint8_t *sig) {
     offset++;
     len--;
   }
-  memcpy(sig + 32, der + offset, len);
+  // Copy the s component of signature prepending 0's
+  memcpy(sig + 32 + (32 - len), der + offset, len);
 }
 
 /**

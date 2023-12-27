@@ -104,5 +104,4 @@ void confirm_scr_focus_cancel();
  * @note
  */
 void confirm_scr_focus_next();
-
 #endif

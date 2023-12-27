@@ -58,6 +58,7 @@
  ******************************************************************************
  */
 #include "card_action_controllers.h"
+#include "card_flow_verify_wallet.h"
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
 #include "flash_api.h"
@@ -88,7 +89,7 @@ void verify_wallet_controller() {
       break;
 
     case VERIFY_WALLET_TAP_CARDS_FLOW:
-      tap_cards_for_verification_flow_controller();
+      card_flow_verify_wallet();
       break;
 
     case VERIFY_WALLET_DATA: {
@@ -102,9 +103,8 @@ void verify_wallet_controller() {
       break;
 
     case VERIFY_WALLET_DELETE:
-      mark_error_screen(ui_text_wallet_verification_failed);
+      mark_error_screen(ui_text_wallet_verification_failed_in_creation);
       flow_level.level_three = 1;
-      flow_level.level_two = LEVEL_THREE_DELETE_WALLET;
       break;
 
     default:

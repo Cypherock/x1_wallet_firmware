@@ -19,10 +19,19 @@
 
 #define FAMILY_ID_SIZE 4
 #define CARD_ID_SIZE (FAMILY_ID_SIZE + 1)
-#define CARD_VERSION_SIZE (2 + 4)
+
+#define CARD_VERSION_MAJOR_MINOR_SIZE 1
+#define CARD_VERSION_PATCH_SIZE 1
+#define CARD_VERSION_GIT_REV_SIZE 4
+#define CARD_VERSION_SIZE                                                      \
+  (CARD_VERSION_MAJOR_MINOR_SIZE + CARD_VERSION_PATCH_SIZE +                   \
+   CARD_VERSION_GIT_REV_SIZE)
 
 #define BLOCK_SIZE 32
-#define NONCE_SIZE 16
+#define NONCE_SIZE 12
+#define PADDED_NONCE_SIZE                                                      \
+  NONCE_SIZE + 4    // 3 bytes as RFU and LSB as version byte
+#define HASH_SIZE 32
 #define WALLET_MAC_SIZE 16
 #define PIN_SHARE_SIZE 80
 #define CHECKSUM_SIZE 4
@@ -109,7 +118,7 @@ typedef struct Wallet {
   uint8_t wallet_info;
   uint8_t password_double_hash[BLOCK_SIZE];
 
-  uint8_t wallet_share_with_mac_and_nonce[BLOCK_SIZE + NONCE_SIZE +
+  uint8_t wallet_share_with_mac_and_nonce[BLOCK_SIZE + PADDED_NONCE_SIZE +
                                           WALLET_MAC_SIZE];
   uint8_t arbitrary_data_share[512];
 
@@ -150,7 +159,7 @@ typedef struct Wallet_shamir_data {
   };
   uint8_t share_x_coords[TOTAL_NUMBER_OF_SHARES];
   uint8_t share_encryption_data[TOTAL_NUMBER_OF_SHARES]
-                               [NONCE_SIZE + WALLET_MAC_SIZE];
+                               [PADDED_NONCE_SIZE + WALLET_MAC_SIZE];
 } Wallet_shamir_data;
 #pragma pack(pop)
 
@@ -175,6 +184,12 @@ typedef struct Wallet_credential_data {
 extern Wallet_credential_data wallet_credential_data;
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet wallet;
+
+/**
+ * @brief This function clears the data stored in the wallet,
+ * wallet_shamir_data, and wallet_credential_data variables.
+ */
+void clear_wallet_data();
 
 /**
  * @brief Encrypts hash of share using chachapoly

@@ -1,0 +1,2 @@
+# Options for file common/cypherock-common/proto/manager/get_logs.proto
+manager.GetLogsDataResponse.data type:FT_STATIC max_size:2048 fixed_length:false

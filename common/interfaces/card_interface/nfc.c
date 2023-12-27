@@ -176,11 +176,6 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time) {
   return adafruit_pn532_nfc_a_target_init(&tag_info, wait_time);
 }
 
-void nfc_card_presence_detect() {
-  if (nfc_wait_for_card(DEFAULT_NFC_TG_INIT_TIME) == STM_SUCCESS)
-    nfc_tapped = true;
-}
-
 ISO7816 nfc_select_applet(uint8_t expected_family_id[],
                           uint8_t *acceptable_cards,
                           uint8_t *version,
@@ -308,29 +303,35 @@ ISO7816 nfc_unpair() {
   return status_word;
 }
 
-ISO7816 nfc_list_all_wallet(uint8_t recv_apdu[], uint16_t *recv_len) {
-  ASSERT(recv_apdu != NULL);
-  ASSERT(recv_len != NULL);
-
-  // Select card before. recv_len receives the length of response APDU. It also
-  // acts as expected length of response APDU.
+ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
+  // Select card before.
   ISO7816 status_word;
-  uint8_t send_apdu[255], send_len;
-  *recv_len = 236;
+  uint8_t send_apdu[300], send_len;
+
+  // Use the same buffer to receive NFC apdu
+  uint8_t *recv_apdu = send_apdu;
+
+  // recv_len receives the length of response APDU. It also
+  // acts as expected length of response APDU.
+  uint16_t recv_len = 236;
+
   send_len = create_apdu_list_wallet(send_apdu);
 
   nfc_secure_comm = true;
   uint32_t system_clock = uwTick;
   ret_code_t err_code =
-      nfc_exchange_apdu(send_apdu, send_len, recv_apdu, recv_len);
+      nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
   LOG_SWV("List wallet in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
     return err_code;
   } else {
-    status_word = (recv_apdu[*recv_len - 2] * 256);
-    status_word += recv_apdu[*recv_len - 1];
+    status_word = (recv_apdu[recv_len - 2] * 256);
+    status_word += recv_apdu[recv_len - 1];
 
+    if (status_word == SW_NO_ERROR) {
+      apdu_extract_wallet_list(wallet_list, recv_apdu, recv_len);
+    }
     return status_word;
   }
   return 0;
@@ -453,11 +454,16 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
 
   if (err_code != STM_SUCCESS) {
     return err_code;
-  } else {
-    status_word = (recv_apdu[recv_len - 2] * 256);
-    status_word += recv_apdu[recv_len - 1];
+  }
 
-    if (status_word == SW_NO_ERROR && recv_len == ECDSA_EXPECTED_LENGTH) {
+  status_word = (recv_apdu[recv_len - 2] * 256);
+  status_word += recv_apdu[recv_len - 1];
+
+  if (status_word == SW_NO_ERROR) {
+    if (recv_len != ECDSA_EXPECTED_LENGTH) {
+      status_word = CARD_SIGNATURE_INCORRECT_LEN;
+      LOG_ERROR("Card error: %04x", status_word);
+    } else {
       // Extracting Data from APDU
       *length_inOut = recv_apdu[1];
       memcpy(data_inOut, recv_apdu + 2, recv_apdu[1]);

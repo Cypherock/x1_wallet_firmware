@@ -61,7 +61,6 @@
 
 #include "abi.h"
 #include "assert_conf.h"
-#include "eth.h"
 #include "utils.h"
 
 /* Global functions

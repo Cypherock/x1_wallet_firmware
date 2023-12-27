@@ -24,6 +24,30 @@
    get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
 
 /**
+ * @brief This API checks if a wallet exists at a particular index.
+ * Optionally, if a wallet exists in that index, this API can return the status
+ * of the wallet.
+ *
+ * @param index The index required to be checked for wallet existance
+ * @param state_output The optional pointer of type wallet_state which will be
+ * filled with the wallet_state in case the wallet exists on that index
+ * @return true If the wallet exists at the index
+ * @return false If the wallet does not exist at the index
+ */
+bool wallet_is_filled(uint8_t index, wallet_state *state_output);
+
+/**
+ * @brief The function checks if a wallet is filled with a share based on its
+ * index.
+ *
+ * @param index The index required to be checked for wallet existance
+ *
+ * @return a boolean value. It returns true if the wallet at the given index is
+ * filled with a share, and false otherwise.
+ */
+bool wallet_is_filled_with_share(uint8_t index);
+
+/**
  * Update auth state and first_boot_on_update variables in firewall
  */
 int set_auth_state(device_auth_state);
@@ -51,6 +75,8 @@ int add_wallet_to_flash(const Flash_Wallet *wallet, uint32_t *index_OUT);
  *
  * @param[in] fwallet a constant reference to an object of type Flash_Wallet
  * @param[out] index_OUT index at which share entry is made
+ * @param[in] wallet_share The 5th share of wallet to be written on device
+ * @param[in] wallet_nonce Wallet nonce common for all shares
  * @return SUCCESS,	MEMORY_OVERFLOW, INVALID_ARGUMENT, ALREADY_EXISTS
  * @retval SUCCESS Wallet share written to firewall region
  * @retval MEMORY_OVERFLOW in case of no empty slots
@@ -59,8 +85,8 @@ int add_wallet_to_flash(const Flash_Wallet *wallet, uint32_t *index_OUT);
  */
 int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
                                   uint32_t *index_OUT,
-                                  const uint8_t *wallet_share);
-
+                                  const uint8_t *wallet_share,
+                                  const uint8_t *wallet_nonce);
 /**
  * @brief Deletes a wallet from flash
  *
@@ -159,7 +185,9 @@ int put_wallet_flash(uint8_t index, const Flash_Wallet *wallet);
  * @retval INVALID_ARGUMENT non-existent wallet reference or wallet_index >=
  * MAX_WALLETS_ALLOWED
  */
-int put_wallet_share_sec_flash(uint8_t index, const uint8_t *wallet_share);
+int put_wallet_share_sec_flash(uint8_t index,
+                               const uint8_t *wallet_share,
+                               const uint8_t *wallet_nonce);
 
 /**
  * @brief Outputs the index of the wallet with given name
@@ -249,8 +277,23 @@ int get_flash_wallet_by_name(const char *name, Flash_Wallet **flash_wallet_OUT);
 int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share);
 
 /**
- * @brief Update the card states for the wallet at specified index (on deletion
- * of the wallet from the given card number)
+ * Retrieves the wallet nonce associated with a given name from flash memory.
+ *
+ * @param name A pointer to a character array representing the name of the
+ * wallet.
+ * @param wallet_nonce A pointer to a uint8_t array where the wallet nonce will
+ * be stored.
+ *
+ * @return SUCCESS, INVALID_ARGUMENT, DOESNT_EXIST
+ * @retval SUCCESS Wallet found & wallet share returned
+ * @retval INVALID_ARGUMENT Passed name is invalid
+ * @retval DOESNT_EXIST Wallet does not exist with given name
+ */
+int get_flash_wallet_nonce_by_name(const char *name, uint8_t *wallet_nonce);
+
+/**
+ * @brief Update the card states(write and attempt states) for the wallet at
+ * specified index (on deletion of the wallet from the given card number)
  *
  * @param index Wallet index in flash
  * @param card_number Card number to delete
@@ -261,6 +304,9 @@ int delete_from_kth_card_flash(uint8_t index, uint8_t card_number);
 /**
  * @brief Tells if the wallet at specified index is already deleted from the
  * given card number
+ *
+ * @details This function checks the write state and attempt state of the wallet
+ * to be deleted.
  *
  * @param index Wallet index in flash
  * @param card_number Card number to check
@@ -285,20 +331,32 @@ int update_challenge_flash(const char *name,
                            const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
+ * The function sets a wallet as locked and assigns a card number in which the
+ * wallet was locked.
+ *
+ * @param wallet_name A pointer to a string representing the name of the wallet.
+ * @param encoded_card_number Encoded locked card number. This card number is
+ * represented by the set bit in the lower nibble.
+ *
+ * @return an integer value. The possible return values are SUCCESS if the
+ * wallet locking operation is successful, or an error code if there is an issue
+ * with retrieving the flash wallet or saving the flash structure.
+ */
+int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number);
+
+/**
  * @brief Add challenge to flash
  * @note This also resets stored nonce
  * @param name Wallet name
  * @param target Target
  * @param random_number Random number
- * @param card_locked Card locked state
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Added successfully
  */
 int add_challenge_flash(const char *name,
                         const uint8_t target[SHA256_SIZE],
-                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
-                        uint8_t card_locked);
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
  * @brief Update the unlocked status of wallet and reset the nonce.
@@ -328,11 +386,14 @@ int update_time_to_unlock_flash(const char *name,
  *
  * @param wallet_index Wallet index in flash
  * @param nonce nonce byte array
+ * @param time_to_unlock_in_secs probabalistic time left to unlock the wallet
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Nonce saved successfully
  */
-int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]);
+int save_nonce_flash(const char *name,
+                     const uint8_t nonce[POW_NONCE_SIZE],
+                     const uint32_t time_to_unlock_in_secs);
 
 /**
  * @brief Set the wallet state in flash
@@ -414,7 +475,7 @@ int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys);
  *
  * @note
  */
-int is_paired(const uint8_t *card_key_id);
+int get_paired_card_index(const uint8_t *card_key_id);
 
 /**
  * @brief Invalidates the pairing of the card by setting the used flag to 0.
@@ -940,5 +1001,19 @@ uint8_t set_keystore_used_status(uint8_t keystore_index,
  * @since v1.0.0
  */
 void flash_delete_all_wallets();
+
+/**
+ * @brief It saves the onboarding step on the flash memory
+ *
+ * @param onboarding_step The value of step that needs to be stored
+ */
+void save_onboarding_step(const uint8_t onboarding_step);
+
+/**
+ * @brief Get the onboarding step value from the flash
+ *
+ * @return uint8_t The onboarding step
+ */
+uint8_t get_onboarding_step(void);
 
 #endif

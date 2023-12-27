@@ -1,0 +1,8 @@
+# Options for file common/cypherock-common/proto/btc/sign_txn.proto
+btc.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+btc.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:3 fixed_length:true
+btc.SignTxnInput.prev_txn type:FT_STATIC max_size:2048 fixed_length:false
+btc.SignTxnInput.prev_txn_hash type:FT_STATIC max_size:32 fixed_length:true
+btc.SignTxnInput.script_pub_key type:FT_STATIC max_size:67 fixed_length:false
+btc.SignTxnOutput.script_pub_key type:FT_STATIC max_size:67 fixed_length:false
+btc.SignTxnSignatureResponse.signature type:FT_STATIC max_size:128 fixed_length:false

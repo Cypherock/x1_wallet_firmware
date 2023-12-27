@@ -15,7 +15,7 @@ The X1Wallet ships with a firmware to take the user through the device setup flo
 Website link for getting started with new device: [cypherock.com/gs](https://www.cypherock.com/get-started/)
 
 ## Functionality of X1Wallet
-After the device is setup ([steps to setup device](#device-setup-flow)), the X1Wallet is ready to use by the end-users. To use the functionality, the user must have access to the X1Wallet and CyCards; CySync is required for on-chain operations such as send operations and balance viewing.
+After the device is setup ([steps to setup device](#device-setup-flow)), the X1Wallet is ready to use by the end-users. To use the functionality, the user must have access to the X1Wallet and CyCards; cySync is required for on-chain operations such as send operations and balance viewing.
 
 ### List of features:
 #### 1. Create wallet (on CyCards)
@@ -43,18 +43,18 @@ A user or owner of X1Wallet has an option to view the critical information of th
 
 To view the word-list, a user needs to have one CyCard (and knowledge of PIN, if the wallet is PIN protected).
 
-#### 4. Import wallet to CySync (Desktop application)
-Since, the X1Wallet is a cold storage, it cannot directly interact with Blockchain on the internet to view the balances. To facilitate this, the desktop application, enables users to view their account balances and funds on their wallet/accounts. In order to enable the tracking of funds for any particular wallet (for a particular type of crypto), users have to sync their X1Wallet with CySync and then [enable coin support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) of that particular cryptocurrency. To sync a wallet with CySync, user will trigger the request via CySync and confirm the request on the X1Wallet.
+#### 4. Import wallet to cySync (Desktop application)
+Since, the X1Wallet is a cold storage, it cannot directly interact with Blockchain on the internet to view the balances. To facilitate this, the desktop application, enables users to view their account balances and funds on their wallet/accounts. In order to enable the tracking of funds for any particular wallet (for a particular type of crypto), users have to sync their X1Wallet with cySync and then [enable coin support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) of that particular cryptocurrency. To sync a wallet with cySync, user will trigger the request via cySync and confirm the request on the X1Wallet.
 
 ***NOTE: This process only sends the public information about the wallet. No private critical information leaves the X1Wallet.***
 
-#### 5. Enable coin support for a wallet on CySync (Desktop application)
-X1Wallet allows tracking a cryptocurrency balances linked to a users wallet. This is possible via CySync interface. To enable a coin tracking support, the user will require to have one CyCard with the wallet. To enable coin tracking support (make sure that the desired wallet is [synced with CySync](#4-import-wallet-to-cysync-desktop-application)), user will trigger the request via CySync and confirm the request on the X1Wallet.
+#### 5. Enable coin support for a wallet on cySync (Desktop application)
+X1Wallet allows tracking a cryptocurrency balances linked to a users wallet. This is possible via cySync interface. To enable a coin tracking support, the user will require to have one CyCard with the wallet. To enable coin tracking support (make sure that the desired wallet is [synced with cySync](#4-import-wallet-to-cysync-desktop-application)), user will trigger the request via cySync and confirm the request on the X1Wallet.
 
 ***NOTE: This process only sends the public information about the accounts for the selected crypto. No private critical information leaves the X1Wallet.***
 
 #### 6. Receive funds into wallet address present on CyCards
-To receive funds into their X1Wallet, first the user must have at least one active wallet on their X1Wallet device ([create a wallet](#1-create-wallet-on-cycards) if you do not have one). If you already have a wallet, then make sure to have access to one CyCard for receiving funds. Now make sure the [wallet is synced with CySync](#4-import-wallet-to-cysync-desktop-application) and [coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) is enabled for the preferred coin.
+To receive funds into their X1Wallet, first the user must have at least one active wallet on their X1Wallet device ([create a wallet](#1-create-wallet-on-cycards) if you do not have one). If you already have a wallet, then make sure to have access to one CyCard for receiving funds. Now make sure the [wallet is synced with cySync](#4-import-wallet-to-cysync-desktop-application) and [coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application) is enabled for the preferred coin.
 
 Trigger the request to generate a receiving public address for your wallet. ***It is recommended to verify the address on the X1Wallet and never skip this step for security reasons.***
 
@@ -64,9 +64,9 @@ To enable transfer of funds from user's wallet to a different wallet, following 
    - Access to one CyCard
    - Wallets with sufficient funds ([create a wallet](#1-create-wallet-on-cycards) if you do not have one and [receive funds](#6-receive-funds-into-wallet-address-present-on-cycards) before proceeding)
    - Knowledge of PIN in case of PIN protected wallets
-   - Wallet synced with CySync ([sync wallet with CySync](#4-import-wallet-to-cysync-desktop-application)) and coin tracking support enabled on CySync ([enabled coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application))
+   - Wallet synced with cySync ([sync wallet with cySync](#4-import-wallet-to-cysync-desktop-application)) and coin tracking support enabled on cySync ([enabled coin tracking support](#5-enable-coin-support-for-a-wallet-on-cysync-desktop-application))
 
-The operation can be started from CySync and confirm the request on X1Wallet to continue. The user is expected to verify the transaction details such as receiver's address and amount being transferred along with a required fee used by the network for processing the transaction. If any descrepancy is observed by the user, the transaction should not be signed and cancelled immediately.
+The operation can be started from cySync and confirm the request on X1Wallet to continue. The user is expected to verify the transaction details such as receiver's address and amount being transferred along with a required fee used by the network for processing the transaction. If any descrepancy is observed by the user, the transaction should not be signed and cancelled immediately.
 
 ***NOTE: The transaction signing starts once the user has tapped the CyCard. It is recommended to not tap the CyCard if any descrepancy is observed by the user.***
 
