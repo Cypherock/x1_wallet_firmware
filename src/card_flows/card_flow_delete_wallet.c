@@ -239,7 +239,6 @@ card_error_type_e card_flow_delete_wallet(Wallet *selected_wallet) {
   // If wallet is deleted on all cards, delete from flash as well
   check_card_state_and_delete_wallet(
       (const char *)delete_cfg.wallet->wallet_name);
-  clear_wallet_data();
 
   return error_code;
 }
