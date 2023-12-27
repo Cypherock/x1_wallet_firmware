@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# source $(pwd)/python-venv/bin/activate
+source $(pwd)/python-venv/bin/activate
 
 usage () {
     echo -e "USAGE: $0 [-c] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"

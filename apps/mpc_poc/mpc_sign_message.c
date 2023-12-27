@@ -2054,6 +2054,15 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     bignum256 *additive_shares_list = malloc((group_info.threshold - 1) * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
 
+    if (!start_mta(query, &group_info, 
+                   my_index, participant_indices, 
+                   group_info.threshold, secret_share_list, 
+                   dec_share, priv_key, additive_shares_list)) {
+      return;
+    }
+
+    mpc_delay_scr_init("MTA successfully finished.", DELAY_SHORT);
+
     bignum256 self_product1;
     bignum256 self_product2;
 
@@ -2070,15 +2079,6 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     compute_self_product(&self_product1, &self_product2, secret_share_list, dec_share, 
                          group_info.threshold, index, participant_indices);
-
-    if (!start_mta(query, &group_info, 
-                   my_index, participant_indices, 
-                   group_info.threshold, secret_share_list, 
-                   dec_share, priv_key, additive_shares_list)) {
-      return;
-    }
-
-    mpc_delay_scr_init("MTA successfully finished.", DELAY_SHORT);
 
     // stop_msg_display();
     // display_msg_on_screen("Generating signature...");

@@ -2,7 +2,7 @@
 
 set -e
 
-# . $(pwd)/python-venv/bin/activate
+. $(pwd)/python-venv/bin/activate
 
 NANOPB_GEN="$(pwd)/vendor/nanopb/generator/nanopb_generator.py"
 
