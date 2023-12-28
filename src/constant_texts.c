@@ -183,6 +183,10 @@ const char *ui_text_joystick_left = "Toggle joystick left";
 const char *ui_text_joystick_center = "Center click joystick";
 const char *ui_text_joystick_checkup_complete =
     "Joystick instructions complete";
+const char *ui_text_wallet_selector_invalid =
+    "The selected wallet is misconfigured\n"
+    "Visit the wallet from main menu to fix it\n"
+    "Or choose a different wallet to continue";
 
 // Onboarding flow text
 const char *ui_text_onboarding_welcome = "Welcome";
