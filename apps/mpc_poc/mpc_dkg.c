@@ -24,14 +24,12 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
   uint8_t rand_coeff[32] = {0};
 
   for (int i = 0; i < coeff_count; i++) {
-    random_generate(rand_coeff, 32);
-
-    if (i == 0) {
-      if (zero_polynomial) {
-        memzero(rand_coeff, 32);
-      }
+    if (i == 0 && zero_polynomial) {
+      bn_zero(&coeff[i]);
+      continue;
     }
 
+    random_generate(rand_coeff, 32);
     bn_read_be(rand_coeff, &coeff[i]);
   }
 
