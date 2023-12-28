@@ -371,25 +371,27 @@ int compare_uint32(const void *a, const void *b) {
 
 void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
-  bn_one(lambda);
+  bignum256 zero_val = {0}, temp = {0};
+  int64_t num = 1, den = 1;
 
-  for (int i = 0; i < participants_len; ++i) {
-    if (i != index) {
-      bignum256 bn_i;
-      bn_read_uint32(participant_indices[i], &bn_i);
+  for (uint64_t i = 0; i < participants_len; i++) {
+      int m = participant_indices[i];
+      if (m == index)
+          continue;
 
-      bignum256 bn_j;
-      bn_read_uint32(participant_indices[index], &bn_j);
-
-      bignum256 bn_i_minus_j;
-
-      bn_subtractmod(&bn_i, &bn_j, &bn_i_minus_j, &curve->order);
-      bn_inverse(&bn_i_minus_j, &curve->order);
-      bn_multiply(&bn_i, &bn_i_minus_j, &curve->order);
-
-      bn_multiply(&bn_i_minus_j, lambda, &curve->order);
-    }
+      num *= (int64_t)(m);
+      den *= (int64_t)(m - index);
   }
+
+  assert(num % den == 0);
+  num /= den;
+
+  bn_zero(&zero_val);
+  bn_read_uint32(num < 0 ? num * -1 : num, lambda);
+  bn_copy(lambda, &temp);
+  if (num < 0)
+      bn_subtractmod(&zero_val, &temp, lambda, &curve->order);
+  bn_mod(lambda, &curve->order);
 }
 
 
@@ -1974,6 +1976,95 @@ void compute_self_product(bignum256 *self_product1, bignum256 *self_product2,
   bn_multiply(&lambda, self_product2, &curve->order);
 }
 
+void dummy_dump_data(bignum256 *secret_share_list, uint8_t *dec_share, mpc_poc_group_info_t *group_info, 
+               uint32_t *participant_indices, uint32_t index, bignum256 *additive_shares_list,
+               mpc_poc_group_key_info_t *group_key_info_list, uint8_t *msg_hash) {
+
+  const size_t secret_share_list_len = POLYNOMIALS_COUNT;
+  const size_t participants_len = group_info->threshold;
+  const size_t additive_shares_list_len = (group_info->threshold - 1) * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1);
+  const size_t group_key_info_list_len = POLYNOMIALS_COUNT;
+
+  char msg[GROUP_INFO_BUFFER_SIZE + 1];
+  uint8_t temp[32];
+
+  LOG_INFO("Dumping secret share list: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; i < secret_share_list_len; ++i) {
+    bn_write_be(&secret_share_list[i], temp);
+    byte_array_to_hex_string(temp, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+    LOG_INFO("hi: %d, %s\n", i, msg);
+    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  }
+
+  LOG_INFO("Dumping dec share: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  byte_array_to_hex_string(dec_share, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+  LOG_INFO("hi, %s\n", msg);
+
+  LOG_INFO("Dumping group info: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  uint8_t *group_info_bytes = malloc(GROUP_INFO_BUFFER_SIZE * sizeof(uint8_t));
+  size_t group_info_bytes_len = 0;
+
+  pb_ostream_t gi_stream = pb_ostream_from_buffer(group_info_bytes, GROUP_INFO_BUFFER_SIZE);
+
+  if (!pb_encode(&gi_stream, MPC_POC_GROUP_INFO_FIELDS, group_info)) {
+    return false;
+  }
+
+  group_info_bytes_len = gi_stream.bytes_written;
+
+  byte_array_to_hex_string(group_info_bytes, group_info_bytes_len, msg, GROUP_INFO_BUFFER_SIZE + 1);
+  free(group_info_bytes);
+  LOG_INFO("hi, %s\n", msg);
+
+  LOG_INFO("Dumping participant_indices: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; participants_len; ++i) {
+    LOG_INFO("hi: %d, %ld\n", i, participant_indices[i]);
+  }
+
+  LOG_INFO("Dumping my index: \n");
+  LOG_INFO("hi, %ld\n", index);
+
+  LOG_INFO("Dumping additive_shares list: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; i < additive_shares_list_len; ++i) {
+    bn_write_be(&additive_shares_list[i], temp);
+    byte_array_to_hex_string(temp, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+    LOG_INFO("hi: %d, %s\n\n", i, msg);
+    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  }
+
+  LOG_INFO("Dumping group key info list: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; i < group_key_info_list_len; ++i) {
+    uint8_t *group_key_info_bytes = malloc(GROUP_KEY_INFO_BUFFER_SIZE * sizeof(uint8_t));
+    size_t group_key_info_bytes_len = 0;
+
+    pb_ostream_t gki_stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
+
+    if (!pb_encode(&gki_stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info_list[i])) {
+      return false;
+    }
+
+    group_key_info_bytes_len = gki_stream.bytes_written;
+
+    byte_array_to_hex_string(group_key_info_bytes, group_key_info_bytes_len, msg, GROUP_INFO_BUFFER_SIZE + 1);
+    free(group_key_info_bytes);
+    LOG_INFO("hi: %d, %s\n\n", i, msg);
+    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  }
+
+  LOG_INFO("Dumping msg hash: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  byte_array_to_hex_string(msg_hash, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+  LOG_INFO("hi, %s\n", msg);
+
+  return;
+}
+
 void sign_message_flow(mpc_poc_query_t *query) {
   if (MPC_POC_SIGN_MESSAGE_REQUEST_INITIATE_TAG !=
       query->sign_message.which_request) {
@@ -2062,6 +2153,9 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     mpc_delay_scr_init("MTA successfully finished.", DELAY_SHORT);
+
+    dummy_dump_data(secret_share_list, dec_share, &group_info, participant_indices, my_index, additive_shares_list,
+              group_key_info_list, msg_hash);
 
     bignum256 self_product1;
     bignum256 self_product2;
