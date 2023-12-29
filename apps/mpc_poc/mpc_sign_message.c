@@ -369,7 +369,7 @@ int compare_uint32(const void *a, const void *b) {
   return (*(uint32_t *)b - *(uint32_t *)a);
 }
 
-void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
+void compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   bignum256 zero_val = {0}, temp = {0};
   int64_t num = 1, den = 1;
@@ -380,10 +380,10 @@ void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t 
           continue;
 
       num *= (int64_t)(m);
-      den *= (int64_t)(m - index);
+      den *= (int64_t)((int64_t) m - (int64_t) index);
   }
 
-  assert(num % den == 0);
+  assert(abs(num) % abs(den) == 0);
   num /= den;
 
   bn_zero(&zero_val);
@@ -391,9 +391,9 @@ void __attribute__((optimize("O0"))) compute_lambda(bignum256 *lambda, uint32_t 
   bn_copy(lambda, &temp);
   if (num < 0)
       bn_subtractmod(&zero_val, &temp, lambda, &curve->order);
+  bn_fast_mod(lambda, &curve->order);
   bn_mod(lambda, &curve->order);
 }
-
 
 bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
                            uint32_t *participant_indices,
@@ -487,7 +487,7 @@ bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
 }
 
 bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
-                           mpc_poc_group_info_t *group_info,
+                           const mpc_poc_group_info_t *group_info,
                            uint32_t index,
                            uint32_t *participant_indices,
                            uint32_t sender_times,
@@ -632,7 +632,7 @@ void store_value_in_matrix(uint8_t *t_value, uint8_t *t_matrix, int index) {
 }
 
 bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
-                      mpc_poc_group_info_t *group_info,
+                      const mpc_poc_group_info_t *group_info,
                       uint32_t index,
                       uint32_t *participant_indices,
                       uint32_t receiver_times,
@@ -722,6 +722,8 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
 
       bn_copy(&(ot_receiver_pk->x), &(ot_receiver_pk_neg->x));
       bn_subtractmod(&(curve->prime), &(ot_receiver_pk->y), &(ot_receiver_pk_neg->y), &(curve->prime));
+      bn_fast_mod(&(ot_receiver_pk_neg->y), &curve->prime);
+      bn_mod(&(ot_receiver_pk_neg->y), &curve->prime);
 
       point_add(curve, ot_sender_pk, ot_receiver_pk_neg);
       point_multiply(curve, ot_receiver_sk, ot_receiver_pk_neg, k1);
@@ -853,7 +855,7 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
 }
 
 bool mta_post_snd_enc(mpc_poc_query_t *query,
-                      mpc_poc_group_info_t *group_info,
+                      const mpc_poc_group_info_t *group_info,
                       uint32_t index,
                       uint32_t *participant_indices,
                       uint32_t sender_times,
@@ -1071,12 +1073,16 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       bn_read_uint32((uint32_t) round, &bn_i);
 
       bignum256 res_x;
-      bn_zero(&res_x);
+      bn_one(&res_x);
 
-      bn_power_mod(&two, &bn_i, &curve->order, &res_x);
+      for (int k = 0; k < round; ++k) {
+        bn_multiply(&two, &res_x, &curve->order);
+      }
+      
       bn_multiply(&rand_bn, &res_x, &curve->order);
 
       bn_addmod(&sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + polynomial], &res_x, &curve->order);
+      bn_mod(&sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + polynomial], &curve->order);
 
       if (polynomial < 3) {
         memcpy(&share_bn, &secret_share_list[ZERO_POLYNOMIALS + polynomial], sizeof(bignum256));
@@ -1092,6 +1098,8 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       }
 
       bn_addmod(&rand_bn, &share_bn, &curve->order);
+      bn_mod(&rand_bn, &curve->order);
+
       bn_write_be(&rand_bn, rand_value);
 
       // xor q_value with s_value
@@ -1117,7 +1125,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
     }
 
     bignum256 lambda;
-    compute_lambda(&lambda, participant_indices, threshold, index + 1 + i);
+    compute_lambda(&lambda, participant_indices, threshold, participant_indices[index + 1 + i]);
 
     for (int k = 0; k < 4; ++k) {
       bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
@@ -1151,7 +1159,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
 }
 
 bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
-                    mpc_poc_group_info_t *group_info,
+                    const mpc_poc_group_info_t *group_info,
                     uint32_t index,
                     uint32_t *participant_indices,
                     uint32_t receiver_times,
@@ -1237,19 +1245,23 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
       bn_read_uint32((uint32_t) round, &bn_i);
 
       bignum256 res_x;
-      bn_zero(&res_x);
+      bn_one(&res_x);
 
-      bn_power_mod(&two, &bn_i, &curve->order, &res_x);
+      for (int k = 0; k < round; ++k) {
+        bn_multiply(&two, &res_x, &curve->order);
+      }
+
       bn_multiply(&bn_dec_m, &res_x, &curve->order);
 
       bn_addmod(&receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + polynomial], &res_x, &curve->order);
+      bn_mod(&receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + polynomial], &curve->order);
 
       result.sign_message = response;
       mpc_send_result(&result);
     }
 
     bignum256 lambda;
-    compute_lambda(&lambda, participant_indices, group_info->threshold, i);
+    compute_lambda(&lambda, participant_indices, group_info->threshold, participant_indices[i]);
 
     for (int k = 0; k < 4; ++k) {
       bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
@@ -1294,8 +1306,8 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
   return true;
 }
 
-bool __attribute__((optimize("O0"))) start_mta(mpc_poc_query_t *query, 
-               mpc_poc_group_info_t *group_info,
+bool start_mta(mpc_poc_query_t *query, 
+               const mpc_poc_group_info_t *group_info,
                const uint32_t my_index, 
                uint32_t *participant_indices, 
                const uint32_t threshold,
@@ -1440,11 +1452,13 @@ bool __attribute__((optimize("O0"))) start_mta(mpc_poc_query_t *query,
   bignum256 lambda;
   LOG_SWV("before lambda function\n");
   
-  compute_lambda(&lambda, participant_indices, threshold, index);
+  compute_lambda(&lambda, participant_indices, threshold, my_index);
   LOG_SWV("after lambda function\n");
 
   for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
     bn_subtractmod(&curve->order, &sender_additive_shares_list[i], &sender_additive_shares_list[i], &curve->order);
+    bn_fast_mod(&sender_additive_shares_list[i], &curve->order);
+    bn_mod(&sender_additive_shares_list[i], &curve->order);
     bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
   }
 
@@ -1522,7 +1536,10 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
 
   for (int i = 0; i < length - 1; ++i) {
     bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 0], &curve->order);
+    bn_mod(&small_w_share_bn, &curve->order);
+
     bn_addmod(&small_w_share_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 1], &curve->order);
+    bn_mod(&small_w_share_bn, &curve->order);
   }
 
   curve_point r_value;
@@ -1638,6 +1655,7 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
     bn_read_be(signed_authenticator_data.authenticator_data.small_w_share, &small_w_share_bn);
 
     bn_addmod(w_bn, &small_w_share_bn, &curve->order);
+    bn_mod(w_bn, &curve->order);
 
     xcords[ind] = participant_indices[i];
 
@@ -1706,6 +1724,7 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
 
   bn_copy(k_inv_share, &ka_share);
   bn_addmod(&ka_share, a_share, &curve->order);
+  bn_mod(&ka_share, &curve->order);
 
   bignum256 lambda;
   compute_lambda(&lambda, participant_indices, threshold, index);
@@ -1788,6 +1807,7 @@ bool sig_compute_ka(mpc_poc_query_t *query,
     bn_read_be(signed_ka_share.ka_share, &ka_share);
 
     bn_addmod(k_inv_plus_p, &ka_share, &curve->order);
+    bn_mod(k_inv_plus_p, &curve->order);
     k++;
   }
 
@@ -1819,7 +1839,10 @@ bool get_sig_share(mpc_poc_query_t *query,
 
   for (int i = 0; i < threshold - 1; ++i) {
     bn_addmod(&pi_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 2], &curve->order);
+    bn_mod(&pi_bn, &curve->order);
+
     bn_addmod(&pi_bn, &additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + 3], &curve->order);
+    bn_mod(&pi_bn, &curve->order);
   }
 
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -1847,6 +1870,8 @@ bool get_sig_share(mpc_poc_query_t *query,
 
   bn_multiply(&lambda, &xi, &curve->order);
   bn_subtractmod(&xi, &pi_bn, &vi, &curve->order);
+  bn_fast_mod(&vi, &curve->order);
+  bn_mod(&vi, &curve->order);
 
   bignum256 mi;
   bn_read_be(message_hash, &mi);
@@ -1855,14 +1880,18 @@ bool get_sig_share(mpc_poc_query_t *query,
   bn_multiply(&mi, &si, &curve->order);
 
   bn_multiply(d_share, &mi, &curve->order);
+
   bn_addmod(&si, &mi, &curve->order);
+  bn_mod(&si, &curve->order);
 
   bn_addmod(&si, e_share, &curve->order);
+  bn_mod(&si, &curve->order);
 
   bn_multiply(&lambda, &si, &curve->order);
 
   bn_multiply(r, &vi, &curve->order);
   bn_addmod(&si, &vi, &curve->order);
+  bn_mod(&si, &curve->order);
 
   bn_copy(&si, sig_share);
 
@@ -1942,6 +1971,7 @@ bool compute_sig(mpc_poc_query_t *query,
     bn_read_be(signed_sig_share.sig_share, &sig_share);
 
     bn_addmod(my_sig_share, &sig_share, &curve->order);
+    bn_mod(my_sig_share, &curve->order);
 
     k++;
   }
@@ -1981,12 +2011,47 @@ void dummy_dump_data(bignum256 *secret_share_list, uint8_t *dec_share, mpc_poc_g
                mpc_poc_group_key_info_t *group_key_info_list, uint8_t *msg_hash) {
 
   const size_t secret_share_list_len = POLYNOMIALS_COUNT;
-  const size_t participants_len = group_info->threshold;
+  const uint32_t participants_len = group_info->threshold;
   const size_t additive_shares_list_len = (group_info->threshold - 1) * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1);
   const size_t group_key_info_list_len = POLYNOMIALS_COUNT;
 
   char msg[GROUP_INFO_BUFFER_SIZE + 1];
   uint8_t temp[32];
+
+  LOG_INFO("Dumping group key info list: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; i < group_key_info_list_len; ++i) {
+    uint8_t *group_key_info_bytes = malloc(GROUP_KEY_INFO_BUFFER_SIZE * sizeof(uint8_t));
+    size_t group_key_info_bytes_len = 0;
+
+    pb_ostream_t gki_stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
+
+    if (!pb_encode(&gki_stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info_list[i])) {
+      return false;
+    }
+
+    group_key_info_bytes_len = gki_stream.bytes_written;
+
+    byte_array_to_hex_string(group_key_info_bytes, group_key_info_bytes_len, msg, GROUP_INFO_BUFFER_SIZE + 1);
+    free(group_key_info_bytes);
+    LOG_INFO("hi: %d, %s\n\n", i, msg);
+    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  }
+
+  LOG_INFO("Dumping additive_shares list: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  for (int i = 0; i < additive_shares_list_len; ++i) {
+    bn_write_be(&additive_shares_list[i], temp);
+    byte_array_to_hex_string(temp, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+    LOG_INFO("hi: %d, %s\n\n", i, msg);
+    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  }
+
+
+  LOG_INFO("Dumping msg hash: \n");
+  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
+  byte_array_to_hex_string(msg_hash, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
+  LOG_INFO("hi, %s\n", msg);
 
   LOG_INFO("Dumping secret share list: \n");
   memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
@@ -2021,46 +2086,12 @@ void dummy_dump_data(bignum256 *secret_share_list, uint8_t *dec_share, mpc_poc_g
 
   LOG_INFO("Dumping participant_indices: \n");
   memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  for (int i = 0; participants_len; ++i) {
+  for (int i = 0; i < participants_len; ++i) {
     LOG_INFO("hi: %d, %ld\n", i, participant_indices[i]);
   }
 
   LOG_INFO("Dumping my index: \n");
   LOG_INFO("hi, %ld\n", index);
-
-  LOG_INFO("Dumping additive_shares list: \n");
-  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  for (int i = 0; i < additive_shares_list_len; ++i) {
-    bn_write_be(&additive_shares_list[i], temp);
-    byte_array_to_hex_string(temp, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
-    LOG_INFO("hi: %d, %s\n\n", i, msg);
-    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  }
-
-  LOG_INFO("Dumping group key info list: \n");
-  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  for (int i = 0; i < group_key_info_list_len; ++i) {
-    uint8_t *group_key_info_bytes = malloc(GROUP_KEY_INFO_BUFFER_SIZE * sizeof(uint8_t));
-    size_t group_key_info_bytes_len = 0;
-
-    pb_ostream_t gki_stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
-
-    if (!pb_encode(&gki_stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info_list[i])) {
-      return false;
-    }
-
-    group_key_info_bytes_len = gki_stream.bytes_written;
-
-    byte_array_to_hex_string(group_key_info_bytes, group_key_info_bytes_len, msg, GROUP_INFO_BUFFER_SIZE + 1);
-    free(group_key_info_bytes);
-    LOG_INFO("hi: %d, %s\n\n", i, msg);
-    memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  }
-
-  LOG_INFO("Dumping msg hash: \n");
-  memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
-  byte_array_to_hex_string(msg_hash, 32, msg, GROUP_INFO_BUFFER_SIZE + 1);
-  LOG_INFO("hi, %s\n", msg);
 
   return;
 }
