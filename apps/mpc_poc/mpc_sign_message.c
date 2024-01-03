@@ -410,6 +410,9 @@ bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
         return false;
     }
 
+    stop_msg_display();
+    display_msg_on_screen("Generating OT key pairs for the senders...");
+
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
 
@@ -497,6 +500,8 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
                            uint8_t *ot_sender_received_pks) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  stop_msg_display();
+  display_msg_on_screen("Waiting for public keys from the receivers...");
 
   for (int i = 0; i < sender_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -504,6 +509,9 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: wrong query (mta snd pk initiate)", DELAY_TIME);
         return false;
     }
+
+    stop_msg_display();
+    display_msg_on_screen("Generating OT key pairs for the receivers...");
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -558,7 +566,7 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_get_pk.public_key, 33);
 
-      uint8_t mask = 1 << (j % 8);
+      uint8_t mask = 1 << (7 - (j % 8));
       if (s_values[(i * 16) + (j / 8)] & mask) {
         point_add(curve, &ot_receiver_pk, &ot_sender_pk);
       }
@@ -618,20 +626,22 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
 }
 
 void store_value_in_matrix(uint8_t *t_value, uint8_t *t_matrix, int index) {
+  // t_value is of length 128 bytes.
+
   // t_matrix is a 1024 * (NUMBER_OF_OTS / 8) matrix
   // store t_value in the index column of the matrix
 
   for (int i = 0; i < 1024; ++i) {
-    uint8_t mask = 1 << (i % 8);
+    uint8_t mask = 1 << (7 - (i % 8));
     if (t_value[i / 8] & mask) {
-      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] |= (1 << (index % 8));
+      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] |= (1 << (7 - (index % 8)));
     } else {
-      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] &= ~(1 << (index % 8));
+      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] &= ~(1 << (7 - (index % 8)));
     }
   }
 }
 
-bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
+bool mta_send_rcv_enc(mpc_poc_query_t *query,
                       const mpc_poc_group_info_t *group_info,
                       uint32_t index,
                       uint32_t *participant_indices,
@@ -642,6 +652,8 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
                       uint8_t *t_matrices) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  stop_msg_display();
+  display_msg_on_screen("Waiting for public keys from the senders...");
 
   for (int i = 0; i < receiver_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -649,6 +661,9 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: wrong query (mta rcv enc initiate)", DELAY_TIME);
         return false;
     }
+
+    stop_msg_display();
+    display_msg_on_screen("Encrypting vertical IKNP matrices for the senders...");
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -709,7 +724,7 @@ bool __attribute__((optimize("O0"))) mta_send_rcv_enc(mpc_poc_query_t *query,
       random_generate(t_value + 64, 32);
       random_generate(t_value + 96, 32);
 
-      store_value_in_matrix(t_value, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
+      // store_value_in_matrix(t_value, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
 
       bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_receiver_sk);
       scalar_multiply(curve, ot_receiver_sk, ot_receiver_pk);
@@ -865,6 +880,8 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
                       uint8_t *q_matrices) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  stop_msg_display();
+  display_msg_on_screen("Waiting for encrypted vertical IKNP matrices from the receivers...");
 
   for (int i = 0; i < sender_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -872,6 +889,9 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: wrong query (mta snd post enc initiate)", DELAY_TIME);
         return false;
     }
+
+    stop_msg_display();
+    display_msg_on_screen("Decrypting vertical IKNP matrices...");
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -927,7 +947,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
       hasher_Final(hasher_key, dec_key);
       free(hasher_key);
 
-      uint8_t mask = 1 << (j % 8);
+      uint8_t mask = 1 << (7 - (j % 8));
       if (s_values[(i * 16) + (j / 8)] & mask) {
         if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m0, 128, dec_m, dec_key) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
@@ -952,7 +972,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
         }  
       }
 
-      store_value_in_matrix(dec_m, &q_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
+      // store_value_in_matrix(dec_m, &q_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m0, 128);
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m1, 128);
@@ -1020,6 +1040,9 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: wrong query (mta snd mascot initiate)", DELAY_TIME);
         return false;
     }
+
+    stop_msg_display();
+    display_msg_on_screen("Performing sender-side MASCOT using symmetric key operations...");
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -1158,7 +1181,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
   return true;
 }
 
-bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
+bool mta_mascot_rcv(mpc_poc_query_t *query,
                     const mpc_poc_group_info_t *group_info,
                     uint32_t index,
                     uint32_t *participant_indices,
@@ -1167,6 +1190,8 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
                     bignum256 *receiver_additive_shares_list,
                     uint8_t *b_value) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  stop_msg_display();
+  display_msg_on_screen("Waiting for sender's MASCOT messages...");
 
   for (int i = 0; i < receiver_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -1174,6 +1199,9 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
         mpc_delay_scr_init("Error: wrong query (mta rcv mascot initiate)", DELAY_TIME);
         return false;
     }
+
+    stop_msg_display();
+    display_msg_on_screen("Performing receiver-side MASCOT using symmetric key operations...");
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -1210,7 +1238,7 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
       hasher_Update(&hasher_verify, query->sign_message.mta_rcv_post_mascot.enc_m1, 32);
 
       // get j'th bit of b_value (128 bytes array)
-      uint8_t mask = 1 << (j % 8);
+      uint8_t mask = 1 << (7 - (j % 8));
       uint8_t b_bit = b_value[j / 8] & mask;
       
       uint8_t *dec_m = malloc(32 * sizeof(uint8_t));
@@ -1306,6 +1334,7 @@ bool __attribute__((optimize("O0"))) mta_mascot_rcv(mpc_poc_query_t *query,
   return true;
 }
 
+extern uint8_t *__sbrk_heap_end;
 bool start_mta(mpc_poc_query_t *query, 
                const mpc_poc_group_info_t *group_info,
                const uint32_t my_index, 
@@ -1363,10 +1392,28 @@ bool start_mta(mpc_poc_query_t *query,
   uint8_t *ot_receiver_sk_lists;
   bignum256 *receiver_additive_shares_list;
 
+  LOG_SWV("Before MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
+
   if (sender_times > 0) {
     s_values = malloc(sender_times * 16 * sizeof(uint8_t));
     ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
     q_matrices = malloc(sender_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t)); 
+    if (s_values == NULL || ot_sender_sk_lists == NULL || q_matrices == NULL) {
+      mpc_delay_scr_init("Error: malloc failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    LOG_INFO("Dumping first 128 bytes of q_matrix right after allocation\n");
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", q_matrices[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
 
     ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * 33 * sizeof(uint8_t));
   }
@@ -1384,6 +1431,23 @@ bool start_mta(mpc_poc_query_t *query,
     bn_write_be(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
 
     t_matrices = malloc(receiver_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t));
+    if (t_matrices == NULL) {
+      mpc_delay_scr_init("Error: malloc failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
+    LOG_INFO("Dumping first 128 bytes of t_matrix right after allocation\n");
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", t_matrices[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
     ot_receiver_sk_lists = malloc(receiver_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
   }
 
@@ -1393,23 +1457,72 @@ bool start_mta(mpc_poc_query_t *query,
   result.sign_message = response;
   mpc_send_result(&result);
 
-  if (!mta_send_rcv_pub_keys(query, participant_indices, receiver_times, 
+
+  if (receiver_times > 0 && !mta_send_rcv_pub_keys(query, participant_indices, receiver_times, 
                              priv_key, ot_receiver_sk_lists)) {
     return false;
   }
 
-  if (!mta_send_snd_pub_keys(query, group_info, index, 
+  if (sender_times > 0 && !mta_send_snd_pub_keys(query, group_info, index, 
                              participant_indices, sender_times, priv_key, s_values, 
                              ot_sender_sk_lists, ot_sender_received_pks)) {
     return false;
   }
 
-  if (!mta_send_rcv_enc(query, group_info, index, participant_indices, receiver_times, 
+  if (receiver_times > 0 && !mta_send_rcv_enc(query, group_info, index, participant_indices, receiver_times, 
                         priv_key, ot_receiver_sk_lists, b_value, t_matrices)) {
     return false;
   }
 
-  LOG_SWV("after function\n");
+  if (receiver_times > 0) {
+    LOG_INFO("Dumping b value new\n");
+
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", b_value[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+
+    LOG_INFO("Dumping first 128 bytes of t_matrix\n");
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", t_matrices[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+    LOG_INFO("Dumping t matrices\n");
+
+    for (int k = 0; k < receiver_times; ++k) {
+      LOG_INFO("Receiver: %d\n", k+1);
+
+      Hasher hasher;
+      hasher_Init(&hasher, HASHER_SHA2);
+
+      for (int p = 0; p < 1024; ++p) {
+        uint8_t *temp = &t_matrices[k * 1024 * 16 + p * 16];
+        hasher_Update(&hasher, temp, 16);
+      }
+
+      uint8_t hash[32];
+      hasher_Final(&hasher, hash);
+
+      char m[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(m + i * 2, "%02x", hash[i]);
+      }
+      m[64] = '\0';
+      LOG_INFO("%s\n", m);
+    }
+    LOG_INFO("Dumped t matrices new\n");
+
+  }
 
   if (sender_times > 0) {
     if (!mta_post_snd_enc(query, group_info, index, participant_indices, sender_times, 
@@ -1421,39 +1534,76 @@ bool start_mta(mpc_poc_query_t *query,
     free(ot_sender_received_pks);
   }
 
-  LOG_SWV("after sender function\n");
+  if (sender_times > 0) {
+    LOG_INFO("Dumping s values new\n");
+    for (int k = 0; k < sender_times; ++k) {
+      uint8_t *s_temp = &s_values[k * 16];
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", s_temp[i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+    LOG_INFO("Dumping first 128 bytes of q_matrix\n");
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", q_matrices[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+    LOG_INFO("Dumping q matrices\n");
+    for (int k = 0; k < sender_times; ++k) {
+      LOG_INFO("Sender: %d\n", k+1);
+
+      Hasher hasher;
+      hasher_Init(&hasher, HASHER_SHA2);
+
+      for (int p = 0; p < 1024; ++p) {
+        uint8_t *temp = &q_matrices[k * 1024 * 16 + p * 16];
+        hasher_Update(&hasher, temp, 16);
+      }
+
+      uint8_t hash[32];
+      hasher_Final(&hasher, hash);
+
+      char m[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(m + i * 2, "%02x", hash[i]);
+      }
+      m[64] = '\0';
+      LOG_INFO("%s\n", m);
+    }
+    LOG_INFO("Dumped q matrices new\n");
+  }
 
   if (receiver_times > 0) {
     free(ot_receiver_sk_lists);
   }
 
-  LOG_SWV("after freeing\n");
-
   if (sender_times > 0) {
-    LOG_SWV("inside sender condition\n");
     sender_additive_shares_list = malloc(sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
 
     for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
       bn_zero(&sender_additive_shares_list[i]);
     }
 
-    LOG_SWV("before sender function\n");
-
     if (!mta_mascot_snd(query, index, participant_indices, sender_times, group_info->threshold,
                         s_values, q_matrices, priv_key, secret_share_list,
                         priv_key_share, sender_additive_shares_list)) {
       return false;
     }
-    LOG_SWV("after sender function\n");
   }
   
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
 
   bignum256 lambda;
-  LOG_SWV("before lambda function\n");
   
   compute_lambda(&lambda, participant_indices, threshold, my_index);
-  LOG_SWV("after lambda function\n");
 
   for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
     bn_subtractmod(&curve->order, &sender_additive_shares_list[i], &sender_additive_shares_list[i], &curve->order);
@@ -1467,18 +1617,14 @@ bool start_mta(mpc_poc_query_t *query,
   }
 
   if (receiver_times > 0) {
-    LOG_SWV("inside sender function\n");
     receiver_additive_shares_list = malloc(receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
 
     for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
       bn_zero(&receiver_additive_shares_list[i]);
     }
   }
-  LOG_SWV("outside sender function\n");
 
-  LOG_SWV("before calling mascot rcv function\n");
-
-  if (!mta_mascot_rcv(query, group_info, index, participant_indices, receiver_times,
+  if (receiver_times > 0 && !mta_mascot_rcv(query, group_info, index, participant_indices, receiver_times,
                       t_matrices, receiver_additive_shares_list, b_value)) {
     return false;
   }
@@ -1727,7 +1873,7 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
   bn_mod(&ka_share, &curve->order);
 
   bignum256 lambda;
-  compute_lambda(&lambda, participant_indices, threshold, index);
+  compute_lambda(&lambda, participant_indices, threshold, participant_indices[index]);
 
   bn_multiply(&lambda, &ka_share, &curve->order);
 
@@ -1866,7 +2012,7 @@ bool get_sig_share(mpc_poc_query_t *query,
   bn_multiply(k_inv_plus_p, &xi, &curve->order);
 
   bignum256 lambda;
-  compute_lambda(&lambda, participant_indices, threshold, index);
+  compute_lambda(&lambda, participant_indices, threshold, participant_indices[index]);
 
   bn_multiply(&lambda, &xi, &curve->order);
   bn_subtractmod(&xi, &pi_bn, &vi, &curve->order);
@@ -1993,7 +2139,7 @@ void compute_self_product(bignum256 *self_product1, bignum256 *self_product2,
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
 
   bignum256 lambda;
-  compute_lambda(&lambda, participant_indices, threshold, index);
+  compute_lambda(&lambda, participant_indices, threshold, participant_indices[index]);
 
   bn_multiply(&secret_share_list[POLYNOMIAL_K_INDEX], self_product1, &curve->order);
   bn_multiply(&secret_share_list[POLYNOMIAL_A_INDEX], self_product1, &curve->order);
@@ -2103,6 +2249,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
   } else {
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+
     uint8_t *priv_key = malloc(32 * sizeof(uint8_t));
     uint8_t *pub_key = malloc(33 * sizeof(uint8_t));
 
@@ -2111,18 +2259,19 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     bignum256 secret_share_list[POLYNOMIALS_COUNT];
 
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+
     if (!sign_message_initiate(query, priv_key, pub_key)) {
       return;
     }
-
-    mpc_delay_scr_init("App initiated.", DELAY_SHORT);
 
     uint8_t *msg_hash = malloc(32 * sizeof(uint8_t));
     if (!approve_message(query, msg_hash)) {
       return;
     }
 
-    mpc_delay_scr_init("Getting Group info.", DELAY_SHORT);
+    stop_msg_display();
+    display_msg_on_screen("Getting things ready...");
 
     if (!get_group_info(query, pub_key, &group_info, &group_key_info)) {
       return;
@@ -2131,14 +2280,14 @@ void sign_message_flow(mpc_poc_query_t *query) {
     uint32_t participant_indices[group_info.threshold];
     uint32_t my_index = 0;
 
-    mpc_delay_scr_init("Getting indices.", DELAY_SHORT);
-
     if (!get_participant_indices(query, pub_key, &group_info, participant_indices, &my_index)) {
       return;
     }
 
-    // stop_msg_display();
-    // display_msg_on_screen("DKG process started.");
+    stop_msg_display();
+    display_msg_on_screen("Performing DKG...");
+
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
 
     if (!transfer_share_data(query, &group_info, pub_key, participant_indices, 
                              secret_share_list, priv_key)) {
@@ -2146,26 +2295,24 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     uint8_t *public_keys[POLYNOMIALS_COUNT];
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
 
     for (uint8_t i = 0; i < POLYNOMIALS_COUNT; i++) {
       public_keys[i] = malloc(33 * sizeof(uint8_t));
     }
 
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
     if (!get_QI(query, &group_info, pub_key, priv_key, secret_share_list, public_keys)) {
       return;
     }
 
     mpc_poc_group_key_info_t group_key_info_list[POLYNOMIALS_COUNT];
 
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
     if (!get_group_key(query, &group_info, pub_key, priv_key, secret_share_list, 
                        public_keys, group_key_info_list)) {
       return;
     }
-
-    mpc_delay_scr_init("DKG successfully finished.", DELAY_SHORT);
-
-    // stop_msg_display();
-    // display_msg_on_screen("MTA process started.");
 
     uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
     if (mpc_aes_decrypt(group_key_info.group_share.enc_share, 32, dec_share, priv_key) != 0) {
@@ -2176,6 +2323,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
 
     bignum256 *additive_shares_list = malloc((group_info.threshold - 1) * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
 
+    LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
     if (!start_mta(query, &group_info, 
                    my_index, participant_indices, 
                    group_info.threshold, secret_share_list, 
@@ -2183,7 +2331,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
       return;
     }
 
-    mpc_delay_scr_init("MTA successfully finished.", DELAY_SHORT);
+    stop_msg_display();
+    display_msg_on_screen("Generating signature...");
 
     dummy_dump_data(secret_share_list, dec_share, &group_info, participant_indices, my_index, additive_shares_list,
               group_key_info_list, msg_hash);
@@ -2261,8 +2410,6 @@ void sign_message_flow(mpc_poc_query_t *query) {
                      index, &R.x, &sig_share, final_signature)) {
       return;
     }
-
-    mpc_delay_scr_init("Signature successfully generated.", DELAY_SHORT);
 
     char msg[130];
     byte_array_to_hex_string(final_signature, 64, msg, 130);
