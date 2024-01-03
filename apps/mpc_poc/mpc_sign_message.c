@@ -625,20 +625,20 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
   return true;
 }
 
-void store_value_in_matrix(uint8_t *t_value, uint8_t *t_matrix, int index) {
-  // t_value is of length 128 bytes.
+void store_value_in_matrix(uint8_t *t_value, uint8_t **t_matrix, int index) {
+    // t_value is of length 128 bytes.
 
-  // t_matrix is a 1024 * (NUMBER_OF_OTS / 8) matrix
-  // store t_value in the index column of the matrix
+    // t_matrix is an array of 1024 pointers, each pointing to a block of 128 / 8 bytes
+    // store t_value in the index column of the matrix
 
-  for (int i = 0; i < 1024; ++i) {
-    uint8_t mask = 1 << (7 - (i % 8));
-    if (t_value[i / 8] & mask) {
-      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] |= (1 << (7 - (index % 8)));
-    } else {
-      t_matrix[i * (NUMBER_OF_OTS / 8) + (index / 8)] &= ~(1 << (7 - (index % 8)));
+    for (int i = 0; i < 1024; ++i) {
+        uint8_t mask = 1 << (7 - (i % 8));
+        if (t_value[i / 8] & mask) {
+            t_matrix[i][index / 8] |= (1 << (7 - (index % 8)));
+        } else {
+            t_matrix[i][index / 8] &= ~(1 << (7 - (index % 8)));
+        }
     }
-  }
 }
 
 bool mta_send_rcv_enc(mpc_poc_query_t *query,
@@ -649,7 +649,7 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
                       uint8_t *priv_key,
                       uint8_t *ot_receiver_sk_lists,
                       uint8_t *b_value,
-                      uint8_t *t_matrices) {
+                      uint8_t ***t_matrices) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   stop_msg_display();
@@ -724,7 +724,7 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       random_generate(t_value + 64, 32);
       random_generate(t_value + 96, 32);
 
-      // store_value_in_matrix(t_value, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
+      store_value_in_matrix(t_value, t_matrices[i], j);
 
       bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_receiver_sk);
       scalar_multiply(curve, ot_receiver_sk, ot_receiver_pk);
@@ -877,7 +877,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
                       uint8_t *s_values,
                       uint8_t *ot_sender_sk_lists,
                       uint8_t *ot_sender_received_pks,
-                      uint8_t *q_matrices) {
+                      uint8_t ***q_matrices) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   stop_msg_display();
@@ -972,7 +972,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
         }  
       }
 
-      // store_value_in_matrix(dec_m, &q_matrices[i * 1024 * (NUMBER_OF_OTS / 8)], j);
+      store_value_in_matrix(dec_m, q_matrices[i], j);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m0, 128);
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_post_enc.enc_m1, 128);
@@ -1026,7 +1026,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
                     uint32_t sender_times,
                     uint32_t threshold,
                     uint8_t *s_values,
-                    uint8_t *q_matrices,
+                    uint8_t ***q_matrices,
                     uint8_t *priv_key,
                     bignum256 *secret_share_list,
                     uint8_t *priv_key_share,
@@ -1076,7 +1076,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_MASCOT_TAG;
 
       uint8_t *q_value = malloc(16 * sizeof(uint8_t));
-      memcpy(q_value, &q_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)], (NUMBER_OF_OTS / 8));
+      memcpy(q_value, q_matrices[i][j], (NUMBER_OF_OTS / 8));
 
       uint8_t *rand_value = malloc(32 * sizeof(uint8_t));
       random_generate(rand_value, 32);
@@ -1186,7 +1186,7 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
                     uint32_t index,
                     uint32_t *participant_indices,
                     uint32_t receiver_times,
-                    uint8_t *t_matrices,
+                    uint8_t ***t_matrices,
                     bignum256 *receiver_additive_shares_list,
                     uint8_t *b_value) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
@@ -1245,14 +1245,14 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
 
       if (b_bit) {
         if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
-                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)]) != 0) {
+                                dec_m, t_matrices[i][j]) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           return false;
         }
       } else {
         if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m1, 32, 
-                                dec_m, &t_matrices[i * 1024 * (NUMBER_OF_OTS / 8) + j * (NUMBER_OF_OTS / 8)]) != 0) {
+                                dec_m, t_matrices[i][j]) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           return false;
@@ -1377,7 +1377,7 @@ bool start_mta(mpc_poc_query_t *query,
 
   uint8_t *s_values;
   uint8_t *ot_sender_sk_lists;
-  uint8_t *q_matrices;
+  uint8_t ***q_matrices;
 
   uint8_t *ot_sender_received_pks;
   bignum256 *sender_additive_shares_list;
@@ -1386,7 +1386,7 @@ bool start_mta(mpc_poc_query_t *query,
   uint8_t *b_value;
 
   // an array called t_matrices of size receiver_times where each t_matrix contains 1024 t_values, each of size 16 bytes
-  uint8_t *t_matrices;
+  uint8_t ***t_matrices;
 
   // an array called ot_receiver_sk_lists of size receiver_times where each ot_receiver_sk_list contains 128 ot_receiver_sks, each of size 32 bytes
   uint8_t *ot_receiver_sk_lists;
@@ -1397,22 +1397,46 @@ bool start_mta(mpc_poc_query_t *query,
   if (sender_times > 0) {
     s_values = malloc(sender_times * 16 * sizeof(uint8_t));
     ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
-    q_matrices = malloc(sender_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t)); 
-    if (s_values == NULL || ot_sender_sk_lists == NULL || q_matrices == NULL) {
-      mpc_delay_scr_init("Error: malloc failed", DELAY_TIME);
-      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_REQUEST);
-      return false;
+
+    q_matrices = malloc(sender_times * sizeof(uint8_t **));
+    if (!q_matrices) {
+        mpc_delay_scr_init("Memory allocation failed for q_matrices", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
     }
 
-    LOG_INFO("Dumping first 128 bytes of q_matrix right after allocation\n");
-    for (int j = 0; j < 4; ++j) {
-      char msg[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(msg + i * 2, "%02x", q_matrices[j * 32 + i]);
-      }
-      msg[64] = '\0';
-      LOG_INFO("%s\n", msg);
+    for (int r = 0; r < sender_times; ++r) {
+        q_matrices[r] = malloc(1024 * sizeof(uint8_t *));
+        if (!q_matrices[r]) {
+            mpc_delay_scr_init("Memory allocation failed for q_matrices inside", DELAY_TIME);
+            mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_REQUEST);
+            // Free already allocated memory
+            for (int k = 0; k < r; ++k) {
+                free(q_matrices[k]);
+            }
+            free(q_matrices);
+            return false;
+        }
+
+        for (int i = 0; i < 1024; ++i) {
+            q_matrices[r][i] = malloc((128 / 8) * sizeof(uint8_t));
+            if (!q_matrices[r][i]) {
+                mpc_delay_scr_init("Memory allocation failed for q_matrices inside inside", DELAY_TIME);
+                mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                              ERROR_DATA_FLOW_INVALID_REQUEST);
+                // Free already allocated memory
+                for (int j = 0; j < i; ++j) {
+                    free(q_matrices[r][j]);
+                }
+                for (int k = 0; k <= r; ++k) {
+                    free(q_matrices[k]);
+                }
+                free(q_matrices);
+                return false;
+            }
+        }
     }
 
     ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * 33 * sizeof(uint8_t));
@@ -1430,22 +1454,45 @@ bool start_mta(mpc_poc_query_t *query,
     b_value_ptr += 32;
     bn_write_be(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
 
-    t_matrices = malloc(receiver_times * 1024 * (NUMBER_OF_OTS / 8) * sizeof(uint8_t));
-    if (t_matrices == NULL) {
-      mpc_delay_scr_init("Error: malloc failed", DELAY_TIME);
-      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_REQUEST);
-      return false;
+    t_matrices = malloc(receiver_times * sizeof(uint8_t **));
+    if (!t_matrices) {
+        mpc_delay_scr_init("Memory allocation failed for t_matrices", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
     }
 
-    LOG_INFO("Dumping first 128 bytes of t_matrix right after allocation\n");
-    for (int j = 0; j < 4; ++j) {
-      char msg[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(msg + i * 2, "%02x", t_matrices[j * 32 + i]);
-      }
-      msg[64] = '\0';
-      LOG_INFO("%s\n", msg);
+    for (int r = 0; r < receiver_times; ++r) {
+        t_matrices[r] = malloc(1024 * sizeof(uint8_t *));
+        if (!t_matrices[r]) {
+            mpc_delay_scr_init("Memory allocation failed for t_matrices inside", DELAY_TIME);
+            mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_REQUEST);
+            // Free already allocated memory
+            for (int k = 0; k < r; ++k) {
+                free(t_matrices[k]);
+            }
+            free(t_matrices);
+            return false;
+        }
+
+        for (int i = 0; i < 1024; ++i) {
+            t_matrices[r][i] = malloc((128 / 8) * sizeof(uint8_t));
+            if (!t_matrices[r][i]) {
+                mpc_delay_scr_init("Memory allocation failed for t_matrices inside inside", DELAY_TIME);
+                mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                              ERROR_DATA_FLOW_INVALID_REQUEST);
+                // Free already allocated memory
+                for (int j = 0; j < i; ++j) {
+                    free(t_matrices[r][j]);
+                }
+                for (int k = 0; k <= r; ++k) {
+                    free(t_matrices[k]);
+                }
+                free(t_matrices);
+                return false;
+            }
+        }
     }
 
     ot_receiver_sk_lists = malloc(receiver_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
@@ -1474,56 +1521,6 @@ bool start_mta(mpc_poc_query_t *query,
     return false;
   }
 
-  if (receiver_times > 0) {
-    LOG_INFO("Dumping b value new\n");
-
-    for (int j = 0; j < 4; ++j) {
-      char msg[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(msg + i * 2, "%02x", b_value[j * 32 + i]);
-      }
-      msg[64] = '\0';
-      LOG_INFO("%s\n", msg);
-    }
-
-
-    LOG_INFO("Dumping first 128 bytes of t_matrix\n");
-    for (int j = 0; j < 4; ++j) {
-      char msg[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(msg + i * 2, "%02x", t_matrices[j * 32 + i]);
-      }
-      msg[64] = '\0';
-      LOG_INFO("%s\n", msg);
-    }
-
-    LOG_INFO("Dumping t matrices\n");
-
-    for (int k = 0; k < receiver_times; ++k) {
-      LOG_INFO("Receiver: %d\n", k+1);
-
-      Hasher hasher;
-      hasher_Init(&hasher, HASHER_SHA2);
-
-      for (int p = 0; p < 1024; ++p) {
-        uint8_t *temp = &t_matrices[k * 1024 * 16 + p * 16];
-        hasher_Update(&hasher, temp, 16);
-      }
-
-      uint8_t hash[32];
-      hasher_Final(&hasher, hash);
-
-      char m[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(m + i * 2, "%02x", hash[i]);
-      }
-      m[64] = '\0';
-      LOG_INFO("%s\n", m);
-    }
-    LOG_INFO("Dumped t matrices new\n");
-
-  }
-
   if (sender_times > 0) {
     if (!mta_post_snd_enc(query, group_info, index, participant_indices, sender_times, 
                           s_values, ot_sender_sk_lists, ot_sender_received_pks, q_matrices)) {
@@ -1532,53 +1529,6 @@ bool start_mta(mpc_poc_query_t *query,
     
     free(ot_sender_sk_lists);
     free(ot_sender_received_pks);
-  }
-
-  if (sender_times > 0) {
-    LOG_INFO("Dumping s values new\n");
-    for (int k = 0; k < sender_times; ++k) {
-      uint8_t *s_temp = &s_values[k * 16];
-      char msg[33];
-      for (int i = 0; i < 16; ++i) {
-        sprintf(msg + i * 2, "%02x", s_temp[i]);
-      }
-      msg[32] = '\0';
-      LOG_INFO("%s\n", msg);
-    }
-
-    LOG_INFO("Dumping first 128 bytes of q_matrix\n");
-    for (int j = 0; j < 4; ++j) {
-      char msg[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(msg + i * 2, "%02x", q_matrices[j * 32 + i]);
-      }
-      msg[64] = '\0';
-      LOG_INFO("%s\n", msg);
-    }
-
-    LOG_INFO("Dumping q matrices\n");
-    for (int k = 0; k < sender_times; ++k) {
-      LOG_INFO("Sender: %d\n", k+1);
-
-      Hasher hasher;
-      hasher_Init(&hasher, HASHER_SHA2);
-
-      for (int p = 0; p < 1024; ++p) {
-        uint8_t *temp = &q_matrices[k * 1024 * 16 + p * 16];
-        hasher_Update(&hasher, temp, 16);
-      }
-
-      uint8_t hash[32];
-      hasher_Final(&hasher, hash);
-
-      char m[65];
-      for (int i = 0; i < 32; ++i) {
-        sprintf(m + i * 2, "%02x", hash[i]);
-      }
-      m[64] = '\0';
-      LOG_INFO("%s\n", m);
-    }
-    LOG_INFO("Dumped q matrices new\n");
   }
 
   if (receiver_times > 0) {
@@ -1640,11 +1590,25 @@ bool start_mta(mpc_poc_query_t *query,
 
   if (sender_times > 0) {
     free(s_values);
+
+    for (int r = 0; r < sender_times; ++r) {
+        for (int i = 0; i < 1024; ++i) {
+            free(q_matrices[r][i]);
+        }
+        free(q_matrices[r]);
+    }
     free(q_matrices);
+
     free(sender_additive_shares_list);
   }
 
   if (receiver_times > 0) {
+    for (int r = 0; r < receiver_times; ++r) {
+        for (int i = 0; i < 1024; ++i) {
+            free(t_matrices[r][i]);
+        }
+        free(t_matrices[r]);
+    }
     free(t_matrices);
     free(b_value);
     free(receiver_additive_shares_list);
