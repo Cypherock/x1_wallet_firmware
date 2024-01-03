@@ -37,12 +37,16 @@ bool mpc_sign_struct(const void *src_struct, size_t buffer_size,
   pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
 
   if (!pb_encode(&stream, fields, src_struct)) {
+    free(struct_bytes);
     return false;
   }
 
   struct_bytes_len = stream.bytes_written;
 
-  return (mpc_sign_message(struct_bytes, struct_bytes_len, sig, priv_key) == 0);
+  bool ret = (mpc_sign_message(struct_bytes, struct_bytes_len, sig, priv_key) == 0);
+  free(struct_bytes);
+
+  return ret;
 }
 
 bool mpc_verify_struct_sig(const void *src_struct, size_t buffer_size, 
@@ -55,12 +59,16 @@ bool mpc_verify_struct_sig(const void *src_struct, size_t buffer_size,
     pb_ostream_t stream = pb_ostream_from_buffer(struct_bytes, buffer_size);
 
     if (!pb_encode(&stream, fields, src_struct)) {
+      free(struct_bytes);
       return false;
     }
 
     struct_bytes_len = stream.bytes_written;
 
-    return (mpc_verify_signature(struct_bytes, struct_bytes_len, sig, pub_key));
+    bool ret = (mpc_verify_signature(struct_bytes, struct_bytes_len, sig, pub_key));
+    free(struct_bytes);
+
+    return ret;
 }
 
 void bytes_to_hex(const uint8_t *data, size_t data_len, char *out, size_t out_len) {

@@ -20,7 +20,7 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
 
   // generate random polynomial
   uint8_t coeff_count = group_info->threshold;
-  bignum256 *coeff = malloc(coeff_count * sizeof(bignum256));
+  bignum256 coeff[coeff_count];
   uint8_t rand_coeff[32] = {0};
 
   for (int i = 0; i < coeff_count; i++) {
@@ -38,7 +38,6 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
   if (!pub_key_to_index(group_info, pub_key, &my_index)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(coeff);
     return false;
   }
 
@@ -69,23 +68,20 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
     uint8_t fx_bytes[32] = {0};
     bn_write_be(&fx, fx_bytes);
 
-    curve_point *cp = malloc(sizeof(curve_point));
-    ecdsa_read_pubkey(curve, group_info->participants[i-1].pub_key, cp);
+    curve_point cp = {0};
+    ecdsa_read_pubkey(curve, group_info->participants[i-1].pub_key, &cp);
 
-    curve_point *sk = malloc(sizeof(curve_point));
+    curve_point sk = {0};
 
     bignum256 k;
     bn_read_be(priv_key, &k);
 
-    point_multiply(curve, &k, cp, sk);
-    free(cp);
+    point_multiply(curve, &k, &cp, &sk);
 
     uint8_t sk_bytes[33] = {0};
 
-    sk_bytes[0] = 0x02 | (sk->y.val[0] & 0x01);
-    bn_write_be(&sk->x, sk_bytes + 1);
-
-    free(sk);
+    sk_bytes[0] = 0x02 | (sk.y.val[0] & 0x01);
+    bn_write_be(&sk.x, sk_bytes + 1);
 
     uint8_t sk_hash[32] = {0};
     Hasher hasher;
@@ -96,7 +92,6 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
     if (mpc_aes_encrypt(fx_bytes, 32, share.enc_share, sk_hash) != 0) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(coeff);
       return false;
     }
 
@@ -110,15 +105,12 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
   if (!mpc_sign_struct(&share_data, SHARE_DATA_BUFFER_SIZE, MPC_POC_SHARE_DATA_FIELDS, signature, priv_key)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(coeff);
     return false;
   }
 
   signed_share_data->has_share_data = true;
   signed_share_data->share_data = share_data;
   memcpy(signed_share_data->signature, signature, 64);
-
-  free(coeff);
 
   return true;
 }
@@ -160,11 +152,10 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
 
     mpc_poc_share_data_t share_data = signed_share_data.share_data;
 
-    uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+    uint8_t participant_pub_key[33] = {0};
     if (index_to_pub_key(group_info, share_data.index, participant_pub_key) == false) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(participant_pub_key);
       return false;
     }
 
@@ -172,14 +163,12 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
                                signed_share_data.signature, participant_pub_key)) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(participant_pub_key);
       return false;
     }
 
     if (share_data.data_count != participants_len) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(participant_pub_key);
       return false;
     }
 
@@ -197,27 +186,24 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
     if (share_found == false) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(participant_pub_key);
       return false;
     }
 
-    curve_point *cp = malloc(sizeof(curve_point));
-    ecdsa_read_pubkey(curve, participant_pub_key, cp);
-    free(participant_pub_key);
+    curve_point cp = {0};
+    ecdsa_read_pubkey(curve, participant_pub_key, &cp);
 
-    curve_point *sk = malloc(sizeof(curve_point));
+    curve_point sk = {0};
 
     bignum256 k;
     bn_read_be(priv_key, &k);
 
-    point_multiply(curve, &k, cp, sk);
-    free(cp);
+    point_multiply(curve, &k, &cp, &sk);
+    // free(cp);
 
     uint8_t sk_bytes[33] = {0};
 
-    sk_bytes[0] = 0x02 | (sk->y.val[0] & 0x01);
-    bn_write_be(&sk->x, sk_bytes + 1);
-    free(sk);
+    sk_bytes[0] = 0x02 | (sk.y.val[0] & 0x01);
+    bn_write_be(&sk.x, sk_bytes + 1);
 
     uint8_t sk_hash[32] = {0};
     Hasher hasher;
@@ -225,38 +211,33 @@ bool dkg_get_individual_public_key(mpc_poc_group_info_t *group_info,
     hasher_Update(&hasher, sk_bytes, 33);
     hasher_Final(&hasher, sk_hash);
 
-    uint8_t *dec_share = malloc(32 * sizeof(uint8_t));
+    uint8_t dec_share[32] = {0};
 
     if (mpc_aes_decrypt(my_share.enc_share, 32, dec_share, sk_hash) != 0) {
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
-      free(dec_share);
       return false;
     }
 
     bignum256 bn_share;
     bn_read_be(dec_share, &bn_share);
-    free(dec_share);
 
     bn_addmod(secret_share, &bn_share, &curve->order);
   }
   
 
-  curve_point *pub_key_point = malloc(sizeof(curve_point));
-  scalar_multiply(curve, secret_share, pub_key_point);
+  curve_point pub_key_point = {0};
+  scalar_multiply(curve, secret_share, &pub_key_point);
 
-  Qi[0] = 0x02 | (pub_key_point->y.val[0] & 0x01);
-  bn_write_be(&pub_key_point->x, Qi + 1);
+  Qi[0] = 0x02 | (pub_key_point.y.val[0] & 0x01);
+  bn_write_be(&pub_key_point.x, Qi + 1);
 
   // sign the individual_pub_key
   if (mpc_sign_message(Qi, 33, signature, priv_key) != 0) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_REQUEST);
-    free(pub_key_point);
     return false;
   }
-
-  free(pub_key_point);
 
   return true;
 }
@@ -289,7 +270,7 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
 
   uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
 
-  const curve_point* points[group_info->threshold];
+  curve_point* points[group_info->threshold];
   uint32_t xcords[group_info->threshold];
   int ind = 0;
 
@@ -320,8 +301,6 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     ecdsa_read_pubkey(curve, signed_pub_key.pub_key, cp);
 
     points[ind] = cp;
-    free(cp);
-
     ind++;
   }
 
@@ -348,7 +327,7 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     return false;
   }
 
-  lagarange_exp_interpolate(curve, points, xcords, my_index, group_info->threshold, &Qj);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, my_index, group_info->threshold, &Qj);
 
   if (!point_is_equal(&Qj, &Qi_point)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -357,7 +336,12 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   }
 
   curve_point Q;
-  lagarange_exp_interpolate(curve, points, xcords, 0, group_info->threshold, &Q);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, 0, group_info->threshold, &Q);
+
+  // free all points except Q
+  for (int i = 0; i < group_info->threshold - 1; ++i) {
+    free(points[i]);
+  }
 
   uint8_t *group_pub_key = malloc(33 * sizeof(uint8_t));
 

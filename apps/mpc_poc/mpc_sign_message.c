@@ -26,6 +26,7 @@ const uint8_t POLYNOMIAL_P_INDEX = ZERO_POLYNOMIALS + 2;
 const uint8_t NUMBER_OF_OTS = 128;
 
 const uint8_t AUTHENTICATOR_DATA_BUFFER_SIZE = 70;
+extern uint8_t *__sbrk_heap_end;
 
 static bool check_which_request(const mpc_poc_query_t *query,
                                 pb_size_t which_request) {
@@ -68,7 +69,8 @@ bool approve_message(mpc_poc_query_t *query, uint8_t *msg_hash) {
         return false;
     }
 
-    char *msg = malloc(300 * sizeof(char));
+    // char *msg = malloc(300 * sizeof(char));
+    char msg[300];
 
     mpc_poc_result_t result =
         init_mpc_result(MPC_POC_RESULT_SIGN_MESSAGE_TAG);
@@ -79,7 +81,7 @@ bool approve_message(mpc_poc_query_t *query, uint8_t *msg_hash) {
     byte_array_to_hex_string(query->sign_message.approve_message.group_id, 32, msg, 300);
 
     if (!mpc_core_scroll_page("Match the GroupID", msg, mpc_send_error)) {
-      free(msg);
+      // free(msg);
       return false;
     }
 
@@ -87,7 +89,7 @@ bool approve_message(mpc_poc_query_t *query, uint8_t *msg_hash) {
                              query->sign_message.approve_message.msg.size, msg, 300);
 
     if (!mpc_core_scroll_page("Match the message to sign", msg, mpc_send_error)) {
-      free(msg);
+      // free(msg);
       return false;
     }
 
@@ -98,7 +100,7 @@ bool approve_message(mpc_poc_query_t *query, uint8_t *msg_hash) {
     
     hasher_Final(&hasher, msg_hash);
 
-    free(msg);
+    // free(msg);
     
     response.approve_message.approved = true;
     result.sign_message = response;
@@ -132,7 +134,8 @@ bool get_group_info(mpc_poc_query_t *query, uint8_t *pub_key,
 
     mpc_poc_group_info_t group_info = query->sign_message.post_group_info.group_info;
 
-    uint8_t *group_id = malloc(32 * sizeof(uint8_t));
+    // uint8_t *group_id = malloc(32 * sizeof(uint8_t));
+    uint8_t group_id[32];
 
     uint8_t group_info_bytes[GROUP_INFO_BUFFER_SIZE] = {0};
     size_t group_info_bytes_len = 0;
@@ -402,6 +405,7 @@ bool mta_send_rcv_pub_keys(mpc_poc_query_t *query,
                            uint8_t *ot_receiver_sk_lists) {
 
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  LOG_SWV("In send rcv pub Keys MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
 
   for (int i = 0; i < receiver_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -499,6 +503,7 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
                            uint8_t *ot_sender_sk_lists,
                            uint8_t *ot_sender_received_pks) {
 
+  LOG_SWV("In send snd pub Keys MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   stop_msg_display();
   display_msg_on_screen("Waiting for public keys from the receivers...");
@@ -599,6 +604,14 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
     hasher_Final(&hasher_verify, hash_verify);
 
     uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!verify_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for verify_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for verify_pub_key\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
     if (!index_to_pub_key(group_info, participant_indices[index + 1 + i], verify_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
       free(verify_pub_key);
@@ -651,6 +664,7 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
                       uint8_t *b_value,
                       uint8_t ***t_matrices) {
 
+  LOG_SWV("In send rcv enc MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   stop_msg_display();
   display_msg_on_screen("Waiting for public keys from the senders...");
@@ -703,6 +717,15 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
     uint8_t *key_hash = malloc(32 * sizeof(uint8_t));
     uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
 
+    if (!t_value || !ot_receiver_sk || !ot_receiver_pk || !ot_sender_pk || 
+        !k0 || !k1 || !ot_receiver_pk_neg || !key_hash || !key_coordinate) {
+      mpc_delay_scr_init("Error: malloc failed at the above of rcv enc function", DELAY_TIME);
+      LOG_SWV("Error: malloc failed at the above of rcv enc function\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
     for (int j = 0; j < NUMBER_OF_OTS; ++j) {
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
           !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_GET_ENC_TAG)) {
@@ -744,6 +767,14 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       point_multiply(curve, ot_receiver_sk, ot_receiver_pk_neg, k1);
 
       Hasher *hasher_key0 = malloc(sizeof(Hasher));
+      if (!hasher_key0) {
+        mpc_delay_scr_init("Error: malloc failed for hasher_key0", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for hasher_key0\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
       hasher_Init(hasher_key0, HASHER_SHA2);
 
       bn_write_be(&(k0->x), key_coordinate);
@@ -773,6 +804,14 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       }
 
       Hasher *hasher_key1 = malloc(sizeof(Hasher));
+      if (!hasher_key1) {
+        mpc_delay_scr_init("Error: malloc failed for hasher_key1", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for hasher_key1\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
       hasher_Init(hasher_key1, HASHER_SHA2);
 
       bn_write_be(&(k1->x), key_coordinate);
@@ -833,10 +872,26 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
     uint8_t *hash = malloc(32 * sizeof(uint8_t));
     uint8_t *hash_verify = malloc(32 * sizeof(uint8_t));
 
+    if (!hash || !hash_verify) {
+      mpc_delay_scr_init("Error: malloc failed for hash or hash_verify", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for hash or hash_verify\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
     hasher_Final(&hasher, hash);
     hasher_Final(&hasher_verify, hash_verify);
 
     uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!verify_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for verify_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for verify_pub_key\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
     if (!index_to_pub_key(group_info, participant_indices[i], verify_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
       free(verify_pub_key);
@@ -879,6 +934,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
                       uint8_t *ot_sender_received_pks,
                       uint8_t ***q_matrices) {
 
+  LOG_SWV("In post snd enc MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   stop_msg_display();
   display_msg_on_screen("Waiting for encrypted vertical IKNP matrices from the receivers...");
@@ -917,6 +973,14 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
     curve_point *kc = malloc(sizeof(curve_point));
     uint8_t *key_coordinate = malloc(32 * sizeof(uint8_t));
 
+    if (!dec_m || !dec_key || !ot_sender_sk || !ot_receiver_pk || !kc || !key_coordinate) {
+      mpc_delay_scr_init("Error: malloc failed at the above of post snd enc function", DELAY_TIME);
+      LOG_SWV("Error: malloc failed at the above of post snd enc function\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
+
     for (int j = 0; j < NUMBER_OF_OTS; ++j) {
       if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
           !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_POST_ENC_TAG)) {
@@ -936,6 +1000,14 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
       point_multiply(curve, ot_sender_sk, ot_receiver_pk, kc);
 
       Hasher *hasher_key = malloc(sizeof(Hasher));
+      if (!hasher_key) {
+        mpc_delay_scr_init("Error: malloc failed for hasher_key", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for hasher_key\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
       hasher_Init(hasher_key, HASHER_SHA2);
 
       bn_write_be(&(kc->x), key_coordinate);
@@ -999,6 +1071,13 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
     hasher_Final(&hasher_verify, hash_verify);
 
     uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!verify_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for verify_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for verify_pub_key\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     if (!index_to_pub_key(group_info, participant_indices[index + 1 + i], verify_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
@@ -1033,6 +1112,7 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
                     bignum256 *sender_additive_shares_list) {
   
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  LOG_SWV("In mascot snd MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
 
   for (int i = 0; i < sender_times; ++i) {
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -1076,9 +1156,26 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       response.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_GET_MASCOT_TAG;
 
       uint8_t *q_value = malloc(16 * sizeof(uint8_t));
+      if (!q_value) {
+        mpc_delay_scr_init("Error: malloc failed for q_value", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for q_value\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
+
       memcpy(q_value, q_matrices[i][j], (NUMBER_OF_OTS / 8));
 
       uint8_t *rand_value = malloc(32 * sizeof(uint8_t));
+      if (!rand_value) {
+        mpc_delay_scr_init("Error: malloc failed for rand_value", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for rand_value\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        free(q_value);
+        return false;
+      }
+
       random_generate(rand_value, 32);
 
       bignum256 rand_bn;
@@ -1190,6 +1287,7 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
                     bignum256 *receiver_additive_shares_list,
                     uint8_t *b_value) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
+  LOG_SWV("In mascot rcv MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   stop_msg_display();
   display_msg_on_screen("Waiting for sender's MASCOT messages...");
 
@@ -1242,6 +1340,13 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       uint8_t b_bit = b_value[j / 8] & mask;
       
       uint8_t *dec_m = malloc(32 * sizeof(uint8_t));
+      if (!dec_m) {
+        mpc_delay_scr_init("Error: malloc failed for dec_m", DELAY_TIME);
+        LOG_SWV("Error: malloc failed for dec_m\n");
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
 
       if (b_bit) {
         if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
@@ -1312,6 +1417,13 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
 
     // verify the signature
     uint8_t *verify_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!verify_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for verify_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for verify_pub_key\n");
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     if (!index_to_pub_key(group_info, participant_indices[i], verify_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
@@ -1334,7 +1446,6 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
   return true;
 }
 
-extern uint8_t *__sbrk_heap_end;
 bool start_mta(mpc_poc_query_t *query, 
                const mpc_poc_group_info_t *group_info,
                const uint32_t my_index, 
@@ -1396,9 +1507,25 @@ bool start_mta(mpc_poc_query_t *query,
 
   if (sender_times > 0) {
     s_values = malloc(sender_times * 16 * sizeof(uint8_t));
+
+    if (!s_values) {
+        mpc_delay_scr_init("Memory allocation failed for s_values", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
     ot_sender_sk_lists = malloc(sender_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
 
+    if (!ot_sender_sk_lists) {
+        mpc_delay_scr_init("Memory allocation failed for ot_sender_sk_lists", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
     q_matrices = malloc(sender_times * sizeof(uint8_t **));
+
     if (!q_matrices) {
         mpc_delay_scr_init("Memory allocation failed for q_matrices", DELAY_TIME);
         mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -1440,10 +1567,23 @@ bool start_mta(mpc_poc_query_t *query,
     }
 
     ot_sender_received_pks = malloc(sender_times * NUMBER_OF_OTS * 33 * sizeof(uint8_t));
+    if (!ot_sender_received_pks) {
+        mpc_delay_scr_init("Memory allocation failed for ot_sender_received_pks", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
   }
 
   if (receiver_times > 0) {
     b_value = malloc(128 * sizeof(uint8_t));
+    if (!b_value) {
+        mpc_delay_scr_init("Memory allocation failed for b_value", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
     uint8_t *b_value_ptr = b_value;
 
     bn_write_be(&secret_share_list[POLYNOMIAL_K_INDEX], b_value_ptr);
@@ -1496,7 +1636,15 @@ bool start_mta(mpc_poc_query_t *query,
     }
 
     ot_receiver_sk_lists = malloc(receiver_times * NUMBER_OF_OTS * 32 * sizeof(uint8_t));
+    if (!ot_receiver_sk_lists) {
+        mpc_delay_scr_init("Memory allocation failed for ot_receiver_sk_lists", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
   }
+
+  LOG_SWV("After allocation MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
 
   response.start_mta.sender_times = sender_times;
   response.start_mta.receiver_times = receiver_times;
@@ -1535,8 +1683,16 @@ bool start_mta(mpc_poc_query_t *query,
     free(ot_receiver_sk_lists);
   }
 
+  LOG_SWV("After sender enc MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
+
   if (sender_times > 0) {
     sender_additive_shares_list = malloc(sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+    if (!sender_additive_shares_list) {
+        mpc_delay_scr_init("Memory allocation failed for sender_additive_shares_list", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
 
     for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
       bn_zero(&sender_additive_shares_list[i]);
@@ -1547,6 +1703,8 @@ bool start_mta(mpc_poc_query_t *query,
                         priv_key_share, sender_additive_shares_list)) {
       return false;
     }
+
+    LOG_SWV("After mascot snd MTA: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   }
   
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
@@ -1568,6 +1726,12 @@ bool start_mta(mpc_poc_query_t *query,
 
   if (receiver_times > 0) {
     receiver_additive_shares_list = malloc(receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) * sizeof(bignum256));
+    if (!receiver_additive_shares_list) {
+        mpc_delay_scr_init("Memory allocation failed for receiver_additive_shares_list", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
 
     for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
       bn_zero(&receiver_additive_shares_list[i]);
@@ -2294,6 +2458,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
                    dec_share, priv_key, additive_shares_list)) {
       return;
     }
+    LOG_SWV("After MTA is completely over: %d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
 
     stop_msg_display();
     display_msg_on_screen("Generating signature...");
