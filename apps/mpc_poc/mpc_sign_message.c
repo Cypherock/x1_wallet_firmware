@@ -1244,12 +1244,12 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       mpc_send_result(&result);
     }
 
-    bignum256 lambda;
-    compute_lambda(&lambda, participant_indices, threshold, participant_indices[index + 1 + i]);
+    // bignum256 lambda;
+    // compute_lambda(&lambda, participant_indices, threshold, participant_indices[index + 1 + i]);
 
-    for (int k = 0; k < 4; ++k) {
-      bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
-    }
+    // for (int k = 0; k < 4; ++k) {
+    //   bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
+    // }
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_GET_MASCOT_SIG_TAG)) {
@@ -1393,12 +1393,12 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       mpc_send_result(&result);
     }
 
-    bignum256 lambda;
-    compute_lambda(&lambda, participant_indices, group_info->threshold, participant_indices[i]);
+    // bignum256 lambda;
+    // compute_lambda(&lambda, participant_indices, group_info->threshold, participant_indices[i]);
 
-    for (int k = 0; k < 4; ++k) {
-      bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
-    }
+    // for (int k = 0; k < 4; ++k) {
+    //   bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
+    // }
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_POST_MASCOT_SIG_TAG)) {
@@ -1709,15 +1709,15 @@ bool start_mta(mpc_poc_query_t *query,
   
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
 
-  bignum256 lambda;
+  // bignum256 lambda;
   
-  compute_lambda(&lambda, participant_indices, threshold, my_index);
+  // compute_lambda(&lambda, participant_indices, threshold, my_index);
 
   for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
     bn_subtractmod(&curve->order, &sender_additive_shares_list[i], &sender_additive_shares_list[i], &curve->order);
     bn_fast_mod(&sender_additive_shares_list[i], &curve->order);
     bn_mod(&sender_additive_shares_list[i], &curve->order);
-    bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
+    // bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
   }
 
   if (sender_times > 0) {
@@ -1743,9 +1743,9 @@ bool start_mta(mpc_poc_query_t *query,
     return false;
   }
 
-  for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
-    bn_multiply(&lambda, &receiver_additive_shares_list[i], &curve->order);
-  }
+  // for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
+  //   bn_multiply(&lambda, &receiver_additive_shares_list[i], &curve->order);
+  // }
 
   if (receiver_times > 0) {
     memcpy(&additive_shares_list[sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1)], 
@@ -1863,6 +1863,7 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
                                bignum256 *w_bn,
                                uint8_t *W) {
 
+  LOG_SWV("Inside compute authenticator: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
       !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_SIG_COMPUTE_AUTHENTICATOR_TAG)) {
       mpc_delay_scr_init("Error: wrong query (compute authenticator)", DELAY_TIME);
@@ -1908,11 +1909,20 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
       query->sign_message.sig_compute_authenticator.signed_authenticator_data_list[k];
 
     uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!participant_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for participant_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for participant_pub_key in compute auth\n");
+      LOG_SWV("%ld %p\n", __get_MSP(), __sbrk_heap_end);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
 
@@ -1922,8 +1932,11 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
       mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
+
+    free(participant_pub_key);
 
     bignum256 small_w_share_bn;
     bn_read_be(signed_authenticator_data.authenticator_data.small_w_share, &small_w_share_bn);
@@ -2032,6 +2045,7 @@ bool sig_compute_ka(mpc_poc_query_t *query,
                     uint32_t threshold,
                     uint32_t index,
                     bignum256 *k_inv_plus_p) {
+  LOG_SWV("Inside compute ka: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -2063,19 +2077,31 @@ bool sig_compute_ka(mpc_poc_query_t *query,
       query->sign_message.sig_compute_ka.signed_ka_share_list[k];
 
     uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!participant_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for participant_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for participant_pub_key in compute ka\n");
+      LOG_SWV("%ld %p\n", __get_MSP(), __sbrk_heap_end);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
     if (!mpc_verify_signature(signed_ka_share.ka_share, 32, signed_ka_share.signature, participant_pub_key)) {
       mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
+
+    free(participant_pub_key);
 
     bignum256 ka_share;
     bn_read_be(signed_ka_share.ka_share, &ka_share);
@@ -2196,6 +2222,7 @@ bool compute_sig(mpc_poc_query_t *query,
                  bignum256 *r,
                  bignum256 *my_sig_share,
                  uint8_t *final_signature) {
+  LOG_SWV("Inside compute sig: %ld %p\n", __get_MSP(), __sbrk_heap_end);
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
 
   if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
@@ -2227,19 +2254,31 @@ bool compute_sig(mpc_poc_query_t *query,
       query->sign_message.compute_sig.signed_sig_share_list[k];
 
     uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
+    if (!participant_pub_key) {
+      mpc_delay_scr_init("Error: malloc failed for participant_pub_key", DELAY_TIME);
+      LOG_SWV("Error: malloc failed for participant_pub_key in compute sig\n");
+      LOG_SWV("%ld %p\n", __get_MSP(), __sbrk_heap_end);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     if (!index_to_pub_key(group_info, participant_indices[i], participant_pub_key)) {
       mpc_delay_scr_init("Error: index to pubkey failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
     if (!mpc_verify_signature(signed_sig_share.sig_share, 32, signed_sig_share.signature, participant_pub_key)) {
       mpc_delay_scr_init("Error: signature verification failed", DELAY_TIME);
       mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
+      free(participant_pub_key);
       return false;
     }
+
+    free(participant_pub_key);
 
     bignum256 sig_share;
     bn_read_be(signed_sig_share.sig_share, &sig_share);
@@ -2296,11 +2335,20 @@ void dummy_dump_data(bignum256 *secret_share_list, uint8_t *dec_share, mpc_poc_g
   memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
   for (int i = 0; i < group_key_info_list_len; ++i) {
     uint8_t *group_key_info_bytes = malloc(GROUP_KEY_INFO_BUFFER_SIZE * sizeof(uint8_t));
+    if (!group_key_info_bytes) {
+        mpc_delay_scr_init("Memory allocation failed for group_key_info_bytes in dump", DELAY_TIME);
+        LOG_SWV("Memory allocation failed for group_key_info_bytes in dump\n");
+        LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
     size_t group_key_info_bytes_len = 0;
 
     pb_ostream_t gki_stream = pb_ostream_from_buffer(group_key_info_bytes, GROUP_KEY_INFO_BUFFER_SIZE);
 
     if (!pb_encode(&gki_stream, MPC_POC_GROUP_KEY_INFO_FIELDS, &group_key_info_list[i])) {
+      free(group_key_info_bytes);
       return false;
     }
 
@@ -2344,11 +2392,20 @@ void dummy_dump_data(bignum256 *secret_share_list, uint8_t *dec_share, mpc_poc_g
   LOG_INFO("Dumping group info: \n");
   memzero(msg, GROUP_INFO_BUFFER_SIZE + 1);
   uint8_t *group_info_bytes = malloc(GROUP_INFO_BUFFER_SIZE * sizeof(uint8_t));
+  if (!group_info_bytes) {
+      mpc_delay_scr_init("Memory allocation failed for group_info_bytes in dump", DELAY_TIME);
+      LOG_SWV("Memory allocation failed for group_info_bytes in dump\n");
+      LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+  }
   size_t group_info_bytes_len = 0;
 
   pb_ostream_t gi_stream = pb_ostream_from_buffer(group_info_bytes, GROUP_INFO_BUFFER_SIZE);
 
   if (!pb_encode(&gi_stream, MPC_POC_GROUP_INFO_FIELDS, group_info)) {
+    free(group_info_bytes);
     return false;
   }
 
@@ -2466,6 +2523,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
     dummy_dump_data(secret_share_list, dec_share, &group_info, participant_indices, my_index, additive_shares_list,
               group_key_info_list, msg_hash);
 
+    LOG_SWV("After dumping data: %d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
     bignum256 self_product1;
     bignum256 self_product2;
 
@@ -2487,7 +2545,24 @@ void sign_message_flow(mpc_poc_query_t *query) {
     // display_msg_on_screen("Generating signature...");
 
     uint8_t *my_small_w_share = malloc(32 * sizeof(uint8_t));
+    if (!my_small_w_share) {
+        mpc_delay_scr_init("Memory allocation failed for my_small_w_share", DELAY_TIME);
+        LOG_SWV("Memory allocation failed for my_small_w_share\n");
+        LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
+
     uint8_t *my_big_w_share = malloc(33 * sizeof(uint8_t));
+    if (!my_big_w_share) {
+        mpc_delay_scr_init("Memory allocation failed for my_big_w_share", DELAY_TIME);
+        LOG_SWV("Memory allocation failed for my_big_w_share\n");
+        LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
 
     if (!sig_get_authenticator(query, additive_shares_list, group_info.threshold, 
                                &self_product1, &secret_share_list[POLYNOMIAL_A_INDEX],
@@ -2501,6 +2576,14 @@ void sign_message_flow(mpc_poc_query_t *query) {
     bignum256 k_inv;
 
     uint8_t *W = malloc(33 * sizeof(uint8_t));
+    if (!W) {
+        mpc_delay_scr_init("Memory allocation failed for W", DELAY_TIME);
+        LOG_SWV("Memory allocation failed for W\n");
+        LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
 
     if (!sig_compute_authenticator(query, &group_info, participant_indices, index, 
                                    group_info.threshold, my_small_w_share, my_big_w_share, 
@@ -2534,6 +2617,14 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     uint8_t *final_signature = malloc(64 * sizeof(uint8_t));
+    if (!final_signature) {
+        mpc_delay_scr_init("Memory allocation failed for final_signature", DELAY_TIME);
+        LOG_SWV("Memory allocation failed for final_signature\n");
+        LOG_SWV("%d: %ld %p\n", __LINE__, __get_MSP(), __sbrk_heap_end);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+    }
 
     if (!compute_sig(query, &group_info, participant_indices, group_info.threshold, 
                      index, &R.x, &sig_share, final_signature)) {
