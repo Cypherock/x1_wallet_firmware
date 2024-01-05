@@ -25,7 +25,7 @@
 #define BTC_SHORT_NAME_MAX_SIZE 8
 /// this makes length of 15 with a termination NULL byte
 #define BTC_LONG_NAME_MAX_SIZE 16
-#define BECH32_HRP_SIZE 3
+#define BECH32_HRP_SIZE 4
 
 /*****************************************************************************
  * TYPEDEFS
