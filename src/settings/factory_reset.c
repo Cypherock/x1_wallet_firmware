@@ -145,12 +145,14 @@ static bool filter_common_wallet(bool match_found);
  * found in 2 X1 cards.
  *
  * @param wallets_in_vault
+ * @param exit_msgs
  * @return true If wallet share is present in atleast 2 X1 cards for each wallet
  * present on the device.
  * @return false If wallet share is NOT present in atleast 2 X1 cards, or any
  * error occured in the card flow
  */
-static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault);
+static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault,
+                                        const char *exit_msgs[]);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -253,7 +255,8 @@ static bool get_wallet_list_from_two_cards(wallet_list_t *wallet_list) {
   return true;
 }
 
-static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
+static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault,
+                                        const char *exit_msgs[]) {
   wallet_list_t wallets_in_cards = {0};
   if (!get_wallet_list_from_two_cards(&wallets_in_cards)) {
     return false;
@@ -272,8 +275,7 @@ static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault) {
     // TODO: Update message to show ALL missing wallets instead of just one
     // wallet
     char msg[64];
-    const char *msg_list[3] = {
-        msg, ui_text_reset_exit[0], ui_text_reset_exit[1]};
+    const char *msg_list[3] = {msg, exit_msgs[0], exit_msgs[1]};
 
     snprintf(msg,
              sizeof(msg),
@@ -307,7 +309,8 @@ void factory_reset(void) {
 
   // If there is atleast one valid wallet on the device, ensure that it is
   // present in atleast 2 X1 cards
-  if (0 < valid_wallets && !safe_to_delete_wallet_share(&wallets_in_vault)) {
+  if (0 < valid_wallets &&
+      !safe_to_delete_wallet_share(&wallets_in_vault, ui_text_reset_exit)) {
     return;
   }
 
@@ -342,7 +345,9 @@ void clear_device_data(void) {
 
   // If there is atleast one valid wallet on the device, ensure that it is
   // present in atleast 2 X1 cards
-  if (0 < valid_wallets && !safe_to_delete_wallet_share(&wallets_in_vault)) {
+  if (0 < valid_wallets &&
+      !safe_to_delete_wallet_share(&wallets_in_vault,
+                                   ui_text_clear_wallet_data_exit)) {
     return;
   }
 
