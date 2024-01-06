@@ -59,6 +59,7 @@
 #include "ui_multi_instruction.h"
 
 #include "assert_conf.h"
+#include "ui_events_priv.h"
 
 static struct Multi_Instruction_Data *data;
 static struct Multi_Instruction_Object *obj;
@@ -217,8 +218,6 @@ static void multi_instructor_destructor() {
     next_instruction_task = NULL;
   }
 
-  lv_obj_clean(lv_scr_act());
-
   if (data != NULL) {
     memzero(data, sizeof(struct Multi_Instruction_Data));
     free(data);
@@ -248,7 +247,6 @@ static void multi_instructor_destructor() {
  * @note
  */
 void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
-  // TODO: Add assertions
   switch (event) {
     case LV_EVENT_KEY: {
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -287,9 +285,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
       if (data->destruct_on_click == true &&
           ((data->index_of_current_string == data->total_strings - 1) ||
            data->one_cycle_completed)) {
-        multi_instructor_destructor();
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
+        ui_set_confirm_event();
       }
       break;
     }
@@ -305,6 +301,7 @@ void arrow_event_handler(lv_obj_t *instruction, const lv_event_t event) {
         lv_task_del(next_instruction_task);
         next_instruction_task = NULL;
       }
+      multi_instructor_destructor();
       break;
     }
     default:
@@ -393,6 +390,8 @@ void multi_instruction_init(const char **arr,
                             const bool destruct_on_click) {
   ASSERT(arr != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
 
+  lv_obj_clean(lv_scr_act());
+
   data = NULL;
   data = malloc(sizeof(struct Multi_Instruction_Data));
   ASSERT(data != NULL);
@@ -417,6 +416,8 @@ void multi_instruction_with_image_init(instruction_content_t content[],
                                        const uint16_t delay_in_ms,
                                        const bool destruct_on_click) {
   ASSERT(content != NULL && count < MAX_NUM_OF_INSTRUCTIONS);
+
+  lv_obj_clean(lv_scr_act());
 
   data = NULL;
   data = malloc(sizeof(struct Multi_Instruction_Data));

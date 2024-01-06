@@ -19,40 +19,8 @@
 #include "eth.h"
 #include "tasks.h"
 
-extern eth_unsigned_txn eth_unsigned_txn_ptr;
+extern evm_unsigned_txn eth_unsigned_txn_ptr;
 extern uint8_t challenge_no[32];
-
-/**
- * @brief This task is executed for exporting wallet on device
- * @details
- *
- * @see EXPORT_WALLET_TASKS,
- * @since v1.0.0
- */
-void export_wallet_task();
-
-/**
- * @brief This task is executed for adding xpub to the device.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void add_coin_tasks();
-
-/**
- * @brief This task is executed for processing and signing unsigned transaction.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void send_transaction_tasks();
-
-/**
- * @brief This task is executed for processing and signing unsigned transaction.
- */
-void send_transaction_tasks_near();
 
 /**
  * @brief This task is executed for processing and signing unsigned transaction
@@ -75,15 +43,6 @@ void sign_message_tasks_eth();
  * @brief This task is executed for processing and signing unsigned transaction.
  */
 void send_transaction_tasks_solana();
-
-/**
- * @brief This task is executed for generating address using xpub.
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void receive_transaction_tasks();
 
 /**
  * @brief This task is executed for generating address using xpub for Ethereum.
@@ -125,15 +84,6 @@ void receive_transaction_tasks_solana();
 void verify_wallet_tasks();
 
 /**
- * @brief Device authentication task handler
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void task_device_authentication();
-
-/**
  * @brief Device provision task handler
  * @details
  *
@@ -141,15 +91,6 @@ void task_device_authentication();
  * @since v1.0.0
  */
 void task_device_provision();
-
-/**
- * @brief Card verification task for initial flow (includes pairing step)
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void initial_verify_card_task();
 
 /**
  * @brief This task is executed when the name of a wallet is clicked
@@ -178,14 +119,5 @@ void verify_card_task();
  * @since v1.0.0
  */
 void card_upgrade_task();
-
-/**
- * @brief
- * @details
- *
- * @see
- * @since v1.0.0
- */
-void sync_cards_task();
 
 #endif

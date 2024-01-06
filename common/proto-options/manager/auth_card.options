@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/manager/auth_card.proto
+manager.AuthCardChallengeRequest.challenge type:FT_STATIC max_size:32 fixed_length:true
+manager.AuthCardSerialSigResponse.serial type:FT_STATIC max_size:5 fixed_length:true
+manager.AuthCardSerialSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+manager.AuthCardChallengeSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true

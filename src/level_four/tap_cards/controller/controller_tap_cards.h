@@ -16,6 +16,7 @@
 #include "controller_main.h"
 #include "nfc.h"
 #include "sha2.h"
+#include "stdbool.h"
 
 /**
  * @brief
@@ -27,20 +28,23 @@
  * @note
  */
 typedef struct NFC_connection_data {
-  uint8_t desktop_control;
-  uint8_t active_cmd_type;
+  uint8_t desktop_control;    // TODO: Remove deprecated
+  uint8_t active_cmd_type;    // TODO: Remove deprecated
   int8_t keystore_index;
   uint8_t acceptable_cards;
   uint8_t tapped_card;
-  uint8_t lvl3_retry_point;
-  uint8_t lvl4_retry_point;
-  uint8_t resume_point;
+  uint8_t lvl3_retry_point;    // TODO: Remove deprecated
+  uint8_t lvl4_retry_point;    // TODO: Remove deprecated
+  uint8_t resume_point;        // TODO: Remove deprecated
   uint8_t retries;
   uint8_t family_id[FAMILY_ID_SIZE +
                     2];    // TODO: Review(need to find reason for extra byte)
   uint8_t card_key_id[4];
+  bool pairing_error;
   uint8_t recovery_mode;
   uint8_t card_absent_retries;
+  uint8_t *card_version;
+  bool init_session_keys;
   ISO7816 status;
 } NFC_connection_data;
 
@@ -113,39 +117,7 @@ bool tap_card_handle_applet_errors();
  *
  * @note
  */
-void tap_card_pair_card_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void tap_cards_for_write_and_verify_flow_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void tap_cards_for_verification_flow_controller();
 
 /**
  * @brief
@@ -177,39 +149,7 @@ void tap_threshold_cards_for_reconstruction_flow_controller(uint8_t threshold);
  *
  * @note
  */
-void tap_a_card_and_sync_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void delete_from_cards_controller();
-
-/**
- * @brief
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void controller_read_card_id();
 
 /**
  * @brief

@@ -12,6 +12,7 @@
 #define LIST_H
 
 #include "ui_common.h"
+// TODO : Add constant
 
 #define MAX_UI_LIST_WORDS MAX_NUMBER_OF_MNEMONIC_WORDS
 #define MAX_UI_LIST_CHAR_LEN MAX_MNEMONIC_WORD_LENGTH
@@ -75,11 +76,5 @@ void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN],
                int number_of_options,
                const char *heading,
                bool dynamic_heading);
-
-/**
- * @brief Create UI for list
- *
- */
-void list_create();
 
 #endif    // !LIST_H

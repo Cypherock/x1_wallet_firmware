@@ -60,6 +60,8 @@
  */
 
 #include "ui_message.h"
+
+#include "ui_events_priv.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -67,8 +69,26 @@
 static struct Message_Data *data = NULL;
 static struct Message_Object *obj = NULL;
 
+/**
+ * @brief Create message screen
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+static void message_scr_create();
+
 void message_scr_init(const char *message) {
   ASSERT(message != NULL);
+
+  lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct Message_Data));
   obj = malloc(sizeof(struct Message_Object));
@@ -98,7 +118,6 @@ void message_scr_init(const char *message) {
  * @note
  */
 static void message_scr_destructor() {
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Message_Data));
     free(data);
@@ -126,12 +145,11 @@ static void message_scr_destructor() {
  * @note
  */
 static void next_btn_event_handler(lv_obj_t *obj, const lv_event_t event) {
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   if (event == LV_EVENT_CLICKED) {
-    if (ui_mark_event_over)
-      (*ui_mark_event_over)();
+    ui_set_confirm_event();
+  } else if (event == LV_EVENT_DELETE) {
+    /* Destruct object and data variables in case the object is being deleted
+     * directly using lv_obj_clean() */
     message_scr_destructor();
   }
 }

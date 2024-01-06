@@ -395,6 +395,14 @@ ret_code_t adafruit_pn532_passive_activation_retries_set(uint8_t max_retries) {
   return STM_SUCCESS;
 }
 
+ret_code_t pn532_set_nfca_target_init_command() {
+  return STM_SUCCESS;
+}
+
+ret_code_t pn532_read_nfca_target_init_resp(nfc_a_tag_info *p_tag_info) {
+  return STM_SUCCESS;
+}
+
 // simply return success; simulator nfc is always initialised
 ret_code_t adafruit_pn532_nfc_a_target_init(nfc_a_tag_info *p_tag_info,
                                             uint16_t timeout) {

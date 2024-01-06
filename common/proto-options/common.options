@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/common.proto
+common.ChunkPayload.chunk type:FT_STATIC max_size:2048 fixed_length:false
+common.Version.major int_size:IS_8
+common.Version.minor int_size:IS_8
+common.Version.patch int_size:IS_16

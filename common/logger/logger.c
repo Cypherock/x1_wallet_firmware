@@ -228,7 +228,8 @@ static void logger_switch_page(void) {
   sg_log_data.next_write_loc = page_addr + sizeof(uint64_t);
 }
 
-void logger_task() {
+void logger_task(uint8_t *data, size_t *size) {
+  ASSERT((NULL != data) && (NULL != size));
 #if USE_SIMULATOR == 0
   printf("#GRN#%s: lc=%d, wl=%ld, pi=%d, i=%d, rpi=%d, sm=%d, rc=%d\n",
          __func__,
@@ -272,9 +273,8 @@ void logger_task() {
                start_of_log,
                GIT_REV,
                FW_get_bootloader_version());
-      transmit_data_to_app(APP_LOG_DATA_SEND,
-                           (uint8_t *)extended_start_of_log,
-                           MAXIMUM_DATA_SIZE);
+      memcpy(data, extended_start_of_log, MAXIMUM_DATA_SIZE);
+      *size = MAXIMUM_DATA_SIZE;
       break;
 
     case LOG_READ_ONGOING:
@@ -289,12 +289,13 @@ void logger_task() {
         sg_log_data.read_sm_e = LOG_READ_END;
         break;
       }
-      if (packet_len > 0)
-        transmit_data_to_app(
-            APP_LOG_DATA_SEND,
-            (const uint8_t *)(LOG_SECTION_START +
-                              sg_log_data.read_page_index * LOG_PAGE_SIZE),
-            packet_len);
+      if (packet_len > 0) {
+        uint8_t *page_read_location =
+            (uint8_t *)(LOG_SECTION_START +
+                        sg_log_data.read_page_index * LOG_PAGE_SIZE);
+        memcpy(data, page_read_location, packet_len);
+        *size = packet_len;
+      }
       sg_log_data.read_page_index =
           CYCLIC_INCREMENT(sg_log_data.read_page_index, LOG_MAX_PAGES);
       sg_log_data.total_page_read += 1;
@@ -302,8 +303,8 @@ void logger_task() {
 
     case LOG_READ_END:
       sg_log_data.read_sm_e = LOG_READ_FINISH;
-      transmit_data_to_app(
-          APP_LOG_DATA_SEND, (uint8_t *)end_of_log, strlen(end_of_log));
+      memcpy(data, end_of_log, strlen(end_of_log));
+      *size = strlen(end_of_log);
       sg_log_data.initialized = true;
       break;
 

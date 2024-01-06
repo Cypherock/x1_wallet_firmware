@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Run clang-format
 CLANG_FORMAT_EXECUTABLE="clang-format"
@@ -14,7 +14,7 @@ do
   [ -e "$FILE" ] || continue
   case "$FILE" in
 
-  common/lvgl/*|common/libraries/atecc/*|common/libraries/crypto/*|common/libraries/nanopb/*|tests/framework/*) continue ;;
+  common/lvgl/*|common/libraries/atecc/*|common/libraries/crypto/*|vendor/*|tests/framework/*) continue ;;
 
   *.c|*.h|*.cpp|*.hpp)
     echo Autoformatting $FILE with $CLANG_FORMAT_EXECUTABLE

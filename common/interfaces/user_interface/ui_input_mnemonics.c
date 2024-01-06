@@ -58,7 +58,7 @@
  */
 #include "ui_input_mnemonics.h"
 
-#include "bip39_english.h"
+#include "ui_events_priv.h"
 static void ui_mnem_create();
 static void refresh_screen_texts();
 static void shrink();
@@ -126,7 +126,8 @@ int get_first_index(const char word[3]) {
   ASSERT(word != NULL);
 
   for (int i = 0; i <= 2047; i++) {
-    if ((word[0] + 32 == wordlist[i][0]) && (word[1] + 32 == wordlist[i][1])) {
+    if ((word[0] + 32 == mnemonic_get_word(i)[0]) &&
+        (word[1] + 32 == mnemonic_get_word(i)[1])) {
       return i;
     }
   }
@@ -144,7 +145,8 @@ int get_last_index(const char word[3]) {
   ASSERT(word != NULL);
 
   for (int i = 2047; i >= 0; --i) {
-    if ((word[0] + 32 == wordlist[i][0]) && (word[1] + 32 == wordlist[i][1])) {
+    if ((word[0] + 32 == mnemonic_get_word(i)[0]) &&
+        (word[1] + 32 == mnemonic_get_word(i)[1])) {
       return i;
     }
   }
@@ -173,11 +175,11 @@ static void second_char_init() {
   int16_t high = 0;
 
   for (int i = 0; i <= 2047; i++) {
-    if (data->text_entered[0] + 32 == wordlist[i][0]) {
+    if (data->text_entered[0] + 32 == mnemonic_get_word(i)[0]) {
       if (low < 0)
-        low = wordlist[i][1] - 'a';
-      data->second_char_ind |= 1 << (wordlist[i][1] - 'a');
-      high = wordlist[i][1] - 'a';
+        low = mnemonic_get_word(i)[1] - 'a';
+      data->second_char_ind |= 1 << (mnemonic_get_word(i)[1] - 'a');
+      high = mnemonic_get_word(i)[1] - 'a';
     }
   }
 
@@ -193,6 +195,8 @@ static void second_char_init() {
 
 void ui_mnem_init(const char *heading) {
   ASSERT(heading != NULL);
+
+  lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct Data));
   obj = malloc(sizeof(struct LvObjects));
@@ -228,7 +232,6 @@ void ui_mnem_init(const char *heading) {
  */
 static void mnem_destructor() {
   // TODO: assert(data->state == EXIT)
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Data));
     free(data);
@@ -333,10 +336,6 @@ static void decrement_data_index() {
  * @note
  */
 static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
-  ASSERT(center != NULL);
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -381,11 +380,7 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
         expand();
       } else if (data->state == SHOWING_SUGGESTIONS) {
         data->state = EXIT;
-        if (ui_mark_list_choice)
-          (*ui_mark_list_choice)(data->index);
-        if (ui_mark_event_over)
-          (*ui_mark_event_over)();
-        mnem_destructor();
+        ui_set_list_event(data->index);
         return;
       } else {
         // shouldn't come here
@@ -394,7 +389,12 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(center, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -420,10 +420,6 @@ static void center_event_handler(lv_obj_t *center, const lv_event_t event) {
  */
 static void backspace_event_handler(lv_obj_t *backspace,
                                     const lv_event_t event) {
-  ASSERT(backspace != NULL);
-  ASSERT(data != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -461,7 +457,12 @@ static void backspace_event_handler(lv_obj_t *backspace,
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(backspace, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -487,9 +488,6 @@ static void backspace_event_handler(lv_obj_t *backspace,
  */
 static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
                                      const lv_event_t event) {
-  ASSERT(cancel_btn != NULL);
-  ASSERT(obj != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -502,14 +500,18 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
-      mnem_destructor();
+      ui_set_cancel_event();
+      lv_obj_clean(lv_scr_act());
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(cancel_btn, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      mnem_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -547,7 +549,7 @@ static void refresh_screen_texts() {
     lv_label_set_text(obj->text_entered, data->text_entered);
   } else if (data->state == SHOWING_SUGGESTIONS) {
     lv_label_set_text(lv_obj_get_child(obj->center_screen, NULL),
-                      wordlist[data->index]);
+                      mnemonic_get_word(data->index));
     lv_label_set_text(obj->text_entered, data->text_entered);
   }
 }

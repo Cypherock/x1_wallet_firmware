@@ -91,7 +91,7 @@ enum LEVEL {
  * corresponding state of the flow from context of their respective context.
  *
  * @see READY_STATE_PACKET, mark_device_state(), is_device_ready(),
- * \_success_listener(), \_abort\_(), success_task, timeout_task
+ * \_success_listener(), \_abort\_(),  timeout_task
  */
 enum DESKTOP_STATUS {
   STATUS_CMD_FAILURE =
@@ -171,7 +171,7 @@ typedef struct Flow_level {
    * valid states would be accessible will be wallet operations, advanced
    * setting options, new wallet creation choices.
    *
-   * @see Screen_input, level_two_tasks(), level_two_controller(),
+   * @see Screen_input,  level_two_controller(),
    * level_two_controller_b(), LEVEL_TWO
    */
   uint8_t level_two;
@@ -201,7 +201,7 @@ typedef struct Flow_level {
    * wallet, unlock wallet, device_provision (only in initial application).
    *
    * @see SYNC_CARDS_TASKS, VERIFY_WALLET_TASKS, WALLET_LOCKED_TASKS,
-   * START_DEVICE_AUTHENTICATION, SEND_TRANSACTION_ETH,
+   * SEND_TRANSACTION_ETH,
    * RECEIVE_TRANSACTION_TASKS_ETH, RECEIVE_TRANSACTION_TASKS, SEND_TRANSACTION,
    * ADD_COINS_TASKS, EXPORT_WALLET_TASKS, VERIFY_CARD_FLOW, PAIR_CARD_FLOW,
    * TAP_CARDS_FLOW, TAP_ONE_CARD_FLOW, controller_level_four.h,
@@ -249,36 +249,6 @@ extern Counter counter;
 extern Wallet wallet;
 extern lv_task_t *address_timeout_task;
 extern uint32_t inactivity_counter;
-
-/**
- * @brief Get the Global Flow_level instance.
- *
- * @return Pointer to the global Flow_level instance.
- *
- * @see #flow_level
- * @since v1.0.0
- */
-Flow_level *get_flow_level();
-
-/**
- * @brief Get the Global Counter instance.
- *
- * @return Pointer to the global Counter instance.
- *
- * @see #counter
- * @since v1.0.0
- */
-Counter *get_counter();
-
-/**
- * @brief Get the Global Wallet instance.
- *
- * @return Pointer to the global Wallet instance.
- *
- * @see #wallet
- * @since v1.0.0
- */
-Wallet *get_wallet();
 
 /**
  * @brief Get the Global Flash_Wallet instance.
@@ -371,11 +341,14 @@ void increase_level_counter();
 void clear_list_choice();
 
 /**
- * @brief Shows error message passed as param on device screen.
+ * @brief [Obsolete] Shows error message passed as param on device screen.
  * @details Sets the Flow_level.show_error_screen to true and sets error message
  * string to Flow_level.error_screen_text. This is error message is shown to the
  * user in the next event loop iteration.
  *
+ * Note: Obsolete function, new function @ref mark_core_error_screen in
+ * core_error.h
+ * TODO: Remove function after refactor complete
  * @param error_msg     The error description message to be shown to user
  *
  * @see flow_level
@@ -423,7 +396,7 @@ void mark_input(char *text);
  * @param [in] expected_list_choice     Correct choice value as indicated by the
  * application
  *
- * @see flow_level, Screen_input, tasks_add_new_wallet()
+ * @see flow_level, Screen_input,
  * @since v1.0.0
  */
 void mark_expected_list_choice(uint8_t expected_list_choice);
@@ -462,7 +435,7 @@ void reset_flow_level_greater_than(enum LEVEL level);
  * message which is shown to the user for confirmation before actually starting
  * the requested flow. It has the capacity to respond to certain requests
  * directly without user consent (such as DEVICE_INFO, START_CARD_AUTH,
- * START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION).
+ * START_DEVICE_PROVISION,
  *
  * @param task lv_task passed while registering the callback.
  *
@@ -474,29 +447,6 @@ void reset_flow_level_greater_than(enum LEVEL level);
  * @note
  */
 void desktop_listener_task(lv_task_t *data);
-
-/**
- * @brief Callback function called periodically to check for success message
- * from desktop.
- * @details This is a generic success listener for the application to work with
- * while waiting for status from the desktop app. The functions looks for any
- * STATUS_PACKET data and only handles STATUS_CMD_ABORT or STATUS_CMD_SUCCESS.
- * In both the cases, the types of STATUS_PACKET, the function resets flow level
- * and de-registers the lv_tasks success_task and timeout_task. Additionally, if
- * the request is for STATUS_CMD_ABORT it displays a message (ref
- * ui_text_operation_has_been_cancelled) to the user. <br/> If any STATUS_PACKET
- * is received, it is cleared from the application buffer regardless of it is
- * processed by this function or not.
- *
- * @param [in] task lv_task passed while registering the callback.
- *
- * @see STATUS_PACKET, STATUS_CMD_ABORT, STATUS_CMD_SUCCESS,
- * ui_text_operation_has_been_cancelled, reset_flow_level(), success_task,
- * timeout_task, mark_error_screen(), mark_event_over(),
- * clear_message_received_data()
- * @since v1.0.0
- */
-void _success_listener(lv_task_t *task);
 
 /**
  * @brief Callback function called by the task after a particular timeout to
@@ -520,7 +470,7 @@ void _timeout_listener(lv_task_t *task);
  * view. This is responsible for exiting flows in situations of errors or if
  * requested by desktop only in case of desktop initiated flows.
  *
- * @see START_DEVICE_PROVISION, START_DEVICE_AUTHENTICATION, nfc_select_card(),
+ * @see START_DEVICE_PROVISION,  nfc_select_card(),
  * set_instant_abort(), nfc_set_early_exit_handler()
  * @since v1.0.0
  *

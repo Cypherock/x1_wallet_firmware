@@ -57,6 +57,9 @@
  ******************************************************************************
  */
 #include "ui_confirmation.h"
+
+#include "ui_events_priv.h"
+
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -66,6 +69,8 @@ static struct Confirm_Object *obj = NULL;
 
 void confirm_scr_init(const char *text) {
   ASSERT(text != NULL);
+
+  lv_obj_clean(lv_scr_act());
 
   data = malloc(sizeof(struct Confirm_Data));
   obj = malloc(sizeof(struct Confirm_Object));
@@ -96,7 +101,6 @@ void confirm_scr_init(const char *text) {
  * @note
  */
 static void confirm_scr_destructor() {
-  lv_obj_clean(lv_scr_act());
   if (data != NULL) {
     memzero(data, sizeof(struct Confirm_Data));
     free(data);
@@ -124,8 +128,6 @@ static void confirm_scr_destructor() {
  * @note
  */
 static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
-  ASSERT(next_btn != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -137,17 +139,19 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
           break;
       }
       break;
-    case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(1);
-      if (ui_mark_event_over)
-        (*ui_mark_event_over)();
-      confirm_scr_destructor();
+    case LV_EVENT_CLICKED: {
+      ui_set_confirm_event();
       break;
+    }
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(next_btn, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      confirm_scr_destructor();
+      break;
+    }
     default:
       break;
   }
@@ -170,8 +174,6 @@ static void next_btn_event_handler(lv_obj_t *next_btn, const lv_event_t event) {
  */
 static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
                                      const lv_event_t event) {
-  ASSERT(cancel_btn != NULL);
-
   switch (event) {
     case LV_EVENT_KEY:
       switch (lv_indev_get_key(ui_get_indev())) {
@@ -184,16 +186,17 @@ static void cancel_btn_event_handler(lv_obj_t *cancel_btn,
       }
       break;
     case LV_EVENT_CLICKED:
-      if (ui_mark_list_choice)
-        (*ui_mark_list_choice)(0);
-      if (ui_mark_event_cancel)
-        (*ui_mark_event_cancel)();
-      confirm_scr_destructor();
+      ui_set_cancel_event();
       break;
     case LV_EVENT_DEFOCUSED:
       lv_btn_set_state(cancel_btn, LV_BTN_STATE_REL);
       break;
-
+    case LV_EVENT_DELETE: {
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      confirm_scr_destructor();
+      break;
+    }
     default:
       break;
   }

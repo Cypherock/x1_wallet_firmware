@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "btc.h"
 #include "controller_main.h"
 #include "cryptoauthlib.h"
 #include "eth.h"
@@ -64,7 +63,6 @@ typedef enum {
 
 extern uint8_t provision_date[4];
 extern uint8_t auth_card_number;
-extern near_unsigned_txn near_utxn;
 extern solana_unsigned_txn solana_unsigned_txn_ptr;
 
 /**
@@ -89,38 +87,6 @@ typedef struct Provision_Data_Struct {
 #pragma pack(pop)
 
 extern Provision_Data_struct provision_keys_data;
-
-/**
- * @brief Stores the chosen wallet index for the export wallet process.
- * @details The chosen wallet index is stored temporarily in the RAM during the
- * export wallet process.
- *
- * @see export_wallet_controller(), export_wallet_task(),
- * desktop_listener_task(), START_EXPORT_WALLET, Cmd_Export_Wallet_t
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Export_Wallet_Data {
-  uint8_t chosen_wallet_index;
-} Export_Wallet_Data;
-#pragma pack(pop)
-
-/**
- * @brief Stores the chosen wallet's public information for the export wallet
- * process.
- * @details
- *
- * @see export_wallet_controller(), export_wallet_task(),
- * desktop_listener_task(), START_EXPORT_WALLET, Export_Wallet_Data
- * @since v1.0.0
- */
-#pragma pack(push, 1)
-typedef struct Cmd_Export_Wallet_t {
-  uint8_t wallet_name[NAME_SIZE];
-  uint8_t wallet_info;
-  uint8_t wallet_id[WALLET_ID_SIZE];
-} Cmd_Export_Wallet_t;
-#pragma pack(pop)
 
 /**
  * @brief Stores the generated xpubs list for the add coin process.
@@ -152,9 +118,7 @@ typedef struct Cmd_Add_Coin_t {
 #pragma pack(push, 1)
 typedef struct Send_Transaction_Data {
   uint8_t transaction_confirmation_list_index;
-  unsigned_txn unsigned_transaction;
   txn_metadata transaction_metadata;
-  signed_txn signed_transaction;
 
 } Send_Transaction_Data;
 #pragma pack(pop)
@@ -162,7 +126,6 @@ typedef struct Send_Transaction_Data {
 extern Coin_Specific_Data_Struct coin_specific_data;
 extern uint8_t *eth_unsigned_txn_byte_array;
 extern Send_Transaction_Data var_send_transaction_data;
-extern Send_Transaction_Cmd send_transaction_cmd;
 
 /**
  * @brief Card upgrade controller available for development purposes.
@@ -178,7 +141,7 @@ void card_upgrade_controller();
  * @details This controller is used to provision the device using the desktop
  * app.
  *
- * @see task_device_authentication(), desktop_listener_task(),
+ * @see desktop_listener_task(),
  * START_DEVICE_PROVISION
  * @since v1.0.0
  */
@@ -225,80 +188,6 @@ void wallet_locked_controller();
  * @since v1.0.0
  */
 void wallet_locked_controller_b();
-
-/**
- * @brief This controller is executed for exporting wallet on device
- * @details This controller is used to export the wallet on device using the
- * desktop app.
- *
- * @see export_wallet_task(), desktop_listener_task(), START_EXPORT_WALLET
- * @since v1.0.0
- */
-void export_wallet_controller();
-
-/**
- * @brief Back button controller for exporting wallet flow.
- * @details This controller is used to handle back button events during
- * exporting the wallet to the desktop app.
- *
- * @see export_wallet_controller(), export_wallet_task()
- * @since v1.0.0
- */
-void export_wallet_controller_b();
-/**
- * @brief This controller is executed for adding xpub to the device.
- * @details This controller is used to add xpub to the desktop app for the coins
- * requested by desktop from a list of supported coins.
- *
- * @see add_coin_tasks(), desktop_listener_task(), ADD_COIN_START
- * @since v1.0.0
- */
-void add_coin_controller();
-
-/**
- * @brief Back button controller for add coin flow.
- * @details This controller is used to handle back button events during adding
- * xpub to the device.
- *
- * @see add_coin_controller(), add_coin_tasks(), ADD_COIN_START
- * @since v1.0.0
- */
-void add_coin_controller_b();
-
-/**
- * @brief Next button controller is executed for processing and signing unsigned
- * transaction.
- * @details This controller is used to process and sign the unsigned transaction
- * for BTC that is requested from the desktop app.
- *
- * @see send_transaction_controller_b(), send_transaction_tasks(),
- * send_transaction_controller_eth(), send_transaction_tasks_eth()
- * @since v1.0.0
- */
-void send_transaction_controller();
-
-/**
- * @brief Back button controller for send transaction flow.
- * @details This controller is used to handle back button events during
- * processing and signing unsigned transaction for BTC.
- *
- * @see send_transaction_controller(), send_transaction_tasks(),
- * send_transaction_controller_eth(), send_transaction_tasks_eth()
- * @since v1.0.0
- */
-void send_transaction_controller_b();
-
-/**
- * @brief Next button controller is executed for processing and signing unsigned
- * transaction.
- */
-void send_transaction_controller_near();
-
-/**
- * @brief Back button controller is executed for handling cancellation of the
- * ongoing process.
- */
-void send_transaction_controller_near_b();
 
 /**
  * @brief Next button controller is executed for processing and signing unsigned
@@ -363,31 +252,7 @@ void send_transaction_controller_b_solana();
  * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
  * @since v1.0.0
  */
-void receive_transaction_controller();
-
-/**
- * @brief Next button controller is executed for generating address using xpub.
- * @details This controller handles is used to generate receiving address for
- * the BTC coins requested by desktop from a list of supported coins.
- *
- * @see receive_transaction_controller_b(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START,
- * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
- * @since v1.0.0
- */
 void receive_transaction_controller_near();
-
-/**
- * @brief Back button controller for receive transaction flow.
- * @details This controller is used to handle back button events during
- * generating receiving address for BTC.
- *
- * @see receive_transaction_controller(), receive_transaction_tasks(),
- * desktop_listener_task(), RECV_TXN_START,
- * receive_transaction_controller_eth(), receive_transaction_tasks_eth()
- * @since v1.0.0
- */
-void receive_transaction_controller_b();
 
 /**
  * @brief Next button controller is executed for generating address using xpub
@@ -458,8 +323,8 @@ void receive_transaction_controller_b_solana();
  * the device and cards.
  *
  * @see verify_wallet_controller_b(), verify_wallet_tasks(),
- * generate_wallet_controller(), tasks_add_new_wallet(),
- * restore_wallet_controller(), tasks_restore_wallet()
+ * generate_wallet_controller(),
+ * restore_wallet_controller(),
  * @since v1.0.0
  */
 void verify_wallet_controller();
@@ -470,46 +335,11 @@ void verify_wallet_controller();
  * verification of newly added wallet.
  *
  * @see verify_wallet_controller(), verify_wallet_tasks(),
- * generate_wallet_controller(), tasks_add_new_wallet(),
- * restore_wallet_controller(), tasks_restore_wallet()
+ * generate_wallet_controller(),
+ * restore_wallet_controller(),
  * @since v1.0.0
  */
 void verify_wallet_controller_b();
-
-/**
- * @brief Sync all the available wallets on the cards with the device.
- * @details This controller is used to sync all the available wallets on the
- * cards with the device. The sync is done one wallet at a time.
- *
- * @see sync_wallet_controller_b(), sync_cards_task()
- * @since v1.0.0
- */
-void sync_cards_controller();
-
-/**
- * @brief Back button controller for sync wallet flow.
- * @details This controller is used to handle back button events during sync
- * wallet flow.
- *
- * @see sync_cards_controller(), sync_cards_task()\
- * @since v1.0.0
- */
-void sync_cards_controller_b();
-
-/**
- * @brief The function handles post-processing successful execution of card
- * pairing on the card.
- * @details The function verifies the signature of the card's response received.
- * Upon successful verification, the shared secret is generated and stored in
- * the device for further use in secure communication with the card.
- *
- * @param [in] card_number       - card number currently being processed
- * @param [in] session_nonce     - session nonce of the device
- * @param [in] card_pairing_data - card pairing data received from the card
- */
-void handle_pair_card_success(uint8_t card_number,
-                              uint8_t *session_nonce,
-                              uint8_t *card_pairing_data);
 
 /**
  * @brief

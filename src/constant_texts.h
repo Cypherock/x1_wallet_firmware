@@ -14,14 +14,26 @@
 #include "ui_menu.h"
 #include "ui_text_slideshow.h"
 
+#define UI_TEXT_CARD_TAPPED "Card #%d Tapped"
+#define UI_TEXT_TAP_CARD_TO_TEST                                               \
+  "Place any card below the device to test card tapping"
 #define UI_TEXT_ENTER_WORD "Enter Word # %d"
 #define UI_TEXT_IS_WORD "Is Word #%d\n%s"
 #define UI_TEXT_TAP_CARD "Tap card #%d"
 #define UI_TEXT_PLACE_CARD "Place Card #%d"
-#define UI_TEXT_RECEIVE_PROMPT "Receive %s on %s in %s"
-#define UI_TEXT_SEND_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_RECEIVE_PROMPT "Receive %s in %s"
+#define UI_TEXT_ADD_ACCOUNT_PROMPT "Add %s to %s"
+#define UI_TEXT_RECEIVE_TOKEN_PROMPT "Receive %s on %s in %s"
+#define UI_TEXT_BTC_SEND_PROMPT "Send %s from %s"
+#define UI_TEXT_SEND_PROMPT "Send %s on %s"
+#define UI_TEXT_SIGN_TXN_PROMPT "Sign transaction on %s from %s"
+#define UI_TEXT_REVIEW_TXN_PROMPT "Review transaction to %s"
+#define UI_TEXT_SEND_TOKEN_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_BTC_RECEIVER "Receiver #%d"
+#define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
-#define UI_TEXT_SEND_TXN_FEE "Transaction fee\n%s\n%s"
+#define UI_TEXT_TXN_FEE "Transaction fee"
+#define UI_TEXT_SEND_TXN_FEE "%s %s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
 #define UI_TEXT_WALLET_LOCKED_WAIT_MSG "%s is currently locked\nWait for %d %s"
@@ -31,30 +43,120 @@
 #define UI_TEXT_VERIFY_MESSAGE "Verify Message"
 #define UI_TEXT_VERIFY_DOMAIN "Verify Domain"
 #define UI_TEXT_EIP712_DOMAIN_TYPE "EIP712Domain"
+#define UI_TEXT_WALLET_UNLOCKED "Correct PIN! %s is now unlocked"
+#define UI_TEXT_UNLOCK_WARNING "Multiple incorrect attempts may block %s"
+#define UI_TEXT_INCORRECT_PIN_ATTEMPTS_REMAINING                               \
+  "Wrong PIN!\n%d attempt(s) left"
+#define UI_TEXT_BLIND_SIGNING_WARNING                                          \
+  LV_SYMBOL_WARNING " Blind Signing\nProceed at your own risk!"
+#define UI_TEXT_VERIFY_HD_PATH "Verify Derivation Path"
 
 // product hash
 extern const char *product_hash;
 
-// level one
+// Main menu text
 #define NUMBER_OF_OPTIONS_MAIN_MENU 2
+
+#define MAIN_MENU_CREATE_WALLET_INDEX 0
+#define MAIN_MENU_SETTINGS_INDEX 1
+extern const char *ui_text_heading_main_menu;
 extern const char *ui_text_options_main_menu[];
 
-// level two
+// Old wallet menu text
 #define NUMBER_OF_OPTIONS_OLD_WALLET 2
 extern const char *ui_text_options_old_wallet[];
 
+// New wallet menu text
 #define NUMBER_OF_OPTIONS_NEW_WALLET 2
+extern const char *ui_text_heading_new_wallet;
 extern const char *ui_text_options_new_wallet[];
 
+#define NUMBER_OF_OPTIONS_MNEMONIC_INPUT 3
+extern const char *ui_text_mnemonics_number_options[];
+
+// Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 10
+#define NUMBER_OF_OPTIONS_SETTINGS 12
+// TODO: Update after refactor - remove the following MACRO
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS 9
-#endif
-extern const char *ui_text_options_advanced_settings[];
+#define NUMBER_OF_OPTIONS_SETTINGS 11
+// TODO: Update after refactor - remove the following MACRO
+#define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
+#endif /* DEV_BUILD*/
+extern const char *ui_text_heading_settings;
+extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
+extern const char *ui_text_rotate_display_confirm;
+extern const char *ui_text_options_logging_export[];
+extern const char *ui_text_options_passphrase[];
+
+extern const char *ui_text_pair_card_confirm;
+extern const char *ui_text_card_pairing_success;
+extern const char *ui_text_card_pairing_warning;
+#define PAIR_CARD_MESSAGE "%d card(s) paired successfully"
+
+#if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
-extern const char *ui_text_logging_export_options[];
-extern const char *u_text_passphrase_options[];
+#endif /* DEV_BUILD */
+
+// Regulatory info text
+#define NUMBER_OF_SLIDES_REGULATORY_INFO 5
+extern const char *ui_text_regulatory_info[];
+
+// Version info text
+#define UI_TEXT_CARD_VERSION "Card Version\n%d.%d.%d-%s"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
+
+// Factory reset text
+extern const char *ui_text_factory_reset_instruction;
+extern const char *ui_text_confirm_factory_reset;
+extern const char *ui_text_erasing;
+#define NUMBER_OF_SLIDES_FACTORY_RESET_EXIT 2
+extern const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
+#define UI_TEXT_FACTORY_RESET_ERROR "Wallet '%s' not found on card(s)"
+
+// Card health check text
+extern const char *ui_text_card_seems_healthy;
+extern const char *ui_text_click_to_view_wallets;
+extern const char *ui_text_no_wallets_fetched;
+extern const char *ui_text_card_health_check_start;
+extern const char *ui_text_card_health_check_error[];
+#define UI_TEXT_CARD_HEALTH_CHECK_ERROR "Wallets in Card #%d"
+
+// Sync wallets with cards text
+#define UI_TEXT_SYNC_WALLET_PROMPT "Do you want to sync wallet %s?"
+#define UI_TEXT_SYNC_WALLET_LOCKED "Wallet %s is locked"
+#define UI_TEXT_SYNC_WALLET_DONE "Syncing %s complete"
+extern const char *ui_text_syncing_complete;
+
+// Clear user data text
+extern const char *ui_text_clear_device_data_instruction;
+extern const char *ui_text_erasing_device_data;
+extern const char
+    *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
+
+// Manager app text
+// Device authentication text
+extern const char *ui_text_message_device_authenticating;
+extern const char *ui_text_message_device_auth_success;
+extern const char *ui_text_message_device_auth_failure;
+
+extern const char *ui_text_joystick_up;
+extern const char *ui_text_joystick_right;
+extern const char *ui_text_joystick_down;
+extern const char *ui_text_joystick_left;
+extern const char *ui_text_joystick_center;
+extern const char *ui_text_joystick_checkup_complete;
+
+// Onboarding text
+extern const char *ui_text_onboarding_welcome;
+#define NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING 3
+extern const char *ui_text_onboarding[];
+extern const char *ui_text_onboarding_complete;
+
+// Firmware update text
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 
@@ -68,8 +170,6 @@ extern const char *ui_text_startup_instruction_screen_3[];
 
 extern const char *ui_text_startup_instruction_screen_4[];
 
-extern const char *ui_text_mnemonics_number_options[];
-
 extern const char *ui_text_view_data;
 
 // errors
@@ -77,7 +177,6 @@ extern const char *ui_text_something_went_wrong;
 extern const char *ui_text_something_went_wrong_contact_support_send_logs;
 extern const char *ui_text_already_have_maxi_wallets;
 extern const char *ui_text_aborted;
-extern const char *ui_text_no_wallet_found;
 extern const char *ui_text_operation_has_been_cancelled;
 extern const char *ui_text_wallet_name_exists;
 extern const char *ui_text_pin_incorrect_re_enter;
@@ -95,9 +194,12 @@ extern const char *ui_text_invalid_transaction;
 // errors card flows
 extern const char *ui_text_invalid_card_contact_cypherock;
 extern const char *ui_text_wrong_card_sequence;
+extern const char *ui_text_tap_another_card;
 extern const char *ui_text_wallet_doesnt_exists_on_this_card;
 extern const char *ui_text_wrong_wallet_is_now_locked;
-extern const char *ui_text_wallet_verification_failed;
+extern const char *ui_text_wallet_already_unlocked;
+extern const char *ui_text_wallet_verification_failed_in_creation;
+extern const char *ui_text_wallet_verification_failed_in_reconstruction;
 
 extern const char *ui_text_invalid_card_tap_card[];
 extern const char *ui_text_device_authenticating[];
@@ -146,6 +248,7 @@ extern const char *ui_text_enter_passphrase;
 extern const char *ui_text_confirm_passphrase;
 extern const char *ui_text_receive_on;
 extern const char *ui_text_verify_address;
+extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_confirm_wallet_name;
@@ -162,6 +265,8 @@ extern const char *ui_text_new_account_id;
 extern const char *ui_text_new_public_key;
 extern const char *ui_text_replace_account;
 extern const char *ui_text_confirm_account;
+extern const char *ui_text_near_transfer_action_type;
+extern const char *ui_text_near_create_account_method;
 
 // headings card flow
 extern const char *ui_text_family_id_hex;
@@ -176,7 +281,6 @@ extern const char *ui_text_tap_card_to_start;
 extern const char *ui_text_wallet_deleted_successfully;
 extern const char *ui_text_recovery_successfull;
 extern const char *ui_text_processing;
-extern const char *ui_text_seed_generated_successfully;
 extern const char *ui_text_press_enter_to_start_verification;
 extern const char *ui_text_now_enter_your_seed_phrase;
 extern const char *ui_text_now_enter_your_data;
@@ -197,14 +301,14 @@ extern const char *ui_text_logs_sent;
 extern const char *ui_text_creation_failed_delete_wallet;
 
 extern const char *ui_text_successfull;
-extern const char *ui_text_view_seed_messages[];
+extern const char *ui_text_view_seed_messages;
 extern const char *ui_text_card_authentication_success;
 extern const char *ui_text_card_authentication_failed;
 extern const char *ui_text_authentication_required;
 extern const char *ui_text_start_auth_from_CySync;
 extern const char *ui_text_enable_passphrase_step;
 extern const char *ui_text_disable_passphrase_step;
-extern const char *ui_text_warning_transaction_fee_too_high;
+extern const char *ui_text_warning_txn_fee_too_high;
 extern const char *ui_text_enable_log_export;
 extern const char *ui_text_disable_log_export;
 
@@ -215,22 +319,15 @@ extern const char *ui_text_do_you_want_to_set_pin;
 extern const char *ui_text_auth_process;
 
 extern const char *ui_text_sync_x1card_confirm;
-extern const char *ui_text_rotate_display_confirm;
 
-extern const char *ui_text_factory_reset_confirm[];
-extern const char *ui_text_confirm_factory_reset;
 extern const char *ui_text_no_wallets_present;
-extern const char *ui_text_card_seems_healthy;
-extern const char *ui_text_click_to_view_wallets;
-extern const char *ui_text_no_wallets_fetched;
-extern const char *ui_text_card_health_check_start;
-extern const char *ui_text_card_health_check_error[];
 extern const char *ui_text_device_verification_success;
 extern const char *ui_text_device_verification_failure;
 extern const char *ui_text_unauthenticate_via_cysync;
 extern const char *ui_text_start_device_verification;
 extern const char *ui_text_its_a_while_check_your_cards;
 extern const char *ui_text_delete_this_wallet;
+extern const char *ui_text_need_all_x1cards_to_create_wallet;
 extern const char *ui_text_need_all_x1cards_to_delete_wallet_entirely;
 extern const char *ui_text_20_spaces;
 extern const char *ui_text_wallet_not_found_on_x1card;
@@ -252,7 +349,6 @@ extern const char *ui_text_worng_eth_transaction;
 extern const char *ui_text_error_no_card_paired;
 extern const char *ui_text_error_pair_all_cards;
 extern const char *ui_text_error_pair_atleast_2_cards;
-extern const char *ui_text_card_pairing_success;
 extern const char *ui_text_continue_with_pairing;
 extern const char *ui_text_device_compromised;
 extern const char *ui_text_device_compromised_not_provisioned;
@@ -262,14 +358,11 @@ extern const char *ui_text_pow_challenge_failed;
 extern const char *ui_text_card_removed_fast;
 extern const char *ui_text_card_freq_discon_fault;
 extern const char *ui_text_card_align_with_device_screen;
-extern const char *ui_text_syncing_complete;
 extern const char *ui_text_remove_card_prompt;
 extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
-extern const char *ui_text_reset_exit[];
-extern const char *ui_text_erasing;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

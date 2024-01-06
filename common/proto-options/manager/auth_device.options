@@ -1,0 +1,9 @@
+# Options for file common/cypherock-common/proto/manager/auth_device.proto
+manager.AuthDeviceChallengeRequest.challenge type:FT_STATIC max_size:32 fixed_length:true
+manager.AuthDeviceSerialSigResponse.postfix1 type:FT_STATIC max_size:7 fixed_length:true
+manager.AuthDeviceSerialSigResponse.postfix2 type:FT_STATIC max_size:23 fixed_length:true
+manager.AuthDeviceSerialSigResponse.serial type:FT_STATIC max_size:32 fixed_length:true
+manager.AuthDeviceSerialSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+manager.AuthDeviceChallengeSigResponse.postfix1 type:FT_STATIC max_size:7 fixed_length:true
+manager.AuthDeviceChallengeSigResponse.postfix2 type:FT_STATIC max_size:23 fixed_length:true
+manager.AuthDeviceChallengeSigResponse.signature type:FT_STATIC max_size:64 fixed_length:true

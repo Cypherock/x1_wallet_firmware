@@ -304,50 +304,23 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
                                     const uint32_t size);
 
 /**
- * @brief Generates xpub for the passed purpose id, coin id and account id.
- *
- * @param [in] path             Path of the node to derive xpub uses fingerprint
- * of second last node. and assumes first two nodes are purpose and coin index.
- * @param [in] path_length      Length of the given path.
- * @param [in] curve            Curve to be used.
- * @param [in] seed             Seed to generate the master node.
- * @param [out] str              String to store the xpub.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   char *str);
-
-/**
- * @brief Get the hdnode at given path from seed.
- * @details
+ * @brief Generates the node from provided seed at the requested path
+ * @details The function performs hardened derivation of the nodes at the
+ * specified derivation path.
  *
  * @param [in] path                 Path to derive the hdnode.
  * @param [in] path_length          Length of the path.
  * @param [in] curve                Curve name.
- * @param [in] seed                 Seed to derive the hdnode.
+ * @param [in] seed                 Seed to derive the hdnode of 64 bytes
  * @param [out] hdnode              Pointer to the HDNode instance used to store
  * the derived hdnode.
  *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded.
+ * @retval false If the node derivation failed.
  */
-void derive_hdnode_from_path(const uint32_t *path,
-                             const size_t path_length,
+bool derive_hdnode_from_path(const uint32_t *path,
+                             size_t path_length,
                              const char *curve,
                              const uint8_t *seed,
                              HDNode *hdnode);
@@ -522,11 +495,11 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth);
  * @param output            Pointer to the character array to be used for output
  * @param out_len           Maximum length of the output character array
  */
-FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
-                                                  const size_t path_length,
-                                                  const bool harden_all,
-                                                  char *output,
-                                                  const size_t out_len);
+FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
+                                          const size_t path_length,
+                                          const bool harden_all,
+                                          char *output,
+                                          const size_t out_len);
 
 /**
  * @brief Create a new display node and return its pointer

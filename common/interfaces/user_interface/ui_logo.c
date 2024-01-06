@@ -58,27 +58,20 @@
  */
 #include "ui_logo.h"
 
+#include "events.h"
+#include "ui_multi_instruction.h"
+
+LV_IMG_DECLARE(cypherock_logo);
+
 void logo_scr_init(const uint16_t delay_in_ms) {
-  lv_obj_t *label = lv_label_create(lv_scr_act(), NULL);
-  lv_label_set_align(label, LV_LABEL_ALIGN_CENTER);
-  lv_obj_align(
-      label,
-      NULL,
-      LV_ALIGN_IN_TOP_LEFT,
-      5,
-      25);    // Alignment may have to be manually changed according to text
+  instruction_content_t logo_content = {
+      .img = &cypherock_logo,
+      .img_x_offset = (128 - (cypherock_logo.header.w)) >> 1,
+      .img_y_offset = (64 - (cypherock_logo.header.h)) >> 1,
+      .text = "",
+      .text_align = LV_ALIGN_CENTER};
 
-  static lv_style_t style;
-  lv_style_copy(&style, lv_theme_get_mono()->style.label.prim);
-  style.text.font = &my_logo;    // This is a file in lvgl/src/lv_font
-  lv_label_set_style(label, LV_LABEL_STYLE_MAIN, &style);
-
-  lv_label_set_text(label, MY_LOGO_SYMBOL);
-
+  multi_instruction_with_image_init(&logo_content, 1, 0, false);
   lv_task_handler();
   BSP_DelayMs(delay_in_ms);
-  lv_obj_clean(lv_scr_act());
-
-  if (ui_mark_event_over)
-    (*ui_mark_event_over)();
 }

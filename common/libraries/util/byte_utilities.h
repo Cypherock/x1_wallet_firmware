@@ -37,7 +37,7 @@
  *
  * @note
  */
-void increament_byte_array(uint8_t *arr, uint8_t size);
+void increment_byte_array(uint8_t *arr, uint8_t size);
 
 /**
  * @brief Adds two byte array of the same size (dest_arr = arr1 + arr2)

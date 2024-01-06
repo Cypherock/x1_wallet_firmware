@@ -19,7 +19,13 @@
 
 #define FAMILY_ID_SIZE 4
 #define CARD_ID_SIZE (FAMILY_ID_SIZE + 1)
-#define CARD_VERSION_SIZE (2 + 4)
+
+#define CARD_VERSION_MAJOR_MINOR_SIZE 1
+#define CARD_VERSION_PATCH_SIZE 1
+#define CARD_VERSION_GIT_REV_SIZE 4
+#define CARD_VERSION_SIZE                                                      \
+  (CARD_VERSION_MAJOR_MINOR_SIZE + CARD_VERSION_PATCH_SIZE +                   \
+   CARD_VERSION_GIT_REV_SIZE)
 
 #define BLOCK_SIZE 32
 #define NONCE_SIZE 16
@@ -175,6 +181,12 @@ typedef struct Wallet_credential_data {
 extern Wallet_credential_data wallet_credential_data;
 extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet wallet;
+
+/**
+ * @brief This function clears the data stored in the wallet,
+ * wallet_shamir_data, and wallet_credential_data variables.
+ */
+void clear_wallet_data();
 
 /**
  * @brief Encrypts hash of share using chachapoly

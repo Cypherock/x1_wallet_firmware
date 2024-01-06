@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 EXIT_STATUS=1
 
 if [[ $# -lt 2 ]]; then

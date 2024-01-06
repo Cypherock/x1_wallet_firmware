@@ -56,9 +56,7 @@
  *
  ******************************************************************************
  */
-#include "btc.h"
 #include "constant_texts.h"
-#include "contracts.h"
 #include "controller_level_four.h"
 #include "eth.h"
 #include "harmony.h"
@@ -96,16 +94,6 @@ void send_transaction_tasks_eth() {
       mark_event_over();
     } break;
 
-    case SEND_TXN_UNSIGNED_TXN_RECEIVED_ETH: {
-      if (eth_unsigned_txn_ptr.payload_status ==
-          PAYLOAD_CONTRACT_NOT_WHITELISTED) {
-        instruction_scr_destructor();
-        delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
-      } else {
-        mark_event_over();
-      }
-    } break;
-
     case SEND_TXN_VERIFY_CONTRACT_ADDRESS: {
       char address[43];
       address[0] = '0';
@@ -115,44 +103,12 @@ void send_transaction_tasks_eth() {
 
       instruction_scr_destructor();
       byte_array_to_hex_string(eth_unsigned_txn_ptr.to_address,
-                               ETHEREUM_ADDRESS_LENGTH,
+                               20,
                                address + 2,
                                sizeof(address) - 2);
       snprintf(top_heading, sizeof(top_heading), "%s", ui_text_verify_contract);
       snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
       address_scr_init(top_heading, display, true);
-    } break;
-
-    case SEND_TXN_VERIFY_BLIND_SIGNING_ETH: {
-      if (eth_unsigned_txn_ptr.payload_status ==
-          PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
-        char display[125] = {0};
-        instruction_scr_destructor();
-        snprintf(display,
-                 sizeof(display),
-                 "%s Blind Signing\nProceed at your own risk!",
-                 LV_SYMBOL_WARNING);
-        confirm_scr_init(display);
-      } else {
-        mark_event_over();
-      }
-    } break;
-
-    case SEND_TXN_VERIFY_DERIVATION_PATH: {
-      if (eth_unsigned_txn_ptr.payload_status ==
-          PAYLOAD_SIGNATURE_NOT_WHITELISTED) {
-        char display[125] = {0};
-        char path[128] = {0};
-        eth_derivation_path_to_string(
-            &var_send_transaction_data.transaction_metadata,
-            path,
-            sizeof(path));
-        instruction_scr_destructor();
-        snprintf(display, sizeof(display), "Verify Derivation Path\n%s", path);
-        confirm_scr_init(display);
-      } else {
-        mark_event_over();
-      }
     } break;
 
     case SEND_TXN_VERIFY_TXN_NONCE_ETH: {
@@ -194,7 +150,6 @@ void send_transaction_tasks_eth() {
           var_send_transaction_data.transaction_metadata.is_harmony_address;
 
       instruction_scr_destructor();
-      eth_get_to_address(&eth_unsigned_txn_ptr, address_bytes);
       if (is_harmony_hrp == 0 || (chain_id != HARMONY_MAINNET_CHAIN))
         byte_array_to_hex_string(address_bytes,
                                  sizeof(address_bytes),
@@ -203,10 +158,7 @@ void send_transaction_tasks_eth() {
       else
         bech32_addr_encode(
             address, "one", address_bytes, sizeof(address_bytes));
-      snprintf(top_heading,
-               sizeof(top_heading),
-               "%s",
-               eth_get_address_title(&eth_unsigned_txn_ptr));
+      snprintf(top_heading, sizeof(top_heading), "%s", "");
       snprintf(display, sizeof(display), "%s%s", ui_text_20_spaces, address);
       address_scr_init(top_heading, display, true);
     } break;
@@ -224,7 +176,6 @@ void send_transaction_tasks_eth() {
       memzero(amount_string, sizeof(amount_string));
       uint8_t len = 0, i = 0, j = 0;
 
-      len = eth_get_value(&eth_unsigned_txn_ptr, amount_string);
       uint8_t decimal_val_s[ETH_VALUE_SIZE_BYTES * 3] = {0};
       if (sizeof(decimal_val_s) / sizeof(decimal_val_s[0]) > UINT8_MAX) {
         LOG_ERROR("0xxx#");
@@ -237,9 +188,7 @@ void send_transaction_tasks_eth() {
       bool pre_dec_digit = false, post_dec_digit = false;
       uint8_t offset = 0;
       log_hex_array("eth value: ", (uint8_t *)amount_string, len);
-      uint8_t point_index =
-          dec_val_len -
-          eth_get_decimal(&var_send_transaction_data.transaction_metadata);
+      uint8_t point_index = dec_val_len - 0;
       i = 0;
       j = dec_val_len - 1;
 
@@ -279,12 +228,6 @@ void send_transaction_tasks_eth() {
       }
 
       instruction_scr_destructor();
-      snprintf(display,
-               sizeof(display),
-               UI_TEXT_VERIFY_AMOUNT,
-               amount_decimal_string,
-               eth_get_asset_symbol(
-                   &var_send_transaction_data.transaction_metadata));
       confirm_scr_init(display);
     } break;
 

@@ -71,6 +71,8 @@
 
 #include "controller_level_four.h"
 #include "controller_tap_cards.h"
+#include "core_error.h"
+#include "core_flow_init.h"
 #include "cryptoauthlib.h"
 #include "flash_api.h"
 #include "flash_if.h"
@@ -81,12 +83,8 @@
 #include "pow.h"
 #include "sec_flash.h"
 #include "sys_state.h"
-#include "ui_delay.h"
-#include "ui_instruction.h"
-#include "ui_logo.h"
-#include "ui_message.h"
-#include "ui_multi_instruction.h"
-
+#include "systick_timer.h"
+#include "ui_screens.h"
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -112,13 +110,7 @@ static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 #endif
 
-#if X1WALLET_MAIN == 1
-extern void __authentication_listener(lv_task_t *task);
-extern lv_task_t *authentication_task;
-#endif
-
 extern lv_task_t *listener_task;
-extern lv_task_t *success_task;
 extern lv_task_t *timeout_task;
 extern lv_indev_t *indev_keypad;
 
@@ -147,37 +139,6 @@ static void clock_init(void) {
   SystemClock_Config();
 }
 
-/**
- * @brief this function will be called repeatedly in time interval of
- * POLLING_TIME.
- * @details
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-static void repeated_timer_handler(void) {
-  lv_tick_inc(POLLING_TIME);
-#if X1WALLET_MAIN == 1
-  if (counter.level > LEVEL_ONE)
-    inactivity_counter += POLLING_TIME;
-  if (inactivity_counter > INACTIVITY_TIME) {
-    inactivity_counter = 0;
-    if (counter.level > LEVEL_ONE) {
-      mark_error_screen(ui_text_process_reset_due_to_inactivity);
-      if (CY_External_Triggered())
-        comm_reject_request(STATUS_PACKET, STATUS_CMD_ABORT);
-      reset_flow_level();
-      lv_obj_clean(lv_scr_act());
-    }
-  }
-#endif
-}
-
 void reset_inactivity_timer() {
   inactivity_counter = 0;
 }
@@ -201,7 +162,7 @@ void reset_inactivity_timer() {
  * @note
  */
 static void create_timers() {
-  BSP_App_Timer_Create(BSP_APPLICATION_TIMER, repeated_timer_handler);
+  BSP_App_Timer_Create(BSP_APPLICATION_TIMER, systick_interrupt_cb);
 }
 
 /**
@@ -246,47 +207,10 @@ void restrict_app() {
                          ui_text_start_auth_from_CySync};
   multi_instruction_init(pptr, 2, DELAY_TIME, false);
   lv_task_set_prio(listener_task, LV_TASK_PRIO_OFF);
-  lv_task_set_prio(authentication_task, LV_TASK_PRIO_HIGH);
   counter.next_event_flag = false;
   CY_Reset_Not_Allow(true);
   mark_device_state(CY_APP_IDLE_TASK | CY_APP_IDLE, 0);
   CY_set_app_restricted(true);
-}
-
-void device_auth() {
-  if (!device_auth_flag) {
-    return;
-  }
-
-  flow_level.level_three = SIGN_SERIAL_NUMBER;
-  mark_device_state(CY_APP_USB_TASK | CY_APP_IDLE, flow_level.level_three);
-  instruction_scr_init(" ", NULL);
-  instruction_scr_change_text(ui_text_auth_process, true);
-  if (main_app_ready)
-    lv_task_set_prio(listener_task, LV_TASK_PRIO_MID);
-
-  while (device_auth_flag) {
-    if (CY_Read_Reset_Flow()) {
-      cy_exit_flow();
-      break;
-    }
-    main_app_ready = false;
-
-    device_authentication_controller();
-    mark_device_state(CY_UNUSED_STATE,
-                      counter.level < LEVEL_THREE ? 0 : flow_level.level_three);
-    flow_level.level_three = 5;
-
-    proof_of_work_task();
-
-    lv_task_handler();
-    BSP_DelayMs(50);
-  }
-
-  // Mark device state busy for the rest of the bootup checks
-  lv_task_set_prio(authentication_task, LV_TASK_PRIO_OFF);
-  instruction_scr_destructor();
-  reset_flow_level();
 }
 #endif
 
@@ -385,11 +309,8 @@ void application_init() {
   reset_flow_level();
 #if X1WALLET_MAIN
   CY_Reset_Not_Allow(true);
-  authentication_task =
-      lv_task_create(__authentication_listener, 20, LV_TASK_PRIO_OFF, NULL);
+
 #endif
-  listener_task =
-      lv_task_create(desktop_listener_task, 20, LV_TASK_PRIO_OFF, NULL);
   nfc_set_device_key_id(get_perm_self_key_id());
   pow_init_hash_rate();
   if (get_first_boot_on_update() == true) {
@@ -401,9 +322,9 @@ void application_init() {
   buzzer_disabled = true;
 #endif
 #endif
+  core_init_app_registry();
 }
 
-#if X1WALLET_MAIN
 void check_invalid_wallets() {
   bool fix = false;
   char display[64];
@@ -415,9 +336,9 @@ void check_invalid_wallets() {
              sizeof(msg),
              "%u card(s) not paired with device",
              (MAX_KEYSTORE_ENTRY - paired_card_count));
-    tap_card_take_to_pairing();
-    mark_error_screen(paired_card_count == 0 ? ui_text_error_no_card_paired
-                                             : msg);
+    delay_scr_init(paired_card_count == 0 ? ui_text_error_no_card_paired : msg,
+                   DELAY_TIME);
+    mark_core_error_screen(ui_text_card_pairing_warning, false);
     return;
   }
 
@@ -467,8 +388,7 @@ void check_invalid_wallets() {
     }
   }
   if (fix)
-    mark_error_screen(ui_text_wallet_visit_to_verify);
-  reset_flow_level();
+    mark_core_error_screen(ui_text_wallet_visit_to_verify, false);
 }
 
 void check_boot_count() {
@@ -476,7 +396,7 @@ void check_boot_count() {
     delay_scr_init(ui_text_its_a_while_check_your_cards, DELAY_TIME);
   }
 }
-#endif
+
 void log_error_handler_faults() {
 #if USE_SIMULATOR == 0
   if (RTC->BKP1R > 1) {
@@ -524,7 +444,6 @@ void handle_fault_in_prev_boot() {
   WRITE_REG(RTC->BKP1R, 0x00);
   delay_scr_init(ui_text_something_went_wrong_contact_support_send_logs,
                  DELAY_TIME);
-  reset_flow_level();
 #endif
 }
 
@@ -564,10 +483,7 @@ void device_provision_check() {
 #if NDEBUG
   msg = ui_text_device_compromised;
 #endif
-  ui_set_event_over_cb(NULL);
   delay_scr_init(msg, DELAY_TIME);
-  ui_set_event_over_cb(&mark_event_over);
-  instruction_scr_destructor();
 #endif
 }
 

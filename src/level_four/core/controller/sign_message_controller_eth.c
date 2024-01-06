@@ -102,7 +102,7 @@ void sign_message_controller_eth() {
           reset_flow_level();
         }
 
-        eth_init_display_nodes(&current_display_node, &msg_data);
+        // eth_init_display_nodes(&current_display_node, &msg_data);
         ASSERT(current_display_node != NULL);
       }
     } break;

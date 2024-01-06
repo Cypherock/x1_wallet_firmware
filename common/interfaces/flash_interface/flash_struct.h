@@ -107,7 +107,8 @@ typedef struct Flash_Wallet {
  * @see
  * @since v1.0.0
  *
- * @note
+ * @note Need to manually update FLASH_STRUCT_TLV_SIZE in case any change is
+ * done in Flash_struct
  */
 #pragma pack(push, 1)
 // TODO: Refactor flash storage, reduce erase cycles
@@ -118,6 +119,7 @@ typedef struct Flash_Struct {
   uint8_t displayRotation;
   uint8_t enable_passphrase;
   uint8_t enable_log;
+  uint8_t onboarding_step;
 } Flash_Struct;
 #pragma pack(pop)
 
@@ -136,5 +138,13 @@ typedef struct Flash_Struct {
  * @note
  */
 void flash_erase();
+
+/**
+ * @brief This API clears the user data - for example: pairing data, wallets,
+ * settings, but preserves some data onto the flash memory
+ * For now, the only thing preserved is the onboarding_step
+ *
+ */
+void flash_clear_user_data(void);
 
 #endif

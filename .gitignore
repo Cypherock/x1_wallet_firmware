@@ -6,9 +6,7 @@ Debug
 !/.vscode/c_cpp_properties.json
 !/.vscode/launch.json
 !/.vscode/tasks.json
-cmake-build-debug*
-cmake-build-release*
-cmake-build-dev*
+cmake-build-*
 .idea
 *.ioc
 *.bak
@@ -16,3 +14,5 @@ cmake-build-dev*
 html
 .DS_Store
 private_key*.?
+*.pb.*
+generated

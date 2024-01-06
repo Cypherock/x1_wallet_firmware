@@ -48,17 +48,20 @@ typedef enum {
 } e_scrollable_page_orientation_t;
 
 /**
- * @brief This API renders a scrollable UI page, which displays UI in the
- * following format:
+ * @brief This API renders a scrollable UI page with a optional heading, 2-3
+ * rows of scrollable text, cancel and accept buttons, and a footnote depicting
+ * pagination.
+ * @details The UI is displayed in the following format:
  * |***************Floating heading***************|
  * |************** Scrollable text 1**************|
  * |<************* Scrollable text 2*************>|
  * |(cancel)***********Page no************(accept)|
- * It also renders cancel and accept buttons which generate events to the caller
- * through callbacks ui_mark_event_over() and ui_mark_event_cancel().
+ * In case the pointer to heading is not NULL, then, 2 rows of Scrollable text
+ * is visible CENTER aligned In case the pointer to heading is NULL, then, 3
+ * rows of Scrollable text is visible TOP_MID aligned
  *
  * @param p_page_ui_heading Pointer to the heading of the screen which is shown
- * as floating text
+ * as floating text. The heading is an optional field.
  * @param p_page_ui_body Pointer to the body of the screen which is scrollable.
  * It should end with Null (\0) character.
  * @param page_orientation Value of type e_scrollable_page_orientation_t which

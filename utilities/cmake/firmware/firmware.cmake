@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 IF(UNIT_TESTS_SWITCH)
-        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "tests/*.*")
+        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*" "tests/*.*")
         #exclude src/main.c from the compilation list as it needs to be overriden by unit_tests_main.c
         LIST(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.c")
 
@@ -16,12 +16,12 @@ IF(UNIT_TESTS_SWITCH)
         add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
         add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)
 ELSE()
-        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*")
+        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
-add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED)
+add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
@@ -40,7 +40,33 @@ else()
     message(FATAL_ERROR "Firmware type not specified. Specify using -DFIRMWARE_TYPE=<Type> Type can be Main or Initial")
 endif()
 target_include_directories(${EXECUTABLE} PRIVATE
+        apps/manager_app
+
+        apps/btc_family
+        apps/btc_family/btc
+        apps/btc_family/dash
+        apps/btc_family/doge
+        apps/btc_family/ltc
+        apps/evm_family
+        apps/evm_family/eth
+        apps/evm_family/polygon
+        apps/evm_family/bsc
+        apps/evm_family/fantom
+        apps/evm_family/avalanche
+        apps/evm_family/optimism
+        apps/evm_family/arbitrum
+        apps/near_app
+        apps/solana_app
+
         src/
+        src/menu
+        src/wallet
+        src/restricted_app
+        src/onboarding
+        src/settings
+
+        src/card_operations
+        src/card_flows
 
         src/level_one/controller
         src/level_one/tasks
@@ -80,13 +106,14 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/libraries/proof_of_work
         common/libraries/shamir
         common/libraries/util
-        common/libraries/nanopb
         common/startup
         common/logger
         common/coin_support
         common/coin_support/eth_sign_data
         common/flash
         common/Firewall
+        common/core
+        common/timers
 
         common
         common/lvgl
@@ -140,6 +167,18 @@ target_include_directories(${EXECUTABLE} PRIVATE
 
         #unit test modules: this list needs to be updated whenever a test module is being added
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/common/core>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/common/util>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/p0_events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/ui/ui_events_test>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/usb/events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/nfc/events>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/nfc>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/manager_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/btc_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
         )
 
 target_compile_options(${EXECUTABLE} PRIVATE

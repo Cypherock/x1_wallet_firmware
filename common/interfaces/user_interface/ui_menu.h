@@ -74,20 +74,4 @@ void menu_init(const char *option_list[],
                const char heading[],
                bool back_button_allowed);
 
-/**
- * @brief Create menu UI
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
-void menu_create();
-
 #endif    // UI_MENU_H

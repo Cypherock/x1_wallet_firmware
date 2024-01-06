@@ -302,65 +302,20 @@ int64_t byte_array_to_recv_txn_data(Receive_Transaction_Data *txn_data_ptr,
   return offset;
 }
 
-int64_t byte_array_to_add_coin_data(Add_Coin_Data *data_ptr,
-                                    const uint8_t *byte_array,
-                                    size_t size) {
-  if (data_ptr == NULL || byte_array == NULL)
-    return -1;
-  memzero(data_ptr, sizeof(Add_Coin_Data));
-
-  int64_t offset = 0;
-
-  data_ptr->derivation_depth = byte_array[offset++];
-  if (data_ptr->derivation_depth < 2 ||
-      data_ptr->derivation_depth >
-          (sizeof(data_ptr->derivation_path) / sizeof(uint32_t))) {
-    return -1;
-  }
-
-  for (int levelIndex = 0; levelIndex < data_ptr->derivation_depth;
-       levelIndex++) {
-    if (offset + sizeof(uint32_t) > size)
-      return -1;
-    data_ptr->derivation_path[levelIndex] =
-        U32_READ_BE_ARRAY(byte_array + offset);
-    offset += sizeof(uint32_t);
-  }
-
-  if (offset + sizeof(uint64_t) > size)
-    return -1;
-  data_ptr->network_chain_id = U64_READ_BE_ARRAY(&byte_array[offset]);
-  offset += sizeof(uint64_t);
-  return offset;
-}
-
-void generate_xpub(const uint32_t *path,
-                   const size_t path_length,
-                   const char *curve,
-                   const uint8_t *seed,
-                   char *str) {
-  uint32_t fingerprint = 0x0, version;
-  HDNode t_node;
-
-  derive_hdnode_from_path(path, path_length - 1, curve, seed, &t_node);
-  fingerprint = hdnode_fingerprint(&t_node);
-  hdnode_private_ckd(&t_node, path[path_length - 1]);
-  hdnode_fill_public_key(&t_node);
-
-  get_version(path[0], path[1], NULL, &version);
-  hdnode_serialize_public(&t_node, fingerprint, version, str, 113);
-  memzero(&t_node, sizeof(HDNode));
-}
-
-void derive_hdnode_from_path(const uint32_t *path,
+bool derive_hdnode_from_path(const uint32_t *path,
                              const size_t path_length,
                              const char *curve,
                              const uint8_t *seed,
                              HDNode *hdnode) {
   hdnode_from_seed(seed, 512 / 8, curve, hdnode);
-  for (size_t i = 0; i < path_length; i++)
-    hdnode_private_ckd(hdnode, path[i]);
+  for (size_t i = 0; i < path_length; i++) {
+    if (0 == hdnode_private_ckd(hdnode, path[i])) {
+      // hdnode_private_ckd returns 1 when the derivation succeeds
+      return false;
+    }
+  }
   hdnode_fill_public_key(hdnode);
+  return true;
 }
 
 void get_address_node(const txn_metadata *txn_metadata_ptr,
@@ -432,8 +387,6 @@ const char *get_coin_symbol(uint32_t coin_index, uint64_t chain_id) {
         }
       }
     }
-    case NEAR_COIN_INDEX:
-      return NEAR_TOKEN_SYMBOL;
     case SOLANA:
       return "SOL";
     default: {
@@ -481,8 +434,6 @@ const char *get_coin_name(uint32_t coin_index, uint64_t chain_id) {
         }
       }
     }
-    case NEAR_COIN_INDEX:
-      return NEAR_TOKEN_NAME;
     case SOLANA:
       return "Solana";
     default: {
@@ -648,7 +599,7 @@ bool verify_xpub_derivation_path(const uint32_t *path, uint8_t depth) {
 
   switch (coin) {
     case NEAR:
-      status = near_verify_derivation_path(path, depth);
+      status = false;
       break;
 
     case SOLANA:
@@ -686,7 +637,7 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
 
   switch (coin) {
     case NEAR:
-      status = near_verify_derivation_path(path, depth);
+      status = false;
       break;
 
     case SOLANA:    // m/44'/501'/i'/j'
@@ -721,11 +672,11 @@ bool verify_receive_derivation_path(const uint32_t *path, uint8_t depth) {
   return status;
 }
 
-FUNC_RETURN_CODES derivation_path_array_to_string(const uint32_t *path,
-                                                  const size_t path_length,
-                                                  const bool harden_all,
-                                                  char *output,
-                                                  const size_t out_len) {
+FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
+                                          const size_t path_length,
+                                          const bool harden_all,
+                                          char *output,
+                                          const size_t out_len) {
   if (out_len == 0 || output == NULL || path == NULL)
     return FRC_INVALID_ARGUMENTS;
 

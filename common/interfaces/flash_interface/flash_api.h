@@ -24,6 +24,19 @@
    get_enable_passphrase() == DEFAULT_VALUE_IN_FLASH)
 
 /**
+ * @brief This API checks if a wallet exists at a particular index.
+ * Optionally, if a wallet exists in that index, this API can return the status
+ * of the wallet.
+ *
+ * @param index The index required to be checked for wallet existance
+ * @param state_output The optional pointer of type wallet_state which will be
+ * filled with the wallet_state in case the wallet exists on that index
+ * @return true If the wallet exists at the index
+ * @return false If the wallet does not exist at the index
+ */
+bool wallet_is_filled(uint8_t index, wallet_state *state_output);
+
+/**
  * Update auth state and first_boot_on_update variables in firewall
  */
 int set_auth_state(device_auth_state);
@@ -285,20 +298,32 @@ int update_challenge_flash(const char *name,
                            const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
+ * The function sets a wallet as locked and assigns a card number in which the
+ * wallet was locked.
+ *
+ * @param wallet_name A pointer to a string representing the name of the wallet.
+ * @param encoded_card_number Encoded locked card number. This card number is
+ * represented by the set bit in the lower nibble.
+ *
+ * @return an integer value. The possible return values are SUCCESS if the
+ * wallet locking operation is successful, or an error code if there is an issue
+ * with retrieving the flash wallet or saving the flash structure.
+ */
+int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number);
+
+/**
  * @brief Add challenge to flash
  * @note This also resets stored nonce
  * @param name Wallet name
  * @param target Target
  * @param random_number Random number
- * @param card_locked Card locked state
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Added successfully
  */
 int add_challenge_flash(const char *name,
                         const uint8_t target[SHA256_SIZE],
-                        const uint8_t random_number[POW_RAND_NUMBER_SIZE],
-                        uint8_t card_locked);
+                        const uint8_t random_number[POW_RAND_NUMBER_SIZE]);
 
 /**
  * @brief Update the unlocked status of wallet and reset the nonce.
@@ -328,11 +353,14 @@ int update_time_to_unlock_flash(const char *name,
  *
  * @param wallet_index Wallet index in flash
  * @param nonce nonce byte array
+ * @param time_to_unlock_in_secs probabalistic time left to unlock the wallet
  * @return INVALID_ARGUMENT, SUCCESS
  * @retval INVALID_ARGUMENT Invalid index
  * @retval SUCCESS Nonce saved successfully
  */
-int save_nonce_flash(const char *name, const uint8_t nonce[POW_NONCE_SIZE]);
+int save_nonce_flash(const char *name,
+                     const uint8_t nonce[POW_NONCE_SIZE],
+                     const uint32_t time_to_unlock_in_secs);
 
 /**
  * @brief Set the wallet state in flash
@@ -414,7 +442,7 @@ int set_ext_key(const Perm_Ext_Keys_Struct *ext_keys);
  *
  * @note
  */
-int is_paired(const uint8_t *card_key_id);
+int get_paired_card_index(const uint8_t *card_key_id);
 
 /**
  * @brief Invalidates the pairing of the card by setting the used flag to 0.
@@ -940,5 +968,19 @@ uint8_t set_keystore_used_status(uint8_t keystore_index,
  * @since v1.0.0
  */
 void flash_delete_all_wallets();
+
+/**
+ * @brief It saves the onboarding step on the flash memory
+ *
+ * @param onboarding_step The value of step that needs to be stored
+ */
+void save_onboarding_step(const uint8_t onboarding_step);
+
+/**
+ * @brief Get the onboarding step value from the flash
+ *
+ * @return uint8_t The onboarding step
+ */
+uint8_t get_onboarding_step(void);
 
 #endif

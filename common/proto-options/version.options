@@ -1,0 +1,2 @@
+# Options for file common/cypherock-common/proto/version.proto
+core.AppVersionResultResponse.app_versions type:FT_STATIC max_count:20
