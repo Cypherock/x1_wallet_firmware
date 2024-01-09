@@ -375,19 +375,27 @@ int compare_uint32(const void *a, const void *b) {
 void compute_lambda(bignum256 *lambda, uint32_t *participant_indices, size_t participants_len, uint32_t index) {
   const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
   bignum256 zero_val = {0}, temp = {0};
-  int64_t num = 1, den = 1;
+  int32_t num = 1, den = 1;
 
-  for (uint64_t i = 0; i < participants_len; i++) {
+  for (uint32_t i = 0; i < participants_len; i++) {
       int m = participant_indices[i];
       if (m == index)
           continue;
 
-      num *= (int64_t)(m);
-      den *= (int64_t)((int64_t) m - (int64_t) index);
+      num *= (int32_t)(m);
+      den *= (int32_t)((int32_t) m - (int32_t) index);
   }
 
   assert(abs(num) % abs(den) == 0);
   num /= den;
+
+  LOG_INFO("NEW DUMP\n");  
+  LOG_INFO("Dumping lambda value: %ld\n", num);
+  LOG_INFO("Dumping participant indices: \n");
+  for (int i = 0; i < participants_len; ++i) {
+    LOG_INFO("%d\n", participant_indices[i]);
+  }
+  LOG_INFO("Dumping index: %d\n", index);
 
   bn_zero(&zero_val);
   bn_read_uint32(num < 0 ? num * -1 : num, lambda);
@@ -566,7 +574,12 @@ bool mta_send_snd_pub_keys(mpc_poc_query_t *query,
       scalar_multiply(curve, &ot_sender_sk, &ot_sender_pk);
 
       curve_point ot_receiver_pk;
-      ecdsa_read_pubkey(curve, query->sign_message.mta_snd_get_pk.public_key, &ot_receiver_pk);
+      if (ecdsa_read_pubkey(curve, query->sign_message.mta_snd_get_pk.public_key, &ot_receiver_pk) == 0) {
+        mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        return false;
+      }
       memcpy(&ot_sender_received_pks[i * NUMBER_OF_OTS * 33 + j * 33], query->sign_message.mta_snd_get_pk.public_key, 33);
 
       hasher_Update(&hasher_verify, query->sign_message.mta_snd_get_pk.public_key, 33);
@@ -752,7 +765,22 @@ bool mta_send_rcv_enc(mpc_poc_query_t *query,
       bn_read_be(&ot_receiver_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_receiver_sk);
       scalar_multiply(curve, ot_receiver_sk, ot_receiver_pk);
 
-      ecdsa_read_pubkey(curve, query->sign_message.mta_rcv_get_enc.public_key, ot_sender_pk);
+      if (ecdsa_read_pubkey(curve, query->sign_message.mta_rcv_get_enc.public_key, ot_sender_pk) == 0) {
+        mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        free(t_value);
+        free(ot_receiver_sk);
+        free(ot_receiver_pk);
+        free(ot_sender_pk);
+        free(k0);
+        free(k1);
+        free(ot_receiver_pk_neg);
+        free(key_hash);
+        free(key_coordinate);
+        return false;
+      
+      }
 
       hasher_Update(&hasher_verify, query->sign_message.mta_rcv_get_enc.public_key, 33);
 
@@ -996,7 +1024,18 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
       result.sign_message.which_response = MPC_POC_SIGN_MESSAGE_RESPONSE_MTA_SND_POST_ENC_TAG;
 
       bn_read_be(&ot_sender_sk_lists[i * NUMBER_OF_OTS * 32 + j * 32], ot_sender_sk);
-      ecdsa_read_pubkey(curve, &ot_sender_received_pks[i * NUMBER_OF_OTS * 33 + j * 33], ot_receiver_pk);
+      if (ecdsa_read_pubkey(curve, &ot_sender_received_pks[i * NUMBER_OF_OTS * 33 + j * 33], ot_receiver_pk) == 0) {
+        mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+        mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+        free(dec_m);
+        free(dec_key);
+        free(ot_sender_sk);
+        free(ot_receiver_pk);
+        free(kc);
+        free(key_coordinate);
+        return false;
+      }
       point_multiply(curve, ot_sender_sk, ot_receiver_pk, kc);
 
       Hasher *hasher_key = malloc(sizeof(Hasher));
@@ -1021,7 +1060,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
 
       uint8_t mask = 1 << (7 - (j % 8));
       if (s_values[(i * 16) + (j / 8)] & mask) {
-        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m0, 128, dec_m, dec_key) != 0) {
+        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m1, 128, dec_m, dec_key) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           free(dec_key);
@@ -1032,7 +1071,7 @@ bool mta_post_snd_enc(mpc_poc_query_t *query,
           return false;
         }
       } else {
-        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m1, 128, dec_m, dec_key) != 0) {
+        if (mpc_aes_decrypt(query->sign_message.mta_snd_post_enc.enc_m0, 128, dec_m, dec_key) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           free(dec_key);
@@ -1180,6 +1219,9 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
 
       bignum256 rand_bn;
       bn_read_be(rand_value, &rand_bn);
+      bn_fast_mod(&rand_bn, &curve->order);
+      bn_mod(&rand_bn, &curve->order);
+      bn_write_be(&rand_bn, rand_value);
 
       uint8_t polynomial = j / 256;
       uint8_t round = j % 256;
@@ -1188,9 +1230,6 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
 
       bignum256 two;
       bn_read_uint32(2, &two);
-
-      bignum256 bn_i;
-      bn_read_uint32((uint32_t) round, &bn_i);
 
       bignum256 res_x;
       bn_one(&res_x);
@@ -1205,9 +1244,21 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       bn_mod(&sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + polynomial], &curve->order);
 
       if (polynomial < 3) {
-        memcpy(&share_bn, &secret_share_list[ZERO_POLYNOMIALS + polynomial], sizeof(bignum256));
+        bn_copy(&secret_share_list[ZERO_POLYNOMIALS + polynomial], &share_bn);
       } else {
         bn_read_be(priv_key_share, &share_bn);
+      }
+
+      if (j < 4) {
+        LOG_INFO("DUMPING DUMPING\n");
+        LOG_INFO("j: %d\n", j);
+        LOG_INFO("enc_m0: ");
+        char msg[65];
+        for (int kp = 0; kp < 32; ++kp) {
+          sprintf(msg + kp * 2, "%02x", rand_value[kp]);
+        }
+        msg[64] = '\0';
+        LOG_INFO("%s\n", msg);
       }
 
       if (mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m0, q_value) != 0) {
@@ -1224,7 +1275,19 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
 
       // xor q_value with s_value
       for (int k = 0; k < 16; ++k) {
-        q_value[k] ^= s_values[sender_times * 16 + k];
+        q_value[k] ^= s_values[i * 16 + k];
+      }
+
+      if (j < 4) {
+        LOG_INFO("DUMPING DUMPING\n");
+        LOG_INFO("j: %d\n", j);
+        LOG_INFO("enc_m1: ");
+        char msg[65];
+        for (int kp = 0; kp < 32; ++kp) {
+          sprintf(msg + kp * 2, "%02x", rand_value[kp]);
+        }
+        msg[64] = '\0';
+        LOG_INFO("%s\n", msg);
       }
 
       if (mpc_aes_encrypt128(rand_value, 32, response.mta_snd_get_mascot.enc_m1, q_value) != 0) {
@@ -1244,12 +1307,12 @@ bool mta_mascot_snd(mpc_poc_query_t *query,
       mpc_send_result(&result);
     }
 
-    // bignum256 lambda;
-    // compute_lambda(&lambda, participant_indices, threshold, participant_indices[index + 1 + i]);
+    bignum256 lambda;
+    compute_lambda(&lambda, participant_indices, threshold, participant_indices[index + 1 + i]);
 
-    // for (int k = 0; k < 4; ++k) {
-    //   bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
-    // }
+    for (int k = 0; k < 4; ++k) {
+      bn_multiply(&lambda, &sender_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
+    }
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_SND_GET_MASCOT_SIG_TAG)) {
@@ -1349,19 +1412,31 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       }
 
       if (b_bit) {
-        if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
-                                dec_m, t_matrices[i][j]) != 0) {
-          mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
-          free(dec_m);
-          return false;
-        }
-      } else {
         if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m1, 32, 
                                 dec_m, t_matrices[i][j]) != 0) {
           mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
           free(dec_m);
           return false;
         }
+      } else {
+        if (mpc_aes_decrypt128(query->sign_message.mta_rcv_post_mascot.enc_m0, 32, 
+                                dec_m, t_matrices[i][j]) != 0) {
+          mpc_delay_scr_init("Error: aes decrypt failed", DELAY_TIME);
+          free(dec_m);
+          return false;
+        }
+      }
+
+      if (j < 4) {
+        LOG_INFO("DUMPING DUMPING\n");
+        LOG_INFO("j: %d\n", j);
+        LOG_INFO("dec_m: ");
+        char msg[65];
+        for (int kp = 0; kp < 32; ++kp) {
+          sprintf(msg + kp * 2, "%02x", dec_m[kp]);
+        }
+        msg[64] = '\0';
+        LOG_INFO("%s\n", msg);
       }
 
       bignum256 bn_dec_m;
@@ -1373,9 +1448,6 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
 
       bignum256 two;
       bn_read_uint32(2, &two);
-
-      bignum256 bn_i;
-      bn_read_uint32((uint32_t) round, &bn_i);
 
       bignum256 res_x;
       bn_one(&res_x);
@@ -1393,12 +1465,12 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
       mpc_send_result(&result);
     }
 
-    // bignum256 lambda;
-    // compute_lambda(&lambda, participant_indices, group_info->threshold, participant_indices[i]);
+    bignum256 lambda;
+    compute_lambda(&lambda, participant_indices, group_info->threshold, participant_indices[i]);
 
-    // for (int k = 0; k < 4; ++k) {
-    //   bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
-    // }
+    for (int k = 0; k < 4; ++k) {
+      bn_multiply(&lambda, &receiver_additive_shares_list[i * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1) + k], &curve->order);
+    }
 
     if (!mpc_get_query(query, MPC_POC_QUERY_SIGN_MESSAGE_TAG) ||
         !check_which_request(query, MPC_POC_SIGN_MESSAGE_REQUEST_MTA_RCV_POST_MASCOT_SIG_TAG)) {
@@ -1444,6 +1516,19 @@ bool mta_mascot_rcv(mpc_poc_query_t *query,
   }
 
   return true;
+}
+
+void reverse_bits(uint8_t *array, size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+        uint8_t currentByte = array[i];
+        uint8_t reversedByte = 0;
+
+        for (int j = 0; j < 8; ++j) {
+            reversedByte |= ((currentByte >> j) & 1) << (7 - j);
+        }
+
+        array[i] = reversedByte;
+    }
 }
 
 bool start_mta(mpc_poc_query_t *query, 
@@ -1584,15 +1669,21 @@ bool start_mta(mpc_poc_query_t *query,
         return false;
     }
 
-    uint8_t *b_value_ptr = b_value;
+    uint8_t *b_value_ptr = b_value;    
+    
+    bn_write_le(&secret_share_list[POLYNOMIAL_K_INDEX], b_value_ptr);
+    b_value_ptr += 32;
+    bn_write_le(&secret_share_list[POLYNOMIAL_A_INDEX], b_value_ptr);
+    b_value_ptr += 32;
 
-    bn_write_be(&secret_share_list[POLYNOMIAL_K_INDEX], b_value_ptr);
+    bignum256 receiver_priv_key_share_bn;
+    bn_read_be(priv_key_share, &receiver_priv_key_share_bn);
+
+    bn_write_le(&receiver_priv_key_share_bn, b_value_ptr);
     b_value_ptr += 32;
-    bn_write_be(&secret_share_list[POLYNOMIAL_A_INDEX], b_value_ptr);
-    b_value_ptr += 32;
-    memcpy(b_value_ptr, priv_key_share, 32);
-    b_value_ptr += 32;
-    bn_write_be(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
+    bn_write_le(&secret_share_list[POLYNOMIAL_P_INDEX], b_value_ptr);
+
+    reverse_bits(b_value, 128);
 
     t_matrices = malloc(receiver_times * sizeof(uint8_t **));
     if (!t_matrices) {
@@ -1669,14 +1760,85 @@ bool start_mta(mpc_poc_query_t *query,
     return false;
   }
 
+  // dump b_value and t_matrix
+  if (receiver_times > 0) {
+    LOG_INFO("Dumping b value very new\n");
+    for (int j = 0; j < 4; ++j) {
+      char msg[65];
+      for (int i = 0; i < 32; ++i) {
+        sprintf(msg + i * 2, "%02x", b_value[j * 32 + i]);
+      }
+      msg[64] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+    LOG_INFO("DDNEW Dumping first 256 bytes of t_matrix\n");
+    for (int j = 256; j < 272; ++j) {
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", t_matrices[0][j][i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+    LOG_INFO("DUMPED b value and t_matrix\n");
+
+    LOG_INFO("DDNEW Dumping second phase 256 bytes of t_matrix\n");
+    for (int j = 0; j < 16; ++j) {
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", t_matrices[0][j][i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+    LOG_INFO("DUMPED b value and t_matrix\n");
+  }
+
   if (sender_times > 0) {
     if (!mta_post_snd_enc(query, group_info, index, participant_indices, sender_times, 
                           s_values, ot_sender_sk_lists, ot_sender_received_pks, q_matrices)) {
       return false;
     }
-    
+
     free(ot_sender_sk_lists);
     free(ot_sender_received_pks);
+  }
+
+  // dump s_values and q_matrix
+  if (sender_times > 0) {
+    LOG_INFO("Dumping s values very new\n");
+    for (int k = 0; k < sender_times; ++k) {
+      uint8_t *s_temp = &s_values[k * 16];
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", s_temp[i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+
+    LOG_INFO("DDNEW Dumping first 256 bytes of q_matrix\n");
+    for (int j = 256; j < 272; ++j) {
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", q_matrices[0][j][i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+    LOG_INFO("DUMPED s value and q_matrix\n");
+    
+    LOG_INFO("Dumping second phase 256 bytes of q_matrix\n");
+    for (int j = 0; j < 16; ++j) {
+      char msg[33];
+      for (int i = 0; i < 16; ++i) {
+        sprintf(msg + i * 2, "%02x", q_matrices[0][j][i]);
+      }
+      msg[32] = '\0';
+      LOG_INFO("%s\n", msg);
+    }
+    LOG_INFO("DUMPED s value and q_matrix\n");
   }
 
   if (receiver_times > 0) {
@@ -1709,15 +1871,14 @@ bool start_mta(mpc_poc_query_t *query,
   
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
 
-  // bignum256 lambda;
-  
-  // compute_lambda(&lambda, participant_indices, threshold, my_index);
+  bignum256 lambda;
+  compute_lambda(&lambda, participant_indices, threshold, my_index);
 
   for (int i = 0; i < sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
     bn_subtractmod(&curve->order, &sender_additive_shares_list[i], &sender_additive_shares_list[i], &curve->order);
     bn_fast_mod(&sender_additive_shares_list[i], &curve->order);
     bn_mod(&sender_additive_shares_list[i], &curve->order);
-    // bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
+    bn_multiply(&lambda, &sender_additive_shares_list[i], &curve->order);
   }
 
   if (sender_times > 0) {
@@ -1742,10 +1903,9 @@ bool start_mta(mpc_poc_query_t *query,
                       t_matrices, receiver_additive_shares_list, b_value)) {
     return false;
   }
-
-  // for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
-  //   bn_multiply(&lambda, &receiver_additive_shares_list[i], &curve->order);
-  // }
+  for (int i = 0; i < receiver_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1); ++i) {
+    bn_multiply(&lambda, &receiver_additive_shares_list[i], &curve->order);
+  }
 
   if (receiver_times > 0) {
     memcpy(&additive_shares_list[sender_times * (POLYNOMIALS_COUNT - ZERO_POLYNOMIALS + 1)], 
@@ -1817,7 +1977,12 @@ bool sig_get_authenticator(mpc_poc_query_t *query,
   }
 
   curve_point r_value;
-  ecdsa_read_pubkey(curve, group_key_info->group_pub_key, &r_value);
+  if (ecdsa_read_pubkey(curve, group_key_info->group_pub_key, &r_value) == 0) {
+    mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
   curve_point big_w_share_point;
   point_multiply(curve, a_share, &r_value, &big_w_share_point);
@@ -1893,7 +2058,12 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
   xcords[0] = participant_indices[index];
 
   curve_point my_point;
-  ecdsa_read_pubkey(curve, my_big_w_share, &my_point);
+  if (ecdsa_read_pubkey(curve, my_big_w_share, &my_point) == 0) {
+    mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+    mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
   points[0] = &my_point;
 
@@ -1947,7 +2117,12 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
     xcords[ind] = participant_indices[i];
 
     curve_point point;
-    ecdsa_read_pubkey(curve, signed_authenticator_data.authenticator_data.big_w_share, &point);
+    if (ecdsa_read_pubkey(curve, signed_authenticator_data.authenticator_data.big_w_share, &point) == 0) {
+      mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     points[ind] = &point;
 
@@ -1980,7 +2155,7 @@ bool sig_compute_authenticator(mpc_poc_query_t *query,
 
 bool sig_get_ka_share(mpc_poc_query_t *query,
                       bignum256 *w,
-                      bignum256 *k_share,
+                      bignum256 *p_share,
                       bignum256 *a_share,
                       uint8_t *priv_key,
                       bignum256 *my_ka_share,
@@ -2007,10 +2182,10 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
 
   bn_copy(w, k_inv_share);
   bn_inverse(k_inv_share, &curve->order);
-  bn_multiply(k_share, k_inv_share, &curve->order);
+  bn_multiply(a_share, k_inv_share, &curve->order);
 
   bn_copy(k_inv_share, &ka_share);
-  bn_addmod(&ka_share, a_share, &curve->order);
+  bn_addmod(&ka_share, p_share, &curve->order);
   bn_mod(&ka_share, &curve->order);
 
   bignum256 lambda;
@@ -2021,7 +2196,7 @@ bool sig_get_ka_share(mpc_poc_query_t *query,
   mpc_poc_signed_ka_share_t signed_ka_share = MPC_POC_SIGNED_KA_SHARE_INIT_ZERO;
   bn_write_be(&ka_share, signed_ka_share.ka_share);
 
-  memcpy(my_ka_share, &ka_share, sizeof(bignum256));
+  bn_copy(&ka_share, my_ka_share);
 
   if (mpc_sign_message(signed_ka_share.ka_share, 32, signed_ka_share.signature, priv_key) != 0) {
     mpc_delay_scr_init("Error: signing failed", DELAY_TIME);
@@ -2592,8 +2767,8 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     bignum256 my_ka_share;
-    if (!sig_get_ka_share(query, &w, &secret_share_list[POLYNOMIAL_K_INDEX], 
-                          &secret_share_list[POLYNOMIAL_P_INDEX], priv_key, &my_ka_share,
+    if (!sig_get_ka_share(query, &w, &secret_share_list[POLYNOMIAL_P_INDEX], 
+                          &secret_share_list[POLYNOMIAL_A_INDEX], priv_key, &my_ka_share,
                           participant_indices, group_info.threshold, index, &k_inv)) {
       return;
     }
@@ -2606,7 +2781,12 @@ void sign_message_flow(mpc_poc_query_t *query) {
     curve_point R;
 
     const ecdsa_curve* curve = get_curve_by_name(SECP256K1_NAME)->params;
-    ecdsa_read_pubkey(curve, group_key_info_list[POLYNOMIAL_K_INDEX].group_pub_key, &R);
+    if (ecdsa_read_pubkey(curve, group_key_info_list[POLYNOMIAL_K_INDEX].group_pub_key, &R) == 0) {
+      mpc_delay_scr_init("Error: reading pubkey failed", DELAY_TIME);
+      mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
+      return false;
+    }
 
     bignum256 sig_share;
     if (!get_sig_share(query, &my_ka_share, &k_inv, dec_share, priv_key, &sig_share, 
@@ -2627,7 +2807,7 @@ void sign_message_flow(mpc_poc_query_t *query) {
     }
 
     if (!compute_sig(query, &group_info, participant_indices, group_info.threshold, 
-                     index, &R.x, &sig_share, final_signature)) {
+                     index, &(R.x), &sig_share, final_signature)) {
       return;
     }
 
