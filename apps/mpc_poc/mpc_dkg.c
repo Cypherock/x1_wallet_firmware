@@ -277,6 +277,18 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   for (int _ = 0; _ < signed_pub_key_list_count; ++_) {
     mpc_poc_signed_public_key_t signed_pub_key = signed_pub_key_list[_];
 
+    bool already_added = false;
+    for (int i = 0; i < ind; ++i) {
+      if (xcords[i] == signed_pub_key.index) {
+        already_added = true;
+        break;
+      }
+    }
+
+    if (already_added) {
+      continue;
+    }
+
     xcords[ind] = signed_pub_key.index;
 
     if (index_to_pub_key(group_info, signed_pub_key.index, participant_pub_key) == false) {
@@ -311,9 +323,22 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     return false;
   }
 
-  points[ind] = &Qi_point;
-  xcords[ind] = my_index;
-  ind++;
+  int malloc_counter = ind;
+
+  // check if my point is already there
+  bool already_added = false;
+  for (int i = 0; i < ind; ++i) {
+    if (xcords[i] == my_index) {
+      already_added = true;
+      break;
+    }
+  }
+
+  if (already_added == false) {
+    xcords[ind] = my_index;
+    points[ind] = &Qi_point;
+    ind++;
+  }
 
   if (ind < group_info->threshold) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -321,7 +346,7 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     return false;
   }
 
-  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, my_index, signed_pub_key_list_count + 1, &Qj);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, my_index, ind, &Qj);
 
   if (!point_is_equal(&Qj, &Qi_point)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -330,10 +355,10 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   }
 
   curve_point Q;
-  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, 0, signed_pub_key_list_count + 1, &Q);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, 0, ind, &Q);
 
   // free all points except Q
-  for (int i = 0; i < signed_pub_key_list_count; ++i) {
+  for (int i = 0; i < malloc_counter; ++i) {
     free(points[i]);
   }
 
