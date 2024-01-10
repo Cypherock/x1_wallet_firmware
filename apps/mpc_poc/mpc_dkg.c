@@ -44,7 +44,7 @@ bool dkg_generate_signed_share_data(mpc_poc_group_info_t *group_info,
   // create share data
   mpc_poc_share_data_t share_data = MPC_POC_SHARE_DATA_INIT_ZERO;
   share_data.index = my_index;
-  share_data.data_count = group_info->total_participants - 1; 
+  share_data.data_count = participants_len - 1; 
   int ind = 0;
 
   for (int _ = 0; _ < participants_len; ++_) {
@@ -270,15 +270,11 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
 
   uint8_t *participant_pub_key = malloc(33 * sizeof(uint8_t));
 
-  curve_point* points[group_info->threshold];
-  uint32_t xcords[group_info->threshold];
+  curve_point* points[signed_pub_key_list_count + 1];
+  uint32_t xcords[signed_pub_key_list_count + 1];
   int ind = 0;
 
   for (int _ = 0; _ < signed_pub_key_list_count; ++_) {
-    if (ind == group_info->threshold) {
-        break;
-    }
-
     mpc_poc_signed_public_key_t signed_pub_key = signed_pub_key_list[_];
 
     xcords[ind] = signed_pub_key.index;
@@ -315,19 +311,17 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
     return false;
   }
 
-  if (ind != group_info->threshold) {
-    points[ind] = &Qi_point;
-    xcords[ind] = my_index;
-    ind++;
-  }
+  points[ind] = &Qi_point;
+  xcords[ind] = my_index;
+  ind++;
 
-  if (ind != group_info->threshold) {
+  if (ind < group_info->threshold) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
-  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, my_index, group_info->threshold, &Qj);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, my_index, signed_pub_key_list_count + 1, &Qj);
 
   if (!point_is_equal(&Qj, &Qi_point)) {
     mpc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -336,10 +330,10 @@ bool dkg_get_group_public_key(mpc_poc_group_info_t *group_info,
   }
 
   curve_point Q;
-  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, 0, group_info->threshold, &Q);
+  lagarange_exp_interpolate(curve, (const curve_point**)points, xcords, 0, signed_pub_key_list_count + 1, &Q);
 
   // free all points except Q
-  for (int i = 0; i < group_info->threshold - 1; ++i) {
+  for (int i = 0; i < signed_pub_key_list_count; ++i) {
     free(points[i]);
   }
 
