@@ -106,8 +106,11 @@ void tasks_arbitrary_data() {
 
   switch (flow_level.level_three) {
     case ARBITRARY_DATA_NAME_INPUT: {
-      input_text_init(
-          ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
+      input_text_init(WALLET_NAME_CHARSET,
+                      ui_text_enter_wallet_name,
+                      2,
+                      DATA_TYPE_TEXT,
+                      15);
     } break;
 
     case ARBITRARY_DATA_NAME_CONFIRM: {

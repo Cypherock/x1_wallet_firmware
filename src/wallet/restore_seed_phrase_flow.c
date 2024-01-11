@@ -168,8 +168,11 @@ restore_wallet_state_e restore_wallet_state_handler(
 
   switch (current_state) {
     case NAME_INPUT: {
-      input_text_init(
-          ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
+      input_text_init(WALLET_NAME_CHARSET,
+                      ui_text_enter_wallet_name,
+                      2,
+                      DATA_TYPE_TEXT,
+                      15);
       next_state = get_state_on_input_scr(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
 
       if (NAME_INPUT != next_state) {
