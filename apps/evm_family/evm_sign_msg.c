@@ -366,9 +366,18 @@ static bool get_user_verification() {
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
-      result = core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
-                                (const char *)sign_msg_ctx.msg_data,
-                                evm_send_error);
+      size_t len = 4 * sign_msg_ctx.init.total_msg_size;
+      char *escaped_str = malloc(len);
+      uint8_t status = string_to_escaped_string(
+          (const char *)sign_msg_ctx.msg_data, escaped_str, len);
+      if (1 == status || 5 == status) {
+        free(escaped_str);
+        result = false;
+        break;
+      }
+      result =
+          core_scroll_page(UI_TEXT_VERIFY_MESSAGE, escaped_str, evm_send_error);
+      free(escaped_str);
     } break;
 
     case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA: {
