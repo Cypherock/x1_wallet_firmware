@@ -302,6 +302,11 @@ static void init_and_pair_card(card_operation_data_t *card_data,
       if (card_data->nfc_data.status != SW_NO_ERROR) {
         card_handle_errors(card_data);
       }
+      // override error message; pairing is special case; the error indicates a
+      // potential supply-chain problem
+      if (SW_SECURITY_CONDITIONS_NOT_SATISFIED == card_data->nfc_data.status) {
+        mark_core_error_screen(ui_text_security_conditions_not_met, true);
+      }
     }
   }
   return;

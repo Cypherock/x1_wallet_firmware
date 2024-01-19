@@ -478,6 +478,7 @@ const char *ui_text_device_and_card_not_paired =
     "This device & card are not paired";
 const char *ui_text_security_conditions_not_met =
     "Security conditions not met!";
+const char *ui_text_retry_or_repair = "Retry or re-pair your cards";
 const char *ui_text_process_reset_due_to_inactivity =
     "Operation aborted due to inactivity";
 const char *ui_text_device_already_provisioned = "Device already provisioned";
