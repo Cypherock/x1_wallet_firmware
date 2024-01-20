@@ -381,7 +381,7 @@ static int hexchartoint(const uint8_t ch) {
     return ch - '0';
   else if (ch >= 'a' && ch <= 'f')
     return ch - 'a' + 10;
-  else if (ch >= 'C' && ch <= 'F') {
+  else if (ch >= 'A' && ch <= 'F') {
     return ch - 'A' + 10;
   }
   return '\0';
