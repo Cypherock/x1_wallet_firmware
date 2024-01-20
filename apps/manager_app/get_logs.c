@@ -203,8 +203,12 @@ static bool send_logs(manager_query_t *query, manager_result_t *result) {
  *****************************************************************************/
 
 void manager_get_logs(manager_query_t *query) {
-  /* Validate if this flow is allowed */
-  if (false == check_logs_export()) {
+  /** Validate if exporting logs is allowed.
+   * Logs should be allowed in restricted mode (unauthenticated device)
+   * irrespective of `Log Setting`
+   */
+  if (DEVICE_AUTHENTICATED == get_auth_state() &&
+      false == check_logs_export()) {
     log_disabled_error();
     return;
   }
