@@ -149,7 +149,7 @@ static wallet_unlock_state_e wallet_unlock_handler(
  *****************************************************************************/
 
 static bool check_default_nonce(const uint8_t *nonce) {
-  for (size_t i = 0; i < PADDED_NONCE_SIZE; i++) {
+  for (size_t i = 0; i < POW_NONCE_SIZE; i++) {
     if (nonce[i] != DEFAULT_VALUE_IN_FLASH) {
       return false;
     }

@@ -724,7 +724,7 @@ int set_wallet_locked(const char *wallet_name, uint8_t encoded_card_number) {
   flash_wallet->is_wallet_locked = true;
   memzero(&(flash_wallet->challenge), sizeof(flash_wallet->challenge));
   flash_wallet->challenge.card_locked = encoded_card_number;
-  memset(flash_wallet->challenge.nonce, 0xFF, PADDED_NONCE_SIZE);
+  memset(flash_wallet->challenge.nonce, 0xFF, POW_NONCE_SIZE);
   flash_struct_save();
   return SUCCESS;
 }
@@ -804,7 +804,7 @@ int update_wallet_locked_flash(const char *name, const bool is_wallet_locked) {
     flash_wallet->challenge.time_to_unlock_in_secs = 0;
 
     // Reset nonce to 0xFF as challenge is not fetched
-    memset(flash_wallet->challenge.nonce, 0xFF, PADDED_NONCE_SIZE);
+    memset(flash_wallet->challenge.nonce, 0xFF, POW_NONCE_SIZE);
   } else {
     // Wallet unlocked, reset challenge
     memzero(&(flash_wallet->challenge), sizeof(flash_wallet->challenge));
