@@ -81,7 +81,7 @@ extern char *HEX;
 void tasks_update_card_id() {
   switch (flow_level.level_three) {
     case 1: {
-      input_text_init(HEX, ui_text_family_id_hex, 10, DATA_TYPE_TEXT, 8);
+      input_text_init(HEX, 0, ui_text_family_id_hex, 10, DATA_TYPE_TEXT, 8);
     }
 
     break;
