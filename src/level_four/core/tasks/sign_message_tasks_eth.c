@@ -112,8 +112,12 @@ void sign_message_tasks_eth() {
         flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
         break;
       }
-      input_text_init(
-          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE,
+                      26,
+                      ui_text_enter_passphrase,
+                      0,
+                      DATA_TYPE_PASSPHRASE,
+                      64);
 
     } break;
 
@@ -134,7 +138,8 @@ void sign_message_tasks_eth() {
         flow_level.level_three = SIGN_MSG_CHECK_PIN_ETH;
         break;
       }
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
 
     } break;
 

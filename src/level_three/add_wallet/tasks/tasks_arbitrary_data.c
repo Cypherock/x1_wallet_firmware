@@ -107,6 +107,7 @@ void tasks_arbitrary_data() {
   switch (flow_level.level_three) {
     case ARBITRARY_DATA_NAME_INPUT: {
       input_text_init(WALLET_NAME_CHARSET,
+                      0,
                       ui_text_enter_wallet_name,
                       2,
                       DATA_TYPE_TEXT,
@@ -141,11 +142,13 @@ void tasks_arbitrary_data() {
     } break;
 
     case ARBITRARY_DATA_PIN_INPUT: {
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case ARBITRARY_DATA_PIN_CONFIRM: {
-      input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case ARBITRARY_DATA_ENTER_DATA_INSTRUCTION: {
@@ -155,7 +158,7 @@ void tasks_arbitrary_data() {
 
     case ARBITRARY_DATA_ENTER_DATA: {
       input_text_init(
-          PASSPHRASE, ui_text_enter_data, 0, DATA_TYPE_PASSPHRASE, 255);
+          PASSPHRASE, 26, ui_text_enter_data, 0, DATA_TYPE_PASSPHRASE, 255);
     } break;
 
     case ARBITRARY_DATA_CONFIRM_DATA: {

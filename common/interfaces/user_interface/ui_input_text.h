@@ -76,6 +76,7 @@ struct Input_Text_Object {
  * @brief Initialize and create input text UI
  *
  * @param input_list Input list of characters
+ * @param initial_input_index The character to point to when initializing ui
  * @param input_text_ptr Pointer to buffer, where the user input will be
  * populated by this API. Temporarily, if this pointer is NULL, then the global
  * buffer flow_level.screen_input.input_text is filled up.
@@ -86,6 +87,7 @@ struct Input_Text_Object {
  * size, buffer size should be greater than this to accomodate max text)
  */
 void ui_input_text(const char *input_list,
+                   uint8_t initial_input_index,
                    char *input_text_ptr,
                    uint8_t input_text_buffer_size,
                    const char *initial_heading,
@@ -101,6 +103,7 @@ void ui_input_text(const char *input_list,
  * Please use ui_input_text instead.
  *
  * @param input_list Input list of characters
+ * @param initial_input_index The character to point to when initializing ui
  * @param initial_heading Input heading text
  * @param min_input_size Mininum input text size
  * @param data_type data type PASSWORD, PASSPHRASE or TEXT
@@ -116,6 +119,7 @@ void ui_input_text(const char *input_list,
  * @note
  */
 void input_text_init(const char *input_list,
+                     uint8_t initial_input_index,
                      const char *initial_heading,
                      uint8_t min_input_size,
                      INPUT_DATA_TYPE data_type,
