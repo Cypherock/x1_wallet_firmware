@@ -110,7 +110,7 @@ static bool get_pin_input() {
   memzero(&wallet_credential_data, sizeof(wallet_credential_data));
   memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
 
-  input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+  input_text_init(ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
   if (0 == get_state_on_input_scr(0, 1, 2)) {
     sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
                strnlen(flow_level.screen_input.input_text,
