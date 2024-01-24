@@ -177,6 +177,7 @@ static bool sync_wallets_in_flash(const wallet_list_t *wallet_list,
     // Record card number on which the wallet is locked
     if (new_wallet.is_wallet_locked) {
       new_wallet.challenge.card_locked = *tapped_card;
+      memset(new_wallet.challenge.nonce, 0xFF, POW_NONCE_SIZE);
     }
 
     uint32_t flash_index = MAX_WALLETS_ALLOWED;
