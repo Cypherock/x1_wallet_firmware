@@ -6,14 +6,14 @@ usage () {
 }
 
 validate_name () {
-    if ! [[ "$FIRMWARE_TYPE" =~ ^Main|Initial$ ]]; then
+    if ! [[ "$FIRMWARE_TYPE" =~ ^(Main|Initial)$ ]]; then
         echo -e "Incorrect firmware ($FIRMWARE_TYPE) selected for build\n"
         usage
     fi
 }
 
 validate_platform () {
-    if ! [[ "$BUILD_PLATFORM" =~ ^Device|Simulator$ ]]; then
+    if ! [[ "$BUILD_PLATFORM" =~ ^(Device|Simulator)$ ]]; then
         echo -e "Incorrect platform ($BUILD_PLATFORM) selected for build\n"
         usage
     fi
@@ -22,8 +22,8 @@ validate_platform () {
 set -e
 while getopts 'f:p:' flag; do
   case "${flag}" in
-    f) FIRMWARE_TYPE=${OPTARG^} ;;
-    p) BUILD_PLATFORM=${OPTARG^} ;;
+    f) FIRMWARE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+    p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
     *) usage ;;
   esac
 done
