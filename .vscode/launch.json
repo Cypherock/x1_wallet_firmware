@@ -7,7 +7,7 @@
 
         {
             "name": "Simulator Debug",
-            "type": "cdbg",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/bin/Cypherock_Simulator",
             "args": [],
@@ -23,7 +23,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "buildsimulator"
+            "preLaunchTask": "build-simulator"
         },
         {
             "name": "Main Debug [Launch]",
@@ -45,37 +45,6 @@
             "name": "Main Debug [Attach]",
             "cwd": "${workspaceRoot}",
             "executable": "build/Cypherock-Main.elf",
-            "request": "attach",
-            "type": "cortex-debug",
-            "servertype": "openocd",
-            "device": "STM32L486RGTx",
-            "configFiles": [
-                "interface/stlink.cfg",
-                "target/stm32l4x.cfg"
-            ],
-            "svdFile": "STM32L4x6.svd",
-        },
-
-        {
-            "name": "Initial Debug [Launch]",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Initial.elf",
-            "request": "launch",
-            "type": "cortex-debug",
-            "servertype": "openocd",
-            "device": "STM32L486RGTx",
-            "configFiles": [
-                "interface/stlink.cfg",
-                "target/stm32l4x.cfg"
-            ],
-            "svdFile": "STM32L4x6.svd",
-            "preLaunchTask": "build-initial-device",
-            "postLaunchCommands": ["break main"],
-        },
-        {
-            "name": "Initial Debug [Attach]",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Initial.elf",
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "openocd",
