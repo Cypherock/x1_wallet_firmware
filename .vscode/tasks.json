@@ -1,130 +1,34 @@
 {
+    "options": {
+        "cwd": "${workspaceFolder}",
+    },
     "tasks": [
         {
-            "label": "config-main-simulator",
+            "label": "build-simulator",
             "type": "shell",
-            "command": "cmake",
+            "command": "utilities/build.sh",
             "args": [
-                "..",
-                "-DDEV_SWITCH=OFF",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_BUILD_PLATFORM=Simulator",
-                "-DFIRMWARE_TYPE=Main",
-                "-GNinja"
+                "-tdebug",
+                "-fmain",
+                "-psimulator",
             ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "group": "none"
-        },
-        {
-            "label": "build-main-simulator",
-            "command": "ninja",
-            "args": [
-                "-j"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": ["config-main-simulator"],
             "group": "build"
         },
 
         {
-            "label": "config-initial-simulator",
-            "type": "shell",
-            "command": "cmake",
+            "label": "build-device",
+        "type": "shell",
+            "command": "utilities/build.sh",
             "args": [
-                "..",
-                "-DDEV_SWITCH=OFF",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_BUILD_PLATFORM=Simulator",
-                "-DFIRMWARE_TYPE=Initial",
-                "-GNinja"
+                "-tdebug",
+                "-fmain",
+                "-pdevice",
             ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "group": "none"
-        },
-        {
-            "label": "build-initial-simulator",
-            "command": "ninja",
-            "args": [
-                "-j"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": ["config-initial-simulator"],
-            "group": "build"
-        },
-
-        {
-            "label": "config-main-device",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "..",
-                "-DDEV_SWITCH=OFF",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_BUILD_PLATFORM=Device",
-                "-DFIRMWARE_TYPE=Main",
-                "-GNinja"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "group": "none"
-        },
-        {
-            "label": "build-main-device",
-            "command": "ninja",
-            "args": [
-                "-j8"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": ["config-main-device"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
         },
-
-        {
-            "label": "config-initial-device",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "..",
-                "-DDEV_SWITCH=OFF",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_BUILD_PLATFORM=Device",
-                "-DFIRMWARE_TYPE=Initial",
-                "-GNinja"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "group": "none"
-        },
-        {
-            "label": "build-initial-device",
-            "command": "ninja",
-            "args": [
-                "-j8"
-            ],
-            "options": {
-                "cwd": "${workspaceRoot}/build"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": ["config-initial-device"]
-        }
     ],
     "version": "2.0.0"
 }
