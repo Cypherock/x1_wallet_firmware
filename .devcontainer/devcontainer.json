@@ -1,0 +1,32 @@
+{
+  "name": "X1Vault",
+  "dockerFile": "./Dockerfile",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "eamodio.gitlens",
+        "marus25.cortex-debug",
+        "mcu-debug.debug-tracker-vscode",
+        "mcu-debug.memory-view",
+        "mcu-debug.peripheral-viewer",
+        "mcu-debug.rtos-views",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "twxs.cmake"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.associations": {
+            "*.html": "html",
+            "*.c": "c",
+            "*.h": "c",
+            "*.ld": "c",
+            "*.cmake": "cmake",
+            "CMakeLists.txt": "cmake"
+        }
+      }
+    }
+  },
+  "postCreateCommand": "echo \"source /usr/share/bash-completion/completions/git\" >> ~/.bashrc",
+  "postStartCommand": "utilities/install-hooks.sh"
+}
