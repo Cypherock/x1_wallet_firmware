@@ -112,6 +112,10 @@ if [ "${BUILD_TOOL}" = "" ]; then
     exit 1;
 fi
 
+if [[ "${clean_flag}" = "true" ]]; then
+  rm -rf "${ACTIVE_ROOT_DIR}/generated/proto"
+fi
+
 "${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
             -DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}"            \
             -DSIGN_BINARY=ON                                    \
