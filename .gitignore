@@ -17,3 +17,5 @@ html
 private_key*.?
 *.pb.*
 generated
+.venv
+venv
