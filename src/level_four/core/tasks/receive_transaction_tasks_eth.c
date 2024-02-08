@@ -91,8 +91,12 @@ void receive_transaction_tasks_eth() {
         flow_level.level_three = ADD_COINS_VERIFY;
         break;
       }
-      input_text_init(
-          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE,
+                      26,
+                      ui_text_enter_passphrase,
+                      0,
+                      DATA_TYPE_PASSPHRASE,
+                      64);
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_ETH: {
@@ -108,7 +112,8 @@ void receive_transaction_tasks_eth() {
     } break;
 
     case RECV_TXN_ENTER_PIN_ETH: {
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RECV_TXN_TAP_CARD_ETH: {

@@ -120,7 +120,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
         break;
       }
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(
           SYNC_PIN_INPUT, SYNC_EARLY_EXIT, SYNC_TIMED_OUT);
 
