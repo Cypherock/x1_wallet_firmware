@@ -12,21 +12,21 @@ usage () {
 }
 
 validate_name () {
-    if ! [[ "$ACTIVE_TYPE" =~ ^Main|Initial$ ]]; then
+    if ! [[ "$ACTIVE_TYPE" =~ ^(Main|Initial)$ ]]; then
         echo -e "Incorrect firmware ($ACTIVE_TYPE) selected for build\n"
         usage
     fi
 }
 
 validate_platform () {
-    if ! [[ "$BUILD_PLATFORM" =~ ^Device|Simulator$ ]]; then
+    if ! [[ "$BUILD_PLATFORM" =~ ^(Device|Simulator)$ ]]; then
         echo -e "Incorrect platform ($BUILD_PLATFORM) selected for build\n"
         usage
     fi
 }
 
 validate_type () {
-    if ! [[ "$BUILD_TYPE" =~ ^Debug|Release|Dev|Unit_tests$ ]]; then
+    if ! [[ "$BUILD_TYPE" =~ ^(Debug|Release|Dev|Unit_tests)$ ]]; then
         echo -e "Incorrect type ($BUILD_TYPE) selected for build\n"
         usage
     fi
@@ -42,9 +42,9 @@ DEV=OFF
 while getopts 'cf:p:t:' flag; do
   case "${flag}" in
     c) clean_flag="true" ;;
-    f) ACTIVE_TYPE=${OPTARG^} ;;
-    p) BUILD_PLATFORM=${OPTARG^} ;;
-    t) BUILD_TYPE=${OPTARG^} ;;
+    f) ACTIVE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+    p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+    t) BUILD_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
     *) usage ;;
   esac
 done
@@ -110,6 +110,10 @@ fi
 if [ "${BUILD_TOOL}" = "" ]; then
     echo -e "\tNo build tool (make/ninja) installation found. Please install one to continue (or check your 'Path' Environment variable";
     exit 1;
+fi
+
+if [[ "${clean_flag}" = "true" ]]; then
+  rm -rf "${ACTIVE_ROOT_DIR}/generated/proto"
 fi
 
 "${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
