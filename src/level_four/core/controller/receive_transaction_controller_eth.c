@@ -137,7 +137,7 @@ void receive_transaction_controller_eth() {
                                      wallet_shamir_data.mnemonic_shares[1]);
       memcpy(wallet_shamir_data.share_encryption_data[1],
              wallet_shamir_data.share_encryption_data[0],
-             NONCE_SIZE + WALLET_MAC_SIZE);
+             PADDED_NONCE_SIZE + WALLET_MAC_SIZE);
       flow_level.level_three = RECV_TXN_DERIVE_ADD_SCREEN_ETH;
       break;
 
@@ -175,13 +175,6 @@ void receive_transaction_controller_eth() {
           &node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index));
       hdnode_private_ckd(
           &node, BYTE_ARRAY_TO_UINT32(receive_transaction_data.account_index));
-
-      uint32_t version;
-      uint8_t address_version;
-      get_version(BYTE_ARRAY_TO_UINT32(receive_transaction_data.purpose),
-                  BYTE_ARRAY_TO_UINT32(receive_transaction_data.coin_index),
-                  &address_version,
-                  &version);
 
       hdnode_fill_public_key(&node);
 

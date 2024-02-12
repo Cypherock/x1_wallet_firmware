@@ -236,15 +236,7 @@ void send_transaction_tasks_eth() {
 
       instruction_scr_destructor();
       eth_get_fee_string(&eth_unsigned_txn_ptr, fee, sizeof(fee), ETH_DECIMAL);
-      snprintf(
-          display,
-          sizeof(display),
-          UI_TEXT_SEND_TXN_FEE,
-          fee,
-          get_coin_symbol(
-              U32_READ_BE_ARRAY(
-                  var_send_transaction_data.transaction_metadata.coin_index),
-              var_send_transaction_data.transaction_metadata.network_chain_id));
+      snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, "");
       confirm_scr_init(display);
     } break;
 
@@ -268,8 +260,12 @@ void send_transaction_tasks_eth() {
         flow_level.level_three = SEND_TXN_VERIFY_RECEIPT_ADDRESS_SEND_CMD_ETH;
         break;
       }
-      input_text_init(
-          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE,
+                      26,
+                      ui_text_enter_passphrase,
+                      0,
+                      DATA_TYPE_PASSPHRASE,
+                      64);
 
     } break;
 
@@ -290,7 +286,8 @@ void send_transaction_tasks_eth() {
         flow_level.level_three = SEND_TXN_CHECK_PIN_ETH;
         break;
       }
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
 
     } break;
 

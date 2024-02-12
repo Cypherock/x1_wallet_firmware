@@ -31,10 +31,10 @@ fi
 
 # Check if subject length is in allowed range
 # Limit subject length to 50 (hard limit of 72)
-if [[ ${#MESSAGE} > $MAX_LENGTH ]]; then
+if [[ ${#MESSAGE} -gt $MAX_LENGTH ]]; then
     echo -e "\033[31mError:\033[0m Commit subject was ${#MESSAGE} characters long, but should be at most $MAX_LENGTH characters"
     exit 1
-elif [[ ${#MESSAGE} > $IDEAL_LENGTH ]]; then
+elif [[ ${#MESSAGE} -gt $IDEAL_LENGTH ]]; then
     echo -e "\033[33mWARNING:\033[0m Commit subject was ${#MESSAGE} characters long. Ideal length is <=$IDEAL_LENGTH"
 fi
 
@@ -61,7 +61,7 @@ fi
 # 'formatted'. If the 'filtered' subject matches the 'formatted' subject, then
 # the checks is pass otherwise failed
 input=$(echo $SUBJECT | perl -pe "s/\".*?\"//g; s/\`.*?\`//g; s/'.*?'//g;")
-formatted=$(lc=${input,,}; echo "${lc^}")
+formatted=$(echo "${input}"| awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}')
 
 # Check if the subject is non-empty and correctly formatted
 if ! [[ ! -z "$SUBJECT" && "$input" == "$formatted" ]]; then

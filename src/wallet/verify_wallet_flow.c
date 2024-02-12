@@ -140,7 +140,8 @@ verify_wallet_state_e verify_wallet_state_handler(
         break;
       }
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_INPUT, EARLY_EXIT, TIMED_OUT);
 
       if (PIN_INPUT != next_state) {

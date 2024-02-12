@@ -296,7 +296,7 @@ static bool safe_to_delete_wallet_share(wallet_list_t *wallets_in_vault,
  *****************************************************************************/
 void factory_reset(void) {
   wallet_list_t wallets_in_vault = {0};
-  uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
+  uint8_t valid_wallets = get_filled_wallet_meta_data_list(&wallets_in_vault);
 
   if (0 < valid_wallets &&
       !core_scroll_page(NULL, ui_text_factory_reset_instruction, NULL)) {
@@ -332,7 +332,7 @@ void factory_reset(void) {
 
 void clear_device_data(void) {
   wallet_list_t wallets_in_vault = {0};
-  uint8_t valid_wallets = get_valid_wallet_meta_data_list(&wallets_in_vault);
+  uint8_t valid_wallets = get_filled_wallet_meta_data_list(&wallets_in_vault);
 
   if (0 < valid_wallets &&
       !core_scroll_page(NULL, ui_text_clear_device_data_instruction, NULL)) {

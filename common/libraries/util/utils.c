@@ -70,6 +70,7 @@
 #include "cryptoauthlib.h"
 #include "curves.h"
 #include "logger.h"
+#include "lv_font.h"
 #include "sha2.h"
 #include "wallet.h"
 
@@ -371,6 +372,38 @@ void der_to_sig(const uint8_t *der, uint8_t *sig) {
 }
 
 /**
+ * @brief The function writes the specified number of bytes in escaped string
+ * format.
+ * @details The escape format returned by the function of the form '\xhh'. This
+ * is done for each byte that is specified in the input buffer. Each byte is
+ * encoded as set of 4-character strings meaning the output buffer is assumed to
+ * be of length `4*count + 1`. The function always ensures that the result
+ * buffer is NULL terminated.
+ *
+ * @param bytes       Pointer to the uint8_t buffer containing bytes to be
+ * escaped
+ * @param count       Number of bytes to be escaped from the specifed input
+ * buffer
+ * @param escaped_str Output buffer for storing the escaped string result
+ */
+static void escape_bytes(const uint8_t *bytes,
+                         uint8_t count,
+                         char *escaped_str) {
+  uint8_t str_off = 0;
+  uint8_t byte_idx = 0;
+
+  while (byte_idx < count) {
+    uint8_t byte = bytes[byte_idx++];
+
+    escaped_str[str_off++] = '\\';
+    escaped_str[str_off++] = 'x';
+    escaped_str[str_off++] = map[(byte & 0xf0) >> 4];
+    escaped_str[str_off++] = map[byte & 0x0f];
+  }
+  escaped_str[str_off] = '\0';
+}
+
+/**
  * @brief hex char to integer.
  *
  * @param ch char
@@ -381,7 +414,7 @@ static int hexchartoint(const uint8_t ch) {
     return ch - '0';
   else if (ch >= 'a' && ch <= 'f')
     return ch - 'a' + 10;
-  else if (ch >= 'C' && ch <= 'F') {
+  else if (ch >= 'A' && ch <= 'F') {
     return ch - 'A' + 10;
   }
   return '\0';
@@ -558,4 +591,69 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
   }
 
   return returnCode;
+}
+
+uint8_t string_to_escaped_string(const char *input,
+                                 char *escaped_string,
+                                 size_t out_len) {
+  uint32_t in_idx = 0;
+  uint32_t letter = 0;
+  uint32_t out_idx = 0;
+  lv_font_glyph_dsc_t g;
+  bool non_printable = false;
+  bool invalid_encoding = false;
+  const lv_font_t *font_p = LV_FONT_DEFAULT;
+  uint8_t zero_bytes[7] = {0, 0, 0, 0, 0, 0, 0};
+
+  if (NULL == escaped_string || NULL == input || 0 == out_len ||
+      input == escaped_string) {
+    return 1;
+  }
+
+  // ensure result is always NULL terminated
+  memset(escaped_string, 0, out_len);
+
+  while (input[in_idx] != '\0') {
+    size_t old_idx = in_idx;
+
+    // read the unicode character; expects 0 if invalid encoding
+    letter = lv_txt_encoded_next(input, &in_idx);
+    // try to get the glyph descriptor for this unicode character
+    bool g_ret = lv_font_get_glyph_dsc(font_p, &g, letter, '\0');
+    uint8_t bytes_read = in_idx - old_idx;
+
+    if (0 != letter && true == g_ret) {
+      // the glyph exists; keep the encoded character as it is
+      if ((out_idx + bytes_read + 1) >= out_len)
+        return 5;
+      memcpy(&escaped_string[out_idx], &input[old_idx], bytes_read);
+      out_idx += bytes_read;
+    } else if (0 != letter && false == g_ret) {
+      // the glyph does not exist; escape the utf-8 bytes
+      if ((out_idx + 4 * bytes_read + 1) >= out_len)
+        return 5;
+      escape_bytes(
+          (uint8_t *)&input[old_idx], bytes_read, &escaped_string[out_idx]);
+      out_idx += (4 * bytes_read);
+      non_printable = true;
+    } else {
+      // invalid utf-8 encoding detected; escape each byte with "\x00" string
+      if ((out_idx + 4 * bytes_read + 1) >= out_len)
+        return 5;
+      escape_bytes(zero_bytes, bytes_read, &escaped_string[out_idx]);
+      out_idx += (4 * bytes_read);
+      invalid_encoding = true;
+    }
+  }
+
+  escaped_string[out_idx] = '\0';
+  if (non_printable && invalid_encoding) {
+    return 4;
+  } else if (invalid_encoding) {
+    return 3;
+  } else if (non_printable) {
+    return 2;
+  } else {
+    return 0;
+  }
 }

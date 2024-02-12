@@ -217,7 +217,7 @@ uint16_t create_apdu_add_wallet(const struct Wallet *wallet, uint8_t apdu[]) {
   fill_tlv(apdu,
            &index,
            INS_WALLET_SHARE,
-           BLOCK_SIZE + NONCE_SIZE + WALLET_MAC_SIZE,
+           BLOCK_SIZE + PADDED_NONCE_SIZE + WALLET_MAC_SIZE,
            wallet);
   fill_tlv(apdu, &index, INS_STRUCTURE_CHECKSUM, CHECKSUM_SIZE, wallet);
   fill_tlv(apdu, &index, INS_MIN_NO_OF_SHARES, 1, wallet);

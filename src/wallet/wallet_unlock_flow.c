@@ -149,7 +149,7 @@ static wallet_unlock_state_e wallet_unlock_handler(
  *****************************************************************************/
 
 static bool check_default_nonce(const uint8_t *nonce) {
-  for (size_t i = 0; i < NONCE_SIZE; i++) {
+  for (size_t i = 0; i < POW_NONCE_SIZE; i++) {
     if (nonce[i] != DEFAULT_VALUE_IN_FLASH) {
       return false;
     }
@@ -237,7 +237,8 @@ static wallet_unlock_state_e wallet_unlock_handler(
         break;
       }
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(WALLET_UNLOCK_PIN_INPUT,
                                           WALLET_UNLOCK_EARLY_EXIT,
                                           WALLET_UNLOCK_TIMED_OUT);

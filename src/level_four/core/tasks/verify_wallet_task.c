@@ -85,7 +85,8 @@ void verify_wallet_tasks() {
       break;
 
     case VERIFY_WALLET_PIN_INPUT:
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       break;
 
     case VERIFY_WALLET_TAP_CARDS_FLOW:

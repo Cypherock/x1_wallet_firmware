@@ -141,8 +141,12 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 
   switch (current_state) {
     case NAME_INPUT: {
-      input_text_init(
-          ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
+      input_text_init(WALLET_NAME_CHARSET,
+                      0,
+                      ui_text_enter_wallet_name,
+                      2,
+                      DATA_TYPE_TEXT,
+                      15);
       next_state = get_state_on_input_scr(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
 
       if (NAME_INPUT != next_state) {
@@ -224,7 +228,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       WALLET_SET_PIN(wallet_for_flash.wallet_info);
       WALLET_SET_PIN(wallet.wallet_info);
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_INPUT, PIN_SELECT, TIMED_OUT);
 
       if (PIN_INPUT != next_state) {
@@ -245,7 +250,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
     }
 
     case PIN_CONFIRM: {
-      input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_CONFIRM, PIN_SELECT, TIMED_OUT);
 
       if (PIN_CONFIRM != next_state) {
@@ -326,8 +332,12 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
                         wallet.total_number_of_shares,
                         wallet.minimum_number_of_shares,
                         wallet_shamir_data.mnemonic_shares);
-      if (WALLET_IS_PIN_SET(wallet.wallet_info))
+
+      derive_wallet_nonce(wallet_shamir_data.share_encryption_data);
+
+      if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         encrypt_shares();
+      }
       derive_beneficiary_key(
           wallet.beneficiary_key, wallet.iv_for_beneficiary_key, mnemo);
       derive_wallet_key(wallet.key, mnemo);
@@ -343,7 +353,10 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       uint32_t index;
       wallet_for_flash.state = DEFAULT_VALUE_IN_FLASH;
       add_wallet_share_to_sec_flash(
-          &wallet_for_flash, &index, wallet_shamir_data.mnemonic_shares[4]);
+          &wallet_for_flash,
+          &index,
+          wallet_shamir_data.mnemonic_shares[4],
+          wallet_shamir_data.share_encryption_data[4]);
       next_state = TAP_CARD_FLOW;
       break;
     }

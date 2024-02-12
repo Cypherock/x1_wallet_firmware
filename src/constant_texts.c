@@ -333,7 +333,7 @@ const char *ui_text_card_null_pointer_exception =
 const char *ui_text_card_crypto_exception =
     "Operation failed on card (Crypto Exp)";
 const char *ui_text_card_invalid_apdu_length =
-    "Operation failed on card (APDU len exp)";
+    "Wallet with same name or seed already exists";
 const char *ui_text_card_invalid_tag_in_apdu =
     "Operation failed on card (Tag exp)";
 const char *ui_text_unknown_error_contact_support =
@@ -478,6 +478,7 @@ const char *ui_text_device_and_card_not_paired =
     "This device & card are not paired";
 const char *ui_text_security_conditions_not_met =
     "Security conditions not met!";
+const char *ui_text_retry_or_repair = "Retry or re-pair your cards";
 const char *ui_text_process_reset_due_to_inactivity =
     "Operation aborted due to inactivity";
 const char *ui_text_device_already_provisioned = "Device already provisioned";

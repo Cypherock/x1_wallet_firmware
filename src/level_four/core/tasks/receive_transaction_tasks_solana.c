@@ -89,8 +89,12 @@ void receive_transaction_tasks_solana() {
         flow_level.level_three = ADD_COINS_VERIFY;
         break;
       }
-      input_text_init(
-          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE,
+                      26,
+                      ui_text_enter_passphrase,
+                      0,
+                      DATA_TYPE_PASSPHRASE,
+                      64);
     } break;
 
     case RECV_TXN_CONFIRM_PASSPHRASE_SOLANA: {
@@ -106,7 +110,8 @@ void receive_transaction_tasks_solana() {
     } break;
 
     case RECV_TXN_ENTER_PIN_SOLANA: {
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
     } break;
 
     case RECV_TXN_TAP_CARD_SOLANA: {

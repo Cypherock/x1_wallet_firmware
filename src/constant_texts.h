@@ -337,6 +337,7 @@ extern const char *ui_text_incompatible_card_version;
 extern const char *ui_text_card_error_contact_support;
 extern const char *ui_text_device_and_card_not_paired;
 extern const char *ui_text_security_conditions_not_met;
+extern const char *ui_text_retry_or_repair;
 extern const char *ui_text_process_reset_due_to_inactivity;
 extern const char *ui_text_device_already_provisioned;
 extern const char *ui_text_check_cysync_app;

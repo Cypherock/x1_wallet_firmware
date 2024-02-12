@@ -4,7 +4,7 @@
 #include "coin_utils.h"
 #include "dash_app.h"
 #include "doge_app.h"
-#include "eth.h"
+#include "evm_helpers.h"
 #include "ltc_app.h"
 #include "near.h"
 #include "near_helpers.h"
@@ -78,12 +78,6 @@ const uint32_t paths[][7] = {
      0x80000000,
      0x8fffffff},    // sol  invalid
 
-    // account 0
-    {3, 1, NON_SEGWIT, ETHEREUM, 0x80000000},    // eth  valid
-    // account 0x7fffffff
-    {3, 1, NON_SEGWIT, ETHEREUM, 0xffffffff},    // eth  valid
-    // non-hardened
-    {3, 0, NON_SEGWIT, ETHEREUM, 0x00000000},    // eth  invalid
     // wrong depth for xpub
     {5,
      0,
@@ -92,8 +86,6 @@ const uint32_t paths[][7] = {
      0x80000000,
      0x80000000,
      0xffffffff},    // eth  invalid
-    // wrong purpose-id
-    {3, 0, NATIVE_SEGWIT, ETHEREUM, 0x80000000},    // eth  invalid
     // wrong depth and purpose-id
     {5,
      0,
@@ -115,7 +107,6 @@ const uint32_t paths[][7] = {
     {3, 1, NATIVE_SEGWIT, BITCOIN, 0x80000000},    // btc  valid
     {3, 1, NATIVE_SEGWIT, BITCOIN, 0x8fffffff},    // btc  valid
     {3, 1, NON_SEGWIT, BITCOIN, 0x80000000},       // btc  valid
-    {3, 1, NON_SEGWIT, BTC_TEST, 0x8fffffff},      // btct valid
     {3, 1, NON_SEGWIT, DOGE, 0x80000000},          // doge valid
     {3, 1, NON_SEGWIT, DOGE, 0x8fffffff},          // doge  valid
     {3, 1, NON_SEGWIT, DASH, 0x8fffffff},          // dash valid
@@ -191,8 +182,11 @@ TEST(xpub, derivation_path_tests) {
       case SOLANA:
         status = solana_derivation_path_guard(&paths[i][2], depth);
         break;
+      case ETHEREUM:
+        status = evm_derivation_path_guard(&paths[i][2], depth);
+        break;
       default:
-        status = verify_xpub_derivation_path(&paths[i][2], depth);
+        status = false;
         break;
     }
 

@@ -87,14 +87,17 @@ typedef struct Flash_Wallet {
   uint8_t wallet_name[NAME_SIZE];
   uint8_t wallet_info;
   uint8_t
-      wallet_share_with_mac_and_nonce[BLOCK_SIZE + NONCE_SIZE +
+      wallet_share_with_mac_and_nonce[BLOCK_SIZE + PADDED_NONCE_SIZE +
                                       WALLET_MAC_SIZE];    // does not include
                                                            // MAC and nonce
 
   uint8_t state;    // if DEFAULT_VALUE_IN_FLASH then not valid. If equal to
                     // VALID_WALLET then valid
-  uint8_t cards_states;        // ith from right ((cards_states>>i)&1) bit tells
-                               // whether card (i+1) has the share or not.
+  uint8_t cards_states;    // ith bit from right ((cards_states>>i)&1) bit tells
+                           // whether card (i+1) has the share or not.
+                           // Attempt state is also recorded on the left nibble,
+                           // recorded before card write operation is attempted
+                           // and cleared when successful.
   uint8_t is_wallet_locked;    // 1 if wallet if locked
   Flash_Pow challenge;
 } Flash_Wallet;

@@ -56,6 +56,7 @@
  ******************************************************************************
  */
 
+#include "lv_symbol_def.h"
 #include "unity_fixture.h"
 #include "utils.h"
 
@@ -114,4 +115,109 @@ TEST(utils_tests, der_to_sig_2) {
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
       expected_signature, signature, sizeof(expected_signature));
+}
+
+TEST(utils_tests, escape_string_non_print_utf) {
+  // message: "Pound symbol (£)"
+  char utf_8_string[] = "Pound symbol (\xc2\xa3)";
+  const char expected_string[] = "Pound symbol (\\xc2\\xa3)";
+  char actual_string[300] = "";
+
+  uint8_t result = string_to_escaped_string(
+      utf_8_string, actual_string, sizeof(actual_string));
+  TEST_ASSERT_EQUAL_UINT8(2, result);
+  TEST_ASSERT_EQUAL_STRING(expected_string, actual_string);
+}
+
+TEST(utils_tests, escape_string_symbol) {
+  // message: "Backspace symbol ()"
+  char utf_8_string[] = "Backspace symbol (" MY_BACKSPACE ")";
+  const char expected_string[] = "Backspace symbol (" MY_BACKSPACE ")";
+  char actual_string[300] = "";
+
+  uint8_t result = string_to_escaped_string(
+      utf_8_string, actual_string, sizeof(actual_string));
+  TEST_ASSERT_EQUAL_UINT8(0, result);
+  TEST_ASSERT_EQUAL_STRING(expected_string, actual_string);
+}
+
+TEST(utils_tests, escape_string_ascii) {
+  // message: "ASCII sample text"
+  char utf_8_string[] = "ASCII sample text";
+  const char expected_string[] = "ASCII sample text";
+  char actual_string[300] = "";
+
+  uint8_t result = string_to_escaped_string(
+      utf_8_string, actual_string, sizeof(actual_string));
+  TEST_ASSERT_EQUAL_UINT8(0, result);
+  TEST_ASSERT_EQUAL_STRING(expected_string, actual_string);
+}
+
+// Mix of valid & invalid utf-8 encodings. Should be escaped as U+0
+TEST(utils_tests, escape_string_invalid_non_print_utf) {
+  // message: "<Mix of valid & invalid utf-8 encodings>"
+  char utf_8_string[] =
+      "a"                   // 'Valid ASCII'
+      "\xc3\xb1"            // 'Valid 2 Octet Sequence'
+      "\xc3\x28"            // 'Invalid 2 Octet Sequence'
+      "\xa0\xa1"            // 'Invalid Sequence Identifier'
+      "\xe2\x82\xa1"        // 'Valid 3 Octet Sequence'
+      "\xe2\x28\xa1"        // 'Invalid 3 Octet Sequence (in 2nd Octet)'
+      "\xe2\x82\x28"        // 'Invalid 3 Octet Sequence (in 3rd Octet)'
+      "\xf0\x90\x8c\xbc"    // 'Valid 4 Octet Sequence'
+      "\xf0\x28\x8c\xbc"    // 'Invalid 4 Octet Sequence (in 2nd Octet)'
+      "\xf0\x90\x28\xbc"    // 'Invalid 4 Octet Sequence (in 3rd Octet)'
+      "\xf0\x90\x8c\x28"    // 'Invalid 4 Octet Sequence (in 4th Octet)'
+      ;
+  const char expected_string[] =
+      "a"                       // 'Valid ASCII'
+      "\\xc3\\xb1"              // 'Valid 2 Octet Sequence'
+      "\\x00("                  // 'Invalid 2 Octet Sequence'
+      "\\x00\\x00"              // 'Invalid Sequence Identifier'
+      "\\xe2\\x82\\xa1"         // 'Valid 3 Octet Sequence'
+      "\\x00(\\x00"             // 'Invalid 3 Octet Sequence (in 2nd Octet)'
+      "\\x00\\x00("             // 'Invalid 3 Octet Sequence (in 3rd Octet)'
+      "\\xf0\\x90\\x8c\\xbc"    // 'Valid 4 Octet Sequence'
+      "\\x00(\\x00\\x00"        // 'Invalid 4 Octet Sequence (in 2nd Octet)'
+      "\\x00\\x00(\\x00"        // 'Invalid 4 Octet Sequence (in 3rd Octet)'
+      "\\x00\\x00\\x00("        // 'Invalid 4 Octet Sequence (in 4th Octet)'
+      ;
+  char actual_string[300] = "";
+
+  uint8_t result = string_to_escaped_string(
+      utf_8_string, actual_string, sizeof(actual_string));
+  TEST_ASSERT_EQUAL_UINT8(4, result);
+  TEST_ASSERT_EQUAL_STRING(expected_string, actual_string);
+}
+
+// short result buffer
+TEST(utils_tests, escape_string_short_out_buff) {
+  // message: "Pound symbol (£)"
+  char utf_8_string[150] = "";
+  const char expected_string[] = "Pound symbol (\\xc2\\xa3)";
+  char actual_string[24] = "";
+
+  hex_string_to_byte_array(
+      "506f756e642073796d626f6c2028c2a329", 34, (uint8_t *)utf_8_string);
+
+  uint8_t result = string_to_escaped_string(
+      utf_8_string, actual_string, sizeof(actual_string));
+  TEST_ASSERT_EQUAL_UINT8(5, result);
+}
+
+// invalid arguments
+TEST(utils_tests, escape_string_invalid_args) {
+  char utf_8_string[150] = "";
+  uint8_t result = 0;
+
+  result = string_to_escaped_string(NULL, utf_8_string, 8);
+  TEST_ASSERT_EQUAL_UINT8(1, result);
+  result = string_to_escaped_string(utf_8_string, NULL, 8);
+  TEST_ASSERT_EQUAL_UINT8(1, result);
+  result = string_to_escaped_string(utf_8_string, utf_8_string, 0);
+  TEST_ASSERT_EQUAL_UINT8(1, result);
+  result = string_to_escaped_string(NULL, NULL, 0);
+  TEST_ASSERT_EQUAL_UINT8(1, result);
+  result = string_to_escaped_string(utf_8_string, utf_8_string, 8);
+  TEST_ASSERT_EQUAL_UINT8(1, result);
 }

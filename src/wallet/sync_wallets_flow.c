@@ -120,7 +120,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
         break;
       }
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(
           SYNC_PIN_INPUT, SYNC_EARLY_EXIT, SYNC_TIMED_OUT);
 
@@ -164,7 +165,13 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
     case SYNC_RECONSTRUCT_SEED: {
       delay_scr_init(ui_text_processing, DELAY_TIME);
 
-      uint8_t temp_password_hash[SHA256_DIGEST_LENGTH];
+      uint8_t temp_password_hash[SHA256_DIGEST_LENGTH] = {0};
+      uint8_t wallet_nonce[PADDED_NONCE_SIZE] = {0};
+
+      memcpy(wallet_nonce,
+             wallet_shamir_data.share_encryption_data[0],
+             PADDED_NONCE_SIZE);
+
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         memcpy(temp_password_hash,
                wallet_credential_data.password_single_hash,
@@ -181,8 +188,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
 
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         memcpy(wallet_shamir_data.share_encryption_data[4],
-               wallet_shamir_data.share_encryption_data[0],
-               NONCE_SIZE + WALLET_MAC_SIZE);
+               wallet_nonce,
+               PADDED_NONCE_SIZE);
         memcpy(wallet_credential_data.password_single_hash,
                temp_password_hash,
                SHA256_DIGEST_LENGTH);
@@ -198,8 +205,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
                         (uint8_t *)(&wallet_index));
       get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
       memcpy(&wallet_for_flash, flash_wallet, sizeof(Flash_Wallet));
-      put_wallet_share_sec_flash(wallet_index,
-                                 wallet_shamir_data.mnemonic_shares[4]);
+      put_wallet_share_sec_flash(
+          wallet_index, wallet_shamir_data.mnemonic_shares[4], wallet_nonce);
 
       next_state = SYNC_COMPLETED;
       break;

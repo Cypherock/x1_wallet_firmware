@@ -44,8 +44,15 @@ typedef struct card_delete_share_cfg {
  * error cases and returns an appropriate error code. For special case such as
  * incorrect pin, it indicates the no. of attempts left.
  *
- * @param config A pointer to the configuration of the card delete operation.
+ * @param delete_config A pointer to the configuration of the card delete
+ * operation.
+ * @param handle_wallet_deleted_from_card Function pointer that needs to be
+ * called to handle successful deletion of wallet on a card. The function takes
+ * the delete_config as an argument.
+ *
  * @return A card_error_type_e value representing the result of the operation.
  */
-card_error_type_e card_delete_share(card_delete_share_cfg_t *config);
+card_error_type_e card_delete_share(
+    card_delete_share_cfg_t *delete_config,
+    void (*handle_wallet_deleted_from_card)(card_delete_share_cfg_t *));
 #endif

@@ -7,13 +7,21 @@
         "CMAKE_BUILD_PLATFORM":"Device",
         "FIRMWARE_TYPE":"Main",
     },
+    "terminal.integrated.env.linux": {
+        "PATH": "${workspaceFolder}/venv/bin:${env:PATH}",
+    },
+    "terminal.integrated.env.osx": {
+        "PATH": "${workspaceFolder}/venv/bin:${env:PATH}",
+    },
+    "terminal.integrated.env.windows": {
+        "PATH": "${workspaceFolder}/venv/Scripts:${workspaceFolder}/venv/bin:${env:PATH}",
+    },
     "files.associations": {
         "*.html": "html",
-        "usbd_cdc_if.h": "c",
-        "lv_port_fs.h": "c",
-        "rand.h": "c",
-        "atca_helpers.h": "c",
-        "atca_crypto_sw_sha2.h": "c",
-        "ui_instruction.h": "c"
+        "*.c": "c",
+        "*.h": "c",
+        "*.ld": "c",
+        "*.cmake": "cmake",
+        "CMakeLists.txt": "cmake",
     }
 }

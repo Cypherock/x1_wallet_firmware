@@ -1,8 +1,7 @@
 /**
- * @file    delete_from_cards_controller.c
+ * @file    card_delete_share.c
  * @author  Cypherock X1 Team
- * @brief   Delete from cards controller.
- *          This file contains the implementation of the functions for deleting
+ * @brief   This file contains the implementation of the functions for deleting
  *          wallets from cards.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
@@ -86,17 +85,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * The function `handle_wallet_deleted_from_card` deletes a wallet from a card.
- *
- * @param delete_config A pointer to a structure of type
- * `card_delete_share_cfg_t`, which contains the following members:
- *
- * @return void, which means it does not return any value.
- */
-static void handle_wallet_deleted_from_card(
-    card_delete_share_cfg_t *delete_config);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -108,30 +96,19 @@ static void handle_wallet_deleted_from_card(
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void handle_wallet_deleted_from_card(
-    card_delete_share_cfg_t *delete_config) {
-  uint8_t flash_wallet_index = 0xFF;
-
-  ASSERT(SUCCESS ==
-         get_index_by_name((const char *)delete_config->wallet->wallet_name,
-                           &flash_wallet_index));
-  ASSERT(SUCCESS == delete_from_kth_card_flash(flash_wallet_index,
-                                               delete_config->card_number));
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-card_error_type_e card_delete_share(card_delete_share_cfg_t *delete_config) {
+card_error_type_e card_delete_share(
+    card_delete_share_cfg_t *delete_config,
+    void (*handle_wallet_deleted_from_card)(card_delete_share_cfg_t *)) {
   card_operation_data_t card_data = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   char heading[50] = "";
 
   snprintf(
       heading, sizeof(heading), UI_TEXT_TAP_CARD, delete_config->card_number);
-  instruction_scr_init(ui_text_place_card_below, heading);
-
   card_data.error_type = CARD_OPERATION_DEFAULT_INVALID;
   card_data.nfc_data.retries = 5;
 

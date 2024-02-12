@@ -216,4 +216,10 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
+  RUN_TEST_CASE(utils_tests, escape_string_non_print_utf);
+  RUN_TEST_CASE(utils_tests, escape_string_symbol);
+  RUN_TEST_CASE(utils_tests, escape_string_ascii);
+  RUN_TEST_CASE(utils_tests, escape_string_invalid_non_print_utf);
+  RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
+  RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
 }
