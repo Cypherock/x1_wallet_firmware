@@ -52,9 +52,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/evm_family/optimism
         apps/evm_family/arbitrum
         apps/near_app
-
         apps/solana_app
         apps/tron_app
+        apps/starknet_app
 
         src/
         src/menu

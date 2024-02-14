@@ -58,7 +58,8 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/near_app
         apps/solana_app
         apps/tron_app
-        
+        apps/starknet_app
+
         src/
         src/menu
         src/wallet
