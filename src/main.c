@@ -158,7 +158,6 @@ int main(void) {
     proof_of_work_task();
 
 #if USE_SIMULATOR == 1
-    usbsim_continue_loop();
 
 #ifdef SDL_APPLE
     SDL_Event event;

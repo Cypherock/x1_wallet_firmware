@@ -28,6 +28,5 @@ typedef enum {
 
 void SIM_USB_DEVICE_Init();
 void SIM_Transmit_FS(uint8_t *data, uint8_t size);
-void usbsim_continue_loop();
 
 #endif
