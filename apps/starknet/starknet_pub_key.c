@@ -63,6 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bn.h"
 #include "reconstruct_wallet_flow.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
@@ -72,6 +73,7 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -280,23 +282,20 @@ static bool temp_func(const uint32_t *path,
 }
 
 static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
-  uint8_t ord[32] = {0};
-  uint8_t limit[32] = {0};
   uint8_t key[32] = {0};
-  bignum256 strk_limit = {0};
-  bignum256 strk_key = {0};
-  bignum256 stark_order = {0};
+  struct bn strk_limit;
+  struct bn strk_key;
+  struct bn stark_order;
+  char str[65] = "";
 
-  hex_string_to_byte_array(
+  bignum_from_string(
+      &stark_order,
       "0800000000000010FFFFFFFFFFFFFFFFB781126DCAE7B2321E66A241ADC64D2F",
-      64,
-      ord);
-  hex_string_to_byte_array(
+      64);
+  bignum_from_string(
+      &strk_limit,
       "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1",
-      64,
-      limit);
-  bn_read_be(ord, &stark_order);
-  bn_read_be(limit, &strk_limit);
+      64);
 
   SHA256_CTX ctx = {0};
   for (uint8_t itr = 0; itr < 200; itr++) {
@@ -304,18 +303,20 @@ static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
     sha256_Update(&ctx, grind_seed, 32);
 
     // copy iteration
-    uint8_t itr_buf[1] = {itr};
-    sha256_Update(&ctx, itr_buf, 1);
+    sha256_Update(&ctx, &itr, 1);
     sha256_Final(&ctx, key);
-    bn_read_be(key, &strk_key);
-    if (bn_is_less(&strk_key, &strk_limit)) {
-      bn_fast_mod(&strk_key, &stark_order);
-      bn_mod(&strk_key, &stark_order);
-      bn_normalize(&strk_key);
-      bn_write_be(&strk_key, out);
+
+    byte_array_to_hex_string(key, 32, str, 65);
+    bignum_from_string(&strk_key, str, 64);
+    if (bignum_cmp(&strk_key, &strk_limit) == SMALLER) {
+      struct bn f_key = {0};
+      bignum_mod(&strk_key, &stark_order, &f_key);
+      bignum_to_string(&f_key, str, 64);
+      hex_string_to_byte_array(str, 64, out);
       return true;
     }
   }
+  starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
   LOG_CRITICAL("grind 200 failed");
   return false;
 }
