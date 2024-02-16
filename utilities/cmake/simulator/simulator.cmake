@@ -20,7 +20,7 @@ set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
+add_executable(${EXECUTABLE} ${SOURCES} vendor/tiny-bignum/bn.c ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
@@ -82,6 +82,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         src/level_four/factory_reset/
         src/level_four/tap_cards/controller
         src/level_four/tap_cards/tasks
+
+        vendor/tiny-bignum
 
         common/interfaces/card_interface
         common/interfaces/desktop_app_interface
