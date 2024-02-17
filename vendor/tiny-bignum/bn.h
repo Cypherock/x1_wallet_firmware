@@ -1,5 +1,5 @@
-#ifndef __BIGNUM_H__
-#define __BIGNUM_H__
+#ifndef __TINY_BIGNUM_H__
+#define __TINY_BIGNUM_H__
 /*
 
 Big number library - arithmetic on multiple-precision unsigned integers.
@@ -26,11 +26,11 @@ There may well be room for performance-optimizations and improvements.
 
 /* This macro defines the word size in bytes of the array that constitues the big-number data structure. */
 #ifndef WORD_SIZE
-  #define WORD_SIZE 4
+  #define WORD_SIZE 2
 #endif
 
 /* Size of big-numbers in bytes */
-#define BN_ARRAY_SIZE    (128 / WORD_SIZE)
+#define BN_ARRAY_SIZE    (64 / WORD_SIZE)
 
 
 /* Here comes the compile-time specialization for how large the underlying array size should be. */
@@ -117,7 +117,6 @@ void bignum_pow(struct bn* a, struct bn* b, struct bn* c); /* Calculate a^b -- e
 void bignum_isqrt(struct bn* a, struct bn* b);             /* Integer square root -- e.g. isqrt(5) => 2*/
 void bignum_assign(struct bn* dst, struct bn* src);        /* Copy src into dst -- dst := src */
 
-
-#endif /* #ifndef __BIGNUM_H__ */
+#endif /* #ifndef __TINY_BIGNUM_H__ */
 
 
