@@ -63,7 +63,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "bn.h"
 #include "reconstruct_wallet_flow.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
@@ -120,25 +119,6 @@ static bool check_which_request(const starknet_query_t *query,
  */
 static bool validate_request_data(starknet_get_public_keys_request_t *request,
                                   const pb_size_t which_request);
-/**
- * @details The function provides a public key. It accepts NULL for output
- * parameter and handles accordingly. The function also manages all the terminal
- * errors during derivation/encoding, in which case it will return false and
- * send a relevant error to the host closing the request-response pair. All the
- * errors/invalid cases are conveyed to the host as unknown_error = 1 because we
- * expect the data validation was success.
- *
- * @param seed Reference to the wallet seed generated from X1 Card
- * @param path Derivation path of the node to be derived
- * @param path_length Expected length of the provided derivation path
- * @param public_key Storage location for raw uncompressed public key
- *
- * @retval false If derivation failed
- */
-static bool get_public_key(const uint8_t *seed,
-                           const uint32_t *path,
-                           uint32_t path_length,
-                           uint8_t *public_key);
 
 /**
  * @brief Derives a list of public key corresponding to the provided list of
@@ -264,113 +244,21 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
   return status;
 }
 
-static bool temp_func(const uint32_t *path,
-                      const size_t path_length,
-                      const char *curve,
-                      const uint8_t *seed,
-                      const uint8_t seed_len,
-                      HDNode *hdnode) {
-  hdnode_from_seed(seed, seed_len, curve, hdnode);
-  for (size_t i = 0; i < path_length; i++) {
-    if (0 == hdnode_private_ckd(hdnode, path[i])) {
-      // hdnode_private_ckd returns 1 when the derivation succeeds
-      return false;
-    }
-  }
-  hdnode_fill_public_key(hdnode);
-  return true;
-}
-
-static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
-  uint8_t key[32] = {0};
-  struct bn strk_limit;
-  struct bn strk_key;
-  struct bn stark_order;
-  char str[65] = "";
-
-  bignum_from_string(
-      &stark_order,
-      "0800000000000010FFFFFFFFFFFFFFFFB781126DCAE7B2321E66A241ADC64D2F",
-      64);
-  bignum_from_string(
-      &strk_limit,
-      "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1",
-      64);
-
-  SHA256_CTX ctx = {0};
-  for (uint8_t itr = 0; itr < 200; itr++) {
-    sha256_Init(&ctx);
-    sha256_Update(&ctx, grind_seed, 32);
-
-    // copy iteration
-    sha256_Update(&ctx, &itr, 1);
-    sha256_Final(&ctx, key);
-
-    byte_array_to_hex_string(key, 32, str, 65);
-    bignum_from_string(&strk_key, str, 64);
-    if (bignum_cmp(&strk_key, &strk_limit) == SMALLER) {
-      struct bn f_key = {0};
-      bignum_mod(&strk_key, &stark_order, &f_key);
-      bignum_to_string(&f_key, str, 64);
-      hex_string_to_byte_array(str, 64, out);
-      return true;
-    }
-  }
-  starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
-  LOG_CRITICAL("grind 200 failed");
-  return false;
-}
-
-static bool get_public_key(const uint8_t *seed,
-                           const uint32_t *path,
-                           uint32_t path_length,
-                           uint8_t *public_key) {
-  HDNode node = {0};
-
-  // derice node at m/44'/9004'/0'/0/i
-  if (!temp_func(path, path_length, SECP256K1_NAME, seed, 32, &node)) {
-    // send unknown error; unknown failure reason
-    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    memzero(&node, sizeof(HDNode));
-    return false;
-  }
-
-  if (NULL != public_key) {
-    hdnode_fill_public_key(&node);
-    ecdsa_uncompress_pubkey(node.curve->params, node.public_key, public_key);
-    // TODO: remove following line to effectively send the public key
-    memcpy(public_key, node.private_key, 32);
-    memzero(public_key, STARKNET_PUB_KEY_SIZE);
-    grind_key(node.private_key, public_key);
-  }
-
-  memzero(&node, sizeof(HDNode));
-  return true;
-}
-
 static bool fill_public_keys(
     const starknet_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
     pb_size_t count) {
-  uint32_t eth_acc0_path[] = {
-      STARKNET_PURPOSE_INDEX, 0x8000003C, 0x80000000, 0, 0};
-  HDNode strkSeedNode = {0};
+  uint8_t hdkey1[32] = {0};
 
-  // derive node at m/44'/60'/0'/0/0
-  if (!derive_hdnode_from_path(
-          eth_acc0_path, 5, SECP256K1_NAME, seed, &strkSeedNode)) {
-    return false;
-  }
-
-  memzero((void *)seed, 64);
-  memcpy((uint8_t *)seed,
-         strkSeedNode.private_key,
-         sizeof(strkSeedNode.private_key));
   for (pb_size_t index = 0; index < count; index++) {
     const starknet_get_public_keys_derivation_path_t *current = &path[index];
-    if (!get_public_key(
-            seed, current->path, current->path_count, public_key_list[index])) {
+    if (!starknet_derive_bip32_node(seed, hdkey1) ||
+        !starknet_derive_key_from_seed(hdkey1,
+                                       current->path,
+                                       current->path_count,
+                                       public_key_list[index])) {
+      // TODO: Generate public key from private key
       return false;
     }
   }
