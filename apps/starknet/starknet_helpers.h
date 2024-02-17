@@ -52,4 +52,17 @@
  */
 bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels);
 
+/**
+ *
+ */
+bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key);
+
+/**
+ *
+ */
+bool starknet_derive_key_from_seed(const uint8_t *seed,
+                                   const uint32_t *path,
+                                   uint32_t path_length,
+                                   uint8_t *private_key);
+
 #endif    // STARKNET_HELPERS_H

@@ -318,22 +318,21 @@ static bool sign_txn(uint8_t *signature_buffer) {
 
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  HDNode t_node = {0};
-  derive_hdnode_from_path(starknet_txn_context->init_info.derivation_path,
-                          starknet_txn_context->init_info.derivation_path_count,
-                          SECP256K1_NAME,
-                          seed,
-                          &t_node);
-
-  ecdsa_sign_digest(&secp256k1,
-                    t_node.private_key,
-                    starknet_txn_context->transaction,
-                    signature_buffer,
-                    NULL,
-                    NULL);
+  uint8_t stark_key[32] = {0};
+  if (starknet_derive_bip32_node(seed, stark_key) &&
+      starknet_derive_key_from_seed(
+          stark_key,
+          starknet_txn_context->init_info.derivation_path,
+          starknet_txn_context->init_info.derivation_path_count,
+          stark_key)) {
+    // TODO: Generate signature using stark_key
+    memcpy(signature_buffer, stark_key, sizeof(stark_key));
+  } else {
+    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
 
   memzero(seed, sizeof(seed));
-  memzero(&t_node, sizeof(t_node));
+  memzero(stark_key, sizeof(stark_key));
 
   return true;
 }
