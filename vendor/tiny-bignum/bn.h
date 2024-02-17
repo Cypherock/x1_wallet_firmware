@@ -117,6 +117,23 @@ void bignum_pow(struct bn* a, struct bn* b, struct bn* c); /* Calculate a^b -- e
 void bignum_isqrt(struct bn* a, struct bn* b);             /* Integer square root -- e.g. isqrt(5) => 2*/
 void bignum_assign(struct bn* dst, struct bn* src);        /* Copy src into dst -- dst := src */
 
+/* Add extended features */
+
+/** in field G_prime, small but slow
+ */
+void bignum_inverse(struct bn *x, struct bn *prime);
+/** res = a - b mod prime.  More exactly res = a + (2*prime - b).
+ * b must be a partly reduced number
+ * result is normalized but not reduced.
+ */
+void bignum_subtractmod(struct bn *a, struct bn *b, struct bn *res,
+                    struct bn *prime);
+/**
+ * res = (a * b) % prime
+*/
+void bignum_multiplymod(struct bn *a, struct bn *b, struct bn *res,
+                    struct bn *prime);
+
 #endif /* #ifndef __TINY_BIGNUM_H__ */
 
 

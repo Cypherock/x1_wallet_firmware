@@ -653,4 +653,52 @@ static void _rshift_one_bit(struct bn* a)
   a->array[BN_ARRAY_SIZE - 1] >>= 1;
 }
 
+// in field G_prime, small but slow
+void bignum_inverse(struct bn *x, struct bn *prime) {
+  // // this method compute x^-1 = x^(prime-2)
+  // uint32_t i, j, limb;
+  // struct bn res;
+  // bignum_from_int(&res, 1);
+  // for (i = 0; i < 9; i++) {
+  //   // invariants:
+  //   //    x   = old(x)^(2^(i*30))
+  //   //    res = old(x)^((prime-2) % 2^(i*30))
+  //   // get the i-th limb of prime - 2
+  //   limb = prime->val[i];
+  //   // this is not enough in general but fine for secp256k1 & nist256p1 because
+  //   // prime->val[0] > 1
+  //   if (i == 0) limb -= 2;
+  //   for (j = 0; j < 30; j++) {
+  //     // invariants:
+  //     //    x    = old(x)^(2^(i*30+j))
+  //     //    res  = old(x)^((prime-2) % 2^(i*30+j))
+  //     //    limb = ((prime-2) % 2^(i*30+30)) / 2^(i*30+j)
+  //     // early abort when only zero bits follow
+  //     if (i == 8 && limb == 0) break;
+  //     if (limb & 1) {
+  //       bignum_multiply(x, &res, prime);
+  //     }
+  //     limb >>= 1;
+  //     bignum_multiply(x, x, prime);
+  //   }
+  // }
+  // bignum_mod(&res, prime, NULL);
+  // memcpy(x, &res, sizeof(struct bn));
+}
 
+void bignum_subtractmod(struct bn *a, struct bn *b, struct bn *res,
+                    struct bn *prime) {
+  struct bn temp = {0};
+
+  bignum_add(prime, prime, &temp);
+  bignum_sub(&temp, b, &temp);
+  bignum_add(&temp, a, &temp);
+  bignum_mod(&temp, prime, res);
+}
+
+void bignum_multiplymod(struct bn *a, struct bn *b, struct bn *res,
+                    struct bn *prime) {
+  struct bn temp;
+  bignum_mul(a, b, &temp);
+  bignum_mod(&temp, prime, res);
+}
