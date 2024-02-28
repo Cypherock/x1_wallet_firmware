@@ -28,7 +28,7 @@
         {
             "name": "Main Debug [Launch]",
             "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Main.elf",
+            "executable": "build/Main/Cypherock-Main.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -44,7 +44,7 @@
         {
             "name": "Main Debug [Attach]",
             "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Main.elf",
+            "executable": "build/Main/Cypherock-Main.elf",
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "openocd",
