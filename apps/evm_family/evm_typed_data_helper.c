@@ -65,6 +65,7 @@
 #include "coin_utils.h"
 #include "eip712_utils.h"
 #include "evm_priv.h"
+#include "eth.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

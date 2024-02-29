@@ -57,17 +57,18 @@
  */
 #include "atca_host.h"
 #include "board.h"
-#include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
 #include "nist256p1.h"
 #include "sec_flash.h"
 #include "string.h"
+#include "flash_api.h"
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
 #endif
 
 #include "device_authentication_api.h"
+#include "atca_basic.h"
 
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7

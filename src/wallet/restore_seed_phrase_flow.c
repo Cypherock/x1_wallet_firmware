@@ -69,6 +69,7 @@
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_utilities.h"
+#include "options.h"
 
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;

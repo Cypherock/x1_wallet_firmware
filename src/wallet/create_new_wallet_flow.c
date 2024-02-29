@@ -73,6 +73,8 @@
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_utilities.h"
+#include "options.h"
+#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

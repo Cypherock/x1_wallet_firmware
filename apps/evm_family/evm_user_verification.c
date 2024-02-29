@@ -68,6 +68,7 @@
 #include "evm_priv.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "eth.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

@@ -1,15 +1,16 @@
 /**
- * @file    wallet_locked_controller.c
+ * @file    card_read_verify_shares.c
  * @author  Cypherock X1 Team
- * @brief   Wallet unlock flow controller.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Source file supporting reading of wallet share from the X1 card for
+ *          wallet verification
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,15 +60,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_internal.h"
+
 #include "card_unlock_wallet.h"
-#include "card_utils.h"
-#include "constant_texts.h"
-#include "core_error.h"
-#include "nfc.h"
-#include "pow.h"
+#include "card_internal.h"
+#include "buzzer.h"
 #include "pow_utilities.h"
-#include "ui_screens.h"
+#include "card_utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,26 +77,6 @@
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTIONS
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 card_error_type_e card_unlock_wallet(const Wallet *wallet) {

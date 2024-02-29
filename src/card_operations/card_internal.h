@@ -14,9 +14,9 @@
  * INCLUDES
  *****************************************************************************/
 #include "card_operation_typedefs.h"
+#include "apdu.h"
+#include "buzzer.h"
 
-/* TODO: Remove the include and move required struct with cleanup*/
-#include "controller_tap_cards.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -24,6 +24,33 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+
+/**
+ * @brief
+ * @details
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+typedef struct NFC_connection_data {
+  uint8_t desktop_control;
+  int8_t keystore_index;
+  uint8_t acceptable_cards;
+  uint8_t tapped_card;
+  uint8_t retries;
+  uint8_t family_id[FAMILY_ID_SIZE +
+                    2];    // TODO: Review(need to find reason for extra byte)
+  uint8_t card_key_id[4];
+  bool pairing_error;
+  uint8_t recovery_mode;
+  uint8_t card_absent_retries;
+  uint8_t *card_version;
+  bool init_session_keys;
+  ISO7816 status;
+} NFC_connection_data;
+
 typedef struct card_operation_data {
   NFC_connection_data nfc_data;
   const char *error_message; /** Error message to be displayed for user action

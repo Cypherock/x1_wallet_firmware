@@ -69,8 +69,6 @@
  */
 #include "application_startup.h"
 
-#include "controller_level_four.h"
-#include "controller_tap_cards.h"
 #include "core_error.h"
 #include "core_flow_init.h"
 #include "cryptoauthlib.h"
@@ -85,6 +83,8 @@
 #include "sys_state.h"
 #include "systick_timer.h"
 #include "ui_screens.h"
+#include "device_authentication_api.h"
+
 #ifdef DEV_BUILD
 #include "dev_utils.h"
 #endif
@@ -454,6 +454,76 @@ void device_hardware_check() {
     delay_scr_init(ui_text_nfc_hardware_fault_detected, DELAY_LONG_STRING);
   ui_set_event_over_cb(&mark_event_over);
 #endif
+}
+
+uint32_t get_device_serial() {
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+    atecc_data.status = atcab_read_zone(ATCA_ZONE_DATA,
+                                        slot_8_serial,
+                                        0,
+                                        0,
+                                        atecc_data.device_serial,
+                                        DEVICE_SERIAL_SIZE);
+  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+
+  if (atecc_data.status == ATCA_SUCCESS) {
+    if (0 != memcmp(atecc_data.device_serial + 8, (void *)UID_BASE, 12)) {
+      return 1;
+    } else {
+      return SUCCESS;
+    }
+  }
+  return atecc_data.status;
+}
+
+provision_status_t check_provision_status() {
+  uint8_t cfg[128];
+  memset(cfg, 0, 128);
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+    atecc_data.status = atcab_read_config_zone(cfg);
+  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+
+  if (atecc_data.status != ATCA_SUCCESS) {
+    LOG_CRITICAL("xxx30: %d", atecc_data.status);
+    return -1;
+  }
+
+  if (cfg[86] == 0x00 &&
+      cfg[87] == 0x00) {    // config zone and data zones are locked
+
+    if (cfg[88] == 0xBF &&
+        cfg[89] ==
+            0xFE) {    // device serial and IO key are programmed and locked
+      return provision_incomplete;
+
+    } else if ((cfg[88] & ATECC_CFG_88_MASK) == 0x00 &&
+               (cfg[89] & ATECC_CFG_89_MASK) ==
+                   0x00) {    // private key slots are locked
+      return provision_complete;
+    } else if ((cfg[88] & ATECC_CFG_88_MASK_OLD_PROV) == 0x00 &&
+               (cfg[89] & ATECC_CFG_89_MASK) ==
+                   0x00) {    // NFC private key slot not locked
+      return provision_v1_complete;
+    } else {
+      return provision_empty;
+    }
+  } else {
+    return provision_empty;
+  }
 }
 
 void device_provision_check() {

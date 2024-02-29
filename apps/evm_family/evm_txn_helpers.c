@@ -65,6 +65,7 @@
 
 #include "evm_priv.h"
 #include "int-util.h"
+#include "eth.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

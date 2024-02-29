@@ -66,6 +66,8 @@
 #include "ui_multi_instruction.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
+#include "options.h"
+#include "bip32.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/

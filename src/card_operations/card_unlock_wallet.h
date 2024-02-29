@@ -16,6 +16,8 @@
 #include "flash_struct.h"
 #include "stdbool.h"
 #include "stdint.h"
+#include "ui_instruction.h"
+#include "nfc.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES

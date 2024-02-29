@@ -68,6 +68,9 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+#include "bip32.h"
+#include "curves.h"
+#include "coin_utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

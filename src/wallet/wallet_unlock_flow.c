@@ -71,6 +71,7 @@
 #include "shamir_wrapper.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
+#include "card_unlock_wallet.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

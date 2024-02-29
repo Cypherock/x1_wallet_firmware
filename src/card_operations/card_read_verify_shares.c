@@ -70,6 +70,8 @@
 #include "ui_instruction.h"
 #include "wallet.h"
 #include "wallet_utilities.h"
+#include "options.h"
+#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

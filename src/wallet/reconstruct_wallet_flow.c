@@ -72,6 +72,7 @@
 #include "ui_state_machine.h"
 #include "wallet_list.h"
 #include "wallet_utilities.h"
+#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

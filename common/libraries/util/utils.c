@@ -65,7 +65,6 @@
 #include "assert_conf.h"
 #include "bip32.h"
 #include "bip39.h"
-#include "controller_level_four.h"
 #include "crypto_random.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
@@ -73,6 +72,9 @@
 #include "lv_font.h"
 #include "sha2.h"
 #include "wallet.h"
+#include "lv_txt.h"
+
+#include "device_authentication_api.h"
 
 /**
  * @brief struct for
