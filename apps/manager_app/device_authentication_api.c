@@ -57,9 +57,9 @@
  */
 #include "atca_host.h"
 #include "board.h"
-#include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
+#include "flash_api.h"
 #include "nist256p1.h"
 #include "sec_flash.h"
 #include "string.h"
@@ -67,6 +67,7 @@
 #include "stm32l4xx_it.h"
 #endif
 
+#include "atca_basic.h"
 #include "device_authentication_api.h"
 
 #define SIGNATURE_SIZE 64

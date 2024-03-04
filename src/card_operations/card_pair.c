@@ -66,13 +66,17 @@
 #include "bip32.h"
 #include "card_internal.h"
 #include "card_utils.h"
-#include "controller_level_four.h"
 #include "core_error.h"
 #include "curves.h"
 #include "nist256p1.h"
 #include "ui_instruction.h"
 #include "utils.h"
-
+#if USE_SIMULATOR == 0
+#include "stm32l4xx_it.h"
+#endif
+#include "atca_basic.h"
+#include "device_authentication_api.h"
+#include "nfc.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -163,6 +167,50 @@ static void init_and_pair_card(card_operation_data_t *card_data,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign) {
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    if (atecc_data.status != ATCA_SUCCESS)
+      LOG_CRITICAL("PAIR SG: %04x, count:%d",
+                   atecc_data.status,
+                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
+    atcab_init(atecc_data.cfg_atecc608a_iface);
+    atecc_data.status = atcab_sign(slot_3_nfc_pair_key, hash, sign);
+  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+
+  return atecc_data.status;
+}
+
+static uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret) {
+  uint8_t io_key[IO_KEY_SIZE];
+  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+
+  if (get_io_protection_key(io_key) != SUCCESS_)
+    return -1;
+
+  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  NVIC_DisableIRQ(OTG_FS_IRQn);
+  do {
+    if (atecc_data.status != ATCA_SUCCESS)
+      LOG_CRITICAL("ECDH: %04x, count:%d",
+                   atecc_data.status,
+                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
+    atcab_init(atecc_data.cfg_atecc608a_iface);
+    atecc_data.status =
+        atcab_ecdh_ioenc(slot_3_nfc_pair_key, pub_key, shared_secret, io_key);
+  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+  if (usb_irq_enable_on_entry == true)
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+
+  return atecc_data.status;
+}
+
 static uint32_t pair_card_preprocess(card_pairing_data_t *pair_data) {
   uint8_t digest[64] = {0}, sig[65] = {0};
   uint8_t invalid_self_keypath[8] = {DEFAULT_VALUE_IN_FLASH,

@@ -59,8 +59,10 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "bip32.h"
 #include "constant_texts.h"
 #include "core_error.h"
+#include "options.h"
 #include "reconstruct_wallet_flow.h"
 #include "ui_core_confirm.h"
 #include "ui_multi_instruction.h"
