@@ -249,6 +249,19 @@ extern Wallet wallet;
 extern lv_task_t *address_timeout_task;
 extern uint32_t inactivity_counter;
 
+#pragma pack(push, 1)
+typedef struct Provision_Data_Struct {
+  uint8_t device_private_key[32];
+  uint8_t device_public_key[ECDSA_PUB_KEY_SIZE];
+  uint8_t self_key_path[FS_KEYSTORE_KEYPATH_LEN];
+  uint8_t priv_key[FS_KEYSTORE_PRIVKEY_LEN];
+  uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN];
+} Provision_Data_struct;
+#pragma pack(pop)
+
+extern Provision_Data_struct provision_keys_data;
+extern uint8_t provision_date[4];
+
 /**
  * @brief Get the Global Flash_Wallet instance.
  *
