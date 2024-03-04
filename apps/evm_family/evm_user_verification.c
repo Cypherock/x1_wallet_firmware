@@ -64,6 +64,7 @@
 
 #include "address.h"
 #include "constant_texts.h"
+#include "eth.h"
 #include "evm_api.h"
 #include "evm_priv.h"
 #include "ui_core_confirm.h"

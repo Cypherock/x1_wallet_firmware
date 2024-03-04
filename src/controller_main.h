@@ -43,7 +43,6 @@
 #include "sha2.h"
 #include "sys_state.h"
 #include "tasks.h"
-#include "tasks_level_four.h"
 #include "utils.h"
 #include "wallet.h"
 

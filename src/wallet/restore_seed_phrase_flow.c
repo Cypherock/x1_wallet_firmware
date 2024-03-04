@@ -62,6 +62,7 @@
 #include "constant_texts.h"
 #include "core_error.h"
 #include "flash_if.h"
+#include "options.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
 #include "ui_core_confirm.h"
