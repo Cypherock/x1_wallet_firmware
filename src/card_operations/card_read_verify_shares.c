@@ -60,12 +60,14 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "bip39.h"
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_read_verify_share.h"
 #include "card_utils.h"
 #include "flash_api.h"
 #include "nfc.h"
+#include "options.h"
 #include "shamir_wrapper.h"
 #include "ui_instruction.h"
 #include "wallet.h"

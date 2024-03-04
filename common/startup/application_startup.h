@@ -54,6 +54,18 @@
 /// Interval defined for user inactivity in a flow in milli seconds
 #define INACTIVITY_TIME (300 * 1000)
 
+#define ATECC_CFG_88_MASK 0x4C
+#define ATECC_CFG_89_MASK 0x01
+
+#define ATECC_CFG_88_MASK_OLD_PROV 44
+
+typedef enum {
+  provision_empty = 0,
+  provision_incomplete = 1,
+  provision_complete = 2,
+  provision_v1_complete = 3
+} provision_status_t;
+
 extern uint8_t device_auth_flag;
 extern bool main_app_ready;
 
@@ -182,6 +194,17 @@ bool fault_in_prev_boot();
  * @note
  */
 void handle_fault_in_prev_boot();
+
+/**
+ * @brief   fetch device serial and check if UID in the serial matches MCU UID
+ * or not
+ * @details
+ *
+ * @return uint32_t device serial fetch status or failure status
+ * @retval 0    fetched successfully
+ * @retval 1    device UID doesn't match with serial UID
+ */
+uint32_t get_device_serial();
 
 /**
  * @brief Detect hardware related faults

@@ -60,7 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "controller_level_four.h"
+#include "application_startup.h"
+#include "atca_status.h"
+#include "device_authentication_api.h"
 #include "flash_api.h"
 #include "manager_api.h"
 #include "manager_app.h"

@@ -92,7 +92,6 @@
 #include "chacha20poly1305.h"
 #include "communication.h"
 #include "constant_texts.h"
-#include "controller_level_four.h"
 #include "cryptoauthlib.h"
 #include "etc.h"
 #include "eth.h"
@@ -141,8 +140,6 @@ char arbitrary_data[4096 / 8 + 1];
 
 // TODO: Variable required for code compilation: Delete after all coins are
 // ported
-Send_Transaction_Data var_send_transaction_data = {0};
-Receive_Transaction_Data receive_transaction_data = {0};
 
 /**
  * @brief Global Flow_level instance.
