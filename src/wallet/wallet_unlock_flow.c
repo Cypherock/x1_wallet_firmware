@@ -62,6 +62,7 @@
 #include "wallet_unlock_flow.h"
 
 #include "card_operations.h"
+#include "card_unlock_wallet.h"
 #include "constant_texts.h"
 #include "core_error.h"
 #include "flash_api.h"
@@ -71,7 +72,6 @@
 #include "shamir_wrapper.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
-#include "card_unlock_wallet.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

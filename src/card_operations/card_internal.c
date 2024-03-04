@@ -62,7 +62,6 @@
  *****************************************************************************/
 #include "card_internal.h"
 
-
 #include "app_error.h"
 #include "core_error.h"
 #include "events.h"

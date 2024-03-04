@@ -74,8 +74,8 @@
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
 #endif
-#include "device_authentication_api.h"
 #include "atca_basic.h"
+#include "device_authentication_api.h"
 #include "nfc.h"
 /*****************************************************************************
  * EXTERN VARIABLES

@@ -62,6 +62,7 @@
 #include "constant_texts.h"
 #include "core_error.h"
 #include "flash_if.h"
+#include "options.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
 #include "ui_core_confirm.h"
@@ -69,7 +70,6 @@
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "wallet_utilities.h"
-#include "options.h"
 
 extern char *ALPHABET;
 extern char *ALPHA_NUMERIC;

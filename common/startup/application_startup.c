@@ -72,6 +72,7 @@
 #include "core_error.h"
 #include "core_flow_init.h"
 #include "cryptoauthlib.h"
+#include "device_authentication_api.h"
 #include "flash_api.h"
 #include "flash_if.h"
 #include "logger.h"
@@ -83,7 +84,6 @@
 #include "sys_state.h"
 #include "systick_timer.h"
 #include "ui_screens.h"
-#include "device_authentication_api.h"
 
 #ifdef DEV_BUILD
 #include "dev_utils.h"

@@ -1,8 +1,7 @@
 /**
- * @file    card_read_verify_shares.c
+ * @file    card_unlock_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Source file supporting reading of wallet share from the X1 card for
- *          wallet verification
+ * @brief   Wallet unlock flow controller
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -62,10 +61,13 @@
  *****************************************************************************/
 
 #include "card_unlock_wallet.h"
-#include "card_internal.h"
+
 #include "buzzer.h"
-#include "pow_utilities.h"
+#include "card_internal.h"
 #include "card_utils.h"
+#include "nfc.h"
+#include "pow_utilities.h"
+#include "ui_instruction.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -77,6 +79,26 @@
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 card_error_type_e card_unlock_wallet(const Wallet *wallet) {

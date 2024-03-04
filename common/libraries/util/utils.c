@@ -68,13 +68,12 @@
 #include "crypto_random.h"
 #include "cryptoauthlib.h"
 #include "curves.h"
+#include "device_authentication_api.h"
 #include "logger.h"
 #include "lv_font.h"
+#include "lv_txt.h"
 #include "sha2.h"
 #include "wallet.h"
-#include "lv_txt.h"
-
-#include "device_authentication_api.h"
 
 /**
  * @brief struct for
