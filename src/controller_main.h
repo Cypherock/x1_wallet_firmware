@@ -259,9 +259,6 @@ typedef struct Provision_Data_Struct {
 } Provision_Data_struct;
 #pragma pack(pop)
 
-extern Provision_Data_struct provision_keys_data;
-extern uint8_t provision_date[4];
-
 /**
  * @brief Get the Global Flash_Wallet instance.
  *
