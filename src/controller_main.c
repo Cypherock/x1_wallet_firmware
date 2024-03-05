@@ -166,6 +166,9 @@ Flash_Wallet wallet_for_flash;
 MessageData msg_data;
 ui_display_node *current_display_node = NULL;
 
+uint8_t provision_date[4];
+Provision_Data_struct provision_keys_data;
+
 Flash_Wallet *get_flash_wallet() {
   ASSERT((&wallet_for_flash) != NULL);
 
