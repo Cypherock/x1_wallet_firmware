@@ -141,8 +141,12 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
 
   switch (current_state) {
     case NAME_INPUT: {
-      input_text_init(
-          ALPHABET, ui_text_enter_wallet_name, 2, DATA_TYPE_TEXT, 15);
+      input_text_init(WALLET_NAME_CHARSET,
+                      0,
+                      ui_text_enter_wallet_name,
+                      2,
+                      DATA_TYPE_TEXT,
+                      15);
       next_state = get_state_on_input_scr(NAME_INPUT, EARLY_EXIT, TIMED_OUT);
 
       if (NAME_INPUT != next_state) {
@@ -224,7 +228,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
       WALLET_SET_PIN(wallet_for_flash.wallet_info);
       WALLET_SET_PIN(wallet.wallet_info);
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_INPUT, PIN_SELECT, TIMED_OUT);
 
       if (PIN_INPUT != next_state) {
@@ -245,7 +250,8 @@ new_wallet_state_e new_wallet_state_handler(new_wallet_state_e current_state) {
     }
 
     case PIN_CONFIRM: {
-      input_text_init(ALPHA_NUMERIC, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_confirm_pin, 4, DATA_TYPE_PIN, 8);
       next_state = get_state_on_input_scr(PIN_CONFIRM, PIN_SELECT, TIMED_OUT);
 
       if (PIN_CONFIRM != next_state) {

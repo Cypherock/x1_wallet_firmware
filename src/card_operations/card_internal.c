@@ -205,6 +205,10 @@ static card_error_type_e default_nfc_errors_handler(
       // support.
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_card_freq_discon_fault);
     }
+  } else if (NFC_SC_ENC_KEY_ERROR <= card_data->nfc_data.status &&
+             NFC_SC_DEC_ERROR >= card_data->nfc_data.status) {
+    // Secure channel error faced. Retry or re-pair card
+    NFC_RETURN_ABORT_ERROR(card_data, ui_text_retry_or_repair);
   } else if (!(--card_data->nfc_data.retries)) {
     // Unknown error detected, after retries, return abort error and prompt user
     // to contact support.
@@ -340,7 +344,7 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
       NFC_RETURN_SUCCESS(card_data);
       break;
     case SW_SECURITY_CONDITIONS_NOT_SATISFIED:
-      NFC_RETURN_ABORT_ERROR(card_data, ui_text_security_conditions_not_met);
+      NFC_RETURN_ABORT_ERROR(card_data, ui_text_retry_or_repair);
       break;
     case SW_NOT_PAIRED:
       /* This error would indicates that device has the pairing keys but card

@@ -450,4 +450,34 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
                         const uint32_t totalSizeOfChunk,
                         const uint8_t *pCurrentSrcAddr,
                         const uint32_t readSize);
+
+/**
+ * @brief The function takes utf-8 string as input and returns a escaped utf-8
+ * string. Escaping the characters that are not supported by the used lvgl-font.
+ * @details The function references lvgl library for the font in use and checks
+ * if the utf-8 bytes have any valid glyphs for redering. All such utf-8 encoded
+ * characters whose glyph is not available will be escaped. The escaping happens
+ * on the utf-8 encoded bytes. Any invalid utf-8 encoding will be escaped with
+ * `\x00`. The function ensures that result buffer is always NULL terminated.
+ *
+ * @param input           The input utf-8 encoded null-terminated string to be
+ * escaped. Should not be NULL.
+ * @param escaped_string  The output buffer which will hold the escaped string.
+ * Should not be NULL.
+ * @param out_len         The size of the output buffer that will hold the.
+ * Should not be 0. result
+ *
+ * @return uint8_t Indicating if the string was processed without errors.
+ * @retval 0 Indicating the input text was processed w/o any change
+ * @retval 1 Indicating wrong arguments
+ * @retval 2 Indicating presence of at least 1 non-printable character
+ * @retval 3 Indicating presence of at least 1 invalid utf-8 encoding
+ * @retval 4 Indicating at least 1 instance of both non-printable character &
+ * invalid utf-8 encoding.
+ *
+ * @note Input & output buffers should not overlap.
+ */
+uint8_t string_to_escaped_string(const char *input,
+                                 char *escaped_string,
+                                 size_t out_len);
 #endif

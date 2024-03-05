@@ -3,7 +3,7 @@
 # Run clang-format
 CLANG_FORMAT_EXECUTABLE="clang-format"
 
-if ! command -v $CLANG_FORMAT_EXECUTABLE &> /dev/null
+if ! command -v "$CLANG_FORMAT_EXECUTABLE" > /dev/null 2>&1
 then
   echo $CLANG_FORMAT_EXECUTABLE does not exist, make sure to install it
   exit 1

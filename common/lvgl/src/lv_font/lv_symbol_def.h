@@ -67,6 +67,7 @@ extern "C" {
 #define MY_LONG_ARROW_LEFT        "\xEF\x8C\x8A"
 #define MY_LOGO_SYMBOL            "\xEE\xA4\x80"
 #define MY_NFC_LOGO               "\xEE\x94\xB1"
+#define REPLACEMENT_CHAR          "\xEF\xBF\xBD"
 
 /** Invalid symbol at (U+F8FF). If written before a string then `lv_img` will show it as a label*/
 #define LV_SYMBOL_DUMMY           "\xEF\xA3\xBF"

@@ -101,6 +101,7 @@ int get_entered_text_px_width() {
 }
 
 void ui_input_text(const char *input_list,
+                   uint8_t initial_input_index,
                    char *input_text_ptr,
                    uint8_t input_text_buffer_size,
                    const char *initial_heading,
@@ -133,9 +134,11 @@ void ui_input_text(const char *input_list,
     }
 
     data->input_list_size = strnlen(input_list, MAX_CHARACTER_INPUT_LIST);
+    ASSERT(initial_input_index < data->input_list_size);
+
     data->initial_heading = (char *)initial_heading;
     data->min_input_size = min_input_size;
-    data->current_index = 26 % data->input_list_size;
+    data->current_index = initial_input_index;
     data->current_text[0] = input_list[data->current_index];
     data->current_display_index = 0;
     data->current_text[1] = '\0';
@@ -154,6 +157,7 @@ void ui_input_text(const char *input_list,
 }
 
 void input_text_init(const char *input_list,
+                     uint8_t initial_input_index,
                      const char *initial_heading,
                      const uint8_t min_input_size,
                      const INPUT_DATA_TYPE data_type,
@@ -161,6 +165,7 @@ void input_text_init(const char *input_list,
   /* In order to support current calls to input_text_init, set the argument
    * `input_text_ptr` as NULL and `input_text_buffer_size` as 0*/
   ui_input_text(input_list,
+                initial_input_index,
                 NULL,
                 0,
                 initial_heading,

@@ -92,7 +92,8 @@ void wallet_locked_task() {
     } break;
 
     case WALLET_LOCKED_ENTER_PIN:
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       break;
 
     case WALLET_LOCKED_TAP_CARD_FRONTEND: {

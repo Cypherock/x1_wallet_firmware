@@ -81,6 +81,9 @@
 /// Unsets the bit that corresponds to Arbitrary Data
 #define WALLET_UNSET_ARBITRARY_DATA(n) (n &= (~4))
 
+/// @brief Character set for wallet name
+#define WALLET_NAME_CHARSET ALPHA_NUMERIC
+
 typedef enum wallet_name_opt {
   WALLET_NAME_ONE = 1,
   WALLET_NAME_TWO,

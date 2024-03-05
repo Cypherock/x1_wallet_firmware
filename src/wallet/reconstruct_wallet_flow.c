@@ -188,8 +188,12 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
         break;
       }
 
-      input_text_init(
-          PASSPHRASE, ui_text_enter_passphrase, 0, DATA_TYPE_PASSPHRASE, 64);
+      input_text_init(PASSPHRASE,
+                      26,
+                      ui_text_enter_passphrase,
+                      0,
+                      DATA_TYPE_PASSPHRASE,
+                      64);
       next_state = get_state_on_input_scr(
           PASSPHRASE_CONFIRM, EARLY_EXIT, ABORTED_DUE_TO_P0);
       break;
@@ -225,7 +229,8 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
         break;
       }
 
-      input_text_init(ALPHA_NUMERIC, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
+      input_text_init(
+          ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
       next_state =
           get_state_on_input_scr(PIN_INPUT, EARLY_EXIT, ABORTED_DUE_TO_P0);
 

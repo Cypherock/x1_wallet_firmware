@@ -169,6 +169,12 @@ TEST_GROUP_RUNNER(btc_helper_test) {
   RUN_TEST_CASE(btc_helper_test, btc_helper_generate_xpub_legacy);
 }
 
+TEST_GROUP_RUNNER(btc_script_test) {
+  RUN_TEST_CASE(btc_script_test, btc_script_ltc_nsegwit_address);
+  RUN_TEST_CASE(btc_script_test, btc_script_ltc_legacy_address);
+  RUN_TEST_CASE(btc_script_test, btc_script_ltc_p2sh_address1);
+}
+
 TEST_GROUP_RUNNER(evm_txn_test) {
 #ifdef EVM_TXN_MANUAL_TEST
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
@@ -210,4 +216,10 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
+  RUN_TEST_CASE(utils_tests, escape_string_non_print_utf);
+  RUN_TEST_CASE(utils_tests, escape_string_symbol);
+  RUN_TEST_CASE(utils_tests, escape_string_ascii);
+  RUN_TEST_CASE(utils_tests, escape_string_invalid_non_print_utf);
+  RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
+  RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
 }
