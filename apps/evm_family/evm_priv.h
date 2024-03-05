@@ -15,6 +15,7 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "eth.h"
 #include "events.h"
 #include "evm_api.h"
 #include "evm_context.h"
