@@ -104,7 +104,6 @@ static void init_tap_card_data(NFC_connection_data *connection_data);
 static void init_tap_card_data(NFC_connection_data *connection_data) {
   memset(connection_data, 0, sizeof(NFC_connection_data));
   connection_data->retries = 5;
-  connection_data->desktop_control = false;
   connection_data->acceptable_cards = ACCEPTABLE_CARDS_ALL;
   memset(connection_data->family_id, 0xff, sizeof(connection_data->family_id));
   memset(connection_data->card_key_id, 0, sizeof(connection_data->card_key_id));

@@ -35,7 +35,6 @@
  * @note
  */
 typedef struct NFC_connection_data {
-  uint8_t desktop_control;
   int8_t keystore_index;
   uint8_t acceptable_cards;
   uint8_t tapped_card;

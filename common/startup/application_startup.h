@@ -196,6 +196,18 @@ bool fault_in_prev_boot();
 void handle_fault_in_prev_boot();
 
 /**
+ * @brief
+ * @details
+ *
+ * @return uint8_t Provision status of the device
+ * @retval 0    Not provisioned
+ * @retval 1    Semi-provisioned (serial and IO-Protection Key present)
+ * @retval 2    Fully provisioned
+ * @retval 3    External auth configuration
+ */
+provision_status_t check_provision_status();
+
+/**
  * @brief   fetch device serial and check if UID in the serial matches MCU UID
  * or not
  * @details

@@ -99,6 +99,37 @@ typedef struct card_pairing_data {
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Request ATECC to generate signature on the hash with private available
+ * on SLOT-3
+ * @details
+ *
+ * @param [in] hash     - hash to be signed
+ * @param [out] sign    - signature generated
+ *
+ * @return    ATCA_SUCCESS on success, otherwise an error code.
+ *
+ * @see atcab_init(), atcab_sign(), ATCAIfaceCfg, cfg_atecc608a_iface
+ * @since v1.0.0
+ */
+static uint8_t atecc_nfc_sign_hash(const uint8_t *hash, uint8_t *sign);
+
+/**
+ * @brief Request ATECC to perform ECDH operation on pub_key with private key
+ * from SLOT-3
+ * @details
+ *
+ * @param [in] pub_key          - public key to be used for ECDH
+ * @param [out] shared_secret   - shared secret generated
+ *
+ * @return    ATCA_SUCCESS on success, otherwise an error code.
+ *
+ * @see atcab_init(), atcab_ecdh(), atcab_ecdh_ioenc(), ATCAIfaceCfg,
+ * cfg_atecc608a_iface
+ * @since v1.0.0
+ */
+static uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
