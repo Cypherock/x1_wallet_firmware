@@ -63,6 +63,7 @@
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "curves.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"

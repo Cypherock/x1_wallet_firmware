@@ -58,7 +58,9 @@
  */
 #include "ui_input_mnemonics.h"
 
+#include "bip39.h"
 #include "ui_events_priv.h"
+
 static void ui_mnem_create();
 static void refresh_screen_texts();
 static void shrink();
