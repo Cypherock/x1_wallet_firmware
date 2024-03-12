@@ -178,7 +178,14 @@ bool evm_get_typed_struct_data_digest(
   uint8_t *data = NULL;
   uint16_t data_size = 0, offset = 0;
 
-  data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
+  data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
+  if (0 < (unsigned int)(typed_data->domain).size) {
+    data_size += HASH_SIZE;
+  }
+  if (0 < (unsigned int)(typed_data->message).size) {
+    data_size += HASH_SIZE;
+  }
+
   data = malloc(data_size);
   ASSERT(NULL != data);
   memzero(data, data_size);
@@ -187,9 +194,17 @@ bool evm_get_typed_struct_data_digest(
          sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
 
   offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-  eip712_status = hash_struct(&(typed_data->domain), data + offset);
+  if (0 < (unsigned int)(typed_data->domain).size) {
+    eip712_status = hash_struct(&(typed_data->domain), data + offset);
+  } else {
+    eip712_status = 0;
+  }
   offset += HASH_SIZE;
-  eip712_status |= hash_struct(&(typed_data->message), data + offset);
+  if (0 < (unsigned int)(typed_data->message).size) {
+    eip712_status |= hash_struct(&(typed_data->message), data + offset);
+  } else {
+    eip712_status |= 0;
+  }
 
   if (EIP712_OK == eip712_status) {
     keccak_256(data, data_size, digest_out);
