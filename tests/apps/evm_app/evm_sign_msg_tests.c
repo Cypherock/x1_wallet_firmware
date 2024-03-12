@@ -98,6 +98,114 @@ TEST_TEAR_DOWN(evm_sign_msg_test) {
   ctx.msg_data = NULL;
 }
 
+TEST(evm_sign_msg_test, evm_sign_msg_test_empty_typed_data_hash) {
+  evm_query_t query = {
+      .which_request = 3,
+      .sign_msg = {
+          .which_request = 1,
+          .initiate = {.derivation_path_count = 5,
+                       .derivation_path = {NON_SEGWIT, ETHEREUM, BITCOIN, 0, 0},
+                       .wallet_id = {},
+                       .message_type = EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA,
+                       .total_msg_size = 121}}};
+  uint8_t buffer[1024];
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+  uint8_t expected_digest[SHA256_DIGEST_LENGTH] = {
+      48, 26,  80,  178, 145, 211, 60,  225, 232, 233, 6,
+      78, 63,  106, 108, 81,  217, 2,   236, 34,  137, 43,
+      80, 213, 138, 191, 99,  87,  198, 164, 85,  65};
+
+  // Set init query to ctx buffer
+  memcpy(&ctx.init,
+         &query.sign_msg.initiate,
+         sizeof(evm_sign_msg_initiate_request_t));
+
+  // Prepare typed data from msg_data
+  char *string =
+      "0a3a0a06646f6d61696e1007220c454950373132446f6d61696e322020bcc3f8105eea47"
+      "d067386e42e60246e89393cd61c512edd1e87688890fb914123b0a076d65737361676510"
+      "07220c454950373132446f6d61696e322020bcc3f8105eea47d067386e42e60246e89393"
+      "cd61c512edd1e87688890fb914";
+  ctx.msg_data = buffer;
+  hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
+  pb_istream_t istream =
+      pb_istream_from_buffer(ctx.msg_data, ctx.init.total_msg_size);
+  bool result =
+      pb_decode(&istream, EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
+
+#ifdef EVM_SIGN_TYPED_DATA_DISPLAY_TEST
+  // Display the typed data
+  ui_display_node *display_node = NULL;
+  evm_init_typed_data_display_node(&display_node, &(ctx.typed_data));
+  while (NULL != display_node) {
+    core_scroll_page(display_node->title, display_node->value, evm_send_error);
+    display_node = display_node->next;
+  }
+#endif
+  TEST_ASSERT_TRUE(result);
+  TEST_ASSERT_TRUE(evm_get_msg_data_digest(&ctx, digest));
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
+
+  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
+}
+
+TEST(evm_sign_msg_test, evm_sign_msg_test_domain_only_typed_data_hash) {
+  evm_query_t query = {
+      .which_request = 3,
+      .sign_msg = {
+          .which_request = 1,
+          .initiate = {.derivation_path_count = 5,
+                       .derivation_path = {NON_SEGWIT, ETHEREUM, BITCOIN, 0, 0},
+                       .wallet_id = {},
+                       .message_type = EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA,
+                       .total_msg_size = 355}}};
+  uint8_t buffer[1024];
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+  uint8_t expected_digest[SHA256_DIGEST_LENGTH] = {
+      116, 118, 39,  55,  210, 218, 151, 77,  201, 234, 163,
+      106, 199, 100, 63,  130, 38,  147, 175, 116, 232, 98,
+      80,  99,  235, 157, 156, 36,  198, 0,   10,  52};
+
+  // Set init query to ctx buffer
+  memcpy(&ctx.init,
+         &query.sign_msg.initiate,
+         sizeof(evm_sign_msg_initiate_request_t));
+
+  // Prepare typed data from msg_data
+  char *string =
+      "0aa3020a06646f6d61696e10071805220c454950373132446f6d61696e3220d87cd6ef79"
+      "d4e2b95e15ce8abf732db51ec771f1ca2edccf22a46c729ac564723a1a0a046e616d6510"
+      "0318062206737472696e672a065472657a6f723a220a0776657273696f6e1003180b2206"
+      "737472696e672a0b546573742076302e302e303a360a07636861696e4964182022077569"
+      "6e743235362a200000000000000000000000000000000000000000000000000000000000"
+      "0000013a360a11766572696679696e67436f6e7472616374100518142207616464726573"
+      "732a14cccccccccccccccccccccccccccccccccccccccc3a350a0473616c741002182022"
+      "07627974657333322a200123456789abcdef0123456789abcdef0123456789abcdef0123"
+      "456789abcdef123b0a076d6573736167651007220c454950373132446f6d61696e3220d8"
+      "7cd6ef79d4e2b95e15ce8abf732db51ec771f1ca2edccf22a46c729ac56472";
+  ctx.msg_data = buffer;
+  hex_string_to_byte_array(string, ctx.init.total_msg_size * 2, buffer);
+  pb_istream_t istream =
+      pb_istream_from_buffer(ctx.msg_data, ctx.init.total_msg_size);
+  bool result =
+      pb_decode(&istream, EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
+
+#ifdef EVM_SIGN_TYPED_DATA_DISPLAY_TEST
+  // Display the typed data
+  ui_display_node *display_node = NULL;
+  evm_init_typed_data_display_node(&display_node, &(ctx.typed_data));
+  while (NULL != display_node) {
+    core_scroll_page(display_node->title, display_node->value, evm_send_error);
+    display_node = display_node->next;
+  }
+#endif
+  TEST_ASSERT_TRUE(result);
+  TEST_ASSERT_TRUE(evm_get_msg_data_digest(&ctx, digest));
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_digest, digest, SHA256_DIGEST_LENGTH);
+
+  pb_release(EVM_SIGN_TYPED_DATA_STRUCT_FIELDS, &(ctx.typed_data));
+}
+
 TEST(evm_sign_msg_test, evm_sign_msg_test_typed_data_hash) {
   evm_query_t query = {
       .which_request = 3,
