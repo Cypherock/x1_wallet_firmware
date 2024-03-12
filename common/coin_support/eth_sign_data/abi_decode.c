@@ -60,7 +60,9 @@
 #include <stdint.h>
 
 #include "abi.h"
+#include "address.h"
 #include "assert_conf.h"
+#include "evm_priv.h"
 #include "utils.h"
 
 /* Global functions
@@ -215,11 +217,11 @@ ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
     case Abi_address_e: {
       char staticBufferInUTF8[43] = "0x";
 
-      byte_array_to_hex_string(pAbiTypeData + Abi_address_e_OFFSET_BE,
-                               20,
-                               &(staticBufferInUTF8[2]),
-                               41);
-
+      // generating checksum'd address
+      ethereum_address_checksum((pAbiTypeData + Abi_address_e_OFFSET_BE),
+                                &(staticBufferInUTF8[2]),
+                                false,
+                                g_evm_app->chain_id);
       ui_node = ui_create_display_node("Datatype:address\0",
                                        25,
                                        &(staticBufferInUTF8[0]),
