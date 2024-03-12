@@ -14,7 +14,17 @@
             ],
             "group": "build"
         },
-
+        {
+            "label": "build-simulator-units-tests",
+            "type": "shell",
+            "command": "utilities/build.sh",
+            "args": [
+                "-tunit_tests",
+                "-fmain",
+                "-psimulator",
+            ],
+            "group": "build"
+        },
         {
             "label": "build-device",
         "type": "shell",
