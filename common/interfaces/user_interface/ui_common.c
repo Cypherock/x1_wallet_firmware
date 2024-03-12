@@ -64,8 +64,8 @@ const char *ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const char *ALPHA_NUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const char *NUMBERS = "0123456789";
 const char *HEX = "0123456789ABCDEF";
-const char *PASSPHRASE =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ";
+const char *PASSPHRASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0"
+                         "123456789 !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 /// Global callback method called when an event is marked over
 void (*ui_mark_event_over)();
