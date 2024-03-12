@@ -132,6 +132,7 @@ extern const char *ui_text_syncing_complete;
 
 // Clear user data text
 extern const char *ui_text_clear_device_data_instruction;
+extern const char *ui_text_confirm_clear_device_data;
 extern const char *ui_text_erasing_device_data;
 extern const char
     *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
