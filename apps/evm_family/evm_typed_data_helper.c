@@ -179,10 +179,10 @@ bool evm_get_typed_struct_data_digest(
   uint16_t data_size = 0, offset = 0;
 
   data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-  if (0 < (unsigned int)(typed_data->domain).size) {
+  if (0 < typed_data->domain.size) {
     data_size += HASH_SIZE;
   }
-  if (0 < (unsigned int)(typed_data->message).size) {
+  if (0 < typed_data->message.size) {
     data_size += HASH_SIZE;
   }
 
@@ -194,13 +194,13 @@ bool evm_get_typed_struct_data_digest(
          sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
 
   offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-  if (0 < (unsigned int)(typed_data->domain).size) {
+  if (0 < typed_data->domain.size) {
     eip712_status = hash_struct(&(typed_data->domain), data + offset);
   } else {
     eip712_status = 0;
   }
   offset += HASH_SIZE;
-  if (0 < (unsigned int)(typed_data->message).size) {
+  if (0 < typed_data->message.size) {
     eip712_status |= hash_struct(&(typed_data->message), data + offset);
   } else {
     eip712_status |= 0;
