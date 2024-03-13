@@ -61,27 +61,43 @@
 #include "nfc.h"
 #include "ui_events_priv.h"
 
-static struct Card_Detect_Data *data = NULL;
-static struct Card_Detect_Object *obj = NULL;
+static struct Skip_instruction_data *data = NULL;
+static struct Skip_instruction_object *obj = NULL;
 static void skip_instruction_scr_create();
 
-void skip_instruction_scr_init(const char *text) {
+void skip_only_instruction_scr_init(const char *text) {
   ASSERT(text != NULL);
 
   lv_obj_clean(lv_scr_act());
 
-  data = malloc(sizeof(struct Card_Detect_Data));
-  obj = malloc(sizeof(struct Card_Detect_Object));
+  data = malloc(sizeof(struct Skip_instruction_data));
+  obj = malloc(sizeof(struct Skip_instruction_object));
 
   if (data != NULL) {
     data->text = (char *)text;
+    data->display_show_option = false;
+  }
+  skip_instruction_scr_create();
+}
+
+void skip_choice_confirmation_scr_init(const char *text) {
+  ASSERT(text != NULL);
+
+  lv_obj_clean(lv_scr_act());
+
+  data = malloc(sizeof(struct Skip_instruction_data));
+  obj = malloc(sizeof(struct Skip_instruction_object));
+
+  if (data != NULL) {
+    data->text = (char *)text;
+    data->display_show_option = true;
   }
   skip_instruction_scr_create();
 }
 
 void skip_instruction_scr_destructor() {
   if (data != NULL) {
-    memzero(data, sizeof(struct Card_Detect_Data));
+    memzero(data, sizeof(struct Skip_instruction_data));
     free(data);
     data = NULL;
   }
@@ -92,27 +108,46 @@ void skip_instruction_scr_destructor() {
   }
 }
 
-void skip_instruction_scr_focus_skip() {
-  lv_group_focus_obj(obj->skip_btn);
+static void show_btn_event_handler(lv_obj_t *show_btn, const lv_event_t event) {
+  switch (event) {
+    case LV_EVENT_KEY:
+      switch (lv_indev_get_key(ui_get_indev())) {
+        case LV_KEY_RIGHT:
+          lv_group_focus_obj(obj->skip_btn);
+          break;
+        default:
+          break;
+      }
+      break;
+    case LV_EVENT_CLICKED:
+      ui_set_confirm_event();
+      break;
+    case LV_EVENT_DEFOCUSED:
+      lv_btn_set_state(show_btn, LV_BTN_STATE_REL);
+      break;
+    case LV_EVENT_DELETE:
+      /* Destruct object and data variables in case the object is being deleted
+       * directly using lv_obj_clean() */
+      skip_instruction_scr_destructor();
+      break;
+    default:
+      break;
+  }
 }
 
-/**
- * @brief Skip button event handler.
- * @details
- *
- * @param skip_btn Skip button lvgl object.
- * @param event Type of event.
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
   switch (event) {
+    case LV_EVENT_KEY:
+      switch (lv_indev_get_key(ui_get_indev())) {
+        case LV_KEY_LEFT:
+          if (data->display_show_option) {
+            lv_group_focus_obj(obj->show_btn);
+          }
+          break;
+        default:
+          break;
+      }
+      break;
     case LV_EVENT_CLICKED:
       ui_set_cancel_event();
       break;
@@ -129,20 +164,6 @@ static void skip_btn_event_handler(lv_obj_t *skip_btn, const lv_event_t event) {
   }
 }
 
-/**
- * @brief Create card detect screen
- * @details
- *
- * @param
- *
- * @return
- * @retval
- *
- * @see
- * @since v1.0.0
- *
- * @note
- */
 void skip_instruction_scr_create() {
   ASSERT(obj != NULL);
   ASSERT(data != NULL);
@@ -152,5 +173,10 @@ void skip_instruction_scr_create() {
 
   ui_paragraph(obj->text, data->text, LV_LABEL_ALIGN_CENTER);
   ui_skip_btn(obj->skip_btn, skip_btn_event_handler, false);
-  skip_instruction_scr_focus_skip();
+
+  if (data->display_show_option) {
+    obj->show_btn = lv_btn_create(lv_scr_act(), NULL);
+    ui_show_btn(obj->show_btn, show_btn_event_handler, false);
+  }
+  lv_group_focus_obj(obj->show_btn);
 }

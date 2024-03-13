@@ -343,51 +343,81 @@ static bool get_msg_data(evm_query_t *query) {
   return true;
 }
 
-static bool get_user_verification() {
+bool get_eth_sign_user_verification(const uint8_t *msg_data,
+                                    size_t total_msg_size) {
   bool result = false;
-  switch (sign_msg_ctx.init.message_type) {
+  const size_t array_size = total_msg_size * 2 + 3;
+  char *buffer = malloc(array_size);
+  memzero(buffer, array_size);
+  snprintf(buffer, array_size, "0x");
+  byte_array_to_hex_string(
+      msg_data, total_msg_size, buffer + 2, array_size - 2);
+  // TODO: Add a limit on size of data per confirmation based on LVGL buffer
+  // and split message into multiple confirmations accordingly
+  result = core_scroll_page(
+      UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
+  memzero(buffer, array_size);
+  free(buffer);
+  return result;
+}
+
+bool get_typed_data_user_verification(
+    evm_sign_typed_data_struct_t *typed_data) {
+  bool result = true;
+  ui_display_node *display_node = NULL;
+  evm_init_typed_data_display_node(&display_node, typed_data);
+  while (NULL != display_node) {
+    result = core_scroll_page(
+        display_node->title, display_node->value, evm_send_error);
+    display_node = display_node->next;
+
+    if (!result) {
+      break;
+    }
+  }
+  return result;
+}
+bool display_message_and_get_user_verification(
+    evm_sign_msg_context_t *sign_msg_ctx) {
+  bool result = false;
+  switch (sign_msg_ctx->init.message_type) {
     case EVM_SIGN_MSG_TYPE_ETH_SIGN: {
-      const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
-      char *buffer = malloc(array_size);
-      memzero(buffer, array_size);
-      snprintf(buffer, array_size, "0x");
-      byte_array_to_hex_string(sign_msg_ctx.msg_data,
-                               sign_msg_ctx.init.total_msg_size,
-                               buffer + 2,
-                               array_size - 2);
-      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
-      // and split message into multiple confirmations accordingly
-      result = core_scroll_page(
-          UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
-      memzero(buffer, array_size);
-      free(buffer);
+      result = get_eth_sign_user_verification(
+          sign_msg_ctx->msg_data, sign_msg_ctx->init.total_msg_size);
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
       result = core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
-                                (const char *)sign_msg_ctx.msg_data,
+                                (const char *)sign_msg_ctx->msg_data,
                                 evm_send_error);
     } break;
 
     case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA: {
-      ui_display_node *display_node = NULL;
-      evm_init_typed_data_display_node(&display_node,
-                                       &(sign_msg_ctx.typed_data));
-      while (NULL != display_node) {
-        result = core_scroll_page(
-            display_node->title, display_node->value, evm_send_error);
-        display_node = display_node->next;
-
-        if (!result) {
-          break;
-        }
-      }
+      result = get_typed_data_user_verification(&(sign_msg_ctx->typed_data));
     } break;
 
     default:
       break;
+  }
+  return result;
+}
+
+static bool get_user_verification() {
+  bool result = false;
+  skip_choice_confirmation_scr_init("Proceed to view message or skip");
+
+  evt_status_t status = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
+  if (status.p0_event.flag)
+    return result;
+  if (status.ui_event.event_occured &&
+      (UI_EVENT_REJECT == status.ui_event.event_type)) {
+    delay_scr_init("Message verification skipped", DELAY_TIME);
+    delay_scr_init("Proceed on your own risk", DELAY_TIME);
+    result = true;
+  } else {
+    result = display_message_and_get_user_verification(&sign_msg_ctx);
   }
 
   if (result) {

@@ -22,8 +22,9 @@
  *
  * @note
  */
-struct Card_Detect_Data {
+struct Skip_instruction_data {
   char *text;
+  bool display_show_option;
 };
 
 /**
@@ -35,9 +36,10 @@ struct Card_Detect_Data {
  *
  * @note
  */
-struct Card_Detect_Object {
+struct Skip_instruction_object {
   lv_obj_t *text;
   lv_obj_t *skip_btn;
+  lv_obj_t *show_btn;
 };
 
 /**
@@ -54,7 +56,23 @@ struct Card_Detect_Object {
  *
  * @note
  */
-void skip_instruction_scr_init(const char *text);
+void skip_only_instruction_scr_init(const char *text);
+
+/**
+ * @brief Initialize and create card detect screen
+ * @details
+ *
+ * @param text card detect text
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+void skip_choice_confirmation_scr_init(const char *text);
 
 /**
  * @brief Clear card detect screen

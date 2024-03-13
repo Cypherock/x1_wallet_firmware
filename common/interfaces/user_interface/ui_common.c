@@ -287,6 +287,23 @@ void ui_skip_btn(lv_obj_t *skip_btn,
   lv_btn_set_style(skip_btn, LV_BTN_STYLE_REL, &ui->btn_rel);
 }
 
+void ui_show_btn(lv_obj_t *show_btn,
+                 const lv_event_cb_t event_cb,
+                 const bool hidden) {
+  ASSERT(show_btn != NULL);
+
+  lv_obj_set_size(show_btn, 46, LV_DPI / 5 - 5);
+  lv_obj_align(show_btn, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 3, 0);
+  lv_obj_set_event_cb(show_btn, event_cb);
+
+  lv_obj_t *label = lv_label_create(show_btn, NULL);
+  lv_label_set_text(label, "Show " LV_SYMBOL_DOWN);
+  lv_obj_set_hidden(show_btn, hidden);
+  lv_group_add_obj(ui->g, show_btn);
+
+  lv_btn_set_style(show_btn, LV_BTN_STYLE_REL, &ui->btn_rel);
+}
+
 void ui_backspace(lv_obj_t *backspace, const lv_event_cb_t event_cb) {
   ASSERT(backspace != NULL);
 
