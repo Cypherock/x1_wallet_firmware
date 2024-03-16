@@ -4,6 +4,7 @@ SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_roboto_12.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_roboto_16.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_roboto_22.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_roboto_28.c
+SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_verdana_11.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/lv_font_unscii_8.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/my_logo.c
 SRC_FILES += $(OLED_DIR)/lvgl/src/lv_font/nfc_logo.c
