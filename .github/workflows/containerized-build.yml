@@ -16,10 +16,6 @@ jobs:
     container:
       image: cypherock/x1-firmware-builder:v0.0.0
     steps:
-    - shell: bash
-      env:
-        GET_KEY: ${{ secrets.GET_KEY }}
-      run: $GET_KEY && cp privatekeypairs/*.h utilities/script/
     - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }})
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
@@ -31,11 +27,10 @@ jobs:
           export VERSION_TAG=main
         fi
         git clone --branch ${VERSION_TAG} --depth 1 https://github.com/${{ github.repository }}.git --recurse-submodules
-        cd x1_wallet_firmware
-        utilities/build.sh -f ${{ inputs.firmware }} -t ${{ inputs.target }}
-        cp build/*/Cypherock-*.* ../
-        cd ../ && mkdir build
-        cp Cypherock-* build/
+        mkdir build && cd x1_wallet_firmware && mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE="${{ inputs.target }}" -DFIRMWARE_TYPE="${{ inputs.firmware }}" -DCMAKE_BUILD_PLATFORM="Device" -G "Ninja" ..
+        ninja && cd ../..
+        cp x1_wallet_firmware/build/Cypherock-*.* ./build/
     - name: Archive Build Artifacts
       uses: actions/upload-artifact@v3
       with:
