@@ -37,6 +37,8 @@
 #define LV_COLOR_DEPTH     1
 #endif
 
+#define LV_SUBPX_BGR 1
+
 /* Swap the 2 bytes of RGB565 color.
  * Useful if the display has a 8 bit interface (e.g. SPI)*/
 #define LV_COLOR_16_SWAP   0
@@ -266,11 +268,10 @@ typedef void * lv_indev_drv_user_data_t;            /*Type of user data in the i
 
 /* Robot fonts with bpp = 4
  * https://fonts.google.com/specimen/Roboto  */
-#define LV_FONT_ROBOTO_12    0
+#define LV_FONT_ROBOTO_12    1
 #define LV_FONT_ROBOTO_16    0
 #define LV_FONT_ROBOTO_22    0
 #define LV_FONT_ROBOTO_28    0
-#define LV_FONT_VERDANA_11   1
 
 /*Pixel perfect monospace font
  * http://pelulamu.net/unscii/ */
@@ -285,7 +286,7 @@ typedef void * lv_indev_drv_user_data_t;            /*Type of user data in the i
 #define LV_FONT_CUSTOM_DECLARE LV_FONT_DECLARE(my_font) LV_FONT_DECLARE(my_logo) LV_FONT_DECLARE(nfc_logo)
 
 /*Always set a default font from the built-in fonts*/
-#define LV_FONT_DEFAULT        &lv_font_verdana_11
+#define LV_FONT_DEFAULT        &lv_font_roboto_12
 
 /* Enable it if you have fonts with a lot of characters.
  * The limit depends on the font size, font face and bpp
