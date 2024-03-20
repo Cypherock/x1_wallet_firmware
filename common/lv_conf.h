@@ -37,7 +37,7 @@
 #define LV_COLOR_DEPTH     1
 #endif
 
-#define LV_SUBPX_BGR 1
+#define LV_SUBPX_BGR 0
 
 /* Swap the 2 bytes of RGB565 color.
  * Useful if the display has a 8 bit interface (e.g. SPI)*/
