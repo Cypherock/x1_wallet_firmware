@@ -136,7 +136,8 @@ const char *ui_text_factory_reset_instruction =
     "You will need 2 cards to perform factory reset\nMake sure at least 2 "
     "cards are accessible\nDo you want to proceed?";
 const char *ui_text_confirm_factory_reset =
-    "This will erase all wallets from device. Confirm?";
+    "This will erase all wallets from device\nYour device will reset to "
+    "factory default settings.\nConfirm?";
 const char *ui_text_erasing = "Factory reset done Device will restart";
 const char *ui_text_reset_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT] = {
     "Exiting without factory reset",
@@ -160,6 +161,9 @@ const char *ui_text_syncing_complete = "wallet(s) synced";
 const char *ui_text_clear_device_data_instruction =
     "You will need 2 cards to perform clear device data\nMake sure at least 2 "
     "cards are accessible\nDo you want to proceed?";
+const char *ui_text_confirm_clear_device_data =
+    "This will erase all wallets from device\nYour device will reset and go to "
+    "main menu.\nConfirm?";
 const char *ui_text_erasing_device_data =
     "Device data cleared Device will restart";
 const char
