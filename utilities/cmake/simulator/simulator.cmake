@@ -54,6 +54,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/near_app
 
         apps/solana_app
+        apps/bittensor_app
 
         src/
         src/menu
