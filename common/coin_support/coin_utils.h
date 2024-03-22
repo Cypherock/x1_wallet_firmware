@@ -59,7 +59,7 @@
 /// NEAR coin index
 #define NEAR (BITCOIN + 0x18d)
 
-/// SOLANA coin index
+/// SOLANA coin indexS
 #define SOLANA (BITCOIN + 0x1F5)
 
 /// NATIVE SEGWIT purpose id
@@ -67,6 +67,9 @@
 
 /// NON SEGWIT purpose id
 #define NON_SEGWIT 0x8000002C
+
+/// bittensor coin index
+#define BITTENSOR (BITCOIN + 0x3ED)
 
 typedef enum Coin_Type {
   COIN_TYPE_BITCOIN = 0x01,
