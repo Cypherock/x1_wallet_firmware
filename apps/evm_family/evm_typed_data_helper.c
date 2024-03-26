@@ -199,9 +199,13 @@ bool evm_get_typed_struct_data_digest(
     if (0 < typed_data->message.children_count) {
       eip712_status |= hash_struct(&(typed_data->message), data + offset);
     }
-  } else if (!strncmp(UI_TEXT_EIP712_DOMAIN_TYPE,
-                      typed_data->message.struct_name,
-                      sizeof(UI_TEXT_EIP712_DOMAIN_TYPE))) {
+  }
+  // Setting the primary_type to "EIP712Domain" is technically in spec
+  // In this case, we ignore the "message" part and only use the "domain" part
+  // https://ethereum-magicians.org/t/eip-712-standards-clarification-primarytype-as-domaintype/3286
+  else if (!strncmp(UI_TEXT_EIP712_DOMAIN_TYPE,
+                    typed_data->message.struct_name,
+                    sizeof(UI_TEXT_EIP712_DOMAIN_TYPE))) {
     eip712_status = EIP712_OK;
   }
 
