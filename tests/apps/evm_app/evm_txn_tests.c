@@ -58,6 +58,7 @@
 
 #include "curves.h"
 #include "eth_app.h"
+#include "evm_helpers.h"
 #include "evm_priv.h"
 #include "flash_config.h"
 #include "pb_decode.h"
@@ -136,7 +137,10 @@ TEST(evm_txn_test, evm_txn_eth_transfer) {
   TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
   usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+
+#ifdef EVM_TXN_MANUAL_TEST
   TEST_ASSERT_TRUE(get_user_verification());
+#endif
 }
 
 TEST(evm_txn_test, evm_txn_usdt_transfer) {
@@ -180,7 +184,10 @@ TEST(evm_txn_test, evm_txn_usdt_transfer) {
   TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
   usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+
+#ifdef EVM_TXN_MANUAL_TEST
   TEST_ASSERT_TRUE(get_user_verification());
+#endif
 }
 
 TEST(evm_txn_test, evm_txn_haka_transfer) {
@@ -224,7 +231,10 @@ TEST(evm_txn_test, evm_txn_haka_transfer) {
   TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
   usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+
+#ifdef EVM_TXN_MANUAL_TEST
   TEST_ASSERT_TRUE(get_user_verification());
+#endif
 }
 
 TEST(evm_txn_test, evm_txn_blind_signing) {
@@ -306,7 +316,58 @@ TEST(evm_txn_test, evm_txn_blind_signing) {
   TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
   usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+
+#ifdef EVM_TXN_MANUAL_TEST
   TEST_ASSERT_TRUE(get_user_verification());
+#endif
 }
+
+TEST(evm_txn_test, evm_txn_token_deposit) {
+  evm_query_t query = {
+      .which_request = 2,
+      .sign_txn = {.which_request = 1,
+                   .initiate = {
+                       .chain_id = 1,
+                       .derivation_path_count = EVM_DRV_BIP44_DEPTH,
+                       .derivation_path = {ETHEREUM_PURPOSE_INDEX,
+                                           ETHEREUM_COIN_INDEX,
+                                           EVM_DRV_ACCOUNT,
+                                           0,
+                                           0},
+                       .wallet_id = {},
+                       .address_format = EVM_DEFAULT,
+                       .transaction_size = 51,
+                   }}};
+  evm_query_t query1 = {.which_request = 2,
+                        .sign_txn = {.which_request = 2,
+                                     .txn_data = {.has_chunk_payload = true,
+                                                  .chunk_payload = {
+                                                      .chunk =
+                                                          {
+                                                              .size = 51,
+                                                          },
+                                                      .remaining_size = 0,
+                                                      .chunk_index = 0,
+                                                      .total_chunks = 1,
+                                                  }}}};
+  // dummy raw Txn
+  hex_string_to_byte_array("f08084014a86108301e6089482af49447d8a07e3bd95bd0d56f"
+                           "35241523fbab188025bf6196bd1000084d0e30db0018080",
+                           102,
+                           query1.sign_txn.txn_data.chunk_payload.chunk.bytes);
+  txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
+  memzero(txn_context, sizeof(evm_txn_context_t));
+  memcpy(&txn_context->init_info,
+         &query.sign_txn.initiate,
+         sizeof(evm_sign_txn_initiate_request_t));
+  TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
+  usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
+  TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
+
+#ifdef EVM_TXN_MANUAL_TEST
+  TEST_ASSERT_TRUE(get_user_verification());
+#endif
+}
+
 // large transaction test
 // https://etherscan.io/getRawTx?tx=0x2d6a7b0f6adeff38423d4c62cd8b6ccb708ddad85da5d3d06756ad4d8a04a6a2
