@@ -281,7 +281,13 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
   const uint8_t *pPayloadBasePtr = pCurrHeadPtr;
   uint8_t currArgument;
 
-  for (currArgument = 0; currArgument < numArgsInFunction; currArgument++) {
+  for (currArgument = 0; currArgument <= numArgsInFunction; currArgument++) {
+    // only return OK when completely parsed whole payload
+    if ((pAbiPayload + sizeOfPayload) == pCurrHeadPtr) {
+      returnCode = ETH_UTXN_ABI_DECODE_OK;
+      break;
+    }
+
     /* Ensure that we are reading from within the bounds */
     if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiPayload,
                                           sizeOfPayload,
@@ -345,7 +351,6 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
     }
 
     pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;
-    returnCode = ETH_UTXN_ABI_DECODE_OK;
 
     if (*displayNode == NULL) {
       *displayNode = pAbiDispNode;
