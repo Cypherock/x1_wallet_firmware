@@ -176,12 +176,11 @@ TEST_GROUP_RUNNER(btc_script_test) {
 }
 
 TEST_GROUP_RUNNER(evm_txn_test) {
-#ifdef EVM_TXN_MANUAL_TEST
   RUN_TEST_CASE(evm_txn_test, evm_txn_eth_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_usdt_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_haka_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_blind_signing);
-#endif
+  RUN_TEST_CASE(evm_txn_test, evm_txn_token_deposit);
 }
 
 TEST_GROUP_RUNNER(evm_sign_msg_test) {
