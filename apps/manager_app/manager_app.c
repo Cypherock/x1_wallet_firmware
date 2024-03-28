@@ -164,6 +164,10 @@ void manager_app_main(usb_event_t usb_evt, const void *app_config) {
       manager_confirm_firmware_update(&query);
       break;
     }
+    case MANAGER_QUERY_SELECT_WALLET_TAG: {
+      manager_wallet_selector(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

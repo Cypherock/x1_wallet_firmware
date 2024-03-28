@@ -17,6 +17,9 @@
 #define MENU_MAX_NUMBER_OF_OPTIONS 12
 #define MAX_LEN_OF_MENU_OPTIONS 25
 
+// wrapper for reducing changes in codebase
+#define menu_init(o, n, h, b) menu_init_with_choice(o, n, h, 0, b)
+
 /**
  * @brief struct to store Menu data and meta data
  * @details
@@ -59,6 +62,7 @@ struct Menu_Object {
  * @param option_list Array of char array for options
  * @param number_of_options Number of options
  * @param heading Heading text
+ * @param initial_selection The default selected choice
  * @param back_button_allowed Show a back button
  *
  * @return
@@ -69,9 +73,9 @@ struct Menu_Object {
  *
  * @note
  */
-void menu_init(const char *option_list[],
-               int number_of_options,
-               const char heading[],
-               bool back_button_allowed);
-
+void menu_init_with_choice(const char *option_list[],
+                           const int number_of_options,
+                           const char heading[],
+                           const int initial_selection,
+                           const bool back_button_allowed);
 #endif    // UI_MENU_H

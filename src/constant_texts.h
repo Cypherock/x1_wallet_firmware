@@ -149,6 +149,7 @@ extern const char *ui_text_joystick_down;
 extern const char *ui_text_joystick_left;
 extern const char *ui_text_joystick_center;
 extern const char *ui_text_joystick_checkup_complete;
+extern const char *ui_text_wallet_selector_invalid;
 
 // Onboarding text
 extern const char *ui_text_onboarding_welcome;
