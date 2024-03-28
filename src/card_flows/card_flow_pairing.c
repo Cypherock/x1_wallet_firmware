@@ -109,7 +109,7 @@ bool card_flow_pairing(uint8_t *cards_paired) {
     }
 
     snprintf(display, sizeof(display), UI_TEXT_PAIRING_TAP_CARD, card_number);
-    skip_instruction_scr_init(display);
+    skip_only_instruction_scr_init(display);
 
     // Enable task to select NFC card
     nfc_en_select_card_task();
