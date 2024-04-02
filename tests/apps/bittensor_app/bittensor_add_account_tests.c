@@ -102,60 +102,84 @@ TEST(bittensor_add_account_test, bittensor_validate_req_action) {
 #define SS58_BLAKE_PREFIX_LEN 7
 #define SS58_ADDRESS_MAX_LEN 60u
 #define PK_LEN_25519 32u
-uint16_t crypto_SS58EncodePubkey(uint8_t *buffer,
+uint16_t crypto_SS58EncodePubkey(char *buffer,
                                  uint16_t buffer_len,
                                  uint16_t addressType,
                                  const uint8_t *pubkey);
 TEST(bittensor_add_account_test, bittensor_get_addr_action) {
+  char *mnemonic = "sample split bamboo west visual approve brain fox arch "
+                   "impact relief smile";
+  uint8_t seed_length = 512 / 8;
+  uint8_t seed[512 / 8];
+  mnemonic_to_seed(mnemonic, "", seed, 0);
+
+  // bittensor_query_t query = {
+  //   .which_request = 1,
+  //   .get_public_keys = {.which_request = 1,
+  //                       .initiate = {
+  //                           .derivation_paths_count = 1,
+  //                           .derivation_paths = {{
+  //                               .path_count = 3,
+  //                               .path = {BITTENSOR_PURPOSE_INDEX,
+  //                                        BITTENSOR_COIN_INDEX,
+  //                                        0x80000000},
+  //                           }},
+  //                           .wallet_id = {},
+  //                       }}};
+  // const char expected_addr[] =
+  //   "5HGC856wXs2Kp3H4EYexdfumLqJ2P3V2PdheZQ5Lg8UVkUZG";
+
+  // // seed_length = 32;
+  // // hex_string_to_byte_array(
+  // // "97a44c67e8ed633282d84bb02d66d33ca56d83f6052e05258992906dec0c5037",
+  // // seed_length,
+  // // seed);
+
   bittensor_query_t query = {
       .which_request = 1,
       .get_public_keys = {.which_request = 1,
                           .initiate = {
                               .derivation_paths_count = 1,
                               .derivation_paths = {{
-                                  .path_count = 3,
-                                  .path = {BITTENSOR_PURPOSE_INDEX,
-                                           BITTENSOR_COIN_INDEX,
-                                           0x80000000},
+                                  .path_count = 0,
                               }},
                               .wallet_id = {},
                           }}};
+  const char expected_addr[] =
+      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ";
 
   uint8_t public_keys[sizeof(query.get_public_keys.initiate.derivation_paths) /
                       sizeof(bittensor_get_public_keys_derivation_path_t)]
                      [BITTENSOR_PUB_KEY_SIZE] = {0};
 
-  char address[100] = "";
-  size_t address_size = sizeof(address);
-
-  uint8_t seed[512 / 8];
-  uint8_t pubkey[100];
-  char PubHash[64];
-
-  char *mnemonic = "sample split bamboo west visual approve brain fox arch "
-                   "impact relief smile";
-  const char expected_addr[] =
-      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ";
-
-  mnemonic_to_seed(mnemonic, "", seed, 0);
-
-  hex_string_to_byte_array(
-      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
-      64,
-      seed)
-
-      // get public key
-      TEST_ASSERT_TRUE(fill_public_keys(
-          query.get_public_keys.initiate.derivation_paths,
-          seed,
-          public_keys,
-          query.get_public_keys.initiate.derivation_paths_count));
-
+  // Get public key
+  TEST_ASSERT_TRUE(
+      fill_public_keys(query.get_public_keys.initiate.derivation_paths,
+                       seed,
+                       public_keys,
+                       query.get_public_keys.initiate.derivation_paths_count));
+  u8ToHexStr("seed", seed, seed_length);
   u8ToHexStr("pubkey received", (uint8_t *)(public_keys[0]), PK_LEN_25519);
-  u8ToHexStr("seed", seed, 512 / 8);
 
-  // Print the values of the public_keys array
-  // printf("\npubkey: %s", (char *)(public_keys[0]));
+  printf("\n\n");
+
+  // seed_length = 32;
+  // hex_string_to_byte_array(
+  // "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+  // seed_length,
+  // seed);
+
+  // fill_public_keys(
+  //     query.get_public_keys.initiate.derivation_paths,
+  //     seed,
+  //     public_keys,
+  //     query.get_public_keys.initiate.derivation_paths_count);
+  // u8ToHexStr("seed", seed, seed_length);
+  // u8ToHexStr("pubkey received", (uint8_t *)(public_keys[0]), PK_LEN_25519);
+
+  // from derivation
+  u8ToHexStr("public key received", (uint8_t *)public_keys[0], PK_LEN_25519);
+  uint8_t pubkey[100];
   for (size_t i = 0; i < 1; ++i) {
     printf("\n1st PubKey : 0x%zu", i);
     for (size_t j = 0; j < BITTENSOR_PUB_KEY_SIZE; ++j) {
@@ -164,22 +188,45 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
     }
     printf("\n");
   }
+  u8ToHexStr("public key derived", pubkey, PK_LEN_25519);
 
-  // get address from pubkey
-  memzero(address, PK_LEN_25519);
-  uint16_t outlen = crypto_SS58EncodePubkey(
-      address, PK_LEN_25519, 0, (uint8_t *)(public_keys[0]));
+  // manual
+  hex_string_to_byte_array(
+      "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
+      64,
+      pubkey);
+  u8ToHexStr("public key manual", pubkey, PK_LEN_25519);
 
+  // Get Account
+
+  printf("\n\n");
+
+  char address[100] = "";
+  size_t address_size = sizeof(address);
+
+  // get address func
+  uint16_t outlen = crypto_SS58EncodePubkey(address, &address_size, 0, pubkey);
+
+  // u8ToHexStr("address func", addressU8, 24);
   printf("\naddress func: %s\n\n", address);
-  // TEST_ASSERT_EQUAL_STRING(expected_addr, address);
+  //   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
 
-  // manual conversion
+  printf("\n\n");
+
+  // address manual
   char pk_hex[(36 * 2) + 1] = "0010b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1"
-                              "534044590f1f966ebc0000000";
+                              "534044590f1f966ebc0000000";    // seed
+  // char pk_hex[(36 * 2) + 1] =
+  // "00e5f0045fe0dbcc980fdd8ffa27522f16b6dfb20539257e916d1dc1d9452cb1b30000000";
+  // // seed//purpose//cointype//0
+
   uint8_t pk[36];
+  char PubHash[64];
+
   hex_string_to_byte_array(pk_hex, (36 * 2) + 1, pk);
   int prefixSize = 1;
-  if (0 == ss58hash(pk, 32, PubHash, 64)) {
+
+  if (0 == ss58hash(pk, 32 + 1, PubHash, 64)) {
     u8ToHexStr("pubHash", PubHash, 64);
 
     pk[33] = PubHash[0];
@@ -188,7 +235,7 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
     u8ToHexStrr("pk", pk, 36, pk_hex);
 
     memzero(address, PK_LEN_25519);
-    b58enc(address, &address_size, pk_hex, 33 + 2);
+    b58enc(address, &address_size, pk_hex, 1 + 32 + 2);
   }
   printf("\naddress manual: %s\n\n", address);
   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
@@ -206,7 +253,7 @@ int ss58hash(const unsigned char *in,
   return 0;
 }
 
-uint16_t crypto_SS58EncodePubkey(uint8_t *buffer,
+uint16_t crypto_SS58EncodePubkey(char *buffer,
                                  uint16_t buffer_len,
                                  uint16_t addressType,
                                  const uint8_t *pubkey) {
@@ -217,12 +264,25 @@ uint16_t crypto_SS58EncodePubkey(uint8_t *buffer,
   if (pubkey == NULL) {
     return 0;
   }
-  memzero(buffer, buffer_len);
 
   uint8_t hash[64] = {0};
   uint8_t unencoded[36] = {0};
+  uint8_t prefixSize;
+  if (addressType > 16383) {
+    prefixSize = 0;
+  }
 
-  const uint8_t prefixSize = crypto_SS58CalculatePrefix(addressType, unencoded);
+  if (addressType > 63) {
+    unencoded[0] = 0x40 | ((addressType >> 2) & 0x3F);
+    unencoded[1] = ((addressType & 0x3) << 6) + ((addressType >> 8) & 0x3F);
+    prefixSize = 2;
+  } else {
+    unencoded[0] = addressType & 0x3F;    // address type
+    prefixSize = 1;
+  }
+
+  // const uint8_t prefixSize = 1; //crypto_SS58CalculatePrefix(addressType,
+  // unencoded);
   if (prefixSize == 0) {
     return 0;
   }
@@ -266,16 +326,16 @@ uint8_t crypto_SS58CalculatePrefix(uint16_t addressType, uint8_t *prefixBytes) {
   return 1;
 }
 
-void u8ToHexStr(const char *name, const uint8_t *data, size_t size) {
-  char hexstring[size * 2 + 1];
-  for (size_t i = 0; i < size; ++i) {
-    for (size_t i = 0; i < size; ++i) {
+void u8ToHexStr(const char *name, const uint8_t *data, size_t datasize) {
+  char hexstring[datasize * 2 + 1];
+  for (size_t i = 0; i < datasize; ++i) {
+    for (size_t i = 0; i < datasize; ++i) {
       sprintf(hexstring + 2 * i,
               "%02x",
               data[i]);    // Each byte represented by 2 characters + '\0'
     }
   }
-  hexstring[size * 2] = '\0';    // Null-terminate the string
+  hexstring[datasize * 2] = '\0';    // Null-terminate the string
   printf("\n%s : 0x%s", name, hexstring);
 }
 
