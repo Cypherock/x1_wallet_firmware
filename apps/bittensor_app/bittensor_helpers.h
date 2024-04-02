@@ -29,7 +29,7 @@
 // https://docs.bittensor.com/wallet-guide/paper-wallet#hierarchical-derivation
 // Taking 3 levels of depth similar to ledger
 #define BITTENSOR_PURPOSE_INDEX 0x8000002C
-#define BITTENSOR_COIN_INDEX 0x800001F5
+#define BITTENSOR_COIN_INDEX 0x80000162
 #define BITTENSOR_ACCOUNT_INDEX 0x80000000
 #define BITTENSOR_CHANGE_INDEX 0x80000000
 
