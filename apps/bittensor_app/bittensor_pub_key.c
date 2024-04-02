@@ -100,7 +100,7 @@
  * @retval true If the query contains the expected request
  * @retval false If the query does not contain the expected request
  */
-STATIC bool check_which_request(const bittensor_query_t *query,
+static bool check_which_request(const bittensor_query_t *query,
                                 pb_size_t which_request);
 /**
  * @brief Validates all the derivation paths received in the request from host
@@ -114,7 +114,7 @@ STATIC bool check_which_request(const bittensor_query_t *query,
  * @retval true If all the derivation path entries are valid
  * @retval false If any of the derivation path entries are invalid
  */
-STATIC bool validate_request_data(bittensor_get_public_keys_request_t *request,
+static bool validate_request_data(bittensor_get_public_keys_request_t *request,
                                   const pb_size_t which_request);
 /**
  * @details The function provides a public key. It accepts NULL for output
@@ -131,7 +131,7 @@ STATIC bool validate_request_data(bittensor_get_public_keys_request_t *request,
  *
  * @retval false If derivation failed
  */
-STATIC bool get_public_key(const uint8_t *seed,
+static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
                            uint8_t *public_key);
@@ -155,7 +155,7 @@ STATIC bool get_public_key(const uint8_t *seed,
  * @retval false If the public key derivation failed. This could be due to
  * invalid derivation path.
  */
-STATIC bool fill_public_keys(
+static bool fill_public_keys(
     const bittensor_get_public_keys_derivation_path_t *paths,
     const uint8_t *seed,
     uint8_t public_keys[][BITTENSOR_PUB_KEY_SIZE],
@@ -215,7 +215,7 @@ static bool get_user_consent(const pb_size_t which_request,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-STATIC bool check_which_request(const bittensor_query_t *query,
+static bool check_which_request(const bittensor_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     bittensor_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -226,7 +226,7 @@ STATIC bool check_which_request(const bittensor_query_t *query,
   return true;
 }
 
-STATIC bool validate_request_data(bittensor_get_public_keys_request_t *request,
+static bool validate_request_data(bittensor_get_public_keys_request_t *request,
                                   const pb_size_t which_request) {
   bool status = true;
 
@@ -261,7 +261,7 @@ STATIC bool validate_request_data(bittensor_get_public_keys_request_t *request,
   return status;
 }
 
-STATIC bool get_public_key(const uint8_t *seed,
+static bool get_public_key(const uint8_t *seed,
                            const uint32_t *path,
                            uint32_t path_length,
                            uint8_t *public_key) {
@@ -282,7 +282,7 @@ STATIC bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-STATIC bool fill_public_keys(
+static bool fill_public_keys(
     const bittensor_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t public_key_list[][BITTENSOR_PUB_KEY_SIZE],

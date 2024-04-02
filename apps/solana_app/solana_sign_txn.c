@@ -180,7 +180,7 @@ STATIC bool solana_get_user_verification();
  * @retval true If all the seed is generated without any error
  * @retval false If seed failed to generate
  */
-STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out);
+static bool fetch_seed(solana_query_t *query, uint8_t *seed_out);
 
 /**
  * @brief Sends the generated signature to the host
@@ -390,7 +390,7 @@ STATIC bool solana_get_user_verification() {
   return true;
 }
 
-STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
+static bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
   if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) &&
       !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_VERIFY_TAG)) {
     return false;

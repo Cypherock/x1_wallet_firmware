@@ -137,7 +137,7 @@ static void send_response(pb_size_t which_response);
  * @retval true If all the validation and user confirmation was positive
  * @retval false If any of the validation or user confirmation was negative
  */
-STATIC bool bittensor_handle_initiate_query(const bittensor_query_t *query);
+static bool bittensor_handle_initiate_query(const bittensor_query_t *query);
 
 /**
  * @brief Fetches complete raw transaction to be signed for verification
@@ -152,7 +152,7 @@ STATIC bool bittensor_handle_initiate_query(const bittensor_query_t *query);
  * @retval true If all the transaction was fetched and verified
  * @retval false If the transaction failed verification or wasn't fetched
  */
-STATIC bool bittensor_fetch_valid_transaction(bittensor_query_t *query);
+static bool bittensor_fetch_valid_transaction(bittensor_query_t *query);
 
 /**
  * @brief Aggregates user consent for the transaction info
@@ -165,7 +165,7 @@ STATIC bool bittensor_fetch_valid_transaction(bittensor_query_t *query);
  * the corresponding value.
  * @retval false Immediate return if any of the confirmation is disapproved
  */
-STATIC bool bittensor_get_user_verification();
+static bool bittensor_get_user_verification();
 
 /**
  * @brief Fetches seed for generating public and private key
@@ -180,7 +180,7 @@ STATIC bool bittensor_get_user_verification();
  * @retval true If all the seed is generated without any error
  * @retval false If seed failed to generate
  */
-STATIC bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out);
+static bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out);
 
 /**
  * @brief Sends the generated signature to the host
@@ -203,7 +203,7 @@ static bool send_signature(bittensor_query_t *query,
  * STATIC VARIABLES
  *****************************************************************************/
 
-STATIC bittensor_txn_context_t *bittensor_txn_context = NULL;
+static bittensor_txn_context_t *bittensor_txn_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -245,7 +245,7 @@ static void send_response(const pb_size_t which_response) {
   bittensor_send_result(&result);
 }
 
-STATIC bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
+static bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -279,7 +279,7 @@ STATIC bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
   return true;
 }
 
-STATIC bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
+static bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
   uint32_t size = 0;
   bittensor_result_t response =
       init_bittensor_result(BITTENSOR_RESULT_SIGN_TXN_TAG);
@@ -341,7 +341,7 @@ STATIC bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
   return true;
 }
 
-STATIC bool bittensor_get_user_verification() {
+static bool bittensor_get_user_verification() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
@@ -395,7 +395,7 @@ STATIC bool bittensor_get_user_verification() {
   return true;
 }
 
-STATIC bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out) {
+static bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out) {
   if (!bittensor_get_query(query, BITTENSOR_QUERY_SIGN_TXN_TAG) &&
       !check_which_request(query, BITTENSOR_SIGN_TXN_REQUEST_VERIFY_TAG)) {
     return false;
