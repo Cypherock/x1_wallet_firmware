@@ -98,6 +98,14 @@ TEST(bittensor_add_account_test, bittensor_validate_req_action) {
       validate_request_data(&query.get_public_keys, which_request));
 }
 
+#define SS58_BLAKE_PREFIX (const unsigned char *)"SS58PRE"
+#define SS58_BLAKE_PREFIX_LEN 7
+#define SS58_ADDRESS_MAX_LEN 60u
+#define PK_LEN_25519 32u
+uint16_t crypto_SS58EncodePubkey(uint8_t *buffer,
+                                 uint16_t buffer_len,
+                                 uint16_t addressType,
+                                 const uint8_t *pubkey);
 TEST(bittensor_add_account_test, bittensor_get_addr_action) {
   bittensor_query_t query = {
       .which_request = 1,
@@ -113,30 +121,176 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
                               .wallet_id = {},
                           }}};
 
-  uint8_t seed[512 / 8];
-
   uint8_t public_keys[sizeof(query.get_public_keys.initiate.derivation_paths) /
                       sizeof(bittensor_get_public_keys_derivation_path_t)]
                      [BITTENSOR_PUB_KEY_SIZE] = {0};
 
-  const char expected_addr[] = "AFnpWBz6yjbYnqUKjo5dSN2gDneo62TmeaFJUraLTP9V";
   char address[100] = "";
   size_t address_size = sizeof(address);
 
-  hex_string_to_byte_array("0090ed0e7eccc22e9d60396e3debb38c"
-                           "95128186493bb4d67750d7b2babf99fc"
-                           "c9ca81fd0ae7719982611a0a28cf46b2"
-                           "db1309c81f62be189bd2d1e5d06cd6fe",
-                           128,
-                           seed);
+  uint8_t seed[512 / 8];
+  uint8_t pubkey[100];
+  char PubHash[64];
 
-  TEST_ASSERT_TRUE(
-      fill_public_keys(query.get_public_keys.initiate.derivation_paths,
-                       seed,
-                       public_keys,
-                       query.get_public_keys.initiate.derivation_paths_count));
+  char *mnemonic = "sample split bamboo west visual approve brain fox arch "
+                   "impact relief smile";
+  const char expected_addr[] =
+      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ";
 
-  b58enc(address, &address_size, (char *)(public_keys[0]), 32);
+  mnemonic_to_seed(mnemonic, "", seed, 0);
 
+  hex_string_to_byte_array(
+      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+      64,
+      seed)
+
+      // get public key
+      TEST_ASSERT_TRUE(fill_public_keys(
+          query.get_public_keys.initiate.derivation_paths,
+          seed,
+          public_keys,
+          query.get_public_keys.initiate.derivation_paths_count));
+
+  u8ToHexStr("pubkey received", (uint8_t *)(public_keys[0]), PK_LEN_25519);
+  u8ToHexStr("seed", seed, 512 / 8);
+
+  // Print the values of the public_keys array
+  // printf("\npubkey: %s", (char *)(public_keys[0]));
+  for (size_t i = 0; i < 1; ++i) {
+    printf("\n1st PubKey : 0x%zu", i);
+    for (size_t j = 0; j < BITTENSOR_PUB_KEY_SIZE; ++j) {
+      pubkey[i] = public_keys[i][j];
+      printf("%02X", public_keys[i][j]);
+    }
+    printf("\n");
+  }
+
+  // get address from pubkey
+  memzero(address, PK_LEN_25519);
+  uint16_t outlen = crypto_SS58EncodePubkey(
+      address, PK_LEN_25519, 0, (uint8_t *)(public_keys[0]));
+
+  printf("\naddress func: %s\n\n", address);
+  // TEST_ASSERT_EQUAL_STRING(expected_addr, address);
+
+  // manual conversion
+  char pk_hex[(36 * 2) + 1] = "0010b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1"
+                              "534044590f1f966ebc0000000";
+  uint8_t pk[36];
+  hex_string_to_byte_array(pk_hex, (36 * 2) + 1, pk);
+  int prefixSize = 1;
+  if (0 == ss58hash(pk, 32, PubHash, 64)) {
+    u8ToHexStr("pubHash", PubHash, 64);
+
+    pk[33] = PubHash[0];
+    pk[34] = PubHash[1];
+
+    u8ToHexStrr("pk", pk, 36, pk_hex);
+
+    memzero(address, PK_LEN_25519);
+    b58enc(address, &address_size, pk_hex, 33 + 2);
+  }
+  printf("\naddress manual: %s\n\n", address);
   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
+}
+
+int ss58hash(const unsigned char *in,
+             unsigned int inLen,
+             unsigned char *out,
+             unsigned int outLen) {
+  blake2b_state s;
+  blake2b_Init(&s, 64);
+  blake2b_Update(&s, SS58_BLAKE_PREFIX, SS58_BLAKE_PREFIX_LEN);
+  blake2b_Update(&s, in, inLen);
+  blake2b_Final(&s, out, outLen);
+  return 0;
+}
+
+uint16_t crypto_SS58EncodePubkey(uint8_t *buffer,
+                                 uint16_t buffer_len,
+                                 uint16_t addressType,
+                                 const uint8_t *pubkey) {
+  // based on https://docs.substrate.io/v3/advanced/ss58/
+  if (buffer == NULL || buffer_len < SS58_ADDRESS_MAX_LEN) {
+    return 0;
+  }
+  if (pubkey == NULL) {
+    return 0;
+  }
+  memzero(buffer, buffer_len);
+
+  uint8_t hash[64] = {0};
+  uint8_t unencoded[36] = {0};
+
+  const uint8_t prefixSize = crypto_SS58CalculatePrefix(addressType, unencoded);
+  if (prefixSize == 0) {
+    return 0;
+  }
+
+  memcpy(unencoded + prefixSize, pubkey, 32);    // account id
+  u8ToHexStr("unencoded p", unencoded, 36);
+  if (ss58hash((uint8_t *)unencoded, 32 + prefixSize, hash, 64) != 0) {
+    memzero(unencoded, sizeof(unencoded));
+    return 0;
+  }
+  unencoded[32 + prefixSize] = hash[0];
+  unencoded[33 + prefixSize] = hash[1];
+
+  u8ToHexStr("hash", hash, 64);
+  u8ToHexStr("unencoded", unencoded, 36);
+
+  char unencoded_str[36 * 2 + 1];
+  u8ToHexStrr("unencoded str", unencoded, 36, unencoded_str);
+
+  size_t outLen = buffer_len;
+  if (b58enc(buffer, &buffer_len, unencoded_str, 34 + prefixSize) != 0) {
+    memzero(unencoded, sizeof(unencoded));
+    return 0;
+  }
+
+  return outLen;
+}
+
+uint8_t crypto_SS58CalculatePrefix(uint16_t addressType, uint8_t *prefixBytes) {
+  if (addressType > 16383) {
+    return 0;
+  }
+
+  if (addressType > 63) {
+    prefixBytes[0] = 0x40 | ((addressType >> 2) & 0x3F);
+    prefixBytes[1] = ((addressType & 0x3) << 6) + ((addressType >> 8) & 0x3F);
+    return 2;
+  }
+
+  prefixBytes[0] = addressType & 0x3F;    // address type
+  return 1;
+}
+
+void u8ToHexStr(const char *name, const uint8_t *data, size_t size) {
+  char hexstring[size * 2 + 1];
+  for (size_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
+      sprintf(hexstring + 2 * i,
+              "%02x",
+              data[i]);    // Each byte represented by 2 characters + '\0'
+    }
+  }
+  hexstring[size * 2] = '\0';    // Null-terminate the string
+  printf("\n%s : 0x%s", name, hexstring);
+}
+
+void u8ToHexStrr(const char *name,
+                 const uint8_t *data,
+                 size_t size,
+                 char *hexstring) {
+  // char hexstring[size*2+1];
+  for (size_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
+      sprintf(hexstring + 2 * i,
+              "%02x",
+              data[i]);    // Each byte represented by 2 characters + '\0'
+    }
+  }
+  hexstring[size * 2] = '\0';    // Null-terminate the string
+  printf("\n%s : 0x%s", name, hexstring);
 }
