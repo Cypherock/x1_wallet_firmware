@@ -207,37 +207,9 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
   // get address func
   uint16_t outlen = crypto_SS58EncodePubkey(address, &address_size, 0, pubkey);
 
-  // u8ToHexStr("address func", addressU8, 24);
+  // Get
+
   printf("\naddress func: %s\n\n", address);
-  //   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
-
-  printf("\n\n");
-
-  // address manual
-  char pk_hex[(36 * 2) + 1] = "0010b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1"
-                              "534044590f1f966ebc0000000";    // seed
-  // char pk_hex[(36 * 2) + 1] =
-  // "00e5f0045fe0dbcc980fdd8ffa27522f16b6dfb20539257e916d1dc1d9452cb1b30000000";
-  // // seed//purpose//cointype//0
-
-  uint8_t pk[36];
-  char PubHash[64];
-
-  hex_string_to_byte_array(pk_hex, (36 * 2) + 1, pk);
-  int prefixSize = 1;
-
-  if (0 == ss58hash(pk, 32 + 1, PubHash, 64)) {
-    u8ToHexStr("pubHash", PubHash, 64);
-
-    pk[33] = PubHash[0];
-    pk[34] = PubHash[1];
-
-    u8ToHexStrr("pk", pk, 36, pk_hex);
-
-    memzero(address, PK_LEN_25519);
-    b58enc(address, &address_size, pk_hex, 1 + 32 + 2);
-  }
-  printf("\naddress manual: %s\n\n", address);
   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
 }
 
@@ -267,6 +239,7 @@ uint16_t crypto_SS58EncodePubkey(char *buffer,
 
   uint8_t hash[64] = {0};
   uint8_t unencoded[36] = {0};
+
   uint8_t prefixSize;
   if (addressType > 16383) {
     prefixSize = 0;
@@ -281,8 +254,6 @@ uint16_t crypto_SS58EncodePubkey(char *buffer,
     prefixSize = 1;
   }
 
-  // const uint8_t prefixSize = 1; //crypto_SS58CalculatePrefix(addressType,
-  // unencoded);
   if (prefixSize == 0) {
     return 0;
   }
@@ -303,27 +274,12 @@ uint16_t crypto_SS58EncodePubkey(char *buffer,
   u8ToHexStrr("unencoded str", unencoded, 36, unencoded_str);
 
   size_t outLen = buffer_len;
-  if (b58enc(buffer, &buffer_len, unencoded_str, 34 + prefixSize) != 0) {
+  if (b58enc(buffer, &buffer_len, unencoded_str, 34 + prefixSize) != true) {
     memzero(unencoded, sizeof(unencoded));
     return 0;
   }
 
   return outLen;
-}
-
-uint8_t crypto_SS58CalculatePrefix(uint16_t addressType, uint8_t *prefixBytes) {
-  if (addressType > 16383) {
-    return 0;
-  }
-
-  if (addressType > 63) {
-    prefixBytes[0] = 0x40 | ((addressType >> 2) & 0x3F);
-    prefixBytes[1] = ((addressType & 0x3) << 6) + ((addressType >> 8) & 0x3F);
-    return 2;
-  }
-
-  prefixBytes[0] = addressType & 0x3F;    // address type
-  return 1;
 }
 
 void u8ToHexStr(const char *name, const uint8_t *data, size_t datasize) {
