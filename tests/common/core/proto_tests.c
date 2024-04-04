@@ -64,9 +64,23 @@
 #include "unity_fixture.h"
 #include "utils.h"
 
+const uint8_t core_msg[] = {10, 2, 8, 1};
+static uint8_t data[4096] = {0};
+
 TEST_GROUP(proto_tests);
 
+/**
+ * @brief Test setup for usb event consumer tests.
+ * @details The function populates data in local buffer of USB communication
+ * module so that the event getter has an event ready for dispatch for
+ * performing tests. buffer of packet(s) of data.
+ */
 TEST_SETUP(proto_tests) {
+  LOG_SWV("Setting up test...\n");
+  const char *hex_str = "";
+  uint16_t length = strlen(hex_str);
+  hex_string_to_byte_array(hex_str, length, data);
+  usb_set_event(4, core_msg, length >> 1, data);
   return;
 }
 
