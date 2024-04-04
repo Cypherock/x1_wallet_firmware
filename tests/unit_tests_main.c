@@ -102,6 +102,7 @@ void RunAllTests(void) {
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
+  RUN_TEST_GROUP(proto_tests);
   RUN_TEST_GROUP(utils_tests);
 }
 
