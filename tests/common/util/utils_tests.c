@@ -145,10 +145,10 @@ TEST(utils_tests, escape_string_ascii) {
   // message:
   // "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789
   // !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~"
-  char utf_8_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz"
-                        "\n0123456789 !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
+  char utf_8_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\nabcdefghijklmnopqrstuvwx"
+                        "yz\n0123456789\r !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
   const char expected_string[] =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789 "
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\nabcdefghijklmnopqrstuvwxyz\n0123456789\r "
       "!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
   char actual_string[300] = "";
 
