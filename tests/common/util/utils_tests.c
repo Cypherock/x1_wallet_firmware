@@ -142,9 +142,14 @@ TEST(utils_tests, escape_string_symbol) {
 }
 
 TEST(utils_tests, escape_string_ascii) {
-  // message: "ASCII sample text"
-  char utf_8_string[] = "ASCII sample text";
-  const char expected_string[] = "ASCII sample text";
+  // message:
+  // "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789
+  // !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~"
+  char utf_8_string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz"
+                        "\n0123456789 !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
+  const char expected_string[] =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789 "
+      "!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
   char actual_string[300] = "";
 
   uint8_t result = string_to_escaped_string(
