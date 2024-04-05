@@ -623,8 +623,11 @@ uint8_t string_to_escaped_string(const char *input,
     bool g_ret = lv_font_get_glyph_dsc(font_p, &g, letter, '\0');
     uint8_t bytes_read = in_idx - old_idx;
 
-    if (0 != letter && true == g_ret) {
-      // the glyph exists; keep the encoded character as it is
+    if (0 != letter && ('\n' == letter || '\r' == letter || true == g_ret)) {
+      // the glyph exists; keep the encoded character as it is.
+      // Additionally, CR/LF characters are handled as special case by LVGL
+      // hence glyphs for CR/LF are meaningless so we should keep it as it is
+      // refer common/lvgl/src/lv_misc/lv_txt.c#174
       if ((out_idx + bytes_read + 1) >= out_len)
         return 5;
       memcpy(&escaped_string[out_idx], &input[old_idx], bytes_read);
