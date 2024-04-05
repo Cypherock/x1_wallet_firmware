@@ -1,6 +1,9 @@
 # Options for file common/cypherock-common/proto/btc/sign_txn.proto
 btc.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
 btc.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:3 fixed_length:true
+# UTXOs can be output of large transactions, increase 2048 to 3072 for quick fix of
+# https://app.clickup.com/t/9002019994/PRF-7143 until chunking is added in the firmware & sdk
+# The change is tracked in https://app.clickup.com/t/9002019994/PRF-4874
 btc.SignTxnInput.prev_txn type:FT_STATIC max_size:3072 fixed_length:false
 btc.SignTxnInput.prev_txn_hash type:FT_STATIC max_size:32 fixed_length:true
 btc.SignTxnInput.script_pub_key type:FT_STATIC max_size:67 fixed_length:false
