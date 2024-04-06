@@ -87,7 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        firmware: [main, initial]
+        firmware: [main]
         target: [release, dev]
         platform: [device, simulator]
     runs-on: ubuntu-latest
@@ -160,7 +160,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        firmware: [main, initial]
+        firmware: [main]
         target: [release]
         platform: [simulator]
     runs-on: ubuntu-latest

@@ -13,7 +13,7 @@ jobs:
   build-firmwares:
     strategy:
       matrix:
-        firmware: [Main, Initial]
+        firmware: [Main]
         target: [Release]
     uses: ./.github/workflows/containerized-build.yml
     with:
