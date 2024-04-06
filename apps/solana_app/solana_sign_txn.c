@@ -288,7 +288,7 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   // allocate memory for storing transaction
   solana_txn_context->transaction = (uint8_t *)malloc(total_size);
   while (1) {
-    if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) &&
+    if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
       return false;
     }
@@ -391,7 +391,7 @@ STATIC bool solana_get_user_verification() {
 }
 
 STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
-  if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) &&
+  if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_VERIFY_TAG)) {
     return false;
   }
