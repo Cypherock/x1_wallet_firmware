@@ -297,7 +297,7 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
   // allocate memory for storing transaction
   txn_context->transaction = (uint8_t *)malloc(total_size);
   while (true) {
-    if (!evm_get_query(query, EVM_QUERY_SIGN_TXN_TAG) &&
+    if (!evm_get_query(query, EVM_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, EVM_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
       return status;
     }
