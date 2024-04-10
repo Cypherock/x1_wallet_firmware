@@ -1,0 +1,3 @@
+# Options for file common/cypherock-common/proto/manager/common.proto
+manager.WalletItem.id type:FT_STATIC max_size:32 fixed_length:true
+manager.WalletItem.name type:FT_STATIC max_size:16 fixed_length:true

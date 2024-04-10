@@ -79,10 +79,11 @@ static struct Menu_Object *obj = NULL;
  */
 static void menu_create();
 
-void menu_init(const char *option_list[],
-               const int number_of_options,
-               const char heading[],
-               const bool back_button_allowed) {
+void menu_init_with_choice(const char *option_list[],
+                           const int number_of_options,
+                           const char heading[],
+                           const int initial_selection,
+                           const bool back_button_allowed) {
   ASSERT(NULL != option_list);
   ASSERT(NULL != heading);
 
@@ -96,7 +97,7 @@ void menu_init(const char *option_list[],
 
   if (data != NULL) {
     data->number_of_options = number_of_options;
-    data->current_index = 0;
+    data->current_index = initial_selection;
     data->back_button_allowed = back_button_allowed;
     snprintf(data->heading, sizeof(data->heading), "%s", heading);
 

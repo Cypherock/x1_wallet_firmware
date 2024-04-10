@@ -37,6 +37,8 @@
 #define LV_COLOR_DEPTH     1
 #endif
 
+#define LV_SUBPX_BGR 0
+
 /* Swap the 2 bytes of RGB565 color.
  * Useful if the display has a 8 bit interface (e.g. SPI)*/
 #define LV_COLOR_16_SWAP   0
@@ -281,7 +283,7 @@ typedef void * lv_indev_drv_user_data_t;            /*Type of user data in the i
  * #define LV_FONT_CUSTOM_DECLARE LV_FONT_DECLARE(my_font_1) \
  *                                LV_FONT_DECLARE(my_font_2)
  */
-#define LV_FONT_CUSTOM_DECLARE LV_FONT_DECLARE(my_font) LV_FONT_DECLARE(my_logo) LV_FONT_DECLARE(nfc_logo)
+#define LV_FONT_CUSTOM_DECLARE LV_FONT_DECLARE(nfc_logo) LV_FONT_DECLARE(special_char)
 
 /*Always set a default font from the built-in fonts*/
 #define LV_FONT_DEFAULT        &lv_font_roboto_12

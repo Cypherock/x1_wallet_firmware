@@ -178,7 +178,13 @@ bool evm_get_typed_struct_data_digest(
   uint8_t *data = NULL;
   uint16_t data_size = 0, offset = 0;
 
-  data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1 + HASH_SIZE * 2;
+  data_size = sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
+  if (0 < typed_data->domain.children_count) {
+    data_size += HASH_SIZE;
+    if (0 < typed_data->message.children_count)
+      data_size += HASH_SIZE;
+  }
+
   data = malloc(data_size);
   ASSERT(NULL != data);
   memzero(data, data_size);
@@ -187,9 +193,21 @@ bool evm_get_typed_struct_data_digest(
          sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1);
 
   offset += sizeof(ETH_SIGN_TYPED_DATA_IDENTIFIER) - 1;
-  eip712_status = hash_struct(&(typed_data->domain), data + offset);
-  offset += HASH_SIZE;
-  eip712_status |= hash_struct(&(typed_data->message), data + offset);
+  if (0 < typed_data->domain.children_count) {
+    eip712_status = hash_struct(&(typed_data->domain), data + offset);
+    offset += HASH_SIZE;
+    if (0 < typed_data->message.children_count) {
+      eip712_status |= hash_struct(&(typed_data->message), data + offset);
+    }
+  }
+  // Setting the primary_type to "EIP712Domain" is technically in spec
+  // In this case, we ignore the "message" part and only use the "domain" part
+  // https://ethereum-magicians.org/t/eip-712-standards-clarification-primarytype-as-domaintype/3286
+  else if (!strncmp(UI_TEXT_EIP712_DOMAIN_TYPE,
+                    typed_data->message.struct_name,
+                    sizeof(UI_TEXT_EIP712_DOMAIN_TYPE))) {
+    eip712_status = EIP712_OK;
+  }
 
   if (EIP712_OK == eip712_status) {
     keccak_256(data, data_size, digest_out);

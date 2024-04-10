@@ -26,9 +26,29 @@
             "preLaunchTask": "build-simulator"
         },
         {
+            "name": "Simulator Debug Unit Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/Cypherock_Simulator",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceRoot}/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-simulator-units-tests"
+        },
+        {
             "name": "Main Debug [Launch]",
             "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Main.elf",
+            "executable": "build/Main/Cypherock-Main.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -44,7 +64,7 @@
         {
             "name": "Main Debug [Attach]",
             "cwd": "${workspaceRoot}",
-            "executable": "build/Cypherock-Main.elf",
+            "executable": "build/Main/Cypherock-Main.elf",
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "openocd",

@@ -89,4 +89,11 @@ void manager_export_wallets(manager_query_t *query);
  * @param query Reference to the decoded query struct from the host app
  */
 void manager_confirm_firmware_update(manager_query_t *query);
+
+/**
+ * @brief
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void manager_wallet_selector(manager_query_t *query);
 #endif

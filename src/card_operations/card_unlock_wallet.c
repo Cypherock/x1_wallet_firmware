@@ -1,15 +1,15 @@
 /**
- * @file    wallet_locked_controller.c
+ * @file    card_unlock_wallet.c
  * @author  Cypherock X1 Team
- * @brief   Wallet unlock flow controller.
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Wallet unlock flow controller
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,15 +59,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_internal.h"
+
 #include "card_unlock_wallet.h"
+
+#include "buzzer.h"
+#include "card_internal.h"
 #include "card_utils.h"
-#include "constant_texts.h"
-#include "core_error.h"
 #include "nfc.h"
-#include "pow.h"
 #include "pow_utilities.h"
-#include "ui_screens.h"
+#include "ui_instruction.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

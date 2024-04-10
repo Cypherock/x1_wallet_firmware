@@ -61,12 +61,14 @@
  *****************************************************************************/
 #include "create_new_wallet_flow.h"
 
+#include "bip39.h"
 #include "card_flow_create_wallet.h"
 #include "constant_texts.h"
 #include "core_error.h"
 #include "crypto_random.h"
 #include "flash_api.h"
 #include "flash_if.h"
+#include "options.h"
 #include "sha2.h"
 #include "shamir_wrapper.h"
 #include "ui_core_confirm.h"

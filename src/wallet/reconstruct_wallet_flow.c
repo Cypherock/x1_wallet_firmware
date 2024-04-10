@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "reconstruct_wallet_flow.h"
 
+#include "bip39.h"
 #include "card_flow_reconstruct_wallet.h"
 #include "common_error.h"
 #include "constant_texts.h"

@@ -64,7 +64,6 @@
 
 #include "card_internal.h"
 #include "constant_texts.h"
-#include "controller_tap_cards.h"
 #include "events.h"
 #include "ui_instruction.h"
 #include "ui_message.h"

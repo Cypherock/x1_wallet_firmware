@@ -8,10 +8,10 @@
         "FIRMWARE_TYPE":"Main",
     },
     "terminal.integrated.env.linux": {
-        "PATH": "${workspaceFolder}/venv/bin:${env:PATH}",
+        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}",
     },
     "terminal.integrated.env.osx": {
-        "PATH": "${workspaceFolder}/venv/bin:${env:PATH}",
+        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}",
     },
     "terminal.integrated.env.windows": {
         "PATH": "${workspaceFolder}/venv/Scripts:${workspaceFolder}/venv/bin:${env:PATH}",

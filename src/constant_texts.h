@@ -132,6 +132,7 @@ extern const char *ui_text_syncing_complete;
 
 // Clear user data text
 extern const char *ui_text_clear_device_data_instruction;
+extern const char *ui_text_confirm_clear_device_data;
 extern const char *ui_text_erasing_device_data;
 extern const char
     *ui_text_clear_wallet_data_exit[NUMBER_OF_SLIDES_FACTORY_RESET_EXIT];
@@ -148,6 +149,7 @@ extern const char *ui_text_joystick_down;
 extern const char *ui_text_joystick_left;
 extern const char *ui_text_joystick_center;
 extern const char *ui_text_joystick_checkup_complete;
+extern const char *ui_text_wallet_selector_invalid;
 
 // Onboarding text
 extern const char *ui_text_onboarding_welcome;

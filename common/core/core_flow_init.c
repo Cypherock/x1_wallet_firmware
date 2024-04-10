@@ -125,8 +125,17 @@ engine_ctx_t core_step_engine_ctx = {
 engine_ctx_t *get_core_flow_ctx(void) {
   engine_reset_flow(&core_step_engine_ctx);
 
+  const manager_onboarding_step_t step = onboarding_get_last_step();
   /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step()) {
+  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
+    // reset partial-onboarding if auth flag is reset (which can happen via
+    // secure-bootloader). Refer PRF-7078
+    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
+        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
+      // bypass onboarding_set_step_done as we want to force reset
+      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
+    }
+
     // Skip onbaording for infield devices with pairing and/or wallets count is
     // greater than zero
     if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {

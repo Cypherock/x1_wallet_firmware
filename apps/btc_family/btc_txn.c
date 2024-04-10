@@ -60,12 +60,15 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "bip32.h"
 #include "btc_api.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
 #include "btc_script.h"
 #include "btc_txn_helpers.h"
+#include "coin_utils.h"
 #include "constant_texts.h"
+#include "curves.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
