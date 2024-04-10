@@ -15,15 +15,31 @@
 
 #include "btc/sign_txn.pb.h"
 #include "btc_priv.h"
+#include "sha2.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
 #define EXPECTED_SCRIPT_SIG_SIZE 106
+#define CHUNK_SIZE 500
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct btc_verify_input
+{ 
+  int32_t chunk_count;
+  int32_t count; //count of ip/op
+  int32_t prev_offset; //offset to remember from prev chunk
+  int32_t input_index;
+  int32_t output_index;
+  SHA256_CTX sha_256_ctx;
+  bool isInputParsed;
+  bool isOpCountParsed;
+  bool isValueSplit;
+  bool isOutputParsed;
+  uint8_t value[8];
+} btc_verify_input_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -51,8 +67,9 @@
  * @retval 2 If there is a hash (input->prev_txn_hash) mismatch
  * @retval 3 If there is a value (input->value) mismatch
  */
-int btc_verify_input(const uint8_t *raw_txn,
-                     uint32_t size,
+int btc_verify_input(const uint8_t *raw_txn_chunk,
+                     const uint32_t chunk_index,
+                     btc_verify_input_t *verify_input_data,
                      const btc_sign_txn_input_t *input);
 
 /**

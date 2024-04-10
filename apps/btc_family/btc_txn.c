@@ -390,9 +390,23 @@ static bool fetch_valid_input(btc_query_t *query) {
     // TODO: ensure only valid input for the path are being provided. spending a
     // segwit input on the legacy derivation path does not make sense.
     // verify transaction details and discard the raw-transaction (prev_txn)
-    const btc_sign_txn_input_prev_txn_t *txn = &txin->prev_txn;
+    //const btc_sign_txn_input_prev_txn_t *txn = &txin->prev_txn;
+
+    btc_verify_input_t verify_input_data;
+    memzero(& (verify_input_data) ,sizeof(btc_verify_input_t) );
+    //verify_input_data.chunk_count = get_from_host();
+
+    int status = 0;
+    uint8_t txn_chunk[CHUNK_SIZE] = {0}; 
+    for(int32_t i = 0; i < verify_input_data.chunk_count; i++){
+      status = btc_verify_input(txn_chunk, i, &verify_input_data, txin);
+      if(status != 0 && status != 4){
+        break;
+      }
+    }
+
     if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
-        0 != btc_verify_input(txn->bytes, txn->size, txin)) {
+        0 != status) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
