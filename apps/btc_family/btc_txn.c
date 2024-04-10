@@ -376,7 +376,7 @@ static bool fetch_valid_input(btc_query_t *query) {
   // Validate inputs for safety from attack. Ref:
   // https://blog.trezor.io/details-of-firmware-updates-for-trezor-one-version-1-9-1-and-trezor-model-t-version-2-3-1-1eba8f60f2dd
   for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
-    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_INPUT_TAG)) {
       return false;
     }
@@ -427,7 +427,7 @@ static bool fetch_valid_output(btc_query_t *query) {
   btc_txn_context->change_output_idx = -1;
 
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
-    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) &&
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_OUTPUT_TAG)) {
       return false;
     }

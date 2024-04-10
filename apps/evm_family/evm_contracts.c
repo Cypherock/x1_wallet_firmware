@@ -281,6 +281,11 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
   const uint8_t *pPayloadBasePtr = pCurrHeadPtr;
   uint8_t currArgument;
 
+  // if argument count is zero (eg. `deposit`), it's an immediate success
+  if (0 == numArgsInFunction) {
+    returnCode = ETH_UTXN_ABI_DECODE_OK;
+  }
+
   for (currArgument = 0; currArgument < numArgsInFunction; currArgument++) {
     /* Ensure that we are reading from within the bounds */
     if (UTIL_IN_BOUNDS != UTIL_CheckBound(pAbiPayload,
