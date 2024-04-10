@@ -268,7 +268,7 @@ static bool handle_initiate_query(const near_query_t *query) {
 }
 
 static bool fetch_valid_input(near_query_t *query) {
-  if (!near_get_query(query, NEAR_QUERY_SIGN_TXN_TAG) &&
+  if (!near_get_query(query, NEAR_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query, NEAR_SIGN_TXN_REQUEST_TXN_TAG)) {
     return false;
   }
