@@ -59,6 +59,7 @@
 #include "bittensor_api.h"
 #include "bittensor_helpers.h"
 #include "bittensor_priv.h"
+#include "pbkdf2.h"
 #include "unity_fixture.h"
 #include "wallet_list.h"
 
@@ -115,12 +116,25 @@ TEST(bittensor_add_account_test, bittensor_get_seckey_action) {
   uint8_t seed_length = 512 / 8;
   uint8_t seed[512 / 8];
   HDNode node;
-  mnemonic_to_seed(mnemonic, "", seed, 0);
-  hdnode_from_seed(seed, 64, ED25519_NAME, &node);
 
-  uint8_t mini_secret_key[32];
-  memcpy(mini_secret_key, node.private_key, 32);
+  mnemonic_to_entropy(mnemonic, seed);
+  seed[16] = 0;
+  mnemonic_to_seed(seed, "", seed, NULL);
+
+  // uint8_t salt[8 + 256] = {0};
+  // memcpy(salt, "mnemonic", 8);
+  // static CONFIDENTIAL PBKDF2_HMAC_SHA512_CTX pctx;
+  // pbkdf2_hmac_sha512_Init(&pctx, seed, 16, salt, 8, 1);
+  // for (int i = 0; i < 16; i++) {
+  //   pbkdf2_hmac_sha512_Update(&pctx, BIP39_PBKDF2_ROUNDS / 16);
+  // }
+  // pbkdf2_hmac_sha512_Final(&pctx, seed);
+  // memzero(salt, sizeof(salt));
+
+  uint8_t mini_secret_key[32] = {0};
+  ed25519_publickey(seed, mini_secret_key);
   u8ToHexStr("mini_secret_key", mini_secret_key, 32);
+  memcpy(mini_secret_key, seed, 32);
 
   uint8_t secret_key[32];
   // TODO: logic from mini_sk to sk
