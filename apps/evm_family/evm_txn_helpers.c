@@ -63,6 +63,8 @@
 
 #include "evm_txn_helpers.h"
 
+#include "eip1159.h"
+#include "evm_helpers.h"
 #include "evm_priv.h"
 #include "int-util.h"
 
@@ -83,21 +85,25 @@
  *****************************************************************************/
 
 /**
- * @brief Get the RLP decoded data, length, type.
- * @details
+ * @brief Decodes transaction buffer based on the structure defined in EIP-155
+ * @details The function ensures that entire buffer is processed. If buffer
+ * contains extra data (which is left unprocessed after decoding all the rlp
+ * elements defined in the EIP), it will return false indicating failure in
+ * decoding. Refer: https://eips.ethereum.org/EIPS/eip-155
  *
- * @param [in] seq          Sequence of bytes of RLP encoded data.
- * @param [in] seq_len      Length of RLP decoded data.
- * @param [out] decoded_len  Size of length.
- * @param [out] type         Type of data (LIST or STRING)
+ * @param data          The buffer containing encoded ethereum transaction as
+ * defined in EIP-155
+ * @param data_size     The size of the data buffer
+ * @param txn_context   Pointer to an instance of evm_txn_context_t which will
+ * hold the decoded fields
  *
- * @return Length of bytes after length.
- * @retval
+ * @return bool Indicating if parsing succeeded
+ * @retval true If transaction is parsed successfully
+ * @retval false If transaction parsing fails
  */
-static uint64_t get_decode_length(const uint8_t *seq,
-                                  const uint64_t seq_len,
-                                  uint64_t *decoded_len,
-                                  seq_type *type);
+static bool evm_parse_legacy(const uint8_t *data,
+                             size_t data_size,
+                             evm_txn_context_t *txn_context);
 
 /**
  * @brief
@@ -120,52 +126,104 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static uint64_t get_decode_length(const uint8_t *seq,
-                                  const uint64_t seq_len,
-                                  uint64_t *decoded_len,
-                                  seq_type *type) {
-  uint8_t first_byte = *seq;
-  uint64_t item_bytes_len = 0;
-  if (first_byte <= 0x7f) {
-    item_bytes_len = 1;
-    *type = STRING;
-    *decoded_len = 0;
-  } else if (first_byte <= 0xb7 && seq_len > (first_byte - 0x80)) {
-    item_bytes_len = first_byte - 0x80;
-    *type = STRING;
-    *decoded_len = 1;
-  } else if (first_byte <= 0xbf && seq_len > (first_byte - 0xb7)) {
-    uint8_t len = first_byte - 0xb7;
-    uint8_t buffer_len[len];
-    char hex_len[len * 2 + 1];
-    hex_len[len * 2] = '\0';
-    *decoded_len = 1;
-    memcpy(buffer_len, seq + *decoded_len, len);
-    *decoded_len += len;
-    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
-    item_bytes_len = hex2dec(hex_len);
-    *type = STRING;
-  } else if (first_byte <= 0xf7 && seq_len > (first_byte - 0xc0)) {
-    item_bytes_len = first_byte - 0xc0;
-    *type = LIST;
-    *decoded_len = 1;
-  } else if (first_byte <= 0xff && seq_len > (first_byte - 0xf7)) {
-    uint8_t len = first_byte - 0xf7;
-    uint8_t buffer_len[len];
-    char hex_len[len * 2 + 1];
-    hex_len[len * 2] = '\0';
-
-    *decoded_len = 1;
-    memcpy(buffer_len, seq + *decoded_len, len);
-    *decoded_len += len;
-    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
-    item_bytes_len = hex2dec(hex_len);
-    *type = LIST;
-  } else {
-    // Intentionally unimplemented...
+static bool evm_parse_legacy(const uint8_t *data,
+                             size_t data_size,
+                             evm_txn_context_t *txn_context) {
+  if (data == NULL || txn_context == NULL) {
+    return false;
   }
+  evm_unsigned_txn *utxn_ptr = &txn_context->transaction_info;
+  memzero(utxn_ptr, sizeof(evm_unsigned_txn));
 
-  return item_bytes_len;
+  seq_type type = NONE;
+  int64_t offset = 0;
+  uint64_t decoded_len = 0;
+  uint64_t item_bytes_len = 0;
+
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != LIST)
+    return false;
+
+  // nonce
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(utxn_ptr->nonce, data, data_size, item_bytes_len, &offset);
+
+  // gas price
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(utxn_ptr->gas_price, data, data_size, item_bytes_len, &offset);
+
+  // gas limit
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(utxn_ptr->gas_limit, data, data_size, item_bytes_len, &offset);
+
+  // to address
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  s_memcpy(utxn_ptr->to_address, data, data_size, item_bytes_len, &offset);
+
+  // value
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(utxn_ptr->value, data, data_size, item_bytes_len, &offset);
+
+  // data
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->data_size = item_bytes_len;
+  utxn_ptr->data = &data[offset];
+  offset += (int64_t)item_bytes_len;
+
+  // chain id
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len;
+  if (type != STRING)
+    return false;
+  utxn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
+  s_memcpy(utxn_ptr->chain_id, data, data_size, item_bytes_len, &offset);
+
+  // r: Should be dummy (i.e. 0); no storage needed
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len + item_bytes_len;
+  if (type != STRING)
+    return false;
+
+  // s: Should be dummy (i.e. 0); no storage needed
+  item_bytes_len =
+      get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
+  offset += decoded_len + item_bytes_len;
+  if (type != STRING)
+    return false;
+
+  return (offset == data_size);
 }
 
 static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
@@ -214,130 +272,34 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-int evm_decode_unsigned_txn(const uint8_t *evm_utxn_byte_array,
-                            size_t byte_array_len,
-                            evm_txn_context_t *txn_context) {
-  if (evm_utxn_byte_array == NULL || txn_context == NULL) {
-    return -1;
+bool evm_decode_unsigned_txn(const uint8_t *data,
+                             size_t data_size,
+                             evm_txn_context_t *txn_context) {
+  bool status = false;
+  uint8_t txn_version = data[0] > 0x7f ? 0 : data[0];
+  switch (txn_version) {
+    case 0:
+      status = evm_parse_legacy(data, data_size, txn_context);
+      break;
+
+    case 1:
+      status = evm_parse_eip2930(&data[1], data_size - 1, txn_context);
+      break;
+
+    case 2:
+      status = evm_parse_eip1559(&data[1], data_size - 1, txn_context);
+      break;
+
+    default:
+      // Error: Unknown transaction type
+      status = false;
+      break;
   }
-  evm_unsigned_txn *utxn_ptr = &txn_context->transaction_info;
-  memzero(utxn_ptr, sizeof(evm_unsigned_txn));
 
-  seq_type type = NONE;
-  int64_t offset = 0;
-  uint64_t decoded_len = 0;
-  uint64_t item_bytes_len = 0;
-
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != LIST)
-    return -1;
-
-  // nonce
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->nonce,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-
-  // gas price
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_price,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-
-  // gas limit
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_limit,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-
-  // to address
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  s_memcpy(utxn_ptr->to_address,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-
-  // value
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->value,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-
-  // payload
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->data_size = item_bytes_len;
-  utxn_ptr->data = &evm_utxn_byte_array[offset];
-  offset += (int64_t)item_bytes_len;
-
-  // chain id
-  item_bytes_len = get_decode_length(evm_utxn_byte_array + offset,
-                                     byte_array_len - offset,
-                                     &decoded_len,
-                                     &type);
-  offset += decoded_len;
-  if (type != STRING)
-    return -1;
-  utxn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->chain_id,
-           evm_utxn_byte_array,
-           byte_array_len,
-           item_bytes_len,
-           &offset);
-  txn_context->txn_type = evm_decode_transaction_type(txn_context);
-  return (offset > 0 ? 0 : -1);
+  if (true == status) {
+    txn_context->txn_type = evm_decode_transaction_type(txn_context);
+  }
+  return status;
 }
 
 bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context) {
