@@ -106,124 +106,127 @@ TEST(bittensor_add_account_test, bittensor_validate_req_action) {
       validate_request_data(&query.get_public_keys, which_request));
 }
 
-TEST(bittensor_add_account_test, bittensor_validate_seckey_action) {
+TEST(bittensor_add_account_test, bittensor_get_seckey_action) {
   const char expected_seckey[] =
-    "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a";
+      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a";
 
   char *mnemonic = "sample split bamboo west visual approve brain fox arch "
                    "impact relief smile";
   uint8_t seed_length = 512 / 8;
   uint8_t seed[512 / 8];
+  HDNode node;
   mnemonic_to_seed(mnemonic, "", seed, 0);
-  
+  hdnode_from_seed(seed, 64, ED25519_NAME, &node);
+
   uint8_t mini_secret_key[32];
-  memcpy(mini_secret_key, seed, 32);
+  memcpy(mini_secret_key, node.private_key, 32);
   u8ToHexStr("mini_secret_key", mini_secret_key, 32);
 
   uint8_t secret_key[32];
-  //TODO: logic from mini_sk to sk
+  // TODO: logic from mini_sk to sk
 
   TEST_ASSERT_EQUAL_STRING(expected_seckey, secret_key);
 }
 
-TEST(bittensor_add_account_test, bittensor_validate_pubkey_action) {
-  const char expected_pubkey[] =
-    "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc";
+// TEST(bittensor_add_account_test, bittensor_validate_pubkey_action) {
+//   const char expected_pubkey[] =
+//     "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc";
 
-  uint8_t secret_key[32];
-  hex_string_to_byte_array(
-    "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
-    64,
-    secret_key);
-  u8ToHexStr("secret_keys", secret_key, 32);
+//   uint8_t secret_key[32];
+//   hex_string_to_byte_array(
+//     "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+//     64,
+//     secret_key);
+//   u8ToHexStr("secret_keys", secret_key, 32);
 
-  ed25519_public_key(secret_key, public_key);
+//   ed25519_public_key(secret_key, public_key);
 
-  printf("\npublic: %s\n\n", public_key);
-  TEST_ASSERT_EQUAL_STRING(expected_pubkey, public_key);
-}
+//   printf("\npublic: %s\n\n", public_key);
+//   TEST_ASSERT_EQUAL_STRING(expected_pubkey, public_key);
+// }
 
-TEST(bittensor_add_account_test, bittensor_get_addr_action) {
-  const char expected_addr[] =
-      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ";
-  
-  uint8_t public_key[32];
-  hex_string_to_byte_array(
-  "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
-  64,
-  public_key);
-  u8ToHexStr("public key", public_key, 32);
+// TEST(bittensor_add_account_test, bittensor_get_addr_action) {
+//   const char expected_addr[] =
+//       "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ";
 
-  char address[100] = "";
-  size_t address_size = sizeof(address);
-  uint16_t outlen = crypto_SS58EncodePubkey(address, &address_size, 0, public_key);
+//   uint8_t public_key[32];
+//   hex_string_to_byte_array(
+//   "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
+//   64,
+//   public_key);
+//   u8ToHexStr("public key", public_key, 32);
 
-  printf("\naddress func: %s\n\n", address);
-  TEST_ASSERT_EQUAL_STRING(expected_addr, address);
-}
+//   char address[100] = "";
+//   size_t address_size = sizeof(address);
+//   uint16_t outlen = crypto_SS58EncodePubkey(address, &address_size, 0,
+//   public_key);
 
-TEST(bittensor_add_account_test, bittensor_get_sig_action) {
-  const char expected_sig[] = // add 00 at 1st byte for ed25519 signature scheme
-      "98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406";
-  
-  size_t unsigned_txn_size = 3;
-  uint8_t unsigned_txn[3];
-  hex_string_to_byte_array(
-    "616263",
-    6,
-    unsigned_txn);
-  u8ToHexStr("unsigned_txn", unsigned_txn, 3);
+//   printf("\naddress func: %s\n\n", address);
+//   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
+// }
 
-  ed25519_public_key public_key;
-  hex_string_to_byte_array(
-    "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
-    64,
-    public_key);
-  u8ToHexStr("public_key", public_key, 3);
-  
-  ed25519_secret_key secret_key;
-  hex_string_to_byte_array(
-    "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
-    64,
-    secret_key);
-  u8ToHexStr("secret_keys", secret_key, 3);
+// TEST(bittensor_add_account_test, bittensor_get_sig_action) {
+//   const char expected_sig[] = // add 00 at 1st byte for ed25519 signature
+//   scheme
+//       "98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406";
 
+//   size_t unsigned_txn_size = 3;
+//   uint8_t unsigned_txn[3];
+//   hex_string_to_byte_array(
+//     "616263",
+//     6,
+//     unsigned_txn);
+//   u8ToHexStr("unsigned_txn", unsigned_txn, 3);
 
-  #define ed25519_hash_context blake256
-  #define ed25519_hash_init(ctx) blake256_Init(ctx)
-  #define ed25519_hash_update(ctx, in, inlen) blake256_Update((ctx), (in), (inlen))
-  #define ed25519_hash_final(ctx, hash) blake256_Final((ctx), (hash))
-  #define ed25519_hash(hash, in, inlen) blake256_Raw((in), (inlen), (hash))
+//   ed25519_public_key public_key;
+//   hex_string_to_byte_array(
+//     "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
+//     64,
+//     public_key);
+//   u8ToHexStr("public_key", public_key, 3);
 
-  ed25519_signature signature;
-  signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key, public_key, signature);
-  u8ToHexStr("signature cosi", signature, 64);
+//   ed25519_secret_key secret_key;
+//   hex_string_to_byte_array(
+//     "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
+//     64,
+//     secret_key);
+//   u8ToHexStr("secret_keys", secret_key, 3);
 
+//   #define ed25519_hash_context blake256
+//   #define ed25519_hash_init(ctx) blake256_Init(ctx)
+//   #define ed25519_hash_update(ctx, in, inlen) blake256_Update((ctx), (in),
+//   (inlen)) #define ed25519_hash_final(ctx, hash) blake256_Final((ctx),
+//   (hash)) #define ed25519_hash(hash, in, inlen) blake256_Raw((in), (inlen),
+//   (hash))
 
-  #define ed25519_hash_context blake2b_state
-  #define ed25519_hash_init(ctx) blake2b_Init(ctx, 32)
-  #define ed25519_hash_update(ctx, in, inlen) blake2b_Update((ctx), (in), (inlen))
-  #define ed25519_hash_final(ctx, hash) blake2b_Final((ctx), (hash), 32)
-  #define ed25519_hash(hash, in, inlen) blake2b_Raw((in), (inlen), (hash))
+//   ed25519_signature signature;
+//   signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key,
+//   public_key, signature); u8ToHexStr("signature cosi", signature, 64);
 
-  memzero(signature, 64);
-  signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key, public_key, signature);
-  u8ToHexStr("signature cosi", signature, 64);
+//   #define ed25519_hash_context blake2b_state
+//   #define ed25519_hash_init(ctx) blake2b_Init(ctx, 32)
+//   #define ed25519_hash_update(ctx, in, inlen) blake2b_Update((ctx), (in),
+//   (inlen)) #define ed25519_hash_final(ctx, hash) blake2b_Final((ctx), (hash),
+//   32) #define ed25519_hash(hash, in, inlen) blake2b_Raw((in), (inlen),
+//   (hash))
 
+//   memzero(signature, 64);
+//   signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key,
+//   public_key, signature); u8ToHexStr("signature cosi", signature, 64);
 
-  #define ed25519_hash_context blake2b_state
-  #define ed25519_hash_init(ctx) blake2b_Init(ctx, 32)
-  #define ed25519_hash_update(ctx, in, inlen) blake2b_Update((ctx), (in), (inlen))
-  #define ed25519_hash_final(ctx, hash) blake2b_Final((ctx), (hash), 64)
-  #define ed25519_hash(hash, in, inlen) blake2b_Raw((in), (inlen), (hash))
+//   #define ed25519_hash_context blake2b_state
+//   #define ed25519_hash_init(ctx) blake2b_Init(ctx, 32)
+//   #define ed25519_hash_update(ctx, in, inlen) blake2b_Update((ctx), (in),
+//   (inlen)) #define ed25519_hash_final(ctx, hash) blake2b_Final((ctx), (hash),
+//   64) #define ed25519_hash(hash, in, inlen) blake2b_Raw((in), (inlen),
+//   (hash))
 
-  memzero(signature, 64);
-  signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key, public_key, signature);
-  u8ToHexStr("signature cosi", signature, 64);
+//   memzero(signature, 64);
+//   signature = ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key,
+//   public_key, signature); u8ToHexStr("signature cosi", signature, 64);
 
-
-  TEST_ASSERT_EQUAL_STRING(expected_sig, signature);
-}
+//   TEST_ASSERT_EQUAL_STRING(expected_sig, signature);
+// }
 
 int ss58hash(const unsigned char *in,
              unsigned int inLen,

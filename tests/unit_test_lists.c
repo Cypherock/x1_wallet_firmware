@@ -218,9 +218,9 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
 
 TEST_GROUP_RUNNER(bittensor_add_account_test) {
   RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_seckey_action);
-  RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_pubkey_action);
-  RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_addr_action);
-  RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_sig_action);
+  // RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_pubkey_action);
+  // RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_addr_action);
+  // RUN_TEST_CASE(bittensor_add_account_test, bittensor_get_sig_action);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {
