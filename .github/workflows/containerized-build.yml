@@ -19,9 +19,9 @@ jobs:
     - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }})
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          export VERSION_TAG=$(echo "${{ github.ref }}" | awk -F/ '{print $3}')
+          export VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')
         elif [[ "${{ github.ref_type }}" == "branch" ]]; then
-          export VERSION_TAG=$(echo "${{ github.ref }}" | awk -F/ '{print $3}')
+          export VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')
         else
           # reftype is repository; use default branch
           export VERSION_TAG=main
