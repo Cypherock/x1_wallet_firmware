@@ -27,7 +27,7 @@
         },
         {
             "label": "build-device",
-        "type": "shell",
+            "type": "shell",
             "command": "utilities/build.sh",
             "args": [
                 "-tdebug",
