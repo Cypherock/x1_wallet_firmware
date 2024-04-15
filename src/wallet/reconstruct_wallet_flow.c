@@ -88,6 +88,8 @@ extern Wallet_shamir_data wallet_shamir_data;
 extern Wallet_credential_data wallet_credential_data;
 extern Wallet wallet;
 
+#define BITTENSOR_WALLET true
+
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -395,9 +397,17 @@ bool reconstruct_seed(const uint8_t *wallet_id,
       reconstruct_wallet(wallet_id, PASSPHRASE_INPUT, reject_cb);
 
   if (NULL != mnemonics) {
-    mnemonic_to_seed(
-        mnemonics, wallet_credential_data.passphrase, seed_out, NULL);
-    result = true;
+    if (BITTENSOR_WALLET) {
+      mnemonic_to_entropy(mnemonics, seed_out);
+      seed_out[16] = 0;
+      mnemonic_to_seed(
+          seed_out, wallet_credential_data.passphrase, seed_out, NULL);
+      result = true;
+    } else {
+      mnemonic_to_seed(
+          mnemonics, wallet_credential_data.passphrase, seed_out, NULL);
+      result = true;
+    }
   }
 
   mnemonic_clear();

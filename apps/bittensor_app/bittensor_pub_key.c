@@ -215,6 +215,22 @@ static bool get_user_consent(const pb_size_t which_request,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static bool ss58enc(char *address,
+                    uint16_t address_size,
+                    uint16_t addressType,
+                    const uint8_t *pubkey);
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
 static bool check_which_request(const bittensor_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
@@ -267,15 +283,19 @@ static bool get_public_key(const uint8_t *seed,
                            uint8_t *public_key) {
   HDNode node = {0};
 
-  if (!derive_hdnode_from_path(path, path_length, ED25519_NAME, seed, &node)) {
-    // send unknown error; unknown failure reason
-    bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    memzero(&node, sizeof(HDNode));
-    return false;
-  }
+  // if (!derive_hdnode_from_path(path, path_length, ED25519_NAME, seed, &node))
+  // {
+  //   // send unknown error; unknown failure reason
+  //   bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  //   memzero(&node, sizeof(HDNode));
+  //   return false;
+  // }
+
+  uint8_t secret_key[32] = {0};
+  mnemonic_to_seed(seed, "", secret_key, NULL);
 
   if (NULL != public_key) {
-    ed25519_publickey(node.private_key, public_key);
+    ed25519_publickey(secret_key, public_key);
   }
 
   memzero(&node, sizeof(HDNode));
@@ -358,6 +378,71 @@ static bool get_user_consent(const pb_size_t which_request,
   return core_scroll_page(NULL, msg, bittensor_send_error);
 }
 
+#define SS58_BLAKE_PREFIX (const unsigned char *)"SS58PRE"
+#define SS58_BLAKE_PREFIX_LEN 7
+#define SS58_ADDRESS_MAX_LEN 60u
+
+static int ss58hash(const unsigned char *in,
+                    unsigned int inLen,
+                    unsigned char *out,
+                    unsigned int outLen) {
+  blake2b_state s;
+  blake2b_Init(&s, 64);
+  blake2b_Update(&s, SS58_BLAKE_PREFIX, SS58_BLAKE_PREFIX_LEN);
+  blake2b_Update(&s, in, inLen);
+  blake2b_Final(&s, out, outLen);
+  return 0;
+}
+
+static bool ss58enc(char *address,
+                    uint16_t address_size,
+                    uint16_t addressType,
+                    const uint8_t *pubkey) {
+  // based on https://docs.substrate.io/v3/advanced/ss58/
+  if (address == NULL || address_size < SS58_ADDRESS_MAX_LEN) {
+    return 0;
+  }
+  if (pubkey == NULL) {
+    return 0;
+  }
+
+  uint8_t hash[64] = {0};
+  uint8_t unencoded[36] = {0};
+
+  uint8_t prefixSize;
+  if (addressType > 16383) {
+    prefixSize = 0;
+  }
+
+  if (addressType > 63) {
+    unencoded[0] = 0x40 | ((addressType >> 2) & 0x3F);
+    unencoded[1] = ((addressType & 0x3) << 6) + ((addressType >> 8) & 0x3F);
+    prefixSize = 2;
+  } else {
+    unencoded[0] = addressType & 0x3F;    // address type
+    prefixSize = 1;
+  }
+
+  if (prefixSize == 0) {
+    return 0;
+  }
+
+  memcpy(unencoded + prefixSize, pubkey, 32);    // account id
+  if (ss58hash((uint8_t *)unencoded, 32 + prefixSize, hash, 64) != 0) {
+    memzero(unencoded, sizeof(unencoded));
+    return 0;
+  }
+  unencoded[32 + prefixSize] = hash[0];
+  unencoded[33 + prefixSize] = hash[1];
+
+  if (b58enc(address, &address_size, unencoded, 34 + prefixSize) != true) {
+    memzero(unencoded, sizeof(unencoded));
+    return 0;
+  }
+
+  return true;
+}
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -433,10 +518,7 @@ void bittensor_get_pub_keys(bittensor_query_t *query) {
     char address[100] = "";
 
     size_t public_key_size = sizeof(address);
-    if (!b58enc(address,
-                &public_key_size,
-                public_keys[0],
-                BITTENSOR_PUB_KEY_SIZE)) {
+    if (!ss58enc(address, &public_key_size, 42, public_keys[0])) {
       bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
     };

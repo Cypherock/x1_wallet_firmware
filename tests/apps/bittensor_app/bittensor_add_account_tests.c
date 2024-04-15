@@ -59,11 +59,10 @@
 #include "bittensor_api.h"
 #include "bittensor_helpers.h"
 #include "bittensor_priv.h"
+#include "ed25519-hash-custom.h"
 #include "pbkdf2.h"
 #include "unity_fixture.h"
 #include "wallet_list.h"
-
-#include "ed25519-hash-custom.h"
 
 #define SS58_BLAKE_PREFIX (const unsigned char *)"SS58PRE"
 #define SS58_BLAKE_PREFIX_LEN 7
@@ -76,10 +75,10 @@ bool fill_public_keys(const bittensor_get_public_keys_derivation_path_t *paths,
                       const uint8_t *seed,
                       uint8_t public_keys[][BITTENSOR_PUB_KEY_SIZE],
                       pb_size_t count);
-uint16_t ss58enc(char *buffer,
-                  uint16_t buffer_len,
-                  uint16_t addressType,
-                  const uint8_t *pubkey);
+bool ss58enc(char *buffer,
+             uint16_t buffer_len,
+             uint16_t addressType,
+             const uint8_t *pubkey);
 
 TEST_GROUP(bittensor_add_account_test);
 
@@ -112,9 +111,9 @@ TEST(bittensor_add_account_test, bittensor_validate_req_action) {
 TEST(bittensor_add_account_test, bittensor_get_seckey_action) {
   uint8_t expected_seckey[32] = {0};
   hex_string_to_byte_array(
-    "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
-    64,
-    expected_seckey);
+      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+      64,
+      expected_seckey);
 
   char *mnemonic = "sample split bamboo west visual approve brain fox arch "
                    "impact relief smile";
@@ -131,37 +130,35 @@ TEST(bittensor_add_account_test, bittensor_get_seckey_action) {
 TEST(bittensor_add_account_test, bittensor_get_pubkey_action) {
   uint8_t expected_pubkey[32] = {0};
   hex_string_to_byte_array(
-    "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
-    64,
-    expected_pubkey);
+      "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
+      64,
+      expected_pubkey);
 
   uint8_t secret_key[32] = {0};
   hex_string_to_byte_array(
-    "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
-    64,
-    secret_key);
+      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+      64,
+      secret_key);
 
   uint8_t public_key[32] = {0};
   ed25519_publickey(secret_key, public_key);
 
   // char public_key_hex[65] = {0};
   // byte_array_to_hex_string(public_key, 32, public_key_hex, 65);
-  
+
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_pubkey, public_key, 32);
 }
 
 TEST(bittensor_add_account_test, bittensor_get_addr_action) {
   uint8_t expected_addr[24] = {0};
   hex_string_to_byte_array(
-      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ",
-      48,
-      expected_addr);
+      "5CSbZ7wG456oty4WoiX6a1J88VUbrCXLhrKVJ9q95BsYH4TZ", 48, expected_addr);
 
   uint8_t public_key[32] = {0};
   hex_string_to_byte_array(
-    "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
-    64,
-  public_key);
+      "10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc",
+      64,
+      public_key);
 
   char address[100] = "";
   size_t address_size = sizeof(address);
@@ -173,117 +170,42 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
 TEST(bittensor_add_account_test, bittensor_get_sig_action) {
   uint8_t expected_sig[64] = {0};
   hex_string_to_byte_array(
-    "98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406",
-    128,
-    expected_sig);
+      "98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042"
+      "463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406",
+      128,
+      expected_sig);
 
   size_t unsigned_txn_size = 3;
   uint8_t unsigned_txn[30] = {0};
-  hex_string_to_byte_array(
-    "616263",
-    6,
-    unsigned_txn);
+  hex_string_to_byte_array("616263", 6, unsigned_txn);
   u8ToHexStr("unsigned_txn", unsigned_txn, 3);
 
   ed25519_public_key public_key = {0};
   hex_string_to_byte_array(
-    "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
-    64,
-    public_key);
+      "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
+      64,
+      public_key);
   u8ToHexStr("public_key", public_key, 32);
 
   ed25519_secret_key secret_key = {0};
   hex_string_to_byte_array(
-    "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
-    64,
-    secret_key);
+      "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
+      64,
+      secret_key);
   u8ToHexStr("secret_keys", secret_key, 32);
 
-// #define ed25519_hash_context blake256
-// #define ed25519_hash_init(ctx) blake256_Init(ctx)
-// #define ed25519_hash_update(ctx, in, inlen) blake256_Update((ctx), (in),(inlen)) 
-// #define ed25519_hash_final(ctx, hash) blake256_Final((ctx), (hash)) 
-// #define ed25519_hash(hash, in, inlen) blake256_Raw((in), (inlen), (hash))
+  // #define ed25519_hash_context blake256
+  // #define ed25519_hash_init(ctx) blake256_Init(ctx)
+  // #define ed25519_hash_update(ctx, in, inlen) blake256_Update((ctx),
+  // (in),(inlen)) #define ed25519_hash_final(ctx, hash) blake256_Final((ctx),
+  // (hash)) #define ed25519_hash(hash, in, inlen) blake256_Raw((in), (inlen),
+  // (hash))
 
   ed25519_signature sig_ed25519 = {0};
-  ed25519_sign(unsigned_txn, unsigned_txn_size, secret_key, public_key, sig_ed25519); 
+  ed25519_sign(
+      unsigned_txn, unsigned_txn_size, secret_key, public_key, sig_ed25519);
 
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_sig, sig_ed25519, 64);
-}
-
-int ss58hash(const unsigned char *in,
-             unsigned int inLen,
-             unsigned char *out,
-             unsigned int outLen) {
-  blake2b_state s;
-  blake2b_Init(&s, 64);
-  blake2b_Update(&s, SS58_BLAKE_PREFIX, SS58_BLAKE_PREFIX_LEN);
-  blake2b_Update(&s, in, inLen);
-  blake2b_Final(&s, out, outLen);
-  return 0;
-}
-
-uint16_t ss58enc(char *address,
-                                 uint16_t address_size,
-                                 uint16_t addressType,
-                                 const uint8_t *pubkey) {
-  // based on https://docs.substrate.io/v3/advanced/ss58/
-  if (address == NULL || address_size < SS58_ADDRESS_MAX_LEN) {
-    return 0;
-  }
-  if (pubkey == NULL) {
-    return 0;
-  }
-
-  uint8_t hash[64] = {0};
-  uint8_t unencoded[36] = {0};
-
-  uint8_t prefixSize;
-  if (addressType > 16383) {
-    prefixSize = 0;
-  }
-
-  if (addressType > 63) {
-    unencoded[0] = 0x40 | ((addressType >> 2) & 0x3F);
-    unencoded[1] = ((addressType & 0x3) << 6) + ((addressType >> 8) & 0x3F);
-    prefixSize = 2;
-  } else {
-    unencoded[0] = addressType & 0x3F;    // address type
-    prefixSize = 1;
-  }
-
-  if (prefixSize == 0) {
-    return 0;
-  }
-
-  memcpy(unencoded + prefixSize, pubkey, 32);    // account id
-  if (ss58hash((uint8_t *)unencoded, 32 + prefixSize, hash, 64) != 0) {
-    memzero(unencoded, sizeof(unencoded));
-    return 0;
-  }
-  unencoded[32 + prefixSize] = hash[0];
-  unencoded[33 + prefixSize] = hash[1];
-
-  size_t outLen = address_size;
-  if (b58enc(address, &address_size, unencoded, 34 + prefixSize) != true) {
-    memzero(unencoded, sizeof(unencoded));
-    return 0;
-  }
-
-  return outLen;
-}
-
-void u8ToHexStr(const char *name, const uint8_t *data, size_t datasize) {
-  char hexstring[datasize * 2 + 1];
-  for (size_t i = 0; i < datasize; ++i) {
-    for (size_t i = 0; i < datasize; ++i) {
-      sprintf(hexstring + 2 * i,
-              "%02x",
-              data[i]);    // Each byte represented by 2 characters + '\0'
-    }
-  }
-  hexstring[datasize * 2] = '\0';    // Null-terminate the string
-  printf("\n%s : 0x%s", name, hexstring);
 }
 
 void u8ToHexStrr(const char *name,
@@ -302,9 +224,8 @@ void u8ToHexStrr(const char *name,
   printf("\n%s : 0x%s", name, hexstring);
 }
 
-
 void uint8_to_char(uint8_t *uint8_array, char *char_array, size_t length) {
-    for (size_t i = 0; i < length; i++) {
-        char_array[i] = (char)uint8_array[i];
-    }
+  for (size_t i = 0; i < length; i++) {
+    char_array[i] = (char)uint8_array[i];
+  }
 }
