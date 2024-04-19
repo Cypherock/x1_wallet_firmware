@@ -172,6 +172,12 @@ int bittensor_update_blockhash_in_byte_array(uint8_t *byte_array,
  *
  * @return uint8_t decimal value
  */
+
+bool ss58enc(char *address,
+             uint16_t address_size,
+             uint16_t addressType,
+             const uint8_t *pubkey);
+
 uint8_t bittensor_get_decimal();
 
 #endif

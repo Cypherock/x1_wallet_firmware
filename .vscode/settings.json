@@ -8,7 +8,7 @@
         "FIRMWARE_TYPE":"Main",
     },
     "terminal.integrated.env.linux": {
-        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}:/home/parnika/Documents/cypherock/x1_dev_env/cmake-3.29.2-linux-x86_64/bin",
+        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}:/home/parnika/Documents/cypherock/x1_dev_env/cmake-3.29.2-linux-x86_64/bin:/home/parnika/Documents/cypherock/x1_dev_env/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux/gcc-arm-none-eabi-10.3-2021.10/bin:/home/parnika/Documents/cypherock/x1_dev_env/STM32IDE/bin:/home/parnika/Documents/cypherock/x1_dev_env/ninja-linux:/home/parnika/Documents/cypherock/x1_dev_env/protoc-26.0-linux-x86_64/bin",
     },
     "terminal.integrated.env.osx": {
         "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}",
@@ -23,5 +23,11 @@
         "*.ld": "c",
         "*.cmake": "cmake",
         "CMakeLists.txt": "cmake",
+        "string": "c",
+        "vector": "c",
+        "memory": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "*.tcc": "c"
     }
 }

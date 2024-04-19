@@ -398,10 +398,13 @@ bool reconstruct_seed(const uint8_t *wallet_id,
 
   if (NULL != mnemonics) {
     if (BITTENSOR_WALLET) {
-      mnemonic_to_entropy(mnemonics, seed_out);
-      seed_out[16] = 0;
+      uint8_t entropy[33] = {0};
+      mnemonic_to_entropy(mnemonics, entropy);
+      // TODO: Only for 24-words seed phrase
+      entropy[32] = 0;
       mnemonic_to_seed(
-          seed_out, wallet_credential_data.passphrase, seed_out, NULL);
+          entropy, wallet_credential_data.passphrase, seed_out, NULL);
+
       result = true;
     } else {
       mnemonic_to_seed(

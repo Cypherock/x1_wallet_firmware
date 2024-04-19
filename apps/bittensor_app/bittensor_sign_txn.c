@@ -248,7 +248,6 @@ static void send_response(const pb_size_t which_response) {
 static bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
-
   if (!check_which_request(query, BITTENSOR_SIGN_TXN_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->sign_txn) ||
       !get_wallet_name_by_id(query->sign_txn.initiate.wallet_id,
@@ -256,7 +255,7 @@ static bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
                              bittensor_send_error)) {
     return false;
   }
-
+  printf("%s:%d", __func__, __LINE__);
   snprintf(msg,
            sizeof(msg),
            UI_TEXT_SEND_TOKEN_PROMPT,
@@ -276,6 +275,7 @@ static bool bittensor_handle_initiate_query(const bittensor_query_t *query) {
   // show processing screen for a minimum duration (additional time will add due
   // to actual processing)
   delay_scr_init(ui_text_processing, DELAY_SHORT);
+  printf("%s:%d", __func__, __LINE__);
   return true;
 }
 
@@ -327,7 +327,7 @@ static bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
                          ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
-
+  printf("%s:%d", __func__, __LINE__);
   // decode and verify the received transaction
   if (SOL_OK != bittensor_byte_array_to_unsigned_txn(
                     bittensor_txn_context->transaction,
@@ -337,7 +337,7 @@ static bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
                     &bittensor_txn_context->transaction_info)) {
     return false;
   }
-
+  printf("%s:%d", __func__, __LINE__);
   return true;
 }
 
@@ -346,11 +346,11 @@ static bool bittensor_get_user_verification() {
   size_t address_size = sizeof(address);
 
   // verify recipient address;
-  if (!b58enc(address,
-              &address_size,
-              bittensor_txn_context->transaction_info.instruction.program
-                  .transfer.recipient_account,
-              BITTENSOR_ACCOUNT_ADDRESS_LENGTH)) {
+  if (!ss58enc(address,
+               &address_size,
+               bittensor_txn_context->transaction_info.instruction.program
+                   .transfer.recipient_account,
+               BITTENSOR_ACCOUNT_ADDRESS_LENGTH)) {
     bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
   }
@@ -418,7 +418,7 @@ static bool send_signature(bittensor_query_t *query,
   HDNode hdnode = {0};
   const size_t depth = bittensor_txn_context->init_info.derivation_path_count;
   const uint32_t *hd_path = bittensor_txn_context->init_info.derivation_path;
-
+  printf("%s:%d", __func__, __LINE__);
   bittensor_result_t result =
       init_bittensor_result(BITTENSOR_RESULT_SIGN_TXN_TAG);
   result.sign_txn.which_response = BITTENSOR_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
@@ -426,27 +426,28 @@ static bool send_signature(bittensor_query_t *query,
       !check_which_request(query, BITTENSOR_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
     return false;
   }
+  printf("%s:%d", __func__, __LINE__);
+  // // recieve latest blockhash
+  // uint8_t bittensor_latest_blockhash[BITTENSOR_BLOCKHASH_LENGTH] = {0};
+  // memcpy(bittensor_latest_blockhash,
+  //        query->sign_txn.signature.blockhash,
+  //        BITTENSOR_BLOCKHASH_LENGTH);
 
-  // recieve latest blockhash
-  uint8_t bittensor_latest_blockhash[BITTENSOR_BLOCKHASH_LENGTH] = {0};
-  memcpy(bittensor_latest_blockhash,
-         query->sign_txn.signature.blockhash,
-         BITTENSOR_BLOCKHASH_LENGTH);
-
-  // update unsigned transaction with latest blockhash
-  int update_status = bittensor_update_blockhash_in_byte_array(
-      bittensor_txn_context->transaction, bittensor_latest_blockhash);
-  if (update_status != SOL_OK)
-    return false;
+  // // update unsigned transaction with latest blockhash
+  // int update_status = bittensor_update_blockhash_in_byte_array(
+  //     bittensor_txn_context->transaction, bittensor_latest_blockhash);
+  // if (update_status != SOL_OK)
+  //   return false;
 
   // sign updated transaction
-  if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode))
-    return false;
+  printf("%s:%d", __func__, __LINE__);
+  uint8_t public_key[32] = {0};
+  ed25519_publickey(seed, public_key);
 
   ed25519_sign(bittensor_txn_context->transaction,
                bittensor_txn_context->init_info.transaction_size,
-               hdnode.private_key,
-               hdnode.public_key + 1,
+               seed,
+               public_key,
                sig->signature);
 
   memzero(&hdnode, sizeof(hdnode));
@@ -472,7 +473,6 @@ void bittensor_sign_transaction(bittensor_query_t *query) {
   uint8_t seed[64] = {0};
 
   if (bittensor_handle_initiate_query(query) &&
-      bittensor_fetch_valid_transaction(query) &&
       bittensor_get_user_verification() && fetch_seed(query, seed) &&
       send_signature(query, seed, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);

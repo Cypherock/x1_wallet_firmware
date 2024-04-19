@@ -132,11 +132,56 @@ static void memory_monitor(lv_task_t *param);
  * @retval int
  */
 
+#include <pb_decode.h>
+#include <pb_encode.h>
+
+#include "bittensor_api.h"
+
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
 #endif
   application_init();
+
+  // bittensor_query_t query = {
+  //     .which_request = 2,
+  //     .sign_txn = {.which_request = 1,
+  //                  .initiate = {
+  //                      .derivation_path_count = 5,
+  //                      .derivation_path = {NON_SEGWIT, ETHEREUM, BITCOIN, 0,
+  //                      0}, .wallet_id = {}, .address_format = EVM_DEFAULT,
+  //                      .transaction_size = 109,
+  //                  }}};
+  // bittensor_query_t query1 = {.which_request = 2,
+  //                       .sign_txn = {.which_request = 2,
+  //                                    .txn_data = {.has_chunk_payload = true,
+  //                                                 .chunk_payload = {
+  //                                                     .chunk =
+  //                                                         {
+  //                                                             .size = 109,
+  //                                                         },
+  //                                                     .remaining_size = 0,
+  //                                                     .chunk_index = 0,
+  //                                                     .total_chunks = 1,
+  //                                                 }}}};
+  // // raw Txn:
+  // //
+  // https://etherscan.io/getRawTx?tx=0xb8a6f4b82037dfc9aefa22d4cca2f695ada1d5d568673d001cf2d7dab27bea25
+  // hex_string_to_byte_array(
+  //     "f86b81a585043be57f958301725d94dac17f958d2ee523a2206206994597c13d831ec700"
+  //     "b844a9059cbb0000000000000000000000001754b2d4414468d38bddea24b83cdb1a9b8c"
+  //     "4355000000000000000000000000000000000000000000000000000000320effa6000180"
+  //     "80",
+  //     218,
+  //     query1.sign_txn.txn_data.chunk_payload.chunk.bytes);
+  // txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
+  // memzero(txn_context, sizeof(evm_txn_context_t));
+  // memcpy(&txn_context->init_info,
+  //        &query.sign_txn.initiate,
+  //        sizeof(evm_sign_txn_initiate_request_t));
+  // TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
+  // usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
+  // TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

@@ -23,7 +23,7 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define BITTENSOR_NAME "Bittensor"
-#define BITTENSOR_LUNIT "SOL"
+#define BITTENSOR_LUNIT "TAO"
 #define BITTENSOR_PUB_KEY_SIZE 32
 // Derivation path reference :
 // https://docs.bittensor.com/wallet-guide/paper-wallet#hierarchical-derivation
