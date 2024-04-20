@@ -198,7 +198,7 @@ TEST(bittensor_add_account_test, bittensor_get_publickey_query_action) {
 TEST(bittensor_add_account_test, bittensor_get_seckey_action) {
   uint8_t expected_seckey[32] = {0};
   hex_string_to_byte_array(
-      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
+      "f2e4cada34659c4f10221565421ecc5cc565e98b0cc1e57849cf5c30547f67bb",
       64,
       expected_seckey);
 
@@ -241,7 +241,7 @@ TEST(bittensor_add_account_test, bittensor_get_pubkey_action) {
 
   uint8_t secret_key[32] = {0};
   hex_string_to_byte_array(
-      "f2e4cada34659c4f10221565421ecc5cc565e98b0cc1e57849cf5c30547f67bb",
+      "9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a",
       64,
       secret_key);
 
@@ -301,16 +301,14 @@ TEST(bittensor_add_account_test, bittensor_get_sig_action) {
       secret_key);
   u8ToHexStr("secret_keys", secret_key, 32);
 
-#define ed25519_hash_context blake256
-#define ed25519_hash_init(ctx) blake256_Init(ctx)
-#define ed25519_hash_update(ctx, in, inlen)                                    \
-  blake256_Update((ctx), (in), (inlen))
-#define ed25519_hash_final(ctx, hash) blake256_Final((ctx), (hash))
-#define ed25519_hash(hash, in, inlen) blake256_Raw((in), (inlen), (hash))
-
   ed25519_signature sig_ed25519 = {0};
   ed25519_sign(
       unsigned_txn, unsigned_txn_size, secret_key, public_key, sig_ed25519);
+
+  int valid = ed25519_sign_open(
+      unsigned_txn, unsigned_txn_size, public_key, sig_ed25519);
+
+  printf("Signature valid: %d", valid);
 
   u8ToHexStr("signature", sig_ed25519, 32);
 

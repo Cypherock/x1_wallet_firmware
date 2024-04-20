@@ -329,50 +329,78 @@ static bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
   }
   printf("%s:%d", __func__, __LINE__);
   // decode and verify the received transaction
-  if (SOL_OK != bittensor_byte_array_to_unsigned_txn(
-                    bittensor_txn_context->transaction,
-                    total_size,
-                    &bittensor_txn_context->transaction_info) ||
-      SOL_OK != bittensor_validate_unsigned_txn(
-                    &bittensor_txn_context->transaction_info)) {
-    return false;
-  }
-  printf("%s:%d", __func__, __LINE__);
+  // if (SOL_OK != bittensor_byte_array_to_unsigned_txn(
+  //                   bittensor_txn_context->transaction,
+  //                   total_size,
+  //                   &bittensor_txn_context->transaction_info) ||
+  //     SOL_OK != bittensor_validate_unsigned_txn(
+  //                   &bittensor_txn_context->transaction_info)) {
+  //   return false;
+  // }
+
+  char buffer[300] = {0};
+
+  memzero(buffer, 300);
+  byte_array_to_hex_string(
+      &query->sign_txn.txn_data, 114, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
   return true;
 }
 
 static bool bittensor_get_user_verification() {
-  char address[45] = {0};
+  char address[100] = "";
   size_t address_size = sizeof(address);
+
+  uint8_t recipient_public_key[64] = {0};
+  memcpy(recipient_public_key, &bittensor_txn_context->transaction[4], 32);
+  char buffer[100] = {0};
+
+  byte_array_to_hex_string(recipient_public_key, 32, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
 
   // verify recipient address;
   if (!ss58enc(address,
                &address_size,
-               bittensor_txn_context->transaction_info.instruction.program
-                   .transfer.recipient_account,
-               BITTENSOR_ACCOUNT_ADDRESS_LENGTH)) {
+               42,    // for substrate
+               recipient_public_key)) {
     bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
   }
+
+  memzero(buffer, 100);
+  byte_array_to_hex_string(
+      address, BITTENSOR_ACCOUNT_ADDRESS_LENGTH, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
 
   if (!core_scroll_page(
           ui_text_verify_address, address, bittensor_send_error)) {
     return false;
   }
 
+  uint8_t recipient_amount[12] = {0};
+  memcpy(recipient_amount, &bittensor_txn_context->transaction[4 + 32], 6);
+
+  memzero(buffer, 100);
+  byte_array_to_hex_string(recipient_amount, 6, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
   // verify recipient amount
-  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+  char amount_string[20] = {'\0'}, amount_decimal_string[30] = {'\0'};
   char display[100] = "";
 
-  uint8_t be_lamports[8] = {0};
-  int i = 8;
-  while (i--)
-    be_lamports[i] = bittensor_txn_context->transaction_info.instruction.program
-                         .transfer.lamports >>
-                     8 * (7 - i);
+  byte_array_to_hex_string(recipient_amount, 6, amount_string, 20);
 
-  byte_array_to_hex_string(
-      be_lamports, 8, amount_string, sizeof(amount_string));
+  // uint8_t be_lamports[8] = {0};
+  // int i = 8;
+  // while (i--)
+  //   be_lamports[i] =
+  //   bittensor_txn_context->transaction_info.instruction.program
+  //                        .transfer.lamports >>
+  //                    8 * (7 - i);
+
+  // byte_array_to_hex_string(
+  //     be_lamports, 8, amount_string, sizeof(amount_string));
   if (!convert_byte_array_to_decimal_string(16,
                                             bittensor_get_decimal(),
                                             amount_string,
@@ -407,6 +435,11 @@ static bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out) {
     memzero(seed_out, sizeof(seed_out));
     return false;
   }
+
+  char buffer[100] = {0};
+  byte_array_to_hex_string(seed_out, 32, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
   set_app_flow_status(BITTENSOR_SIGN_TXN_STATUS_SEED_GENERATED);
   send_response(BITTENSOR_SIGN_TXN_RESPONSE_VERIFY_TAG);
   return true;
@@ -415,10 +448,10 @@ static bool fetch_seed(bittensor_query_t *query, uint8_t *seed_out) {
 static bool send_signature(bittensor_query_t *query,
                            uint8_t *seed,
                            bittensor_sign_txn_signature_response_t *sig) {
-  HDNode hdnode = {0};
-  const size_t depth = bittensor_txn_context->init_info.derivation_path_count;
-  const uint32_t *hd_path = bittensor_txn_context->init_info.derivation_path;
-  printf("%s:%d", __func__, __LINE__);
+  // HDNode hdnode = {0};
+  // const size_t depth =
+  // bittensor_txn_context->init_info.derivation_path_count; const uint32_t
+  // *hd_path = bittensor_txn_context->init_info.derivation_path;
   bittensor_result_t result =
       init_bittensor_result(BITTENSOR_RESULT_SIGN_TXN_TAG);
   result.sign_txn.which_response = BITTENSOR_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
@@ -426,8 +459,7 @@ static bool send_signature(bittensor_query_t *query,
       !check_which_request(query, BITTENSOR_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
     return false;
   }
-  printf("%s:%d", __func__, __LINE__);
-  // // recieve latest blockhash
+  // recieve latest blockhash
   // uint8_t bittensor_latest_blockhash[BITTENSOR_BLOCKHASH_LENGTH] = {0};
   // memcpy(bittensor_latest_blockhash,
   //        query->sign_txn.signature.blockhash,
@@ -440,17 +472,40 @@ static bool send_signature(bittensor_query_t *query,
   //   return false;
 
   // sign updated transaction
-  printf("%s:%d", __func__, __LINE__);
+
   uint8_t public_key[32] = {0};
   ed25519_publickey(seed, public_key);
+
+  char buffer[100] = {0};
+  byte_array_to_hex_string(seed, 32, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
 
   ed25519_sign(bittensor_txn_context->transaction,
                bittensor_txn_context->init_info.transaction_size,
                seed,
                public_key,
                sig->signature);
+  int check_sig =
+      ed25519_sign_open(bittensor_txn_context->transaction,
+                        bittensor_txn_context->init_info.transaction_size,
+                        public_key,
+                        sig->signature);
 
-  memzero(&hdnode, sizeof(hdnode));
+  if (check_sig == 0) {
+    printf("\nSignature Valid");
+  } else {
+    printf("\nSignature Invalid");
+  }
+
+  byte_array_to_hex_string(bittensor_txn_context->transaction,
+                           bittensor_txn_context->init_info.transaction_size,
+                           buffer,
+                           sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
+  byte_array_to_hex_string(sig->signature, 64, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
   memzero(seed, sizeof(seed));
 
   memcpy(&result.sign_txn.signature,
@@ -473,6 +528,7 @@ void bittensor_sign_transaction(bittensor_query_t *query) {
   uint8_t seed[64] = {0};
 
   if (bittensor_handle_initiate_query(query) &&
+      bittensor_fetch_valid_transaction(query) &&
       bittensor_get_user_verification() && fetch_seed(query, seed) &&
       send_signature(query, seed, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);

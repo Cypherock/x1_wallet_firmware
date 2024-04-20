@@ -25,7 +25,7 @@
 /// Ref: https://docs.bittensor.com/terminology#lamport
 #define BITTENSOR_DECIMAL (9U)
 
-#define BITTENSOR_ACCOUNT_ADDRESS_LENGTH 32
+#define BITTENSOR_ACCOUNT_ADDRESS_LENGTH 48
 #define BITTENSOR_BLOCKHASH_LENGTH 32
 
 /*****************************************************************************

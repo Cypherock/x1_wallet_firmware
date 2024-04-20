@@ -28,6 +28,7 @@
         "memory": "c",
         "string_view": "c",
         "system_error": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "random": "c"
     }
 }

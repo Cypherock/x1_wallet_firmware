@@ -118,6 +118,11 @@ void bittensor_main(usb_event_t usb_evt, const void *app_config) {
     return;
   }
 
+  char buffer[300] = {0};
+  byte_array_to_hex_string(
+      usb_evt.p_msg, usb_evt.msg_size, buffer, sizeof(buffer));
+  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+
   /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);

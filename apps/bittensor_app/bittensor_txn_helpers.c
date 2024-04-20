@@ -269,10 +269,10 @@ bool ss58enc(char *address,
              const uint8_t *pubkey) {
   // based on https://docs.substrate.io/v3/advanced/ss58/
   if (address == NULL || address_size < SS58_ADDRESS_MAX_LEN) {
-    return 0;
+    return false;
   }
   if (pubkey == NULL) {
-    return 0;
+    return false;
   }
 
   uint8_t hash[64] = {0};
@@ -293,20 +293,20 @@ bool ss58enc(char *address,
   }
 
   if (prefixSize == 0) {
-    return 0;
+    return false;
   }
 
   memcpy(unencoded + prefixSize, pubkey, 32);    // account id
   if (ss58hash((uint8_t *)unencoded, 32 + prefixSize, hash, 64) != 0) {
     memzero(unencoded, sizeof(unencoded));
-    return 0;
+    return false;
   }
   unencoded[32 + prefixSize] = hash[0];
   unencoded[33 + prefixSize] = hash[1];
 
   if (b58enc(address, &address_size, unencoded, 34 + prefixSize) != true) {
     memzero(unencoded, sizeof(unencoded));
-    return 0;
+    return false;
   }
 
   return true;
