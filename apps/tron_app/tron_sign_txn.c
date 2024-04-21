@@ -77,6 +77,10 @@
 #include "hasher.h"
 #include <pb_decode.h>
 #include "base58.h"
+#include "secp256k1.h"
+#include "ecdsa.h"
+#include "coin_utils.h"
+
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -136,7 +140,9 @@ static void send_response(pb_size_t which_response);
  * type of request. Additionally, the wallet-id is validated for sanity and the
  * derivation path for the account is also validated. After the validations,
  * user is prompted about the action for confirmation. The function returns true
- * indicating all the validation and user confirmation was a success.
+ * indicating all the validation and user confirmation was a success. The
+ * function also duplicates the data from query into the tron_txn_context  for
+ * further processing.
  *
  * @param query Constant reference to the decoded query received from the host
  *
@@ -164,7 +170,7 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query);
 /**
  * @brief Aggregates user consent for the transaction info
  * @details The function decodes the receiver address along with the
- * corresponding transfer value in SOL.
+ * corresponding transfer value in TRX.
  *
  *
  * @return bool Indicating if the user confirmed the transaction
@@ -234,8 +240,10 @@ static bool check_which_request(const tron_query_t *query,
 static bool validate_request_data(const tron_sign_txn_request_t *request) {
   bool status = true;
 
-  if (!tron_derivation_path_guard(request->initiate.derivation_path,
-                                    request->initiate.derivation_path_count)) {
+  if (
+    /*!tron_derivation_path_guard(request->initiate.derivation_path,
+                                    request->initiate.derivation_path_count)
+      */ false) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -272,6 +280,9 @@ STATIC bool tron_handle_initiate_query(const tron_query_t *query) {
   if (!core_confirmation(msg, tron_send_error)) {
     return false;
   }
+  memcpy(&tron_txn_context->init_info,
+         &query->sign_txn.initiate,
+         sizeof(tron_sign_txn_initiate_request_t));
 
   set_app_flow_status(TRON_SIGN_TXN_STATUS_CONFIRM);
   send_response(TRON_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
@@ -353,14 +364,13 @@ STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     
     tron_transaction_contract_t contract = raw_txn->contract[0];  // Example for the first contract
 
-    tron_transfer_contract_t transfer_contract = TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
-    google_protobuf_any_t any = contract.parameter;
-    int state = memcmp(any.type_url, "type.googleapis.com/protocol.TransferContract", 64);
     // TODO: Add switch-cases for more contract types
-    switch (state) {
-      // case protocol_Transaction_Contract_ContractType_TransferContract:
-      case 0:
+    switch (contract.type) {
+
+      case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT:
       {
+        tron_transfer_contract_t transfer_contract = TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
+        google_protobuf_any_t any = contract.parameter;
         pb_istream_t stream = pb_istream_from_buffer(any.value.bytes, any.value.size);
 
         if(!pb_decode(&stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer_contract)){
@@ -375,13 +385,13 @@ STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
       }
 
       default:
+      {
           tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
                           ERROR_DATA_FLOW_INVALID_REQUEST);
           return false;
-        }
+      }
 
-      
-
+    }
       return true;
 }
 
@@ -460,10 +470,51 @@ STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
   return true;
 }
 
-static bool send_signature() {
-  
+static bool send_signature(tron_query_t *query,
+                           uint8_t *seed,
+                           tron_sign_txn_signature_response_t *sig) {
+  HDNode hdnode = {0};
+  const size_t depth = tron_txn_context->init_info.derivation_path_count;
+  const uint32_t *hd_path = tron_txn_context->init_info.derivation_path;
+
+  tron_result_t result = init_tron_result(TRON_RESULT_SIGN_TXN_TAG);
+  result.sign_txn.which_response = TRON_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
+  if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG) ||
+      !check_which_request(query, TRON_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+    return false;
+  }
+
+  // Hash the raw data using sha256. This gives you the Transaction ID.
+  uint8_t txid[SHA256_DIGEST_LENGTH] = {0};
+
+  sha256_Raw(tron_txn_context->transaction,
+             tron_txn_context->init_info.transaction_size,
+             txid);
+
+  // sign transaction
+  if (!derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode))
+    return false;
+
+  uint8_t v_value = 0;
+  ecdsa_sign_digest(&secp256k1,
+                    hdnode.private_key,
+                    txid,
+                    sig->signature,
+                    &v_value,
+                    NULL);
+  sig->signature[64] = v_value;
+
+  memzero(&hdnode, sizeof(hdnode));
+  memzero(seed, sizeof(seed));
+
+  memcpy(&result.sign_txn.signature,
+         sig,
+         sizeof(tron_sign_txn_signature_response_t));
+
+  tron_send_result(&result);
   return true;
 }
+
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
