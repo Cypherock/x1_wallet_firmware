@@ -65,7 +65,7 @@
 
 #include "reconstruct_wallet_flow.h"
 #include "tron_api.h"
-//#include "solana_helpers.h"
+#include "tron_txn_helpers.h"
 #include "tron_priv.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
