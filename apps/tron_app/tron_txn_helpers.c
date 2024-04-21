@@ -105,14 +105,14 @@ int tron_byte_array_to_raw_txn(uint8_t *byte_array,
     memzero(raw_txn, sizeof(tron_transaction_raw_t));
 
     pb_istream_t stream = pb_istream_from_buffer(byte_array, size);
-    raw_txn = TRON_TRANSACTION_RAW_INIT_ZERO;
+    //*raw_txn = TRON_TRANSACTION_RAW_INIT_ZERO;
 
-    if(!pb_decode(&stream, TRON_TRANSACTION_RAW_FIELDS, &raw_txn)){
+    if(!pb_decode(&stream, TRON_TRANSACTION_RAW_FIELDS, raw_txn)){
         return -1;
     }
 }
 
-int tron_validate_unsigned_txn(tron_transaction_raw_t *raw_txn) {
+int tron_validate_unsigned_txn(const tron_transaction_raw_t *raw_txn) {
     //TODO:
     return 0;
 }

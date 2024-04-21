@@ -439,7 +439,7 @@ void tron_get_pub_keys(tron_query_t *query) {
     uint8_t initial_address[1 + 20] = {0}; //initial address
     initial_address[0] = 0x41;
     uint8_t public_key_digest[32];
-    //#define USE_KECCAK 1
+    
     //No iteration in public_keys[i]?
     keccak_256(public_keys[0], TRON_PUB_KEY_SIZE, public_key_digest); //compare with reference
 
