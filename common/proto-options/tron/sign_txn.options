@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/tron/sign_txn.proto
+tron.SignTxnInitiateRequest.walletId type:FT_STATIC max_size:32 fixed_length:true
+tron.SignTxnInitiateRequest.derivationPath type:FT_STATIC max_count:4 fixed_length:true
+tron.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+tron.SignTxnSignatureRequest.blockhash type:FT_STATIC max_size:32 fixed_length:true
