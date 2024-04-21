@@ -74,6 +74,9 @@
 #include <tron/tron.pb.h>
 #include <google/protobuf/any.pb.h>
 #include <tron_txn_helpers.h>
+#include "hasher.h"
+#include <pb_decode.h>
+#include "base58.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -329,16 +332,16 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
   if (0 != tron_byte_array_to_raw_txn(
                     tron_txn_context->transaction,
                     total_size,
-                    &tron_txn_context->raw_txn) ||
+                    tron_txn_context->raw_txn) ||
       0 !=
-          tron_validate_unsigned_txn(&tron_txn_context->raw_txn)) {
+          tron_validate_unsigned_txn(tron_txn_context->raw_txn)) {
     return false;
   }
 
   return true;
 }
 
-STATIC bool extract_contract_info(tron_transaction_raw *raw_txn, 
+STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn, 
                                   int64_t *amount, 
                                   uint8_t *to_address, 
                                   uint8_t *owner_address) {
@@ -348,14 +351,16 @@ STATIC bool extract_contract_info(tron_transaction_raw *raw_txn,
       return false;
     }
     
-    tron_transaction_contract contract = raw_txn->contract[0];  // Example for the first contract
+    tron_transaction_contract_t contract = raw_txn->contract[0];  // Example for the first contract
 
     tron_transfer_contract_t transfer_contract = TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
-        
+    google_protobuf_any_t any = contract.parameter;
+    int state = memcmp(any.type_url, "type.googleapis.com/protocol.TransferContract", 64);
     // TODO: Add switch-cases for more contract types
-    switch (contract.type) {
-      case tron_Transaction_Contract_ContractType_TransferContract:
-        google_protobuf_any_t any = contract.parameter;
+    switch (state) {
+      // case protocol_Transaction_Contract_ContractType_TransferContract:
+      case 0:
+      {
         pb_istream_t stream = pb_istream_from_buffer(any.value.bytes, any.value.size);
 
         if(!pb_decode(&stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer_contract)){
@@ -364,15 +369,18 @@ STATIC bool extract_contract_info(tron_transaction_raw *raw_txn,
           return false;
         }
 
-        default:
+        amount = &transfer_contract.amount;
+        to_address = (uint8_t *)transfer_contract.to_address;
+        owner_address = (uint8_t *)transfer_contract.owner_address;
+      }
+
+      default:
           tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
                           ERROR_DATA_FLOW_INVALID_REQUEST);
           return false;
         }
 
-      *amount = transfer_contract->amount;
-      *to_address = transfer_contract->to_address;
-      *owner_address = transfer_contract->owner_address;
+      
 
       return true;
 }
@@ -417,7 +425,8 @@ STATIC bool tron_get_user_verification() {
   if(!convert_byte_array_to_decimal_string( 8,
                                             0,
                                             amount_string,
-                                            amount_decimal_string)){
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))){
     tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     return false;                                  
   }
@@ -451,50 +460,8 @@ STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
   return true;
 }
 
-static bool send_signature(tron_query_t *query,
-                           uint8_t *seed,
-                           tron_sign_txn_signature_response_t *sig) {
-  HDNode hdnode = {0};
-  const size_t depth = tron_txn_context->init_info.derivation_path_count;
-  const uint32_t *hd_path = tron_txn_context->init_info.derivation_path;
-
-  tron_result_t result = init_tron_result(TRON_RESULT_SIGN_TXN_TAG);
-  result.sign_txn.which_response = TRON_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
-  if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG) ||
-      !check_which_request(query, TRON_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
-    return false;
-  }
-
-  // recieve latest blockhash
-  uint8_t tron_latest_blockhash[TRON_BLOCKHASH_LENGTH] = {0};
-  memcpy(tron_latest_blockhash,
-         query->sign_txn.signature.blockhash,
-         TRON_BLOCKHASH_LENGTH);
-
-  // update unsigned transaction with latest blockhash
-  int update_status = tron_update_blockhash_in_byte_array(
-      tron_txn_context->transaction, tron_latest_blockhash);
-  if (update_status != SOL_OK)
-    return false;
-
-  // sign updated transaction
-  if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode))
-    return false;
-
-  ed25519_sign(tron_txn_context->transaction,
-               tron_txn_context->init_info.transaction_size,
-               hdnode.private_key,
-               hdnode.public_key + 1,
-               sig->signature);
-
-  memzero(&hdnode, sizeof(hdnode));
-  memzero(seed, sizeof(seed));
-
-  memcpy(&result.sign_txn.signature,
-         sig,
-         sizeof(tron_sign_txn_signature_response_t));
-
-  tron_send_result(&result);
+static bool send_signature() {
+  
   return true;
 }
 
