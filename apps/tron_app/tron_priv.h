@@ -2,7 +2,7 @@
  * @file    tron_priv.h
  * @author  Cypherock X1 Team
  * @brief   Support for tron app internal operations
- *          This file is defined to separate TRON's internal use functions,
+ *          This file is defined to separate tron's internal use functions,
  * flows, common APIs
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
@@ -10,14 +10,16 @@
  */
 #ifndef TRON_PRIV_H
 #define TRON_PRIV_H
+
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <tron/core.pb.h>
-#include <stdint.h>
 
+#include "events.h"
+#include "tron_api.h"
 #include "tron_context.h"
-//#include "solana_txn_helpers.h"
+#include <tron/tron.pb.h>
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -25,8 +27,20 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by solana_handle_initiate_query()
+   */
+  tron_sign_txn_initiate_request_t init_info;
 
+  // remembers the allocated buffer for holding complete unsigned transaction
+  uint8_t *transaction;
 
+  // decoded raw txn
+  tron_transaction_raw_t *raw_txn;
+
+} tron_txn_context_t;
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -36,24 +50,23 @@
  *****************************************************************************/
 
 /**
- * @brief Handler for NEAR public key derivation.
- * @details This flow expects BTC_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
- * query, otherwise the flow is aborted
+ * @brief Handler for getting public keys for TRON.
+ * @details This flow expects TRON_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG as
+ * initial query, otherwise the flow is aborted
  *
- * @param query object for address public key query
+ * @param query Reference to the decoded query struct from the host app
  */
 void tron_get_pub_keys(tron_query_t *query);
 
 /**
- * @brief Handler for NEAR sign transaction function
+ * @brief Handler for signing a transaction on tron.
+ * @details The expected request type is TRON_SIGN_TXN_REQUEST_INITIATE_TAG. The
+ * function controls the complete data exchange with host, user prompts and
+ * confirmations for signing an TRON based transaction.
  *
- * @param query Buffer containing USB query received from host
+ * @param query Reference to the decoded query struct from the host app
  */
 void tron_sign_transaction(tron_query_t *query);
-
-
-
-
 
 #endif /* TRON_PRIV_H */
 
