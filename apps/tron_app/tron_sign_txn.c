@@ -339,11 +339,12 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
     return false;
   }
 
+  tron_txn_context->raw_txn = (tron_transaction_raw_t *)malloc(sizeof(tron_transaction_raw_t));
   // decode and verify the received transaction
   if (0 != tron_byte_array_to_raw_txn(
                     tron_txn_context->transaction,
                     total_size,
-                    tron_txn_context->raw_txn) ||
+                    tron_txn_context->raw_txn)  ||
       0 !=
           tron_validate_unsigned_txn(tron_txn_context->raw_txn)) {
     return false;
@@ -368,7 +369,7 @@ STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     switch (contract.type) {
 
       case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT:
-      {
+      { 
         tron_transfer_contract_t transfer_contract = TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
         google_protobuf_any_t any = contract.parameter;
         pb_istream_t stream = pb_istream_from_buffer(any.value.bytes, any.value.size);
@@ -377,29 +378,31 @@ STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
           tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 
                           ERROR_DATA_FLOW_DECODING_FAILED);
           return false;
+          
         }
 
-        amount = &transfer_contract.amount;
-        to_address = (uint8_t *)transfer_contract.to_address;
-        owner_address = (uint8_t *)transfer_contract.owner_address;
+        memcpy(amount, &transfer_contract.amount, sizeof(int64_t));
+        memcpy(to_address, (uint8_t *)transfer_contract.to_address, TRON_INITIAL_ADDRESS_LENGTH);
+        memcpy(owner_address, (uint8_t *)transfer_contract.owner_address, TRON_INITIAL_ADDRESS_LENGTH);
+        break;
       }
 
       default:
-      {
+      {   
           tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
                           ERROR_DATA_FLOW_INVALID_REQUEST);
           return false;
       }
 
     }
-      return true;
+    return true;
 }
 
 
 
 STATIC bool tron_get_user_verification() {
-  uint8_t to_address[TRON_ACCOUNT_ADDRESS_LENGTH] = {0};
-  uint8_t owner_address[TRON_ACCOUNT_ADDRESS_LENGTH] = {0};
+  uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
+  uint8_t owner_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   int64_t amount = 0;
   char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
   // extract raw
@@ -454,8 +457,7 @@ STATIC bool tron_get_user_verification() {
 }
 
 STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
-  if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG) ||
-      !check_which_request(query, TRON_SIGN_TXN_REQUEST_VERIFY_TAG)) {
+  if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG)) {
     return false;
   }
 
@@ -465,8 +467,8 @@ STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
     memzero(seed_out, sizeof(seed_out));
     return false;
   }
+
   set_app_flow_status(TRON_SIGN_TXN_STATUS_SEED_GENERATED);
-  send_response(TRON_SIGN_TXN_RESPONSE_VERIFY_TAG);
   return true;
 }
 
@@ -513,6 +515,7 @@ static bool send_signature(tron_query_t *query,
 
   tron_send_result(&result);
   return true;
+
 }
 
 

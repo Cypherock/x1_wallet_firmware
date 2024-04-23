@@ -110,6 +110,8 @@ int tron_byte_array_to_raw_txn(uint8_t *byte_array,
     if(!pb_decode(&stream, TRON_TRANSACTION_RAW_FIELDS, raw_txn)){
         return -1;
     }
+
+    return 0;
 }
 
 int tron_validate_unsigned_txn(const tron_transaction_raw_t *raw_txn) {
