@@ -15,10 +15,11 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <tron/tron.pb.h>
+
 #include "events.h"
 #include "tron_api.h"
 #include "tron_context.h"
-#include <tron/tron.pb.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -69,4 +70,3 @@ void tron_get_pub_keys(tron_query_t *query);
 void tron_sign_transaction(tron_query_t *query);
 
 #endif /* TRON_PRIV_H */
-
