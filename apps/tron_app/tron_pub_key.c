@@ -63,19 +63,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "reconstruct_wallet_flow.h"
-#include "tron_api.h"
-#include "tron_txn_helpers.h"
-#include "tron_priv.h"
-#include "status_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
-#include "wallet_list.h"
-#include "sha3.h"
-#include  "base58.h"
+#include "base58.h"
 #include "bip32.h"
 #include "coin_utils.h"
 #include "curves.h"
+#include "reconstruct_wallet_flow.h"
+#include "sha3.h"
+#include "status_api.h"
+#include "tron_api.h"
+#include "tron_priv.h"
+#include "tron_txn_helpers.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
+#include "wallet_list.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -222,7 +222,7 @@ STATIC bool check_which_request(const tron_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_REQUEST);
+                    ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
@@ -236,7 +236,7 @@ STATIC bool validate_request_data(tron_get_public_keys_request_t *request,
   if (0 == request->initiate.derivation_paths_count) {
     // request does not have any derivation paths, invalid request
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -245,7 +245,7 @@ STATIC bool validate_request_data(tron_get_public_keys_request_t *request,
     // `TRON_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more
     // than one derivation path which is not expected
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -253,7 +253,7 @@ STATIC bool validate_request_data(tron_get_public_keys_request_t *request,
   pb_size_t count = request->initiate.derivation_paths_count;
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
-    //TODO: 
+    // TODO:
     /*
     if (!tron_derivation_path_guard(path->path, path->path_count)) {
       tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -273,7 +273,8 @@ STATIC bool get_public_key(const uint8_t *seed,
                            uint8_t *public_key) {
   HDNode node = {0};
 
-  if (!derive_hdnode_from_path(path, path_length, SECP256K1_NAME, seed, &node)) {
+  if (!derive_hdnode_from_path(
+          path, path_length, SECP256K1_NAME, seed, &node)) {
     // send unknown error; unknown failure reason
     tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
@@ -289,10 +290,11 @@ STATIC bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool fill_public_keys(const tron_get_public_keys_derivation_path_t *paths,
-                             const uint8_t *seed,
-                             uint8_t public_keys[][TRON_PUB_KEY_SIZE],
-                             pb_size_t count) {
+static bool fill_public_keys(
+    const tron_get_public_keys_derivation_path_t *paths,
+    const uint8_t *seed,
+    uint8_t public_keys[][TRON_PUB_KEY_SIZE],
+    pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const tron_get_public_keys_derivation_path_t *path = &paths[index];
     if (!get_public_key(
@@ -347,8 +349,7 @@ static bool get_user_consent(const pb_size_t which_request,
   char msg[100] = "";
 
   if (TRON_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    snprintf(
-        msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, "Tron", wallet_name);
+    snprintf(msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, "Tron", wallet_name);
   } else {
     snprintf(msg,
              sizeof(msg),
@@ -392,8 +393,7 @@ void tron_get_pub_keys(tron_query_t *query) {
                       sizeof(tron_get_public_keys_derivation_path_t)]
                      [TRON_PUB_KEY_SIZE] = {0};
 
-  if (!check_which_request(query,
-                           TRON_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
+  if (!check_which_request(query, TRON_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_keys, which_request) ||
       !get_wallet_name_by_id(query->get_public_keys.initiate.wallet_id,
                              (uint8_t *)wallet_name,
@@ -436,22 +436,28 @@ void tron_get_pub_keys(tron_query_t *query) {
     char main_address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = "";
 
     // gen Address:
-    uint8_t initial_address[1 + 20] = {0}; //initial address
+    uint8_t initial_address[1 + 20] = {0};    // initial address
     initial_address[0] = 0x41;
     uint8_t public_key_digest[32];
-    
-    //No iteration in public_keys[i]?
-    keccak_256(public_keys[0], TRON_PUB_KEY_SIZE, public_key_digest); //compare with reference
+
+    // No iteration in public_keys[i]?
+    keccak_256(public_keys[0],
+               TRON_PUB_KEY_SIZE,
+               public_key_digest);    // compare with reference
 
     // extract last 20 bytes
     // address = 41||sha3[12,32)
-    for(int i = 12;i < 32;i++){
-        initial_address[i - 12 + 1] = public_key_digest[i];
+    for (int i = 12; i < 32; i++) {
+      initial_address[i - 12 + 1] = public_key_digest[i];
     }
 
-    if(!base58_encode_check(initial_address, 1 + 20, HASHER_SHA2D, main_address, TRON_ACCOUNT_ADDRESS_LENGTH + 1)){
-        tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-        return;
+    if (!base58_encode_check(initial_address,
+                             1 + 20,
+                             HASHER_SHA2D,
+                             main_address,
+                             TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
+      tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+      return;
     }
 
     if (!core_scroll_page(ui_text_receive_on, main_address, tron_send_error)) {

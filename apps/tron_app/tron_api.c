@@ -102,11 +102,11 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool decode_tron_query(const uint8_t *data,
-                         uint16_t data_size,
-                         tron_query_t *query_out) {
+                       uint16_t data_size,
+                       tron_query_t *query_out) {
   if (NULL == data || NULL == query_out || 0 == data_size) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_DECODING_FAILED);
+                    ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
@@ -122,16 +122,16 @@ bool decode_tron_query(const uint8_t *data,
   /* Send error to host if status is false*/
   if (false == status) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_DECODING_FAILED);
+                    ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
   return status;
 }
 
 bool encode_tron_result(const tron_result_t *result,
-                          uint8_t *buffer,
-                          uint16_t max_buffer_len,
-                          size_t *bytes_written_out) {
+                        uint8_t *buffer,
+                        uint16_t max_buffer_len,
+                        size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out)
     return false;
 
@@ -151,7 +151,7 @@ bool encode_tron_result(const tron_result_t *result,
 bool check_tron_query(const tron_query_t *query, pb_size_t exp_query_tag) {
   if ((NULL == query) || (exp_query_tag != query->which_request)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
+                    ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
   }
   return true;
