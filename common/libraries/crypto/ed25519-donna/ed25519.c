@@ -97,6 +97,7 @@ ED25519_FN(ed25519_cosi_sign) (const unsigned char *m, size_t mlen, const ed2551
 	contract256_modm(sig, S);
 }
 
+#include "blake2b.h"
 void
 ED25519_FN(ed25519_sign) (const unsigned char *m, size_t mlen, const ed25519_secret_key sk, const ed25519_public_key pk, ed25519_signature RS) {
 	ed25519_hash_context ctx;
@@ -113,6 +114,31 @@ ED25519_FN(ed25519_sign) (const unsigned char *m, size_t mlen, const ed25519_sec
 	ed25519_hash_update(&ctx, m, mlen);
 	ed25519_hash_final(&ctx, hashr);
 	expand256_modm(r, hashr, 64);
+
+	// BLAKE2S_CTX ctx;
+
+	// blake2s_Init(&ctx, BLAKE2S_DIGEST_LENGTH);
+	// blake2s_Update(&ctx, extsk + 32, 32);
+	// blake2s_Update(&ctx, m, mlen);
+	// blake2s_Final(&ctx, hashr, BLAKE2S_DIGEST_LENGTH);
+	// expand256_modm(r, hashr, 64);
+
+	// BLAKE256_CTX ctx;
+
+	// blake256_Init(&ctx);
+	// blake256_Update(&ctx, extsk + 32, 32);
+	// blake256_Update(&ctx, m, mlen);
+	// blake256_Final(&ctx, hashr);
+	// expand256_modm(r, hashr, 64);
+
+
+	// SHA512_CTX ctx;
+
+	// sha512_Init(&ctx);
+	// sha512_Update(&ctx, extsk + 32, 32);
+	// sha512_Update(&ctx, m, mlen);
+	// sha512_Final(&ctx, hashr);
+	// expand256_modm(r, hashr, 64);
 
 	/* R = rB */
 	ge25519_scalarmult_base_niels(&R, ge25519_niels_base_multiples, r);

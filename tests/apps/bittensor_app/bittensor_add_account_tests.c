@@ -308,9 +308,9 @@ TEST(bittensor_add_account_test, bittensor_get_sig_action) {
   int valid = ed25519_sign_open(
       unsigned_txn, unsigned_txn_size, public_key, sig_ed25519);
 
-  printf("Signature valid: %d", valid);
+  printf("\nSignature valid: %d", valid);
 
-  u8ToHexStr("signature", sig_ed25519, 32);
+  u8ToHexStr("signature", sig_ed25519, 64);
 
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_sig, sig_ed25519, 64);
 }
