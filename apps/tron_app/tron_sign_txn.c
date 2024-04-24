@@ -60,27 +60,27 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <google/protobuf/any.pb.h>
+#include <pb_decode.h>
+#include <tron/contract.pb.h>
+#include <tron/sign_txn.pb.h>
+#include <tron/tron.pb.h>
+#include <tron_txn_helpers.h>
+
+#include "base58.h"
+#include "coin_utils.h"
+#include "curves.h"
+#include "ecdsa.h"
+#include "hasher.h"
 #include "reconstruct_wallet_flow.h"
-#include "tron_api.h"
+#include "secp256k1.h"
 #include "sha2.h"
-#include "tron_priv.h"
 #include "status_api.h"
+#include "tron_api.h"
+#include "tron_priv.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
-#include "curves.h"
-#include <tron/sign_txn.pb.h>
-#include <tron/contract.pb.h>
-#include <tron/tron.pb.h>
-#include <google/protobuf/any.pb.h>
-#include <tron_txn_helpers.h>
-#include "hasher.h"
-#include <pb_decode.h>
-#include "base58.h"
-#include "secp256k1.h"
-#include "ecdsa.h"
-#include "coin_utils.h"
-
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -230,7 +230,7 @@ static bool check_which_request(const tron_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_txn.which_request) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_REQUEST);
+                    ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
@@ -241,11 +241,12 @@ static bool validate_request_data(const tron_sign_txn_request_t *request) {
   bool status = true;
 
   if (
-    /*!tron_derivation_path_guard(request->initiate.derivation_path,
-                                    request->initiate.derivation_path_count)
-      */ false) {
+      /*!tron_derivation_path_guard(request->initiate.derivation_path,
+                                      request->initiate.derivation_path_count)
+        */
+      false) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -312,15 +313,14 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
         payload->chunk_index >= payload->total_chunks ||
         size + payload->chunk.size > total_size) {
       tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_DATA);
+                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
 
     memcpy(&tron_txn_context->transaction[size], chunk->bytes, chunk->size);
     size += chunk->size;
     // Send chunk ack to host
-    response.sign_txn.which_response =
-        TRON_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG;
+    response.sign_txn.which_response = TRON_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG;
     response.sign_txn.data_accepted.has_chunk_ack = true;
     response.sign_txn.data_accepted.chunk_ack.chunk_index =
         payload->chunk_index;
@@ -335,70 +335,70 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
   // make sure all chunks were received
   if (size != total_size) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
 
-  tron_txn_context->raw_txn = (tron_transaction_raw_t *)malloc(sizeof(tron_transaction_raw_t));
+  tron_txn_context->raw_txn =
+      (tron_transaction_raw_t *)malloc(sizeof(tron_transaction_raw_t));
   // decode and verify the received transaction
-  if (0 != tron_byte_array_to_raw_txn(
-                    tron_txn_context->transaction,
-                    total_size,
-                    tron_txn_context->raw_txn)  ||
-      0 !=
-          tron_validate_unsigned_txn(tron_txn_context->raw_txn)) {
+  if (0 != tron_byte_array_to_raw_txn(tron_txn_context->transaction,
+                                      total_size,
+                                      tron_txn_context->raw_txn) ||
+      0 != tron_validate_unsigned_txn(tron_txn_context->raw_txn)) {
     return false;
   }
 
   return true;
 }
 
-STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn, 
-                                  int64_t *amount, 
-                                  uint8_t *to_address, 
+STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
+                                  int64_t *amount,
+                                  uint8_t *to_address,
                                   uint8_t *owner_address) {
-    if (!(raw_txn->contract_count > 0)){
-      tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+  if (!(raw_txn->contract_count > 0)) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  tron_transaction_contract_t contract =
+      raw_txn->contract[0];    // Example for the first contract
+
+  // TODO: Add switch-cases for more contract types
+  switch (contract.type) {
+    case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
+      tron_transfer_contract_t transfer_contract =
+          TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
+      google_protobuf_any_t any = contract.parameter;
+      pb_istream_t stream =
+          pb_istream_from_buffer(any.value.bytes, any.value.size);
+
+      if (!pb_decode(
+              &stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer_contract)) {
+        tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_DECODING_FAILED);
+        return false;
+      }
+
+      memcpy(amount, &transfer_contract.amount, sizeof(int64_t));
+      memcpy(to_address,
+             (uint8_t *)transfer_contract.to_address,
+             TRON_INITIAL_ADDRESS_LENGTH);
+      memcpy(owner_address,
+             (uint8_t *)transfer_contract.owner_address,
+             TRON_INITIAL_ADDRESS_LENGTH);
+      break;
+    }
+
+    default: {
+      tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                      ERROR_DATA_FLOW_INVALID_REQUEST);
       return false;
     }
-    
-    tron_transaction_contract_t contract = raw_txn->contract[0];  // Example for the first contract
-
-    // TODO: Add switch-cases for more contract types
-    switch (contract.type) {
-
-      case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT:
-      { 
-        tron_transfer_contract_t transfer_contract = TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
-        google_protobuf_any_t any = contract.parameter;
-        pb_istream_t stream = pb_istream_from_buffer(any.value.bytes, any.value.size);
-
-        if(!pb_decode(&stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer_contract)){
-          tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 
-                          ERROR_DATA_FLOW_DECODING_FAILED);
-          return false;
-          
-        }
-
-        memcpy(amount, &transfer_contract.amount, sizeof(int64_t));
-        memcpy(to_address, (uint8_t *)transfer_contract.to_address, TRON_INITIAL_ADDRESS_LENGTH);
-        memcpy(owner_address, (uint8_t *)transfer_contract.owner_address, TRON_INITIAL_ADDRESS_LENGTH);
-        break;
-      }
-
-      default:
-      {   
-          tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
-                          ERROR_DATA_FLOW_INVALID_REQUEST);
-          return false;
-      }
-
-    }
-    return true;
+  }
+  return true;
 }
-
-
 
 STATIC bool tron_get_user_verification() {
   uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
@@ -406,19 +406,16 @@ STATIC bool tron_get_user_verification() {
   int64_t amount = 0;
   char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
   // extract raw
-  if(!extract_contract_info(tron_txn_context->raw_txn,
-                            &amount,
-                            to_address,
-                            owner_address)){
-    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 
-                          ERROR_DATA_FLOW_DECODING_FAILED);
+  if (!extract_contract_info(
+          tron_txn_context->raw_txn, &amount, to_address, owner_address)) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
-
   }
   // verify recipient address;
   if (!base58_encode_check(to_address,
-                           1 + 20, 
-                           HASHER_SHA2D, 
+                           1 + 20,
+                           HASHER_SHA2D,
                            address,
                            TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
     tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
@@ -430,24 +427,17 @@ STATIC bool tron_get_user_verification() {
   }
 
   // verify recipient amount
-  uint8_t amount_hex[8];
-  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
-  char display[100] ={'\0'};
+  char amount_decimal_string[30] = {'\0'};
+  char display[100] = {'\0'};
 
-  dec_to_hex(amount, amount_hex, 8);
-  if(!convert_byte_array_to_decimal_string( 8,
-                                            0,
-                                            amount_string,
-                                            amount_decimal_string,
-                                            sizeof(amount_decimal_string))){
-    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    return false;                                  
-  }
+  sprintf(display, "%lli", amount);
+  /*
   snprintf(display,
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
            TRON_LUNIT);
+    */
   if (!core_confirmation(display, tron_send_error)) {
     return false;
   }
@@ -461,9 +451,8 @@ STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
     return false;
   }
 
-  if (!reconstruct_seed(tron_txn_context->init_info.wallet_id,
-                        seed_out,
-                        tron_send_error)) {
+  if (!reconstruct_seed(
+          tron_txn_context->init_info.wallet_id, seed_out, tron_send_error)) {
     memzero(seed_out, sizeof(seed_out));
     return false;
   }
@@ -498,12 +487,8 @@ static bool send_signature(tron_query_t *query,
     return false;
 
   uint8_t v_value = 0;
-  ecdsa_sign_digest(&secp256k1,
-                    hdnode.private_key,
-                    txid,
-                    sig->signature,
-                    &v_value,
-                    NULL);
+  ecdsa_sign_digest(
+      &secp256k1, hdnode.private_key, txid, sig->signature, &v_value, NULL);
   sig->signature[64] = v_value;
 
   memzero(&hdnode, sizeof(hdnode));
@@ -515,17 +500,14 @@ static bool send_signature(tron_query_t *query,
 
   tron_send_result(&result);
   return true;
-
 }
-
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void tron_sign_transaction(tron_query_t *query) {
-  tron_txn_context =
-      (tron_txn_context_t *)malloc(sizeof(tron_txn_context_t));
+  tron_txn_context = (tron_txn_context_t *)malloc(sizeof(tron_txn_context_t));
   memzero(tron_txn_context, sizeof(tron_txn_context_t));
   tron_sign_txn_signature_response_t sig = {0};
   uint8_t seed[64] = {0};
