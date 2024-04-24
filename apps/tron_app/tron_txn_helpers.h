@@ -16,16 +16,16 @@
 
 #include <stdint.h>
 #include <tron/tron.pb.h>
-#include "tron_txn_helpers.h"
-#include "tron_priv.h"
 
+#include "tron_priv.h"
+#include "tron_txn_helpers.h"
 #include "utils.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
 #define TRON_NAME "Tron"
-#define TRON_LUNIT "TRX" //To Confirm
+#define TRON_LUNIT "TRX"    // To Confirm
 #define TRON_PUB_KEY_SIZE 65
 #define TRON_INITIAL_ADDRESS_LENGTH 21
 #define TRON_ACCOUNT_ADDRESS_LENGTH 34
@@ -72,6 +72,5 @@ int tron_byte_array_to_raw_txn(uint8_t *byte_array,
  * @return -1 if validation failed
  */
 int tron_validate_unsigned_txn(const tron_transaction_raw_t *raw_txn);
-
 
 #endif

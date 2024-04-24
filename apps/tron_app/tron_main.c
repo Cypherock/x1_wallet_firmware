@@ -62,9 +62,9 @@
 
 #include "tron_main.h"
 
+#include "status_api.h"
 #include "tron_api.h"
 #include "tron_priv.h"
-#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,14 +98,14 @@ void tron_main(usb_event_t usb_evt, const void *app_config);
  * STATIC VARIABLES
  *****************************************************************************/
 static const cy_app_desc_t tron_app_desc = {.id = 18,
-                                              .version =
-                                                  {
-                                                      .major = 1,
-                                                      .minor = 0,
-                                                      .patch = 0,
-                                                  },
-                                              .app = tron_main,
-                                              .app_config = NULL};
+                                            .version =
+                                                {
+                                                    .major = 1,
+                                                    .minor = 0,
+                                                    .patch = 0,
+                                                },
+                                            .app = tron_main,
+                                            .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -135,7 +135,7 @@ void tron_main(usb_event_t usb_evt, const void *app_config) {
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_QUERY);
+                      ERROR_DATA_FLOW_INVALID_QUERY);
     } break;
   }
 

@@ -427,7 +427,7 @@ STATIC bool tron_get_user_verification() {
   }
 
   // verify recipient amount
-  char amount_decimal_string[30] = {'\0'};
+  // char amount_decimal_string[30] = {'\0'};
   char display[100] = {'\0'};
 
   sprintf(display, "%lli", amount);
