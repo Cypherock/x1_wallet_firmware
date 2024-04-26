@@ -97,12 +97,6 @@ jobs:
       with:
         submodules: recursive
 
-    - shell: bash
-      if: matrix.platform == 'device'
-      env:
-        GET_KEY: ${{ secrets.GET_KEY }}
-      run: $GET_KEY && cp privatekeypairs/*.h utilities/script/
-
     - name: Restore build-tools
       id: cache-build-tools
       uses: actions/cache@v3
@@ -152,7 +146,7 @@ jobs:
         fi
         pip install -r vendor/nanopb/extra/requirements.txt
         PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin:$(pwd)/proto-tools/bin"
-        ./utilities/build.sh -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
+        ./utilities/build.sh -u -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
 
   run-unit-tests:
     needs: check-format
