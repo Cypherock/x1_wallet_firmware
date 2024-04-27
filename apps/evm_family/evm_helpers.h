@@ -62,6 +62,23 @@
 bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth);
 
 /**
+ * @brief Get the RLP decoded data, length, type.
+ * @details
+ *
+ * @param [in] seq          Sequence of bytes of RLP encoded data.
+ * @param [in] seq_len      Length of RLP decoded data.
+ * @param [out] decoded_len  Size of length.
+ * @param [out] type         Type of data (LIST or STRING)
+ *
+ * @return Length of bytes after length.
+ * @retval
+ */
+uint64_t get_decode_length(const uint8_t *seq,
+                           const uint64_t seq_len,
+                           uint64_t *decoded_len,
+                           seq_type *type);
+
+/**
  * @brief This function calculates the hash of the message data based on the
  * message type.
  *
