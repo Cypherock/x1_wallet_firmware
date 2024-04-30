@@ -25,8 +25,9 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define TRON_NAME "Tron"
-#define TRON_LUNIT "TRX"    // To Confirm
-#define TRON_PUB_KEY_SIZE 65
+#define TRON_LUNIT "TRX"
+#define TRON_PUB_KEY_SIZE 64    // ECDSA's x+y coordinates only
+#define TRON_PUB_KEY_SIZE_PLUS_ONE 65
 #define TRON_INITIAL_ADDRESS_LENGTH 21
 #define TRON_ACCOUNT_ADDRESS_LENGTH 34
 
@@ -42,12 +43,12 @@
  *****************************************************************************/
 /**
  * @brief Convert byte array representation of unsigned transaction to
- * solana_unsigned_txn.
+ * tron_unsigned_txn.
  * @details
  *
  * @param [in] byte_array                   Byte array of unsigned transaction.
  * @param [in] byte_array_size              Size of byte array.
- * @param [out] utxn                        Pointer to the solana_unsigned_txn
+ * @param [out] utxn                        Pointer to the tron_unsigned_txn
  * instance to store the transaction details.
  *
  * @return Status of conversion
@@ -66,7 +67,7 @@ int tron_byte_array_to_raw_txn(uint8_t *byte_array,
 /**
  * @brief Validate the deserialized unsigned transaction
  *
- * @param utxn Pointer to the solana_unsigned_txn instance to validate the
+ * @param utxn Pointer to the tron_unsigned_txn instance to validate the
  * transaction
  * @return 0 if validation succeeded
  * @return -1 if validation failed

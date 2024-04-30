@@ -1,8 +1,7 @@
 /**
- * @file    tron_txn_helpers.c
+ * @file    tron_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Helper implementation for interpreting and signing tron
- *          transactions
+ * @brief   Utilities specific to Tron chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,13 +59,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "tron_txn_helpers.h"
 
-#include <pb_decode.h>
-#include <string.h>
-#include <tron/tron.pb.h>
+#include "tron_helpers.h"
 
-#include "tron_priv.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -98,23 +93,31 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-int tron_byte_array_to_raw_txn(uint8_t *byte_array,
-                               size_t size,
-                               tron_transaction_raw_t *raw_txn) {
-  if (byte_array == NULL || raw_txn == NULL)
-    return 1;
-  memzero(raw_txn, sizeof(tron_transaction_raw_t));
 
-  pb_istream_t stream = pb_istream_from_buffer(byte_array, size);
+bool tron_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels < 3)
+    return status;
 
-  if (!pb_decode(&stream, TRON_TRANSACTION_RAW_FIELDS, raw_txn)) {
-    return -1;
+  uint32_t purpose = path[0], coin = path[1], account = path[2];
+
+  switch (levels) {
+    case 3: {    // m/44'/195'/0'
+      status = (purpose == TRON_PURPOSE_INDEX && coin == TRON_COIN_INDEX &&
+                account == TRON_ACCOUNT_INDEX);
+    } break;
+
+    case 5: {    // m/44'/195'/0'/0/i
+      uint32_t change = path[3];
+      uint32_t address = path[4];
+      status = (purpose == TRON_PURPOSE_INDEX && coin == TRON_COIN_INDEX &&
+                account == TRON_ACCOUNT_INDEX && change == TRON_CHANGE_INDEX &&
+                is_non_hardened(address));
+    } break;
+
+    default:
+      break;
   }
 
-  return 0;
-}
-
-int tron_validate_unsigned_txn(const tron_transaction_raw_t *raw_txn) {
-  // TODO:
-  return 0;
+  return status;
 }

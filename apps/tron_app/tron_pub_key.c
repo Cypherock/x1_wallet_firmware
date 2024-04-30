@@ -162,7 +162,7 @@ STATIC bool get_public_key(const uint8_t *seed,
 STATIC bool fill_public_keys(
     const tron_get_public_keys_derivation_path_t *paths,
     const uint8_t *seed,
-    uint8_t public_keys[][TRON_PUB_KEY_SIZE],
+    uint8_t public_keys[][TRON_PUB_KEY_SIZE_PLUS_ONE],
     pb_size_t count);
 
 /**
@@ -186,11 +186,12 @@ STATIC bool fill_public_keys(
  * @retval false If the export was interrupted by a P0 event or an invalid query
  * was received from the host app.
  */
-static bool send_public_keys(tron_query_t *query,
-                             const uint8_t public_keys[][TRON_PUB_KEY_SIZE],
-                             const size_t count,
-                             const pb_size_t which_request,
-                             const pb_size_t which_response);
+static bool send_public_keys(
+    tron_query_t *query,
+    const uint8_t public_keys[][TRON_PUB_KEY_SIZE_PLUS_ONE],
+    const size_t count,
+    const pb_size_t which_request,
+    const pb_size_t which_response);
 /**
  * @brief Helper function to take user consent before exporting public keys to
  * the host. Uses an appropriate message template based on the query request
@@ -293,7 +294,7 @@ STATIC bool get_public_key(const uint8_t *seed,
 static bool fill_public_keys(
     const tron_get_public_keys_derivation_path_t *paths,
     const uint8_t *seed,
-    uint8_t public_keys[][TRON_PUB_KEY_SIZE],
+    uint8_t public_keys[][TRON_PUB_KEY_SIZE_PLUS_ONE],
     pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const tron_get_public_keys_derivation_path_t *path = &paths[index];
@@ -305,16 +306,18 @@ static bool fill_public_keys(
   return true;
 }
 
-static bool send_public_keys(tron_query_t *query,
-                             const uint8_t public_keys[][TRON_PUB_KEY_SIZE],
-                             const size_t count,
-                             const pb_size_t which_request,
-                             const pb_size_t which_response) {
+static bool send_public_keys(
+    tron_query_t *query,
+    const uint8_t public_keys[][TRON_PUB_KEY_SIZE_PLUS_ONE],
+    const size_t count,
+    const pb_size_t which_request,
+    const pb_size_t which_response) {
   tron_result_t response = init_tron_result(which_response);
   tron_get_public_keys_result_response_t *result =
       &response.get_public_keys.result;
   static const size_t batch_limit =
-      sizeof(response.get_public_keys.result.public_keys) / TRON_PUB_KEY_SIZE;
+      sizeof(response.get_public_keys.result.public_keys) /
+      TRON_PUB_KEY_SIZE_PLUS_ONE;
   size_t remaining = count;
 
   response.get_public_keys.which_response =
@@ -327,7 +330,7 @@ static bool send_public_keys(tron_query_t *query,
 
     memcpy(response.get_public_keys.result.public_keys,
            public_keys[count - remaining],
-           batch_size * TRON_PUB_KEY_SIZE);
+           batch_size * TRON_PUB_KEY_SIZE_PLUS_ONE);
 
     tron_send_result(&response);
     remaining -= batch_size;
@@ -391,7 +394,7 @@ void tron_get_pub_keys(tron_query_t *query) {
 
   uint8_t public_keys[sizeof(init_req->derivation_paths) /
                       sizeof(tron_get_public_keys_derivation_path_t)]
-                     [TRON_PUB_KEY_SIZE] = {0};
+                     [TRON_PUB_KEY_SIZE_PLUS_ONE] = {0};
 
   if (!check_which_request(query, TRON_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->get_public_keys, which_request) ||
@@ -436,14 +439,13 @@ void tron_get_pub_keys(tron_query_t *query) {
     char main_address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = "";
 
     // gen Address:
-    uint8_t initial_address[1 + 20] = {0};    // initial address
+    uint8_t initial_address[1 + 20] = {0};
     initial_address[0] = 0x41;
     uint8_t public_key_digest[32];
 
+    // Drop the '04' from pubkey
     // No iteration in public_keys[i]?
-    keccak_256(public_keys[0],
-               TRON_PUB_KEY_SIZE,
-               public_key_digest);    // compare with reference
+    keccak_256(&public_keys[0][1], TRON_PUB_KEY_SIZE, public_key_digest);
 
     // extract last 20 bytes
     // address = 41||sha3[12,32)
