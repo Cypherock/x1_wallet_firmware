@@ -77,6 +77,7 @@
 #include "sha2.h"
 #include "status_api.h"
 #include "tron_api.h"
+#include "tron_helpers.h"
 #include "tron_priv.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -240,11 +241,8 @@ static bool check_which_request(const tron_query_t *query,
 static bool validate_request_data(const tron_sign_txn_request_t *request) {
   bool status = true;
 
-  if (
-      /*!tron_derivation_path_guard(request->initiate.derivation_path,
-                                      request->initiate.derivation_path_count)
-        */
-      false) {
+  if (!tron_derivation_path_guard(request->initiate.derivation_path,
+                                  request->initiate.derivation_path_count)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -362,8 +360,7 @@ STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     return false;
   }
 
-  tron_transaction_contract_t contract =
-      raw_txn->contract[0];    // Example for the first contract
+  tron_transaction_contract_t contract = raw_txn->contract[0];
 
   // TODO: Add switch-cases for more contract types
   switch (contract.type) {

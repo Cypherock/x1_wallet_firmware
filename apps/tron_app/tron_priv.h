@@ -31,7 +31,7 @@
 typedef struct {
   /**
    * The structure holds the wallet information of the transaction.
-   * @note Populated by solana_handle_initiate_query()
+   * @note Populated by tron_handle_initiate_query()
    */
   tron_sign_txn_initiate_request_t init_info;
 
