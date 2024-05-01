@@ -64,6 +64,7 @@
 #include "bittensor_helpers.h"
 #include "bittensor_priv.h"
 #include "reconstruct_wallet_flow.h"
+#include "scale.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -352,10 +353,10 @@ static bool bittensor_get_user_verification() {
   char address[100] = "";
   size_t address_size = sizeof(address);
 
-  uint8_t recipient_public_key[64] = {0};
-  memcpy(recipient_public_key, &bittensor_txn_context->transaction[4], 32);
-  char buffer[100] = {0};
+  uint8_t recipient_public_key[35] = {0};
+  memcpy(recipient_public_key, &bittensor_txn_context->transaction[3], 32);
 
+  char buffer[100] = {0};
   byte_array_to_hex_string(recipient_public_key, 32, buffer, sizeof(buffer));
   printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
 
@@ -378,42 +379,35 @@ static bool bittensor_get_user_verification() {
     return false;
   }
 
-  uint8_t recipient_amount[12] = {0};
-  memcpy(recipient_amount, &bittensor_txn_context->transaction[4 + 32], 6);
+  size_t amount_len = bittensor_txn_context->init_info.transaction_size - 50;
+  printf("\n%s:%d amount_len: %d", __func__, __LINE__, amount_len);
+
+  uint8_t amount[10] = {0};
+  memcpy(recipient_public_key,
+         &bittensor_txn_context->transaction[3 + 32],
+         amount_len);
+
+  scale_compact_int compact = SCALE_COMPACT_INT_INIT;
+  memcpy(compact.data, amount, amount_len);
+  char *compact_hex = decode_compact_to_hex(&compact);
+  double decimalValue = strtoull(compact_hex, NULL, 16);
+  printf("%s = %u\n", compact_hex, decimalValue);
+  free(compact_hex);
 
   memzero(buffer, 100);
-  byte_array_to_hex_string(recipient_amount, 6, buffer, sizeof(buffer));
+  printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
+
+  decimalValue *= 1e-12;
+  static char amount_str[20];
+  sprintf(amount_str, "%.12f", decimalValue);
+
+  byte_array_to_hex_string(amount_str, 20, buffer, sizeof(buffer));
   printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
-
-  // verify recipient amount
-  char amount_string[20] = {'\0'}, amount_decimal_string[30] = {'\0'};
-  char display[100] = "";
-
-  byte_array_to_hex_string(recipient_amount, 6, amount_string, 20);
-
-  // uint8_t be_lamports[8] = {0};
-  // int i = 8;
-  // while (i--)
-  //   be_lamports[i] =
-  //   bittensor_txn_context->transaction_info.instruction.program
-  //                        .transfer.lamports >>
-  //                    8 * (7 - i);
-
-  // byte_array_to_hex_string(
-  //     be_lamports, 8, amount_string, sizeof(amount_string));
-  if (!convert_byte_array_to_decimal_string(16,
-                                            bittensor_get_decimal(),
-                                            amount_string,
-                                            amount_decimal_string,
-                                            sizeof(amount_decimal_string))) {
-    bittensor_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    return false;
-  }
 
   snprintf(display,
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
-           amount_decimal_string,
+           amount_str,
            BITTENSOR_LUNIT);
   if (!core_confirmation(display, bittensor_send_error)) {
     return false;

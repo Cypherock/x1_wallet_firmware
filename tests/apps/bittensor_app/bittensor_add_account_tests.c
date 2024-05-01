@@ -275,28 +275,36 @@ TEST(bittensor_add_account_test, bittensor_get_addr_action) {
 }
 
 TEST(bittensor_add_account_test, bittensor_get_sig_action) {
+  // https://cyphr.me/ed25519_tool/ed.html#?alg_type=Msg&msg_enc=Text&key_enc=Hex&verify
+  // for sha512
   uint8_t expected_sig[64] = {0};
   hex_string_to_byte_array(
-      "98a70222f0b8121aa9d30f813d683f809e462b469c7ff87639499bb94e6dae4131f85042"
-      "463c2a355a2003d062adf5aaa10b8c61e636062aaad11c2a26083406",
+      "707ceae8cbbaf30a18b1254274be0b854269a2e672f820b0d09b706c9acefd849a12889c"
+      "be22c065bd0fed2b908c4c8d5821dc53ec059e07def479f51638a803",
       128,
       expected_sig);
 
   size_t unsigned_txn_size = 3;
   uint8_t unsigned_txn[30] = {0};
-  hex_string_to_byte_array("616263", 6, unsigned_txn);
+  hex_string_to_byte_array(
+      "04030010b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebce5"
+      "c000280050690f0018000000e143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2c"
+      "fd15340213f3423ee143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd153402"
+      "13f3423e",
+      224,
+      unsigned_txn);
   u8ToHexStr("unsigned_txn", unsigned_txn, 3);
 
   ed25519_public_key public_key = {0};
   hex_string_to_byte_array(
-      "ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf",
+      "15771a0a9a77d1a4523190c911d3e1f75dfb6aee172baf3bbe576561897e5216",
       64,
       public_key);
   u8ToHexStr("public_key", public_key, 32);
 
   ed25519_secret_key secret_key = {0};
   hex_string_to_byte_array(
-      "833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42",
+      "f2e4cada34659c4f10221565421ecc5cc565e98b0cc1e57849cf5c30547f67bb",
       64,
       secret_key);
   u8ToHexStr("secret_keys", secret_key, 32);
