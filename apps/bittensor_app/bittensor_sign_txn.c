@@ -60,11 +60,11 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "../../vendor/cScale/src/scale.h"
 #include "bittensor_api.h"
 #include "bittensor_helpers.h"
 #include "bittensor_priv.h"
 #include "reconstruct_wallet_flow.h"
-#include "scale.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -349,6 +349,15 @@ static bool bittensor_fetch_valid_transaction(bittensor_query_t *query) {
   return true;
 }
 
+double hexArrayToDouble(const uint8_t *hexArray, size_t length) {
+  double result = 0.0;
+  for (size_t i = 0; i < length; i++) {
+    result *= 256.0;          // Shift existing bits by one byte
+    result += hexArray[i];    // Add current byte value
+  }
+  return result;
+}
+
 static bool bittensor_get_user_verification() {
   char address[100] = "";
   size_t address_size = sizeof(address);
@@ -379,31 +388,36 @@ static bool bittensor_get_user_verification() {
     return false;
   }
 
-  size_t amount_len = bittensor_txn_context->init_info.transaction_size - 50;
+  size_t amount_len = bittensor_txn_context->init_info.transaction_size - 111;
+  printf("\n%s:%d total_size: %d",
+         __func__,
+         __LINE__,
+         bittensor_txn_context->init_info.transaction_size);
   printf("\n%s:%d amount_len: %d", __func__, __LINE__, amount_len);
 
   uint8_t amount[10] = {0};
-  memcpy(recipient_public_key,
-         &bittensor_txn_context->transaction[3 + 32],
-         amount_len);
+  memcpy(amount, &bittensor_txn_context->transaction[3 + 32], amount_len);
 
-  scale_compact_int compact = SCALE_COMPACT_INT_INIT;
-  memcpy(compact.data, amount, amount_len);
-  char *compact_hex = decode_compact_to_hex(&compact);
-  double decimalValue = strtoull(compact_hex, NULL, 16);
-  printf("%s = %u\n", compact_hex, decimalValue);
-  free(compact_hex);
+  // scale_compact_int compact = SCALE_COMPACT_INT_INIT;
+  // memcpy(compact.data, amount, amount_len);
+  // compact.mode = amount_len;
 
-  memzero(buffer, 100);
+  // char *compact_hex = decode_compact_to_hex(&compact);
+  // double decimalValue = strtoull(compact_hex, NULL, 16);
+  // printf("%s = %u\n", compact_hex, decimalValue);
+  // free(compact_hex);
+
+  double decimalValue = hexArrayToDouble(amount, amount_len);
   printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
-
   decimalValue *= 1e-12;
+  printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
   static char amount_str[20];
   sprintf(amount_str, "%.12f", decimalValue);
 
   byte_array_to_hex_string(amount_str, 20, buffer, sizeof(buffer));
-  printf("\n%s:%d buffer: %s", __func__, __LINE__, buffer);
+  printf("\n%s:%d amount_str: %s", __func__, __LINE__, buffer);
 
+  char display[100] = "";
   snprintf(display,
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
