@@ -23,7 +23,7 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define TRON_PURPOSE_INDEX 0x8000002C
-#define TRON_COIN_INDEX 0x80000405
+#define TRON_COIN_INDEX 0x800000C3
 #define TRON_ACCOUNT_INDEX 0x80000000
 #define TRON_CHANGE_INDEX 0x0
 /*****************************************************************************

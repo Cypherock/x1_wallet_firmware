@@ -71,11 +71,13 @@
 #include "sha3.h"
 #include "status_api.h"
 #include "tron_api.h"
+#include "tron_helpers.h"
 #include "tron_priv.h"
 #include "tron_txn_helpers.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -254,15 +256,13 @@ STATIC bool validate_request_data(tron_get_public_keys_request_t *request,
   pb_size_t count = request->initiate.derivation_paths_count;
   for (pb_size_t index = 0; index < count; index++) {
     path = &request->initiate.derivation_paths[index];
-    // TODO:
-    /*
+
     if (!tron_derivation_path_guard(path->path, path->path_count)) {
       tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_DATA);
+                      ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
       break;
     }
-    */
   }
 
   return status;
