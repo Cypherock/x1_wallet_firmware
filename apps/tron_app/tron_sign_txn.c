@@ -194,7 +194,7 @@ STATIC bool tron_get_user_verification();
  * @retval true If all the seed is generated without any error
  * @retval false If seed failed to generate
  */
-STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out);
+static bool fetch_seed(tron_query_t *query, uint8_t *seed_out);
 
 /**
  * @brief Sends the generated signature to the host
@@ -424,17 +424,17 @@ STATIC bool tron_get_user_verification() {
   }
 
   // verify recipient amount
-  // char amount_decimal_string[30] = {'\0'};
+  char amount_decimal_string[30] = {'\0'};
   char display[100] = {'\0'};
 
-  sprintf(display, "%lli", amount);
-  /*
+  snprintf(
+      amount_decimal_string, sizeof(amount_decimal_string), "%lli", amount);
   snprintf(display,
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
            TRON_LUNIT);
-    */
+
   if (!core_confirmation(display, tron_send_error)) {
     return false;
   }
@@ -443,7 +443,7 @@ STATIC bool tron_get_user_verification() {
   return true;
 }
 
-STATIC bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
+static bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
   if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG)) {
     return false;
   }
