@@ -419,7 +419,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
 
     case OUTPUT: {
       while (verify_input_data->output_index < verify_input_data->count) {
-        output_case op_case = verify_input_data->input_parse;
+        output_case op_case = verify_input_data->output_parse;
         switch (op_case) {
           case VALUE_CASE: {
             if (verify_input_data->output_index == input->prev_output_index) {
@@ -455,8 +455,6 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
               memcpy(verify_input_data->value + (8 - offset),
                      raw_txn_chunk,
                      offset);
-              offset += (raw_txn_chunk[offset] + 1);
-              verify_input_data->output_index++;
               verify_input_data->output_parse = SCRIPT_PUBKEY_CASE;
               verify_input_data->isSplit = 0;
             }
@@ -466,10 +464,11 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
             if (offset + raw_txn_chunk[offset] + 1 > CHUNK_SIZE) {
               // update prev offset for next chunk
               verify_input_data->prev_offset =
-                  CHUNK_SIZE - (offset + raw_txn_chunk[offset] + 1);
+                  (offset + raw_txn_chunk[offset] + 1) - CHUNK_SIZE;
               sha256_Update(
                   &(verify_input_data->sha_256_ctx), raw_txn_chunk, CHUNK_SIZE);
               verify_input_data->output_parse = VALUE_CASE;
+              verify_input_data->output_index++;
               return 4;
             } else {
               offset += (raw_txn_chunk[offset] + 1);
@@ -497,16 +496,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
   if (U64_READ_LE_ARRAY(verify_input_data->value) == 0) {
     return 1;
   }
-  // Implement the following once function is passing for standard ips
-  /*
-    // network version (first 4 bytes)
-    memcpy(txn_data, raw_txn, 4);
-    // txin and txout (skip marker & flag)
-    memcpy(txn_data + 4, raw_txn + start_offset, offset - start_offset);
-    // locktime (last 4 bytes)
-    memcpy(txn_data + offset - start_offset + 4, raw_txn + size - 4, 4);
-      sha256_Raw(txn_data, offset - start_offset + 4 + 4, hash);
-  */
+
   sha256_Raw(hash, sizeof(hash), hash);
   // verify input txn hash
   if (memcmp(hash, input->prev_txn_hash, sizeof(input->prev_txn_hash)) != 0) {
