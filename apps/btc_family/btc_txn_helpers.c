@@ -342,7 +342,12 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
   }
   // chunk size 500bytes
   int32_t offset = 0;
-
+  /*
+  for(int i =0;i<CHUNK_SIZE;i++){
+      printf("%02x", raw_txn_chunk[i]);
+      fflush(stdout);
+    }
+  */
   if (chunk_index == 0) {
     // ignore network version (4-bytes), skip marker & flag (in segwit)
     offset += (raw_txn_chunk[4] == 0 ? 6 : 4);
@@ -363,7 +368,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
         switch (ip_case) {
           case PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE: {
             if (offset + 36 > CHUNK_SIZE) {
-              verify_input_data->prev_offset = CHUNK_SIZE - (offset + 36);
+              verify_input_data->prev_offset = (offset + 36) - CHUNK_SIZE;
               sha256_Update(
                   &(verify_input_data->sha_256_ctx), raw_txn_chunk, CHUNK_SIZE);
               verify_input_data->input_parse = SCRIPT_LENGTH_CASE;
@@ -376,11 +381,12 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
           case SCRIPT_LENGTH_CASE: {
             if (offset + raw_txn_chunk[offset] + 1 + 4 > CHUNK_SIZE) {
               verify_input_data->prev_offset =
-                  CHUNK_SIZE - (offset + raw_txn_chunk[offset] + 1 + 4);
+                  (offset + raw_txn_chunk[offset] + 1 + 4) - CHUNK_SIZE;
               sha256_Update(
                   &(verify_input_data->sha_256_ctx), raw_txn_chunk, CHUNK_SIZE);
               verify_input_data->input_parse =
                   PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE;
+              verify_input_data->input_index++;
               return 4;
             } else {
               offset += (raw_txn_chunk[offset] + 1 + 4);
@@ -418,7 +424,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
           case VALUE_CASE: {
             if (verify_input_data->output_index == input->prev_output_index) {
               if (offset + 8 > CHUNK_SIZE) {
-                verify_input_data->prev_offset = CHUNK_SIZE - (offset + 8);
+                verify_input_data->prev_offset = (offset + 8) - CHUNK_SIZE;
                 memcpy(verify_input_data->value,
                        raw_txn_chunk + offset,
                        CHUNK_SIZE - offset);
@@ -433,7 +439,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
               }
             }
             if (offset + 8 > CHUNK_SIZE) {
-              verify_input_data->prev_offset = CHUNK_SIZE - (offset + 8);
+              verify_input_data->prev_offset = (offset + 8) - CHUNK_SIZE;
               sha256_Update(
                   &(verify_input_data->sha_256_ctx), raw_txn_chunk, CHUNK_SIZE);
               verify_input_data->output_parse = SCRIPT_PUBKEY_CASE;
@@ -488,7 +494,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, offset + 4);
   sha256_Final(&(verify_input_data->sha_256_ctx), hash);
-  if (verify_input_data->value[0] == 0) {
+  if (U64_READ_LE_ARRAY(verify_input_data->value) == 0) {
     return 1;
   }
   // Implement the following once function is passing for standard ips
