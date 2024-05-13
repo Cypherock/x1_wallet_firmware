@@ -26,18 +26,30 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef struct btc_verify_input
-{ 
+typedef enum parseType { INPUT, OP_COUNT, OUTPUT, PARSED } parse_type;
+
+typedef enum inputCase {
+  PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE,    // 32 + 4
+  SCRIPT_LENGTH_CASE,
+  SEQ_CASE
+} input_case;
+
+typedef enum outputCase {
+  VALUE_CASE,
+  VALUE_SPLIT_CASE,
+  SCRIPT_PUBKEY_CASE,
+} output_case;
+typedef struct btc_verify_input {
   int32_t chunk_count;
-  int32_t count; //count of ip/op
-  int32_t prev_offset; //offset to remember from prev chunk
+  int32_t count;          // count of ip/op
+  int32_t prev_offset;    // offset to remember from prev chunk
   int32_t input_index;
   int32_t output_index;
   SHA256_CTX sha_256_ctx;
-  bool isInputParsed;
-  bool isOpCountParsed;
-  bool isValueSplit;
-  bool isOutputParsed;
+  parse_type parsetype;
+  input_case input_parse;
+  output_case output_parse;
+  bool isSplit;
   uint8_t value[8];
 } btc_verify_input_t;
 
