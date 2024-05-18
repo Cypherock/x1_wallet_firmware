@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 usage () {
-    echo -e "USAGE: $0 [-c] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
+    echo -e "USAGE: $0 [-c] [-u] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
     echo -e "Parameters are optional and assumes 'main debug device' if not provided"
     echo -e "\n\n -c \t Performs a forced clean before invoking build"
+    echo -e "\n\n -u \t Generate unsigned binary"
     echo -e "\n\n -f \t Sets the preferred firmware to build. Can be main or initial"
     echo -e "\n\n -p \t Provides the preferred platform to build for. Can be simulator or device"
     echo -e "\n\n -t \t Tells the build type that should be generate. Can be a valid build type."
@@ -38,13 +39,15 @@ BUILD_TYPE=Debug
 BUILD_PLATFORM=Device
 UNIT_TESTS=OFF
 DEV=OFF
+SIGN_BINARY=ON
 
-while getopts 'cf:p:t:' flag; do
+while getopts 'cf:p:t:u' flag; do
   case "${flag}" in
     c) clean_flag="true" ;;
     f) ACTIVE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
     p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
     t) BUILD_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+    u) SIGN_BINARY=OFF ;;
     *) usage ;;
   esac
 done
@@ -118,7 +121,7 @@ fi
 
 "${CMAKE}"  -DDEV_SWITCH=${DEV}                                 \
             -DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}"            \
-            -DSIGN_BINARY=ON                                    \
+            -DSIGN_BINARY:BOOL="${SIGN_BINARY}"                 \
             -DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}"           \
             -DFIRMWARE_TYPE="${ACTIVE_TYPE}"                    \
             -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON             \
