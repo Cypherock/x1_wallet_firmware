@@ -120,7 +120,7 @@ static const cy_app_desc_t eth_app_desc = {.id = 7,
                                            .version =
                                                {
                                                    .major = 1,
-                                                   .minor = 0,
+                                                   .minor = 1,
                                                    .patch = 0,
                                                },
                                            .app = evm_main,

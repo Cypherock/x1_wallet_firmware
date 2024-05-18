@@ -124,7 +124,7 @@ static const cy_app_desc_t polygon_app_desc = {
     .version =
         {
             .major = 1,
-            .minor = 0,
+            .minor = 1,
             .patch = 0,
         },
     .app = evm_main,
