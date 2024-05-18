@@ -390,18 +390,57 @@ static bool fetch_valid_input(btc_query_t *query) {
     // TODO: ensure only valid input for the path are being provided. spending a
     // segwit input on the legacy derivation path does not make sense.
     // verify transaction details and discard the raw-transaction (prev_txn)
-    //const btc_sign_txn_input_prev_txn_t *txn = &txin->prev_txn;
+    btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+    const btc_prev_txn_chunk_t *prev_txn = &(query->sign_txn.prev_txn_chunk);
+    const common_chunk_payload_t *payload = &(prev_txn->chunk_payload);
+    const common_chunk_payload_chunk_t *chunk = &(payload->chunk);
+    const uint32_t total_chunks = payload->total_chunks;
+    uint32_t total_size = chunk->size + payload->remaining_size;
+
+    uint32_t size = 0;
+    int status = 4;
 
     btc_verify_input_t verify_input_data;
-    memzero(& (verify_input_data) ,sizeof(btc_verify_input_t) );
-    //verify_input_data.chunk_count = get_from_host();
+    memzero(&(verify_input_data), sizeof(btc_verify_input_t));
+    verify_input_data.chunk_total = total_chunks;
+    while (1) {
+      status = btc_verify_input(
+          (uint8_t *)chunk, payload->chunk_index, &verify_input_data, txin);
 
-    int status = 0;
-    uint8_t txn_chunk[CHUNK_SIZE] = {0}; 
-    for(int32_t i = 0; i < verify_input_data.chunk_count; i++){
-      status = btc_verify_input(txn_chunk, i, &verify_input_data, txin);
-      if(status != 0 && status != 4){
+      // Get next data chunk from host
+      if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
+          !check_which_request(query,
+                               BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
+        return false;
+      }
+
+      if (false == query->sign_txn.prev_txn_chunk.has_chunk_payload ||
+          payload->chunk_index >= payload->total_chunks ||
+          size + chunk->size > total_size) {
+        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+      size += chunk->size;
+
+      // Send chunk ack to host
+      response.sign_txn.which_response =
+          BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
+      response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
+      response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
+          payload->chunk_index;
+      btc_send_result(&response);
+
+      // If no data remaining to be received from the host, then exit
+      if (0 == payload->remaining_size ||
+          payload->chunk_index + 1 == payload->total_chunks) {
         break;
+      }
+
+      if (total_size != size) {
+        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
       }
     }
 

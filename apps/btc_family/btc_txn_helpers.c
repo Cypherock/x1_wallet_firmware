@@ -337,17 +337,11 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
                      btc_verify_input_t *verify_input_data,
                      const btc_sign_txn_input_t *input) {
   if (NULL == input || NULL == raw_txn_chunk ||
-      0 == verify_input_data->chunk_count) {
+      0 == verify_input_data->chunk_total) {
     return -1;
   }
-  // chunk size 500bytes
+  // chunk size >500bytes
   int32_t offset = 0;
-  /*
-  for(int i =0;i<CHUNK_SIZE;i++){
-      printf("%02x", raw_txn_chunk[i]);
-      fflush(stdout);
-    }
-  */
   if (chunk_index == 0) {
     // ignore network version (4-bytes), skip marker & flag (in segwit)
     offset += (raw_txn_chunk[4] == 0 ? 6 : 4);
@@ -462,7 +456,6 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
 
           case SCRIPT_PUBKEY_CASE: {
             if (offset + raw_txn_chunk[offset] + 1 > CHUNK_SIZE) {
-              // update prev offset for next chunk
               verify_input_data->prev_offset =
                   (offset + raw_txn_chunk[offset] + 1) - CHUNK_SIZE;
               sha256_Update(
@@ -481,6 +474,23 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
         verify_input_data->output_parse = VALUE_CASE;
         verify_input_data->output_index++;
       }
+      verify_input_data->parsetype = LOCK_TIME;
+    }
+
+    case LOCK_TIME: {
+      if (offset + 4 > CHUNK_SIZE) {
+        // update prev offset for next chunk
+        verify_input_data->prev_offset = (offset + 4) - CHUNK_SIZE;
+        sha256_Update(
+            &(verify_input_data->sha_256_ctx), raw_txn_chunk, CHUNK_SIZE);
+        verify_input_data->isLocktimeSplit = 1;
+        return 4;
+      } else if (verify_input_data->isLocktimeSplit) {
+        sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, offset);
+      } else {
+        sha256_Update(
+            &(verify_input_data->sha_256_ctx), raw_txn_chunk, offset + 4);
+      }
     }
     default:
       break;
@@ -488,15 +498,13 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
 
   verify_input_data->parsetype = PARSED;
 
-  // since the above loop parses till the end
-  // can Finalize hashing
+  // Finalize hashing
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
-  sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, offset + 4);
   sha256_Final(&(verify_input_data->sha_256_ctx), hash);
+
   if (U64_READ_LE_ARRAY(verify_input_data->value) == 0) {
     return 1;
   }
-
   sha256_Raw(hash, sizeof(hash), hash);
   // verify input txn hash
   if (memcmp(hash, input->prev_txn_hash, sizeof(input->prev_txn_hash)) != 0) {
