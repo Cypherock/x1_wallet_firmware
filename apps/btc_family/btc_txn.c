@@ -463,6 +463,8 @@ static bool fetch_valid_input(btc_query_t *query) {
         return false;
       }
     }
+    // Free txin after use
+    free(txin);
 
     if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
         0 != status) {
