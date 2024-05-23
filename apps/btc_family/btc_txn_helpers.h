@@ -45,6 +45,8 @@ typedef enum outputCase {
   VALUE_SPLIT_CASE,
   SCRIPT_PUBKEY_CASE,
 } output_case;
+
+typedef enum hashCase { FIRST_CHUNK_HASH, DEFAULT } hash_case;
 typedef struct btc_verify_input {
   int32_t chunk_total;
   int32_t count;          // count of ip/op
@@ -55,9 +57,13 @@ typedef struct btc_verify_input {
   parse_type parsetype;
   input_case input_parse;
   output_case output_parse;
+  bool isSegwit;
   bool isSplit;
+  bool hasLocktime;
   bool isLocktimeSplit;
+  int32_t size_last_chunk;
   uint8_t value[8];
+  uint8_t locktime[4];
 } btc_verify_input_t;
 
 /*****************************************************************************

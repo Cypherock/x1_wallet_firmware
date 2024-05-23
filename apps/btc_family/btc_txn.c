@@ -432,7 +432,13 @@ static bool fetch_valid_input(btc_query_t *query) {
       if (0 == size) {
         verify_input_data.chunk_total = payload->total_chunks;
         total_size = chunk->size + payload->remaining_size;
+
+        verify_input_data.size_last_chunk = total_size % CHUNK_SIZE;
+        if (verify_input_data.size_last_chunk < 4) {
+          verify_input_data.isLocktimeSplit = true;
+        }
       }
+
       if (false == query->sign_txn.prev_txn_chunk.has_chunk_payload ||
           payload->chunk_index >= payload->total_chunks ||
           size + chunk->size > total_size) {
@@ -457,14 +463,18 @@ static bool fetch_valid_input(btc_query_t *query) {
           payload->chunk_index + 1 == payload->total_chunks) {
         break;
       }
-      if (total_size != size) {
-        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
-        return false;
+
+      if (4 != status) {
+        break;
       }
     }
     // Free txin after use
     free(txin);
+    if (total_size != size) {
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
 
     if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
         0 != status) {

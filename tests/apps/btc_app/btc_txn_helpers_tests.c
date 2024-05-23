@@ -100,11 +100,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
    */
   uint8_t raw_txn[300] = {0};
   hex_string_to_byte_array(
-      "010000000100000000000000000000000000000000000000000000000000000000000000"
-      "00ffffffff0704ffff001d0134ffffffff0100f2052a0100000043410411db93e1dcdb8a"
-      "016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464"
-      "f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac00000000",
-      268,
+      "01000000000101fee6b227e3e24bf2e5a4ea1ca6eba722c5eab233832c9c84b4893339ad"
+      "9294413200000000ffffffff02dcb93400000000001976a9141499db6b8f427c624a644b"
+      "f9442b9e3ec37f211d88aca9790100000000001600143026421e3930e0243b626d1445fb"
+      "2d028510c68a024830450221008e2f802e44bdff18531a05ddc5b3788e84ca96b8136772"
+      "96dae224687d25df320220518d296d04cb9b40c338bf83afd07e73e810b90213c8751377"
+      "40dbebcba7af3b0121024aece25573da4ed274ee891341490fe26bd021b63e54e8581fc3"
+      "ca10085a8fa000000000",
+      452,
       raw_txn);
   // only fill necessary values
   btc_sign_txn_input_t input = {.prev_output_index = 0,
@@ -113,28 +116,28 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
                                     .size = 67,
                                 }};
   hex_string_to_byte_array(
-      "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9",
+      "40633b2fd084e35feac1db9308412c99944e6b5324c3afad29873d88abcf11c0",
       64,
       input.prev_txn_hash);
   // revere order of txn-id:
   // 0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9
-  cy_reverse_byte_array(input.prev_txn_hash, sizeof(input.prev_txn_hash));
+  // cy_reverse_byte_array(input.prev_txn_hash, sizeof(input.prev_txn_hash));
   hex_string_to_byte_array(
       "410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0"
       "eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac",
       134,
       input.script_pub_key.bytes);
 
-  int ip_txn_bytes_size = 134;    // Hardcode
+  int ip_txn_bytes_size = 226;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
-
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
        chunk_var -= CHUNK_SIZE) {
@@ -150,7 +153,7 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
     }
     index++;
   }
-  TEST_ASSERT_EQUAL_INT(0, status);
+  TEST_ASSERT_EQUAL_INT(3, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
@@ -190,13 +193,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
 
   int ip_txn_bytes_size = 134;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
 
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
@@ -254,13 +258,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh) {
 
   int ip_txn_bytes_size = 224;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
 
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
@@ -319,13 +324,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail) {
 
   int ip_txn_bytes_size = 224;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
 
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
@@ -402,13 +408,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh) {
 
   int ip_txn_bytes_size = 929;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
 
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
@@ -487,13 +494,14 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
 
   int ip_txn_bytes_size = 929;    // Hardcode
   btc_verify_input_t verify_input_data;
+  int status = 4;
   memzero(&(verify_input_data), sizeof(btc_verify_input_t));
   verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
                                       ? (ip_txn_bytes_size / CHUNK_SIZE)
                                       : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
 
-  int status = 4;
   uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
 
   int index = 0;
   for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
