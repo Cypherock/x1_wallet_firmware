@@ -332,13 +332,12 @@ static void update_hash(btc_verify_input_t *verify_input_data,
                         const uint8_t *raw_txn_chunk,
                         int chunk_index,
                         int32_t offset) {
-  hash_case h_case = DEFAULT;
-  bool isFirst = (0 == chunk_index);
+  hash_case update = DEFAULT;
 
-  if (isFirst) {
-    h_case = FIRST_CHUNK_HASH;
+  if (0 == chunk_index) {
+    update = FIRST_CHUNK_HASH;
   }
-  switch (h_case) {
+  switch (update) {
     case FIRST_CHUNK_HASH: {
       if (verify_input_data->isSegwit) {
         sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, 4);
@@ -403,7 +402,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
       0 == verify_input_data->chunk_total) {
     return -1;
   }
-  // chunk size >500bytes
+
   int32_t offset = 0;
   if (chunk_index == 0) {
     // ignore network version (4-bytes), skip marker & flag (in segwit)
@@ -507,7 +506,6 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
           }
 
           case VALUE_SPLIT_CASE: {
-            // Split case, dont forget to update op_index
             if (verify_input_data->isSplit) {
               memcpy(verify_input_data->value + (8 - offset),
                      raw_txn_chunk,
@@ -554,7 +552,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
       break;
   }
 
-  verify_input_data->parsetype = PARSED;
+  verify_input_data->parsetype = END;
 
   // Finalize hashing
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};

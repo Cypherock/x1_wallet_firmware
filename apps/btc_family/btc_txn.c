@@ -422,7 +422,7 @@ static bool fetch_valid_input(btc_query_t *query) {
     memzero(&(verify_input_data), sizeof(btc_verify_input_t));
 
     while (1) {
-      // Get next data chunk from host
+      // req prev txn chunk from host
       if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
           !check_which_request(query,
                                BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
@@ -465,6 +465,8 @@ static bool fetch_valid_input(btc_query_t *query) {
       }
 
       if (4 != status) {
+        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
         break;
       }
     }

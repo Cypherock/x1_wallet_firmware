@@ -26,27 +26,21 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-typedef enum parseType {
-  INPUT,
-  OP_COUNT,
-  OUTPUT,
-  LOCK_TIME,
-  PARSED
-} parse_type;
+typedef enum parse_type { INPUT, OP_COUNT, OUTPUT, LOCK_TIME, END } parse_type;
 
-typedef enum inputCase {
-  PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE,    // 32 + 4
+typedef enum input_case {
+  PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE,
   SCRIPT_LENGTH_CASE,
   SEQ_CASE
 } input_case;
 
-typedef enum outputCase {
+typedef enum output_case {
   VALUE_CASE,
   VALUE_SPLIT_CASE,
-  SCRIPT_PUBKEY_CASE,
+  SCRIPT_PUBKEY_CASE
 } output_case;
 
-typedef enum hashCase { FIRST_CHUNK_HASH, DEFAULT } hash_case;
+typedef enum hash_case { FIRST_CHUNK_HASH, DEFAULT } hash_case;
 typedef struct btc_verify_input {
   int32_t chunk_total;
   int32_t count;          // count of ip/op
@@ -80,10 +74,14 @@ typedef struct btc_verify_input {
  * the raw transaction. This is done by checking the output value against the
  * specified output index in the raw transaction and then finally matching the
  * specified hash with the calculated hash from the raw transactions bytes.
+ * To remove size limitations, the function requests the prev_txn from host
+ * in chunks of size CHUNK_SIZE.
  *
- * @param [in] raw_txn  Byte array of a transaction.
- * @param [in] size     Size of the raw_txn.
- * @param [in] input    Immutable reference to the btc_txn_input_t.
+ * @param [in] raw_txn_chunk      current chunk of transaction.
+ * @param [in] chunk_index        index of current chunk.
+ * @param [in] verify_input_data  struct to hold data and flags required by
+ * parser.
+ * @param [in] input              Immutable reference to the btc_txn_input_t.
  *
  * @return int Result of verification, 0 if verified otherwise error status.
  * @retval 0 Input verified successfully.
@@ -91,6 +89,7 @@ typedef struct btc_verify_input {
  * @retval 1 If specified output index (input->prev_output_index) is not present
  * @retval 2 If there is a hash (input->prev_txn_hash) mismatch
  * @retval 3 If there is a value (input->value) mismatch
+ * @retval 4 If in processing state, not all chunks parsed
  */
 int btc_verify_input(const uint8_t *raw_txn_chunk,
                      const uint32_t chunk_index,
