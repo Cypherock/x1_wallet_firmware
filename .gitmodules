@@ -7,6 +7,6 @@
 [submodule "nanopb"]
 	path = vendor/nanopb
 	url = ../nanopb
-[submodule "vendor/cScale"]
+[submodule "cScale"]
 	path = vendor/cScale
 	url = ../cScale

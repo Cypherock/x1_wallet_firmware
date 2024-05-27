@@ -24,7 +24,10 @@ execute_process(COMMAND sh utilities/proto/generate-protob.sh WORKING_DIRECTORY 
 include(utilities/cmake/version.cmake)
 
 file(GLOB_RECURSE PROTO_SRCS "generated/proto/*.*")
-list(APPEND PROTO_SRCS  "vendor/cScale/src/scale.c" "vendor/cScale/src/scale.h" "vendor/nanopb/pb_common.c" "vendor/nanopb/pb_decode.c" "vendor/nanopb/pb_encode.c" "vendor/nanopb/pb_common.h" "vendor/nanopb/pb_decode.h" "vendor/nanopb/pb_encode.h" "vendor/nanopb/pb.h")
+list(APPEND PROTO_SRCS "vendor/nanopb/pb_common.c" "vendor/nanopb/pb_decode.c" "vendor/nanopb/pb_encode.c" "vendor/nanopb/pb_common.h" "vendor/nanopb/pb_decode.h" "vendor/nanopb/pb_encode.h" "vendor/nanopb/pb.h")
+
+file(GLOB_RECURSE SCALE_SOURCES "apps/bittensor_app/*.*" "vendor/cScale/src/type/*.*" "vendor/cScale/src/util/*.*")
+list(APPEND SCALE_SRCS "vendor/cScale/src/scale.c" "vendor/cScale/src/scale.h" ${SCALE_SOURCES} )
 
 OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
@@ -49,7 +52,9 @@ else()
 endif()
 
 # Include nanopb source headers
-target_include_directories( ${EXECUTABLE} PRIVATE vendor/cScale vendor/nanopb generated/proto )
+target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto )
+
+target_include_directories( ${EXECUTABLE} PRIVATE vendor/cScale/src apps/bittensor_app )
 
 # Enable support for dynamically allocated fields in nanopb
 # Ref: vendor/nanopb/pb.h

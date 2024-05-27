@@ -398,16 +398,17 @@ static bool bittensor_get_user_verification() {
   uint8_t amount[10] = {0};
   memcpy(amount, &bittensor_txn_context->transaction[3 + 32], amount_len);
 
-  // scale_compact_int compact = SCALE_COMPACT_INT_INIT;
-  // memcpy(compact.data, amount, amount_len);
-  // compact.mode = amount_len;
-
-  // char *compact_hex = decode_compact_to_hex(&compact);
-  // double decimalValue = strtoull(compact_hex, NULL, 16);
-  // printf("%s = %u\n", compact_hex, decimalValue);
-  // free(compact_hex);
-
   double decimalValue = hexArrayToDouble(amount, amount_len);
+
+  // decode the scale encoded amount
+  scale_compact_int compact = SCALE_COMPACT_INT_INIT;
+  memcpy(compact.data, amount, amount_len);
+  compact.mode = amount_len;
+  char *compact_hex = decode_compact_to_hex(&compact);
+  decimalValue = strtoull(compact_hex, NULL, 16);
+  printf("%s = %u\n", compact_hex, decimalValue);
+  free(compact_hex);
+
   printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
   decimalValue *= 1e-12;
   printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
