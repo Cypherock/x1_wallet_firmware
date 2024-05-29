@@ -133,23 +133,20 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
    */
   uint8_t raw_txn[300] = {0};
   hex_string_to_byte_array(
-      "01000000000101fee6b227e3e24bf2e5a4ea1ca6eba722c5eab233832c9c84b4893339ad"
-      "9294413200000000ffffffff02dcb93400000000001976a9141499db6b8f427c624a644b"
-      "f9442b9e3ec37f211d88aca9790100000000001600143026421e3930e0243b626d1445fb"
-      "2d028510c68a024830450221008e2f802e44bdff18531a05ddc5b3788e84ca96b8136772"
-      "96dae224687d25df320220518d296d04cb9b40c338bf83afd07e73e810b90213c8751377"
-      "40dbebcba7af3b0121024aece25573da4ed274ee891341490fe26bd021b63e54e8581fc3"
-      "ca10085a8fa000000000",
-      452,
+      "010000000100000000000000000000000000000000000000000000000000000000000000"
+      "00ffffffff0704ffff001d0134ffffffff0100f2052a0100000043410411db93e1dcdb8a"
+      "016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464"
+      "f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac00000000",
+      268,
       raw_txn);
   // only fill necessary values
   btc_sign_txn_input_t input = {.prev_output_index = 0,
-                                .value = 5000000000,    // Wrong value
+                                .value = 5000000000,
                                 .script_pub_key = {
                                     .size = 67,
                                 }};
   hex_string_to_byte_array(
-      "c011cfab883d8729adafc324536b4e94992c410893dbc1ea5fe384d02f3b6340",
+      "0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9",
       64,
       input.prev_txn_hash);
   // revere order of txn-id:
@@ -161,9 +158,9 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
       134,
       input.script_pub_key.bytes);
 
-  int status = btc_verify_input_test(&input, raw_txn, 226);
+  int status = btc_verify_input_test(&input, raw_txn, 134);
 
-  TEST_ASSERT_EQUAL_INT(3, status);
+  TEST_ASSERT_EQUAL_INT(0, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {

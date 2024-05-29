@@ -410,9 +410,14 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
     if (6 == offset) {
       verify_input_data->isSegwit = true;
     }
-    // remember the number of inputs in the raw_txn
-    // TODO: UPDATE VAR-INT DECODE
+
+    // store the number of inputs in the raw_txn
     verify_input_data->count = raw_txn_chunk[offset++];
+    // TODO: Improve varint decode.
+    // size of variable containing ip-count/op-count
+    // varies (1-9 Bytes) depending on its value.
+    // refer:
+    // https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
     verify_input_data->parsetype = INPUT;
     sha256_Init(&(verify_input_data->sha_256_ctx));
   } else {
