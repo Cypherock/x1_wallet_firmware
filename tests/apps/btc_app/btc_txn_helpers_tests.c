@@ -69,6 +69,39 @@
 
 uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
 
+// wrapper function to call 'btc_verify_input'
+// The function takes the entire 'raw_txn' and feeds it to
+// 'btc_verify_input' in chunks of size CHUNK_SIZE, simulating the sdk
+int btc_verify_input_test(btc_sign_txn_input_t *input,
+                          uint8_t *raw_txn,
+                          int ip_txn_bytes_size) {
+  btc_verify_input_t verify_input_data;
+  int status = 4;
+  memzero(&(verify_input_data), sizeof(btc_verify_input_t));
+  verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
+                                      ? (ip_txn_bytes_size / CHUNK_SIZE)
+                                      : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
+
+  uint8_t txn_chunk[CHUNK_SIZE] = {0};
+  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
+  int index = 0;
+  for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
+       chunk_var -= CHUNK_SIZE) {
+    int chvar = (chunk_var >= CHUNK_SIZE) ? CHUNK_SIZE : chunk_var % CHUNK_SIZE;
+
+    for (int i = 0; i < (chvar); i++) {
+      txn_chunk[i] = raw_txn[i + (CHUNK_SIZE * index)];
+    }
+
+    status = btc_verify_input(txn_chunk, index, &verify_input_data, input);
+    if (status != 4) {
+      break;
+    }
+    index++;
+  }
+  return status;
+}
+
 TEST_GROUP(btc_txn_helper_test);
 
 /**
@@ -117,15 +150,17 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk) {
       64,
       input.prev_txn_hash);
   // revere order of txn-id:
-  // 0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9
   cy_reverse_byte_array(input.prev_txn_hash, sizeof(input.prev_txn_hash));
+
   hex_string_to_byte_array(
       "410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0"
       "eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac",
       134,
       input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 134, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 134);
+
+  TEST_ASSERT_EQUAL_INT(0, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
@@ -163,7 +198,9 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pk_fail) {
       134,
       input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(1, btc_verify_input(raw_txn, 134, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 134);
+
+  TEST_ASSERT_EQUAL_INT(1, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh) {
@@ -201,7 +238,8 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh) {
                            50,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 224, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 224);
+  TEST_ASSERT_EQUAL_INT(0, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail) {
@@ -240,7 +278,8 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2pkh_fail) {
                            50,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(3, btc_verify_input(raw_txn, 224, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 224);
+  TEST_ASSERT_EQUAL_INT(3, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh) {
@@ -297,7 +336,8 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh) {
                            44,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(0, btc_verify_input(raw_txn, 929, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 929);
+  TEST_ASSERT_EQUAL_INT(0, status);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
@@ -356,7 +396,8 @@ TEST(btc_txn_helper_test, btc_txn_helper_verify_input_p2wpkh_fail) {
                            44,
                            input.script_pub_key.bytes);
 
-  TEST_ASSERT_EQUAL_INT(2, btc_verify_input(raw_txn, 929, &input));
+  int status = btc_verify_input_test(&input, raw_txn, 929);
+  TEST_ASSERT_EQUAL_INT(2, status);
 }
 
 /* FIX: Required to fix the hardcoded value of 106 (2 + 33 + 71) since the

@@ -328,65 +328,250 @@ STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
   return true;
 }
 
+static void update_hash(btc_verify_input_t *verify_input_data,
+                        const uint8_t *raw_txn_chunk,
+                        int chunk_index,
+                        int32_t offset) {
+  hash_case update = DEFAULT;
+
+  if (0 == chunk_index) {
+    update = FIRST_CHUNK_HASH;
+  }
+  switch (update) {
+    case FIRST_CHUNK_HASH: {
+      if (verify_input_data->isSegwit) {
+        sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, 4);
+        // skip marker and flag
+        sha256_Update(
+            &(verify_input_data->sha_256_ctx), raw_txn_chunk + 6, offset - 6);
+      } else {
+        sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, offset);
+      }
+      return;
+      break;
+    }
+
+    default: {
+      sha256_Update(&(verify_input_data->sha_256_ctx), raw_txn_chunk, offset);
+      break;
+    }
+  }
+}
+
+static void update_locktime(btc_verify_input_t *verify_input_data,
+                            const uint8_t *raw_txn_chunk,
+                            int chunk_index) {
+  if (verify_input_data->isLocktimeSplit) {
+    // last second chunk
+    if (chunk_index + 2 == verify_input_data->chunk_total) {
+      memcpy(
+          verify_input_data->locktime,
+          raw_txn_chunk + (CHUNK_SIZE - 4 - verify_input_data->size_last_chunk),
+          4 - verify_input_data->size_last_chunk);
+      return;
+    } else if (chunk_index + 1 == verify_input_data->chunk_total) {
+      memcpy(
+          verify_input_data->locktime + 4 - verify_input_data->size_last_chunk,
+          raw_txn_chunk,
+          verify_input_data->size_last_chunk);
+      verify_input_data->hasLocktime = true;
+      return;
+    } else {
+      // wait for subsequent chunks
+      return;
+    }
+  } else if (chunk_index + 1 == verify_input_data->chunk_total) {
+    memcpy(verify_input_data->locktime,
+           raw_txn_chunk + verify_input_data->size_last_chunk - 4,
+           4);
+    verify_input_data->hasLocktime = true;
+  } else {
+    // wait for subsequent chunks
+    return;
+  }
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-int btc_verify_input(const uint8_t *raw_txn,
-                     const uint32_t size,
+int btc_verify_input(const uint8_t *raw_txn_chunk,
+                     const uint32_t chunk_index,
+                     btc_verify_input_t *verify_input_data,
                      const btc_sign_txn_input_t *input) {
-  if (NULL == input || NULL == raw_txn || 0 == size) {
+  if (NULL == input || NULL == raw_txn_chunk ||
+      0 == verify_input_data->chunk_total) {
     return -1;
   }
 
-  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
   int32_t offset = 0;
-  int32_t count = 0;
-  int32_t value_offset = 0;
-  int32_t start_offset = 0;
-  uint8_t txn_data[size];
-
-  // ignore network version (4-bytes), skip marker & flag (in segwit)
-  offset += (raw_txn[4] == 0 ? 6 : 4);
-  start_offset = offset;
-  // remember the number of inputs in the raw_txn
-  count = raw_txn[offset++];
-
-  for (int32_t input_index = 0; input_index < count; input_index++) {
-    offset += 36;
-    offset += (raw_txn[offset] + 1 + 4);
-  }
-  // remember the number of outputs in the raw_txn
-  count = raw_txn[offset++];
-  for (int32_t output_index = 0; output_index < count; output_index++) {
-    if (output_index == input->prev_output_index) {
-      // only check the specified output index as we are looking for an exact
-      // match; remember the location of value in the raw_txn & compare later
-      value_offset = offset;
-
-      // NOTE: do not break here, the 'offset' should traverse till the end
+  if (chunk_index == 0) {
+    // ignore network version (4-bytes), skip marker & flag (in segwit)
+    offset += (raw_txn_chunk[4] == 0 ? 6 : 4);
+    if (6 == offset) {
+      verify_input_data->isSegwit = true;
     }
-    offset += 8;
-    offset += (raw_txn[offset] + 1);
+
+    // store the number of inputs in the raw_txn
+    verify_input_data->count = raw_txn_chunk[offset++];
+    // TODO: Improve varint decode.
+    // size of variable containing ip-count/op-count
+    // varies (1-9 Bytes) depending on its value.
+    // refer:
+    // https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+    verify_input_data->parsetype = INPUT;
+    sha256_Init(&(verify_input_data->sha_256_ctx));
+  } else {
+    offset += verify_input_data->prev_offset;
+  }
+  switch (verify_input_data->parsetype) {
+    case INPUT: {
+      while (verify_input_data->input_index < (verify_input_data->count) &&
+             INPUT == verify_input_data->parsetype) {
+        input_case ip_case = verify_input_data->input_parse;
+        switch (ip_case) {
+          case PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE: {
+            if (offset + 36 > CHUNK_SIZE) {
+              verify_input_data->prev_offset = (offset + 36) - CHUNK_SIZE;
+              update_hash(
+                  verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+              verify_input_data->input_parse = SCRIPT_LENGTH_CASE;
+              return 4;
+            } else {
+              offset += 36;
+            }
+          }
+
+          case SCRIPT_LENGTH_CASE: {
+            if (offset + raw_txn_chunk[offset] + 1 + 4 > CHUNK_SIZE) {
+              verify_input_data->prev_offset =
+                  (offset + raw_txn_chunk[offset] + 1 + 4) - CHUNK_SIZE;
+              update_hash(
+                  verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+              verify_input_data->input_parse =
+                  PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE;
+              verify_input_data->input_index++;
+              return 4;
+            } else {
+              offset += (raw_txn_chunk[offset] + 1 + 4);
+            }
+            break;
+          }
+
+          default:
+            break;
+        }
+        verify_input_data->input_parse = PREVIOUS_TX_HASH_PLUS_OP_INDEX_CASE;
+        verify_input_data->input_index++;
+      }
+      verify_input_data->parsetype = OP_COUNT;
+    }
+
+    case OP_COUNT: {
+      if (offset + 1 > CHUNK_SIZE) {
+        // reset prev offset
+        verify_input_data->prev_offset = -1;
+        update_hash(verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+        return 4;
+      } else {
+        verify_input_data->count = raw_txn_chunk[offset++];
+      }
+      verify_input_data->parsetype = OUTPUT;
+      verify_input_data->output_parse = VALUE_CASE;
+    }
+
+    case OUTPUT: {
+      while (verify_input_data->output_index < verify_input_data->count) {
+        output_case op_case = verify_input_data->output_parse;
+        switch (op_case) {
+          case VALUE_CASE: {
+            if (verify_input_data->output_index == input->prev_output_index) {
+              if (offset + 8 > CHUNK_SIZE) {
+                verify_input_data->prev_offset = (offset + 8) - CHUNK_SIZE;
+                memcpy(verify_input_data->value,
+                       raw_txn_chunk + offset,
+                       CHUNK_SIZE - offset);
+                update_hash(
+                    verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+                verify_input_data->output_parse = VALUE_SPLIT_CASE;
+                verify_input_data->isSplit = 1;
+                return 4;
+              } else {
+                memcpy(verify_input_data->value, raw_txn_chunk + offset, 8);
+              }
+            }
+            if (offset + 8 > CHUNK_SIZE) {
+              verify_input_data->prev_offset = (offset + 8) - CHUNK_SIZE;
+              update_hash(
+                  verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+              verify_input_data->output_parse = SCRIPT_PUBKEY_CASE;
+              return 4;
+            } else {
+              offset += 8;
+            }
+          }
+
+          case VALUE_SPLIT_CASE: {
+            if (verify_input_data->isSplit) {
+              memcpy(verify_input_data->value + (8 - offset),
+                     raw_txn_chunk,
+                     offset);
+              verify_input_data->output_parse = SCRIPT_PUBKEY_CASE;
+              verify_input_data->isSplit = 0;
+            }
+          }
+
+          case SCRIPT_PUBKEY_CASE: {
+            if (offset + raw_txn_chunk[offset] + 1 > CHUNK_SIZE) {
+              verify_input_data->prev_offset =
+                  (offset + raw_txn_chunk[offset] + 1) - CHUNK_SIZE;
+              update_hash(
+                  verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
+              verify_input_data->output_parse = VALUE_CASE;
+              verify_input_data->output_index++;
+              return 4;
+            } else {
+              offset += (raw_txn_chunk[offset] + 1);
+            }
+            break;
+          }
+          default:
+            break;
+        }
+        verify_input_data->output_parse = VALUE_CASE;
+        verify_input_data->output_index++;
+      }
+
+      verify_input_data->parsetype = LOCK_TIME;
+      update_hash(verify_input_data, raw_txn_chunk, chunk_index, offset);
+    }
+
+    case LOCK_TIME: {
+      update_locktime(verify_input_data, raw_txn_chunk, chunk_index);
+      if (false == verify_input_data->hasLocktime) {
+        return 4;
+      }
+      sha256_Update(
+          &(verify_input_data->sha_256_ctx), verify_input_data->locktime, 4);
+    }
+    default:
+      break;
   }
 
-  if (value_offset == 0) {
+  verify_input_data->parsetype = END;
+
+  // Finalize hashing
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Final(&(verify_input_data->sha_256_ctx), hash);
+
+  if (U64_READ_LE_ARRAY(verify_input_data->value) == 0) {
     return 1;
   }
-
-  // network version (first 4 bytes)
-  memcpy(txn_data, raw_txn, 4);
-  // txin and txout (skip marker & flag)
-  memcpy(txn_data + 4, raw_txn + start_offset, offset - start_offset);
-  // locktime (last 4 bytes)
-  memcpy(txn_data + offset - start_offset + 4, raw_txn + size - 4, 4);
-  sha256_Raw(txn_data, offset - start_offset + 4 + 4, hash);
   sha256_Raw(hash, sizeof(hash), hash);
   // verify input txn hash
   if (memcmp(hash, input->prev_txn_hash, sizeof(input->prev_txn_hash)) != 0) {
     return 2;
   }
-  if (U64_READ_LE_ARRAY(raw_txn + value_offset) != input->value) {
+  if (U64_READ_LE_ARRAY(verify_input_data->value) != input->value) {
     return 3;
   }
   return 0;
