@@ -311,6 +311,7 @@ static device_auth_state_e sign_random_handler(const manager_query_t *query) {
     default: {
       manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                          ERROR_DATA_FLOW_INVALID_REQUEST);
+      usb_clear_event();
       break;
     }
   }
