@@ -58,11 +58,16 @@ typedef enum {
  */
 #pragma pack(push, 1)
 typedef struct {
+  uint8_t version;
+
   uint8_t nonce_size[1];
   uint8_t nonce[32];
 
   uint8_t gas_price_size[1];
   uint8_t gas_price[32];
+
+  uint8_t max_priority_fee_size[1];
+  uint8_t max_priority_fee[32];
 
   uint8_t gas_limit_size[1];
   uint8_t gas_limit[32];
@@ -116,20 +121,23 @@ typedef struct {
 /**
  * @brief Convert byte array representation of unsigned transaction to
  * evm_unsigned_txn.
- * @details
+ * @details Supports EIP-155, EIP-1559, EIP-2930 formats of RLP encoded
+ * transaction buffer. Any additional data in the buffer other than defined in
+ * the EIPs will result in failure of decoding.
  *
- * @param [in] evm_utxn_byte_array  Byte array of unsigned transaction.
- * @param [in] byte_array_len               Length of byte array.
- * @param [out] unsigned_txn_ptr            Pointer to the evm_unsigned_txn
- * instance to store the transaction details.
+ * @param data          The buffer containing encoded ethereum transaction as
+ * defined in EIP-2930
+ * @param data_size     The size of the data buffer
+ * @param txn_context   Pointer to an instance of evm_txn_context_t which will
+ * hold the decoded fields
  *
- * @return Status of conversion
- * @retval 0 Success
- * @retval -1 Failure
+ * @return bool Indicating if parsing succeeded
+ * @retval true If transaction is parsed successfully
+ * @retval false If transaction parsing fails
  */
-int evm_decode_unsigned_txn(const uint8_t *evm_utxn_byte_array,
-                            size_t byte_array_len,
-                            evm_txn_context_t *txn_context);
+bool evm_decode_unsigned_txn(const uint8_t *data,
+                             size_t data_size,
+                             evm_txn_context_t *txn_context);
 
 /**
  * @brief Verifies the unsigned transaction.

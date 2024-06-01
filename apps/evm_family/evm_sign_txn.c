@@ -326,8 +326,8 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
     return status;
   }
   // decode and verify the received transaction
-  if (0 != evm_decode_unsigned_txn(
-               txn_context->transaction, total_size, txn_context) ||
+  if (!evm_decode_unsigned_txn(
+          txn_context->transaction, total_size, txn_context) ||
       EVM_TXN_INVALID_DATA == txn_context->txn_type ||
       !evm_validate_unsigned_txn(txn_context)) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

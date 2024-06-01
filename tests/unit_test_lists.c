@@ -55,6 +55,7 @@
  *
  ******************************************************************************
  */
+
 #include "p0_events_test.h"
 #include "ui_events_test.h"
 #include "unity_fixture.h"
@@ -120,6 +121,7 @@ TEST_GROUP_RUNNER(array_lists_tests) {
   RUN_TEST_CASE(array_list_tests, delete_middle_element);
   RUN_TEST_CASE(array_list_tests, delete_element_when_list_empty);
 }
+
 TEST_GROUP_RUNNER(flow_engine_tests) {
   RUN_TEST_CASE(flow_engine_tests, engine_use_case_test);
 }
@@ -181,6 +183,15 @@ TEST_GROUP_RUNNER(evm_txn_test) {
   RUN_TEST_CASE(evm_txn_test, evm_txn_haka_transfer);
   RUN_TEST_CASE(evm_txn_test, evm_txn_blind_signing);
   RUN_TEST_CASE(evm_txn_test, evm_txn_token_deposit);
+}
+
+TEST_GROUP_RUNNER(evm_eip1559_tests) {
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_1_acl1);
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_1_acl2);
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_1_acl3);
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_2_acl1);
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_2_acl2);
+  RUN_TEST_CASE(evm_eip1559_tests, evm_version_2_acl3);
 }
 
 TEST_GROUP_RUNNER(evm_sign_msg_test) {

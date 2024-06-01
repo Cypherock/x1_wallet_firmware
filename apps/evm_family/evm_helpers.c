@@ -202,6 +202,54 @@ bool evm_derivation_path_guard(const uint32_t *path, uint32_t depth) {
   return false;
 }
 
+uint64_t get_decode_length(const uint8_t *seq,
+                           const uint64_t seq_len,
+                           uint64_t *decoded_len,
+                           seq_type *type) {
+  uint8_t first_byte = *seq;
+  uint64_t item_bytes_len = 0;
+  if (first_byte <= 0x7f) {
+    item_bytes_len = 1;
+    *type = STRING;
+    *decoded_len = 0;
+  } else if (first_byte <= 0xb7 && seq_len > (first_byte - 0x80)) {
+    item_bytes_len = first_byte - 0x80;
+    *type = STRING;
+    *decoded_len = 1;
+  } else if (first_byte <= 0xbf && seq_len > (first_byte - 0xb7)) {
+    uint8_t len = first_byte - 0xb7;
+    uint8_t buffer_len[len];
+    char hex_len[len * 2 + 1];
+    hex_len[len * 2] = '\0';
+    *decoded_len = 1;
+    memcpy(buffer_len, seq + *decoded_len, len);
+    *decoded_len += len;
+    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
+    item_bytes_len = hex2dec(hex_len);
+    *type = STRING;
+  } else if (first_byte <= 0xf7 && seq_len > (first_byte - 0xc0)) {
+    item_bytes_len = first_byte - 0xc0;
+    *type = LIST;
+    *decoded_len = 1;
+  } else if (first_byte <= 0xff && seq_len > (first_byte - 0xf7)) {
+    uint8_t len = first_byte - 0xf7;
+    uint8_t buffer_len[len];
+    char hex_len[len * 2 + 1];
+    hex_len[len * 2] = '\0';
+
+    *decoded_len = 1;
+    memcpy(buffer_len, seq + *decoded_len, len);
+    *decoded_len += len;
+    byte_array_to_hex_string(buffer_len, len, hex_len, sizeof(hex_len));
+    item_bytes_len = hex2dec(hex_len);
+    *type = LIST;
+  } else {
+    // Intentionally unimplemented...
+  }
+
+  return item_bytes_len;
+}
+
 bool evm_get_msg_data_digest(const evm_sign_msg_context_t *ctx,
                              uint8_t *digest) {
   bool result = false;

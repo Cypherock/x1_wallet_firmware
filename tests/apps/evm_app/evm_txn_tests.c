@@ -336,7 +336,7 @@ TEST(evm_txn_test, evm_txn_token_deposit) {
                                            0},
                        .wallet_id = {},
                        .address_format = EVM_DEFAULT,
-                       .transaction_size = 51,
+                       .transaction_size = 49,
                    }}};
   evm_query_t query1 = {.which_request = 2,
                         .sign_txn = {.which_request = 2,
@@ -344,7 +344,7 @@ TEST(evm_txn_test, evm_txn_token_deposit) {
                                                   .chunk_payload = {
                                                       .chunk =
                                                           {
-                                                              .size = 51,
+                                                              .size = 49,
                                                           },
                                                       .remaining_size = 0,
                                                       .chunk_index = 0,
@@ -353,7 +353,7 @@ TEST(evm_txn_test, evm_txn_token_deposit) {
   // dummy raw Txn
   hex_string_to_byte_array("f08084014a86108301e6089482af49447d8a07e3bd95bd0d56f"
                            "35241523fbab188025bf6196bd1000084d0e30db0018080",
-                           102,
+                           98,
                            query1.sign_txn.txn_data.chunk_payload.chunk.bytes);
   txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
   memzero(txn_context, sizeof(evm_txn_context_t));
