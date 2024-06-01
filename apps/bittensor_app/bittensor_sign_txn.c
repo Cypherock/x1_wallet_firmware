@@ -389,29 +389,51 @@ static bool bittensor_get_user_verification() {
   }
 
   size_t amount_len = bittensor_txn_context->init_info.transaction_size - 111;
+  printf("\n%s:%d amount_len: %d", __func__, __LINE__, amount_len);
   printf("\n%s:%d total_size: %d",
          __func__,
          __LINE__,
          bittensor_txn_context->init_info.transaction_size);
-  printf("\n%s:%d amount_len: %d", __func__, __LINE__, amount_len);
 
-  uint8_t amount[10] = {0};
-  memcpy(amount, &bittensor_txn_context->transaction[3 + 32], amount_len);
+  printf("\n%s:%d bittensor_txn_context->transaction: ", __func__, __LINE__);
+  for (size_t i = 0; i < bittensor_txn_context->init_info.transaction_size;
+       i++) {
+    printf("%02X ", bittensor_txn_context->transaction[i]);
+  }
+  printf("\n");
 
-  double decimalValue = hexArrayToDouble(amount, amount_len);
+  uint8_t amount_byte[5] = "";
+  memcpy(
+      amount_byte, bittensor_txn_context->transaction + (3 + 32), amount_len);
+  printf("\n%s:%d amount_byte:", __func__, __LINE__);
+  for (size_t i = 0; i < amount_len; i++) {
+    printf("%02X ", amount_byte[i]);
+  }
+  printf("\n");
+  char amount_hex[5] = "";
+  byte_array_to_hex_string(
+      amount_byte, amount_len, amount_hex, (amount_len * 2) + 1);
+  printf("\n%s:%d amount_hex: %s", __func__, __LINE__, amount_hex);
 
   // decode the scale encoded amount
   scale_compact_int compact = SCALE_COMPACT_INT_INIT;
-  memcpy(compact.data, amount, amount_len);
-  compact.mode = amount_len;
-  char *compact_hex = decode_compact_to_hex(&compact);
-  decimalValue = strtoull(compact_hex, NULL, 16);
-  printf("%s = %u\n", compact_hex, decimalValue);
-  free(compact_hex);
+  printf("\t\tRe-Encoding: <%s> --- ", amount_hex);
+  encode_compact_hex_to_scale(&compact, amount_hex);
+  char *hex_out = decode_compact_to_hex(&compact);
+  // assert(hex_out);
+  uint64_t value = strtoull(hex_out, NULL, 16);
+  printf("Output: <0x%s> Yields: %llu\n", hex_out, (unsigned long long)value);
+  free(hex_out);
+  // assert(69 == value);
+  cleanup_scale_compact_int(&compact);
 
-  printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
+  printf("\n%s:%d hex_out: %llu", __func__, __LINE__, hex_out);
+
+  double decimalValue = (double)value;
+  printf("\n%s:%d decimalValue double: %llu", __func__, __LINE__, decimalValue);
   decimalValue *= 1e-12;
-  printf("\n%s:%d decimalValue: %d", __func__, __LINE__, decimalValue);
+  printf("\n%s:%d decimalValue 1e-12: %llu", __func__, __LINE__, decimalValue);
+
   static char amount_str[20];
   sprintf(amount_str, "%.12f", decimalValue);
 

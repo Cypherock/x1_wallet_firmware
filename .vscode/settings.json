@@ -29,6 +29,7 @@
         "string_view": "c",
         "system_error": "c",
         "*.tcc": "c",
-        "random": "c"
+        "random": "c",
+        "array": "c"
     }
 }
