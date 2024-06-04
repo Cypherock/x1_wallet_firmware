@@ -14,6 +14,7 @@
  *****************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
+#include <tron/tron.pb.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -34,5 +35,6 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+bool extract_contract_info(tron_transaction_raw_t *raw_txn);
 
 #endif /* TRON_CONTEXT_H */

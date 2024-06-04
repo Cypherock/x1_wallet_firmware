@@ -77,11 +77,13 @@
 #include "sha2.h"
 #include "status_api.h"
 #include "tron_api.h"
+#include "tron_context.h"
 #include "tron_helpers.h"
 #include "tron_priv.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+//#include "tron_contracts.c"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -336,7 +338,6 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
                     ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
-
   tron_txn_context->raw_txn =
       (tron_transaction_raw_t *)malloc(sizeof(tron_transaction_raw_t));
   // decode and verify the received transaction
@@ -350,96 +351,13 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
   return true;
 }
 
-STATIC bool extract_contract_info(tron_transaction_raw_t *raw_txn,
-                                  int64_t *amount,
-                                  uint8_t *to_address,
-                                  uint8_t *owner_address) {
-  if (!(raw_txn->contract_count > 0)) {
-    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                    ERROR_DATA_FLOW_INVALID_DATA);
-    return false;
-  }
-
-  tron_transaction_contract_t contract = raw_txn->contract[0];
-
-  // TODO: Add switch-cases for more contract types
-  switch (contract.type) {
-    case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
-      tron_transfer_contract_t transfer_contract =
-          TRON_TRANSFER_CONTRACT_INIT_DEFAULT;
-      google_protobuf_any_t any = contract.parameter;
-      pb_istream_t stream =
-          pb_istream_from_buffer(any.value.bytes, any.value.size);
-
-      if (!pb_decode(
-              &stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer_contract)) {
-        tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_DECODING_FAILED);
-        return false;
-      }
-
-      memcpy(amount, &transfer_contract.amount, sizeof(int64_t));
-      memcpy(to_address,
-             (uint8_t *)transfer_contract.to_address,
-             TRON_INITIAL_ADDRESS_LENGTH);
-      memcpy(owner_address,
-             (uint8_t *)transfer_contract.owner_address,
-             TRON_INITIAL_ADDRESS_LENGTH);
-      break;
-    }
-
-    default: {
-      tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
-                      ERROR_DATA_FLOW_INVALID_REQUEST);
-      return false;
-    }
-  }
-  return true;
-}
-
 STATIC bool tron_get_user_verification() {
-  uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
-  uint8_t owner_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
-  int64_t amount = 0;
-  char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
   // extract raw
-  if (!extract_contract_info(
-          tron_txn_context->raw_txn, &amount, to_address, owner_address)) {
+  if (!extract_contract_info(tron_txn_context->raw_txn)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
-  // verify recipient address;
-  if (!base58_encode_check(to_address,
-                           1 + 20,
-                           HASHER_SHA2D,
-                           address,
-                           TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
-    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    return false;
-  }
-
-  if (!core_scroll_page(ui_text_verify_address, address, tron_send_error)) {
-    return false;
-  }
-
-  // verify recipient amount
-  char amount_decimal_string[30] = {'\0'};
-  char display[100] = {'\0'};
-
-  snprintf(
-      amount_decimal_string, sizeof(amount_decimal_string), "%lli", amount);
-  snprintf(display,
-           sizeof(display),
-           UI_TEXT_VERIFY_AMOUNT,
-           amount_decimal_string,
-           TRON_LUNIT);
-
-  if (!core_confirmation(display, tron_send_error)) {
-    return false;
-  }
-
-  set_app_flow_status(TRON_SIGN_TXN_STATUS_VERIFY);
   return true;
 }
 
@@ -472,7 +390,7 @@ static bool send_signature(tron_query_t *query,
     return false;
   }
 
-  // Hash the raw data using sha256. This gives you the Transaction ID.
+  // Hash the raw data using sha256. This gives us the Transaction ID.
   uint8_t txid[SHA256_DIGEST_LENGTH] = {0};
 
   sha256_Raw(tron_txn_context->transaction,
