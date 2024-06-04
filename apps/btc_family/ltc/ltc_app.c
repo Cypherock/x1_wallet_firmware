@@ -123,7 +123,7 @@ static const cy_app_desc_t ltc_app_desc = {.id = 4,
                                            .version =
                                                {
                                                    .major = 1,
-                                                   .minor = 0,
+                                                   .minor = 1,
                                                    .patch = 0,
                                                },
                                            .app = btc_main,
