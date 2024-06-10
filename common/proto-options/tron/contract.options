@@ -42,7 +42,7 @@ tron.ProposalDeleteContract.owner_address       max_size: 21, fixed_length: true
 
 tron.TriggerSmartContract.owner_address         max_size: 21, fixed_length: true
 tron.TriggerSmartContract.contract_address      max_size: 21, fixed_length: true
-tron.TriggerSmartContract.data                  type: FT_CALLBACK
+tron.TriggerSmartContract.data                  max_size: 68, fixed_length: true
 
 tron.ExchangeCreateContract.owner_address       max_size: 21, fixed_length: true
 tron.ExchangeCreateContract.first_token_id      max_size: 8
