@@ -140,7 +140,7 @@ int main(void) {
 #endif
   application_init();
 
-  test();
+  session_initiation();
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

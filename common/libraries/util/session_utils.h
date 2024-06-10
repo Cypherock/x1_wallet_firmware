@@ -94,7 +94,7 @@ void session_append_signature(uint8_t *payload,
  * @see SESSION_INIT
  * @since v1.0.0
  */
-void session_send_device_key(uint8_t *session_details_data_array);
+void session_send_device_key(Session session, uint8_t *payload);
 
 /**
  * @brief Completes the session creation process
@@ -108,7 +108,7 @@ void session_send_device_key(uint8_t *session_details_data_array);
  * @see SESSION_ESTABLISH
  * @since v1.0.0
  */
-bool session_get_server_key(uint8_t *verification_details);
+bool session_get_server_key(Session session, uint8_t *server_message);
 
 void session_initiation();
 
