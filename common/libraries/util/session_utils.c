@@ -65,7 +65,7 @@ const uint32_t session_key_derv_data[2] = {6, 7};
 Session session;
 
 static void derive_public_key() {
-  HDNode session_node;
+  HDNode node;
   uint32_t index;
   char xpub[112] = {'\0'};
 
@@ -75,16 +75,15 @@ static void derive_public_key() {
                       xpub,
                       112);
   hdnode_deserialize_public(
-      (char *)xpub, 0x0488b21e, NIST256P1_NAME, &session_node, NULL);
+      (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
 
   index = 0;
-  hdnode_public_ckd(&session_node, session_key_derv_data[index]);
+  hdnode_public_ckd(&node, session_key_derv_data[index]);
 
   index += 1;
-  hdnode_public_ckd(&session_node, session_key_derv_data[index]);
+  hdnode_public_ckd(&node, session_key_derv_data[index]);
 
-  memcpy(
-      session.public_key, session_node.public_key, sizeof(session.public_key));
+  memcpy(session.server_random_public, node.public_key, SERVER_RANDOM_SIZE);
 }
 
 static void derive_session_id() {
@@ -124,14 +123,7 @@ void session_append_signature(uint8_t *payload,
   offset += POSTFIX2_SIZE;
 }
 
-void session_server_msg_deserialize(uint8_t *data_array, uint16_t data_size) {
-  uint8_t offset = 0;
-  memcpy(data_array, device_random, DEVICE_SERIAL_SIZE);
-  offset += SERVER_RANDOM_SIZE memcpy(
-      data_array + offset, session_age, sizeof(session_age));
-}
-
-void session_device_initiation(uint8_t *session_details_data_array) {
+void session_send_device_key(Session *session, uint8_t *payload) {
   // Output Payload: Device Random (32) + Device Id (32) + Signature (64) +
   // Postfix1 + Postfix2
   uint8_t session_details_data_array_size = 0;
@@ -156,8 +148,7 @@ void session_device_initiation(uint8_t *session_details_data_array) {
       session_details_data_array, offset, session_details_data_array + offset);
 }
 
-bool session_server_response(uint8_t *session_init_details,
-                             uint8_t *verification_details) {
+bool session_get_server_key(Session *session, uint8_t *payload) {
   // Input  payload (session_init_details): Session Random + Session Age
   // Output Payload: Session Random + Session Age + Device Id + Device Random
   uint8_t offset = 0;
@@ -169,12 +160,12 @@ bool session_server_response(uint8_t *session_init_details,
          sizeof(session.session_age));
   offset += sizeof(session.session_age);
 
-  uint8_t payload[SESSION_RANDOM_SIZE + sizeof(session.session_age) +
+  uint8_t payload[SERVER_RANDOM_SIZE + sizeof(session.session_age) +
                   DEVICE_SERIAL_SIZE + DEVICE_RANDOM_SIZE];
 
   size_t offset = 0;
   memcpy(payload, session_init_details, offset);
-  offset += offset;
+  payload_length += offset;
   memcpy(payload + payload_length, session.device_id, DEVICE_SERIAL_SIZE);
   offset += DEVICE_SERIAL_SIZE;
   memcpy(payload + payload_length, session.device_random, DEVICE_RANDOM_SIZE);
@@ -184,8 +175,6 @@ bool session_server_response(uint8_t *session_init_details,
           payload, payload_length, session_init_details + offset)) {
     return false;
   }
-
-  derive_session_id();
 
   // Verification details: Device Id + Signature + Postfix1 + Postfix2
   memcpy(verification_details, session.device_id, DEVICE_SERIAL_SIZE);
@@ -203,53 +192,45 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
   arr[3] = value & 0xFF;            // Extract the lowest byte
 }
 
-void test_generate_server_message(Server_Message *msg) {
+void test_generate_server_data(uint8_t *server_message) {
   uint8_t device_random[SERVER_RANDOM_SIZE];
   random_generate(server_random, SERVER_RANDOM_SIZE);
+
   uint32_t session_age_value = 1234;
   uint8_t session_age[4];
-
   test_uint32_to_uint8_array(session_age_value, session_age);
 
   uint8_t offset = 0;
-  memcpy(msg->message, device_random, SERVER_RANDOM_SIZE);
-  offset += SERVER_RANDOM_SIZE memcpy(
-      msg->message + offset, session_age, sizeof(session_age));
-  offset += sizeof(session_age) msg->message_size = offset
+  memcpy(server_message, device_random, SERVER_RANDOM_SIZE);
+  offset += SERVER_RANDOM_SIZE;
+  memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
 }
 
-void test() {
-  // Send: Device Random (32) + Device Id (32) + Signature (64) + Postfix1 +
-  // Postfix2
-  uint8_t session_details_data_array[DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                                     SIGNATURE_SIZE + POSTFIX1_SIZE +
-                                     POSTFIX2_SIZE];
+void session_initiation() {
+  // On Cysync Request: Send Device_Random to server [Device Random (32) +
+  // Device Id (32) + Signature (64) + Postfix1 + Postfix2]
+  uint8_t payload_size = DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
+                         SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
+  uint8_t session_details_data_array[payload_size];
 
-  session_device_initiation(session_details_data_array);
+  session_send_device_key(session_details_data_array);
 
   char hex[200];
-  byte_array_to_hex_string(session_details_data_array,
-                           DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                               SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE,
-                           hex,
-                           (DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                            SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE) *
-                                   2 +
-                               1);
+  byte_array_to_hex_string(
+      session_details_data_array, payload_size, hex, payload_size * 2 + 1);
   printf("session_details_data_array : %s", hex);
 
-  // char hex[200];
-  byte_array_to_hex_string(data_array,
-                           DEVICE_RANDOM_SIZE + sizeof(session_age),
-                           hex,
-                           (DEVICE_RANDOM_SIZE + sizeof(session_age)) * 2 + 1);
-  printf("data_array : %s", hex);
+  // Generate Server_Message
+  uint8_t *server_message;
+  test_generate_server_message(server_message);
 
-  // Send: Device Id (32) + Signature (64) + Postfix1 + Postfix2
-  uint8_t verification_details[DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-                               POSTFIX1_SIZE + POSTFIX2_SIZE];
+  // On Server Request: Get Server_Random_Public from Server [payload: Device Id
+  // (32) + Signature (64) + Postfix1 + Postfix2]
+  payload_size =
+      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
+  uint8_t verification_details[payload_size];
 
-  if (!session_server_response(data_array, verification_details)) {
+  if (!session_server_response(server_message, verification_details)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     comm_reject_invalid_cmd();
     clear_message_received_data();
@@ -257,11 +238,8 @@ void test() {
 
   memzero(hex, 200);
   byte_array_to_hex_string(
-      verification_details,
-      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE,
-      hex,
-      (DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE) *
-              2 +
-          1);
+      verification_details, payload_size, hex, payload_size * 2 + 1);
   printf("verification_details : %s", hex);
+
+  //
 }

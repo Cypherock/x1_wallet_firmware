@@ -141,6 +141,7 @@ int main(void) {
   application_init();
 
   test();
+
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0
   if (fault_in_prev_boot()) {
