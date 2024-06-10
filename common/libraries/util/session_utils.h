@@ -25,11 +25,12 @@
 #include "nfc.h"
 #include "rand.h"
 
-#define DEVICE_RANDOM_SIZE 32
-#define SERVER_RANDOM_SIZE 32
+#define PUBLIC_KEY_SIZE 32
+#define PRIVATE_KEY_SIZE 32
 #define SESSION_AGE_SIZE 32
-#define SESSION_ID_SIZE 32
-#define SESSION_KEY_SIZE 32
+
+#define SESSION_ID_SIZE 64
+#define SESSION_KEY_SIZE 64
 
 /**
  * @brief Stores the session information
@@ -38,19 +39,20 @@
 #pragma pack(push, 1)
 typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
-  uint8_t device_random[DEVICE_RANDOM_SIZE];
-  uint8_t device_random_public[DEVICE_RANDOM_SIZE];
+  uint8_t device_random[PRIVATE_KEY_SIZE];
+  uint8_t device_random_public[PUBLIC_KEY_SIZE];
 
-  uint8_t server_random_public[SERVER_RANDOM_SIZE];
+  uint8_t derived_server_public_key[PUBLIC_KEY_SIZE];
+  uint8_t server_random_public[PUBLIC_KEY_SIZE];
 
   uint8_t session_id[SESSION_ID_SIZE];
-  uint8_t session_key[SESSION_KEY_SIZE];
+  uint8_t session_key[PRIVATE_KEY_SIZE];
 
-  uint8_t session_age[4];
+  uint8_t session_age[SESSION_AGE_SIZE];
 } Session;
 #pragma pack(pop)
 
-extern const uint32_t session_key_derv_data[2];
+extern const uint32_t session_key_rotation[2];
 extern Session session;
 
 /**
