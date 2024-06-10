@@ -140,60 +140,7 @@ int main(void) {
 #endif
   application_init();
 
-  // Send: Device Random (32) + Device Id (32) + Signature (64) + Postfix1 +
-  // Postfix2
-  uint8_t session_details_data_array[DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                                     SIGNATURE_SIZE + POSTFIX1_SIZE +
-                                     POSTFIX2_SIZE];
-
-  session_device_initiation(session_details_data_array);
-
-  char hex[200];
-  byte_array_to_hex_string(session_details_data_array,
-                           DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                               SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE,
-                           hex,
-                           (DEVICE_RANDOM_SIZE + DEVICE_SERIAL_SIZE +
-                            SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE) *
-                                   2 +
-                               1);
-  printf("session_details_data_array : %s", hex);
-
-  uint8_t device_random[DEVICE_RANDOM_SIZE];
-  random_generate(device_random, DEVICE_RANDOM_SIZE);
-  uint32_t session_age = 1234;
-
-  uint8_t data_array[SESSION_RANDOM_SIZE + sizeof(uint32_t)];
-  memcpy(data_array, device_random, DEVICE_SERIAL_SIZE);
-  memcpy(data_array + SESSION_RANDOM_SIZE, session_age, sizeof(session_age));
-
-  // char hex[200];
-  byte_array_to_hex_string(data_array,
-                           DEVICE_RANDOM_SIZE + sizeof(session_age),
-                           hex,
-                           (DEVICE_RANDOM_SIZE + sizeof(session_age)) * 2 + 1);
-  printf("data_array : %s", hex);
-
-  // Send: Device Id (32) + Signature (64) + Postfix1 + Postfix2
-  uint8_t verification_details[DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-                               POSTFIX1_SIZE + POSTFIX2_SIZE];
-
-  if (!session_server_response(data_array, verification_details)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    comm_reject_invalid_cmd();
-    clear_message_received_data();
-  }
-
-  memzero(hex, 200);
-  byte_array_to_hex_string(
-      verification_details,
-      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE,
-      hex,
-      (DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE) *
-              2 +
-          1);
-  printf("verification_details : %s", hex);
-
+  test();
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0
   if (fault_in_prev_boot()) {

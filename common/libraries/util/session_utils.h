@@ -27,7 +27,8 @@
 
 #define SESSION_ID_SIZE 32
 #define DEVICE_RANDOM_SIZE 32
-#define SESSION_RANDOM_SIZE 32
+#define SERVER_RANDOM_SIZE 32
+#define SESSION_KEY_SIZE 32
 
 /**
  * @brief Stores the session information
@@ -35,17 +36,21 @@
  */
 #pragma pack(push, 1)
 typedef struct {
-  uint8_t device_random[DEVICE_RANDOM_SIZE];
-  uint8_t session_random[SESSION_RANDOM_SIZE];
   uint8_t device_id[DEVICE_SERIAL_SIZE];
+  uint8_t device_random[DEVICE_RANDOM_SIZE];
+  uint8_t device_random_public[DEVICE_RANDOM_SIZE];
+
+  uint8_t session_random_public[SERVER_RANDOM_SIZE];
+
   uint8_t session_id[SESSION_ID_SIZE];
-  uint8_t public_key[33];
-  uint32_t session_age;
+  uint8_t session_key[SESSION_KEY_SIZE];
+
+  uint8_t session_age[4];
 } Session;
 #pragma pack(pop)
 
 /**
- * @brief A generic message structure to send and receive authenticated
+ * @brief Message structure received from server
  * messages
  * @details
  * For sending an authenticated message to server all the fields have to be
@@ -57,10 +62,9 @@ typedef struct {
 typedef struct {
   uint16_t message_size;
   uint8_t *message;
-  uint8_t signature[SIGNATURE_SIZE];
-  uint8_t postfix1[POSTFIX1_SIZE];
-  uint8_t postfix2[POSTFIX2_SIZE];
-} Message;
+  uint8_t server_random_public[SERVER_RANDOM_SIZE];
+  uint8_t session_age[4];
+} Server_Message;
 #pragma pack(pop)
 
 extern const uint32_t session_key_derv_data[3];
@@ -89,7 +93,7 @@ bool verify_session_signature(uint8_t *payload,
  * @see SESSION_INIT
  * @since v1.0.0
  */
-void session_pre_init(uint8_t *session_details_data_array);
+void session_device_initiation(uint8_t *session_details_data_array);
 
 /**
  * @brief Completes the session creation process
@@ -103,7 +107,8 @@ void session_pre_init(uint8_t *session_details_data_array);
  * @see SESSION_ESTABLISH
  * @since v1.0.0
  */
-bool session_init(uint8_t *session_init_details, uint8_t *verification_details);
+bool session_server_response(uint8_t *session_init_details,
+                             uint8_t *verification_details);
 
 /**
  * @brief Deserializes the an authentication message to Message structure
@@ -118,17 +123,6 @@ void byte_array_to_session_message(uint8_t *data_array,
                                    Message *msg);
 
 /**
- * @brief Serializes the Message structure to an authentication message to
- * be sent to the server
- * @param message The Message structure to be serialized
- * @param data_array The buffer to store the serialized message
- * @return uint8_t The size of the serialized message
- *
- * @since v1.0.0
- */
-uint8_t session_message_to_byte_array(Message message, uint8_t *data_array);
-
-/**
  * @brief Generates the payload to be sent to the server.
  * @details It generates the signature on the payload and appends the
  * signature to the payload. It further appends the postfix1 and postfix2
@@ -140,8 +134,8 @@ uint8_t session_message_to_byte_array(Message message, uint8_t *data_array);
  * @see session_pre_init(), session_init()
  * @since v1.0.0
  */
-void append_signature(uint8_t *payload,
-                      uint8_t payload_length,
-                      uint8_t *signature_details);
+void session_append_signature(uint8_t *payload,
+                              uint8_t payload_length,
+                              uint8_t *signature_details);
 
 #endif    // SESSION_UTILS

@@ -17,9 +17,9 @@
 #pragma once
 
 #include "atca_host.h"
+// #include "stm32l4xx_it.h"
 #include "device_authentication_api.h"
 #include "nist256p1.h"
-#include "stm32l4xx_it.h"
 
 #define SIGNATURE_SIZE 64
 #define POSTFIX1_SIZE 7
