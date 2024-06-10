@@ -17,6 +17,8 @@
 #pragma once
 
 #include "atca_host.h"
+#include "device_authentication_api.h"
+#include "nist256p1.h"
 #include "stm32l4xx_it.h"
 
 #define SIGNATURE_SIZE 64
@@ -41,31 +43,6 @@ typedef struct auth_data_struct {
   uint8_t postfix1[POSTFIX1_SIZE], postfix2[POSTFIX2_SIZE],
       signature[SIGNATURE_SIZE], serial[DEVICE_SERIAL_SIZE];
 } auth_data_t;
-
-typedef enum {
-  slot_0_unused = 0U,
-  slot_1_unused = 1U,
-  slot_2_auth_key = 2U,
-  slot_3_nfc_pair_key = 3U,
-  slot_4_unused = 4U,
-  slot_5_challenge = 5U,
-  slot_6_io_key = 6U,
-  slot_7_unused = 7U,
-  slot_8_serial = 8U,
-  slot_9_unused = 9U,
-  slot_10_unused = 10U,
-  slot_11_unused = 11U,
-  slot_12_unused = 12U,
-  slot_13_unused = 13U,
-  slot_14_unused = 14U,
-  slot_15_unused = 15U
-} atecc_slot_define_t;
-
-typedef struct {
-  uint8_t device_serial[DEVICE_SERIAL_SIZE], retries;
-  ATCA_STATUS status;
-  ATCAIfaceCfg *cfg_atecc608a_iface;
-} atecc_data_t;
 
 /**
  * @brief

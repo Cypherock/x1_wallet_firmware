@@ -56,7 +56,7 @@ typedef struct {
 } atecc_data_t;
 
 extern atecc_data_t atecc_data;
-
+// extern uint8_t challenge_no[32];
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/

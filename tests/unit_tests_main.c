@@ -104,6 +104,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
   RUN_TEST_GROUP(utils_tests);
+  RUN_TEST_GROUP(session_tests);
 }
 
 /**

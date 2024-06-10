@@ -21,8 +21,8 @@
 #include "atecc_utils.h"
 #include "base58.h"
 #include "bip32.h"
+#include "curves.h"
 #include "nfc.h"
-#include "nist256p1.h"
 #include "rand.h"
 
 #define SESSION_ID_SIZE 32
