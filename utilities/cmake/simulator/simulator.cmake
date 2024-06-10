@@ -108,6 +108,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/logger
         common/coin_support
         common/coin_support/eth_sign_data
+        common/coin_support/tron_parse_txn
         common/flash
         common/Firewall
         common/core
