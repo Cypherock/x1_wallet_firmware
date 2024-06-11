@@ -110,6 +110,8 @@ void session_send_device_key(Session session, uint8_t *payload);
  */
 bool session_get_server_key(Session session, uint8_t *server_message);
 
+void session_get_random_keys(uint8_t *random, uint8_t *random_public);
+
 void session_initiation();
 
 #endif    // SESSION_UTILS

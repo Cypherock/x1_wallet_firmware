@@ -313,19 +313,20 @@ void random_generate(uint8_t *arr, int len) {
   ASSERT(crypto_random_generate(arr, len) == true);
 
   // using atecc
-  uint8_t temp[32] = {0};
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  uint8_t temp[32] = {0};    // TODO: uncomment after testing
+  // atecc_data.retries = DEFAULT_ATECC_RETRIES;
 
-  bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-  NVIC_DisableIRQ(OTG_FS_IRQn);
-  do {
-    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
-    atecc_data.status = atcab_random(temp);
-  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
-  if (usb_irq_enable_on_entry == true)
-    NVIC_EnableIRQ(OTG_FS_IRQn);
+  // bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
+  // NVIC_DisableIRQ(OTG_FS_IRQn);
+  // do {
+  //   atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
+  //   atecc_data.status = atcab_random(temp);
+  // } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+  // if (usb_irq_enable_on_entry == true)
+  //   NVIC_EnableIRQ(OTG_FS_IRQn);
 
-  ASSERT((atecc_data.status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
+  // ASSERT((atecc_data.status == ATCA_SUCCESS) && (!is_zero(temp,
+  // sizeof(temp))));
 
   for (int i = 0; i < len; ++i) {
     arr[i] ^= temp[i];
