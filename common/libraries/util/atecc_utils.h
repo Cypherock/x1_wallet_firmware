@@ -21,15 +21,6 @@
 #include "device_authentication_api.h"
 #include "nist256p1.h"
 
-#define SIGNATURE_SIZE 64
-#define POSTFIX1_SIZE 7
-#define POSTFIX2_SIZE 23
-#define DEVICE_SERIAL_SIZE 32
-#define AUTH_DATA_SERIAL_SIGN_MSG_SIZE                                         \
-  (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE + DEVICE_SERIAL_SIZE)
-#define AUTH_DATA_CHALLENGE_SIGN_MSG_SIZE                                      \
-  (POSTFIX1_SIZE + POSTFIX2_SIZE + SIGNATURE_SIZE)
-
 /**
  * @brief
  * @details

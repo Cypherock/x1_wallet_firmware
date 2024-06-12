@@ -121,15 +121,13 @@ TEST(session_tests, session_send_device_key_action) {
   uint8_t payload[payload_size];
   char hex[payload_size * 2 + 1];
 
-  // On Cysync Request: Send Device_Random to server [Device Random (32) +
-  // Device Id (32) + Signature (64) + Postfix1 + Postfix2]
   session_send_device_key(session, payload);
 
   byte_array_to_hex_string(payload, payload_size, hex, sizeof(hex));
-  printf("session_send_device_key_action : %s", hex);
+  printf("\nsession_send_device_key_action : %s", hex);
 }
 
-TEST(session_tests, session_get_server_key_action) {
+TEST(session_tests, session_receive_server_key_action) {
   uint8_t payload_size =
       DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
   uint8_t payload[payload_size];
@@ -144,14 +142,14 @@ TEST(session_tests, session_get_server_key_action) {
   payload_size =
       DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
 
-  if (!session_get_server_key(session, server_message)) {
+  if (!session_receive_server_key(session, server_message)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     comm_reject_invalid_cmd();
     clear_message_received_data();
   }
 
   byte_array_to_hex_string(payload, payload_size, hex, sizeof(hex));
-  printf("session_get_server_key_action : %s", hex);
+  printf("session_receive_server_key_action : %s", hex);
 
   // uint8_t device_random[PUBLIC_KEY_SIZE];
   // random_generate(device_random, PUBLIC_KEY_SIZE);
@@ -177,7 +175,9 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
 void test_generate_server_data(uint8_t *server_message) {
   uint8_t server_random[PRIVATE_KEY_SIZE];
   uint8_t server_random_public[PUBLIC_KEY_SIZE];
-  session_get_random_keys(server_random, server_random_public);
+  curve_point server_random_public_point = {0};
+  session_get_random_keys(
+      server_random, server_random_public, server_random_public_point);
 
   uint32_t session_age_int = 1234;
   uint8_t session_age[4];
@@ -209,6 +209,7 @@ void session_initiation() {
 
   // Generate Server_Message
   uint8_t *server_message;
+  USE_SIMULATOR
   test_generate_server_data(server_message);
 
   // On Server Request: Get Server_Random_Public from Server [payload: Device Id
@@ -217,13 +218,13 @@ void session_initiation() {
       DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
   payload = (uint8_t *)malloc(payload_size * sizeof(uint8_t));
 
-  if (!session_get_server_key(session, server_message)) {
+  if (!session_receive_server_key(session, server_message)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     comm_reject_invalid_cmd();
     clear_message_received_data();
   }
 
-  memzero(hex, 200);
+  memzero(hex, 500);
   byte_array_to_hex_string(payload, payload_size, hex, payload_size * 2 + 1);
   printf("verification_details : %s", hex);
 

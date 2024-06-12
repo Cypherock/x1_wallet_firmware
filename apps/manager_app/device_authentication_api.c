@@ -70,9 +70,6 @@
 #include "atca_basic.h"
 #include "device_authentication_api.h"
 
-#define SIGNATURE_SIZE 64
-#define POSTFIX1_SIZE 7
-#define POSTFIX2_SIZE 23
 #define RANDOM_CHALLENGE_SIZE 32
 
 atecc_data_t atecc_data = {0};

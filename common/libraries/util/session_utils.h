@@ -25,12 +25,12 @@
 #include "nfc.h"
 #include "rand.h"
 
-#define PUBLIC_KEY_SIZE 32
+#define PUBLIC_KEY_SIZE 33
 #define PRIVATE_KEY_SIZE 32
 #define SESSION_AGE_SIZE 32
 
-#define SESSION_ID_SIZE 64
-#define SESSION_KEY_SIZE 64
+#define SESSION_ID_SIZE 16
+#define SESSION_KEY_SIZE 32
 
 /**
  * @brief Stores the session information
@@ -41,9 +41,11 @@ typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
   uint8_t device_random[PRIVATE_KEY_SIZE];
   uint8_t device_random_public[PUBLIC_KEY_SIZE];
+  curve_point device_random_public_point;
 
   uint8_t derived_server_public_key[PUBLIC_KEY_SIZE];
   uint8_t server_random_public[PUBLIC_KEY_SIZE];
+  curve_point server_random_public_point;
 
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[PRIVATE_KEY_SIZE];
@@ -66,8 +68,8 @@ extern Session session;
  * @since v1.0.0
  */
 bool verify_session_signature(uint8_t *payload,
-                              uint8_t payload_length,
-                              uint8_t *buffer);
+                              uint8_t payload_size,
+                              uint8_t *signature);
 
 /**
  * @brief Generates the payload to be sent to the server.
@@ -81,9 +83,7 @@ bool verify_session_signature(uint8_t *payload,
  * @see session_pre_init(), session_init()
  * @since v1.0.0
  */
-void session_append_signature(uint8_t *payload,
-                              uint8_t payload_length,
-                              uint8_t *signature_details);
+void session_append_signature(uint8_t *payload, uint8_t payload_length);
 
 /**
  * @brief Starts the session creation process
@@ -108,10 +108,16 @@ void session_send_device_key(Session session, uint8_t *payload);
  * @see SESSION_ESTABLISH
  * @since v1.0.0
  */
-bool session_get_server_key(Session session, uint8_t *server_message);
+bool session_receive_server_key(Session session, uint8_t *server_message);
 
-void session_get_random_keys(uint8_t *random, uint8_t *random_public);
+void session_get_random_keys(uint8_t *random,
+                             uint8_t *random_public,
+                             curve_point random_public_point);
 
 void session_initiation();
+
+char *print_arr(char *name,
+                uint8_t *bytearray,
+                size_t size);    // TODO: remove after testing
 
 #endif    // SESSION_UTILS

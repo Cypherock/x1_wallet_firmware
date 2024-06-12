@@ -23,6 +23,10 @@
         "*.ld": "c",
         "*.cmake": "cmake",
         "CMakeLists.txt": "cmake",
+        "*.tcc": "c",
+        "cstring": "c",
+        "algorithm": "c"
     },
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+    "cortex-debug.variableUseNaturalFormat": true
 }
