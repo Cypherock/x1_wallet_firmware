@@ -25,12 +25,30 @@
 #include "nfc.h"
 #include "rand.h"
 
+#define BUFFER_SIZE 1024
 #define PUBLIC_KEY_SIZE 33
 #define PRIVATE_KEY_SIZE 32
 #define SESSION_AGE_SIZE 32
 
 #define SESSION_ID_SIZE 16
 #define SESSION_KEY_SIZE 32
+
+typedef enum {
+  SESSION_MSG_SEND_DEVICE_KEY,
+  SESSION_MSG_RECEIVE_SERVER_KEY,
+  SESSION_MSG_ENCRYPT,
+  SESSION_MSG_DECRYPT,
+  SESSION_CLOSE,
+  NUM_SESSION_MSG_TYPE_E
+} session_msg_type_e;
+typedef enum {
+  SESSION_OK = 0,
+  SESSION_ERR_INVALID = 1,
+  SESSION_ERR_DEVICE_KEY,
+  SESSION_ERR_SERVER_KEY,
+  SESSION_ERR_ENCRYPT,
+  SESSION_ERR_DECRYPT,
+} session_status_type_e;
 
 /**
  * @brief Stores the session information
@@ -46,16 +64,18 @@ typedef struct {
   uint8_t derived_server_public_key[PUBLIC_KEY_SIZE];
   uint8_t server_random_public[PUBLIC_KEY_SIZE];
   curve_point server_random_public_point;
+  uint8_t session_age[SESSION_AGE_SIZE];
 
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[PRIVATE_KEY_SIZE];
 
-  uint8_t session_age[SESSION_AGE_SIZE];
+  session_status_type_e status;
 } Session;
 #pragma pack(pop)
 
 extern const uint32_t session_key_rotation[2];
 extern Session session;
+extern const ecdsa_curve *curve;
 
 /**
  * @brief Verified the signature of the payload
@@ -83,7 +103,7 @@ bool verify_session_signature(uint8_t *payload,
  * @see session_pre_init(), session_init()
  * @since v1.0.0
  */
-void session_append_signature(uint8_t *payload, uint8_t payload_length);
+void session_append_signature(uint8_t *payload, size_t payload_size);
 
 /**
  * @brief Starts the session creation process
@@ -94,7 +114,7 @@ void session_append_signature(uint8_t *payload, uint8_t payload_length);
  * @see SESSION_INIT
  * @since v1.0.0
  */
-void session_send_device_key(Session session, uint8_t *payload);
+bool session_send_device_key(uint8_t *payload);
 
 /**
  * @brief Completes the session creation process
@@ -108,13 +128,9 @@ void session_send_device_key(Session session, uint8_t *payload);
  * @see SESSION_ESTABLISH
  * @since v1.0.0
  */
-bool session_receive_server_key(Session session, uint8_t *server_message);
+bool session_receive_server_key(uint8_t *server_message);
 
-void session_get_random_keys(uint8_t *random,
-                             uint8_t *random_public,
-                             curve_point random_public_point);
-
-void session_initiation();
+void test_session_main(session_msg_type_e type);
 
 char *print_arr(char *name,
                 uint8_t *bytearray,

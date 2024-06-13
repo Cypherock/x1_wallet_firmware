@@ -25,7 +25,10 @@
         "CMakeLists.txt": "cmake",
         "*.tcc": "c",
         "cstring": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "istream": "c",
+        "ostream": "c",
+        "system_error": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "cortex-debug.variableUseNaturalFormat": true

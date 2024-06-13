@@ -227,8 +227,8 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
 }
 
 TEST_GROUP_RUNNER(session_tests) {
-  RUN_TEST_CASE(session_tests, session_send_device_key_action);
-  // RUN_TEST_CASE(session_tests, session_receive_server_key_action);
+  // RUN_TEST_CASE(session_tests, session_send_device_key_action);
+  RUN_TEST_CASE(session_tests, session_receive_server_key_action);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {

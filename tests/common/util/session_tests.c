@@ -121,113 +121,24 @@ TEST(session_tests, session_send_device_key_action) {
   uint8_t payload[payload_size];
   char hex[payload_size * 2 + 1];
 
-  session_send_device_key(session, payload);
+  session_send_device_key(payload);
 
   byte_array_to_hex_string(payload, payload_size, hex, sizeof(hex));
   printf("\nsession_send_device_key_action : %s", hex);
 }
 
+const char *session_status_string(session_msg_type_e type) {
+  static const char *status[] = {
+      "init_send", "init_receive", "encrypt", "decrypt", "close"};
+  return (type >= 0 && type < NUM_SESSION_MSG_TYPE_E) ? status[type]
+                                                      : "UNKNOWN";
+}
+
 TEST(session_tests, session_receive_server_key_action) {
-  uint8_t payload_size =
-      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
-  uint8_t payload[payload_size];
-  char hex[payload_size * 2 + 1];
-
-  // Generate Server_Message
-  uint8_t *server_message;
-  test_generate_server_data(server_message);
-
-  // On Server Request: Get Server_Random_Public from Server [payload: Device Id
-  // (32) + Signature (64) + Postfix1 + Postfix2]
-  payload_size =
-      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
-
-  if (!session_receive_server_key(session, server_message)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    comm_reject_invalid_cmd();
-    clear_message_received_data();
+  for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
+       type < NUM_SESSION_MSG_TYPE_E;
+       type = (session_msg_type_e)(type + 1)) {
+    printf("\nTYPE: %s\n", session_status_string(type));
+    test_session_main(type);
   }
-
-  byte_array_to_hex_string(payload, payload_size, hex, sizeof(hex));
-  printf("session_receive_server_key_action : %s", hex);
-
-  // uint8_t device_random[PUBLIC_KEY_SIZE];
-  // random_generate(device_random, PUBLIC_KEY_SIZE);
-  // memzero(hex, 200);
-
-  // char hex[200]="";
-  // memzero(hex, 200);
-  // byte_array_to_hex_string(
-  //     device_random,
-  //     PUBLIC_KEY_SIZE,
-  //     hex,
-  //     65);
-  // printf("\nverification_details : %s\n", hex);
-}
-
-void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
-  arr[0] = (value >> 24) & 0xFF;    // Extract the highest byte
-  arr[1] = (value >> 16) & 0xFF;    // Extract the second highest byte
-  arr[2] = (value >> 8) & 0xFF;     // Extract the second lowest byte
-  arr[3] = value & 0xFF;            // Extract the lowest byte
-}
-
-void test_generate_server_data(uint8_t *server_message) {
-  uint8_t server_random[PRIVATE_KEY_SIZE];
-  uint8_t server_random_public[PUBLIC_KEY_SIZE];
-  curve_point server_random_public_point = {0};
-  session_get_random_keys(
-      server_random, server_random_public, server_random_public_point);
-
-  uint32_t session_age_int = 1234;
-  uint8_t session_age[4];
-  test_uint32_to_uint8_array(session_age_int, session_age);
-
-  uint8_t offset = 0;
-  memcpy(server_message, server_random_public, PUBLIC_KEY_SIZE);
-  offset += PUBLIC_KEY_SIZE;
-  memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
-  offset += SESSION_AGE_SIZE;
-  memcpy(server_message + offset, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-  offset += DEVICE_SERIAL_SIZE;
-}
-
-void session_initiation() {
-  uint8_t payload_size;
-  uint8_t *payload;
-  char hex[500];
-
-  // On Cysync Request: Send Device_Random to server [Device Random (32) +
-  // Device Id (32) + Signature (64) + Postfix1 + Postfix2]
-  payload_size = PUBLIC_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-                 POSTFIX1_SIZE + POSTFIX2_SIZE;
-
-  session_send_device_key(session, payload);
-
-  byte_array_to_hex_string(&payload, payload_size, hex, payload_size * 2 + 1);
-  printf("session_details_data_array : %s", hex);
-
-  // Generate Server_Message
-  uint8_t *server_message;
-  USE_SIMULATOR
-  test_generate_server_data(server_message);
-
-  // On Server Request: Get Server_Random_Public from Server [payload: Device Id
-  // (32) + Signature (64) + Postfix1 + Postfix2]
-  payload_size =
-      DEVICE_SERIAL_SIZE + SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
-  payload = (uint8_t *)malloc(payload_size * sizeof(uint8_t));
-
-  if (!session_receive_server_key(session, server_message)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    comm_reject_invalid_cmd();
-    clear_message_received_data();
-  }
-
-  memzero(hex, 500);
-  byte_array_to_hex_string(payload, payload_size, hex, payload_size * 2 + 1);
-  printf("verification_details : %s", hex);
-
-  // derive_session_id();
-  // derive_session_key();
 }
