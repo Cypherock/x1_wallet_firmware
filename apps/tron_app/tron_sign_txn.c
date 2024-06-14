@@ -60,9 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
-#include <google/protobuf/any.pb.h>
 #include <pb_decode.h>
 #include <tron/contract.pb.h>
+#include <tron/google/protobuf/any.pb.h>
 #include <tron/sign_txn.pb.h>
 #include <tron/tron.pb.h>
 #include <tron_txn_helpers.h>
@@ -271,12 +271,7 @@ STATIC bool tron_handle_initiate_query(const tron_query_t *query) {
     return false;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_SEND_TOKEN_PROMPT,
-           TRON_LUNIT,
-           TRON_NAME,
-           wallet_name);
+  snprintf(msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, TRON_NAME, wallet_name);
   // Take user consent to sign the transaction for the wallet
   if (!core_confirmation(msg, tron_send_error)) {
     return false;
