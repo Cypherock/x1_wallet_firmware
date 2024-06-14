@@ -62,10 +62,13 @@
 
 #include "abi_extract.h"
 
+#include "tron_contracts.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
 
+extern const uint8_t selector[][4];
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -98,9 +101,23 @@ ui_display_node *extract_data(uint8_t *data) {
   uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   to_address[0] = 0x41;
   uint8_t amount[32];
+  uint8_t function_selector[4] = {0};
+
+  memcpy(function_selector, data, 4);
+  // address is initial_address without '0x41' (20 Bytes)
   memcpy(to_address + 1, data + 4 + (32 - 20), 20);
   memcpy(amount, data + 4 + 32, 32);
 
+  // check function selector
+  for (int i = 0; i < TRC20_FUNCTION_SELECTOR_COUNT; i++) {
+    bool is_valid = 0;
+    if (memcmp(function_selector, selector[i], 4) == 0) {
+      is_valid = 1;
+    }
+    if (!is_valid) {
+      return NULL;
+    }
+  }
   char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
   // receipent address
   if (!base58_encode_check(to_address,
