@@ -1,2 +1,2 @@
-google.protobuf.Any.type_url max_size:64
-google.protobuf.Any.value max_size:116
+google.protobuf.Any.type_url max_size:100
+google.protobuf.Any.value max_size:200

@@ -4,22 +4,22 @@ import "tron/google/protobuf/any.proto";
 
 package tron;
 
-enum AccountType {
-  Normal = 0;
-  AssetIssue = 1;
-  Contract = 2;
-}
+// enum AccountType {
+//   Normal = 0;
+//   AssetIssue = 1;
+//   Contract = 2;
+// }
 
-// Exchange
-message Exchange {
-  int64 exchange_id = 1;
-  bytes creator_address = 2;
-  int64 create_time = 3;
-  bytes first_token_id = 6;
-  int64 first_token_balance = 7;
-  bytes second_token_id = 8;
-  int64 second_token_balance = 9;
-}
+// // Exchange
+// message Exchange {
+//   int64 exchange_id = 1;
+//   bytes creator_address = 2;
+//   int64 create_time = 3;
+//   bytes first_token_id = 6;
+//   int64 first_token_balance = 7;
+//   bytes second_token_id = 8;
+//   int64 second_token_balance = 9;
+// }
 
 // AccountId, (name, address) use name, (null, address) use address, (name, null) use name,
 message AccountId {
@@ -38,43 +38,43 @@ message Transaction {
       AccountCreateContract = 0;
       TransferContract = 1;
       TransferAssetContract = 2;
-      VoteAssetContract = 3;
-      VoteWitnessContract = 4;
-      WitnessCreateContract = 5;
-      AssetIssueContract = 6;
-      WitnessUpdateContract = 8;
-      ParticipateAssetIssueContract = 9;
-      AccountUpdateContract = 10;
-      FreezeBalanceContract = 11;
-      UnfreezeBalanceContract = 12;
-      WithdrawBalanceContract = 13;
-      UnfreezeAssetContract = 14;
-      UpdateAssetContract = 15;
-      ProposalCreateContract = 16;
-      ProposalApproveContract = 17;
-      ProposalDeleteContract = 18;
-      SetAccountIdContract = 19;
-      CustomContract = 20;
+      // VoteAssetContract = 3;
+      // VoteWitnessContract = 4;
+      // WitnessCreateContract = 5;
+      // AssetIssueContract = 6;
+      // WitnessUpdateContract = 8;
+      // ParticipateAssetIssueContract = 9;
+      // AccountUpdateContract = 10;
+      // FreezeBalanceContract = 11;
+      // UnfreezeBalanceContract = 12;
+      // WithdrawBalanceContract = 13;
+      // UnfreezeAssetContract = 14;
+      // UpdateAssetContract = 15;
+      // ProposalCreateContract = 16;
+      // ProposalApproveContract = 17;
+      // ProposalDeleteContract = 18;
+      // SetAccountIdContract = 19;
+      // CustomContract = 20;
       // BuyStorageContract = 21;
       // BuyStorageBytesContract = 22;
       // SellStorageContract = 23;
-      CreateSmartContract = 30;
+      // CreateSmartContract = 30;
       TriggerSmartContract = 31;
-      GetContract = 32;
-      UpdateSettingContract = 33;
-      ExchangeCreateContract = 41;
-      ExchangeInjectContract = 42;
-      ExchangeWithdrawContract = 43;
-      ExchangeTransactionContract = 44;
-      UpdateEnergyLimitContract = 45;
-      AccountPermissionUpdateContract = 46;
-      ClearABIContract = 48;
-      UpdateBrokerageContract = 49;
-      FreezeBalanceV2Contract = 54;
-      UnfreezeBalanceV2Contract = 55;
-      WithdrawExpireUnfreezeContract = 56;
-      DelegateResourceContract = 57;
-      UnDelegateResourceContract = 58;
+      // GetContract = 32;
+      // UpdateSettingContract = 33;
+      // ExchangeCreateContract = 41;
+      // ExchangeInjectContract = 42;
+      // ExchangeWithdrawContract = 43;
+      // ExchangeTransactionContract = 44;
+      // UpdateEnergyLimitContract = 45;
+      // AccountPermissionUpdateContract = 46;
+      // ClearABIContract = 48;
+      // UpdateBrokerageContract = 49;
+      // FreezeBalanceV2Contract = 54;
+      // UnfreezeBalanceV2Contract = 55;
+      // WithdrawExpireUnfreezeContract = 56;
+      // DelegateResourceContract = 57;
+      // UnDelegateResourceContract = 58;
     }
     ContractType type = 1;
     google.protobuf.Any parameter = 2;
