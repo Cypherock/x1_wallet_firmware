@@ -25,13 +25,22 @@
 #include "nfc.h"
 #include "rand.h"
 
-#define BUFFER_SIZE 1024
-#define PUBLIC_KEY_SIZE 33
-#define PRIVATE_KEY_SIZE 32
+#define SESSION_BUFFER_SIZE 1024
+#define SESSION_PUB_KEY_SIZE 33
+#define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 32
 
 #define SESSION_ID_SIZE 16
 #define SESSION_KEY_SIZE 32
+
+#define SESSION_MSG_RAW_SIZE 1024
+#define SESSION_MSG_NAME_SIZE 32
+#define SESSION_MSG_SIZE ((MSG_PRIVATE_SIZE + MSG_PUBLIC_SIZE) * 2)
+#define SESSION_MSG_MAX 5
+
+extern const uint32_t session_key_rotation[2];
+extern Session session;
+extern const ecdsa_curve *curve;
 
 typedef enum {
   SESSION_MSG_SEND_DEVICE_KEY,
@@ -48,7 +57,15 @@ typedef enum {
   SESSION_ERR_SERVER_KEY,
   SESSION_ERR_ENCRYPT,
   SESSION_ERR_DECRYPT,
-} session_status_type_e;
+} session_states_type_e;
+
+#pragma pack(push, 1)
+typedef struct {
+  uint8_t msg_raw[SESSION_MSG_RAW_SIZE];
+  bool is_private;
+  uint8_t msg_enc[SESSION_MSG_SIZE];
+} SessionMsg;
+#pragma pack(pop)
 
 /**
  * @brief Stores the session information
@@ -57,25 +74,38 @@ typedef enum {
 #pragma pack(push, 1)
 typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
-  uint8_t device_random[PRIVATE_KEY_SIZE];
-  uint8_t device_random_public[PUBLIC_KEY_SIZE];
+  uint8_t device_random[SESSION_PRIV_KEY_SIZE];
+  uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
   curve_point device_random_public_point;
 
-  uint8_t derived_server_public_key[PUBLIC_KEY_SIZE];
-  uint8_t server_random_public[PUBLIC_KEY_SIZE];
+  uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
+  uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
 
   uint8_t session_id[SESSION_ID_SIZE];
-  uint8_t session_key[PRIVATE_KEY_SIZE];
+  uint8_t session_key[SESSION_PRIV_KEY_SIZE];
 
-  session_status_type_e status;
+  SessionMsg SessionMsg[SESSION_MSG_MAX];
+
+  session_states_type_e status;
 } Session;
 #pragma pack(pop)
 
-extern const uint32_t session_key_rotation[2];
-extern Session session;
-extern const ecdsa_curve *curve;
+typedef struct {
+  // session_init
+  session_states_type_e type;
+  uint8_t server_message[SESSION_BUFFER_SIZE];
+
+  // session_enc
+  uint8_t msg_num;
+  SessionMsg SessionMsg[SESSION_MSG_MAX];
+  uint8_t pass_key[SESSION_ID_SIZE];
+  uint8_t wallet_id[WALLET_ID_SIZE];
+
+  // output
+  uint8_t device_message[SESSION_BUFFER_SIZE];
+} inheritance_query_t;
 
 /**
  * @brief Verified the signature of the payload
@@ -130,7 +160,7 @@ bool session_send_device_key(uint8_t *payload);
  */
 bool session_receive_server_key(uint8_t *server_message);
 
-void test_session_main(session_msg_type_e type);
+void test_session_main(inheritance_query_t *query);
 
 char *print_arr(char *name,
                 uint8_t *bytearray,
