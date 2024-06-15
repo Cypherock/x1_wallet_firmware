@@ -10,5 +10,5 @@ typedef struct trc20_contracts {
 } trc20_contracts_t;
 
 /// Number of entries in whitelisted contracts list
-#define TRC20_WHITELISTED_CONTRACTS_COUNT 2
+#define TRC20_WHITELISTED_CONTRACTS_COUNT 9
 #define TRC20_FUNCTION_SELECTOR_COUNT 1

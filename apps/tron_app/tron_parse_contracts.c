@@ -279,9 +279,11 @@ static bool transfer_contract_txn(tron_transaction_contract_t *contract) {
 
   // verify recipient amount
   char amount_string[30] = {'\0'};
-  char display[100] = {'\0'};
+  double decimal_amount = (double)amount;
+  decimal_amount *= 1e-6;
+  snprintf(amount_string, sizeof(amount_string), "%.6f", decimal_amount);
 
-  snprintf(amount_string, sizeof(amount_string), "%lli", amount);
+  char display[100] = {'\0'};
   snprintf(display,
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
@@ -361,6 +363,8 @@ static bool transfer_asset_contract_txn(tron_transaction_contract_t *contract) {
     return false;
   }
 
+  delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
+
   if (!core_scroll_page(ui_text_verify_address, address, tron_send_error)) {
     return false;
   }
@@ -370,14 +374,12 @@ static bool transfer_asset_contract_txn(tron_transaction_contract_t *contract) {
   char display[100] = {'\0'};
 
   snprintf(amount_string, sizeof(amount_string), "%lli", amount);
-  snprintf(
-      display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_string, "TOKENS");
+  snprintf(display, sizeof(display), "Verify amount\n%s", amount_string);
 
   if (!core_confirmation(display, tron_send_error)) {
     return false;
   }
   // TODO: DISPLAY ASSET NAME/TOKEN ID
-  // tac_
 
   set_app_flow_status(TRON_SIGN_TXN_STATUS_VERIFY);
   return true;
@@ -396,7 +398,6 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn) {
 
   tron_transaction_contract_t contract = raw_txn->contract[0];
 
-  // TODO: Add switch-cases for more contract types
   switch (contract.type) {
     case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
       if (!transfer_contract_txn(&contract)) {
