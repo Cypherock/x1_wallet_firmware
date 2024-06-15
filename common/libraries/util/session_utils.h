@@ -21,6 +21,7 @@
 #include "atecc_utils.h"
 #include "base58.h"
 #include "bip32.h"
+#include "card_fetch_data.h"
 #include "curves.h"
 #include "nfc.h"
 #include "rand.h"
@@ -33,8 +34,6 @@
 #define SESSION_ID_SIZE 16
 #define SESSION_KEY_SIZE 32
 
-#define SESSION_MSG_RAW_SIZE 1024
-#define SESSION_MSG_NAME_SIZE 32
 #define SESSION_MSG_SIZE ((MSG_PRIVATE_SIZE + MSG_PUBLIC_SIZE) * 2)
 #define SESSION_MSG_MAX 5
 
@@ -58,14 +57,6 @@ typedef enum {
   SESSION_ERR_ENCRYPT,
   SESSION_ERR_DECRYPT,
 } session_states_type_e;
-
-#pragma pack(push, 1)
-typedef struct {
-  uint8_t msg_raw[SESSION_MSG_RAW_SIZE];
-  bool is_private;
-  uint8_t msg_enc[SESSION_MSG_SIZE];
-} SessionMsg;
-#pragma pack(pop)
 
 /**
  * @brief Stores the session information

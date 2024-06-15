@@ -314,27 +314,16 @@ bool session_msg_encryption(uint8_t *pass_key,
 
   char name[SESSION_MSG_NAME_SIZE];
   size_t name_size = 0;
+
+  get_wallet_name_by_id(wallet_id);
+
   card_error_status_word_e status;
 
   memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
-  for (int i = 0, i < msg_num, i++) {
-    name_size = sizeof(session.SessionMsg[i].name);
-    byte_array_to_hex_string(
-        session.SessionMsg[i].name, name_size, name, sizeof(name_size) * 2 + 1);
-    print_msg(session.SessionMsg[i]);
 
-    status = nfc_encrypt_data(name,
-                              session.SessionMsg[i].msg_raw,
-                              sizeof(session.SessionMsg[i].msg_raw),
-                              session.SessionMsg[i].msg_enc,
-                              sizeof(session.SessionMsg[i].msg_enc));
-
-    print_msg(session.SessionMsg[i]);
-
-    if (status != SW_NO_ERROR) {
-      printf("ERROR: Card is invalid: %x", status);
-      return false;
-    }
+  if (status != SW_NO_ERROR) {
+    printf("ERROR: Card is invalid: %x", status);
+    return false;
   }
 
   return true;
@@ -354,27 +343,14 @@ bool session_msg_decryption(uint8_t *pass_key,
   card_error_status_word_e status;
 
   memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
-  for (int i = 0, i < msg_num, i++) {
-    name_size = sizeof(session.SessionMsg[i].name);
-    byte_array_to_hex_string(
-        session.SessionMsg[i].name, name_size, name, sizeof(name_size) * 2 + 1);
-    print_msg(session.SessionMsg[i]);
 
-    status = (name,
-              session.SessionMsg[i].msg_raw,
-              sizeof(session.SessionMsg[i].msg_raw),
-              session.SessionMsg[i].msg_enc,
-              sizeof(session.SessionMsg[i].msg_enc));
-
-    print_msg(session.SessionMsg[i]);
-
-    if (status != SW_NO_ERROR) {
-      printf("ERROR: Card is invalid: %x", status);
-      return false;
-    }
+  if (status != SW_NO_ERROR) {
+    printf("ERROR: Card is invalid: %x", status);
+    return false;
   }
+}
 
-  return true;
+return true;
 }
 
 void session_main(inheritance_query_t *query) {
@@ -569,18 +545,4 @@ void test_generate_server_encrypt_data(inheritance_query_t *query) {
 
   memcpy(query->pass_key, session.session_id, SESSION_ID_SIZE);
   print_arr("query->pass_key", query->pass_key, SESSION_ID_SIZE);
-}
-
-void print_msg(SessionMsg msg) {
-  char hex[SESSION_BUFFER_SIZE];
-  byte_array_to_hex_string(
-      msg.name, sizeof(msg.name), hex, sizeof(msg.name) * 2 + 1);
-  printf("MSG Name: %s\n", msg.name);
-  byte_array_to_hex_string(
-      msg.msg_raw, sizeof(msg.msg_raw), hex, sizeof(msg.msg_raw) * 2 + 1);
-  printf("MSG Msg_Raw: %s\n", msg.msg_raw);
-  byte_array_to_hex_string(
-      msg.msg_enc, sizeof(msg.msg_enc), hex, sizeof(msg.msg_enc) * 2 + 1);
-  printf("MSG Msg_Enc: %s\n", msg.msg_enc);
-  printf("MSG Is_Private: %d\n", msg.is_private);
 }
