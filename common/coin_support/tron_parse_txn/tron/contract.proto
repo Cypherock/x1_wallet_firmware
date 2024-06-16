@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package tron;
 
-import "tron/tron.proto";
+//import "tron/tron.proto";
 
 // message AccountCreateContract {
 //     bytes owner_address = 1;

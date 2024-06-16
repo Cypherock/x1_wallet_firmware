@@ -1,21 +1,100 @@
+/**
+ * @file    TRON_contracts.c
+ * @author  Cypherock X1 Team
+ * @brief   TRON whitelisted contracts list
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
+ *target=_blank>https://mitcc.org/</a>
+ *
+ ******************************************************************************
+ * @attention
+ *
+ * (c) Copyright 2023 by HODL TECH PTE LTD
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject
+ * to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ * "Commons Clause" License Condition v1.0
+ *
+ * The Software is provided to you by the Licensor under the License,
+ * as defined below, subject to the following condition.
+ *
+ * Without limiting other conditions in the License, the grant of
+ * rights under the License will not include, and the License does not
+ * grant to you, the right to Sell the Software.
+ *
+ * For purposes of the foregoing, "Sell" means practicing any or all
+ * of the rights granted to you under the License to provide to third
+ * parties, for a fee or other consideration (including without
+ * limitation fees for hosting or consulting/ support services related
+ * to the Software), a product or service whose value derives, entirely
+ * or substantially, from the functionality of the Software. Any license
+ * notice or attribution required by the License must also include
+ * this Commons Clause License Condition notice.
+ *
+ * Software: All X1Wallet associated files.
+ * License: MIT
+ * Licensor: HODL TECH PTE LTD
+ *
+ ******************************************************************************
+ */
+
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+
 #include <tron_contracts.h>
+
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 // a9059cbb -> transfer(address,uint256)
-// 095ea7b3 -> approve(address,uint256)
 const uint8_t selector[TRC20_FUNCTION_SELECTOR_COUNT][4] = {
-    {0xA9, 0x05, 0x9C, 0xBB}};    //, {0x09, 0x5E, 0xA7, 0xB3}};
+    {0xA9, 0x05, 0x9C, 0xBB}};
 
 const trc20_contracts_t trc20_contracts[TRC20_WHITELISTED_CONTRACTS_COUNT] = {
-    // USDT
     {{0x41, 0xA6, 0x14, 0xF8, 0x03, 0xB6, 0xFD, 0x78, 0x09, 0x86, 0xA4,
       0x2C, 0x78, 0xEC, 0x9C, 0x7F, 0x77, 0xE6, 0xDE, 0xD1, 0x3C},
      "USDT",
      6},
-    // 0x
     {{0x41, 0x34, 0x87, 0xb6, 0x3d, 0x30, 0xb5, 0xb2, 0xc8, 0x7f, 0xb7,
       0xff, 0xa8, 0xbc, 0xfa, 0xde, 0x38, 0xea, 0xac, 0x1a, 0xbe},
      "USDC",
@@ -49,3 +128,11 @@ const trc20_contracts_t trc20_contracts[TRC20_WHITELISTED_CONTRACTS_COUNT] = {
      "WTRX",
      6},
 };
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
