@@ -85,6 +85,7 @@ typedef enum Coin_Type {
   COIN_TYPE_HARMONY = 0x0E,
   COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
   COIN_TYPE_ARBITRUM = 0x10,
+  COIN_TYPE_BASE = 0x11,
 } Coin_Type;
 
 #pragma pack(push, 1)

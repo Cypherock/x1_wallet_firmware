@@ -51,6 +51,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
+        apps/evm_family/base
         apps/near_app
 
         apps/solana_app
