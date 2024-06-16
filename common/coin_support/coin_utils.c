@@ -59,6 +59,7 @@
 #include "coin_utils.h"
 
 #include "arbitrum.h"
+#include "base.h"
 #include "avalanche.h"
 #include "bsc.h"
 #include "etc.h"
