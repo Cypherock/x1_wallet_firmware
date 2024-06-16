@@ -35,6 +35,12 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Function for handling the parameter field of tron txns
+ *
+ * @param[in] raw_txn: tron raw transaction
+ * @return bool True if decoding was successful, else false
+ */
 bool extract_contract_info(tron_transaction_raw_t *raw_txn);
 
 #endif /* TRON_CONTEXT_H */

@@ -95,7 +95,7 @@
  * will enable the device to verify the TRC20 token transaction in a
  * user-friendly manner.
  *
- * @see erc20_contracts_t
+ * @see trc20_contracts_t
  */
 extern const trc20_contracts_t trc20_contracts[];
 
@@ -110,6 +110,46 @@ extern const trc20_contracts_t trc20_contracts[];
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Checks if the provided token address is whitelisted and return the
+ * matching contract instance.
+ *
+ * @param address Reference to the buffer containing the token address
+ * @param contract Pointer to store the matched contract address instance
+ *
+ * @return bool Indicating if the provided token address is whitelisted
+ * @return true If the address matches to an entry in the whitelist
+ * @return false If the address does not match to an entry in the whitelist
+ */
+static bool is_token_whitelisted(const uint8_t *address,
+                                 const trc20_contracts_t **contract);
+
+/**
+ * @brief User verification case when token is whitelisted
+ *
+ * @param data ABI encoded data field of tron txn
+ * @param contract_address contract address of current txn
+ * @param status Indicates the result of is_token_whitelisted
+ *
+ * @return bool Indicating parsing and verification status
+ * @return true If parsing and user verification successful
+ * @return false If parsing error or user denial
+ */
+static bool parse_whitelist(uint8_t *data,
+                            const uint8_t *contract_address,
+                            bool *status);
+
+/**
+ * @brief User verification case when token is not whitelisted
+ *
+ * @param data ABI encoded data field of tron txn
+ * @param contract_address contract address of current txn
+ *
+ * @return bool Indicating parsing and verification status
+ * @return true If parsing and user verification successful
+ * @return false If parsing error or user denial
+ */
+static bool parse_unverified(uint8_t *data, uint8_t *contract_address);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -242,6 +282,7 @@ static bool parse_unverified(uint8_t *data, uint8_t *contract_address) {
   cy_free();
   return true;
 }
+
 static bool transfer_contract_txn(tron_transaction_contract_t *contract) {
   uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   // uint8_t owner_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
@@ -400,18 +441,21 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn) {
 
   switch (contract.type) {
     case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
+      // Transfer TRX type
       if (!transfer_contract_txn(&contract)) {
         return false;
       }
       break;
     }
     case TRON_TRANSACTION_CONTRACT_TRIGGER_SMART_CONTRACT: {
+      // TRC20 type
       if (!trigger_smart_contract_txn(&contract)) {
         return false;
       }
       break;
     }
     case TRON_TRANSACTION_CONTRACT_TRANSFER_ASSET_CONTRACT: {
+      // TRC10 type
       if (!transfer_asset_contract_txn(&contract)) {
         return false;
       }

@@ -98,5 +98,18 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This function converts ABI value to UTF8 format
+ * to be displayed on the LED display for user verification for tron txns.
+ * This function creates and returns a UI node of type ui_display_node.
+ * Important thing to note here is that it only supports static Abi type data.
+ * If the Abi data is dynamic, it must be broken down into static data and then
+ * stringified.
+ *
+ * @param data Pointer to Abi data to be stringified
+ *
+ * @return ui_display_node: This function returns pointer to the UI node which
+ * can be displayed by the caller.
+ */
 
 ui_display_node *extract_data(uint8_t *data);
