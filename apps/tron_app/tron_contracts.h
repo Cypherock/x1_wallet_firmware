@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 // Number of entries in whitelisted contracts list
-#define TRC20_WHITELISTED_CONTRACTS_COUNT 9
+#define TRC20_WHITELISTED_CONTRACTS_COUNT 19
 #define TRC20_FUNCTION_SELECTOR_COUNT 1
 
 /*****************************************************************************

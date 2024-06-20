@@ -107,6 +107,8 @@ bool tron_derivation_path_guard(const uint32_t *path, uint8_t levels) {
                 account == TRON_ACCOUNT_INDEX);
     } break;
 
+      // TODO: 4 levels not supported yet
+
     case 5: {    // m/44'/195'/0'/0/i
       uint32_t change = path[3];
       uint32_t address = path[4];

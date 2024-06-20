@@ -26,10 +26,8 @@
  *****************************************************************************/
 #define TRON_NAME "Tron"
 #define TRON_LUNIT "TRX"
-#define TRON_PUB_KEY_SIZE 64    // ECDSA's x+y coordinates only
-#define TRON_PUB_KEY_SIZE_PLUS_ONE 65
+#define TRON_PUB_KEY_SIZE 65
 #define TRON_INITIAL_ADDRESS_LENGTH 21
-#define TRON_INITIAL_ADDRESS_LENGTH_MINUS_ONE 20
 #define TRON_ACCOUNT_ADDRESS_LENGTH 34
 
 /*****************************************************************************

@@ -115,6 +115,15 @@ int tron_byte_array_to_raw_txn(uint8_t *byte_array,
 }
 
 int tron_validate_unsigned_txn(const tron_transaction_raw_t *raw_txn) {
-  // TODO:
+  if (NULL == raw_txn || NULL == raw_txn->contract) {
+    return 1;
+  }
+
+  if (raw_txn->contract_count != 1) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return 1;
+  }
+
   return 0;
 }
