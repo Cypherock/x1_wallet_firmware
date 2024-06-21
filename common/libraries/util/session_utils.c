@@ -190,29 +190,16 @@ bool session_get_random_keys(uint8_t *random,
   return true;
 }
 
-bool session_is_valid(uint8_t *pass_key) {
-  return (pass_key == session.session_id);
+bool session_id_is_valid(uint8_t *pass_key) {
+  return (memcmp(pass_key, session.session_id, SESSION_ID_SIZE));
 }
 
-bool session_is_valid(
-    uint8_t *wallet_id) {    // TODO: Change when protobuf added
-  return (wallet_id == session.device_id);
-}
-
-void session_reset() {
-  memset(&session, 0, sizeof(session));
-}
-
-void session_send_error() {
-  printf("\nERROR: Invalid session query");
+bool wallet_id_is_valid(
+    uint8_t *wallet_id) {    // TODO: Change to wallet_id when protobuf added
+  return (memcmp(wallet_id, session.device_id, WALLET_ID_SIZE));
 }
 
 bool session_send_device_key(uint8_t *payload) {
-  // Output Payload:
-  // Device Random(32)+Device Id(32)+Signature(64)+Postfix1(7)+Postfix2(23)
-
-  session_reset();
-
   if (!session_get_random_keys(session.device_random,
                                session.device_random_public,
                                session.device_random_public_point)) {
@@ -241,7 +228,6 @@ bool session_send_device_key(uint8_t *payload) {
 
 bool session_receive_server_key(uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
-  memset(&session, 0, sizeof(session));
 
   if (!derive_server_public_key()) {
     printf("\nERROR: Server Randoms not read");
@@ -292,84 +278,77 @@ bool session_receive_server_key(uint8_t *server_message) {
     printf("\nERROR: Generation session keys");
     return false;
   }
-  void session_reset() {
-    memset(&session, 0, sizeof(session));
-  }
-
-  void session_send_error() {
-    printf("\nERROR: Invalid session query");
-  }
 
   return true;
 }
 
 bool session_msg_encryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
-                            size_t msg_num,
-                            SessionMsg *msgs) {
-  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
+                            SessionMsg *msgs,
+                            size_t msg_num) {
+  if (session_id_is_valid(pass_key) || wallet_id_is_valid(wallet_id)) {
     printf("ERROR: Session is invalid");
     return false;
   }
 
-  char name[SESSION_MSG_NAME_SIZE];
-  size_t name_size = 0;
+  card_error_type_e status = card_fetch_encrypt_data(wallet_id, &msgs, msg_num);
 
-  get_wallet_name_by_id(wallet_id);
-
-  card_error_status_word_e status;
-
-  memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
-
-  if (status != SW_NO_ERROR) {
+  if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
-    return false;
+    return false;    // payload = (uint8_t*)malloc(sizeof(uint8_t))*size;
+    //   if (payload == NULL) {
+    //       printf("ERROR: Memory allocation failed\n");
+    //       return 1;
+    //   }
   }
+
+  memcpy(&session.SessionMsg, msgs, sizeof(SessionMsg) * msg_num);
 
   return true;
 }
 
-bool session_msg_decryption(uint8_t *pass_key,
-                            uint8_t *wallet_id,
-                            size_t msg_num,
-                            SessionMsg *msgs) {
-  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
-    printf("ERROR: Session is invalid");
-    return false;
-  }
+// bool session_msg_decryption(uint8_t *pass_key,
+//                             uint8_t *wallet_id,
+//                             size_t msg_num,
+//                             SessionMsg *msgs) {
+//   if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
+//     printf("ERROR: Session is invalid");
+//     return false;
+//   }
+//   card_error_status_word_e status;
+//   memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
+//   if (status != SW_NO_ERROR) {
+//     printf("ERROR: Card is invalid: %x", status);
+//     return false;
+//   }
+//   return true;
+// }
 
-  char name[SESSION_MSG_NAME_SIZE];
-  size_t name_size = 0;
-  card_error_status_word_e status;
-
-  memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
-
-  if (status != SW_NO_ERROR) {
-    printf("ERROR: Card is invalid: %x", status);
-    return false;
-  }
+void session_reset() {
+  memset(&session, 0, sizeof(session));
 }
 
-return true;
+void session_send_error() {
+  printf("\nERROR: Invalid session query");
 }
 
 void session_main(inheritance_query_t *query) {
   char buffer[SESSION_BUFFER_SIZE] = {0};
   size_t size;
 
-  switch (type) {
+  switch (query->type) {
     case SESSION_MSG_SEND_DEVICE_KEY:
-      if (!session_send_device_key(out)) {
+      size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
+             POSTFIX1_SIZE + POSTFIX2_SIZE;
+      if (!session_send_device_key(query->device_message)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
         return SESSION_ERR_DEVICE_KEY;
       }
-
-      size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-             POSTFIX1_SIZE + POSTFIX2_SIZE;
-      byte_array_to_hex_string(query->payload, size, buffer, size * 2 + 1);
+      byte_array_to_hex_string(
+          query->device_message, size, buffer, size * 2 + 1);
       break;
 
     case SESSION_MSG_RECEIVE_SERVER_KEY:
@@ -388,17 +367,21 @@ void session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
-      session_msg_encrypt(query->msg_num, query->pass_key);
+      session_msg_encryption(query->pass_key,
+                             query->wallet_id,
+                             &query->SessionMsg,
+                             query->msg_num);
       break;
 
     case SESSION_MSG_DECRYPT:
       // if (!memcmp(session.session_id, {0}, SESSION_ID_SIZE) ||
       // !memcmp(session.session_key, {0}, SESSION_KEY_SIZE))
-      session_pkt_decryption(query->msg_num, query->pass_key);
+      // session_pkt_decryption(query->msg_num, query->pass_key);
+      printf("Session data decrypting..");
       break;
 
     case SESSION_CLOSE:
-      session_close();
+      session_reset();
       break;
 
     default: {
@@ -412,7 +395,10 @@ void session_main(inheritance_query_t *query) {
   session.status = SESSION_OK;
 }
 
-void test_session_main(inheritance_query_t *query) {
+void test_session_main(session_msg_type_e type) {
+  inheritance_query_t *query = malloc(sizeof(inheritance_query_t));
+  query->type = type;
+
   session.status = SESSION_ERR_INVALID;
   session_curve_init();
 
@@ -433,11 +419,12 @@ void test_session_main(inheritance_query_t *query) {
 
   if (session.status != SESSION_OK) {
     printf("\nERORR: SESSION COMMAND FAILED");
+    return;
   }
 
   printf("\nSESSION MSG STATUS: %d", session.status);
 
-  return 0;
+  return;
 }
 
 // TODO: functions to remove after testing
@@ -512,31 +499,27 @@ void test_generate_server_data(inheritance_query_t *query) {
 }
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
-  query->msg_num = 2;
-
-  char name[] = "message1";
-  char msg[] = "This message is public";
   int i = 0;
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].msg_raw);
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].name);
+  memcpy(query->SessionMsg[i].msg_dec, "This message is public", 22);
+  query->SessionMsg[i].msg_dec_size = 22;
   query->SessionMsg[i].is_private = false;
   print_msg(query->SessionMsg[i]);
 
-  name[] = "message2";
-  msg[] = "This message is private";
   i += 1;
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].msg_raw);
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].name);
+  memcpy(query->SessionMsg[i].msg_dec, "This message is private", 23);
+  query->SessionMsg[i].msg_dec_size = 23;
   query->SessionMsg[i].is_private = true;
   print_msg(query->SessionMsg[i]);
 
-  name[] = "message3";
-  msg[] = "This message is another public message";
   i += 1;
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].msg_raw);
-  hex_string_to_byte_array(msg, sizeof(msg), query->SessionMsg[i].name);
+  memcpy(query->SessionMsg[i].msg_dec,
+         "This message is another public message",
+         38);
+  query->SessionMsg[i].msg_dec_size = 38;
   query->SessionMsg[i].is_private = false;
   print_msg(query->SessionMsg[i]);
+
+  query->msg_num = i;
 
   memcpy(query->wallet_id,
          session.device_id,

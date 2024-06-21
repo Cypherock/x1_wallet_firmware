@@ -1,1 +1,1 @@
-sync_with_cards();
+// sync_with_cards();

@@ -101,15 +101,16 @@
  *****************************************************************************/
 
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SessionMsg msgs,
+                                          SessionMsg *msgs,
                                           size_t msg_num) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
   char heading[50] = "";
   uint8_t wallet_index = 0xFF;
-  char wallet_name[NAME_SIZE] = "";
-  ASSERT(SUCCESS == get_wallet_name_by_id(wallet_id, (uint8_t *)wallet_name));
+  const char wallet_name[NAME_SIZE] = "";
+  ASSERT(SUCCESS ==
+         get_wallet_name_by_id(wallet_id, (const uint8_t *)wallet_name, NULL));
   ASSERT(SUCCESS ==
          get_index_by_name((const char *)wallet_name, &wallet_index));
 
@@ -129,73 +130,59 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
     result = card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      for (int i = 0, i < msg_num, i++) {
+      for (int i = 0; i < msg_num; i++) {
         print_msg(msgs[i]);
 
         card_data.nfc_data.status = nfc_encrypt_data(wallet_name,
-                                                     msgs[i].msg_raw,
-                                                     sizeof(msgs[i].msg_raw),
+                                                     msgs[i].msg_dec,
+                                                     sizeof(msgs[i].msg_dec),
                                                      msgs[i].msg_enc,
                                                      sizeof(msgs[i].msg_enc));
-        print_msg(msg[i]);
+        print_msg(msgs[i]);
       }
 
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_WARNING_STATE_UNCHANGED) {
-        update_wallet_locked_flash((const char *)wallet_name, false);
         buzzer_start(BUZZER_DURATION);
         break;
       } else {
         card_handle_errors(&card_data);
       }
     }
-  }
 
-  if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
-      CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
-    const char *error_msg = card_data.error_message;
-    if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
-      // Re-render the instruction screen
-      instruction_scr_init(ui_text_place_card_below, heading);
-      continue;
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, heading);
+        continue;
+      }
     }
-  }
 
-  /**
-   * @brief For errors which lead to challenge failure or incorrect pin, we
-   * have to refetch the challenge which is performed subsequently in the same
-   * card tap session by the caller from user's perspective, so only for the
-   * condiion of `CARD_OPERATION_LOCKED_WALLET` we don't sound the buzzer as
-   * the card tap session has not completed.
-   */
-  if (CARD_OPERATION_LOCKED_WALLET != card_data.error_type) {
-    buzzer_start(BUZZER_DURATION);
-  }
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
+      break;
+    }
 
-  result = handle_wallet_errors(&card_data, wallet);
-  if (CARD_OPERATION_SUCCESS != result) {
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
     break;
   }
 
-  // If control reached here, it is an unrecoverable error, so break
-  result = card_data.error_type;
-  break;
-}
-
-nfc_deselect_card();
-return result;
+  nfc_deselect_card();
+  return result;
 }
 
 void print_msg(SessionMsg msg) {
   char hex[200];
   byte_array_to_hex_string(
-      msg.name, sizeof(msg.name), hex, sizeof(msg.name) * 2 + 1);
-  printf("MSG Name: %s\n", msg.name);
+      msg.msg_dec, msg.msg_dec_size, hex, msg.msg_dec_size * 2 + 1);
+  printf("MSG Msg_Dec: %s\n", msg.msg_dec);
+  printf("MSG Msg_Dec_Size: %d\n", msg.msg_dec_size);
   byte_array_to_hex_string(
-      msg.msg_raw, sizeof(msg.msg_raw), hex, sizeof(msg.msg_raw) * 2 + 1);
-  printf("MSG Msg_Raw: %s\n", msg.msg_raw);
-  byte_array_to_hex_string(
-      msg.msg_enc, sizeof(msg.msg_enc), hex, sizeof(msg.msg_enc) * 2 + 1);
+      msg.msg_enc, msg.msg_enc_size, hex, msg.msg_enc_size * 2 + 1);
   printf("MSG Msg_Enc: %s\n", msg.msg_enc);
-  printf("MSG Is_Private: %d\n", msg.is_private);
+  printf("MSG Msg_Enc_Size: %d\n", msg.msg_enc_size);
+  printf("MSG Is_Private: %s\n", msg.is_private ? "true" : "false");
 }

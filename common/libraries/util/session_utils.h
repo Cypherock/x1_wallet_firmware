@@ -38,8 +38,7 @@
 #define SESSION_MSG_MAX 5
 
 extern const uint32_t session_key_rotation[2];
-extern Session session;
-extern const ecdsa_curve *curve;
+// extern const ecdsa_curve *curve;
 
 typedef enum {
   SESSION_MSG_SEND_DEVICE_KEY,
@@ -51,11 +50,11 @@ typedef enum {
 } session_msg_type_e;
 typedef enum {
   SESSION_OK = 0,
-  SESSION_ERR_INVALID = 1,
-  SESSION_ERR_DEVICE_KEY,
-  SESSION_ERR_SERVER_KEY,
-  SESSION_ERR_ENCRYPT,
-  SESSION_ERR_DECRYPT,
+  SESSION_ERR_INVALID = 0x01,
+  SESSION_ERR_DEVICE_KEY = 0x02,
+  SESSION_ERR_SERVER_KEY = 0x03,
+  SESSION_ERR_ENCRYPT = 0x04,
+  SESSION_ERR_DECRYPT = 0x05,
 } session_states_type_e;
 
 /**
@@ -83,9 +82,11 @@ typedef struct {
 } Session;
 #pragma pack(pop)
 
+extern Session session;
+
 typedef struct {
   // session_init
-  session_states_type_e type;
+  session_msg_type_e type;
   uint8_t server_message[SESSION_BUFFER_SIZE];
 
   // session_enc
@@ -143,7 +144,9 @@ bool session_send_device_key(uint8_t *payload);
  * session random.
  * @param session_init_details The server response
  * @param verification_details The buffer to store the details
- * to be send back to the server to confirm the verification.
+ * to be send back to the server to confirm
+ * /home/parnika/Documents/GitHub/x1_wallet_firmware/common/libraries/util/session_utils.c:394:6the
+ * verification.
  * @return true if the session is created, false otherwise
  *
  * @see SESSION_ESTABLISH
@@ -151,7 +154,7 @@ bool session_send_device_key(uint8_t *payload);
  */
 bool session_receive_server_key(uint8_t *server_message);
 
-void test_session_main(inheritance_query_t *query);
+void test_session_main(session_msg_type_e type);
 
 char *print_arr(char *name,
                 uint8_t *bytearray,

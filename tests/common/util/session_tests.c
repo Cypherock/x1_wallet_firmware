@@ -112,12 +112,9 @@ TEST_TEAR_DOWN(session_tests) {
   // memset(&array_buffer[0], 0, sizeof(array_buffer));
 }
 
-void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]);
-void test_generate_server_data(uint8_t *server_message);
-
 TEST(session_tests, session_send_device_key_action) {
-  uint8_t payload_size = PUBLIC_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-                         POSTFIX1_SIZE + POSTFIX2_SIZE;
+  uint8_t payload_size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE +
+                         SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
   uint8_t payload[payload_size];
   char hex[payload_size * 2 + 1];
 
