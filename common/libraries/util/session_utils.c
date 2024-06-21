@@ -286,7 +286,8 @@ bool session_msg_encryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
                             SessionMsg *msgs,
                             size_t msg_num) {
-  if (session_id_is_valid(pass_key) || wallet_id_is_valid(wallet_id)) {
+  if (session_id_is_valid(pass_key) != 0 ||
+      wallet_id_is_valid(wallet_id) != 0) {
     printf("ERROR: Session is invalid");
     return false;
   }
@@ -295,11 +296,7 @@ bool session_msg_encryption(uint8_t *pass_key,
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
-    return false;    // payload = (uint8_t*)malloc(sizeof(uint8_t))*size;
-    //   if (payload == NULL) {
-    //       printf("ERROR: Memory allocation failed\n");
-    //       return 1;
-    //   }
+    return false;
   }
 
   memcpy(&session.SessionMsg, msgs, sizeof(SessionMsg) * msg_num);
