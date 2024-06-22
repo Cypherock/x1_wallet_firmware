@@ -136,7 +136,7 @@ static void memory_monitor(lv_task_t *param);
 
 const char *session_status_string(session_msg_type_e type) {
   static const char *status[] = {
-      "init_send", "init_receive", "encrypt", "decrypt", "close"};
+      "send", "receive", "encrypt", "decrypt", "close"};
   return (type >= 0 && type < NUM_SESSION_MSG_TYPE_E) ? status[type]
                                                       : "UNKNOWN";
 }

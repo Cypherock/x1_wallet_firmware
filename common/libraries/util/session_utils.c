@@ -94,7 +94,7 @@ static bool derive_server_public_key() {
 }
 
 bool verify_session_signature(uint8_t *payload,
-                              uint8_t payload_size,
+                              size_t payload_size,
                               uint8_t *signature) {
   uint8_t hash[32] = {0};
   sha256_Raw(payload, payload_size, hash);
@@ -102,8 +102,11 @@ bool verify_session_signature(uint8_t *payload,
   // TODO: uncomment while integrating the sdk
   // uint8_t status = ecdsa_verify_digest(
   // &nist256p1, session.derived_server_public_key, signature, hash);
-  uint8_t status = ecdsa_verify_digest(
-      &nist256p1, session.server_random_public, signature, hash);
+  uint8_t status =
+      ecdsa_verify_digest(&nist256p1,
+                          session.device_random_public,
+                          signature,
+                          hash);    // since signing with device_random
   return (status == 0);
 };
 
@@ -191,25 +194,32 @@ bool session_get_random_keys(uint8_t *random,
 }
 
 bool session_id_is_valid(uint8_t *pass_key) {
-  return (memcmp(pass_key, session.session_id, SESSION_ID_SIZE));
+  return (memcmp(pass_key, session.session_id, SESSION_ID_SIZE) == 0);
 }
 
 bool wallet_id_is_valid(
     uint8_t *wallet_id) {    // TODO: Change to wallet_id when protobuf added
-  return (memcmp(wallet_id, session.device_id, WALLET_ID_SIZE));
+#if USE_SIMULATOR == 0
+  return (memcmp(wallet_id, get_wallet_id(0), WALLET_ID_SIZE) == 0);
+#else
+  return (memcmp(wallet_id, session.device_id, WALLET_ID_SIZE) == 0);
+#endif
 }
 
 bool session_send_device_key(uint8_t *payload) {
   if (!session_get_random_keys(session.device_random,
                                session.device_random_public,
                                session.device_random_public_point)) {
-    printf("\nERROR: Device Random keys not genrated");
+    printf("\nERROR: Device Random keys not generated");
     return false;
   }
 
   // Get device_id
 #if USE_SIMULATOR == 0
-  get_device_serial();
+  if (get_device_serial() != 0) {
+    printf("\nERROR: Device Serial fetch failed");
+    return false;
+  }
   memcpy(session.device_id, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
 #else
   memcpy(session.device_id, session.device_random, DEVICE_SERIAL_SIZE);
@@ -236,14 +246,14 @@ bool session_receive_server_key(uint8_t *server_message) {
 
   size_t server_message_size =
       SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE;
-#if USE_SIMULATOR == 0
-  if (!verify_session_signature(server_message,
-                                server_message_size,
-                                server_message + server_message_size)) {
-    printf("\nERROR: Message from server invalid");
-    return false;
-  }
-#endif
+
+  // TODO: uncomment when server test starts
+  // if (!verify_session_signature(server_message,
+  //                               server_message_size,
+  //                               server_message + server_message_size)) {
+  //   printf("\nERROR: Message from server invalid");
+  //   return false;
+  // }
 
   uint8_t offset = 0;
   memcpy(session.server_random_public,
@@ -286,8 +296,7 @@ bool session_msg_encryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
                             SessionMsg *msgs,
                             size_t msg_num) {
-  if (session_id_is_valid(pass_key) != 0 ||
-      wallet_id_is_valid(wallet_id) != 0) {
+  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
     printf("ERROR: Session is invalid");
     return false;
   }
@@ -323,6 +332,10 @@ bool session_msg_encryption(uint8_t *pass_key,
 
 void session_reset() {
   memset(&session, 0, sizeof(session));
+}
+
+void session_msg_reset() {
+  memset(&session.SessionMsg, 0, sizeof(SessionMsg) * SESSION_MSG_MAX);
 }
 
 void session_send_error() {
@@ -364,10 +377,9 @@ void session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
-      session_msg_encryption(query->pass_key,
-                             query->wallet_id,
-                             &query->SessionMsg,
-                             query->msg_num);
+      session_msg_encryption(
+          query->pass_key, query->wallet_id, query->SessionMsg, query->msg_num);
+      session_msg_reset();
       break;
 
     case SESSION_MSG_DECRYPT:
@@ -375,6 +387,7 @@ void session_main(inheritance_query_t *query) {
       // !memcmp(session.session_key, {0}, SESSION_KEY_SIZE))
       // session_pkt_decryption(query->msg_num, query->pass_key);
       printf("Session data decrypting..");
+      session_msg_reset();
       break;
 
     case SESSION_CLOSE:
@@ -413,32 +426,16 @@ void test_session_main(session_msg_type_e type) {
   }
 
   session_main(query);
+  free(query);
 
   if (session.status != SESSION_OK) {
     printf("\nERORR: SESSION COMMAND FAILED");
     return;
   }
-
   printf("\nSESSION MSG STATUS: %d", session.status);
-
-  return;
 }
 
 // TODO: functions to remove after testing
-
-bool debug = true;
-// TODO cleanup: delete after testing
-char *print_arr(char *name, uint8_t *bytearray, size_t size) {
-  char bytearray_hex[size * 2 + 1];
-  if (debug == true) {
-    uint8ToHexString(bytearray, size, bytearray_hex);
-    printf("\n%s[%d bytes]: %s\n",
-           name,
-           (strlen(bytearray_hex) / 2),
-           bytearray_hex);
-  }
-  return bytearray_hex;
-}
 
 void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
   for (size_t i = 0; i < size; ++i) {
@@ -471,7 +468,7 @@ void test_generate_server_data(inheritance_query_t *query) {
   }
 
   uint32_t session_age_int = 1234;
-  uint8_t session_age[4];
+  uint8_t session_age[SESSION_AGE_SIZE];
   test_uint32_to_uint8_array(session_age_int, session_age);
 
   uint8_t offset = 0;
@@ -483,11 +480,13 @@ void test_generate_server_data(inheritance_query_t *query) {
   offset += DEVICE_SERIAL_SIZE;
 
   uint8_t hash[32] = {0};
+  uint8_t signature[SIGNATURE_SIZE] = {0};
   sha256_Raw(server_message, offset, hash);
-  auth_data_t signed_data =
-      atecc_sign(hash);    // NOTE: But on server signing will be from master
-                           // device derived private key
-  memcpy(server_message + offset, signed_data.signature, SIGNATURE_SIZE);
+  // NOTE: MSG would be signed by server_key (added from master device in
+  // server)
+  int res =
+      ecdsa_sign_digest(curve, session.device_random, hash, signature, 0, 0);
+  memcpy(server_message + offset, signature, SIGNATURE_SIZE);
   offset += SIGNATURE_SIZE;
 
   print_arr("server data", server_message, offset);
@@ -516,11 +515,16 @@ void test_generate_server_encrypt_data(inheritance_query_t *query) {
   query->SessionMsg[i].is_private = false;
   print_msg(query->SessionMsg[i]);
 
-  query->msg_num = i;
-
+  query->msg_num = i + 1;
+#if USE_SIMULATOR == 0
+  memcpy(query->wallet_id,
+         get_wallet_id(0),
+         WALLET_ID_SIZE);    // will get wallet id from device
+#else
   memcpy(query->wallet_id,
          session.device_id,
          WALLET_ID_SIZE);    // will get wallet id from cysync
+#endif
   print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
 
   memcpy(query->pass_key, session.session_id, SESSION_ID_SIZE);

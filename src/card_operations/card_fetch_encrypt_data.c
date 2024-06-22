@@ -106,24 +106,22 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
-  char heading[50] = "";
-  uint8_t wallet_index = 0xFF;
   const char wallet_name[NAME_SIZE] = "";
-  ASSERT(SUCCESS ==
-         get_wallet_name_by_id(wallet_id, (const uint8_t *)wallet_name, NULL));
-  ASSERT(SUCCESS ==
-         get_index_by_name((const char *)wallet_name, &wallet_index));
+  rejection_cb *reject_cb;
+  ASSERT(get_wallet_data_by_id(
+      wallet_id, (const uint8_t *)wallet_name, reject_cb));
 
-  snprintf(heading,
-           sizeof(heading),
-           UI_TEXT_TAP_CARD,
-           decode_card_number(get_wallet_card_locked(wallet_index)));
-  instruction_scr_init(ui_text_place_card_below, heading);
+  uint8_t flash_wallet_index = 0xFF;
+  ASSERT(SUCCESS == get_index_by_name((const char *)wallet_name,
+                                      &flash_wallet_index));    // check issue
+
+  instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
 
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
   while (1) {
-    card_data.nfc_data.acceptable_cards = get_wallet_card_locked(wallet_index);
+    card_data.nfc_data.acceptable_cards =
+        get_wallet_card_locked(flash_wallet_index);
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     card_data.nfc_data.tapped_card = 0;
 
@@ -155,7 +153,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
       const char *error_msg = card_data.error_message;
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
-        instruction_scr_init(ui_text_place_card_below, heading);
+        instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
         continue;
       }
     }
@@ -174,6 +172,8 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   return result;
 }
 
+// TODO: Remove after testing
+
 void print_msg(SessionMsg msg) {
   char hex[200];
   byte_array_to_hex_string(
@@ -185,4 +185,18 @@ void print_msg(SessionMsg msg) {
   printf("MSG Msg_Enc: %s\n", msg.msg_enc);
   printf("MSG Msg_Enc_Size: %d\n", msg.msg_enc_size);
   printf("MSG Is_Private: %s\n", msg.is_private ? "true" : "false");
+}
+
+bool debug = true;
+// TODO cleanup: delete after testing
+char *print_arr(char *name, uint8_t *bytearray, size_t size) {
+  char bytearray_hex[size * 2 + 1];
+  if (debug == true) {
+    uint8ToHexString(bytearray, size, bytearray_hex);
+    printf("\n%s[%d bytes]: %s\n",
+           name,
+           (strlen(bytearray_hex) / 2),
+           bytearray_hex);
+  }
+  return bytearray_hex;
 }

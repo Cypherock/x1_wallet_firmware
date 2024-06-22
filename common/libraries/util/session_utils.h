@@ -29,7 +29,7 @@
 #define SESSION_BUFFER_SIZE 1024
 #define SESSION_PUB_KEY_SIZE 33
 #define SESSION_PRIV_KEY_SIZE 32
-#define SESSION_AGE_SIZE 32
+#define SESSION_AGE_SIZE 4
 
 #define SESSION_ID_SIZE 16
 #define SESSION_KEY_SIZE 32
@@ -110,7 +110,7 @@ typedef struct {
  * @since v1.0.0
  */
 bool verify_session_signature(uint8_t *payload,
-                              uint8_t payload_size,
+                              size_t payload_size,
                               uint8_t *signature);
 
 /**
@@ -155,9 +155,5 @@ bool session_send_device_key(uint8_t *payload);
 bool session_receive_server_key(uint8_t *server_message);
 
 void test_session_main(session_msg_type_e type);
-
-char *print_arr(char *name,
-                uint8_t *bytearray,
-                size_t size);    // TODO: remove after testing
 
 #endif    // SESSION_UTILS

@@ -66,5 +66,6 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
 // TODO: Remove after testing
 void print_msg(SessionMsg msg);
+char *print_arr(char *name, uint8_t *bytearray, size_t size);
 
 #endif
