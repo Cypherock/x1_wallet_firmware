@@ -17,8 +17,8 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define SESSION_MSG_RAW_SIZE 1024
-#define SESSION_MSG_ENC_SIZE 1024
+#define SESSION_MSG_DEC_SIZE 1024
+#define SESSION_MSG_ENC_SIZE (SESSION_MSG_DEC_SIZE * 2)
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -29,7 +29,7 @@
  *****************************************************************************/
 #pragma pack(push, 1)
 typedef struct {
-  uint8_t msg_dec[SESSION_MSG_RAW_SIZE];
+  uint8_t msg_dec[SESSION_MSG_DEC_SIZE];
   uint16_t msg_dec_size;
   bool is_private;
   uint8_t msg_enc[SESSION_MSG_ENC_SIZE];

@@ -38,7 +38,6 @@
 #define SESSION_MSG_MAX 5
 
 extern const uint32_t session_key_rotation[2];
-// extern const ecdsa_curve *curve;
 
 typedef enum {
   SESSION_MSG_SEND_DEVICE_KEY,
@@ -76,7 +75,7 @@ typedef struct {
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
 
-  SessionMsg SessionMsg[SESSION_MSG_MAX];
+  SessionMsg SessionMsgs[SESSION_MSG_MAX];
 
   session_states_type_e status;
 } Session;
@@ -91,7 +90,7 @@ typedef struct {
 
   // session_enc
   uint8_t msg_num;
-  SessionMsg SessionMsg[SESSION_MSG_MAX];
+  SessionMsg SessionMsgs[SESSION_MSG_MAX];
   uint8_t pass_key[SESSION_ID_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
 

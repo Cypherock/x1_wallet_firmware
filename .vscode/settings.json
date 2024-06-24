@@ -28,7 +28,9 @@
         "algorithm": "c",
         "istream": "c",
         "ostream": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "chrono": "c",
+        "condition_variable": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "cortex-debug.variableUseNaturalFormat": true

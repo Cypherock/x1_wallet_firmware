@@ -120,8 +120,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
   while (1) {
-    card_data.nfc_data.acceptable_cards =
-        get_wallet_card_locked(flash_wallet_index);
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     card_data.nfc_data.tapped_card = 0;
 
@@ -129,13 +128,16 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_num; i++) {
+        int i = 1;
+        memset(msgs[i].msg_enc, 0, sizeof(msgs[i].msg_enc));
+        msgs[i].msg_enc_size = 0;
         print_msg(msgs[i]);
 
         card_data.nfc_data.status = nfc_encrypt_data(wallet_name,
                                                      msgs[i].msg_dec,
-                                                     sizeof(msgs[i].msg_dec),
+                                                     msgs[i].msg_dec_size,
                                                      msgs[i].msg_enc,
-                                                     sizeof(msgs[i].msg_enc));
+                                                     &msgs[i].msg_enc_size);
         print_msg(msgs[i]);
       }
 

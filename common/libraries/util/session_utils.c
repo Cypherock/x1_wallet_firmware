@@ -301,14 +301,14 @@ bool session_msg_encryption(uint8_t *pass_key,
     return false;
   }
 
-  card_error_type_e status = card_fetch_encrypt_data(wallet_id, &msgs, msg_num);
+  card_error_type_e status = card_fetch_encrypt_data(wallet_id, msgs, msg_num);
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
     return false;
   }
 
-  memcpy(&session.SessionMsg, msgs, sizeof(SessionMsg) * msg_num);
+  memcpy(&session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_num);
 
   return true;
 }
@@ -335,7 +335,7 @@ void session_reset() {
 }
 
 void session_msg_reset() {
-  memset(&session.SessionMsg, 0, sizeof(SessionMsg) * SESSION_MSG_MAX);
+  memset(&session.SessionMsgs, 0, sizeof(SessionMsg) * SESSION_MSG_MAX);
 }
 
 void session_send_error() {
@@ -377,8 +377,10 @@ void session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
-      session_msg_encryption(
-          query->pass_key, query->wallet_id, query->SessionMsg, query->msg_num);
+      session_msg_encryption(query->pass_key,
+                             query->wallet_id,
+                             query->SessionMsgs,
+                             query->msg_num);
       session_msg_reset();
       break;
 
@@ -423,6 +425,7 @@ void test_session_main(session_msg_type_e type) {
       break;
     case SESSION_MSG_DECRYPT:
       break;
+      // extern const ecdsa_curve *curve;
   }
 
   session_main(query);
@@ -496,24 +499,24 @@ void test_generate_server_data(inheritance_query_t *query) {
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
   int i = 0;
-  memcpy(query->SessionMsg[i].msg_dec, "This message is public", 22);
-  query->SessionMsg[i].msg_dec_size = 22;
-  query->SessionMsg[i].is_private = false;
-  print_msg(query->SessionMsg[i]);
+  memcpy(query->SessionMsgs[i].msg_dec, "This message is public", 22);
+  query->SessionMsgs[i].msg_dec_size = 22;
+  query->SessionMsgs[i].is_private = false;
+  print_msg(query->SessionMsgs[i]);
 
   i += 1;
-  memcpy(query->SessionMsg[i].msg_dec, "This message is private", 23);
-  query->SessionMsg[i].msg_dec_size = 23;
-  query->SessionMsg[i].is_private = true;
-  print_msg(query->SessionMsg[i]);
+  memcpy(query->SessionMsgs[i].msg_dec, "This message is private", 23);
+  query->SessionMsgs[i].msg_dec_size = 23;
+  query->SessionMsgs[i].is_private = true;
+  print_msg(query->SessionMsgs[i]);
 
   i += 1;
-  memcpy(query->SessionMsg[i].msg_dec,
+  memcpy(query->SessionMsgs[i].msg_dec,
          "This message is another public message",
          38);
-  query->SessionMsg[i].msg_dec_size = 38;
-  query->SessionMsg[i].is_private = false;
-  print_msg(query->SessionMsg[i]);
+  query->SessionMsgs[i].msg_dec_size = 38;
+  query->SessionMsgs[i].is_private = false;
+  print_msg(query->SessionMsgs[i]);
 
   query->msg_num = i + 1;
 #if USE_SIMULATOR == 0
