@@ -1,0 +1,13 @@
+tron.Transaction.raw.contract           max_count: 1
+tron.Transaction.raw.ref_block_bytes    type: FT_IGNORE
+tron.Transaction.raw.ref_block_num      type: FT_IGNORE
+tron.Transaction.raw.ref_block_hash     type: FT_IGNORE
+tron.Transaction.raw.expiration         type: FT_IGNORE
+tron.Transaction.raw.auths              type: FT_IGNORE
+tron.Transaction.raw.scripts            type: FT_IGNORE
+tron.Transaction.raw.timestamp          type: FT_IGNORE
+
+tron.Key.address                        max_size: 21, fixed_length: true
+
+tron.Permission.keys                    max_count: 3  # Assume 3 max keys
+tron.Permission.operations              max_size: 32, fixed_length: true
