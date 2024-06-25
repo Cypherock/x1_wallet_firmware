@@ -390,6 +390,19 @@ static void update_locktime(btc_verify_input_t *verify_input_data,
     return;
   }
 }
+
+// TODO: cover uint32_t and uint64_t numbers
+static int64_t varint_decode(const uint8_t *raw_txn_chunk, int32_t *offset) {
+  uint8_t first_byte = raw_txn_chunk[*offset];
+  if (first_byte < 0xFD) {
+    return first_byte;
+  } else {
+    uint8_t result[2];
+    memcpy(result, raw_txn_chunk + *offset + 1, 2);
+    *offset += 2;
+    return U16_READ_LE_ARRAY(result);
+  }
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -442,9 +455,13 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
           }
 
           case SCRIPT_LENGTH_CASE: {
-            if (offset + raw_txn_chunk[offset] + 1 + 4 > CHUNK_SIZE) {
+            // Added partial solution to var-int decode, fixing PRF#7276
+            // https://app.clickup.com/t/9002019994/PRF-7276
+            // refer to:
+            int64_t script_length = varint_decode(raw_txn_chunk, &offset);
+            if (offset + script_length + 1 + 4 > CHUNK_SIZE) {
               verify_input_data->prev_offset =
-                  (offset + raw_txn_chunk[offset] + 1 + 4) - CHUNK_SIZE;
+                  (offset + script_length + 1 + 4) - CHUNK_SIZE;
               update_hash(
                   verify_input_data, raw_txn_chunk, chunk_index, CHUNK_SIZE);
               verify_input_data->input_parse =
@@ -452,7 +469,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
               verify_input_data->input_index++;
               return 4;
             } else {
-              offset += (raw_txn_chunk[offset] + 1 + 4);
+              offset += (script_length + 1 + 4);
             }
             break;
           }
