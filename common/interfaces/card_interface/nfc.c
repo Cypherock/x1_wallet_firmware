@@ -545,8 +545,8 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
                          uint16_t *encrypted_data_size) {
   ASSERT(name != NULL);
   ASSERT(plain_data != NULL);
+  ASSERT(plain_data_size != 0);
   ASSERT(encrypted_data != NULL);
-  ASSERT(encrypted_data_size != NULL);
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
@@ -576,6 +576,8 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
       memcpy(encrypted_data, recv_apdu + 2, recv_apdu[1]);
     }
   }
+
+  print_hex_array("encrypted data", encrypted_data, encrypted_data_size);
 
   memzero(recv_apdu, sizeof(send_apdu));
   nfc_secure_comm = false;
@@ -619,6 +621,8 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
       memcpy(plain_data, recv_apdu + 2, recv_apdu[1]);
     }
   }
+
+  print_hex_array("plain data", plain_data, plain_data_size);
 
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;

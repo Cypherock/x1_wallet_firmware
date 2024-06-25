@@ -135,7 +135,7 @@ TEST(session_tests, session_receive_server_key_action) {
   for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
        type < NUM_SESSION_MSG_TYPE_E;
        type = (session_msg_type_e)(type + 1)) {
-    printf("\nTYPE: %s\n", session_status_string(type));
+    printf("\n\n--------> TYPE: %s\n", session_status_string(type));
     test_session_main(type);
   }
 }

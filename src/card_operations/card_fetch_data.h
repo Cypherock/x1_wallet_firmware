@@ -17,8 +17,8 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define SESSION_MSG_DEC_SIZE 1024
-#define SESSION_MSG_ENC_SIZE (SESSION_MSG_DEC_SIZE * 2)
+#define PLAIN_DATA_SIZE 200
+#define ENCRYPTED_DATA_SIZE (PLAIN_DATA_SIZE * 2)
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -29,11 +29,11 @@
  *****************************************************************************/
 #pragma pack(push, 1)
 typedef struct {
-  uint8_t msg_dec[SESSION_MSG_DEC_SIZE];
-  uint16_t msg_dec_size;
+  uint8_t plain_data[PLAIN_DATA_SIZE];
+  uint16_t plain_data_size;
   bool is_private;
-  uint8_t msg_enc[SESSION_MSG_ENC_SIZE];
-  uint16_t msg_enc_size;
+  uint8_t encrypted_data[ENCRYPTED_DATA_SIZE];
+  uint16_t encrypted_data_size;
 } SessionMsg;
 #pragma pack(pop)
 
@@ -62,10 +62,5 @@ typedef struct {
  */
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                                           SessionMsg *msgs,
-                                          size_t msg_num);
-
-// TODO: Remove after testing
-void print_msg(SessionMsg msg);
-char *print_arr(char *name, uint8_t *bytearray, size_t size);
-
+                                          size_t msg_array_size);
 #endif

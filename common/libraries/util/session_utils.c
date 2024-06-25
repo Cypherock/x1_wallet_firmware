@@ -238,6 +238,7 @@ bool session_send_device_key(uint8_t *payload) {
 
 bool session_receive_server_key(uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
+  ASSERT(server_message != NULL);
 
   if (!derive_server_public_key()) {
     printf("\nERROR: Server Randoms not read");
@@ -295,40 +296,68 @@ bool session_receive_server_key(uint8_t *server_message) {
 bool session_msg_encryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
                             SessionMsg *msgs,
-                            size_t msg_num) {
+                            size_t msg_array_size) {
+  ASSERT(pass_key != NULL);
+  ASSERT(wallet_id != NULL);
+  ASSERT(msgs != NULL);
+  ASSERT(msg_array_size != 0);
+
   if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
     printf("ERROR: Session is invalid");
     return false;
   }
 
-  card_error_type_e status = card_fetch_encrypt_data(wallet_id, msgs, msg_num);
+  card_error_type_e status =
+      card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
     return false;
   }
 
-  memcpy(&session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_num);
+  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
 
   return true;
 }
 
-// bool session_msg_decryption(uint8_t *pass_key,
-//                             uint8_t *wallet_id,
-//                             size_t msg_num,
-//                             SessionMsg *msgs) {
-//   if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
-//     printf("ERROR: Session is invalid");
-//     return false;
-//   }
-//   card_error_status_word_e status;
-//   memcpy(&session.SesssionMsg, msgs, sizeof(SessionMsg));
-//   if (status != SW_NO_ERROR) {
-//     printf("ERROR: Card is invalid: %x", status);
-//     return false;
-//   }
-//   return true;
-// }
+bool session_msg_decryption(uint8_t *pass_key,
+                            uint8_t *wallet_id,
+                            SessionMsg *msgs,
+                            size_t msg_array_size) {
+  ASSERT(pass_key != NULL);
+  ASSERT(wallet_id != NULL);
+  ASSERT(msgs != NULL);
+  ASSERT(msg_array_size != 0);
+
+  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
+    printf("ERROR: Session is invalid");
+    return false;
+  }
+
+  // TODO: remove after testing
+  card_error_type_e status;
+  status = card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
+  if (status != CARD_OPERATION_SUCCESS) {
+    printf("ERROR: Card is invalid: %x", status);
+    return false;
+  }
+  printf("Data reset");
+  for (int i = 0; i < msg_array_size; i++) {
+    memzero(msgs[i].plain_data, msgs[i].plain_data_size);
+    print_msg(msgs[i], i);
+  }
+
+  status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
+
+  if (status != CARD_OPERATION_SUCCESS) {
+    printf("ERROR: Card is invalid: %x", status);
+    return false;
+  }
+
+  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
+
+  return true;
+}
 
 void session_reset() {
   memset(&session, 0, sizeof(session));
@@ -342,7 +371,7 @@ void session_send_error() {
   printf("\nERROR: Invalid session query");
 }
 
-void session_main(inheritance_query_t *query) {
+session_error_type_e session_main(inheritance_query_t *query) {
   char buffer[SESSION_BUFFER_SIZE] = {0};
   size_t size;
 
@@ -377,19 +406,35 @@ void session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
-      session_msg_encryption(query->pass_key,
-                             query->wallet_id,
-                             query->SessionMsgs,
-                             query->msg_num);
+      if (!session_msg_encryption(query->pass_key,
+                                  query->wallet_id,
+                                  query->SessionMsgs,
+                                  query->msg_array_size)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
+
+        return SESSION_ERR_ENCRYPT;
+      }
+      for (int i = 0; i < query->msg_array_size; i++)
+        print_msg(session.SessionMsgs[i], i);
       session_msg_reset();
       break;
 
     case SESSION_MSG_DECRYPT:
-      // if (!memcmp(session.session_id, {0}, SESSION_ID_SIZE) ||
-      // !memcmp(session.session_key, {0}, SESSION_KEY_SIZE))
-      // session_pkt_decryption(query->msg_num, query->pass_key);
-      printf("Session data decrypting..");
+      if (!session_msg_decryption(query->pass_key,
+                                  query->wallet_id,
+                                  query->SessionMsgs,
+                                  query->msg_array_size)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
+
+        return SESSION_ERR_ENCRYPT;
+      }
       session_msg_reset();
+      for (int i = 0; i < query->msg_array_size; i++)
+        print_msg(session.SessionMsgs[i], i);
       break;
 
     case SESSION_CLOSE:
@@ -451,6 +496,38 @@ void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
   hexstring[size * 2] = '\0';    // Null-terminate the string
 }
 
+void print_msg(SessionMsg msg, uint8_t index) {
+  char hex[200];
+  byte_array_to_hex_string(
+      msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);
+  printf("\nData [%d] plain_data: %s\n", index + 1, (char *)msg.plain_data);
+  printf("Data [%d] plain_size: %d\n", index + 1, msg.plain_data_size);
+  byte_array_to_hex_string(msg.encrypted_data,
+                           msg.encrypted_data_size,
+                           hex,
+                           msg.encrypted_data_size * 2 + 1);
+  printf(
+      "Data [%d] encrypted_data: %s\n", index + 1, (char *)msg.encrypted_data);
+  printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
+  printf("Data [%d] is_private: %s\n",
+         index + 1,
+         msg.is_private ? "true" : "false");
+}
+
+bool debug = true;
+// TODO cleanup: delete after testing
+char *print_arr(char *name, uint8_t *bytearray, size_t size) {
+  char bytearray_hex[size * 2 + 1];
+  if (debug == true) {
+    uint8ToHexString(bytearray, size, bytearray_hex);
+    printf("\n%s[%d bytes]: %s\n",
+           name,
+           (strlen(bytearray_hex) / 2),
+           bytearray_hex);
+  }
+  return bytearray_hex;
+}
+
 void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
   arr[0] = (value >> 24) & 0xFF;    // Extract the highest byte
   arr[1] = (value >> 16) & 0xFF;    // Extract the second highest byte
@@ -499,30 +576,26 @@ void test_generate_server_data(inheritance_query_t *query) {
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
   int i = 0;
-  memcpy(query->SessionMsgs[i].msg_dec, "This message is public", 22);
-  query->SessionMsgs[i].msg_dec_size = 22;
+  memcpy(query->SessionMsgs[i].plain_data, "password", 9);
+  query->SessionMsgs[i].plain_data_size = 9;
   query->SessionMsgs[i].is_private = false;
-  print_msg(query->SessionMsgs[i]);
+  print_msg(query->SessionMsgs[i], i);
 
   i += 1;
-  memcpy(query->SessionMsgs[i].msg_dec, "This message is private", 23);
-  query->SessionMsgs[i].msg_dec_size = 23;
+  memcpy(query->SessionMsgs[i].plain_data, "location message", 17);
+  query->SessionMsgs[i].plain_data_size = 17;
   query->SessionMsgs[i].is_private = true;
-  print_msg(query->SessionMsgs[i]);
+  print_msg(query->SessionMsgs[i], i);
 
   i += 1;
-  memcpy(query->SessionMsgs[i].msg_dec,
-         "This message is another public message",
-         38);
-  query->SessionMsgs[i].msg_dec_size = 38;
+  memcpy(query->SessionMsgs[i].plain_data, "public message", 15);
+  query->SessionMsgs[i].plain_data_size = 15;
   query->SessionMsgs[i].is_private = false;
-  print_msg(query->SessionMsgs[i]);
+  print_msg(query->SessionMsgs[i], i);
 
-  query->msg_num = i + 1;
+  query->msg_array_size = i + 1;
 #if USE_SIMULATOR == 0
-  memcpy(query->wallet_id,
-         get_wallet_id(0),
-         WALLET_ID_SIZE);    // will get wallet id from device
+  memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
 #else
   memcpy(query->wallet_id,
          session.device_id,

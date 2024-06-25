@@ -54,7 +54,7 @@ typedef enum {
   SESSION_ERR_SERVER_KEY = 0x03,
   SESSION_ERR_ENCRYPT = 0x04,
   SESSION_ERR_DECRYPT = 0x05,
-} session_states_type_e;
+} session_error_type_e;
 
 /**
  * @brief Stores the session information
@@ -77,7 +77,7 @@ typedef struct {
 
   SessionMsg SessionMsgs[SESSION_MSG_MAX];
 
-  session_states_type_e status;
+  session_error_type_e status;
 } Session;
 #pragma pack(pop)
 
@@ -89,7 +89,7 @@ typedef struct {
   uint8_t server_message[SESSION_BUFFER_SIZE];
 
   // session_enc
-  uint8_t msg_num;
+  uint8_t msg_array_size;
   SessionMsg SessionMsgs[SESSION_MSG_MAX];
   uint8_t pass_key[SESSION_ID_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
@@ -153,6 +153,9 @@ bool session_send_device_key(uint8_t *payload);
  */
 bool session_receive_server_key(uint8_t *server_message);
 
+// TODO: Remove after testing
+void print_msg(SessionMsg msg, uint8_t index);
+char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
 
 #endif    // SESSION_UTILS

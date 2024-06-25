@@ -102,18 +102,16 @@
 
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                                           SessionMsg *msgs,
-                                          size_t msg_num) {
+                                          size_t msg_array_size) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
   const char wallet_name[NAME_SIZE] = "";
   rejection_cb *reject_cb;
+#if USE_SIMULATOR == 0
   ASSERT(get_wallet_data_by_id(
       wallet_id, (const uint8_t *)wallet_name, reject_cb));
-
-  uint8_t flash_wallet_index = 0xFF;
-  ASSERT(SUCCESS == get_index_by_name((const char *)wallet_name,
-                                      &flash_wallet_index));    // check issue
+#endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
 
@@ -121,29 +119,36 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_data.nfc_data.init_session_keys = true;
   while (1) {
     card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+#if USE_SIMULATOR == 0
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
-    card_data.nfc_data.tapped_card = 0;
-
     result = card_initialize_applet(&card_data);
+#endif
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      for (int i = 0; i < msg_num; i++) {
-        int i = 1;
-        memset(msgs[i].msg_enc, 0, sizeof(msgs[i].msg_enc));
-        msgs[i].msg_enc_size = 0;
-        print_msg(msgs[i]);
-
-        card_data.nfc_data.status = nfc_encrypt_data(wallet_name,
-                                                     msgs[i].msg_dec,
-                                                     msgs[i].msg_dec_size,
-                                                     msgs[i].msg_enc,
-                                                     &msgs[i].msg_enc_size);
-        print_msg(msgs[i]);
+      for (int i = 0; i < msg_array_size; i++) {
+        // memcpy(msgs[i].plain_data + 1, msgs[i].plain_data,
+        // msgs[i].plain_data_size); msgs[i].plain_data[0] = msgs[i].is_private
+        // ? 1 : 0;
+#if USE_SIMULATOR == 0
+        card_data.nfc_data.status =
+            nfc_encrypt_data(wallet_name,
+                             msgs[i].plain_data,
+                             msgs[i].plain_data_size,
+                             msgs[i].encrypted_data,
+                             &msgs[i].encrypted_data_size);
+#else
+        dummy_nfc_encrypt_data(wallet_name,
+                               msgs[i].plain_data,
+                               msgs[i].plain_data_size,
+                               msgs[i].encrypted_data,
+                               &msgs[i].encrypted_data_size);
+        card_data.nfc_data.status = SW_NO_ERROR;
+        result = CARD_OPERATION_SUCCESS;
+#endif
       }
 
-      if (card_data.nfc_data.status == SW_NO_ERROR ||
-          card_data.nfc_data.status == SW_WARNING_STATE_UNCHANGED) {
-        buzzer_start(BUZZER_DURATION);
+      if (card_data.nfc_data.status == SW_NO_ERROR) {
+        // buzzer_start(BUZZER_DURATION);
         break;
       } else {
         card_handle_errors(&card_data);
@@ -169,36 +174,19 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
     result = card_data.error_type;
     break;
   }
-
+#if USE_SIMULATOR == 0
   nfc_deselect_card();
+#endif
   return result;
 }
 
 // TODO: Remove after testing
-
-void print_msg(SessionMsg msg) {
-  char hex[200];
-  byte_array_to_hex_string(
-      msg.msg_dec, msg.msg_dec_size, hex, msg.msg_dec_size * 2 + 1);
-  printf("MSG Msg_Dec: %s\n", msg.msg_dec);
-  printf("MSG Msg_Dec_Size: %d\n", msg.msg_dec_size);
-  byte_array_to_hex_string(
-      msg.msg_enc, msg.msg_enc_size, hex, msg.msg_enc_size * 2 + 1);
-  printf("MSG Msg_Enc: %s\n", msg.msg_enc);
-  printf("MSG Msg_Enc_Size: %d\n", msg.msg_enc_size);
-  printf("MSG Is_Private: %s\n", msg.is_private ? "true" : "false");
-}
-
-bool debug = true;
-// TODO cleanup: delete after testing
-char *print_arr(char *name, uint8_t *bytearray, size_t size) {
-  char bytearray_hex[size * 2 + 1];
-  if (debug == true) {
-    uint8ToHexString(bytearray, size, bytearray_hex);
-    printf("\n%s[%d bytes]: %s\n",
-           name,
-           (strlen(bytearray_hex) / 2),
-           bytearray_hex);
-  }
-  return bytearray_hex;
+void dummy_nfc_encrypt_data(const uint8_t name[NAME_SIZE],
+                            const uint8_t *plain_data,
+                            const uint16_t plain_data_size,
+                            uint8_t *encrypted_data,
+                            uint16_t *encrypted_data_size) {
+  memcpy(encrypted_data, name, sizeof(name));
+  memcpy(encrypted_data + sizeof(name), plain_data, plain_data_size);
+  *encrypted_data_size = sizeof(name) + plain_data_size;
 }
