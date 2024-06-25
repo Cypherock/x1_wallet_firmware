@@ -391,12 +391,16 @@ static void update_locktime(btc_verify_input_t *verify_input_data,
   }
 }
 
-// TODO: cover uint32_t and uint64_t numbers
+// TODO: Add chunking condition for varint decode
+// refer: https://app.clickup.com/t/9002019994/PRF-7288
 static int64_t varint_decode(const uint8_t *raw_txn_chunk, int32_t *offset) {
   uint8_t first_byte = raw_txn_chunk[*offset];
   if (first_byte < 0xFD) {
     return first_byte;
   } else {
+    // TODO: var-int varies between 1-9 bytes
+    // current implementation supports decoding
+    // upto 3 bytes only
     uint8_t result[2];
     memcpy(result, raw_txn_chunk + *offset + 1, 2);
     *offset += 2;
@@ -427,7 +431,7 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
     // store the number of inputs in the raw_txn
     verify_input_data->count = raw_txn_chunk[offset++];
     // TODO: Improve varint decode.
-    // size of variable containing ip-count/op-count
+    // size of variable containing script size and ip-count/op-count
     // varies (1-9 Bytes) depending on its value.
     // refer:
     // https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
@@ -455,9 +459,6 @@ int btc_verify_input(const uint8_t *raw_txn_chunk,
           }
 
           case SCRIPT_LENGTH_CASE: {
-            // Added partial solution to var-int decode, fixing PRF#7276
-            // https://app.clickup.com/t/9002019994/PRF-7276
-            // refer to:
             int64_t script_length = varint_decode(raw_txn_chunk, &offset);
             if (offset + script_length + 1 + 4 > CHUNK_SIZE) {
               verify_input_data->prev_offset =
