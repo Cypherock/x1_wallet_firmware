@@ -134,6 +134,16 @@ static bool get_pin_input() {
 void delete_wallet_flow(const Flash_Wallet *flash_wallet) {
   ASSERT(NULL != flash_wallet);
 
+  char confimation_display[100];
+  snprintf(confimation_display,
+           sizeof(confimation_display),
+           UI_TEXT_PERMANENTLY_DELETE,
+           flash_wallet->wallet_name);
+
+  if (!core_scroll_page(NULL, confimation_display, NULL)) {
+    return;
+  }
+
   if (!core_scroll_page(
           NULL, ui_text_need_all_x1cards_to_delete_wallet_entirely, NULL)) {
     return;

@@ -479,7 +479,8 @@ const char *ui_text_sync_wallets_next_steps = "Sync each wallet in next steps";
 const char *ui_text_corrupted_card_contact_support =
     "Corrupted card! Contact support";
 const char *ui_text_incompatible_card_version =
-    "Incompatible card version! Contact support";
+    "Incompatible card version! Contact suppsnprintf(msg, sizeof(msg), "
+    "UI_TEXT_SIGN_TXN_PROMPT, TRON_NAME, wallet_name);ort";
 const char *ui_text_card_error_contact_support =
     "Contact support & share the device logs";
 const char *ui_text_device_and_card_not_paired =
