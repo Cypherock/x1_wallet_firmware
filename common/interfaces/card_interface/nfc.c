@@ -580,7 +580,6 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   print_hex_array("encrypted data", encrypted_data, encrypted_data_size);
 
   memzero(recv_apdu, sizeof(send_apdu));
-  nfc_secure_comm = false;
   return status_word;
 }
 

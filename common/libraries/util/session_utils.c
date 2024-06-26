@@ -249,12 +249,13 @@ bool session_receive_server_key(uint8_t *server_message) {
       SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE;
 
   // TODO: uncomment when server test starts
-  // if (!verify_session_signature(server_message,
-  //                               server_message_size,
-  //                               server_message + server_message_size)) {
-  //   printf("\nERROR: Message from server invalid");
-  //   return false;
-  // }
+  /* if (!verify_session_signature(server_message,
+                                 server_message_size,
+                                 server_message + server_message_size)) {
+     printf("\nERROR: Message from server invalid");
+     return false;
+   }
+  */
 
   uint8_t offset = 0;
   memcpy(session.server_random_public,
@@ -341,11 +342,12 @@ bool session_msg_decryption(uint8_t *pass_key,
     printf("ERROR: Card is invalid: %x", status);
     return false;
   }
-  printf("Data reset");
+  printf("plain_data reset");
   for (int i = 0; i < msg_array_size; i++) {
     memzero(msgs[i].plain_data, msgs[i].plain_data_size);
-    print_msg(msgs[i], i);
+    msgs[i].plain_data_size = 0;
   }
+  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
 
   status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
 
@@ -416,8 +418,8 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_ENCRYPT;
       }
-      for (int i = 0; i < query->msg_array_size; i++)
-        print_msg(session.SessionMsgs[i], i);
+      // for (int i = 0; i < query->msg_array_size; i++)
+      //   print_msg(session.SessionMsgs[i], i);
       session_msg_reset();
       break;
 
@@ -432,9 +434,9 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_ENCRYPT;
       }
+      // for (int i = 0; i < query->msg_array_size; i++)
+      //   print_msg(session.SessionMsgs[i], i);
       session_msg_reset();
-      for (int i = 0; i < query->msg_array_size; i++)
-        print_msg(session.SessionMsgs[i], i);
       break;
 
     case SESSION_CLOSE:
@@ -576,19 +578,19 @@ void test_generate_server_data(inheritance_query_t *query) {
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
   int i = 0;
-  memcpy(query->SessionMsgs[i].plain_data, "password", 9);
+  memcpy(query->SessionMsgs[i].plain_data, "password", 8);
   query->SessionMsgs[i].plain_data_size = 9;
   query->SessionMsgs[i].is_private = false;
   print_msg(query->SessionMsgs[i], i);
 
   i += 1;
-  memcpy(query->SessionMsgs[i].plain_data, "location message", 17);
+  memcpy(query->SessionMsgs[i].plain_data, "location message", 16);
   query->SessionMsgs[i].plain_data_size = 17;
   query->SessionMsgs[i].is_private = true;
   print_msg(query->SessionMsgs[i], i);
 
   i += 1;
-  memcpy(query->SessionMsgs[i].plain_data, "public message", 15);
+  memcpy(query->SessionMsgs[i].plain_data, "public message", 14);
   query->SessionMsgs[i].plain_data_size = 15;
   query->SessionMsgs[i].is_private = false;
   print_msg(query->SessionMsgs[i], i);

@@ -105,9 +105,6 @@ card_error_type_e card_fetch_decrypt_data(uint8_t *wallet_id,
                                           size_t msg_array_size) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
-#if USE_SIMULATOR == 0
-  sync_with_cards();
-#endif
 
   const char wallet_name[NAME_SIZE] = "";
   rejection_cb *reject_cb;
@@ -137,6 +134,7 @@ card_error_type_e card_fetch_decrypt_data(uint8_t *wallet_id,
                              msgs[i].encrypted_data,
                              msgs[i].encrypted_data_size);
 #else
+        memcpy(wallet_name, "FIRST", 5);
         dummy_nfc_decrypt_data(wallet_name,
                                msgs[i].plain_data,
                                &msgs[i].plain_data_size,
@@ -185,7 +183,12 @@ void dummy_nfc_decrypt_data(const uint8_t name[NAME_SIZE],
                             uint16_t *plain_data_size,
                             const uint8_t *encrypted_data,
                             const uint16_t encrypted_data_size) {
-  memcpy(plain_data, name, sizeof(name));
-  memcpy(plain_data + sizeof(name), encrypted_data, encrypted_data_size);
-  *plain_data_size = sizeof(name) + encrypted_data_size;
+  ASSERT(name != NULL);
+  ASSERT(plain_data != NULL);
+  ASSERT(encrypted_data != NULL);
+  ASSERT(encrypted_data_size != 0);
+  memcpy(plain_data,
+         encrypted_data + strlen(name),
+         encrypted_data_size - strlen(name));
+  *plain_data_size = encrypted_data_size - strlen(name);
 }
