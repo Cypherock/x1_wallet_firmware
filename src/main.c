@@ -147,6 +147,8 @@ int main(void) {
 #endif
   application_init();
 
+  card_health_check();
+
   for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
        type < NUM_SESSION_MSG_TYPE_E;
        type = (session_msg_type_e)(type + 1)) {

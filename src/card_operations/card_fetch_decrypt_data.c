@@ -100,7 +100,7 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-card_error_type_e card_fetch_decrypt_data(uint8_t *wallet_id,
+card_error_type_e card_fetch_decrypt_data(const char *wallet_name,
                                           SessionMsg *msgs,
                                           size_t msg_array_size) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;

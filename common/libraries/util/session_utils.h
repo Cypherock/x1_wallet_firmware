@@ -77,6 +77,8 @@ typedef struct {
 
   SessionMsg SessionMsgs[SESSION_MSG_MAX];
 
+  const char wallet_name[NAME_SIZE];
+
   session_error_type_e status;
 } Session;
 #pragma pack(pop)
