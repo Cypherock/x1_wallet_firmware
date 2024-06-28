@@ -63,6 +63,8 @@
 #include "btc_txn_helpers.h"
 
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "bignum.h"
 #include "btc_helpers.h"
@@ -144,9 +146,48 @@ STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
                                     uint8_t input_index,
                                     uint8_t *digest);
 
+/**
+ * @brief Calculates digest according to the serialization format defined in
+ * BIP-0143.
+ * https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wpkh
+ *
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ *
+ * @return bool Indicating if the specified input was digested or not
+ * @retval true If the digest was calculated successfully
+ * @retval false If the digest was not calculated due to missing segwit cache
+ */
+bool calculate_p2wpkh_in_p2sh_digest(const btc_txn_context_t *context,
+                                    const uint8_t input_index,
+                                    uint8_t *digest);
+
+/**
+ * @brief Calculates digest according to the serialization format defined in
+ * BIP-0341.
+ *
+ * @param context Reference to the bitcoin transaction context
+ * @param index The index of the input to digest
+ * @param digest Reference to a buffer to hold the calculated digest
+ *
+ * @return bool Indicating if the specified input was digested or not
+ * @retval true If the digest was calculated successfully
+ * @retval false If the digest was not calculated due to missing taproot cache or
+ * and annex was found in the transaction data
+ */
+STATIC bool calculate_p2tr_digest(const btc_txn_context_t *context,
+                                    const uint8_t input_index,
+                                    uint8_t *digest);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+const uint8_t TAP_SIG_HASH[] = {
+    244, 10, 72, 223, 75, 42, 112, 200, 180, 146, 75, 242, 101, 70, 97, 237, 61,
+    149, 253, 102, 163, 19, 235, 135, 35, 117, 151, 198, 40, 228, 160, 49, 244,
+    10, 72, 223, 75, 42, 112, 200, 180, 146, 75, 242, 101, 70, 97, 237, 61, 149,
+    253, 102, 163, 19, 235, 135, 35, 117, 151, 198, 40, 228, 160, 49,
+  };
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -325,6 +366,199 @@ STATIC bool calculate_p2wpkh_digest(const btc_txn_context_t *context,
   sha256_Final(&sha_256_ctx, digest);
   sha256_Raw(digest, 32, digest);
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  return true;
+}
+
+
+bool calculate_p2wpkh_in_p2sh_digest(const btc_txn_context_t *context,
+                                    const uint8_t input_index,
+                                    uint8_t *digest) {
+  if (!context->segwit_cache.filled) {
+    // cache is not filled, no benefit to proceed as we depend on it
+    return false;
+  }
+  uint8_t buffer[206] = {0};
+  uint32_t len = 0;
+  SHA256_CTX sha_256_ctx = {0};
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  sha256_Init(&sha_256_ctx);
+
+  // digest version
+  write_le(buffer, context->metadata.version);
+  len +=4;
+  sha256_Update(&sha_256_ctx, buffer, 4);
+
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_prevouts, 32);
+  len +=32;
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_sequence, 32);
+  len +=32;
+  
+  //outpoint
+  memcpy(buffer, context->inputs[input_index].prev_txn_hash, 32);
+  write_le(buffer+32, context->inputs[input_index].prev_output_index);
+
+  sha256_Update(&sha_256_ctx, buffer, 36);
+  len +=36;
+
+  /* Scriptcode */
+  // Leading size bytes
+  buffer[0] = 0x19;
+  buffer[1] = 0x76;
+  sha256_Update(&sha_256_ctx, buffer, 2);
+  len +=2;
+  sha256_Update(
+    &sha_256_ctx,
+    context->inputs[input_index].script_pub_key.bytes,
+    context->inputs[input_index].script_pub_key.size-1
+    );
+  len +=22;
+  buffer[0] = 0x88;
+  buffer[1] = 0xac;
+  sha256_Update(&sha_256_ctx, buffer, 2);
+  len +=2;
+
+  // digest the 64-bit value (little-endian)
+  sha256_Update(&sha_256_ctx, (uint8_t *)&context->inputs[input_index].value, 8);
+  len +=8;
+
+  // digest sequence
+  write_le(buffer, context->inputs[input_index].sequence);
+  len +=4;
+  sha256_Update(&sha_256_ctx, buffer, 4);
+  sha256_Update(&sha_256_ctx, context->segwit_cache.hash_outputs, 32);
+  len +=32;
+
+  // digest locktime and sighash
+  write_le(buffer, context->metadata.locktime);
+  write_le(buffer + 4, context->metadata.sighash);
+  len +=8;
+  sha256_Update(&sha_256_ctx, buffer, 8);
+
+  // double hash
+  sha256_Final(&sha_256_ctx, digest);
+  sha256_Raw(digest, 32, digest);
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  return true;
+}
+
+
+STATIC bool calculate_p2tr_digest(const btc_txn_context_t *context,
+                                    const uint8_t input_index,
+                                    uint8_t *digest) {
+  if (!context->taproot_cache.filled) {
+    // cache is not filled, no benefit to proceed as we depend on it
+    return false;
+  }
+
+  uint8_t buffer[206] = {0};
+  uint32_t len = 0;
+    
+  bool annex = false;//!(!context->metadata.annex);
+
+  uint8_t output_type = (context->metadata.sighash == SIGHASH_DEFAULT) ? SIGHASH_ALL : context->metadata.sighash & SIGHASH_OUTPUT_MASK;
+  uint8_t input_type = context->metadata.sighash & SIGHASH_INPUT_MASK;
+  bool is_anyone_can_pay = (input_type == SIGHASH_ANYONECANPAY);
+  bool is_none = (output_type == SIGHASH_NONE);
+  bool is_single = (output_type == SIGHASH_SINGLE);
+
+  uint8_t prefix = 0x00;
+  memcpy(buffer, (uint8_t *)&prefix, 1);
+  len += 1;
+
+  memcpy(buffer+len, (uint8_t *)&context->metadata.sighash, 1);
+  len += 1;
+    
+  write_le(buffer+len, context->metadata.version);
+  len += 4;
+
+  write_le(buffer+len, context->metadata.locktime);
+  len += 4;
+
+  if (!is_anyone_can_pay) {
+    memcpy(buffer+len, context->taproot_cache.sha_prevouts, 32);
+    len += 32;
+   
+    memcpy(buffer+len, context->taproot_cache.sha_amounts, 32);
+    len += 32;
+
+    memcpy(buffer+len, context->taproot_cache.sha_scriptpubkeys, 32);
+    len += 32;
+
+    memcpy(buffer+len, context->taproot_cache.sha_sequences, 32);
+    len += 32;
+  }
+
+  if (!(is_none || is_single)) {
+    //sha_outputs
+    memcpy(buffer+len, context->taproot_cache.sha_outputs, 32);
+    len += 32;
+  }
+
+  // spend_flag = (ext_flag*2)+annex_present
+  //ext_flag = 0, should compute annex_present
+  uint8_t spendbit = 0;
+  memcpy(buffer+len, &spendbit,1);
+  len += 1;
+
+  if (is_anyone_can_pay) {
+    memcpy(buffer+len, context->inputs[input_index].prev_txn_hash, 32);
+    len +=32;
+    memcpy(buffer+len, (uint8_t*)&context->inputs[input_index].prev_output_index, 4);
+    len += 4;
+
+    memcpy(buffer+len, context->inputs[input_index].script_pub_key.bytes, context->inputs[input_index].script_pub_key.size);
+    len += 35;
+
+    memcpy(buffer+len, (uint8_t*)&context->inputs[input_index].sequence, 4);
+    len += 4;
+  }
+  else {
+    memcpy(buffer+len, (uint8_t*)&context->inputs[input_index].prev_output_index, 4);
+    len += 4;
+  }
+
+  if (annex) {
+      // todo: implement support for annex
+    return false;
+  }
+
+  if ((context->metadata.sighash & 3) == SIGHASH_SINGLE) {
+    //sha_outputs
+    /**
+    SHA256_CTX sha_256_ctx = {0};
+    memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+
+    sha256_Init(&sha_256_ctx);
+    sha256_Update(&sha_256_ctx, (uint8_t*)&output_data[txindex].value, 8);
+    sha256_Update(&sha_256_ctx,  output_data[txindex].script_pub_key, output_data[txindex].script_pub_key_len);
+    
+    sha256_Final(&sha_256_ctx, sha_single_output);
+      */
+    memcpy(buffer+len, context->taproot_cache.sha_outputs, 32);
+    len += 32;
+  }
+
+    // TODO: BIP342 extension
+    /*
+    Length calculation from:
+    https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#cite_note-14
+    With extension from:
+    https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#signature-validation
+    uint8_t sig_msg_size =
+      174 -
+      (isAnyoneCanPay ? 49 : 0) -
+      (isNone ? 32 : 0) +
+      (annex ? 32 : 0) +
+      (leafHash ? 37 : 0);
+    */
+
+  //compute message hash
+  uint8_t temp_buffer[272] = {0};
+  memcpy(temp_buffer, TAP_SIG_HASH, sizeof(TAP_SIG_HASH)/sizeof(TAP_SIG_HASH[0]));
+  memcpy(temp_buffer+(sizeof(TAP_SIG_HASH)/sizeof(TAP_SIG_HASH[0])), buffer, len);
+
+
+  sha256_Raw(temp_buffer, len+(sizeof(TAP_SIG_HASH)/sizeof(TAP_SIG_HASH[0])), digest);
   return true;
 }
 
@@ -644,6 +878,77 @@ void btc_segwit_init_cache(btc_txn_context_t *context) {
   memzero(&sha_256_ctx, sizeof(sha_256_ctx));
 }
 
+void btc_taproot_init_cache(btc_txn_context_t *context) {
+  btc_taproot_cache_t * taproot_cache = &context->taproot_cache;
+
+  //sha_prevouts
+  uint8_t * prevouts_buf = malloc(36*context->metadata.input_count);
+  memzero(prevouts_buf, 36*context->metadata.input_count);
+
+  for (uint32_t idx = 0, len = 0; idx < context->metadata.input_count; idx++) {
+    memcpy(prevouts_buf+len, context->inputs[idx].prev_txn_hash, 32);
+    len +=32;
+    memcpy(prevouts_buf+len, (uint8_t*)&context->inputs[idx].prev_output_index, 4);
+    len+4;
+  }
+  sha256_Raw(prevouts_buf, 36*context->metadata.input_count, taproot_cache->sha_prevouts);
+  free(prevouts_buf);
+
+  //sha_amounts
+  SHA256_CTX sha_256_ctx = {0};
+  memzero(&sha_256_ctx, sizeof(sha_256_ctx));
+  sha256_Init(&sha_256_ctx);
+
+  for (uint32_t idx = 0; idx < context->metadata.input_count; idx++) {
+    sha256_Update(&sha_256_ctx, (uint8_t*)&context->inputs[idx].value, 8);
+  }
+  sha256_Final(&sha_256_ctx, taproot_cache->sha_amounts);
+
+  //sha_scriptpubkeys
+  uint8_t * script_buf = malloc(35*context->metadata.input_count);
+  memzero(script_buf, 35*context->metadata.input_count);
+
+  for (uint32_t idx = 0, len = 0; idx < context->metadata.input_count; idx++) {
+    memcpy(script_buf + len, context->inputs[idx].script_pub_key.bytes, context->inputs[idx].script_pub_key.size);
+    len += context->inputs[idx].script_pub_key.size;
+  }
+  sha256_Raw(script_buf, 35*context->metadata.input_count, taproot_cache->sha_scriptpubkeys);
+  free(script_buf);
+
+  //sha_sequences
+  sha256_Init(&sha_256_ctx);
+  for (uint32_t idx = 0; idx < context->metadata.input_count; idx++) {
+    sha256_Update(&sha_256_ctx, (uint8_t*)&context->inputs[idx].sequence, 4);
+  }
+
+  sha256_Final(&sha_256_ctx, taproot_cache->sha_sequences);
+
+  //sha_outputs
+  // calculate capacity
+  uint32_t capacity = 0;
+  uint32_t size = 0;
+  while (size < context->metadata.output_count)
+  {
+    capacity +=8;
+    capacity += context->outputs[size].script_pub_key.size;
+    size++;
+  }
+  
+  uint8_t * output_buf = malloc(capacity);
+  memzero(output_buf, capacity);
+
+  for (uint32_t idx = 0, len = 0; idx < context->metadata.output_count; idx++) {
+    memcpy( output_buf+len, (uint8_t*)&context->outputs[idx].value, 8);
+    len += 8;
+    memcpy( output_buf+len, context->outputs[idx].script_pub_key.bytes, context->outputs[idx].script_pub_key.size);
+    len += context->outputs[idx].script_pub_key.size;
+  }
+  sha256_Raw(output_buf, capacity, taproot_cache->sha_outputs);
+  free(output_buf);
+
+  taproot_cache->filled = true;
+}
+
 bool btc_digest_input(const btc_txn_context_t *context,
                       const uint32_t index,
                       uint8_t *digest) {
@@ -659,6 +964,10 @@ bool btc_digest_input(const btc_txn_context_t *context,
   } else if (SCRIPT_TYPE_P2PKH == type) {
     // p2pkh digest calculation; has not failure case
     calculate_p2pkh_digest(context, index, digest);
+  }  else if (SCRIPT_TYPE_P2SH == type) {
+    status = calculate_p2wpkh_in_p2sh_digest(context, index, digest);
+  } else if (SCRIPT_TYPE_P2TR == type) {
+    status = calculate_p2tr_digest(context, index, digest);
   } else {
     status = false;
   }

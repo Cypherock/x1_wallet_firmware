@@ -16,12 +16,14 @@ IF(UNIT_TESTS_SWITCH)
         add_compile_definitions(UNITY_INCLUDE_CONFIG_H)
         add_compile_definitions(UNITY_FIXTURE_NO_EXTRAS)
 ELSE()
-        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*")
+        file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*" )
 ENDIF(UNIT_TESTS_SWITCH)
 
+set(SOURCES ${SOURCES} "${PROJECT_SOURCE_DIR}/vendor/secp256k1/src/secp256k1.c" "${PROJECT_SOURCE_DIR}/vendor/secp256k1/src/precomputed_ecmult.c"  "${PROJECT_SOURCE_DIR}/vendor/secp256k1/src/precomputed_ecmult_gen.c")
+
 add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
-target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
-add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1)
+target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx -DSECP256K1_CONTEXT_SIZE=208)
+add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1 -DECMULT_GEN_PREC_BITS=4 -DECMULT_WINDOW_SIZE=2  -DENABLE_MODULE_SCHNORRSIG -DENABLE_MODULE_EXTRAKEYS)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
@@ -159,6 +161,11 @@ target_include_directories(${EXECUTABLE} PRIVATE
         stm32-hal/libusb/
         stm32-hal/libusb/inc
         stm32-hal/libusb/src
+        
+        # secp256k1
+        vendor/secp256k1
+        vendor/secp256k1/src
+        vendor/secp256k1/include
 
         #unit test framework
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/framework/unity>
@@ -193,9 +200,10 @@ target_compile_options(${EXECUTABLE} PRIVATE
 target_link_options(${EXECUTABLE} PRIVATE
         -T${CMAKE_SOURCE_DIR}/STM32L486RGTX_FLASH.ld
         -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16
-        -mfloat-abi=hard -u _printf_float -lc -lm -lnosys
+        -mfloat-abi=hard -u _printf_float -lc -lm -lnosys 
         -Wl,-Map=${PROJECT_NAME}.map,--cref -Wl,--gc-sections
         )
+
 
 # Used to suppress compile time warnings in libraries
 file(GLOB_RECURSE LIBRARIES_SRC_DIR "common/libraries/atecc/*.c"

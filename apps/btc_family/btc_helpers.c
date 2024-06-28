@@ -64,8 +64,14 @@
 
 #include "btc_priv.h"
 #include "coin_utils.h"
+#include "curves.h"
+#include "ecdsa.h"
 #include "flash_config.h"
 #include "segwit_addr.h"
+#include "zkp_context.h"
+#include "zkp_bip340.h"
+#include "../../../vendor/secp256k1/include/secp256k1.h"
+#include "../../../vendor/secp256k1/include/secp256k1_extrakeys.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -124,6 +130,60 @@ int btc_get_segwit_addr(const uint8_t *public_key,
   return segwit_addr_encode(address, hrp, 0x00, rip, RIPEMD160_DIGEST_LENGTH);
 }
 
+void btc_get_taproot_address(uint8_t * public_key, const char * hrp, char * address_out) {
+  if (!zkp_context_is_initialized()) {
+    // init context
+    zkp_context_init();
+  }
+
+  // acquire writable
+  secp256k1_context * context = zkp_context_acquire_writable();
+  secp256k1_pubkey pubkey = {0};
+
+  int status = secp256k1_ec_pubkey_parse(context, &pubkey, public_key, 33);
+  //assert(status == 1);
+
+
+  // TODO: use "secp256k1_xonly_pubkey_from_pubkey"
+  // Check if y-coordinate is odd
+  if (SECP256K1_TAG_PUBKEY_ODD == public_key[0]) {
+    // negate public key
+    status = secp256k1_ec_pubkey_negate(context, &pubkey);
+    //assert(status == 1);
+    
+  }
+
+  secp256k1_xonly_pubkey xonly_in_pubkey = {0};
+  if (secp256k1_xonly_pubkey_from_pubkey(context,
+                                           &xonly_in_pubkey, NULL,
+                                           &pubkey) != 1) {
+      //assert(1);
+  } 
+
+  uint8_t xonly_in[32] = {0};
+  if (secp256k1_xonly_pubkey_serialize(context, xonly_in,
+                                         &xonly_in_pubkey) != 1) {
+      //assert(1);
+  }
+
+  zkp_context_release_writable();
+
+  //tweak public key
+  uint8_t output_public_key[32] = {0};
+
+  status = zkp_bip340_tweak_public_key(xonly_in, NULL, output_public_key);
+  
+  //assert(status == 0);
+
+  // hash public key
+  uint8_t h[HASHER_DIGEST_LENGTH] = {0};
+
+  char address[76] = {0};
+  segwit_addr_encode(address, hrp, 1, output_public_key, 32);
+
+  strcpy(address_out, address);
+}
+
 bool btc_generate_xpub(const uint32_t *path,
                        const size_t path_length,
                        const char *curve,
@@ -149,6 +209,8 @@ bool btc_generate_xpub(const uint32_t *path,
   memzero(&t_node, sizeof(HDNode));
   return status;
 }
+
+
 
 bool btc_get_version(uint32_t purpose_index, uint32_t *xpub_ver) {
   bool status = true;

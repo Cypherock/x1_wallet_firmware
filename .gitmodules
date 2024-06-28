@@ -7,3 +7,6 @@
 [submodule "nanopb"]
 	path = vendor/nanopb
 	url = ../nanopb
+[submodule "vendor/secp256k1"]
+	path = vendor/secp256k1
+	url = git@github.com:bitcoin-core/secp256k1.git

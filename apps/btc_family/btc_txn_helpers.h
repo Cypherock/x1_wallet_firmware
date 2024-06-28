@@ -23,6 +23,17 @@
 #define EXPECTED_SCRIPT_SIG_SIZE 106
 #define CHUNK_SIZE 2048
 
+#define DEFAULT_SEQUENCE 0xffffffff
+#define SIGHASH_DEFAULT 0x00
+#define SIGHASH_ALL 0x01
+#define SIGHASH_NONE 0x02
+#define SIGHASH_SINGLE 0x03
+#define SIGHASH_ANYONECANPAY 0x80
+#define SIGHASH_OUTPUT_MASK 0x03
+#define SIGHASH_INPUT_MASK 0x80
+#define ADVANCED_TRANSACTION_MARKER 0x00
+#define ADVANCED_TRANSACTION_FLAG 0x01
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -63,7 +74,6 @@ typedef struct btc_verify_input {
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
-
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -140,7 +150,20 @@ bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee);
  * signed
  */
 void btc_segwit_init_cache(btc_txn_context_t *context);
-
+/**
+ * @brief The function populates the cache of hashes for signing taproot
+ * transaction.
+ * @details The function fills the calculated cache. The cache consists of the
+ * common piece of information to be serialized for signing a taproot input.
+ * These are 8 digests calculated over different pieces of information
+ * serialized from an unsigned transaction; namely sha_prevouts, sha_amounts,
+ * sha_scriptpubkeys, sha_sequences, sha_outputs, sha_annex, sha_single_output.
+ * For examples refer: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki
+ *
+ * @param context Reference to the context for the current transaction to be
+ * signed
+ */
+void btc_taproot_init_cache(btc_txn_context_t *context);
 /**
  * @brief Prepares digest for the specified input to be signed.
  * @details The function prepares digest in conformation to the BIP definitions
