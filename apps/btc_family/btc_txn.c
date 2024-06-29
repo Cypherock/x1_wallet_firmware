@@ -74,6 +74,7 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+#include "../zkp_bip340.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -636,8 +637,10 @@ static bool sign_input(scrip_sig_t *signatures) {
 
   // populate hashes cache for segwit transaction types
   btc_segwit_init_cache(btc_txn_context);
+  // populate hashes cache for taproot transaction types
+  btc_taproot_init_cache(btc_txn_context);
   if (!derive_hdnode_from_path(hd_path, 3, SECP256K1_NAME, buffer, &node) ||
-      false == validate_change_address(&node)) {
+      false == validate_change_address(&node)) {   
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     memzero(&node, sizeof(HDNode));
@@ -653,10 +656,16 @@ static bool sign_input(scrip_sig_t *signatures) {
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].change_index);
     hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].address_index);
     hdnode_fill_public_key(&t_node);
-    ecdsa_sign_digest(
+    if (TAPROOT_KEY_PATH == hd_path[0]) {
+      zkp_bip340_sign_digest(t_node.private_key, buffer, signatures[idx].bytes, NULL);
+    }
+    else {
+      ecdsa_sign_digest(
         curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
-    signatures[idx].size = btc_sig_to_script_sig(
-        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+      signatures[idx].size = btc_sig_to_script_sig(
+        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);  
+    }
+
     if (0 == signatures[idx].size || false == status) {
       // early exit as digest could not be calculated
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);

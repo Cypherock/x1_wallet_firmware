@@ -205,6 +205,22 @@ static size_t btc_get_address(const uint8_t *seed,
       hdnode_get_address(&node, g_btc_app->p2pkh_addr_ver, addr, 35);
       break;
     // TODO: add support for taproot and segwit
+    case SEGWIT_P2SH:
+      ecdsa_get_address_segwit_p2sh(
+              node.public_key,
+              g_btc_app->p2sh_addr_ver,
+              node.curve->hasher_pubkey,
+              node.curve->hasher_base58,
+              addr,
+              36
+            );
+      break;
+    case TAPROOT_KEY_PATH:
+      btc_get_taproot_address(
+        node.public_key,
+        g_btc_app->bech32_hrp,
+        addr
+        );
     default:
       break;
   }

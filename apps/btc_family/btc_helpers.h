@@ -62,6 +62,17 @@ int btc_get_segwit_addr(const uint8_t *public_key,
                         char *address);
 
 /**
+ * @brief Returns the taproot key path address string (Bech32M encoding)
+ * @details The functions assumes public key is compressed
+ * 
+ * @param [in] public_key    33 Byte array representation of public key.
+ * @param [in] hrp           HRP value for bech32M encoding "bc" for mainnet and "tb" for testnet.
+ * @param [out] address_out  char array to store segwit address.
+ * 
+*/
+void btc_get_taproot_address(uint8_t * public_key, const char * hrp, char * address_out);
+
+/**
  * @brief Generates xpub for the passed purpose id, coin id and account id.
  * @details The function uses fingerprint of second last node and assumes first
  * two nodes are purpose and coin index.

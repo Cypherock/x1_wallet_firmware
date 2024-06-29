@@ -68,6 +68,12 @@
 /// NON SEGWIT purpose id
 #define NON_SEGWIT 0x8000002C
 
+/// P2WPKH-nested-in-P2SH purpose id
+#define SEGWIT_P2SH 0x80000031
+
+/// P2TR purpose id
+#define TAPROOT_KEY_PATH 0x80000056
+
 typedef enum Coin_Type {
   COIN_TYPE_BITCOIN = 0x01,
   COIN_TYPE_BTC_TEST = 0x02,
