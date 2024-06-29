@@ -17,6 +17,9 @@
 #define UI_TEXT_CARD_TAPPED "Card #%d Tapped"
 #define UI_TEXT_TAP_CARD_TO_TEST                                               \
   "Place any card below the device to test card tapping"
+#define UI_TEXT_PERMANENTLY_DELETE                                             \
+  "This will permanently delete %s wallet\nfrom your device and all cards. "   \
+  "Confirm?"
 #define UI_TEXT_ENTER_WORD "Enter Word # %d"
 #define UI_TEXT_IS_WORD "Is Word #%d\n%s"
 #define UI_TEXT_TAP_CARD "Tap card #%d"

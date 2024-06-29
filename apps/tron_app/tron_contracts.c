@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    tron_contracts.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   TRON whitelisted contracts list
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,30 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "tron_main.h"
+#include <tron_contracts.h>
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -91,30 +69,124 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
+// a9059cbb -> transfer(address,uint256)
+const uint8_t selector[TRC20_FUNCTION_SELECTOR_COUNT][4] = {
+    {0xA9, 0x05, 0x9C, 0xBB}};
+
+const trc20_contracts_t trc20_contracts[TRC20_WHITELISTED_CONTRACTS_COUNT] = {
+    // Tether USD
+    {{0x41, 0xA6, 0x14, 0xF8, 0x03, 0xB6, 0xFD, 0x78, 0x09, 0x86, 0xA4,
+      0x2C, 0x78, 0xEC, 0x9C, 0x7F, 0x77, 0xE6, 0xDE, 0xD1, 0x3C},
+     "USDT",
+     6},
+    // USD Coin
+    {{0x41, 0x34, 0x87, 0xb6, 0x3d, 0x30, 0xb5, 0xb2, 0xc8, 0x7f, 0xb7,
+      0xff, 0xa8, 0xbc, 0xfa, 0xde, 0x38, 0xea, 0xac, 0x1a, 0xbe},
+     "USDC",
+     6},
+    // Decentralized USD
+    {{0x41, 0x94, 0xf2, 0x4e, 0x99, 0x2c, 0xa0, 0x4b, 0x49, 0xc6, 0xf2,
+      0xa2, 0x75, 0x30, 0x76, 0xef, 0x89, 0x38, 0xed, 0x4d, 0xaa},
+     "USDD",
+     18},
+    // BitTorrent
+    {{0x41, 0x03, 0x20, 0x17, 0x41, 0x1f, 0x46, 0x63, 0xb3, 0x17, 0xfe,
+      0x77, 0xc2, 0x57, 0xd2, 0x8d, 0x5c, 0xd1, 0xb2, 0x6e, 0x3d},
+     "BTT",
+     18},
+    // TrueUSD
+    {{0x41, 0xce, 0xbd, 0xe7, 0x10, 0x77, 0xb8, 0x30, 0xb9, 0x58, 0xc8,
+      0xda, 0x17, 0xbc, 0xdd, 0xee, 0xb8, 0x5d, 0x0b, 0xcf, 0x25},
+     "TUSD",
+     18},
+    // APENFT
+    {{0x41, 0x3d, 0xfe, 0x63, 0x7b, 0x2b, 0x9a, 0xe4, 0x19, 0x0a, 0x45,
+      0x8b, 0x5f, 0x3e, 0xfc, 0x19, 0x69, 0xaf, 0xe2, 0x78, 0x19},
+     "NFT",
+     6},
+    // JUST
+    {{0x41, 0x18, 0xfd, 0x06, 0x26, 0xda, 0xf3, 0xaf, 0x02, 0x38, 0x9a,
+      0xef, 0x3e, 0xd8, 0x7d, 0xb9, 0xc3, 0x3f, 0x63, 0x8f, 0xfa},
+     "JST",
+     18},
+    // WINkLink
+    {{0x41, 0x74, 0x47, 0x2E, 0x7D, 0x35, 0x39, 0x5A, 0x6B, 0x5A, 0xDD,
+      0x42, 0x7E, 0xEC, 0xB7, 0xF4, 0xB6, 0x2A, 0xD2, 0xB0, 0x71},
+     "WIN",
+     6},
+    // Wrapped TRX
+    {{0x41, 0x89, 0x1c, 0xdb, 0x91, 0xd1, 0x49, 0xf2, 0x3b, 0x1a, 0x45,
+      0xd9, 0xc5, 0xca, 0x78, 0xa8, 0x8d, 0x0c, 0xb4, 0x4c, 0x18},
+     "WTRX",
+     6},
+    // Staked USDT
+    {{0x41, 0xc2, 0x91, 0xf8, 0x08, 0xee, 0x3b, 0xc3, 0xda, 0xd2, 0xa2,
+      0x8e, 0x9d, 0x4d, 0x3c, 0x84, 0xd9, 0xa7, 0xd7, 0xca, 0xed},
+     "stUSDT",
+     18},
+    // SUNOLD
+    {{0x41, 0x6b, 0x51, 0x51, 0x32, 0x03, 0x59, 0xec, 0x18, 0xb0, 0x86,
+      0x07, 0xc7, 0x0a, 0x3b, 0x74, 0x39, 0xaf, 0x62, 0x6a, 0xa3},
+     "SUNOLD",
+     18},
+    // SUN
+    {{0x41, 0xb4, 0xa4, 0x28, 0xab, 0x70, 0x92, 0xc2, 0xf1, 0x39, 0x5f,
+      0x37, 0x6c, 0xe2, 0x97, 0x03, 0x3b, 0x3b, 0xb4, 0x46, 0xc1},
+     "SUN",
+     18},
+    // JUST Stablecoin
+    {{0x41, 0x83, 0x42, 0x95, 0x92, 0x1a, 0x48, 0x8d, 0x9d, 0x42, 0xb4,
+      0xb3, 0x02, 0x1e, 0xd1, 0xa3, 0xc3, 0x9f, 0xb0, 0xf0, 0x3e},
+     "USDJ",
+     18},
+    // EthereumOLD
+    {{0x41, 0x53, 0x90, 0x83, 0x08, 0xf4, 0xaa, 0x22, 0x0f, 0xb1, 0x0d,
+      0x77, 0x8b, 0x5d, 0x1b, 0x34, 0x48, 0x9c, 0xd6, 0xed, 0xfc},
+     "ETHOLD",
+     18},
+    // Ethereum
+    {{0x41, 0xa7, 0xa5, 0x72, 0xf6, 0xd8, 0xb4, 0xca, 0x29, 0x1b, 0x93,
+      0x53, 0xcf, 0x26, 0x58, 0x0a, 0xbe, 0xd7, 0x4f, 0x3e, 0x31},
+     "ETH",
+     18},
+    // Wrapped BTC
+    {{0x41, 0xef, 0xc2, 0x30, 0xe1, 0x25, 0xc2, 0x4d, 0xe3, 0x5f, 0x62,
+      0x90, 0xaf, 0xca, 0xfa, 0x28, 0xd5, 0x0b, 0x43, 0x65, 0x36},
+     "WBTC",
+     8},
+    // Bitcoin
+    {{0x41, 0x84, 0x71, 0x69, 0x14, 0xc0, 0xfd, 0xf7, 0x11, 0x0a, 0x44,
+      0x03, 0x0d, 0x04, 0xd0, 0xc4, 0x92, 0x35, 0x04, 0xd9, 0xcc},
+     "BTC",
+     8},
+    // Wrapped BTT
+    {{0x41, 0x6a, 0x63, 0x37, 0xae, 0x47, 0xa0, 0x9a, 0xea, 0x0b, 0xbd,
+      0x4f, 0xae, 0xb2, 0x3c, 0xa9, 0x43, 0x49, 0xc7, 0xb7, 0x74},
+     "WBTT",
+     6},
+    // HTX
+    {{0x41, 0xca, 0x03, 0x03, 0xe8, 0xb9, 0xa7, 0x38, 0x12, 0x17, 0x77,
+      0x11, 0x6d, 0xce, 0xa4, 0x19, 0xfe, 0x52, 0x4f, 0x27, 0x1a},
+     "HTX",
+     18},
+};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -123,60 +195,3 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
-  }
-
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
-
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
-
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
-}
-
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-}
