@@ -183,6 +183,7 @@ This card operation pairs X1 Vault with an X1 card. A public-private key pair is
 <br>
 
 <table>
+ <caption id="multi_row">Table 4: Generate Key-Pair Response APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -222,7 +223,7 @@ This card operation retrieves the wallet data from the card, and shares the retr
 
 ### RETRIVE WALLET APDU Command-Response
 <table>
-<caption id="multi_row">Table 4: Retrieve wallet Command APDU</caption>
+<caption id="multi_row">Table 5: Retrieve wallet Command APDU</caption>
 <tr>
 <th>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -303,7 +304,7 @@ This card operation retrieves the wallet data from the card, and shares the retr
 
 
 <table>
-  <caption id="multi_row">Table 5: Retrieve wallet Response APDU</caption>
+  <caption id="multi_row">Table 6: Retrieve wallet Response APDU</caption>
 <tr>
 <th>
 <p><span style="font-weight: 400;">Tag</span></p>
@@ -406,7 +407,7 @@ This card operation retrieves the wallet data from the card, and shares the retr
 <br>
 <br>
 
-<table><caption id="multi_row">Retrieve wallet SW</caption>
+<table><caption id="multi_row">Table 7: Retrieve wallet Status Word</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">SW</span></p>
@@ -468,11 +469,11 @@ This card operation retrieves the wallet data from the card, and shares the retr
 
 ## 5. Write Card Shares
 
-This card operation writes the wallet share to an X1 card. For checking if space is available to store new wallet, if it is available then applet will store information mentioned in the data part of the request apdu. Applet will ensure there is no wallet name conflict.
+This card operation writes the wallet share to an X1 card. Checks if space is available to store new wallet, if it is available then applet will store information mentioned in the data part of the request apdu. Also, ensures there is no wallet name conflict.
 
 ### ADD WALLET APDU Command-Response
 <table>
-<caption id="multi_row">Add wallet</caption>
+<caption id="multi_row">Table 8: Add wallet Command APDU</caption>
 <tr>
 <th>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -673,7 +674,7 @@ This card operation writes the wallet share to an X1 card. For checking if space
 <br>
 
 <table>
-<caption id="multi_row">Table 6: Add Wallet SW</caption>
+<caption id="multi_row">Table 9: Add Wallet Status Word</caption>
 <tr>
 <th>
 <p><span style="font-weight: 400;">SW</span></p>
@@ -738,7 +739,7 @@ This card operation deletes wallet share data from an X1 card and updates wallet
 
 ### DELETE WALLET APDU Command-Response
 <table>
-  <caption id="multi_row">Table 7: Delete wallet Command APDU</caption>
+  <caption id="multi_row">Table 10: Delete wallet Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -819,7 +820,7 @@ This card operation deletes wallet share data from an X1 card and updates wallet
 <br>
 
 <table>
-  <caption id="multi_row">Table 8: Delete wallet SW</caption>
+  <caption id="multi_row">Table 11: Delete wallet Status Word</caption>
 <tr>
 <td>
 <p><strong>SW</strong></p>
@@ -883,12 +884,12 @@ This card operation deletes wallet share data from an X1 card and updates wallet
 
 This card operation extracts the wallet list from an X1 card. To retrieve all wallet names send the below mentioned APDU, the card will send names of wallet stored in that card. No verification by password is required.
 
-### LIST ALL WALLET NAMES APDU Command-Response
+### LIST WALLET NAMES APDU Command-Response
 
 Note : The first byte will return the number of wallets.
 
 <table>
-  <caption id="multi_row">Table 9: List Wallet Name Command APDU</caption>
+  <caption id="multi_row">Table 12: List Wallet Name Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -939,13 +940,87 @@ Note : The first byte will return the number of wallets.
 </tr>
 </table>
 
+<br>
+<br>
+
+<table>
+  <caption id="multi_row">Table 13: List Wallet Name Response APDU</caption>
+<tr>
+<th>
+<p><span style="font-weight: 400;">Tag</span></p>
+</th>
+<th>
+<p><span style="font-weight: 400;">Length</span></p>
+</th>
+<th>
+<p><span style="font-weight: 400;">Value</span></p>
+</th>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">Wallet Info (0xE8)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">Skip</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">To be Added</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">Is Stored Data Arbitary (0xA1)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">Skip</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0x01 if Arbitary Data, Set else 0x00 by Default</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">Is Wallet Locked (0xD4)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">Skip</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0x01 if Wallet Locked else 0x00</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">Wallet Name (0xE0)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">&lsquo;16&rsquo;</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">Name of Wallet</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">Wallet ID (0xEC)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">&lsquo;32&rsquo;</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">Hash of master public key (at m/1000'/0'/3'/1)</span></p>
+</td>
+</tr>
+</table>
+
+
 ## 9. Fetch Challenge
 
 This card operation fetches wallet challenge data from an X1 card. When the card gets locked due to incorrect pin tries, this operation is used to get the challenge which is to be solved and unlock the card. The challenge corresponding to the wallet name provided is returned. Subsequent calls to this APDU will not change the challenge. The challenge changes only if it is solved.
 
 ### GET CHALLENGE APDU Command-Response
 <table>
-  <caption id="multi_row">Command APDU</caption>
+  <caption id="multi_row">Table 14: Get Challenge Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1013,7 +1088,7 @@ This card operation fetches wallet challenge data from an X1 card. When the card
 <br>
 
 <table>
-  <caption id="multi_row">Response APDU</caption>
+  <caption id="multi_row">Table 15: Get Challenge Response APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1059,7 +1134,7 @@ This card operation fetches wallet challenge data from an X1 card. When the card
 <br>
 
 <table>
-  <caption id="multi_row">Status Words</caption>
+  <caption id="multi_row">Table 16: Get Challenge Status Word</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">SW</span></p>
@@ -1110,7 +1185,7 @@ This card operation signs authentication data with the provided configuration. T
 ### SIGN CHALLENGE APDU Command-Response
 
 <table>
- <caption id="multi_row">Command APDU</caption>
+ <caption id="multi_row">Table 17: Sign Challenge Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1172,7 +1247,7 @@ This card operation signs authentication data with the provided configuration. T
 <br>
 
 <table>
-<caption id="multi_row">Response Data</caption>
+<caption id="multi_row">Table 18: Sign Challenge Response APDU</caption>
 
 <tr>
 <td>
@@ -1217,7 +1292,7 @@ If the card is already unlocked then this APDU can also be used to verify PIN.
 ### VERIFY CHALLENGE APDU Command-Response
 
 <table>
-  <caption id="multi_row">Command APDU</caption>
+  <caption id="multi_row">Table 19: Verify Challenge Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1310,7 +1385,7 @@ If the card is already unlocked then this APDU can also be used to verify PIN.
 <br>
 
 <table>
-  <caption id="multi_row">Response APDU</caption>
+  <caption id="multi_row">Table 20: Verify Challenge Response APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1356,7 +1431,7 @@ If the card is already unlocked then this APDU can also be used to verify PIN.
 <br>
 
 <table>
-  <caption id="multi_row">Status Word</caption>
+  <caption id="multi_row">Table 21: Verify Challenge Status Word</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">SW</span></p>
@@ -1423,7 +1498,7 @@ This card operation will encrypt data using the AES key and IV which was stored 
 ### ENCRYPT DATA APDU Command-Response
 
 <table>
-  <caption id="multi_row">Command APDU</caption>
+  <caption id="multi_row">Table 22: Encrypt Data Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1503,7 +1578,7 @@ This card operation will encrypt data using the AES key and IV which was stored 
 <br>
 
 <table>
-  <caption id="multi_row">Response APDU</caption>
+  <caption id="multi_row">Table 23: Encrypt Data Response APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1532,7 +1607,7 @@ This card operation will encrypt data using the AES key and IV which was stored 
 <br>
 
 <table>
-  <caption id="multi_row">Status Words</caption>
+  <caption id="multi_row">Table 24: Encrypt Data Status Words</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">SW</span></p>
@@ -1582,7 +1657,7 @@ This card operation will decrypt data using the AES key and IV which was stored 
 ### DECRYPT DATA APDU Command-Response
 
 <table>
-<caption id="multi_row">Command APDU</caption>
+<caption id="multi_row">Table 25: Decrypt Data Command APDU</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">TAG</span></p>
@@ -1661,7 +1736,7 @@ This card operation will decrypt data using the AES key and IV which was stored 
 <br>
 <br>
 <table>
-  <caption id="multi_row">Response APDU</caption>
+  <caption id="multi_row">Table 26: Decrypt Data Response APDU</caption>
 
 <tr>
 <td>
@@ -1691,8 +1766,7 @@ This card operation will decrypt data using the AES key and IV which was stored 
 <br>
 
 <table>
- <caption id="multi_row">Status Word</caption>
-
+ <caption id="multi_row">Table 27: Decrypt Data Status Word</caption>
 <tr>
 <td>
 <p><span style="font-weight: 400;">SW</span></p>
