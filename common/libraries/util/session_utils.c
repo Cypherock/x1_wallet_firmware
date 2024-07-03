@@ -335,21 +335,7 @@ bool session_msg_decryption(uint8_t *pass_key,
     return false;
   }
 
-  // TODO: remove after testing
-  card_error_type_e status;
-  // status = card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
-  // if (status != CARD_OPERATION_SUCCESS) {
-  //   printf("ERROR: Card is invalid: %x", status);
-  //   return false;
-  // }
-  // printf("plain_data reset");
-  // for (int i = 0; i < msg_array_size; i++) {
-  //   memzero(msgs[i].plain_data, msgs[i].plain_data_size);
-  //   msgs[i].plain_data_size = 0;
-  // }
-  // memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
-
-  status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
+  card_error_type_e status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
@@ -418,8 +404,10 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_ENCRYPT;
       }
-      // for (int i = 0; i < query->msg_array_size; i++)
-      //   print_msg(session.SessionMsgs[i], i);
+#if USE_SIMULATOR == 1
+      for (int i = 0; i < query->msg_array_size; i++)
+        print_msg(session.SessionMsgs[i], i);
+#endif
       session_msg_reset();
       break;
 
@@ -434,8 +422,10 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_ENCRYPT;
       }
-      // for (int i = 0; i < query->msg_array_size; i++)
-      //   print_msg(session.SessionMsgs[i], i);
+#if USE_SIMULATOR == 1
+      for (int i = 0; i < query->msg_array_size; i++)
+        print_msg(session.SessionMsgs[i], i);
+#endif
       session_msg_reset();
       break;
 
@@ -472,7 +462,6 @@ void test_session_main(session_msg_type_e type) {
       break;
     case SESSION_MSG_DECRYPT:
       break;
-      // extern const ecdsa_curve *curve;
   }
 
   session_main(query);
@@ -577,25 +566,17 @@ void test_generate_server_data(inheritance_query_t *query) {
 }
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
-  int i = 0;
-  memcpy(query->SessionMsgs[i].plain_data, "password", 8);
-  query->SessionMsgs[i].plain_data_size = 9;
-  query->SessionMsgs[i].is_private = false;
-  print_msg(query->SessionMsgs[i], i);
+  static const char *messages[] = {
+      "small small small small small small small small small small small small small small small small 100", "very big very big", "larger message larger message"};
+  int i=0;
+  for (; i<3; i++){
+    memcpy(query->SessionMsgs[i].plain_data, messages[i], strlen(messages[i]));
+    query->SessionMsgs[i].plain_data_size = strlen(messages[i]);
+    query->SessionMsgs[i].is_private = false;
+    print_msg(query->SessionMsgs[i], i);
+  }
+  query->msg_array_size = i;
 
-  i += 1;
-  memcpy(query->SessionMsgs[i].plain_data, "location message", 16);
-  query->SessionMsgs[i].plain_data_size = 17;
-  query->SessionMsgs[i].is_private = true;
-  print_msg(query->SessionMsgs[i], i);
-
-  i += 1;
-  memcpy(query->SessionMsgs[i].plain_data, "public message", 14);
-  query->SessionMsgs[i].plain_data_size = 15;
-  query->SessionMsgs[i].is_private = false;
-  print_msg(query->SessionMsgs[i], i);
-
-  query->msg_array_size = i + 1;
 #if USE_SIMULATOR == 0
   memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
 #else

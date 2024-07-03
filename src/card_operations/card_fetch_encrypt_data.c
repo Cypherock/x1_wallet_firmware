@@ -142,16 +142,16 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                              msgs[i].encrypted_data,
                              &msgs[i].encrypted_data_size);
         memcpy(&sessionMsgs[i], &msgs[i], sizeof(SessionMsg));     
-        memzero(msgs[i].plain_data, msgs[i].plain_data_size);
-        msgs[i].plain_data_size = 0;
+        // memzero(msgs[i].plain_data, msgs[i].plain_data_size);
+        // msgs[i].plain_data_size = 0;
 
-        card_data.nfc_data.status =
-            nfc_decrypt_data(wallet_name,
-                             msgs[i].plain_data,
-                             &msgs[i].plain_data_size,
-                             msgs[i].encrypted_data,
-                             msgs[i].encrypted_data_size);
-        memcpy(&sessionMsgs[i], &msgs[i], sizeof(SessionMsg));  
+        // card_data.nfc_data.status =
+        //     nfc_decrypt_data(wallet_name,
+        //                      msgs[i].plain_data,
+        //                      &msgs[i].plain_data_size,
+        //                      msgs[i].encrypted_data,
+        //                      msgs[i].encrypted_data_size);
+        // memcpy(&sessionMsgs[i], &msgs[i], sizeof(SessionMsg));  
 #else
 
         memcpy(wallet_name, "FIRST", 5);
