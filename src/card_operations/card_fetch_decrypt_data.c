@@ -67,6 +67,7 @@
 #include "nfc.h"
 #include "pow_utilities.h"
 #include "ui_instruction.h"
+#include "card_fetch_wallet_name.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -100,7 +101,7 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-card_error_type_e card_fetch_decrypt_data(uint8_t *wallet_id,
+card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
                                           SessionMsg *msgs,
                                           size_t msg_array_size) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
@@ -111,6 +112,8 @@ card_error_type_e card_fetch_decrypt_data(uint8_t *wallet_id,
 #if USE_SIMULATOR == 0
   ASSERT(get_wallet_data_by_id(
       wallet_id, (const uint8_t *)wallet_name, reject_cb));
+
+  // card_get_wallet_name(wallet_id, wallet_name);
 #endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);

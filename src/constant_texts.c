@@ -172,6 +172,9 @@ const char
         "Press the center button to proceed",
 };
 
+// card derive wallet name
+const char* ui_text_card_get_wallet_info = "Tap a card to check get wallet info from card";
+
 // Manager app text
 // Device authentication text
 const char *ui_text_message_device_authenticating = "Device\nauthenticating...";

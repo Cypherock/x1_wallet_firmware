@@ -337,17 +337,17 @@ bool session_msg_decryption(uint8_t *pass_key,
 
   // TODO: remove after testing
   card_error_type_e status;
-  status = card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
-  if (status != CARD_OPERATION_SUCCESS) {
-    printf("ERROR: Card is invalid: %x", status);
-    return false;
-  }
-  printf("plain_data reset");
-  for (int i = 0; i < msg_array_size; i++) {
-    memzero(msgs[i].plain_data, msgs[i].plain_data_size);
-    msgs[i].plain_data_size = 0;
-  }
-  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
+  // status = card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
+  // if (status != CARD_OPERATION_SUCCESS) {
+  //   printf("ERROR: Card is invalid: %x", status);
+  //   return false;
+  // }
+  // printf("plain_data reset");
+  // for (int i = 0; i < msg_array_size; i++) {
+  //   memzero(msgs[i].plain_data, msgs[i].plain_data_size);
+  //   msgs[i].plain_data_size = 0;
+  // }
+  // memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
 
   status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
 

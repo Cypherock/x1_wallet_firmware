@@ -562,6 +562,9 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   uint32_t system_clock = uwTick;
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+
+  uint8_t tmp[236];
+  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Encrypt data in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
@@ -572,12 +575,10 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
 
     if (status_word == SW_NO_ERROR) {
       // Extracting Data from APDU
-      *encrypted_data_size = recv_apdu[1];
-      memcpy(encrypted_data, recv_apdu + 2, recv_apdu[1]);
+      *encrypted_data_size = 236-32;
+      memcpy(encrypted_data, recv_apdu + 32, 236-32);
     }
   }
-
-  print_hex_array("encrypted data", encrypted_data, encrypted_data_size);
 
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;
@@ -607,6 +608,9 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
   uint32_t system_clock = uwTick;
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+
+  uint8_t tmp[236];
+  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Decrypt data in %lums\n", uwTick - system_clock);
   if (err_code != STM_SUCCESS) {
     return err_code;
@@ -616,12 +620,10 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
 
     if (status_word == SW_NO_ERROR) {
       // Extracting Data from APDU
-      *plain_data_size = recv_apdu[1];
-      memcpy(plain_data, recv_apdu + 2, recv_apdu[1]);
+      *plain_data_size = recv_apdu;
+      memcpy(plain_data, recv_apdu + 2, recv_len-4);
     }
   }
-
-  print_hex_array("plain data", plain_data, plain_data_size);
 
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;

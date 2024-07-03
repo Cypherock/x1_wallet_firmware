@@ -109,7 +109,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   const char wallet_name[NAME_SIZE] = "";
   rejection_cb *reject_cb;
 #if USE_SIMULATOR == 0
-  ASSERT(get_wallet_data_by_id(
+  ASSERT(get_wallet_name_by_id(
       wallet_id, (const uint8_t *)wallet_name, reject_cb));
 #endif
 
@@ -118,6 +118,8 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
   uint8_t temp[PLAIN_DATA_SIZE];
+  memzero(temp, PLAIN_DATA_SIZE);
+  SessionMsg sessionMsgs[3];
   while (1) {
     card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 #if USE_SIMULATOR == 0
@@ -127,11 +129,11 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_array_size; i++) {
-        memcpy(temp, msgs[i].plain_data, msgs[i].plain_data_size);
-        memzero(msgs[i].plain_data, msgs[i].plain_data, PLAIN_DATA_SIZE);
+        // memcpy(temp, msgs[i].plain_data, msgs[i].plain_data_size);
+        // memzero(msgs[i].plain_data, PLAIN_DATA_SIZE);
 
-        msgs[i].plain_data[0] = msgs[i].is_private ? 0x01 : 0x00;
-        memcpy(msgs[i].plain_data + 1, temp, msgs[i].plain_data_size);
+        // msgs[i].plain_data[0] = msgs[i].is_private ? 0x01 : 0x00;
+        // memcpy(msgs[i].plain_data + 1, temp, msgs[i].plain_data_size);
 #if USE_SIMULATOR == 0
         card_data.nfc_data.status =
             nfc_encrypt_data(wallet_name,
@@ -139,7 +141,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                              msgs[i].plain_data_size,
                              msgs[i].encrypted_data,
                              &msgs[i].encrypted_data_size);
-
+        memcpy(&sessionMsgs[i], &msgs[i], sizeof(SessionMsg));     
         memzero(msgs[i].plain_data, msgs[i].plain_data_size);
         msgs[i].plain_data_size = 0;
 
@@ -149,6 +151,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                              &msgs[i].plain_data_size,
                              msgs[i].encrypted_data,
                              msgs[i].encrypted_data_size);
+        memcpy(&sessionMsgs[i], &msgs[i], sizeof(SessionMsg));  
 #else
 
         memcpy(wallet_name, "FIRST", 5);

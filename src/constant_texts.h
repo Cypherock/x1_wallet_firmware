@@ -124,6 +124,9 @@ extern const char *ui_text_card_health_check_start;
 extern const char *ui_text_card_health_check_error[];
 #define UI_TEXT_CARD_HEALTH_CHECK_ERROR "Wallets in Card #%d"
 
+// Card get wallet info
+extern const char *ui_text_card_get_wallet_info;
+
 // Sync wallets with cards text
 #define UI_TEXT_SYNC_WALLET_PROMPT "Do you want to sync wallet %s?"
 #define UI_TEXT_SYNC_WALLET_LOCKED "Wallet %s is locked"
@@ -366,6 +369,9 @@ extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
+
+// session
+#define UI_TEXT_CARD_FETCH_WALLET "Found `%d` wallet in your Card!"
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
