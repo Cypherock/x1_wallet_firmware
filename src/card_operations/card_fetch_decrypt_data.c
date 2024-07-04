@@ -120,6 +120,13 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
 
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
+
+  uint8_t *plain_data_buffer;
+  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_SIZE];
+  size_t plain_data_buffer_size;
+  size_t encrypted_data_buffer_size;
+  uint8_t index;
+
   while (1) {
     card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 #if USE_SIMULATOR == 0
@@ -128,14 +135,23 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
 #endif
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      for (int i = 0; i < msg_array_size; i++) {
+      for (int i = 0; i < msg_array_size; i++) {  
+        memzero(plain_data_buffer, PLAIN_DATA_SIZE);
+        memzero(encrypted_data_buffer, ENCRYPTED_DATA_SIZE);
+
+        index = 0;
+        while (index>=msgs[i].plain_data_size) {
+        encrypted_data_buffer_size = (msgs[i].encrypted_data_size - index) <= ENCRYPTED_DATA_SIZE ? 
+                                     (msgs[i].encrypted_data_size - index) : 
+                                     ENCRYPTED_DATA_SIZE;
+        memcpy(encrypted_data_buffer, msgs[i].encrypted_data_size + index, encrypted_data_buffer_size);
 #if USE_SIMULATOR == 0
-        card_data.nfc_data.status =
-            nfc_decrypt_data(wallet_name,
-                             msgs[i].plain_data,
-                             &msgs[i].plain_data_size,
-                             msgs[i].encrypted_data,
-                             msgs[i].encrypted_data_size);
+          card_data.nfc_data.status =
+              nfc_decrypt_data(wallet_name,
+                              plain_data_buffer,
+                              &plain_data_buffer_size,
+                              encrypted_data_buffer,
+                              encrypted_data_buffer_size);
 #else
         memcpy(wallet_name, "FIRST", 5);
         dummy_nfc_decrypt_data(wallet_name,
@@ -146,13 +162,16 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
         card_data.nfc_data.status = SW_NO_ERROR;
         result = CARD_OPERATION_SUCCESS;
 #endif
-      }
-
-      if (card_data.nfc_data.status == SW_NO_ERROR) {
-        // buzzer_start(BUZZER_DURATION);
-        break;
-      } else {
-        card_handle_errors(&card_data);
+          if (card_data.nfc_data.status == SW_NO_ERROR) {
+            // buzzer_start(BUZZER_DURATION);
+            memcpy(msgs[i].plain_data+index, plain_data_buffer, plain_data_buffer_size);
+            msgs[i].plain_data_size += plain_data_buffer_size; 
+            break;
+          } else {
+            card_handle_errors(&card_data);
+          }
+          index +=encrypted_data_buffer_size;
+        }
       }
     }
 
@@ -175,6 +194,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
     result = card_data.error_type;
     break;
   }
+
 #if USE_SIMULATOR == 0
   nfc_deselect_card();
 #endif

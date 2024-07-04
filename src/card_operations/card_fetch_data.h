@@ -17,8 +17,10 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define PLAIN_DATA_SIZE 200
-#define ENCRYPTED_DATA_SIZE (PLAIN_DATA_SIZE * 2)
+#define PLAIN_DATA_SIZE 100 // Card data encryption limit <100 chars>
+#define ENCRYPTED_DATA_SIZE 112
+
+#define MSG_SIZE 1024
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -29,10 +31,9 @@
  *****************************************************************************/
 #pragma pack(push, 1)
 typedef struct {
-  uint8_t plain_data[PLAIN_DATA_SIZE];
+  uint8_t plain_data[MSG_SIZE];
   uint16_t plain_data_size;
-  bool is_private;
-  uint8_t encrypted_data[ENCRYPTED_DATA_SIZE];
+  uint8_t encrypted_data[MSG_SIZE];
   uint16_t encrypted_data_size;
 } SessionMsg;
 #pragma pack(pop)

@@ -420,7 +420,7 @@ session_error_type_e session_main(inheritance_query_t *query) {
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
-        return SESSION_ERR_ENCRYPT;
+        return SESSION_ERR_DECRYPT;
       }
 #if USE_SIMULATOR == 1
       for (int i = 0; i < query->msg_array_size; i++)
@@ -500,9 +500,6 @@ void print_msg(SessionMsg msg, uint8_t index) {
   printf(
       "Data [%d] encrypted_data: %s\n", index + 1, (char *)msg.encrypted_data);
   printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
-  printf("Data [%d] is_private: %s\n",
-         index + 1,
-         msg.is_private ? "true" : "false");
 }
 
 bool debug = true;
@@ -566,17 +563,25 @@ void test_generate_server_data(inheritance_query_t *query) {
 }
 
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
+  const uint8_t msg_count = 5;
   static const char *messages[] = {
-      "small small small small small small small small small small small small small small small small 100", "very big very big", "larger message larger message"};
-  int i=0;
-  for (; i<3; i++){
+      "0small small small small small small small small small small small small small small small small"\ 
+      "two two two two two two two two two two two two two two two two two two two two two two two two"\ 
+      "three three three three three three three three three three three three three three three three",
+      "1four four four four four four four four four four four four four four four four four four four",
+      "0five five five five five five five five five five five five five five five five five five five",
+      "1six six six six six six six six six six six six six six six six six six six six six six six six si",
+      "0seven seven seven seven seven seven seven seven seven seven seven seven seven seven seven seven se",
+      // "eight eight eight eight eight eight eight eight eight eight eight eight eight eight eight eight ei"
+      };
+
+  query->msg_array_size = msg_count;
+  for (int i=0; i<msg_count; i++){
     memcpy(query->SessionMsgs[i].plain_data, messages[i], strlen(messages[i]));
     query->SessionMsgs[i].plain_data_size = strlen(messages[i]);
-    query->SessionMsgs[i].is_private = false;
-    print_msg(query->SessionMsgs[i], i);
+    // print_msg(query->SessionMsgs[i], i);
   }
-  query->msg_array_size = i;
-
+  
 #if USE_SIMULATOR == 0
   memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
 #else

@@ -37,6 +37,8 @@
 #define SESSION_MSG_SIZE ((MSG_PRIVATE_SIZE + MSG_PUBLIC_SIZE) * 2)
 #define SESSION_MSG_MAX 5
 
+#define SESSION_MSG_IS_PRIVATE  0x01
+
 extern const uint32_t session_key_rotation[2];
 
 typedef enum {
