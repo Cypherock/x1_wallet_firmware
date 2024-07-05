@@ -58,6 +58,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/near_app
         apps/solana_app
         apps/tron_app
+        apps/inheritance_app
         
         src/
         src/menu
