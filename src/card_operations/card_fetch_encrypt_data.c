@@ -120,8 +120,8 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
   uint8_t plain_data_buffer[PLAIN_DATA_SIZE];
   uint8_t encrypted_data_buffer[ENCRYPTED_DATA_SIZE];
-  uint8_t encrypted_data_buffer_size;
-  uint8_t plain_data_buffer_size;
+  uint16_t encrypted_data_buffer_size;
+  uint16_t plain_data_buffer_size;
   size_t index;
 
   while (1) {
@@ -151,7 +151,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                               plain_data_buffer_size,
                               encrypted_data_buffer,
                               &encrypted_data_buffer_size);
-  #else
+#else
           memcpy(wallet_name, "FIRST", 5);
           dummy_nfc_encrypt_data(wallet_name,
                               plain_data_buffer,
@@ -162,35 +162,44 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
           result = CARD_OPERATION_SUCCESS;
 #endif
           if (card_data.nfc_data.status == SW_NO_ERROR) {
-            // buzzer_start(BUZZER_DURATION);
-            memcpy(msgs[i].encrypted_data+index, encrypted_data_buffer, encrypted_data_buffer_size);
-            msgs[i].encrypted_data_size += encrypted_data_buffer_size; 
+            msgs[i].encrypted_data[msgs[i].encrypted_data_size] = encrypted_data_buffer_size;
+            msgs[i].encrypted_data_size += 1;
+
+            memcpy(msgs[i].encrypted_data + msgs[i].encrypted_data_size, encrypted_data_buffer, encrypted_data_buffer_size);
+            msgs[i].encrypted_data_size += encrypted_data_buffer_size;
           } else {
             card_handle_errors(&card_data);
           }
           index += plain_data_buffer_size;
         }
       }
+    }
 
-      if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
-          CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
-        const char *error_msg = card_data.error_message;
-        if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
-          // Re-render the instruction screen
-          instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
-          continue;
-        }
+    if (card_data.nfc_data.status == SW_NO_ERROR) {
+      // buzzer_start(BUZZER_DURATION);
+      break;
+    } else {
+      card_handle_errors(&card_data);
+    }
+    
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
+        continue;
       }
+    }
 
-      result = handle_wallet_errors(&card_data, &wallet);
-      if (CARD_OPERATION_SUCCESS != result) {
-        break;
-      }
-
-      // If control reached here, it is an unrecoverable error, so break
-      result = card_data.error_type;
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
       break;
     }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
   }
 #if USE_SIMULATOR == 0
   nfc_deselect_card();
@@ -204,7 +213,7 @@ void dummy_nfc_encrypt_data(const uint8_t name[NAME_SIZE],
                             const uint16_t plain_data_size,
                             uint8_t *encrypted_data,
                             uint16_t *encrypted_data_size) {
-  memcpy(encrypted_data, name, strlen(name));
-  memcpy(encrypted_data + strlen(name), plain_data, plain_data_size);
-  *encrypted_data_size = strlen(name) + plain_data_size;
+  memcpy(encrypted_data, name, 1);
+  memcpy(encrypted_data + 1, plain_data, plain_data_size);
+  *encrypted_data_size = 1 + plain_data_size;
 }

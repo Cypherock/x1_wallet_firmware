@@ -30,7 +30,8 @@
         "ostream": "c",
         "system_error": "c",
         "chrono": "c",
-        "condition_variable": "c"
+        "condition_variable": "c",
+        "functional": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "cortex-debug.variableUseNaturalFormat": true

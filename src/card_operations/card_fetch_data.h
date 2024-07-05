@@ -17,8 +17,8 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define PLAIN_DATA_SIZE 100 // Card data encryption limit <100 chars>
-#define ENCRYPTED_DATA_SIZE 112
+#define PLAIN_DATA_SIZE 5 // Card data encryption limit <100 chars>
+#define ENCRYPTED_DATA_SIZE 150
 
 #define MSG_SIZE 1024
 

@@ -394,6 +394,10 @@ session_error_type_e session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
+      for (int i = 0; i < query->msg_array_size; i++){
+        memzero(query->SessionMsgs[i].encrypted_data, MSG_SIZE);
+        query->SessionMsgs[i].encrypted_data_size = 0; 
+      }
       if (!session_msg_encryption(query->pass_key,
                                   query->wallet_id,
                                   query->SessionMsgs,
@@ -404,14 +408,14 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_ENCRYPT;
       }
-#if USE_SIMULATOR == 1
-      for (int i = 0; i < query->msg_array_size; i++)
-        print_msg(session.SessionMsgs[i], i);
-#endif
       session_msg_reset();
       break;
 
     case SESSION_MSG_DECRYPT:
+      for (int i = 0; i < query->msg_array_size; i++){
+        memzero(query->SessionMsgs[i].plain_data, MSG_SIZE);
+        query->SessionMsgs[i].plain_data_size = 0; 
+      }
       if (!session_msg_decryption(query->pass_key,
                                   query->wallet_id,
                                   query->SessionMsgs,
@@ -422,10 +426,6 @@ session_error_type_e session_main(inheritance_query_t *query) {
 
         return SESSION_ERR_DECRYPT;
       }
-#if USE_SIMULATOR == 1
-      for (int i = 0; i < query->msg_array_size; i++)
-        print_msg(session.SessionMsgs[i], i);
-#endif
       session_msg_reset();
       break;
 
@@ -491,14 +491,14 @@ void print_msg(SessionMsg msg, uint8_t index) {
   char hex[200];
   byte_array_to_hex_string(
       msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);
-  printf("\nData [%d] plain_data: %s\n", index + 1, (char *)msg.plain_data);
+  printf("\nData [%d] plain_data: %s\n", index + 1, msg.plain_data);
   printf("Data [%d] plain_size: %d\n", index + 1, msg.plain_data_size);
   byte_array_to_hex_string(msg.encrypted_data,
                            msg.encrypted_data_size,
                            hex,
                            msg.encrypted_data_size * 2 + 1);
   printf(
-      "Data [%d] encrypted_data: %s\n", index + 1, (char *)msg.encrypted_data);
+      "Data [%d] encrypted_data: %s\n", index + 1, msg.encrypted_data);
   printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
 }
 
@@ -565,14 +565,14 @@ void test_generate_server_data(inheritance_query_t *query) {
 void test_generate_server_encrypt_data(inheritance_query_t *query) {
   const uint8_t msg_count = 5;
   static const char *messages[] = {
-      "0small small small small small small small small small small small small small small small small"\ 
-      "two two two two two two two two two two two two two two two two two two two two two two two two"\ 
-      "three three three three three three three three three three three three three three three three",
-      "1four four four four four four four four four four four four four four four four four four four",
-      "0five five five five five five five five five five five five five five five five five five five",
-      "1six six six six six six six six six six six six six six six six six six six six six six six six si",
-      "0seven seven seven seven seven seven seven seven seven seven seven seven seven seven seven seven se",
-      // "eight eight eight eight eight eight eight eight eight eight eight eight eight eight eight eight ei"
+      // "0small small small small small small small small small small small small small small small small"\ 
+      // "two two two two two two two two two two two two two two two two two two two two two two two two"\ 
+      // "three three three three three three three three three three three three three three three three",
+      "1!@#$%^&*()ASDFGHJKLQWERTYUIOPZXCVBNM",
+      "0ASDFGHJQWERTYUIOPZXCVBNM@#$%^&*()",
+      "1zxcvbnmasdfghjklqwertyuiop",
+      "0qwertyuiopasdfghjkl",
+      "1abcdefghij"
       };
 
   query->msg_array_size = msg_count;
