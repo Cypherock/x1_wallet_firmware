@@ -35,7 +35,7 @@ typedef struct {
   uint16_t plain_data_size;
   uint8_t encrypted_data[MSG_SIZE];
   uint16_t encrypted_data_size;
-} SessionMsg;
+} SecureMsg;
 #pragma pack(pop)
 
 /*****************************************************************************
@@ -62,6 +62,6 @@ typedef struct {
  * @return A card_error_type_e value representing the result of the operation.
  */
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SessionMsg *msgs,
+                                          SecureMsg *msgs,
                                           size_t msg_array_size);
 #endif

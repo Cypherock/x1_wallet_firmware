@@ -74,12 +74,11 @@ typedef struct {
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
 
+  SecureMsg SessionMsgs[SESSION_MSG_MAX];
+  const char wallet_name[NAME_SIZE];
+
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
-
-  SessionMsg SessionMsgs[SESSION_MSG_MAX];
-
-  const char wallet_name[NAME_SIZE];
 
   session_error_type_e status;
 } Session;
@@ -94,7 +93,7 @@ typedef struct {
 
   // session_enc
   uint8_t msg_array_size;
-  SessionMsg SessionMsgs[SESSION_MSG_MAX];
+  SecureMsg SessionMsgs[SESSION_MSG_MAX];
   uint8_t pass_key[SESSION_ID_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
 
@@ -158,7 +157,7 @@ bool session_send_device_key(uint8_t *payload);
 bool session_receive_server_key(uint8_t *server_message);
 
 // TODO: Remove after testing
-void print_msg(SessionMsg msg, uint8_t index);
+void print_msg(SecureMsg msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
 

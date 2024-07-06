@@ -1,5 +1,3 @@
-RUN_TEST_CASE(inheritance_session_test, session_initiate_action);
-
 /**
  * @file    session_tests.c
  * @author  Cypherock X1 Team

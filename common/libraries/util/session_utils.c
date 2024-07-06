@@ -296,7 +296,7 @@ bool session_receive_server_key(uint8_t *server_message) {
 
 bool session_msg_encryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
-                            SessionMsg *msgs,
+                            SecureMsg *msgs,
                             size_t msg_array_size) {
   ASSERT(pass_key != NULL);
   ASSERT(wallet_id != NULL);
@@ -316,14 +316,14 @@ bool session_msg_encryption(uint8_t *pass_key,
     return false;
   }
 
-  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
+  memcpy(session.SessionMsgs, msgs, sizeof(SecureMsg) * msg_array_size);
 
   return true;
 }
 
 bool session_msg_decryption(uint8_t *pass_key,
                             uint8_t *wallet_id,
-                            SessionMsg *msgs,
+                            SecureMsg *msgs,
                             size_t msg_array_size) {
   ASSERT(pass_key != NULL);
   ASSERT(wallet_id != NULL);
@@ -342,7 +342,7 @@ bool session_msg_decryption(uint8_t *pass_key,
     return false;
   }
 
-  memcpy(session.SessionMsgs, msgs, sizeof(SessionMsg) * msg_array_size);
+  memcpy(session.SessionMsgs, msgs, sizeof(SecureMsg) * msg_array_size);
 
   return true;
 }
@@ -352,11 +352,11 @@ void session_reset() {
 }
 
 void session_msg_reset() {
-  memset(&session.SessionMsgs, 0, sizeof(SessionMsg) * SESSION_MSG_MAX);
+  memset(&session.SessionMsgs, 0, sizeof(SecureMsg) * SESSION_MSG_MAX);
 }
 
 void session_send_error() {
-  printf("\nERROR: Invalid session query");
+  LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
 }
 
 session_error_type_e session_main(inheritance_query_t *query) {
@@ -487,7 +487,7 @@ void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
   hexstring[size * 2] = '\0';    // Null-terminate the string
 }
 
-void print_msg(SessionMsg msg, uint8_t index) {
+void print_msg(SecureMsg msg, uint8_t index) {
   char hex[200];
   byte_array_to_hex_string(
       msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);

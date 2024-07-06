@@ -101,7 +101,7 @@
  *****************************************************************************/
 
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SessionMsg *msgs,
+                                          SecureMsg *msgs,
                                           size_t msg_array_size) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
