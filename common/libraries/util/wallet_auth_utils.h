@@ -46,6 +46,7 @@ typedef struct {
     size_t challenge_size;
 
     uint8_t entropy[ENTROPY_SIZE_LIMIT];
+    uint8_t entropy_size;
     ed25519_secret_key private_key;
 
     ed25519_signature signature;
@@ -55,3 +56,7 @@ typedef struct {
     wallet_auth_error_type_e status;
 } wallet_auth_t;
 #pragma pack(pop)
+
+extern wallet_auth_t auth;
+
+#endif

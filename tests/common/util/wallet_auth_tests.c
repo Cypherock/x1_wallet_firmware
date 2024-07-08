@@ -79,7 +79,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static wallet_auth_t auth = {0};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -102,48 +102,57 @@ TEST_SETUP(wallet_auth_tests) {
 }
 
 TEST_TEAR_DOWN(wallet_auth_tests) {
-  memset(&auth[0], 0, sizeof(auth));
+  memset(&auth, 0, sizeof(auth));
 }
 
-TEST(wallet_auth_tests, wallet_auth_get_pairs) { 
-  hex_string_to_byte_array("",auth.entropy);
+TEST(wallet_auth_tests, wallet_auth_get_entropy_action) { 
+  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth.wallet_id);
 
-  get_pairs(auth);
+  wallet_auth_get_entropy();
 
-  char hex[64];
-  byte_array_to_hex_string(auth.public_key, sizeof(ed25519_public_key), hex, sizeof(hex));
-  printf("\nwallet key auth public_key: %s", hex);
+  uint8_t expected_entropy[ENTROPY_SIZE_LIMIT] = {0};
+  hex_string_to_byte_array(
+    "2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe",
+    68,
+    expected_entropy);
 
-  // uint8_t expected_public_key[32] = {0};
-  // hex_string_to_byte_array(
-  //   "",
-  //   64,
-  //   expected_public_key);
-
-  // uint8_t public_key[64] = {0};
-  // TEST_ASSERT_EQUAL_UINT8_ARRAY(
-  //     expected_public_key, auth.public_key, sizeof(expected_public_key));
+  uint8_t public_key[64] = {0};
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_entropy, auth.entropy, sizeof(expected_entropy));
 }
 
-TEST(wallet_auth_tests, wallet_auth_get_signature) {
-  auth.challenge_size = 32;
-  hex_string_to_byte_array("This is an example challenge", auth.challenge*2+1, auth.challenge);
-  hex_string_to_byte_array("", WALLET_ID_SIZE, auth.wallet_id);
-  hex_string_to_byte_array("9fa1ab1d37025d8c3cd596ecbf50435572eeaeb1785a0c9ed2b22afa4c378d6a", 32, auth.private_key);
-  hex_string_to_byte_array("10b22ebe89b321370bee8d39d5c5d411daf1e8fc91c9d1534044590f1f966ebc", 32, auth.public_key);
+TEST(wallet_auth_tests, wallet_auth_get_pairs_action) { 
+  auth.entropy_size = 68;
+  hex_string_to_byte_array("2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe", auth.entropy_size, auth.entropy);
+
+  wallet_auth_get_pairs();
+
+  uint8_t expected_public_key[32] = {0};
+  hex_string_to_byte_array(
+    "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
+    64,
+    expected_public_key);
+
+  uint8_t public_key[64] = {0};
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_public_key, auth.public_key, sizeof(expected_public_key));
+}
+
+TEST(wallet_auth_tests, wallet_auth_get_signature_action) {
+  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth.wallet_id);
+  hex_string_to_byte_array("947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e", sizeof(ed25519_secret_key)*2, auth.private_key);
+  hex_string_to_byte_array("a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c", sizeof(ed25519_public_key)*2, auth.public_key);
+  auth.challenge_size = 28;
+  memcpy(auth.challenge, "This is an example challenge", auth.challenge_size);
   
-  get_signature(auth);
+  wallet_auth_get_signature();
 
-  char hex[128];
-  byte_array_to_hex_string(auth.signature, sizeof(ed25519_signature), hex, sizeof(hex));
-  printf("\nwallet key auth signature: %s", hex);
+  uint8_t expected_signature[64] = {0};
+  hex_string_to_byte_array(
+    "b522e317d22a17177969383e204c6bef1762dde4218d823bac3a7c400f4f303690e103a4b9160d15e3df0ea2aadf4dee6a7cf4bb3c9db3e69cd04cf14edb6c06",
+    128,
+    expected_signature);
 
-  // uint8_t expected_signature[64] = {0};
-  // hex_string_to_byte_array(
-  //   "",
-  //   128,
-  //   expected_signature);
-
-  // TEST_ASSERT_EQUAL_UINT8_ARRAY(
-  //     expected_signature, auth.signature, sizeof(expected_signature));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_signature, auth.signature, sizeof(expected_signature));
 }

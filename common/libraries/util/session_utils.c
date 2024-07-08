@@ -63,7 +63,7 @@
 
 const ecdsa_curve *curve;
 const uint32_t session_key_rotation[2] = {6, 7};
-Session session;
+Session session = {0};
 
 void session_curve_init() {
   curve = get_curve_by_name(SECP256K1_NAME)->params;

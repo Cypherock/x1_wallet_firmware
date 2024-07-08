@@ -98,28 +98,10 @@
 TEST_GROUP(session_tests);
 
 TEST_SETUP(session_tests) {
-  // array_list.array = &array_buffer[0];
-  // array_list.current_index = 0;
-  // array_list.num_of_elements = 0;
-  // array_list.max_capacity = sizeof(array_buffer) / sizeof(array_buffer[0]);
-  // array_list.size_of_element = sizeof(array_buffer[0]);
-  // memset(&array_buffer[0], 0, sizeof(array_buffer));
 }
 
-TEST_TEAR_DOWN(session_tests) {
-  // memset(&array_buffer[0], 0, sizeof(array_buffer));
-}
-
-TEST(session_tests, session_send_device_key_action) {
-  uint8_t payload_size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE +
-                         SIGNATURE_SIZE + POSTFIX1_SIZE + POSTFIX2_SIZE;
-  uint8_t payload[payload_size];
-  char hex[payload_size * 2 + 1];
-
-  session_send_device_key(payload);
-
-  byte_array_to_hex_string(payload, payload_size, hex, sizeof(hex));
-  printf("\nsession_send_device_key_action : %s", hex);
+TEST_TEAR_DOWN(session_tests) { 
+  // memset(&session, 0, sizeof(session)); // Already done in the Close Session Command
 }
 
 const char *session_status_string(session_msg_type_e type) {
@@ -129,7 +111,7 @@ const char *session_status_string(session_msg_type_e type) {
                                                       : "UNKNOWN";
 }
 
-TEST(session_tests, session_receive_server_key_action) {
+TEST(session_tests, session_entire_flow_action) {
   for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
        type < NUM_SESSION_MSG_TYPE_E;
        type = (session_msg_type_e)(type + 1)) {

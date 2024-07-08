@@ -58,7 +58,9 @@
  */
 #include "wallet_auth_utils.h"
 
-bool verify_wallet_auth_inputs(wallet_auth_t auth){
+wallet_auth_t auth = {0};
+
+bool verify_wallet_auth_inputs(){
     ASSERT(auth.challenge != NULL);
     ASSERT(auth.wallet_id != NULL);
     ASSERT(auth.challenge_size != NULL);
@@ -67,33 +69,34 @@ bool verify_wallet_auth_inputs(wallet_auth_t auth){
     return true;
 }
 
-bool get_entropy(wallet_auth_t auth){
-    SecureMsg msg;
-    msg.plain_data_size = WALLET_ID_SIZE;
-    memcpy(msg.plain_data, auth.wallet_id, WALLET_ID_SIZE);
+bool wallet_auth_get_entropy(){
+    SecureMsg msgs[1] = {0};
+    msgs[0].plain_data_size = WALLET_ID_SIZE;
+    memcpy(msgs[0].plain_data, auth.wallet_id, WALLET_ID_SIZE);
     
     card_error_type_e status =
-    card_fetch_encrypt_data(auth.wallet_id, msg, msg.plain_data_size);
+    card_fetch_encrypt_data(auth.wallet_id, msgs, 1);
 
-    if (status != CARD_OPERATION_SUCCESS || msg.encrypted_data_size > ENTROPY_SIZE_LIMIT) {
+    if (status != CARD_OPERATION_SUCCESS || msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
         printf("Secure msg encryption issue %d", status);
         return false;
     }
         
-    memcpy(auth.entropy, msg.encrypted_data, msg.encrypted_data_size);
+    memcpy(auth.entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
+    auth.entropy_size = msgs[0].encrypted_data_size;
 
     return true;
 }
 
-bool get_pairs(wallet_auth_t auth){
+bool wallet_auth_get_pairs(){
     mnemonic_to_seed(auth.entropy, "", auth.private_key, NULL);
     ed25519_publickey(auth.private_key, auth.public_key);
 
     memcpy(auth.public_key, auth.public_key, sizeof(ed25519_public_key));
 }
 
-bool get_signature(wallet_auth_t auth){ 
-    const uint16_t unsigned_txn_size = CHALLENGE_SIZE_LIMIT + WALLET_ID_SIZE;
+bool wallet_auth_get_signature(){ 
+    const uint16_t unsigned_txn_size = auth.challenge_size + WALLET_ID_SIZE;
     uint8_t unsigned_txn[unsigned_txn_size];
 
     memcpy(unsigned_txn, auth.challenge, auth.challenge_size);
@@ -111,19 +114,19 @@ bool get_signature(wallet_auth_t auth){
 }
 
 
-wallet_auth_error_type_e wallet_login(wallet_auth_t auth){
+wallet_auth_error_type_e wallet_login(){
     if (!verify_wallet_auth_inputs(auth)) {
         return WALLET_AUTH_INPUTS_INVALID;
     }
 
     switch (auth.auth_type) {
         case WALLET_AUTH_OWNER:
-            if (!get_entropy(auth) || get_pairs(auth) || !get_signature(auth))
-                return WALLET_AUTH_OWNER;
+            if (!wallet_auth_get_entropy(auth) || wallet_auth_get_pairs(auth) || !wallet_auth_get_signature(auth))
+                return WALLET_AUTH_ERR_OWNER;
             break;
 
         case WALLET_AUTH_NOMINEE:
-            if (!get_signature(auth))
+            if (!wallet_auth_get_signature(auth))
                 return WALLET_AUTH_ERR_NOMINEE;
 
     default: {
@@ -131,4 +134,6 @@ wallet_auth_error_type_e wallet_login(wallet_auth_t auth){
     }
   }
   auth.status = WALLET_AUTH_OK;
+  
+  memset(&auth, 0, sizeof(auth));
 }

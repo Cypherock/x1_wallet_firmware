@@ -147,9 +147,24 @@ int main(void) {
   ekp_queue_init();
 #endif
   application_init();
+
   // Test Wallet Key Auth
-  wallet_auth_t auth;
-  auth.
+  
+  // uint8_t wallet_index=0; // 0 to 4
+
+  // uint8_t wallet_id[WALLET_ID_SIZE];
+  // memcpy(wallet_id, get_wallet_id(wallet_index), WALLET_ID_SIZE);
+
+  // const char wallet_name[NAME_SIZE] = "";
+  // rejection_cb *reject_cb;
+  // get_wallet_name_by_id(wallet_id, (const uint8_t *)wallet_name, reject_cb);
+
+
+  // char wallet_id_hex[WALLET_ID_SIZE*2+1];
+  // byte_array_to_hex_string(wallet_id, WALLET_ID_SIZE, wallet_id_hex, WALLET_ID_SIZE*2+1);
+
+  // char wallet_name_hex[NAME_SIZE*2+1];
+  // byte_array_to_hex_string(wallet_id, NAME_SIZE, wallet_id_hex, NAME_SIZE*2+1);
 
   // Test Session
   // for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
