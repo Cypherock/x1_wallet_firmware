@@ -132,11 +132,47 @@ static void memory_monitor(lv_task_t *param);
  * @retval int
  */
 
+#include "session_utils.h"
+#include "wallet_auth_utils.h"
+
+const char *session_status_string(session_msg_type_e type) {
+  static const char *status[] = {
+      "send", "receive", "encrypt", "decrypt", "close"};
+  return (type >= 0 && type < NUM_SESSION_MSG_TYPE_E) ? status[type]
+                                                      : "UNKNOWN";
+}
+
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
 #endif
   application_init();
+
+  // Test Wallet Key Auth
+  
+  // uint8_t wallet_index=0; // 0 to 4
+
+  // uint8_t wallet_id[WALLET_ID_SIZE];
+  // memcpy(wallet_id, get_wallet_id(wallet_index), WALLET_ID_SIZE);
+
+  // const char wallet_name[NAME_SIZE] = "";
+  // rejection_cb *reject_cb;
+  // get_wallet_name_by_id(wallet_id, (const uint8_t *)wallet_name, reject_cb);
+
+
+  // char wallet_id_hex[WALLET_ID_SIZE*2+1];
+  // byte_array_to_hex_string(wallet_id, WALLET_ID_SIZE, wallet_id_hex, WALLET_ID_SIZE*2+1);
+
+  // char wallet_name_hex[NAME_SIZE*2+1];
+  // byte_array_to_hex_string(wallet_id, NAME_SIZE, wallet_id_hex, NAME_SIZE*2+1);
+
+  // Test Session
+  // for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
+  //      type < NUM_SESSION_MSG_TYPE_E;
+  //      type = (session_msg_type_e)(type + 1)) {
+  //   printf("\n\n--------> TYPE: %s\n", session_status_string(type));
+  //   test_session_main(type);
+  // }
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

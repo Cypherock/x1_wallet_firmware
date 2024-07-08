@@ -236,3 +236,13 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
 }
+
+TEST_GROUP_RUNNER(wallet_auth_tests) {
+  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_entropy_action);
+  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_pairs_action);
+  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_signature_action);
+}
+
+TEST_GROUP_RUNNER(session_tests) {
+  RUN_TEST_CASE(session_tests, session_entire_flow_action);
+}

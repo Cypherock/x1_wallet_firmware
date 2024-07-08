@@ -8,7 +8,7 @@
         "FIRMWARE_TYPE":"Main",
     },
     "terminal.integrated.env.linux": {
-        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}",
+        "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}:/home/parnika/Documents/cypherock/x1_dev_env/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux/gcc-arm-none-eabi-10.3-2021.10/bin",
     },
     "terminal.integrated.env.osx": {
         "PATH": "${env:HOME}/.local/bin:${workspaceFolder}/venv/bin:${env:PATH}",
@@ -23,5 +23,16 @@
         "*.ld": "c",
         "*.cmake": "cmake",
         "CMakeLists.txt": "cmake",
-    }
+        "*.tcc": "c",
+        "cstring": "c",
+        "algorithm": "c",
+        "istream": "c",
+        "ostream": "c",
+        "system_error": "c",
+        "chrono": "c",
+        "condition_variable": "c",
+        "functional": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled",
+    "cortex-debug.variableUseNaturalFormat": true
 }

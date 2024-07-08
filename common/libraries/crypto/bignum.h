@@ -25,6 +25,8 @@
 #ifndef __BIGNUM_H__
 #define __BIGNUM_H__
 
+#define USE_BN_PRINT true // TODO: remove after testing
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
