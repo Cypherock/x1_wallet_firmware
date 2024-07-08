@@ -1,0 +1,63 @@
+# Address size is 21
+
+tron.AccountUpdateContract.owner_address        max_size: 21, fixed_length: true
+
+tron.TransferContract.owner_address             max_size: 21, fixed_length: true
+tron.TransferContract.to_address                max_size: 21, fixed_length: true
+
+tron.TransferAssetContract.asset_name           max_size: 16
+tron.TransferAssetContract.owner_address        max_size: 21, fixed_length: true
+tron.TransferAssetContract.to_address           max_size: 21, fixed_length: true
+
+tron.VoteWitnessContract.owner_address          max_size: 21, fixed_length: true
+tron.VoteWitnessContract.votes                  max_count: 5  # Assume 5 votes max
+tron.VoteWitnessContract.Vote.vote_address      max_size: 21, fixed_length: true
+tron.VoteWitnessContract.support                type: FT_IGNORE
+
+tron.FreezeBalanceContract.owner_address        max_size: 21, fixed_length: true
+tron.FreezeBalanceContract.receiver_address     max_size: 21, fixed_length: true
+
+tron.UnfreezeBalanceContract.owner_address      max_size: 21, fixed_length: true
+tron.UnfreezeBalanceContract.receiver_address   max_size: 21, fixed_length: true
+
+tron.FreezeBalanceV2Contract.owner_address      max_size: 21, fixed_length: true
+tron.UnfreezeBalanceV2Contract.owner_address    max_size: 21, fixed_length: true
+
+tron.WithdrawExpireUnfreezeContract.owner_address  max_size: 21, fixed_length: true
+
+tron.DelegateResourceContract.owner_address     max_size: 21, fixed_length: true
+tron.DelegateResourceContract.receiver_address  max_size: 21, fixed_length: true
+
+tron.UnDelegateResourceContract.owner_address   max_size: 21, fixed_length: true
+tron.UnDelegateResourceContract.receiver_address   max_size: 21, fixed_length: true
+
+tron.WithdrawBalanceContract.owner_address      max_size: 21, fixed_length: true
+
+tron.ProposalCreateContract.owner_address       max_size: 21, fixed_length: true
+tron.ProposalCreateContract.parameters          max_count: 10
+
+tron.ProposalApproveContract.owner_address      max_size: 21, fixed_length: true
+
+tron.ProposalDeleteContract.owner_address       max_size: 21, fixed_length: true
+
+tron.TriggerSmartContract.owner_address         max_size: 21, fixed_length: true
+tron.TriggerSmartContract.contract_address      max_size: 21, fixed_length: true
+tron.TriggerSmartContract.data                  max_size: 68, fixed_length: true
+
+tron.ExchangeCreateContract.owner_address       max_size: 21, fixed_length: true
+tron.ExchangeCreateContract.first_token_id      max_size: 8
+tron.ExchangeCreateContract.second_token_id     max_size: 8
+
+tron.ExchangeInjectContract.owner_address       max_size: 21, fixed_length: true
+tron.ExchangeInjectContract.token_id            max_size: 8
+
+tron.ExchangeWithdrawContract.owner_address     max_size: 21, fixed_length: true
+tron.ExchangeWithdrawContract.token_id          max_size: 8
+
+tron.ExchangeTransactionContract.owner_address  max_size: 21, fixed_length: true
+tron.ExchangeTransactionContract.token_id       max_size: 8
+
+tron.AccountPermissionUpdateContract.owner_address  max_size: 21, fixed_length: true
+tron.AccountPermissionUpdateContract.owner          type: FT_IGNORE
+tron.AccountPermissionUpdateContract.witness        type: FT_IGNORE
+tron.AccountPermissionUpdateContract.actives        type: FT_IGNORE

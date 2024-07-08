@@ -57,7 +57,9 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/evm_family/arbitrum
         apps/near_app
         apps/solana_app
-
+        apps/tron_app
+        apps/inheritance_app
+        
         src/
         src/menu
         src/wallet
@@ -110,6 +112,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/logger
         common/coin_support
         common/coin_support/eth_sign_data
+        common/coin_support/tron_parse_txn
         common/flash
         common/Firewall
         common/core

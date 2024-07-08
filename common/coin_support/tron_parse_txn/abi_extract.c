@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    abi_extract.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Tron chain abi extract logic
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,62 +59,35 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "inheritance_app.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "tron_main.h"
+#include "abi_extract.h"
+
+#include "tron_contracts.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
 
+extern const uint8_t selector[][4];
+
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -124,61 +97,54 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
+ui_display_node *extract_data(uint8_t *data) {
+  uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
+  to_address[0] = 0x41;
+  uint8_t amount[32];
+  uint8_t function_selector[4] = {0};
+
+  memcpy(function_selector, data, 4);
+  // address is initial_address without '0x41' (20 Bytes)
+  memcpy(to_address + 1, data + 4 + (32 - 20), 20);
+  memcpy(amount, data + 4 + 32, 32);
+
+  // check function selector
+  for (int i = 0; i < TRC20_FUNCTION_SELECTOR_COUNT; i++) {
+    bool is_valid = 0;
+    if (memcmp(function_selector, selector[i], 4) == 0) {
+      is_valid = 1;
     }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
+    if (!is_valid) {
+      return NULL;
     }
   }
-
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
+  char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
+  // receipent address
+  if (!base58_encode_check(to_address,
+                           1 + 20,
+                           HASHER_SHA2D,
+                           address,
+                           TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return NULL;
   }
+  ui_display_node *ui_node = ui_create_display_node(
+      "Datatype:address\0", 25, address, sizeof(address));
+  ui_display_node *head = ui_node;
 
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
+  // receipent amount
+  char staticBufferInUTF8[200];
+  memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
+  byte_array_to_hex_string(amount, 32, &(staticBufferInUTF8[0]), 65);
+  convert_byte_array_to_decimal_string(
+      64, 0, &(staticBufferInUTF8[0]), &(staticBufferInUTF8[100]), 100);
 
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
-}
+  (ui_node)->next = ui_create_display_node(
+      "Datatype:uint256\0", 25, &(staticBufferInUTF8[100]), 100);
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
+  ui_node = (ui_node)->next;
+  (ui_node)->next = NULL;
+
+  return head;
 }

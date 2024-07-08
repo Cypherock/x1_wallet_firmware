@@ -1,15 +1,15 @@
 /**
- * @file    delete_wallet_flow.c
+ * @file    abi_extract.h
  * @author  Cypherock X1 Team
- * @brief   Flow for delete wallet operation on an existing wallet
- * @copyright Copyright (c) 2022 HODL TECH PTE LTD
+ * @brief   Tron chain abi extract logic
+ * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2022 by HODL TECH PTE LTD
+ * (c) Copyright 2023 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,115 +59,57 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_flow_delete_wallet.h"
-#include "constant_texts.h"
-#include "core_error.h"
-#include "flash_api.h"
+
+#include <pb_decode.h>
+#include <tron/contract.pb.h>
+#include <tron/google/protobuf/any.pb.h>
+#include <tron/sign_txn.pb.h>
+#include <tron/tron.pb.h>
+#include <tron_txn_helpers.h>
+
+#include "base58.h"
+#include "coin_utils.h"
+#include "curves.h"
+#include "ecdsa.h"
+#include "hasher.h"
+#include "secp256k1.h"
 #include "sha2.h"
-#include "shamir_wrapper.h"
-#include "tasks.h"
+#include "status_api.h"
+#include "tron_api.h"
+#include "tron_helpers.h"
+#include "tron_priv.h"
+#include "tron_txn_helpers.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-#include "ui_state_machine.h"
-#include "wallet.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
- * EXTERN VARIABLES
+ * MACROS AND DEFINES
  *****************************************************************************/
 
 /*****************************************************************************
- * PRIVATE MACROS AND DEFINES
+ * TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
- * PRIVATE TYPEDEFS
+ * EXPORTED VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
+ * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief This function converts ABI value to UTF8 format
+ * to be displayed on the LED display for user verification for tron txns.
+ * This function creates and returns a UI node of type ui_display_node.
+ * Important thing to note here is that it only supports static Abi type data.
+ * If the Abi data is dynamic, it must be broken down into static data and then
+ * stringified.
+ *
+ * @param data Pointer to Abi data to be stringified
+ *
+ * @return ui_display_node: This function returns pointer to the UI node which
+ * can be displayed by the caller.
+ */
 
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-extern char *ALPHA_NUMERIC;
-
-extern Wallet wallet;
-extern Wallet_credential_data wallet_credential_data;
-/*****************************************************************************
- * STATIC FUNCTIONS
- *****************************************************************************/
-static bool get_pin_input() {
-  if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
-    return true;
-  }
-
-  memzero(&wallet_credential_data, sizeof(wallet_credential_data));
-  memzero(wallet.password_double_hash, sizeof(wallet.password_double_hash));
-
-  input_text_init(ALPHA_NUMERIC, 26, ui_text_enter_pin, 4, DATA_TYPE_PIN, 8);
-  if (0 == get_state_on_input_scr(0, 1, 2)) {
-    sha256_Raw((uint8_t *)flow_level.screen_input.input_text,
-               strnlen(flow_level.screen_input.input_text,
-                       sizeof(flow_level.screen_input.input_text)),
-               wallet_credential_data.password_single_hash);
-    sha256_Raw(wallet_credential_data.password_single_hash,
-               SHA256_DIGEST_LENGTH,
-               wallet.password_double_hash);
-
-    memzero(flow_level.screen_input.input_text,
-            sizeof(flow_level.screen_input.input_text));
-    return true;
-  }
-
-  return false;
-}
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-void delete_wallet_flow(const Flash_Wallet *flash_wallet) {
-  ASSERT(NULL != flash_wallet);
-
-  char confimation_display[100];
-  snprintf(confimation_display,
-           sizeof(confimation_display),
-           UI_TEXT_PERMANENTLY_DELETE,
-           flash_wallet->wallet_name);
-
-  if (!core_scroll_page(NULL, confimation_display, NULL)) {
-    return;
-  }
-
-  if (!core_scroll_page(
-          NULL, ui_text_need_all_x1cards_to_delete_wallet_entirely, NULL)) {
-    return;
-  }
-
-  clear_wallet_data();
-
-  // Populate global wallet object with wallet data
-  memcpy(wallet.wallet_id, flash_wallet->wallet_id, WALLET_ID_SIZE);
-  memcpy(wallet.wallet_name, flash_wallet->wallet_name, NAME_SIZE);
-  wallet.wallet_info = flash_wallet->wallet_info;
-
-  while (1) {
-    if (!get_pin_input()) {
-      break;
-    }
-
-    if (CARD_OPERATION_INCORRECT_PIN_ENTERED ==
-        card_flow_delete_wallet(&wallet)) {
-      continue;
-    } else {
-      break;
-    }
-  }
-
-  clear_wallet_data();
-}
+ui_display_node *extract_data(uint8_t *data);
