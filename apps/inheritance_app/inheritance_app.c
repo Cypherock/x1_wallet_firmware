@@ -128,8 +128,8 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
 
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
-      // inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-      //                 ERROR_DATA_FLOW_INVALID_QUERY);
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_QUERY);
     } break;
   }
 
