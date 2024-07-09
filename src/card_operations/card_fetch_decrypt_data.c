@@ -67,7 +67,7 @@
 #include "nfc.h"
 #include "pow_utilities.h"
 #include "ui_instruction.h"
-#include "card_fetch_wallet_name.h"
+#include "card_fetch_wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -102,18 +102,18 @@
  *****************************************************************************/
 
 card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
-                                          SecureMsg *msgs,
-                                          size_t msg_array_size) {
+                                          SecureData *msgs,
+                                          size_t msg_count) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
   const char wallet_name[NAME_SIZE] = "";
   rejection_cb *reject_cb;
 #if USE_SIMULATOR == 0
-  ASSERT(get_wallet_data_by_id(
-      wallet_id, (const uint8_t *)wallet_name, reject_cb));
+  // ASSERT(get_wallet_data_by_id(
+  //     wallet_id, (const uint8_t *)wallet_name, reject_cb));
 
-  // card_get_wallet_name(wallet_id, wallet_name);
+  card_get_wallet_name(wallet_id, wallet_name);
 #endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
@@ -121,8 +121,8 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  uint8_t plain_data_buffer[PLAIN_DATA_SIZE];
-  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_SIZE];
+  uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE];
+  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE];
   uint16_t encrypted_data_buffer_size;
   uint16_t plain_data_buffer_size;
   size_t index;
@@ -136,9 +136,9 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t* wallet_id,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       
-      for (int i = 0; i < msg_array_size; i++) {  
-        memzero(plain_data_buffer, PLAIN_DATA_SIZE);
-        memzero(encrypted_data_buffer, ENCRYPTED_DATA_SIZE);
+      for (int i = 0; i < msg_count; i++) {  
+        memzero(plain_data_buffer, PLAIN_DATA_BUFFER_SIZE);
+        memzero(encrypted_data_buffer, ENCRYPTED_DATA_BUFFER_SIZE);
 
         index = 0;
         while (index < msgs[i].encrypted_data_size) {

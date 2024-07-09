@@ -374,7 +374,7 @@ extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
 
 // session
-#define UI_TEXT_CARD_FETCH_WALLET "Found `%d` wallet in your Card!"
+#define UI_TEXT_CARD_FETCH_WALLET "Found `%s` wallet in your Card!"
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

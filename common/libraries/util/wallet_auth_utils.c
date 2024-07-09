@@ -70,7 +70,7 @@ bool verify_wallet_auth_inputs(){
 }
 
 bool wallet_auth_get_entropy(){
-    SecureMsg msgs[1] = {0};
+    SecureData msgs[1] = {0};
     msgs[0].plain_data_size = WALLET_ID_SIZE;
     memcpy(msgs[0].plain_data, auth.wallet_id, WALLET_ID_SIZE);
     

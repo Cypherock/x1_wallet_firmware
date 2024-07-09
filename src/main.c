@@ -159,6 +159,8 @@ int main(void) {
   // rejection_cb *reject_cb;
   // get_wallet_name_by_id(wallet_id, (const uint8_t *)wallet_name, reject_cb);
 
+  // card_get_wallet_name(wallet_id, wallet_name);
+
 
   // char wallet_id_hex[WALLET_ID_SIZE*2+1];
   // byte_array_to_hex_string(wallet_id, WALLET_ID_SIZE, wallet_id_hex, WALLET_ID_SIZE*2+1);
@@ -167,12 +169,12 @@ int main(void) {
   // byte_array_to_hex_string(wallet_id, NAME_SIZE, wallet_id_hex, NAME_SIZE*2+1);
 
   // Test Session
-  // for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
-  //      type < NUM_SESSION_MSG_TYPE_E;
-  //      type = (session_msg_type_e)(type + 1)) {
-  //   printf("\n\n--------> TYPE: %s\n", session_status_string(type));
-  //   test_session_main(type);
-  // }
+  for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
+       type < NUM_SESSION_MSG_TYPE_E;
+       type = (session_msg_type_e)(type + 1)) {
+    printf("\n\n--------> TYPE: %s\n", session_status_string(type));
+    test_session_main(type);
+  }
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

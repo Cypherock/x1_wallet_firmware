@@ -173,3 +173,73 @@ card_error_type_e card_fetch_wallet_list(
   nfc_deselect_card();
   return card_data.error_type;
 }
+
+bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name) {
+  wallet_list_t wallets_in_card = {0};
+
+  card_fetch_wallet_list_config_t configuration = {0};
+  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+  configuration.operation.skip_card_removal = true;
+  configuration.operation.expected_family_id = get_family_id();
+  configuration.frontend.heading = NULL;
+  configuration.frontend.msg = ui_text_card_get_wallet_info;
+
+  card_fetch_wallet_list_response_t response = {0};
+  response.wallet_list = &wallets_in_card;
+  response.card_info.tapped_card = 0;
+  response.card_info.recovery_mode = 0;
+  response.card_info.status = 0;
+  response.card_info.tapped_family_id = NULL;
+
+  // P0 abort is the only condition we want to exit the flow
+  // Card abort error will be explicitly shown here as error codes
+  card_error_type_e status = card_fetch_wallet_list(&configuration, &response);
+  if (CARD_OPERATION_P0_OCCURED == status) {
+    return false;
+  }
+
+  // If the tapped card is not paired, it is a terminal case in the flow
+  if (true == response.card_info.pairing_error) {
+    return false;
+  }
+
+  // At this stage, either there is no core error message set, or it is set but
+  // we want to overwrite the error message using user facing messages in this
+  // flow
+  clear_core_error_screen();
+
+  uint32_t card_fault_status = 0;
+  if (1 == response.card_info.recovery_mode) {
+    card_fault_status = NFC_NULL_PTR_ERROR;
+  } else if (CARD_OPERATION_SUCCESS != status) {
+    card_fault_status = response.card_info.status;
+  }
+
+  char display_msg[100] = "";
+  for (uint8_t i = 0; i < wallets_in_card.count; i++) {
+    if (memcmp(wallet_id, wallets_in_card.wallet->id, WALLET_ID_SIZE) == 0) {
+      memcpy(
+          wallet_name, (const char *)wallets_in_card.wallet[i].name, NAME_SIZE);
+      snprintf(display_msg,
+               sizeof(display_msg),
+               UI_TEXT_CARD_FETCH_WALLET,
+               wallet_name);
+      break;
+    }
+  }
+
+  if (wallet_name == ""){
+    return false;
+  }
+
+  if (!core_scroll_page(NULL, display_msg, NULL)) {
+    return false;
+  }
+
+  // Do not care about the return value from confirmation screen
+  (void)get_state_on_confirm_scr(0, 0, 0);
+  // }
+
+  return true;
+}
+

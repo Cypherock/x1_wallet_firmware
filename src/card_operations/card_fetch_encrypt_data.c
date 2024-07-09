@@ -101,8 +101,8 @@
  *****************************************************************************/
 
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SecureMsg *msgs,
-                                          size_t msg_array_size) {
+                                          SecureData *msgs,
+                                          size_t msg_count) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
@@ -118,8 +118,8 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  uint8_t plain_data_buffer[PLAIN_DATA_SIZE];
-  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_SIZE];
+  uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE];
+  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE];
   uint16_t encrypted_data_buffer_size;
   uint16_t plain_data_buffer_size;
   size_t index;
@@ -133,15 +133,15 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
 
-      for (int i = 0; i < msg_array_size; i++) {  
-        memzero(plain_data_buffer, PLAIN_DATA_SIZE);
-        memzero(encrypted_data_buffer, ENCRYPTED_DATA_SIZE);
+      for (int i = 0; i < msg_count; i++) {  
+        memzero(plain_data_buffer, PLAIN_DATA_BUFFER_SIZE);
+        memzero(encrypted_data_buffer, ENCRYPTED_DATA_BUFFER_SIZE);
 
         index = 0;
         while (index < msgs[i].plain_data_size) {
-          plain_data_buffer_size = (msgs[i].plain_data_size - index) <= PLAIN_DATA_SIZE ? 
+          plain_data_buffer_size = (msgs[i].plain_data_size - index) < PLAIN_DATA_BUFFER_SIZE ? 
                               (msgs[i].plain_data_size - index) : 
-                              PLAIN_DATA_SIZE;
+                              PLAIN_DATA_BUFFER_SIZE;
           memcpy(plain_data_buffer, msgs[i].plain_data + index, plain_data_buffer_size);
 
 #if USE_SIMULATOR == 0

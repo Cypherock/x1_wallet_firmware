@@ -34,10 +34,8 @@
 #define SESSION_ID_SIZE 16
 #define SESSION_KEY_SIZE 32
 
-#define SESSION_MSG_SIZE ((MSG_PRIVATE_SIZE + MSG_PUBLIC_SIZE) * 2)
 #define SESSION_MSG_MAX 5
-
-#define SESSION_MSG_IS_PRIVATE  0x01
+#define SESSION_PACKET_SIZE (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX)
 
 extern const uint32_t session_key_rotation[2];
 
@@ -49,13 +47,20 @@ typedef enum {
   SESSION_CLOSE,
   NUM_SESSION_MSG_TYPE_E
 } session_msg_type_e;
+
 typedef enum {
   SESSION_OK = 0,
-  SESSION_ERR_INVALID = 0x01,
-  SESSION_ERR_DEVICE_KEY = 0x02,
-  SESSION_ERR_SERVER_KEY = 0x03,
-  SESSION_ERR_ENCRYPT = 0x04,
-  SESSION_ERR_DECRYPT = 0x05,
+  SESSION_ENCRYPT_PKT_SUCCESS,
+  SESSION_DECRYPT_PKT_SUCCESS,
+  SESSION_ERR_INVALID,
+  SESSION_ERR_DEVICE_KEY,
+  SESSION_ERR_SERVER_KEY,
+  SESSION_ERR_ENCRYPT,
+  SESSION_ERR_DECRYPT,
+  SESSION_ENCRYPT_PKT_KEY_ERR,
+  SESSION_ENCRYPT_PKT_ERR,
+  SESSION_DECRYPT_PKT_KEY_ERR,
+  SESSION_DECRYPT_PKT_ERR
 } session_error_type_e;
 
 /**
@@ -74,9 +79,10 @@ typedef struct {
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
 
-  SecureMsg SessionMsgs[SESSION_MSG_MAX];
   const char wallet_name[NAME_SIZE];
-
+  SecureData SessionMsgs[SESSION_MSG_MAX];
+  uint8_t msg_count;
+  
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
 
@@ -92,8 +98,8 @@ typedef struct {
   uint8_t server_message[SESSION_BUFFER_SIZE];
 
   // session_enc
-  uint8_t msg_array_size;
-  SecureMsg SessionMsgs[SESSION_MSG_MAX];
+  uint8_t msg_count;
+  SecureData SessionMsgs[SESSION_MSG_MAX];
   uint8_t pass_key[SESSION_ID_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
 
@@ -157,7 +163,7 @@ bool session_send_device_key(uint8_t *payload);
 bool session_receive_server_key(uint8_t *server_message);
 
 // TODO: Remove after testing
-void print_msg(SecureMsg msg, uint8_t index);
+void print_msg(SecureData msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
 
