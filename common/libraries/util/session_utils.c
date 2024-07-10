@@ -287,27 +287,36 @@ bool session_receive_server_key(uint8_t *server_message) {
 
 
 void session_serialise_packet(SecureData *msgs,
-                            size_t msg_count, uint8_t *buf, size_t *buf_size){
+                            size_t msg_count, uint8_t *data, size_t *len){
+  size_t size = *len;  
+
   ASSERT(msgs != NULL);
   ASSERT(msg_count != 0);
 
-  *buf_size = 0;
+  size = 0;
   for (int i=0; i<msg_count; i++){
-    buf[*buf_size] += msgs->encrypted_data_size;
-    *buf_size += 1;
+    data[size] += (msgs[i].encrypted_data_size >> 8) & 0xFF;
+    size += 1;
+    data[size] += msgs[i].encrypted_data_size & 0xFF;
+    size += 1;
 
-    memcpy(buf + *buf_size, msgs[i].encrypted_data, msgs[i].encrypted_data_size);
-    *buf_size += msgs[i].encrypted_data_size;
+    memcpy(data + size, msgs[i].encrypted_data, msgs[i].encrypted_data_size);
+    size += msgs[i].encrypted_data_size;
   }
+
+  *len = size;
 }
 
-int session_aes_encrypt_packet(uint8_t *InOut_data, size_t size, uint8_t *key, uint8_t *iv_immut){
+session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data, size_t *len, uint8_t *key, uint8_t *iv_immut){
   ASSERT(InOut_data != NULL);
-  ASSERT(size != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
   ASSERT(size <= SESSION_PACKET_SIZE);
 
   uint8_t payload[size];
   memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
 
   uint8_t last_block[AES_BLOCK_SIZE] = {0};
   uint8_t remainder = size % AES_BLOCK_SIZE;
@@ -323,48 +332,52 @@ int session_aes_encrypt_packet(uint8_t *InOut_data, size_t size, uint8_t *key, u
   // the IV gets mutated, so we make a copy not to touch the original
   uint8_t iv[AES_BLOCK_SIZE] = {0};
   memcpy(iv, iv_immut, AES_BLOCK_SIZE);
-
   
   aes_encrypt_ctx ctx = {0};
 
   if (aes_encrypt_key256(key, &ctx) != EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PKT_KEY_ERR;
+    return SESSION_ENCRYPT_PACKET_KEY_ERR;
   }
 
   if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PKT_ERR;
+    return SESSION_ENCRYPT_PACKET_ERR;
   }
 
   if (aes_cbc_encrypt(last_block, InOut_data + size, sizeof(last_block), iv, &ctx) != EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PKT_ERR;
+    return SESSION_ENCRYPT_PACKET_ERR;
   }
+
+  size += sizeof(last_block);
+  *len = size;
 
   memset(&ctx, 0, sizeof(ctx));
 
-  return SESSION_ENCRYPT_PKT_SUCCESS;
+  return SESSION_ENCRYPT_PACKET_SUCCESS;
 }
 
-bool session_encrypt_packet(SecureData *msgs, uint8_t msg_count, uint8_t *key, uint8_t iv, uint8_t *pkt, size_t pkt_size){
-  session_serialise_packet(msgs, msg_count, pkt, &pkt_size);
-  int err = session_aes_encrypt_packet(pkt, &pkt_size, key, iv);
-  if (SESSION_ENCRYPT_PKT_SUCCESS != err){
-    printf("Packet encryption err: %x", err);
+bool session_encrypt_packet(SecureData *msgs, uint8_t msg_count, uint8_t *key, uint8_t *iv, uint8_t *packet, size_t *packet_size){
+  session_serialise_packet(msgs, msg_count, packet, packet_size);
+  memcpy(session.packet, packet, *packet_size);
+  if (SESSION_ENCRYPT_PACKET_SUCCESS != session_aes_encrypt_packet(packet, packet_size, key, iv))
     return false;
-  }
+
+  memcpy(session.packet, packet, *packet_size);
+  
   return true;
 }
 
 void session_deserialise_packet(SecureData *msgs,
-                            size_t msg_count, uint8_t *buf, size_t buf_size){
+                            size_t msg_count, uint8_t *data, size_t *len){
   ASSERT(msgs != NULL);
-  ASSERT(msg_count != 0);
 
-  int index = 0;
-  while (index<=buf_size){
-    msgs[msg_count].encrypted_data_size = buf[index];
+  size_t index = 0;
+  while (index <= *len){
+    msgs[msg_count].encrypted_data_size = (uint16_t) data[index] << 8;
+    index += 1;
+    msgs[msg_count].encrypted_data_size |= (uint16_t) data[index];
     index += 1;
 
-    memcpy(msgs[msg_count].encrypted_data, buf + index, msgs[msg_count].encrypted_data_size);
+    memcpy(msgs[msg_count].encrypted_data, data + index, msgs[msg_count].encrypted_data_size);
     index += msgs[msg_count].encrypted_data_size;
 
     msg_count += 1;
@@ -372,42 +385,41 @@ void session_deserialise_packet(SecureData *msgs,
 }
 
 
-bool session_aes_decrypt_packet(uint8_t *InOut_data, uint16_t size, uint8_t *key, uint8_t *iv){
+session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data, uint16_t *len, uint8_t *key, uint8_t *iv){
   ASSERT(InOut_data != NULL);
-  ASSERT(size != NULL);
+  ASSERT(len != NULL);
+  
+  size_t size = *len;
 
   uint8_t payload[size];
   memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
 
   aes_decrypt_ctx ctx = {0};
 
-  int ret = aes_decrypt_key256(key, &ctx);
-  if (ret != EXIT_SUCCESS) {
-    return SESSION_DECRYPT_PKT_KEY_ERR;
-  }
+  if (EXIT_SUCCESS != aes_decrypt_key256(key, &ctx))
+    return SESSION_DECRYPT_PACKET_KEY_ERR;
 
-  if (aes_cbc_decrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
-    return SESSION_DECRYPT_PKT_ERR;
-  }
+  if (aes_cbc_decrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS || size > SESSION_PACKET_SIZE)
+    return SESSION_DECRYPT_PACKET_ERR;
 
-  ASSERT(size < SESSION_PACKET_SIZE);
-
+  *len = size;
   memset(&ctx, 0, sizeof(ctx));
 
-  return SESSION_DECRYPT_PKT_SUCCESS;
+  return SESSION_DECRYPT_PACKET_SUCCESS;
 }
 
-bool session_decrypt_packet(SecureData *msgs, uint8_t msg_count, uint8_t *key, uint8_t iv, uint8_t *pkt, size_t pkt_size){
-  uint8_t packet[SESSION_MSG_MAX];
-  size_t packet_size;
+bool session_decrypt_packet(SecureData *msgs, uint8_t msg_count, uint8_t *key, uint8_t *iv, uint8_t *packet, size_t *packet_size){
+  memcpy(session.packet, packet, *packet_size);
   
-  int err = session_aes_decrypt_packet(packet, packet_size, key, iv);
-  if (SESSION_DECRYPT_PKT_SUCCESS != err){
-    printf("Packet decryption err: %x", err);
+  if (SESSION_DECRYPT_PACKET_SUCCESS != session_aes_decrypt_packet(packet, packet_size, key, iv))
     return false;
-  }
 
-  session_deserialise_packet(msgs, msg_count, packet, &packet_size);
+  memcpy(session.packet, packet, *packet_size);
+
+  session_deserialise_packet(msgs, msg_count, packet, packet_size);
+
+  memcpy(session.packet, packet, *packet_size);
 
   return true;
 }
@@ -438,11 +450,12 @@ bool session_encrypt_secure_data(uint8_t *pass_key,
   session.msg_count = msg_count;
 
   // TODO: remove after testing
-  uint8_t packet[SESSION_PACKET_SIZE];
-  size_t packet_size;
-  session_encrypt_packet(session.SessionMsgs, session.msg_count, session.session_key, session.session_id, packet, packet_size);
+  uint8_t packet[SESSION_PACKET_SIZE] = {0};
+  size_t packet_size = 0;
+
+  session_encrypt_packet(session.SessionMsgs, session.msg_count, session.session_key, session.session_id, packet, &packet_size);
   session_reset_secure_data();
-  session_decrypt_packet(session.SessionMsgs, session.msg_count, session.session_key, session.session_id, packet, packet_size);
+  session_decrypt_packet(session.SessionMsgs, session.msg_count, session.session_key, session.session_id, packet, &packet_size);
 
   return true;
 }
@@ -481,6 +494,7 @@ void session_reset() {
 
 void session_reset_secure_data() {
   memset(&session.SessionMsgs, 0, sizeof(session.SessionMsgs));
+  session.msg_count = 0;
 }
 
 void session_send_error() {
