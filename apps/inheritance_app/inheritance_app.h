@@ -22,6 +22,8 @@
 #include "events.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
+#include "libraries/util/wallet_auth_utils.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -44,5 +46,5 @@
  */
 const cy_app_desc_t *get_inheritance_app_desc();
 
-void inheritance_get_wallet_sign(inheritance_query_t *query);
+bool wallet_login(inheritance_query_t *query);
 #endif /* INHERITANCE_MAIN_H */

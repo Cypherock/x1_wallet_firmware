@@ -111,6 +111,11 @@ static const cy_app_desc_t inheritance_app_desc = {.id = 19,
 void inheritance_main(usb_event_t usb_evt, const void *app_config) {
   inheritance_query_t query = INHERITANCE_QUERY_INIT_DEFAULT;
 
+  for (int i = 0; i < usb_evt.msg_size; i++) {
+    printf("%02x", usb_evt.p_msg[i]);
+  }
+  fflush(stdout);
+
   if (false ==
       decode_inheritance_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
@@ -121,8 +126,8 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   switch ((uint8_t)query.which_request) {
-    case INHERITANCE_QUERY_GET_CHALLENGE_TAG: {
-      inheritance_get_wallet_sign(&query);
+    case INHERITANCE_QUERY_WALLET_AUTH_TAG: {
+      wallet_login(&query);
       break;
     }
 

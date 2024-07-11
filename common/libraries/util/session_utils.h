@@ -37,7 +37,7 @@
 #define SESSION_MSG_SIZE ((MSG_PRIVATE_SIZE + MSG_PUBLIC_SIZE) * 2)
 #define SESSION_MSG_MAX 5
 
-#define SESSION_MSG_IS_PRIVATE  0x01
+#define SESSION_MSG_IS_PRIVATE 0x01
 
 extern const uint32_t session_key_rotation[2];
 
@@ -99,7 +99,7 @@ typedef struct {
 
   // output
   uint8_t device_message[SESSION_BUFFER_SIZE];
-} inheritance_query_t;
+} dummy_inheritance_query_t;
 
 /**
  * @brief Verified the signature of the payload

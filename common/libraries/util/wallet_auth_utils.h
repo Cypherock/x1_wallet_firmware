@@ -38,25 +38,29 @@ typedef enum {
   WALLET_AUTH_ERR_NOMINEE,
 } wallet_auth_error_type_e;
 
-
 #pragma pack(push, 1)
 typedef struct {
-    uint8_t wallet_id[WALLET_ID_SIZE];
-    uint8_t challenge[CHALLENGE_SIZE_LIMIT];
-    size_t challenge_size;
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  uint8_t challenge[CHALLENGE_SIZE_LIMIT];
+  size_t challenge_size;
 
-    uint8_t entropy[ENTROPY_SIZE_LIMIT];
-    uint8_t entropy_size;
-    ed25519_secret_key private_key;
+  uint8_t entropy[ENTROPY_SIZE_LIMIT];
+  uint8_t entropy_size;
+  ed25519_secret_key private_key;
 
-    ed25519_signature signature;
-    ed25519_public_key public_key;
+  ed25519_signature signature;
+  ed25519_public_key public_key;
 
-    wallet_auth_type_e auth_type;
-    wallet_auth_error_type_e status;
+  bool is_publickey;
+  wallet_auth_error_type_e status;
 } wallet_auth_t;
 #pragma pack(pop)
 
 extern wallet_auth_t auth;
+
+bool verify_wallet_auth_inputs();
+bool wallet_auth_get_entropy();
+bool wallet_auth_get_pairs();
+bool wallet_auth_get_signature();
 
 #endif

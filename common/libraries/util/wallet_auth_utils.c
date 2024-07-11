@@ -58,82 +58,60 @@
  */
 #include "wallet_auth_utils.h"
 
-wallet_auth_t auth = {0};
+bool verify_wallet_auth_inputs() {
+  ASSERT(auth.challenge != NULL);
+  ASSERT(auth.wallet_id != NULL);
+  ASSERT(auth.challenge_size != NULL);
+  ASSERT(auth.challenge_size <= CHALLENGE_SIZE_LIMIT);    // Add lower limit
 
-bool verify_wallet_auth_inputs(){
-    ASSERT(auth.challenge != NULL);
-    ASSERT(auth.wallet_id != NULL);
-    ASSERT(auth.challenge_size != NULL);
-    ASSERT(auth.challenge_size <= CHALLENGE_SIZE_LIMIT);
-
-    return true;
+  return true;
 }
 
-bool wallet_auth_get_entropy(){
-    SecureMsg msgs[1] = {0};
-    msgs[0].plain_data_size = WALLET_ID_SIZE;
-    memcpy(msgs[0].plain_data, auth.wallet_id, WALLET_ID_SIZE);
-    
-    card_error_type_e status =
-    card_fetch_encrypt_data(auth.wallet_id, msgs, 1);
+bool wallet_auth_get_entropy() {
+  SecureMsg msgs[1] = {0};
+  msgs[0].plain_data_size = WALLET_ID_SIZE;
+  memcpy(msgs[0].plain_data, auth.wallet_id, WALLET_ID_SIZE);
 
-    if (status != CARD_OPERATION_SUCCESS || msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
-        printf("Secure msg encryption issue %d", status);
-        return false;
-    }
-        
-    memcpy(auth.entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
-    auth.entropy_size = msgs[0].encrypted_data_size;
+  card_error_type_e status = card_fetch_encrypt_data(auth.wallet_id, msgs, 1);
 
-    return true;
-}
-
-bool wallet_auth_get_pairs(){
-    mnemonic_to_seed(auth.entropy, "", auth.private_key, NULL);
-    ed25519_publickey(auth.private_key, auth.public_key);
-
-    memcpy(auth.public_key, auth.public_key, sizeof(ed25519_public_key));
-}
-
-bool wallet_auth_get_signature(){ 
-    const uint16_t unsigned_txn_size = auth.challenge_size + WALLET_ID_SIZE;
-    uint8_t unsigned_txn[unsigned_txn_size];
-
-    memcpy(unsigned_txn, auth.challenge, auth.challenge_size);
-    memcpy(unsigned_txn + auth.challenge_size, auth.wallet_id, WALLET_ID_SIZE);
-    
-    ed25519_sign(unsigned_txn, unsigned_txn_size, auth.private_key, auth.public_key, auth.signature);
-
-    int valid = ed25519_sign_open(unsigned_txn, unsigned_txn_size, auth.public_key, auth.signature);
-    if (0 != valid){
-        printf("Signature generation err: %d", valid);
-        return false;
-    }
-
-    return true;
-}
-
-
-wallet_auth_error_type_e wallet_login(){
-    if (!verify_wallet_auth_inputs(auth)) {
-        return WALLET_AUTH_INPUTS_INVALID;
-    }
-
-    switch (auth.auth_type) {
-        case WALLET_AUTH_OWNER:
-            if (!wallet_auth_get_entropy(auth) || wallet_auth_get_pairs(auth) || !wallet_auth_get_signature(auth))
-                return WALLET_AUTH_ERR_OWNER;
-            break;
-
-        case WALLET_AUTH_NOMINEE:
-            if (!wallet_auth_get_signature(auth))
-                return WALLET_AUTH_ERR_NOMINEE;
-
-    default: {
-      return WALLET_AUTH_TYPE_INVALID;
-    }
+  if (status != CARD_OPERATION_SUCCESS ||
+      msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
+    printf("Secure msg encryption issue %d", status);
+    return false;
   }
-  auth.status = WALLET_AUTH_OK;
-  
-  memset(&auth, 0, sizeof(auth));
+
+  memcpy(auth.entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
+  auth.entropy_size = msgs[0].encrypted_data_size;
+
+  return true;
+}
+
+bool wallet_auth_get_pairs() {
+  mnemonic_to_seed(auth.entropy, "", auth.private_key, NULL);
+  ed25519_publickey(auth.private_key, auth.public_key);
+
+  memcpy(auth.public_key, auth.public_key, sizeof(ed25519_public_key));
+}
+
+bool wallet_auth_get_signature() {
+  const uint16_t unsigned_txn_size = auth.challenge_size + WALLET_ID_SIZE;
+  uint8_t unsigned_txn[unsigned_txn_size];
+
+  memcpy(unsigned_txn, auth.challenge, auth.challenge_size);
+  memcpy(unsigned_txn + auth.challenge_size, auth.wallet_id, WALLET_ID_SIZE);
+
+  ed25519_sign(unsigned_txn,
+               unsigned_txn_size,
+               auth.private_key,
+               auth.public_key,
+               auth.signature);
+
+  int valid = ed25519_sign_open(
+      unsigned_txn, unsigned_txn_size, auth.public_key, auth.signature);
+  if (0 != valid) {
+    printf("Signature generation err: %d", valid);
+    return false;
+  }
+
+  return true;
 }

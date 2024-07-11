@@ -335,7 +335,8 @@ bool session_msg_decryption(uint8_t *pass_key,
     return false;
   }
 
-  card_error_type_e status = card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
+  card_error_type_e status =
+      card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
@@ -359,7 +360,7 @@ void session_send_error() {
   LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
 }
 
-session_error_type_e session_main(inheritance_query_t *query) {
+session_error_type_e session_main(dummy_inheritance_query_t *query) {
   char buffer[SESSION_BUFFER_SIZE] = {0};
   size_t size;
 
@@ -394,9 +395,9 @@ session_error_type_e session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_ENCRYPT:
-      for (int i = 0; i < query->msg_array_size; i++){
+      for (int i = 0; i < query->msg_array_size; i++) {
         memzero(query->SessionMsgs[i].encrypted_data, MSG_SIZE);
-        query->SessionMsgs[i].encrypted_data_size = 0; 
+        query->SessionMsgs[i].encrypted_data_size = 0;
       }
       if (!session_msg_encryption(query->pass_key,
                                   query->wallet_id,
@@ -412,9 +413,9 @@ session_error_type_e session_main(inheritance_query_t *query) {
       break;
 
     case SESSION_MSG_DECRYPT:
-      for (int i = 0; i < query->msg_array_size; i++){
+      for (int i = 0; i < query->msg_array_size; i++) {
         memzero(query->SessionMsgs[i].plain_data, MSG_SIZE);
-        query->SessionMsgs[i].plain_data_size = 0; 
+        query->SessionMsgs[i].plain_data_size = 0;
       }
       if (!session_msg_decryption(query->pass_key,
                                   query->wallet_id,
@@ -445,7 +446,7 @@ session_error_type_e session_main(inheritance_query_t *query) {
 }
 
 void test_session_main(session_msg_type_e type) {
-  inheritance_query_t *query = malloc(sizeof(inheritance_query_t));
+  dummy_inheritance_query_t *query = malloc(sizeof(dummy_inheritance_query_t));
   query->type = type;
 
   session.status = SESSION_ERR_INVALID;
@@ -497,8 +498,7 @@ void print_msg(SecureMsg msg, uint8_t index) {
                            msg.encrypted_data_size,
                            hex,
                            msg.encrypted_data_size * 2 + 1);
-  printf(
-      "Data [%d] encrypted_data: %s\n", index + 1, msg.encrypted_data);
+  printf("Data [%d] encrypted_data: %s\n", index + 1, msg.encrypted_data);
   printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
 }
 
@@ -523,7 +523,7 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
   arr[3] = value & 0xFF;            // Extract the lowest byte
 }
 
-void test_generate_server_data(inheritance_query_t *query) {
+void test_generate_server_data(dummy_inheritance_query_t *query) {
   uint8_t server_message[SESSION_BUFFER_SIZE];
 
   uint8_t server_random[SESSION_PRIV_KEY_SIZE];
@@ -562,49 +562,96 @@ void test_generate_server_data(inheritance_query_t *query) {
   memcpy(query->server_message, server_message, offset);
 }
 
-void test_generate_server_encrypt_data(inheritance_query_t *query) {
+void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
   const uint8_t msg_count = 5;
-  static const char *messages[] = {
-    "Short message", // 10 chars
+  static const char
+      *
+          messages[] =
+              {
+                  "Short message",    // 10 chars
 
-    "This is a slightly longer message to test the 50 characters length requirement.", // 50 chars
+                  "This is a slightly longer message to test the 50 characters "
+                  "length requirement.",    // 50 chars
 
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", // 100 chars
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
+                  "aliqua.",    // 100 chars
 
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor "
-    "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-    "sunt in culpa qui officia deserunt mollit anim id est laborum.", // 200 chars
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
+                  "aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
+                  "irure dolor "
+                  "in reprehenderit in voluptate velit esse cillum dolore eu "
+                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
+                  "non proident, "
+                  "sunt in culpa qui officia deserunt mollit anim id est "
+                  "laborum.",    // 200 chars
 
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor "
-    "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-    "sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
-    "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris "
-    "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat "
-    "nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", // 300 chars
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
+                  "aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
+                  "irure dolor "
+                  "in reprehenderit in voluptate velit esse cillum dolore eu "
+                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
+                  "non proident, "
+                  "sunt in culpa qui officia deserunt mollit anim id est "
+                  "laborum. Lorem ipsum dolor sit amet, consectetur adipiscing "
+                  "elit, sed do "
+                  "eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris "
+                  "nisi ut aliquip ex ea commodo consequat. Duis aute irure "
+                  "dolor in reprehenderit in voluptate velit esse cillum "
+                  "dolore eu fugiat "
+                  "nulla pariatur. Excepteur sint occaecat cupidatat non "
+                  "proident, sunt in culpa qui officia deserunt mollit anim id "
+                  "est laborum.",    // 300 chars
 
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor "
-    "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-    "sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "
-    "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris "
-    "nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat "
-    "nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. "
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut "
-    "enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor "
-    "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, "
-    "sunt in culpa qui officia deserunt mollit anim id est laborum." // 500 chars
-  };
-
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
+                  "aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
+                  "irure dolor "
+                  "in reprehenderit in voluptate velit esse cillum dolore eu "
+                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
+                  "non proident, "
+                  "sunt in culpa qui officia deserunt mollit anim id est "
+                  "laborum. Lorem ipsum dolor sit amet, consectetur adipiscing "
+                  "elit, sed do "
+                  "eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris "
+                  "nisi ut aliquip ex ea commodo consequat. Duis aute irure "
+                  "dolor in reprehenderit in voluptate velit esse cillum "
+                  "dolore eu fugiat "
+                  "nulla pariatur. Excepteur sint occaecat cupidatat non "
+                  "proident, sunt in culpa qui officia deserunt mollit anim id "
+                  "est laborum. "
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
+                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
+                  "aliqua. Ut "
+                  "enim ad minim veniam, quis nostrud exercitation ullamco "
+                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
+                  "irure dolor "
+                  "in reprehenderit in voluptate velit esse cillum dolore eu "
+                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
+                  "non proident, "
+                  "sunt in culpa qui officia deserunt mollit anim id est "
+                  "laborum."    // 500 chars
+              };
 
   query->msg_array_size = msg_count;
-  for (int i=0; i<msg_count; i++){
+  for (int i = 0; i < msg_count; i++) {
     memcpy(query->SessionMsgs[i].plain_data, messages[i], strlen(messages[i]));
     query->SessionMsgs[i].plain_data_size = strlen(messages[i]);
     // print_msg(query->SessionMsgs[i], i);
   }
-  
+
 #if USE_SIMULATOR == 0
   memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
 #else
