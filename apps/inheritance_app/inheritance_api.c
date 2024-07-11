@@ -140,7 +140,7 @@ bool encode_inheritance_result(const inheritance_result_t *result,
 
   /* Now we are ready to encode the message! */
   bool status = pb_encode(&stream, INHERITANCE_RESULT_FIELDS, result);
-  printf("ENCODE STATUS: %d", status);
+
   if (true == status) {
     *bytes_written_out = stream.bytes_written;
   }
@@ -177,10 +177,7 @@ void inheritance_send_result(const inheritance_result_t *result) {
   size_t bytes_encoded = 0;
   ASSERT(encode_inheritance_result(
       result, buffer, sizeof(buffer), &bytes_encoded));
-  printf("\nBUFFER:");
-  for (int i = 0; i < bytes_encoded; i++) {
-    printf("%02x", buffer[i]);
-  }
+
   send_response_to_host(&buffer[0], bytes_encoded);
 }
 
