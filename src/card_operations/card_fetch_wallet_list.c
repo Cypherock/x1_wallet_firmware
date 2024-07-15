@@ -228,7 +228,7 @@ bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name) {
     }
   }
 
-  if (wallet_name == ""){
+  if (wallet_name == "") {
     return false;
   }
 
@@ -242,4 +242,3 @@ bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name) {
 
   return true;
 }
-

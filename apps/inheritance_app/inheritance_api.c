@@ -177,6 +177,7 @@ void inheritance_send_result(const inheritance_result_t *result) {
   size_t bytes_encoded = 0;
   ASSERT(encode_inheritance_result(
       result, buffer, sizeof(buffer), &bytes_encoded));
+
   send_response_to_host(&buffer[0], bytes_encoded);
 }
 

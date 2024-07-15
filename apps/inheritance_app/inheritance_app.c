@@ -121,8 +121,8 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
   switch ((uint8_t)query.which_request) {
-    case INHERITANCE_QUERY_GET_CHALLENGE_TAG: {
-      inheritance_get_wallet_sign(&query);
+    case INHERITANCE_QUERY_WALLET_AUTH_TAG: {
+      wallet_login(&query);
       break;
     }
 

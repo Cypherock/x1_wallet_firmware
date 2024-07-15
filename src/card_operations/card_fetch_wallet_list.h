@@ -57,7 +57,6 @@ card_error_type_e card_fetch_wallet_list(
     const card_fetch_wallet_list_config_t *config,
     card_fetch_wallet_list_response_t *response);
 
-
 /**
  * @brief This card operation extracts the wallet list from an X1 card
  *

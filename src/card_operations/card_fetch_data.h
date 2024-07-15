@@ -17,7 +17,7 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define PLAIN_DATA_BUFFER_SIZE 100 // Card data encryption limit <100 chars>
+#define PLAIN_DATA_BUFFER_SIZE 100    // Card data encryption limit <100 chars>
 #define ENCRYPTED_DATA_BUFFER_SIZE 112
 
 #define DATA_CHUNKS_MAX 10

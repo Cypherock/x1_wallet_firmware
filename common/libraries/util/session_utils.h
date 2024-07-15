@@ -82,7 +82,7 @@ typedef struct {
   const char wallet_name[NAME_SIZE];
   SecureData SessionMsgs[SESSION_MSG_MAX];
   uint8_t msg_count;
-  
+
   uint8_t session_id[SESSION_ID_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
 
@@ -107,7 +107,7 @@ typedef struct {
 
   // output
   uint8_t device_message[SESSION_BUFFER_SIZE];
-} inheritance_query_t;
+} dummy_inheritance_query_t;
 
 /**
  * @brief Verified the signature of the payload
