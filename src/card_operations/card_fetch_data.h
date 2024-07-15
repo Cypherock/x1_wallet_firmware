@@ -17,10 +17,13 @@
 #include "stdint.h"
 #include "wallet.h"
 
-#define PLAIN_DATA_SIZE 100 // Card data encryption limit <100 chars>
-#define ENCRYPTED_DATA_SIZE 150
+#define PLAIN_DATA_BUFFER_SIZE 100    // Card data encryption limit <100 chars>
+#define ENCRYPTED_DATA_BUFFER_SIZE 112
 
-#define MSG_SIZE 1024
+#define DATA_CHUNKS_MAX 10
+
+#define PLAIN_DATA_SIZE (PLAIN_DATA_BUFFER_SIZE * DATA_CHUNKS_MAX)
+#define ENCRYPTED_DATA_SIZE (ENCRYPTED_DATA_BUFFER_SIZE * DATA_CHUNKS_MAX)
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -31,11 +34,11 @@
  *****************************************************************************/
 #pragma pack(push, 1)
 typedef struct {
-  uint8_t plain_data[MSG_SIZE];
+  uint8_t plain_data[PLAIN_DATA_SIZE];
   uint16_t plain_data_size;
-  uint8_t encrypted_data[MSG_SIZE];
+  uint8_t encrypted_data[ENCRYPTED_DATA_SIZE];
   uint16_t encrypted_data_size;
-} SecureMsg;
+} SecureData;
 #pragma pack(pop)
 
 /*****************************************************************************
@@ -62,6 +65,6 @@ typedef struct {
  * @return A card_error_type_e value representing the result of the operation.
  */
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SecureMsg *msgs,
-                                          size_t msg_array_size);
+                                          SecureData *msgs,
+                                          size_t msg_count);
 #endif

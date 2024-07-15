@@ -116,9 +116,9 @@ bool derive_session_id() {
       &random_point, &session.server_random_public_point, sizeof(curve_point));
   point_add(curve, &session.device_random_public_point, &random_point);
 
-  printf("\nsession id random_point: ");
-  bn_print(&random_point.x);
-  bn_print(&random_point.y);
+  // printf("\nsession id random_point: ");
+  // bn_print(&random_point.x);
+  // bn_print(&random_point.y);
 
   uint8_t temp[2 * SESSION_PRIV_KEY_SIZE];
   bn_write_be(&random_point.x, temp);
@@ -187,23 +187,14 @@ bool session_get_random_keys(uint8_t *random,
     return false;
   }
 
-  bn_print(&random_public_point.x);
-  bn_print(&random_public_point.y);
+  // bn_print(&random_public_point.x);
+  // bn_print(&random_public_point.y);
 
   return true;
 }
 
 bool session_id_is_valid(uint8_t *pass_key) {
   return (memcmp(pass_key, session.session_id, SESSION_ID_SIZE) == 0);
-}
-
-bool wallet_id_is_valid(
-    uint8_t *wallet_id) {    // TODO: Change to wallet_id when protobuf added
-#if USE_SIMULATOR == 0
-  return (memcmp(wallet_id, get_wallet_id(0), WALLET_ID_SIZE) == 0);
-#else
-  return (memcmp(wallet_id, session.device_id, WALLET_ID_SIZE) == 0);
-#endif
 }
 
 bool session_send_device_key(uint8_t *payload) {
@@ -294,56 +285,242 @@ bool session_receive_server_key(uint8_t *server_message) {
   return true;
 }
 
-bool session_msg_encryption(uint8_t *pass_key,
-                            uint8_t *wallet_id,
-                            SecureMsg *msgs,
-                            size_t msg_array_size) {
-  ASSERT(pass_key != NULL);
-  ASSERT(wallet_id != NULL);
+void session_serialise_packet(SecureData *msgs,
+                              size_t msg_count,
+                              uint8_t *data,
+                              size_t *len) {
+  size_t size = *len;
+
   ASSERT(msgs != NULL);
-  ASSERT(msg_array_size != 0);
+  ASSERT(msg_count != 0);
 
-  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
-    printf("ERROR: Session is invalid");
-    return false;
+  size = 0;
+  for (int i = 0; i < msg_count; i++) {
+    data[size] += (msgs[i].encrypted_data_size >> 8) & 0xFF;
+    size += 1;
+    data[size] += msgs[i].encrypted_data_size & 0xFF;
+    size += 1;
+
+    memcpy(data + size, msgs[i].encrypted_data, msgs[i].encrypted_data_size);
+    size += msgs[i].encrypted_data_size;
   }
 
-  card_error_type_e status =
-      card_fetch_encrypt_data(wallet_id, msgs, msg_array_size);
+  *len = size;
+}
 
-  if (status != CARD_OPERATION_SUCCESS) {
-    printf("ERROR: Card is invalid: %x", status);
-    return false;
+session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
+                                                size_t *len,
+                                                uint8_t *key,
+                                                uint8_t *iv_immut) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
+  ASSERT(size <= SESSION_PACKET_SIZE);
+
+  uint8_t payload[size];
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  uint8_t last_block[AES_BLOCK_SIZE] = {0};
+  uint8_t remainder = size % AES_BLOCK_SIZE;
+
+  // Round down to last whole block
+  size -= remainder;
+  // Copy old last block
+  memcpy(last_block, payload + size, remainder);
+  // Pad new last block with number of missing bytes
+  memset(last_block + remainder,
+         AES_BLOCK_SIZE - remainder,
+         AES_BLOCK_SIZE - remainder);
+
+  // the IV gets mutated, so we make a copy not to touch the original
+  uint8_t iv[AES_BLOCK_SIZE] = {0};
+  memcpy(iv, iv_immut, AES_BLOCK_SIZE);
+
+  aes_encrypt_ctx ctx = {0};
+
+  if (aes_encrypt_key256(key, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_KEY_ERR;
   }
 
-  memcpy(session.SessionMsgs, msgs, sizeof(SecureMsg) * msg_array_size);
+  if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  if (aes_cbc_encrypt(
+          last_block, InOut_data + size, sizeof(last_block), iv, &ctx) !=
+      EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  size += sizeof(last_block);
+  *len = size;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  return SESSION_ENCRYPT_PACKET_SUCCESS;
+}
+
+bool session_encrypt_packet(SecureData *msgs,
+                            uint8_t msg_count,
+                            uint8_t *key,
+                            uint8_t *iv,
+                            uint8_t *packet,
+                            size_t *packet_size) {
+  session_serialise_packet(msgs, msg_count, packet, packet_size);
+  memcpy(session.packet, packet, *packet_size);
+  if (SESSION_ENCRYPT_PACKET_SUCCESS !=
+      session_aes_encrypt_packet(packet, packet_size, key, iv))
+    return false;
+
+  memcpy(session.packet, packet, *packet_size);
 
   return true;
 }
 
-bool session_msg_decryption(uint8_t *pass_key,
-                            uint8_t *wallet_id,
-                            SecureMsg *msgs,
-                            size_t msg_array_size) {
+void session_deserialise_packet(SecureData *msgs,
+                                size_t msg_count,
+                                uint8_t *data,
+                                size_t *len) {
+  ASSERT(msgs != NULL);
+
+  size_t index = 0;
+  while (index <= *len) {
+    msgs[msg_count].encrypted_data_size = (uint16_t)data[index] << 8;
+    index += 1;
+    msgs[msg_count].encrypted_data_size |= (uint16_t)data[index];
+    index += 1;
+
+    memcpy(msgs[msg_count].encrypted_data,
+           data + index,
+           msgs[msg_count].encrypted_data_size);
+    index += msgs[msg_count].encrypted_data_size;
+
+    msg_count += 1;
+  }
+}
+
+session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
+                                                uint16_t *len,
+                                                uint8_t *key,
+                                                uint8_t *iv) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
+
+  uint8_t payload[size];
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  aes_decrypt_ctx ctx = {0};
+
+  if (EXIT_SUCCESS != aes_decrypt_key256(key, &ctx))
+    return SESSION_DECRYPT_PACKET_KEY_ERR;
+
+  if (aes_cbc_decrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS ||
+      size > SESSION_PACKET_SIZE)
+    return SESSION_DECRYPT_PACKET_ERR;
+
+  *len = size;
+  memset(&ctx, 0, sizeof(ctx));
+
+  return SESSION_DECRYPT_PACKET_SUCCESS;
+}
+
+bool session_decrypt_packet(SecureData *msgs,
+                            uint8_t msg_count,
+                            uint8_t *key,
+                            uint8_t *iv,
+                            uint8_t *packet,
+                            size_t *packet_size) {
+  memcpy(session.packet, packet, *packet_size);
+
+  if (SESSION_DECRYPT_PACKET_SUCCESS !=
+      session_aes_decrypt_packet(packet, packet_size, key, iv))
+    return false;
+
+  memcpy(session.packet, packet, *packet_size);
+
+  session_deserialise_packet(msgs, msg_count, packet, packet_size);
+
+  memcpy(session.packet, packet, *packet_size);
+
+  return true;
+}
+
+bool session_encrypt_secure_data(uint8_t *pass_key,
+                                 uint8_t *wallet_id,
+                                 SecureData *msgs,
+                                 size_t msg_count) {
   ASSERT(pass_key != NULL);
   ASSERT(wallet_id != NULL);
   ASSERT(msgs != NULL);
-  ASSERT(msg_array_size != 0);
+  ASSERT(msg_count != 0);
+  ASSERT(msg_count <= SESSION_MSG_MAX);
 
-  if (!session_id_is_valid(pass_key) || !wallet_id_is_valid(wallet_id)) {
+  if (!session_id_is_valid(pass_key)) {
+    printf("Session key invalid err");
+    return false;
+  }
+
+  card_error_type_e status =
+      card_fetch_encrypt_data(wallet_id, msgs, msg_count);
+  if (status != CARD_OPERATION_SUCCESS) {
+    printf("Card encrypt err: %x", status);
+    return false;
+  }
+
+  memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
+  session.msg_count = msg_count;
+
+  // TODO: remove after testing
+  uint8_t packet[SESSION_PACKET_SIZE] = {0};
+  size_t packet_size = 0;
+
+  session_encrypt_packet(session.SessionMsgs,
+                         session.msg_count,
+                         session.session_key,
+                         session.session_id,
+                         packet,
+                         &packet_size);
+  session_reset_secure_data();
+  session_decrypt_packet(session.SessionMsgs,
+                         session.msg_count,
+                         session.session_key,
+                         session.session_id,
+                         packet,
+                         &packet_size);
+
+  return true;
+}
+
+bool session_decrypt_secure_data(uint8_t *pass_key,
+                                 uint8_t *wallet_id,
+                                 SecureData *msgs,
+                                 size_t msg_count) {
+  ASSERT(pass_key != NULL);
+  ASSERT(wallet_id != NULL);
+  ASSERT(msgs != NULL);
+  ASSERT(msg_count != 0);
+  ASSERT(msg_count <= SESSION_MSG_MAX);
+
+  if (!session_id_is_valid(pass_key)) {
     printf("ERROR: Session is invalid");
     return false;
   }
 
   card_error_type_e status =
-      card_fetch_decrypt_data(wallet_id, msgs, msg_array_size);
+      card_fetch_decrypt_data(wallet_id, msgs, msg_count);
 
   if (status != CARD_OPERATION_SUCCESS) {
     printf("ERROR: Card is invalid: %x", status);
     return false;
   }
 
-  memcpy(session.SessionMsgs, msgs, sizeof(SecureMsg) * msg_array_size);
+  memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
+  session.msg_count = msg_count;
 
   return true;
 }
@@ -352,8 +529,9 @@ void session_reset() {
   memset(&session, 0, sizeof(session));
 }
 
-void session_msg_reset() {
-  memset(&session.SessionMsgs, 0, sizeof(SecureMsg) * SESSION_MSG_MAX);
+void session_reset_secure_data() {
+  memset(&session.SessionMsgs, 0, sizeof(session.SessionMsgs));
+  session.msg_count = 0;
 }
 
 void session_send_error() {
@@ -377,6 +555,7 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
       }
       byte_array_to_hex_string(
           query->device_message, size, buffer, size * 2 + 1);
+      printf("Device Message: %s", buffer, size * 2 + 1);
       break;
 
     case SESSION_MSG_RECEIVE_SERVER_KEY:
@@ -392,42 +571,45 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
              SIGNATURE_SIZE;
       byte_array_to_hex_string(
           query->server_message, size, buffer, size * 2 + 1);
+      printf("Server Message: %s", buffer, size * 2 + 1);
       break;
 
     case SESSION_MSG_ENCRYPT:
-      for (int i = 0; i < query->msg_array_size; i++) {
-        memzero(query->SessionMsgs[i].encrypted_data, MSG_SIZE);
+      // TODO: Remove after testing
+      for (int i = 0; i < query->msg_count; i++) {
+        memzero(query->SessionMsgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
         query->SessionMsgs[i].encrypted_data_size = 0;
       }
-      if (!session_msg_encryption(query->pass_key,
-                                  query->wallet_id,
-                                  query->SessionMsgs,
-                                  query->msg_array_size)) {
+      if (!session_encrypt_secure_data(query->pass_key,
+                                       query->wallet_id,
+                                       query->SessionMsgs,
+                                       query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
         return SESSION_ERR_ENCRYPT;
       }
-      session_msg_reset();
+      session_reset_secure_data();
       break;
 
     case SESSION_MSG_DECRYPT:
-      for (int i = 0; i < query->msg_array_size; i++) {
-        memzero(query->SessionMsgs[i].plain_data, MSG_SIZE);
+      // TODO: Remove after testing
+      for (int i = 0; i < query->msg_count; i++) {
+        memzero(query->SessionMsgs[i].plain_data, PLAIN_DATA_SIZE);
         query->SessionMsgs[i].plain_data_size = 0;
       }
-      if (!session_msg_decryption(query->pass_key,
-                                  query->wallet_id,
-                                  query->SessionMsgs,
-                                  query->msg_array_size)) {
+      if (!session_decrypt_secure_data(query->pass_key,
+                                       query->wallet_id,
+                                       query->SessionMsgs,
+                                       query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
         return SESSION_ERR_DECRYPT;
       }
-      session_msg_reset();
+      session_reset_secure_data();
       break;
 
     case SESSION_CLOSE:
@@ -488,7 +670,7 @@ void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
   hexstring[size * 2] = '\0';    // Null-terminate the string
 }
 
-void print_msg(SecureMsg msg, uint8_t index) {
+void print_msg(SecureData msg, uint8_t index) {
   char hex[200];
   byte_array_to_hex_string(
       msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);
@@ -568,26 +750,16 @@ void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
       *
           messages[] =
               {
-                  "Short message",    // 10 chars
+                  "Shortest",    // 9 chars
+
+                  "Short message",    // 13 chars
 
                   "This is a slightly longer message to test the 50 characters "
-                  "length requirement.",    // 50 chars
+                  "length requirement.",    // 80 chars
 
                   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
                   "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua.",    // 100 chars
-
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua. "
-                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
-                  "irure dolor "
-                  "in reprehenderit in voluptate velit esse cillum dolore eu "
-                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
-                  "non proident, "
-                  "sunt in culpa qui officia deserunt mollit anim id est "
-                  "laborum.",    // 200 chars
+                  "aliqua.",    // 123 chars
 
                   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
                   "sed do eiusmod tempor incididunt ut labore et dolore magna "
@@ -599,53 +771,54 @@ void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
                   "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
                   "non proident, "
                   "sunt in culpa qui officia deserunt mollit anim id est "
-                  "laborum. Lorem ipsum dolor sit amet, consectetur adipiscing "
-                  "elit, sed do "
-                  "eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris "
-                  "nisi ut aliquip ex ea commodo consequat. Duis aute irure "
-                  "dolor in reprehenderit in voluptate velit esse cillum "
-                  "dolore eu fugiat "
-                  "nulla pariatur. Excepteur sint occaecat cupidatat non "
-                  "proident, sunt in culpa qui officia deserunt mollit anim id "
-                  "est laborum.",    // 300 chars
+                  "laborum.",    // 446 chars
 
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua. "
-                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
-                  "irure dolor "
-                  "in reprehenderit in voluptate velit esse cillum dolore eu "
-                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
-                  "non proident, "
-                  "sunt in culpa qui officia deserunt mollit anim id est "
-                  "laborum. Lorem ipsum dolor sit amet, consectetur adipiscing "
-                  "elit, sed do "
-                  "eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris "
-                  "nisi ut aliquip ex ea commodo consequat. Duis aute irure "
-                  "dolor in reprehenderit in voluptate velit esse cillum "
-                  "dolore eu fugiat "
-                  "nulla pariatur. Excepteur sint occaecat cupidatat non "
-                  "proident, sunt in culpa qui officia deserunt mollit anim id "
-                  "est laborum. "
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua. Ut "
-                  "enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
-                  "irure dolor "
-                  "in reprehenderit in voluptate velit esse cillum dolore eu "
-                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
-                  "non proident, "
-                  "sunt in culpa qui officia deserunt mollit anim id est "
-                  "laborum."    // 500 chars
+                  // "Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                  // sed do eiusmod tempor incididunt ut labore et dolore magna
+                  // aliqua. " "Ut enim ad minim veniam, quis nostrud
+                  // exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  // consequat. Duis aute irure dolor " "in reprehenderit in
+                  // voluptate velit esse cillum dolore eu fugiat nulla
+                  // pariatur. Excepteur sint occaecat cupidatat non proident, "
+                  // "sunt in culpa qui officia deserunt mollit anim id est
+                  // laborum. Lorem ipsum dolor sit amet, consectetur adipiscing
+                  // elit, sed do " "eiusmod tempor incididunt ut labore et
+                  // dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  // exercitation ullamco laboris " "nisi ut aliquip ex ea
+                  // commodo consequat. Duis aute irure dolor in reprehenderit
+                  // in voluptate velit esse cillum dolore eu fugiat " "nulla
+                  // pariatur. Excepteur sint occaecat cupidatat non proident,
+                  // sunt in culpa qui officia deserunt mollit anim id est
+                  // laborum.", // 892 chars
+
+                  // "Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                  // sed do eiusmod tempor incididunt ut labore et dolore magna
+                  // aliqua. " "Ut enim ad minim veniam, quis nostrud
+                  // exercitation ullamco laboris nisi ut aliquip ex ea commodo
+                  // consequat. Duis aute irure dolor " "in reprehenderit in
+                  // voluptate velit esse cillum dolore eu fugiat nulla
+                  // pariatur. Excepteur sint occaecat cupidatat non proident, "
+                  // "sunt in culpa qui officia deserunt mollit anim id est
+                  // laborum. Lorem ipsum dolor sit amet, consectetur adipiscing
+                  // elit, sed do " "eiusmod tempor incididunt ut labore et
+                  // dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  // exercitation ullamco laboris " "nisi ut aliquip ex ea
+                  // commodo consequat. Duis aute irure dolor in reprehenderit
+                  // in voluptate velit esse cillum dolore eu fugiat " "nulla
+                  // pariatur. Excepteur sint occaecat cupidatat non proident,
+                  // sunt in culpa qui officia deserunt mollit anim id est
+                  // laborum. " "Lorem ipsum dolor sit amet, consectetur
+                  // adipiscing elit, sed do eiusmod tempor incididunt ut labore
+                  // et dolore magna aliqua. Ut " "enim ad minim veniam, quis
+                  // nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+                  // commodo consequat. Duis aute irure dolor " "in
+                  // reprehenderit in voluptate velit esse cillum dolore eu
+                  // fugiat nulla pariatur. Excepteur sint occaecat cupidatat
+                  // non proident, " "sunt in culpa qui officia deserunt mollit
+                  // anim id est laborum." // 500 chars
               };
 
-  query->msg_array_size = msg_count;
+  query->msg_count = msg_count;
   for (int i = 0; i < msg_count; i++) {
     memcpy(query->SessionMsgs[i].plain_data, messages[i], strlen(messages[i]));
     query->SessionMsgs[i].plain_data_size = strlen(messages[i]);

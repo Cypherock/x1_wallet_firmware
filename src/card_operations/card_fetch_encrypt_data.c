@@ -101,8 +101,8 @@
  *****************************************************************************/
 
 card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
-                                          SecureMsg *msgs,
-                                          size_t msg_array_size) {
+                                          SecureData *msgs,
+                                          size_t msg_count) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
@@ -118,8 +118,8 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  uint8_t plain_data_buffer[PLAIN_DATA_SIZE];
-  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_SIZE];
+  uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE];
+  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE];
   uint16_t encrypted_data_buffer_size;
   uint16_t plain_data_buffer_size;
   size_t index;
@@ -132,40 +132,45 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 #endif
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-
-      for (int i = 0; i < msg_array_size; i++) {  
-        memzero(plain_data_buffer, PLAIN_DATA_SIZE);
-        memzero(encrypted_data_buffer, ENCRYPTED_DATA_SIZE);
+      for (int i = 0; i < msg_count; i++) {
+        memzero(plain_data_buffer, PLAIN_DATA_BUFFER_SIZE);
+        memzero(encrypted_data_buffer, ENCRYPTED_DATA_BUFFER_SIZE);
 
         index = 0;
         while (index < msgs[i].plain_data_size) {
-          plain_data_buffer_size = (msgs[i].plain_data_size - index) <= PLAIN_DATA_SIZE ? 
-                              (msgs[i].plain_data_size - index) : 
-                              PLAIN_DATA_SIZE;
-          memcpy(plain_data_buffer, msgs[i].plain_data + index, plain_data_buffer_size);
+          plain_data_buffer_size =
+              (msgs[i].plain_data_size - index) < PLAIN_DATA_BUFFER_SIZE
+                  ? (msgs[i].plain_data_size - index)
+                  : PLAIN_DATA_BUFFER_SIZE;
+          memcpy(plain_data_buffer,
+                 msgs[i].plain_data + index,
+                 plain_data_buffer_size);
 
 #if USE_SIMULATOR == 0
           card_data.nfc_data.status =
               nfc_encrypt_data(wallet_name,
-                              plain_data_buffer,
-                              plain_data_buffer_size,
-                              encrypted_data_buffer,
-                              &encrypted_data_buffer_size);
+                               plain_data_buffer,
+                               plain_data_buffer_size,
+                               encrypted_data_buffer,
+                               &encrypted_data_buffer_size);
 #else
           memcpy(wallet_name, "FIRST", 5);
           dummy_nfc_encrypt_data(wallet_name,
-                              plain_data_buffer,
-                              plain_data_buffer_size,
-                              encrypted_data_buffer,
-                              &encrypted_data_buffer_size);
+                                 plain_data_buffer,
+                                 plain_data_buffer_size,
+                                 encrypted_data_buffer,
+                                 &encrypted_data_buffer_size);
           card_data.nfc_data.status = SW_NO_ERROR;
           result = CARD_OPERATION_SUCCESS;
 #endif
           if (card_data.nfc_data.status == SW_NO_ERROR) {
-            msgs[i].encrypted_data[msgs[i].encrypted_data_size] = encrypted_data_buffer_size;
+            msgs[i].encrypted_data[msgs[i].encrypted_data_size] =
+                encrypted_data_buffer_size;
             msgs[i].encrypted_data_size += 1;
 
-            memcpy(msgs[i].encrypted_data + msgs[i].encrypted_data_size, encrypted_data_buffer, encrypted_data_buffer_size);
+            memcpy(msgs[i].encrypted_data + msgs[i].encrypted_data_size,
+                   encrypted_data_buffer,
+                   encrypted_data_buffer_size);
             msgs[i].encrypted_data_size += encrypted_data_buffer_size;
           } else {
             card_handle_errors(&card_data);
@@ -181,7 +186,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
     } else {
       card_handle_errors(&card_data);
     }
-    
+
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;

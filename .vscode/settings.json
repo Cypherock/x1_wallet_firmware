@@ -31,7 +31,11 @@
         "system_error": "c",
         "chrono": "c",
         "condition_variable": "c",
-        "functional": "c"
+        "functional": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "cortex-debug.variableUseNaturalFormat": true

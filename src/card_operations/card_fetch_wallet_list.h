@@ -57,4 +57,16 @@ card_error_type_e card_fetch_wallet_list(
     const card_fetch_wallet_list_config_t *config,
     card_fetch_wallet_list_response_t *response);
 
+/**
+ * @brief This card operation extracts the wallet list from an X1 card
+ *
+ * @param config Reference to operation specific parameters such as acceptable
+ * cards
+ * @param response Reference to response structure which will be filled with the
+ * wallet list and the card tapped
+ * @return true If the operation was performed successfully
+ * @return false If the operation did not complete
+ */
+bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name);
+
 #endif /* CARD_FETCH_WALLET_LIST_H */
