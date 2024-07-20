@@ -226,6 +226,12 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
   RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
 }
 
+TEST_GROUP_RUNNER(inheritance_wallet_auth_tests) {
+  RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_entropy_action);
+  RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_pairs_action);
+  RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_signature_action);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
@@ -235,12 +241,6 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_invalid_non_print_utf);
   RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
-}
-
-TEST_GROUP_RUNNER(wallet_auth_tests) {
-  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_entropy_action);
-  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_pairs_action);
-  RUN_TEST_CASE(wallet_auth_tests, wallet_auth_get_signature_action);
 }
 
 TEST_GROUP_RUNNER(session_tests) {

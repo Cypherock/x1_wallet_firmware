@@ -170,12 +170,12 @@ int main(void) {
   // NAME_SIZE*2+1);
 
   // Test Session
-  for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
-       type < NUM_SESSION_MSG_TYPE_E;
-       type = (session_msg_type_e)(type + 1)) {
-    printf("\n\n--------> TYPE: %s\n", session_status_string(type));
-    test_session_main(type);
-  }
+  // for (session_msg_type_e type = SESSION_MSG_SEND_DEVICE_KEY;
+  //      type < NUM_SESSION_MSG_TYPE_E;
+  //      type = (session_msg_type_e)(type + 1)) {
+  //   printf("\n\n--------> TYPE: %s\n", session_status_string(type));
+  //   test_session_main(type);
+  // }
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

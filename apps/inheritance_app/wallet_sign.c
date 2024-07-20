@@ -17,6 +17,7 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_auth_helpers.h"
+#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -43,22 +44,36 @@ static wallet_auth_t *auth = NULL;
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Verifies the integrity and validity of the wallet authentication inputs.
+ *
+ * This static function checks if the challenge, wallet ID, and challenge size are
+ * non-zero and within the expected range. It ensures the authentication inputs are valid.
+ *
+ * @return true Always returns true if all assertions pass.
+ */
+static bool verify_wallet_auth_inputs(wallet_auth_t *auth);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool verify_wallet_auth_inputs() {
-  ASSERT(auth->challenge != NULL);
-  ASSERT(auth->wallet_id != NULL);
-  ASSERT(auth->challenge_size != NULL);
+static bool verify_wallet_auth_inputs(wallet_auth_t *auth) {
+  ASSERT(auth->challenge != 0);
+  ASSERT(auth->wallet_id != 0);
+  ASSERT(auth->challenge_size != 0);
   ASSERT(CHALLENGE_SIZE_MIN <= auth->challenge_size &&
          auth->challenge_size <= CHALLENGE_SIZE_MAX);
 
   return true;
 }
 
-static bool wallet_auth_get_entropy() {
-  SecureMsg msgs[1] = {0};
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+
+bool wallet_auth_get_entropy(wallet_auth_t *auth) {
+  SecureData msgs[1] = {0};
   msgs[0].plain_data_size = WALLET_ID_SIZE;
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 
@@ -69,22 +84,20 @@ static bool wallet_auth_get_entropy() {
     return false;
   }
 
-  memcpy(auth->entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
+  memcpy((void*)auth->entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
   auth->entropy_size = msgs[0].encrypted_data_size;
 
   return true;
 }
 
-static bool wallet_auth_get_pairs() {
+bool wallet_auth_get_pairs(wallet_auth_t *auth) {
   mnemonic_to_seed(auth->entropy, "", auth->private_key, NULL);
   ed25519_publickey(auth->private_key, auth->public_key);
-
-  memcpy(auth->public_key, auth->public_key, sizeof(ed25519_public_key));
 
   return true;
 }
 
-static bool wallet_auth_get_signature() {
+bool wallet_auth_get_signature(wallet_auth_t *auth) {
   const size_t unsigned_txn_size = auth->challenge_size + WALLET_ID_SIZE;
   uint8_t unsigned_txn[unsigned_txn_size];
 
@@ -107,9 +120,6 @@ static bool wallet_auth_get_signature() {
   return true;
 }
 
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
 void wallet_login(inheritance_query_t *query) {
   auth = (wallet_auth_t *)malloc(sizeof(wallet_auth_t));
   memzero(auth, sizeof(wallet_auth_t));
@@ -122,8 +132,8 @@ void wallet_login(inheritance_query_t *query) {
          auth->challenge_size);
   auth->is_setup = query->wallet_auth.initiate.is_publickey;
 
-  if (!verify_wallet_auth_inputs() || !wallet_auth_get_entropy() ||
-      !wallet_auth_get_pairs() || !wallet_auth_get_signature()) {
+  if (!verify_wallet_auth_inputs(auth) || !wallet_auth_get_entropy(auth) ||
+      !wallet_auth_get_pairs(auth) || !wallet_auth_get_signature(auth)) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_DATA);
     return;

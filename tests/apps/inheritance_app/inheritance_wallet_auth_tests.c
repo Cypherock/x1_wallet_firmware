@@ -1,7 +1,7 @@
 /**
- * @file    wallet_auth_tests.c
+ * @file    inheritance_helper_tests.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Unit tests for Bitcoin helper functions
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -55,14 +55,15 @@
  *
  ******************************************************************************
  */
-
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
 #include <string.h>
 
-#include "wallet_auth_utils.h"
+#include "wallet_auth_helpers.h"
 #include "unity_fixture.h"
+#include "wallet.h"
+#include "ed25519.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,6 +80,7 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static wallet_auth_t *auth = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -95,20 +97,20 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-TEST_GROUP(wallet_auth_tests);
+TEST_GROUP(inheritance_wallet_auth_tests);
 
-TEST_SETUP(wallet_auth_tests) {
-  return;
+TEST_SETUP(inheritance_wallet_auth_tests) {
+  auth = (wallet_auth_t *)malloc(sizeof(wallet_auth_t));
 }
 
-TEST_TEAR_DOWN(wallet_auth_tests) {
-  memset(&auth, 0, sizeof(auth));
+TEST_TEAR_DOWN(inheritance_wallet_auth_tests) {
+  memset(auth, 0, sizeof(auth));
 }
 
-TEST(wallet_auth_tests, wallet_auth_get_entropy_action) { 
-  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth.wallet_id);
+TEST(inheritance_wallet_auth_tests, wallet_auth_get_entropy_action) {
+  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth->wallet_id);
 
-  wallet_auth_get_entropy();
+  wallet_auth_get_entropy(auth);
 
   uint8_t expected_entropy[ENTROPY_SIZE_LIMIT] = {0};
   hex_string_to_byte_array(
@@ -118,14 +120,14 @@ TEST(wallet_auth_tests, wallet_auth_get_entropy_action) {
 
   uint8_t public_key[64] = {0};
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-      expected_entropy, auth.entropy, sizeof(expected_entropy));
+      expected_entropy, auth->entropy, sizeof(expected_entropy));
 }
 
-TEST(wallet_auth_tests, wallet_auth_get_pairs_action) { 
-  auth.entropy_size = 68;
-  hex_string_to_byte_array("2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe", auth.entropy_size, auth.entropy);
+TEST(inheritance_wallet_auth_tests, wallet_auth_get_pairs_action) {
+  auth->entropy_size = 68;
+  hex_string_to_byte_array("2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe", auth->entropy_size, auth->entropy);
 
-  wallet_auth_get_pairs();
+  wallet_auth_get_pairs(auth);
 
   uint8_t expected_public_key[32] = {0};
   hex_string_to_byte_array(
@@ -135,17 +137,17 @@ TEST(wallet_auth_tests, wallet_auth_get_pairs_action) {
 
   uint8_t public_key[64] = {0};
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-      expected_public_key, auth.public_key, sizeof(expected_public_key));
+      expected_public_key, auth->public_key, sizeof(expected_public_key));
 }
 
-TEST(wallet_auth_tests, wallet_auth_get_signature_action) {
-  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth.wallet_id);
-  hex_string_to_byte_array("947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e", sizeof(ed25519_secret_key)*2, auth.private_key);
-  hex_string_to_byte_array("a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c", sizeof(ed25519_public_key)*2, auth.public_key);
-  auth.challenge_size = 28;
-  memcpy(auth.challenge, "This is an example challenge", auth.challenge_size);
+TEST(inheritance_wallet_auth_tests, wallet_auth_get_signature_action) {
+  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth->wallet_id);
+  hex_string_to_byte_array("947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e", sizeof(ed25519_secret_key)*2, auth->private_key);
+  hex_string_to_byte_array("a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c", sizeof(ed25519_public_key)*2, auth->public_key);
+  auth->challenge_size = 28;
+  memcpy(auth->challenge, "This is an example challenge", auth->challenge_size);
   
-  wallet_auth_get_signature();
+  wallet_auth_get_signature(auth);
 
   uint8_t expected_signature[64] = {0};
   hex_string_to_byte_array(
@@ -154,5 +156,5 @@ TEST(wallet_auth_tests, wallet_auth_get_signature_action) {
     expected_signature);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-      expected_signature, auth.signature, sizeof(expected_signature));
+      expected_signature, auth->signature, sizeof(expected_signature));
 }
