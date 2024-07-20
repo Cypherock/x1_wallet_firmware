@@ -46,7 +46,16 @@
  */
 const cy_app_desc_t *get_inheritance_app_desc();
 
-// COMMENTS
+/**
+ * @brief Handles the wallet login process, including authentication and key generation.
+ *
+ * This function initializes the wallet authentication structure, populates it with data
+ * from the query, and performs a series of authentication steps (input verification,
+ * entropy fetching, key pair generation, and signature generation). If successful,
+ * it sends the result, including the public key and signature if setup is required.
+ *
+ * @param query The reference to the inheritance query containing wallet authentication data.
+ */
 void wallet_login(inheritance_query_t *query);
 
 #endif /* INHERITANCE_MAIN_H */
