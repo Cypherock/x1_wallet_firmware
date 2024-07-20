@@ -48,9 +48,9 @@ static wallet_auth_t *auth = NULL;
  *****************************************************************************/
 
 static bool verify_wallet_auth_inputs() {
-  ASSERT(auth->challenge != NULL);
-  ASSERT(auth->wallet_id != NULL);
-  ASSERT(auth->challenge_size != NULL);
+  ASSERT(auth->challenge != 0);
+  ASSERT(auth->wallet_id != 0);
+  ASSERT(auth->challenge_size != 0);
   ASSERT(CHALLENGE_SIZE_MIN <= auth->challenge_size &&
          auth->challenge_size <= CHALLENGE_SIZE_MAX);
 
