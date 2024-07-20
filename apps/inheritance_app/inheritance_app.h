@@ -22,7 +22,7 @@
 #include "events.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
-#include "wallet_auth_helpers.h"
+#include "wallet_auth.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES

@@ -135,12 +135,12 @@ static void memory_monitor(lv_task_t *param);
 #include "session_utils.h"
 // #include "wallet_auth_utils.h"
 
-const char *session_status_string(session_msg_type_e type) {
-  static const char *status[] = {
-      "send", "receive", "encrypt", "decrypt", "close"};
-  return (type >= 0 && type < NUM_SESSION_MSG_TYPE_E) ? status[type]
-                                                      : "UNKNOWN";
-}
+// const char *session_status_string(session_msg_type_e type) {
+//   static const char *status[] = {
+//       "send", "receive", "encrypt", "decrypt", "close"};
+//   return (type >= 0 && type < NUM_SESSION_MSG_TYPE_E) ? status[type]
+//                                                       : "UNKNOWN";
+// }
 
 int main(void) {
 #ifdef DEV_BUILD

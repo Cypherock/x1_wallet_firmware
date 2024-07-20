@@ -1,5 +1,5 @@
 /**
- * @file    session_utils.h
+ * @file    wallet_auth.h
  * @author  Cypherock X1 Team
  * @brief   Header file containing the session utility functions
  *          This file declares the functions used to create and manage the
@@ -10,8 +10,8 @@
  * target=_blank>https://mitcc.org/</a>
  */
 
-#ifndef WALLET_AUTH_UTILS
-#define WALLET_AUTH_UTILS
+#ifndef WALLET_AUTH
+#define WALLET_AUTH
 
 #pragma once
 
@@ -22,9 +22,9 @@
 #include "nfc.h"
 #include "session_utils.h"
 
-#define CHALLENGE_SIZE_MAX 100    // 32 ?
+#define CHALLENGE_SIZE_MAX 32
 #define CHALLENGE_SIZE_MIN 16
-#define ENTROPY_SIZE_LIMIT 150
+#define ENTROPY_SIZE_LIMIT 100
 
 typedef enum {
   WALLET_AUTH_OK = 0,

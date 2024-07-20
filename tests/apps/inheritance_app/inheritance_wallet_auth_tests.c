@@ -60,7 +60,7 @@
  *****************************************************************************/
 #include <string.h>
 
-#include "wallet_auth_helpers.h"
+#include "wallet_auth.h"
 #include "unity_fixture.h"
 #include "wallet.h"
 #include "ed25519.h"
