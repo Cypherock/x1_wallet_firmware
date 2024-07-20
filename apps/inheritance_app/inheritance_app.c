@@ -125,6 +125,14 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
       wallet_login(&query);
       break;
     }
+    case INHERITANCE_QUERY_SETUP_TAG: {
+      inheritance_setup(&query);
+      break;
+    }
+    case INHERITANCE_QUERY_RECOVERY_TAG: {
+      inheritance_recovery(&query);
+      break;
+    }
 
     default: {
       /* In case we ever encounter invalid query, convey to the host app */

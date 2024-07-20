@@ -22,7 +22,7 @@
 #include "events.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
-#include "wallet_auth.h"
+#include "inheritance_wallet_auth.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -57,5 +57,11 @@ const cy_app_desc_t *get_inheritance_app_desc();
  * @param query The reference to the inheritance query containing wallet authentication data.
  */
 void wallet_login(inheritance_query_t *query);
+
+// TODO: desc
+void inheritance_setup(inheritance_query_t *query);
+
+// TODO: desc
+void inheritance_recovery(inheritance_query_t *query);
 
 #endif /* INHERITANCE_MAIN_H */

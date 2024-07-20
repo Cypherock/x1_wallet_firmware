@@ -781,75 +781,18 @@ void test_generate_server_data(dummy_inheritance_query_t *query) {
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
   const uint8_t msg_count = 5;
   static const char
-      *
-          messages[] =
+      *messages[] =
               {
-                  "Shortest",    // 9 chars
+                "Shortest",    // 8 chars
 
-                  "Short message",    // 13 chars
+                "This is a slightly longer message to test the 50 characters "
+                "length requirement.",    // 79 chars
 
-                  "This is a slightly longer message to test the 50 characters "
-                  "length requirement.",    // 80 chars
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",    // 123 chars
 
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua.",    // 123 chars
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",    // 445 chars
 
-                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-                  "sed do eiusmod tempor incididunt ut labore et dolore magna "
-                  "aliqua. "
-                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco "
-                  "laboris nisi ut aliquip ex ea commodo consequat. Duis aute "
-                  "irure dolor "
-                  "in reprehenderit in voluptate velit esse cillum dolore eu "
-                  "fugiat nulla pariatur. Excepteur sint occaecat cupidatat "
-                  "non proident, "
-                  "sunt in culpa qui officia deserunt mollit anim id est "
-                  "laborum.",    // 446 chars
-
-                  // "Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-                  // sed do eiusmod tempor incididunt ut labore et dolore magna
-                  // aliqua. " "Ut enim ad minim veniam, quis nostrud
-                  // exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                  // consequat. Duis aute irure dolor " "in reprehenderit in
-                  // voluptate velit esse cillum dolore eu fugiat nulla
-                  // pariatur. Excepteur sint occaecat cupidatat non proident, "
-                  // "sunt in culpa qui officia deserunt mollit anim id est
-                  // laborum. Lorem ipsum dolor sit amet, consectetur adipiscing
-                  // elit, sed do " "eiusmod tempor incididunt ut labore et
-                  // dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                  // exercitation ullamco laboris " "nisi ut aliquip ex ea
-                  // commodo consequat. Duis aute irure dolor in reprehenderit
-                  // in voluptate velit esse cillum dolore eu fugiat " "nulla
-                  // pariatur. Excepteur sint occaecat cupidatat non proident,
-                  // sunt in culpa qui officia deserunt mollit anim id est
-                  // laborum.", // 892 chars
-
-                  // "Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-                  // sed do eiusmod tempor incididunt ut labore et dolore magna
-                  // aliqua. " "Ut enim ad minim veniam, quis nostrud
-                  // exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                  // consequat. Duis aute irure dolor " "in reprehenderit in
-                  // voluptate velit esse cillum dolore eu fugiat nulla
-                  // pariatur. Excepteur sint occaecat cupidatat non proident, "
-                  // "sunt in culpa qui officia deserunt mollit anim id est
-                  // laborum. Lorem ipsum dolor sit amet, consectetur adipiscing
-                  // elit, sed do " "eiusmod tempor incididunt ut labore et
-                  // dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                  // exercitation ullamco laboris " "nisi ut aliquip ex ea
-                  // commodo consequat. Duis aute irure dolor in reprehenderit
-                  // in voluptate velit esse cillum dolore eu fugiat " "nulla
-                  // pariatur. Excepteur sint occaecat cupidatat non proident,
-                  // sunt in culpa qui officia deserunt mollit anim id est
-                  // laborum. " "Lorem ipsum dolor sit amet, consectetur
-                  // adipiscing elit, sed do eiusmod tempor incididunt ut labore
-                  // et dolore magna aliqua. Ut " "enim ad minim veniam, quis
-                  // nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-                  // commodo consequat. Duis aute irure dolor " "in
-                  // reprehenderit in voluptate velit esse cillum dolore eu
-                  // fugiat nulla pariatur. Excepteur sint occaecat cupidatat
-                  // non proident, " "sunt in culpa qui officia deserunt mollit
-                  // anim id est laborum." // 500 chars
+                "Embarking on a journey to write a 900-character piece necessitates precision and clarity, ensuring each word contributes to the overall message. Begin by defining the central theme or purpose, whether it's to inform, persuade, or entertain. Structure is crucial: start with an engaging introduction to hook the reader, followed by the main content divided into concise paragraphs, and conclude with a memorable closing statement. Use active voice and vary sentence lengths to maintain reader interest. Edit ruthlessly to eliminate redundant words and ensure each sentence flows seamlessly into the next. Pay attention to grammar and punctuation, as these details enhance readability and professionalism. Finally, read the piece aloud to catch any awkward phrasing or overlooked errors, ensuring the final draft is polished and impactful. This approach not only adheres to the character limit of msgs.", // 900 char 
               };
 
   query->msg_count = msg_count;

@@ -1,5 +1,5 @@
 /**
- * @file    wallet_auth.h
+ * @file    inheritance_wallet_auth.h
  * @author  Cypherock X1 Team
  * @brief   Header file containing the session utility functions
  *          This file declares the functions used to create and manage the
@@ -10,8 +10,8 @@
  * target=_blank>https://mitcc.org/</a>
  */
 
-#ifndef WALLET_AUTH
-#define WALLET_AUTH
+#ifndef INHERITANCE_WALLET_AUTH
+#define INHERITANCE_WALLET_AUTH
 
 #pragma once
 
@@ -28,8 +28,8 @@
 
 typedef enum {
   WALLET_AUTH_OK = 0,
-  WALLET_AUTH_TYPE_INVALID,
-  WALLET_AUTH_INPUTS_INVALID,
+  WALLET_AUTH_TYPE_INVALID, // TODO
+  WALLET_AUTH_INPUTS_INVALID, // TODO
 } wallet_auth_error_type_e;
 
 #pragma pack(push, 1)

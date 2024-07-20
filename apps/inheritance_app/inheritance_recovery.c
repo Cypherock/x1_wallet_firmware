@@ -1,5 +1,5 @@
 /**
- * @file    session_helpers.c
+ * @file    inheritance_recovery.c
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -97,10 +97,6 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_encrypt_data(){
+void inheritance_recovery(inheritance_query_t *query){
 
-}
-
-void inheritance_decrypt_data(){
-    
 }

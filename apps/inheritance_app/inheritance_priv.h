@@ -1,5 +1,5 @@
 /**
- * @file    session_helpers.h
+ * @file    inheritance_priv.h
  * @author  Cypherock X1 Team
  * @brief   Header file containing the session utility functions
  *          This file declares the functions used to create and manage the
@@ -10,9 +10,8 @@
  * target=_blank>https://mitcc.org/</a>
  */
 
-#ifndef SESSION_HELPERS
-#define SESSION_HELPERS
-
+#ifndef INHERITANCE_PRIV
+#define INHERITANCE_PRIV
 
 
 #endif

@@ -1,5 +1,5 @@
 /**
- * @file    wallet_auth.c
+ * @file    inheritance_wallet_auth.c
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -16,7 +16,7 @@
 #include "inheritance_app.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-#include "wallet_auth.h"
+#include "inheritance_wallet_auth.h"
 #include "bip39.h"
 
 /*****************************************************************************
