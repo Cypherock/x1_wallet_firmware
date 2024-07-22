@@ -110,9 +110,6 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
   const char wallet_name[NAME_SIZE] = "";
   rejection_cb *reject_cb;
 #if USE_SIMULATOR == 0
-  // ASSERT(get_wallet_data_by_id(
-  //     wallet_id, (const uint8_t *)wallet_name, reject_cb));
-
   card_get_wallet_name(wallet_id, wallet_name);
 #endif
 

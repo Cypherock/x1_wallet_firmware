@@ -549,6 +549,7 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
   return true;
 }
 
+// TODO: add is private in setup
 bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
   if (*msg_count > SESSION_MSG_MAX)
     return false;
@@ -562,6 +563,7 @@ bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *m
   return true;
 }
 
+// TODO: add is private in recovery
 bool session_msg_to_plaindata(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
   if (*msg_count > SESSION_MSG_MAX)
     return false;
