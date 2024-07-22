@@ -227,8 +227,8 @@ bool session_get_random_keys(uint8_t *random,
   return true;
 }
 
-bool session_id_is_valid(uint8_t *pass_key) {
-  return (memcmp(pass_key, session.session_id, SESSION_ID_SIZE) == 0);
+bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
+  return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 && memcmp(pass_id, session.session_id, SESSION_ID_SIZE) == 0);
 }
 
 bool session_send_device_key(uint8_t *payload) {
@@ -484,20 +484,13 @@ bool session_decrypt_packet(SecureData *msgs,
   return true;
 }
 
-bool session_encrypt_secure_data(uint8_t *pass_key,
-                                 uint8_t *wallet_id,
+bool session_encrypt_secure_data(uint8_t *wallet_id,
                                  SecureData *msgs,
                                  size_t msg_count) {
-  ASSERT(pass_key != NULL);
   ASSERT(wallet_id != NULL);
   ASSERT(msgs != NULL);
   ASSERT(msg_count != 0);
   ASSERT(msg_count <= SESSION_MSG_MAX);
-
-  if (!session_id_is_valid(pass_key)) {
-    printf("Session key invalid err");
-    return false;
-  }
 
   card_error_type_e status =
       card_fetch_encrypt_data(wallet_id, msgs, msg_count);
@@ -509,41 +502,38 @@ bool session_encrypt_secure_data(uint8_t *pass_key,
   memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
   session.msg_count = msg_count;
 
-  // TODO: remove after testing
-  uint8_t packet[SESSION_PACKET_SIZE] = {0};
-  size_t packet_size = 0;
+  // TODO: remove after testing session core
+  // if (!session_id_is_valid(session.session_id)) {
+  //   printf("ERROR: Session is invalid");
+  //   return false;
+  // }
+  // uint8_t packet[SESSION_PACKET_SIZE] = {0};
+  // size_t packet_size = 0;
 
-  session_encrypt_packet(session.SessionMsgs,
-                         session.msg_count,
-                         session.session_key,
-                         session.session_id,
-                         packet,
-                         &packet_size);
-  session_reset_secure_data();
-  session_decrypt_packet(session.SessionMsgs,
-                         session.msg_count,
-                         session.session_key,
-                         session.session_id,
-                         packet,
-                         &packet_size);
+  // session_encrypt_packet(session.SessionMsgs,
+  //                        session.msg_count,
+  //                        session.session_key,
+  //                        session.session_id,
+  //                        packet,
+  //                        &packet_size);
+  // session_reset_secure_data();
+  // session_decrypt_packet(session.SessionMsgs,
+  //                        session.msg_count,
+  //                        session.session_key,
+  //                        session.session_id,
+  //                        packet,
+  //                        &packet_size);
 
   return true;
 }
 
-bool session_decrypt_secure_data(uint8_t *pass_key,
-                                 uint8_t *wallet_id,
+bool session_decrypt_secure_data(uint8_t *wallet_id,
                                  SecureData *msgs,
                                  size_t msg_count) {
-  ASSERT(pass_key != NULL);
   ASSERT(wallet_id != NULL);
   ASSERT(msgs != NULL);
   ASSERT(msg_count != 0);
   ASSERT(msg_count <= SESSION_MSG_MAX);
-
-  if (!session_id_is_valid(pass_key)) {
-    printf("ERROR: Session is invalid");
-    return false;
-  }
 
   card_error_type_e status =
       card_fetch_decrypt_data(wallet_id, msgs, msg_count);
@@ -555,6 +545,30 @@ bool session_decrypt_secure_data(uint8_t *pass_key,
 
   memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
   session.msg_count = msg_count;
+
+  return true;
+}
+
+bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
+  if (*msg_count > SESSION_MSG_MAX)
+    return false;
+
+  for(uint8_t i=0; i<msg_count; i++){
+    msgs[i].plain_data_size = sizeof(plain_data[i]);
+    memcpy(msgs[i].plain_data, plain_data[i], msgs[i].plain_data_size);
+    msgs[i]
+  }
+
+  return true;
+}
+
+bool session_msg_to_plaindata(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
+  if (*msg_count > SESSION_MSG_MAX)
+    return false;
+
+  for(uint8_t i=0; i<msg_count; i++){
+    memcpy(plain_data[i], msgs[i].plain_data, msgs[i].plain_data_size);
+  }
 
   return true;
 }
@@ -614,8 +628,7 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
         memzero(query->SessionMsgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
         query->SessionMsgs[i].encrypted_data_size = 0;
       }
-      if (!session_encrypt_secure_data(query->pass_key,
-                                       query->wallet_id,
+      if (!session_encrypt_secure_data(query->wallet_id,
                                        query->SessionMsgs,
                                        query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);
@@ -633,8 +646,7 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
         memzero(query->SessionMsgs[i].plain_data, PLAIN_DATA_SIZE);
         query->SessionMsgs[i].plain_data_size = 0;
       }
-      if (!session_decrypt_secure_data(query->pass_key,
-                                       query->wallet_id,
+      if (!session_decrypt_secure_data(query->wallet_id,
                                        query->SessionMsgs,
                                        query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);

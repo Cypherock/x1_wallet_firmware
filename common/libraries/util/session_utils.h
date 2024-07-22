@@ -110,34 +110,6 @@ typedef struct {
 } dummy_inheritance_query_t;
 
 /**
- * @brief Verified the signature of the payload
- * @param payload The payload to be verified
- * @param payload_length The length of the payload
- * @param buffer The buffer to store the signature
- * @return true if the signature is verified, false otherwise
- *
- * @see session_init()
- * @since v1.0.0
- */
-bool verify_session_signature(uint8_t *payload,
-                              size_t payload_size,
-                              uint8_t *signature);
-
-/**
- * @brief Generates the payload to be sent to the server.
- * @details It generates the signature on the payload and appends the
- * signature to the payload. It further appends the postfix1 and postfix2
- * for verification on the server side.
- * @param payload The payload to be sent to the server
- * @param payload_length The length of the payload
- * @param signature_details The buffer to store the signature and the postfixes
- *
- * @see session_pre_init(), session_init()
- * @since v1.0.0
- */
-void session_append_signature(uint8_t *payload, size_t payload_size);
-
-/**
  * @brief Starts the session creation process
  * @details It generates the device random, derives and stores the device
  * public key. It also generates the payload to be sent to the server.
@@ -164,6 +136,30 @@ bool session_send_device_key(uint8_t *payload);
  */
 bool session_receive_server_key(uint8_t *server_message);
 
+
+bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count);
+bool session_msg_to_plaindata(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count);
+
+bool session_encrypt_secure_data(uint8_t *wallet_id,
+                                 SecureData *msgs,
+                                 size_t msg_count);
+bool session_encrypt_packet(SecureData *msgs,
+                            uint8_t msg_count,
+                            uint8_t *key,
+                            uint8_t *iv,
+                            uint8_t *packet,
+                            size_t *packet_size);
+
+bool session_decrypt_secure_data(uint8_t *wallet_id,
+                                 SecureData *msgs,
+                                 size_t msg_count);
+bool session_decrypt_packet(SecureData *msgs,
+                            uint8_t msg_count,
+                            uint8_t *key,
+                            uint8_t *iv,
+                            uint8_t *packet,
+                            size_t *packet_size);
+                            
 // TODO: Remove after testing
 void print_msg(SecureData msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);

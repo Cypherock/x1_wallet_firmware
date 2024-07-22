@@ -98,5 +98,42 @@
  *****************************************************************************/
 
 void inheritance_recovery(inheritance_query_t *query){
+    SecureData msgs[SESSION_MSG_MAX] = (SecureData *)malloc(sizeof(SecureData))*SESSION_MSG_MAX;
+    memzero(msgs, size_t(msgs));
+    size_t *msg_count = 0;
 
+    // TODO: Recieve values from core
+    uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    uint8_t iv[16]  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    uint8_t packet[SESSION_PACKET_SIZE] = {0};
+    size_t packet_size = 0;
+    if (!session_decrypt_packet(msgs,
+                            msg_count,
+                            key,
+                            iv,
+                            packet,
+                            &packet_size)){
+        LOG_CRITICAL("xxec %d", __LINE__);
+        return;
+    }
+
+    if (!session_decrypt_secure_data(query->wallet_auth.initiate.wallet_id,
+                                    msgs,
+                                    msg_count)){
+        LOG_CRITICAL("xxec %d", __LINE__);
+        return;
+    }
+
+    inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
+    result.which_response = INHERITANCE_RESULT_RECOVERY_TAG;
+
+    session_msg_to_plaindata(result.recovery.plain_data, msgs, msg_count);
+
+    inheritance_send_result(&result);
+
+    if (NULL != msgs) {
+    free(msgs);
+    msgs = NULL;
+  }
 }

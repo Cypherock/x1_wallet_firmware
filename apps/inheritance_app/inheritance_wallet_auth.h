@@ -28,8 +28,8 @@
 
 typedef enum {
   WALLET_AUTH_OK = 0,
-  WALLET_AUTH_TYPE_INVALID, // TODO
-  WALLET_AUTH_INPUTS_INVALID, // TODO
+  WALLET_AUTH_TYPE_INVALID, // TODO: In inheriance app - Show error message on ui that which assert is wrong 
+  WALLET_AUTH_INPUTS_INVALID, // TODO: In inheritance app - Add in wallet id comparison, show error message on ui
 } wallet_auth_error_type_e;
 
 #pragma pack(push, 1)

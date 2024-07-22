@@ -23,6 +23,7 @@
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_wallet_auth.h"
+#include "session_utils.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
