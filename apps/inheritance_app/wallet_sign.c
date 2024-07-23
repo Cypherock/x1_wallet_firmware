@@ -13,11 +13,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "bip39.h"
 #include "inheritance_app.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_auth_helpers.h"
-#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -45,10 +45,12 @@ static wallet_auth_t *auth = NULL;
  *****************************************************************************/
 
 /**
- * @brief Verifies the integrity and validity of the wallet authentication inputs.
+ * @brief Verifies the integrity and validity of the wallet authentication
+ * inputs.
  *
- * This static function checks if the challenge, wallet ID, and challenge size are
- * non-zero and within the expected range. It ensures the authentication inputs are valid.
+ * This static function checks if the challenge, wallet ID, and challenge size
+ * are non-zero and within the expected range. It ensures the authentication
+ * inputs are valid.
  *
  * @return true Always returns true if all assertions pass.
  */
@@ -78,13 +80,17 @@ bool wallet_auth_get_entropy(wallet_auth_t *auth) {
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 
   card_error_type_e status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
+  // TODO: Set App Flow Status
+  delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
 
   if (status != CARD_OPERATION_SUCCESS ||
       msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
     return false;
   }
 
-  memcpy((void*)auth->entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
+  memcpy((void *)auth->entropy,
+         msgs[0].encrypted_data,
+         msgs[0].encrypted_data_size);
   auth->entropy_size = msgs[0].encrypted_data_size;
 
   return true;
@@ -114,6 +120,8 @@ bool wallet_auth_get_signature(wallet_auth_t *auth) {
       unsigned_txn, unsigned_txn_size, auth->public_key, auth->signature);
 
   if (0 != valid) {
+    // Set App flow status
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
 
@@ -138,6 +146,8 @@ void wallet_login(inheritance_query_t *query) {
                            ERROR_DATA_FLOW_INVALID_DATA);
     return;
   }
+  // Set App flow status
+  delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
 
   inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
   result.which_response = INHERITANCE_RESULT_WALLET_AUTH_TAG;

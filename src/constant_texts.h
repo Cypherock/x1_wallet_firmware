@@ -373,6 +373,13 @@ extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
 
+// App specific
+
+// Inheritance
+extern const char *ui_text_inheritance_wallet_authenticating;
+extern const char *ui_text_inheritance_wallet_auth_success;
+extern const char *ui_text_inheritance_wallet_auth_fail;
+
 // session
 #define UI_TEXT_CARD_FETCH_WALLET "Found `%s` wallet in your Card!"
 
