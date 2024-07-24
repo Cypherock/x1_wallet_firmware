@@ -1,0 +1,2 @@
+inheritance.SetupResponse.encrypted_data type:FT_STATIC max_size:5600 fixed_length:false
+inheritance.SetupRequest.plain_data type:FT_STATIC max_count:5 fixed_length:false

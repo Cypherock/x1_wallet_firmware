@@ -229,7 +229,8 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
 TEST_GROUP_RUNNER(inheritance_wallet_auth_tests) {
   RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_entropy_action);
   RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_pairs_action);
-  RUN_TEST_CASE(inheritance_wallet_auth_tests, wallet_auth_get_signature_action);
+  RUN_TEST_CASE(inheritance_wallet_auth_tests,
+                wallet_auth_get_signature_action);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {
@@ -241,6 +242,10 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_invalid_non_print_utf);
   RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
+}
+
+TEST_GROUP_RUNNER(inheritance_setup_test) {
+  TEST(inheritance_setup_test, inheritance_setup_test_first);
 }
 
 TEST_GROUP_RUNNER(session_tests) {

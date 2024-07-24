@@ -23,6 +23,7 @@
 #include "bip32.h"
 #include "card_fetch_data.h"
 #include "curves.h"
+#include "inheritance_app.h"
 #include "nfc.h"
 #include "rand.h"
 
@@ -35,7 +36,8 @@
 #define SESSION_KEY_SIZE 32
 
 #define SESSION_MSG_MAX 5
-#define SESSION_PACKET_SIZE (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX)
+#define SESSION_PACKET_SIZE                                                    \
+  (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX)    // (112 * 10) * 5 = 5600
 
 extern const uint32_t session_key_rotation[2];
 
@@ -136,9 +138,12 @@ bool session_send_device_key(uint8_t *payload);
  */
 bool session_receive_server_key(uint8_t *server_message);
 
-
-bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count);
-bool session_msg_to_plaindata(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count);
+bool session_plaindata_to_msg(uint8_t *plain_data[],
+                              SecureData *msgs,
+                              size_t *msg_count);
+bool session_msg_to_plaindata(uint8_t *plain_data[],
+                              SecureData *msgs,
+                              size_t *msg_count);
 
 bool session_encrypt_secure_data(uint8_t *wallet_id,
                                  SecureData *msgs,
@@ -159,7 +164,11 @@ bool session_decrypt_packet(SecureData *msgs,
                             uint8_t *iv,
                             uint8_t *packet,
                             size_t *packet_size);
-                            
+
+bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
+                             SecureData *msgs,
+                             size_t msgs_count);
+
 // TODO: Remove after testing
 void print_msg(SecureData msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);

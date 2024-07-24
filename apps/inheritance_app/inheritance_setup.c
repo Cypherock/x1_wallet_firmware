@@ -97,49 +97,46 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_setup(inheritance_query_t *query){
-    SecureData msgs[SESSION_MSG_MAX] = (SecureData *)malloc(sizeof(SecureData))*SESSION_MSG_MAX;
-    memzero(msgs, size_t(msgs));
-    size_t *msg_count = 0;
+void inheritance_setup(inheritance_query_t *query) {
+  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
+  memzero(msgs, sizeof(msgs));
+  size_t *msg_count = &(query->setup.plain_data_count);
 
-    if (!plain_data_to_array_obj(query->setup.plain_data, msgs, &msg_count)){
-        LOG_CRITICAL("xxec %d", __LINE__);
-        return;
-    }
+  if (!plain_data_to_array_obj(query->setup.plain_data, msgs, *msg_count)) {
+    LOG_CRITICAL("xxec %d", __LINE__);
+    return;
+  }
 
-    if (!session_encrypt_secure_data(query->wallet_auth.initiate.wallet_id,
-                                    msgs,
-                                    msg_count)){
-        LOG_CRITICAL("xxec %d", __LINE__);
-        return;
-    }
+  if (!session_encrypt_secure_data(
+          query->wallet_auth.initiate.wallet_id, msgs, *msg_count)) {
+    LOG_CRITICAL("xxec %d", __LINE__);
+    return;
+  }
 
-    // TODO: Recieve values from core
-    uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    uint8_t iv[16]  = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  // TODO: Recieve values from core
+  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-    uint8_t packet[SESSION_PACKET_SIZE] = {0};
-    size_t packet_size = 0;
+  uint8_t packet[SESSION_PACKET_SIZE] = {0};
+  size_t packet_size = 0;
 
-    if (!session_encrypt_packet(msgs,
-                            msg_count,
-                            key,
-                            iv,
-                            packet,
-                            &packet_size)){
-        LOG_CRITICAL("xxec %d", __LINE__);
-        return;
-    }
+  if (!session_encrypt_packet(
+          msgs, *msg_count, key, iv, packet, &packet_size)) {
+    LOG_CRITICAL("xxec %d", __LINE__);
+    return;
+  }
 
-    inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
-    result.which_response = INHERITANCE_RESULT_SETUP_TAG;
-    result.setup.has_encrypted_data_packet = true;
+  inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
+  result.which_response = INHERITANCE_RESULT_SETUP_TAG;
+  result.setup.has_encrypted_data = true;
 
-    memcpy(result.setup.encrypted_data_packet, packet, packet_size);
+  memcpy(result.setup.encrypted_data.packet.bytes, packet, packet_size);
+  result.setup.encrypted_data.packet.size = packet_size;
 
-    inheritance_send_result(&result);
+  inheritance_send_result(&result);
 
-    if (NULL != msgs) {
+  if (NULL != msgs) {
     free(msgs);
     msgs = NULL;
   }

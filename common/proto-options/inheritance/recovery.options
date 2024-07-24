@@ -1,0 +1,1 @@
+inheritance.RecoveryResponse.plain_data type:FT_STATIC max_count:5  fixed_length:false

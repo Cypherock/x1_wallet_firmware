@@ -64,6 +64,8 @@
  *****************************************************************************/
 #include "session_utils.h"
 
+#include "inheritance_app.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -228,7 +230,8 @@ bool session_get_random_keys(uint8_t *random,
 }
 
 bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
-  return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 && memcmp(pass_id, session.session_id, SESSION_ID_SIZE) == 0);
+  return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 &&
+          memcmp(pass_id, session.session_id, SESSION_ID_SIZE) == 0);
 }
 
 bool session_send_device_key(uint8_t *payload) {
@@ -550,25 +553,28 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
 }
 
 // TODO: add is private in setup
-bool session_plaindata_to_msg(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
+bool session_plaindata_to_msg(uint8_t *plain_data[],
+                              SecureData *msgs,
+                              size_t *msg_count) {
   if (*msg_count > SESSION_MSG_MAX)
     return false;
 
-  for(uint8_t i=0; i<msg_count; i++){
+  for (uint8_t i = 0; i < msg_count; i++) {
     msgs[i].plain_data_size = sizeof(plain_data[i]);
     memcpy(msgs[i].plain_data, plain_data[i], msgs[i].plain_data_size);
-    msgs[i]
   }
 
   return true;
 }
 
 // TODO: add is private in recovery
-bool session_msg_to_plaindata(uint8_t *plain_data[], SecureData *msgs, size_t *msg_count){
+bool session_msg_to_plaindata(uint8_t *plain_data[],
+                              SecureData *msgs,
+                              size_t *msg_count) {
   if (*msg_count > SESSION_MSG_MAX)
     return false;
 
-  for(uint8_t i=0; i<msg_count; i++){
+  for (uint8_t i = 0; i < msg_count; i++) {
     memcpy(plain_data[i], msgs[i].plain_data, msgs[i].plain_data_size);
   }
 
@@ -630,9 +636,8 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
         memzero(query->SessionMsgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
         query->SessionMsgs[i].encrypted_data_size = 0;
       }
-      if (!session_encrypt_secure_data(query->wallet_id,
-                                       query->SessionMsgs,
-                                       query->msg_count)) {
+      if (!session_encrypt_secure_data(
+              query->wallet_id, query->SessionMsgs, query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
@@ -648,9 +653,8 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
         memzero(query->SessionMsgs[i].plain_data, PLAIN_DATA_SIZE);
         query->SessionMsgs[i].plain_data_size = 0;
       }
-      if (!session_decrypt_secure_data(query->wallet_id,
-                                       query->SessionMsgs,
-                                       query->msg_count)) {
+      if (!session_decrypt_secure_data(
+              query->wallet_id, query->SessionMsgs, query->msg_count)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
@@ -794,20 +798,38 @@ void test_generate_server_data(dummy_inheritance_query_t *query) {
 
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
   const uint8_t msg_count = 5;
-  static const char
-      *messages[] =
-              {
-                "Shortest",    // 8 chars
+  static const char *messages[] = {
+      "Shortest",    // 8 chars
 
-                "This is a slightly longer message to test the 50 characters "
-                "length requirement.",    // 79 chars
+      "This is a slightly longer message to test the 50 characters "
+      "length requirement.",    // 79 chars
 
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",    // 123 chars
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
+      "tempor incididunt ut labore et dolore magna aliqua.",    // 123 chars
 
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",    // 445 chars
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
+      "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim "
+      "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea "
+      "commodo consequat. Duis aute irure dolor in reprehenderit in voluptate "
+      "velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint "
+      "occaecat cupidatat non proident, sunt in culpa qui officia deserunt "
+      "mollit anim id est laborum.",    // 445 chars
 
-                "Embarking on a journey to write a 900-character piece necessitates precision and clarity, ensuring each word contributes to the overall message. Begin by defining the central theme or purpose, whether it's to inform, persuade, or entertain. Structure is crucial: start with an engaging introduction to hook the reader, followed by the main content divided into concise paragraphs, and conclude with a memorable closing statement. Use active voice and vary sentence lengths to maintain reader interest. Edit ruthlessly to eliminate redundant words and ensure each sentence flows seamlessly into the next. Pay attention to grammar and punctuation, as these details enhance readability and professionalism. Finally, read the piece aloud to catch any awkward phrasing or overlooked errors, ensuring the final draft is polished and impactful. This approach not only adheres to the character limit of msgs.", // 900 char 
-              };
+      "Embarking on a journey to write a 900-character piece necessitates "
+      "precision and clarity, ensuring each word contributes to the overall "
+      "message. Begin by defining the central theme or purpose, whether it's "
+      "to inform, persuade, or entertain. Structure is crucial: start with an "
+      "engaging introduction to hook the reader, followed by the main content "
+      "divided into concise paragraphs, and conclude with a memorable closing "
+      "statement. Use active voice and vary sentence lengths to maintain "
+      "reader interest. Edit ruthlessly to eliminate redundant words and "
+      "ensure each sentence flows seamlessly into the next. Pay attention to "
+      "grammar and punctuation, as these details enhance readability and "
+      "professionalism. Finally, read the piece aloud to catch any awkward "
+      "phrasing or overlooked errors, ensuring the final draft is polished and "
+      "impactful. This approach not only adheres to the character limit of "
+      "msgs.",    // 900 char
+  };
 
   query->msg_count = msg_count;
   for (int i = 0; i < msg_count; i++) {
@@ -827,4 +849,17 @@ void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
 
   memcpy(query->pass_key, session.session_id, SESSION_ID_SIZE);
   print_arr("query->pass_key", query->pass_key, SESSION_ID_SIZE);
+}
+
+bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
+                             SecureData *msgs,
+                             size_t msgs_count) {
+  for (uint8_t i = 0; i < msgs_count; i++) {
+    memcpy(msgs[i].plain_data,
+           plain_data[i].message.bytes,
+           plain_data[i].message.size);
+    msgs[i].plain_data_size = plain_data[i].message.size;
+  }
+
+  return true;
 }
