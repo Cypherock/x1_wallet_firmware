@@ -64,7 +64,7 @@
  *****************************************************************************/
 #include "session_utils.h"
 
-#include "inheritance_app.h"
+#include "inheritance_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -417,25 +417,27 @@ bool session_encrypt_packet(SecureData *msgs,
 }
 
 void session_deserialise_packet(SecureData *msgs,
-                                size_t msg_count,
+                                uint8_t *msg_count,
                                 uint8_t *data,
                                 size_t *len) {
   ASSERT(msgs != NULL);
 
   size_t index = 0;
-  while (index <= *len) {
-    msgs[msg_count].encrypted_data_size = (uint16_t)data[index] << 8;
+  while (index < *len) {
+    msgs[*msg_count].encrypted_data_size = (uint16_t)data[index] << 8;
     index += 1;
-    msgs[msg_count].encrypted_data_size |= (uint16_t)data[index];
+    msgs[*msg_count].encrypted_data_size |= (uint16_t)data[index];
     index += 1;
 
-    memcpy(msgs[msg_count].encrypted_data,
+    memcpy(msgs[*msg_count].encrypted_data,
            data + index,
-           msgs[msg_count].encrypted_data_size);
-    index += msgs[msg_count].encrypted_data_size;
+           msgs[*msg_count].encrypted_data_size);
+    index += msgs[*msg_count].encrypted_data_size;
 
-    msg_count += 1;
+    *msg_count += 1;
   }
+  // bug#1 false fix
+  // *msg_count += -1;
 }
 
 session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
@@ -467,7 +469,7 @@ session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
 }
 
 bool session_decrypt_packet(SecureData *msgs,
-                            uint8_t msg_count,
+                            uint8_t *msg_count,
                             uint8_t *key,
                             uint8_t *iv,
                             uint8_t *packet,
@@ -568,14 +570,17 @@ bool session_plaindata_to_msg(uint8_t *plain_data[],
 }
 
 // TODO: add is private in recovery
-bool session_msg_to_plaindata(uint8_t *plain_data[],
+bool session_msg_to_plaindata(inheritance_plain_data_t *plain_data,
                               SecureData *msgs,
-                              size_t *msg_count) {
-  if (*msg_count > SESSION_MSG_MAX)
+                              uint8_t *msg_count) {
+  if ((*msg_count) > SESSION_MSG_MAX)
     return false;
 
-  for (uint8_t i = 0; i < msg_count; i++) {
-    memcpy(plain_data[i], msgs[i].plain_data, msgs[i].plain_data_size);
+  for (uint8_t i = 0; i < (*msg_count); i++) {
+    memcpy(plain_data[i].message.bytes,
+           msgs[i].plain_data,
+           msgs[i].plain_data_size);
+    plain_data[i].message.size = msgs[i].plain_data_size;
   }
 
   return true;

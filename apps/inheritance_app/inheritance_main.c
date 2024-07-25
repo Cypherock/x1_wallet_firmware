@@ -60,7 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "inheritance_app.h"
+#include "inheritance_main.h"
 
 #include "status_api.h"
 
@@ -119,7 +119,7 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
   /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
- 
+
   switch ((uint8_t)query.which_request) {
     case INHERITANCE_QUERY_WALLET_AUTH_TAG: {
       wallet_login(&query);

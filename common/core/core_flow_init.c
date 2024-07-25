@@ -73,7 +73,7 @@
 #include "eth_app.h"
 #include "evm_main.h"
 #include "fantom_app.h"
-#include "inheritance_app.h"
+#include "inheritance_main.h"
 #include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"

@@ -245,7 +245,7 @@ TEST_GROUP_RUNNER(utils_tests) {
 }
 
 TEST_GROUP_RUNNER(inheritance_setup_test) {
-  TEST(inheritance_setup_test, inheritance_setup_test_first);
+  RUN_TEST_CASE(inheritance_setup_test, inheritance_setup_test_first);
 }
 
 TEST_GROUP_RUNNER(session_tests) {

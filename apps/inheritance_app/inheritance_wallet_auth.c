@@ -13,11 +13,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "inheritance_app.h"
+#include "inheritance_wallet_auth.h"
+
+#include "bip39.h"
+#include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-#include "inheritance_wallet_auth.h"
-#include "bip39.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -45,10 +46,12 @@ static wallet_auth_t *auth = NULL;
  *****************************************************************************/
 
 /**
- * @brief Verifies the integrity and validity of the wallet authentication inputs.
+ * @brief Verifies the integrity and validity of the wallet authentication
+ * inputs.
  *
- * This static function checks if the challenge, wallet ID, and challenge size are
- * non-zero and within the expected range. It ensures the authentication inputs are valid.
+ * This static function checks if the challenge, wallet ID, and challenge size
+ * are non-zero and within the expected range. It ensures the authentication
+ * inputs are valid.
  *
  * @return true Always returns true if all assertions pass.
  */
@@ -84,7 +87,9 @@ bool wallet_auth_get_entropy(wallet_auth_t *auth) {
     return false;
   }
 
-  memcpy((void*)auth->entropy, msgs[0].encrypted_data, msgs[0].encrypted_data_size);
+  memcpy((void *)auth->entropy,
+         msgs[0].encrypted_data,
+         msgs[0].encrypted_data_size);
   auth->entropy_size = msgs[0].encrypted_data_size;
 
   return true;

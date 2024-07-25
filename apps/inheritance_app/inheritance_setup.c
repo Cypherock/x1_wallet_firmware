@@ -61,7 +61,7 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "inheritance_app.h"
+#include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 
@@ -100,8 +100,8 @@
 void inheritance_setup(inheritance_query_t *query) {
   SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
   memzero(msgs, sizeof(msgs));
-  size_t *msg_count = &(query->setup.plain_data_count);
-
+  uint32_t *msg_count = (uint32_t *)malloc(sizeof(uint32_t));
+  *msg_count = query->setup.plain_data_count;
   if (!plain_data_to_array_obj(query->setup.plain_data, msgs, *msg_count)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
@@ -134,10 +134,24 @@ void inheritance_setup(inheritance_query_t *query) {
   memcpy(result.setup.encrypted_data.packet.bytes, packet, packet_size);
   result.setup.encrypted_data.packet.size = packet_size;
 
+#if USE_SIMULATOR == 1
+  printf("Inheritance Setup Result: Encrpyted Data:\n");
+  for (int i = 0; i < result.setup.encrypted_data.packet.size; i++) {
+    printf("%02x", result.setup.encrypted_data.packet.bytes[i]);
+    fflush(stdout);
+  }
+  printf("\nEnd");
+#else
   inheritance_send_result(&result);
+#endif
 
   if (NULL != msgs) {
     free(msgs);
     msgs = NULL;
+  }
+
+  if (NULL != msg_count) {
+    free(msg_count);
+    msg_count = NULL;
   }
 }
