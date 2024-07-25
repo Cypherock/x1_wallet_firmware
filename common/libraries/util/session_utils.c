@@ -436,8 +436,8 @@ void session_deserialise_packet(SecureData *msgs,
 
     *msg_count += 1;
   }
-  // bug#1 false fix
-  // *msg_count += -1;
+  // inheritance_bug#1 false fix
+  *msg_count += -1;
 }
 
 session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
@@ -479,7 +479,8 @@ bool session_decrypt_packet(SecureData *msgs,
   if (SESSION_DECRYPT_PACKET_SUCCESS !=
       session_aes_decrypt_packet(packet, packet_size, key, iv))
     return false;
-
+  // inheritance_bug#2
+  // packet_size is not being updated for aes dectyption
   memcpy(session.packet, packet, *packet_size);
 
   session_deserialise_packet(msgs, msg_count, packet, packet_size);
