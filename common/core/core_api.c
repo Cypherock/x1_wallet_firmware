@@ -157,16 +157,23 @@ void send_app_version_list_to_host(
   return;
 }
 
-
-void send_session_start_response_to_host(const uint8_t *msg, const uint32_t size) {
-  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+// TODO: ADD remaining result parameters
+void send_session_start_response_to_host(const uint8_t *random_public) {
+  core_msg_t core_msg = CORE_MSG_INIT_DEFAULT;
   core_msg.which_type = CORE_MSG_SESSION_START_TAG;
+  core_msg.session_start.response.which_response =
+      CORE_SESSION_START_RESPONSE_CONFIRMATION_INITIATE_TAG;
+  memcpy(core_msg.session_start.response.confirmation_initiate
+             .device_random_public,
+         random_public,
+         32);
 
-  send_core_msg(&core_msg, msg, size);
+  send_core_msg(&core_msg, NULL, 0);
   return;
 }
 
-void send_session_close_response_to_host(const uint8_t *msg, const uint32_t size) {
+void send_session_close_response_to_host(const uint8_t *msg,
+                                         const uint32_t size) {
   core_msg_t core_msg = CORE_MSG_INIT_ZERO;
   core_msg.which_type = CORE_MSG_SESSION_CLOSE_TAG;
 

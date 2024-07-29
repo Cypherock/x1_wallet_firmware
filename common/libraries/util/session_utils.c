@@ -226,6 +226,7 @@ bool session_get_random_keys(uint8_t *random,
   // bn_print(&random_public_point.x);
   // bn_print(&random_public_point.y);
 
+  send_session_start_response_to_host(random_public);
   return true;
 }
 

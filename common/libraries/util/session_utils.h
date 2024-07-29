@@ -22,6 +22,7 @@
 #include "base58.h"
 #include "bip32.h"
 #include "card_fetch_data.h"
+#include "core_api.h"
 #include "curves.h"
 #include "inheritance_main.h"
 #include "nfc.h"
@@ -168,6 +169,10 @@ bool session_decrypt_packet(SecureData *msgs,
 bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
                              SecureData *msgs,
                              size_t msgs_count);
+
+bool session_get_random_keys(uint8_t *random,
+                             uint8_t *random_public,
+                             curve_point random_public_point);
 
 // TODO: Remove after testing
 void print_msg(SecureData msg, uint8_t index);

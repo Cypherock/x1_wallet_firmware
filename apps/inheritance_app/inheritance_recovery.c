@@ -144,10 +144,8 @@ void inheritance_recovery(inheritance_query_t *query) {
 
   if (NULL != msgs) {
     free(msgs);
-    msgs = NULL;
   }
   if (NULL != msg_count) {
     free(msg_count);
-    msg_count = NULL;
   }
 }

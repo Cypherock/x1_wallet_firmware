@@ -60,4 +60,6 @@ void send_core_error_msg_to_host(uint32_t which_error);
  */
 void send_app_version_list_to_host(
     const core_app_version_result_response_t *version_resp);
+
+void send_session_start_response_to_host(const uint8_t *random_public);
 #endif /* CORE_API_H */

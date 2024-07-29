@@ -67,6 +67,7 @@
 #include "core_api.h"
 #include "memzero.h"
 #include "pb_decode.h"
+#include "session_utils.h"
 #include "usb_api.h"
 #include "usb_api_priv.h"
 
@@ -183,6 +184,13 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
         status = CORE_NO_ERROR;
       }
     } break;
+
+    case CORE_MSG_SESSION_START_TAG: {
+      uint8_t *random;
+      uint8_t *random_public;
+      curve_point random_public_point;
+      session_get_random_keys(random, random_public, random_public_point);
+    }
 
     default:
       break;
