@@ -121,8 +121,9 @@ void inheritance_setup(inheritance_query_t *query,
     return;
   }
 
-  // TODO: remove after testing
-  set_session();
+#if USE_SIMULATOR == 1
+  set_dummy_session();
+#endif
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
   size_t packet_size = 0;

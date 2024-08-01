@@ -564,6 +564,16 @@ void session_send_error() {
   LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
 }
 
+void set_dummy_session() {
+  // TODO: Recieve values from core
+  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+  memcpy(session.session_key, key, SESSION_KEY_SIZE);
+  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
+}
+
 session_error_type_e session_main(dummy_inheritance_query_t *query) {
   char buffer[SESSION_BUFFER_SIZE] = {0};
   size_t size;
@@ -764,16 +774,6 @@ void test_generate_server_data(dummy_inheritance_query_t *query) {
   print_arr("server data", server_message, offset);
 
   memcpy(query->server_message, server_message, offset);
-}
-
-void set_session() {
-  // TODO: Recieve values from core
-  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-
-  memcpy(session.session_key, key, SESSION_KEY_SIZE);
-  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
 }
 
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {

@@ -1,1 +1,2 @@
 inheritance.RecoveryResponse.plain_data type:FT_STATIC max_count:5  fixed_length:false
+inheritance.RecoverRequest.encrypted_data type:FT_STATIC max_size:6000 fixed_length:false

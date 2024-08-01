@@ -1,2 +1,2 @@
 inheritance.EncryptedData.packet type:FT_STATIC max_size:6000 fixed_length:false
-inheritance.PlainData.message type:FT_STATIC max_size:500 fixed_length:false
+inheritance.PlainData.message type:FT_STATIC max_size:1000 fixed_length:false

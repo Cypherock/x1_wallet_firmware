@@ -99,15 +99,16 @@
 
 void inheritance_recovery(inheritance_query_t *query,
                           inheritance_result_t *response) {
-  SecureData msgs[SESSION_MSG_MAX] = {0};
+  SecureData msgs[5] = {0};
   uint32_t msg_count = 0;
 
-  // TODO: remove after testing
-  set_session();
+#if USE_SIMULATOR == 1
+  set_dummy_session();
+#endif
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
   size_t packet_size = query->recovery.encrypted_data.packet.size;
-  memcpy(packet, &query->recovery.encrypted_data.packet.bytes, packet_size);
+  memcpy(packet, query->recovery.encrypted_data.packet.bytes, packet_size);
 
   if (!session_decrypt_packet(msgs, &msg_count, packet, &packet_size)) {
     LOG_CRITICAL("xxec %d", __LINE__);
@@ -129,7 +130,7 @@ void inheritance_recovery(inheritance_query_t *query,
   printf("Inheritance Recovery Result: <Plain Data>\n");
   for (int j = 0; j < response->recovery.plain_data_count; j++) {
     printf("\nMessage #%d:\n", j);
-    printf("%x", response->recovery.plain_data[j].message);
+    printf("%s", (char *)response->recovery.plain_data[j].message.bytes);
   }
   printf("\nEnd");
 #else
@@ -140,7 +141,7 @@ void inheritance_recovery(inheritance_query_t *query,
 void convert_msg_to_plaindata(inheritance_plain_data_t *plain_data,
                               SecureData *msgs,
                               uint8_t msg_count) {
-  for (uint8_t i = 0; i < (msg_count); i++) {
+  for (uint8_t i = 0; i < msg_count; i++) {
     if (1 == msgs[i].plain_data[0])
       plain_data[i].is_private = true;
 

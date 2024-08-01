@@ -37,8 +37,10 @@
 #define SESSION_KEY_SIZE 32
 
 #define SESSION_MSG_MAX 5
+#define SESSION_PACKET_BUFFER 400
 #define SESSION_PACKET_SIZE                                                    \
-  (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX)    // (112 * 10) * 5 = 5600
+  (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX) +                                    \
+      SESSION_PACKET_BUFFER    // (112 * 10) * 5 + 400 = 6000
 
 extern const uint32_t session_key_rotation[2];
 
