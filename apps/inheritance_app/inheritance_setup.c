@@ -101,34 +101,34 @@ void inheritance_setup(inheritance_query_t *query) {
   // Memory Allocation Issue
   //
   uint32_t msg_count = query->setup.plain_data_count;
-  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
-  memzero(msgs, sizeof(SecureData) * SESSION_MSG_MAX);
+  if (SESSION_MSG_MAX < msg_count) {
+    // ADD error
+    LOG_CRITICAL("xxec %d", __LINE__);
+    return;
+  }
 
+  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData)*msg_count);
+  memzero(msgs, sizeof(msgs));
   if (NULL == msgs) {
     // ADD error
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
 
-  if (!plain_data_to_array_obj(query->setup.plain_data, msgs, msg_count)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    return;
-  }
+  convert_plaindata_to_msg(query->setup.plain_data, msgs, msg_count);
 
   if (!session_encrypt_secure_data(query->setup.wallet_id, msgs, msg_count)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
 
-  // TODO: Recieve values from core
-  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  // TODO: remove after testing
+  set_session();
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
   size_t packet_size = 0;
 
-  if (!session_encrypt_packet(msgs, msg_count, key, iv, packet, &packet_size)) {
+  if (!session_encrypt_packet(msgs, msg_count, packet, &packet_size)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
@@ -152,4 +152,17 @@ void inheritance_setup(inheritance_query_t *query) {
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   free(msgs);
+}
+
+// TODO: add is private in setup
+void convert_plaindata_to_msg(inheritance_plain_data_t *plain_data,
+                              SecureData *msgs,
+                              size_t msg_count) {
+  for (uint8_t i = 0; i < msg_count; i++) {
+    msgs[i].plain_data[0] = plain_data[i].is_private ? 1 : 0;
+    msgs[i].plain_data_size +=1;
+
+    memcpy(msgs[i].plain_data + 1, plain_data[i].message.bytes, plain_data[i].message.size);
+    msgs[i].plain_data_size += plain_data[i].message.size;
+  }
 }

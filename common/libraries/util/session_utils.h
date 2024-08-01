@@ -33,7 +33,7 @@
 #define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 4
 
-#define SESSION_ID_SIZE 16
+#define SESSION_IV_SIZE 16
 #define SESSION_KEY_SIZE 32
 
 #define SESSION_MSG_MAX 5
@@ -86,7 +86,7 @@ typedef struct {
   SecureData SessionMsgs[SESSION_MSG_MAX];
   uint8_t msg_count;
 
-  uint8_t session_id[SESSION_ID_SIZE];
+  uint8_t session_iv[SESSION_IV_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
 
   uint8_t packet[SESSION_PACKET_SIZE];
@@ -105,7 +105,7 @@ typedef struct {
   // session_enc
   uint8_t msg_count;
   SecureData SessionMsgs[SESSION_MSG_MAX];
-  uint8_t pass_key[SESSION_ID_SIZE];
+  uint8_t pass_key[SESSION_IV_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
 
   // output
@@ -151,8 +151,6 @@ bool session_encrypt_secure_data(uint8_t *wallet_id,
                                  size_t msg_count);
 bool session_encrypt_packet(SecureData *msgs,
                             uint8_t msg_count,
-                            uint8_t *key,
-                            uint8_t *iv,
                             uint8_t *packet,
                             size_t *packet_size);
 
@@ -161,14 +159,8 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
                                  size_t msg_count);
 bool session_decrypt_packet(SecureData *msgs,
                             uint8_t *msg_count,
-                            uint8_t *key,
-                            uint8_t *iv,
                             uint8_t *packet,
                             size_t *packet_size);
-
-bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
-                             SecureData *msgs,
-                             size_t msgs_count);
 
 bool session_get_random_keys(uint8_t *random,
                              uint8_t *random_public,

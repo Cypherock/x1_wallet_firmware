@@ -100,26 +100,23 @@
 void inheritance_recovery(inheritance_query_t *query) {
   SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
   memzero(msgs, sizeof(msgs));
-  uint32_t *msg_count = (uint32_t *)malloc(sizeof(uint32_t));
-  *msg_count = 0;
+  uint32_t *msg_count = 0;
 
-  // TODO: Recieve values from core
-  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  // TODO: remove after testing
+  set_session();
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
   size_t packet_size = query->recovery.encrypted_data.packet.size;
   memcpy(packet, &query->recovery.encrypted_data.packet.bytes, packet_size);
 
   if (!session_decrypt_packet(
-          msgs, (msg_count), key, iv, packet, &packet_size)) {
+          msgs, msg_count, packet, &packet_size)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
 
   if (!session_decrypt_secure_data(
-          query->wallet_auth.initiate.wallet_id, msgs, (*msg_count))) {
+          query->wallet_auth.initiate.wallet_id, msgs, msg_count)) {
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
@@ -127,7 +124,9 @@ void inheritance_recovery(inheritance_query_t *query) {
   inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
   result.which_response = INHERITANCE_RESULT_RECOVERY_TAG;
   result.recovery.plain_data_count = *msg_count;
-  session_msg_to_plaindata(result.recovery.plain_data, msgs, msg_count);
+  
+  convert_msg_to_plaindata(result.recovery.plain_data, msgs, msg_count);
+  
 #if USE_SIMULATOR == 1
   printf("Inheritance Recovery Result: Plain Data:\n");
   for (int j = 0; j < result.recovery.plain_data_count; j++) {
@@ -145,7 +144,20 @@ void inheritance_recovery(inheritance_query_t *query) {
   if (NULL != msgs) {
     free(msgs);
   }
-  if (NULL != msg_count) {
-    free(msg_count);
+}
+
+
+// TODO: add is private in recovery
+void convert_msg_to_plaindata(inheritance_plain_data_t *plain_data,
+                              SecureData *msgs,
+                              uint8_t *msg_count) {
+  for (uint8_t i = 0; i < (*msg_count); i++) {
+    if (1 == msgs[i].plain_data[0])
+      plain_data[i].is_private = true;
+
+    memcpy(plain_data[i].message.bytes,
+           msgs[i].plain_data+1,
+           msgs[i].plain_data_size-1);
+    plain_data[i].message.size = msgs[i].plain_data_size;
   }
 }

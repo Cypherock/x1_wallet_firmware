@@ -146,7 +146,7 @@ bool verify_session_signature(uint8_t *payload,
   return (status == 0);
 };
 
-bool derive_session_id() {
+bool derive_session_iv() {
   curve_point random_point;
   memcpy(
       &random_point, &session.server_random_public_point, sizeof(curve_point));
@@ -162,9 +162,9 @@ bool derive_session_id() {
 
   print_arr("session id temp", temp, 2 * SESSION_PRIV_KEY_SIZE);
 
-  sha256_Raw(temp, 2 * SESSION_PUB_KEY_SIZE, session.session_id);
+  sha256_Raw(temp, 2 * SESSION_PUB_KEY_SIZE, session.session_iv);
 
-  print_arr("session.session_id", session.session_id, SESSION_ID_SIZE);
+  print_arr("session.session_iv", session.session_iv, SESSION_IV_SIZE);
 
   return true;
 }
@@ -232,7 +232,7 @@ bool session_get_random_keys(uint8_t *random,
 
 bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
   return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 &&
-          memcmp(pass_id, session.session_id, SESSION_ID_SIZE) == 0);
+          memcmp(pass_id, session.session_iv, SESSION_IV_SIZE) == 0);
 }
 
 bool session_send_device_key(uint8_t *payload) {
@@ -315,7 +315,7 @@ bool session_receive_server_key(uint8_t *server_message) {
             session.server_random_public,
             SESSION_PUB_KEY_SIZE);
 
-  if (!derive_session_id() || !derive_session_key()) {
+  if (!derive_session_iv() || !derive_session_key()) {
     printf("\nERROR: Generation session keys");
     return false;
   }
@@ -402,14 +402,12 @@ session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
 
 bool session_encrypt_packet(SecureData *msgs,
                             uint8_t msg_count,
-                            uint8_t *key,
-                            uint8_t *iv,
                             uint8_t *packet,
                             size_t *packet_size) {
   session_serialise_packet(msgs, msg_count, packet, packet_size);
   memcpy(session.packet, packet, *packet_size);
   if (SESSION_ENCRYPT_PACKET_SUCCESS !=
-      session_aes_encrypt_packet(packet, packet_size, key, iv))
+      session_aes_encrypt_packet(packet, packet_size, session.session_key, session.session_iv))
     return false;
 
   memcpy(session.packet, packet, *packet_size);
@@ -471,14 +469,12 @@ session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
 
 bool session_decrypt_packet(SecureData *msgs,
                             uint8_t *msg_count,
-                            uint8_t *key,
-                            uint8_t *iv,
                             uint8_t *packet,
                             size_t *packet_size) {
   memcpy(session.packet, packet, *packet_size);
 
   if (SESSION_DECRYPT_PACKET_SUCCESS !=
-      session_aes_decrypt_packet(packet, packet_size, key, iv))
+      session_aes_decrypt_packet(packet, packet_size, session.session_key, session.session_iv))
     return false;
   // inheritance_bug#2
   // packet_size is not being updated for aes dectyption
@@ -510,7 +506,7 @@ bool session_encrypt_secure_data(uint8_t *wallet_id,
   session.msg_count = msg_count;
 
   // TODO: remove after testing session core
-  // if (!session_id_is_valid(session.session_id)) {
+  // if (!session_iv_is_valid(session.session_iv)) {
   //   printf("ERROR: Session is invalid");
   //   return false;
   // }
@@ -520,14 +516,14 @@ bool session_encrypt_secure_data(uint8_t *wallet_id,
   // session_encrypt_packet(session.SessionMsgs,
   //                        session.msg_count,
   //                        session.session_key,
-  //                        session.session_id,
+  //                        session.session_iv,
   //                        packet,
   //                        &packet_size);
   // session_reset_secure_data();
   // session_decrypt_packet(session.SessionMsgs,
   //                        session.msg_count,
   //                        session.session_key,
-  //                        session.session_id,
+  //                        session.session_iv,
   //                        packet,
   //                        &packet_size);
 
@@ -552,38 +548,6 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
 
   memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
   session.msg_count = msg_count;
-
-  return true;
-}
-
-// TODO: add is private in setup
-bool session_plaindata_to_msg(uint8_t *plain_data[],
-                              SecureData *msgs,
-                              size_t *msg_count) {
-  if (*msg_count > SESSION_MSG_MAX)
-    return false;
-
-  for (uint8_t i = 0; i < msg_count; i++) {
-    msgs[i].plain_data_size = sizeof(plain_data[i]);
-    memcpy(msgs[i].plain_data, plain_data[i], msgs[i].plain_data_size);
-  }
-
-  return true;
-}
-
-// TODO: add is private in recovery
-bool session_msg_to_plaindata(inheritance_plain_data_t *plain_data,
-                              SecureData *msgs,
-                              uint8_t *msg_count) {
-  if ((*msg_count) > SESSION_MSG_MAX)
-    return false;
-
-  for (uint8_t i = 0; i < (*msg_count); i++) {
-    memcpy(plain_data[i].message.bytes,
-           msgs[i].plain_data,
-           msgs[i].plain_data_size);
-    plain_data[i].message.size = msgs[i].plain_data_size;
-  }
 
   return true;
 }
@@ -803,6 +767,17 @@ void test_generate_server_data(dummy_inheritance_query_t *query) {
   memcpy(query->server_message, server_message, offset);
 }
 
+void set_session(){
+  // TODO: Recieve values from core
+  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+  memcpy(session.session_key, key, SESSION_KEY_SIZE);
+  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
+
+}
+
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
   const uint8_t msg_count = 5;
   static const char *messages[] = {
@@ -854,8 +829,8 @@ void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
 #endif
   print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
 
-  memcpy(query->pass_key, session.session_id, SESSION_ID_SIZE);
-  print_arr("query->pass_key", query->pass_key, SESSION_ID_SIZE);
+  memcpy(query->pass_key, session.session_iv, SESSION_IV_SIZE);
+  print_arr("query->pass_key", query->pass_key, SESSION_IV_SIZE);
 }
 
 bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
