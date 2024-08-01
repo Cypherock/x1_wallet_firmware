@@ -244,8 +244,11 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
 }
 
-TEST_GROUP_RUNNER(inheritance_setup_test) {
-  RUN_TEST_CASE(inheritance_setup_test, inheritance_setup_test_first);
+TEST_GROUP_RUNNER(inheritance_session_data_test) {
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_one);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_one);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_five);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_five);
 }
 
 TEST_GROUP_RUNNER(session_tests) {

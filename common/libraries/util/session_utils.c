@@ -323,170 +323,6 @@ bool session_receive_server_key(uint8_t *server_message) {
   return true;
 }
 
-void session_serialise_packet(SecureData *msgs,
-                              size_t msg_count,
-                              uint8_t *data,
-                              size_t *len) {
-  size_t size = *len;
-
-  ASSERT(msgs != NULL);
-  ASSERT(msg_count != 0);
-
-  size = 0;
-  for (int i = 0; i < msg_count; i++) {
-    data[size] += (msgs[i].encrypted_data_size >> 8) & 0xFF;
-    size += 1;
-    data[size] += msgs[i].encrypted_data_size & 0xFF;
-    size += 1;
-
-    memcpy(data + size, msgs[i].encrypted_data, msgs[i].encrypted_data_size);
-    size += msgs[i].encrypted_data_size;
-  }
-
-  *len = size;
-}
-
-session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
-                                                size_t *len,
-                                                uint8_t *key,
-                                                uint8_t *iv_immut) {
-  ASSERT(InOut_data != NULL);
-  ASSERT(len != NULL);
-
-  size_t size = *len;
-  ASSERT(size <= SESSION_PACKET_SIZE);
-
-  uint8_t payload[size];
-  memcpy(payload, InOut_data, size);
-  memzero(InOut_data, size);
-
-  uint8_t last_block[AES_BLOCK_SIZE] = {0};
-  uint8_t remainder = size % AES_BLOCK_SIZE;
-
-  // Round down to last whole block
-  size -= remainder;
-  // Copy old last block
-  memcpy(last_block, payload + size, remainder);
-  // Pad new last block with number of missing bytes
-  memset(last_block + remainder,
-         AES_BLOCK_SIZE - remainder,
-         AES_BLOCK_SIZE - remainder);
-
-  // the IV gets mutated, so we make a copy not to touch the original
-  uint8_t iv[AES_BLOCK_SIZE] = {0};
-  memcpy(iv, iv_immut, AES_BLOCK_SIZE);
-
-  aes_encrypt_ctx ctx = {0};
-
-  if (aes_encrypt_key256(key, &ctx) != EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PACKET_KEY_ERR;
-  }
-
-  if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PACKET_ERR;
-  }
-
-  if (aes_cbc_encrypt(
-          last_block, InOut_data + size, sizeof(last_block), iv, &ctx) !=
-      EXIT_SUCCESS) {
-    return SESSION_ENCRYPT_PACKET_ERR;
-  }
-
-  size += sizeof(last_block);
-  *len = size;
-
-  memset(&ctx, 0, sizeof(ctx));
-
-  return SESSION_ENCRYPT_PACKET_SUCCESS;
-}
-
-bool session_encrypt_packet(SecureData *msgs,
-                            uint8_t msg_count,
-                            uint8_t *packet,
-                            size_t *packet_size) {
-  session_serialise_packet(msgs, msg_count, packet, packet_size);
-  memcpy(session.packet, packet, *packet_size);
-  if (SESSION_ENCRYPT_PACKET_SUCCESS !=
-      session_aes_encrypt_packet(packet, packet_size, session.session_key, session.session_iv))
-    return false;
-
-  memcpy(session.packet, packet, *packet_size);
-
-  return true;
-}
-
-void session_deserialise_packet(SecureData *msgs,
-                                uint8_t *msg_count,
-                                uint8_t *data,
-                                size_t *len) {
-  ASSERT(msgs != NULL);
-
-  size_t index = 0;
-  while (index < *len) {
-    msgs[*msg_count].encrypted_data_size = (uint16_t)data[index] << 8;
-    index += 1;
-    msgs[*msg_count].encrypted_data_size |= (uint16_t)data[index];
-    index += 1;
-
-    memcpy(msgs[*msg_count].encrypted_data,
-           data + index,
-           msgs[*msg_count].encrypted_data_size);
-    index += msgs[*msg_count].encrypted_data_size;
-
-    *msg_count += 1;
-  }
-  // inheritance_bug#1 false fix
-  *msg_count += -1;
-}
-
-session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
-                                                uint16_t *len,
-                                                uint8_t *key,
-                                                uint8_t *iv) {
-  ASSERT(InOut_data != NULL);
-  ASSERT(len != NULL);
-
-  size_t size = *len;
-
-  uint8_t payload[size];
-  memcpy(payload, InOut_data, size);
-  memzero(InOut_data, size);
-
-  aes_decrypt_ctx ctx = {0};
-
-  if (EXIT_SUCCESS != aes_decrypt_key256(key, &ctx))
-    return SESSION_DECRYPT_PACKET_KEY_ERR;
-
-  if (aes_cbc_decrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS ||
-      size > SESSION_PACKET_SIZE)
-    return SESSION_DECRYPT_PACKET_ERR;
-
-  *len = size;
-  memset(&ctx, 0, sizeof(ctx));
-
-  return SESSION_DECRYPT_PACKET_SUCCESS;
-}
-
-bool session_decrypt_packet(SecureData *msgs,
-                            uint8_t *msg_count,
-                            uint8_t *packet,
-                            size_t *packet_size) {
-  memcpy(session.packet, packet, *packet_size);
-
-  if (SESSION_DECRYPT_PACKET_SUCCESS !=
-      session_aes_decrypt_packet(packet, packet_size, session.session_key, session.session_iv))
-    return false;
-  // inheritance_bug#2
-  // packet_size is not being updated for aes dectyption
-  memcpy(session.packet, packet, *packet_size);
-
-  session_deserialise_packet(msgs, msg_count, packet, packet_size);
-
-  memcpy(session.packet, packet, *packet_size);
-
-  return true;
-}
-
 bool session_encrypt_secure_data(uint8_t *wallet_id,
                                  SecureData *msgs,
                                  size_t msg_count) {
@@ -548,6 +384,169 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
 
   memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
   session.msg_count = msg_count;
+
+  return true;
+}
+
+void session_serialise_packet(SecureData *msgs,
+                              size_t msg_count,
+                              uint8_t *data,
+                              size_t *len) {
+  size_t size = *len;
+
+  ASSERT(msgs != NULL);
+  ASSERT(msg_count != 0);
+
+  size = 0;
+  data[size] = msg_count;
+  size += 1;
+  for (int i = 0; i < msg_count; i++) {
+    data[size] += (msgs[i].encrypted_data_size >> 8) & 0xFF;
+    size += 1;
+    data[size] += msgs[i].encrypted_data_size & 0xFF;
+    size += 1;
+
+    memcpy(data + size, msgs[i].encrypted_data, msgs[i].encrypted_data_size);
+    size += msgs[i].encrypted_data_size;
+  }
+
+  *len = size;
+}
+
+void session_deserialise_packet(SecureData *msgs,
+                                uint8_t *msg_count,
+                                uint8_t *data,
+                                size_t *len) {
+  ASSERT(data != NULL);
+  ASSERT(*len > 0);
+
+  size_t index = 0;
+  *msg_count = data[index];
+  index += 1;
+  for (int i = 0; i < *msg_count; i++) {
+    msgs[i].encrypted_data_size = (uint16_t)data[index] << 8;
+    index += 1;
+    msgs[i].encrypted_data_size |= (uint16_t)data[index];
+    index += 1;
+
+    memcpy(msgs[i].encrypted_data, data + index, msgs[i].encrypted_data_size);
+    index += msgs[i].encrypted_data_size;
+  }
+}
+
+session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
+                                                size_t *len,
+                                                uint8_t *key,
+                                                uint8_t *iv_immut) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
+  ASSERT(size <= SESSION_PACKET_SIZE);
+
+  uint8_t payload[size];
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  uint8_t last_block[AES_BLOCK_SIZE] = {0};
+  uint8_t remainder = size % AES_BLOCK_SIZE;
+
+  // Round down to last whole block
+  size -= remainder;
+  // Copy old last block
+  memcpy(last_block, payload + size, remainder);
+  // Pad new last block with number of missing bytes
+  memset(last_block + remainder,
+         AES_BLOCK_SIZE - remainder,
+         AES_BLOCK_SIZE - remainder);
+
+  // the IV gets mutated, so we make a copy not to touch the original
+  uint8_t iv[AES_BLOCK_SIZE] = {0};
+  memcpy(iv, iv_immut, AES_BLOCK_SIZE);
+
+  aes_encrypt_ctx ctx = {0};
+
+  if (aes_encrypt_key256(key, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_KEY_ERR;
+  }
+
+  if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  if (aes_cbc_encrypt(
+          last_block, InOut_data + size, sizeof(last_block), iv, &ctx) !=
+      EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  size += sizeof(last_block);
+  *len = size;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  return SESSION_ENCRYPT_PACKET_SUCCESS;
+}
+
+session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
+                                                uint16_t *len,
+                                                uint8_t *key,
+                                                uint8_t *iv) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
+
+  uint8_t payload[size];
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  aes_decrypt_ctx ctx = {0};
+
+  if (EXIT_SUCCESS != aes_decrypt_key256(key, &ctx))
+    return SESSION_DECRYPT_PACKET_KEY_ERR;
+
+  if (aes_cbc_decrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS ||
+      size > SESSION_PACKET_SIZE)
+    return SESSION_DECRYPT_PACKET_ERR;
+
+  *len = size;
+  memset(&ctx, 0, sizeof(ctx));
+
+  return SESSION_DECRYPT_PACKET_SUCCESS;
+}
+
+bool session_encrypt_packet(SecureData *msgs,
+                            uint8_t msg_count,
+                            uint8_t *packet,
+                            size_t *packet_size) {
+  session_serialise_packet(msgs, msg_count, packet, packet_size);
+  memcpy(session.packet, packet, *packet_size);
+  if (SESSION_ENCRYPT_PACKET_SUCCESS !=
+      session_aes_encrypt_packet(
+          packet, packet_size, session.session_key, session.session_iv))
+    return false;
+
+  memcpy(session.packet, packet, *packet_size);
+
+  return true;
+}
+
+bool session_decrypt_packet(SecureData *msgs,
+                            uint8_t *msg_count,
+                            uint8_t *packet,
+                            size_t *packet_size) {
+  memcpy(session.packet, packet, *packet_size);
+
+  if (SESSION_DECRYPT_PACKET_SUCCESS !=
+      session_aes_decrypt_packet(
+          packet, packet_size, session.session_key, session.session_iv))
+    return false;
+  memcpy(session.packet, packet, *packet_size);
+
+  session_deserialise_packet(msgs, msg_count, packet, packet_size);
+
+  memcpy(session.packet, packet, *packet_size);
 
   return true;
 }
@@ -767,7 +766,7 @@ void test_generate_server_data(dummy_inheritance_query_t *query) {
   memcpy(query->server_message, server_message, offset);
 }
 
-void set_session(){
+void set_session() {
   // TODO: Recieve values from core
   uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -775,7 +774,6 @@ void set_session(){
 
   memcpy(session.session_key, key, SESSION_KEY_SIZE);
   memcpy(session.session_iv, iv, SESSION_IV_SIZE);
-
 }
 
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {

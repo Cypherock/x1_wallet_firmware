@@ -97,9 +97,8 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_setup(inheritance_query_t *query) {
-  // Memory Allocation Issue
-  //
+void inheritance_setup(inheritance_query_t *query,
+                       inheritance_result_t *response) {
   uint32_t msg_count = query->setup.plain_data_count;
   if (SESSION_MSG_MAX < msg_count) {
     // ADD error
@@ -107,7 +106,7 @@ void inheritance_setup(inheritance_query_t *query) {
     return;
   }
 
-  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData)*msg_count);
+  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * msg_count);
   memzero(msgs, sizeof(msgs));
   if (NULL == msgs) {
     // ADD error
@@ -133,36 +132,36 @@ void inheritance_setup(inheritance_query_t *query) {
     return;
   }
 
-  inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
-  result.which_response = INHERITANCE_RESULT_SETUP_TAG;
-  result.setup.has_encrypted_data = true;
-  memcpy(result.setup.encrypted_data.packet.bytes, packet, packet_size);
-  result.setup.encrypted_data.packet.size = packet_size;
+  response->which_response = INHERITANCE_RESULT_SETUP_TAG;
+  response->setup.has_encrypted_data = true;
+  memcpy(response->setup.encrypted_data.packet.bytes, packet, packet_size);
+  response->setup.encrypted_data.packet.size = packet_size;
 
 #if USE_SIMULATOR == 1
-  printf("Inheritance Setup Result: Encrpyted Data:\n");
-  for (int i = 0; i < result.setup.encrypted_data.packet.size; i++) {
-    printf("%02x", result.setup.encrypted_data.packet.bytes[i]);
+  printf("Inheritance Setup Result: <Encrpyted Data>\n");
+  for (int i = 0; i < response->setup.encrypted_data.packet.size; i++) {
+    printf("%02x", response->setup.encrypted_data.packet.bytes[i]);
     fflush(stdout);
   }
   printf("\nEnd");
 #endif
 
-  inheritance_send_result(&result);
+  inheritance_send_result(&response);
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   free(msgs);
 }
 
-// TODO: add is private in setup
 void convert_plaindata_to_msg(inheritance_plain_data_t *plain_data,
                               SecureData *msgs,
                               size_t msg_count) {
   for (uint8_t i = 0; i < msg_count; i++) {
     msgs[i].plain_data[0] = plain_data[i].is_private ? 1 : 0;
-    msgs[i].plain_data_size +=1;
+    msgs[i].plain_data_size += 1;
 
-    memcpy(msgs[i].plain_data + 1, plain_data[i].message.bytes, plain_data[i].message.size);
+    memcpy(msgs[i].plain_data + 1,
+           plain_data[i].message.bytes,
+           plain_data[i].message.size);
     msgs[i].plain_data_size += plain_data[i].message.size;
   }
 }

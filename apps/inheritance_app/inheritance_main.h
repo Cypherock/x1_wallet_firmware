@@ -63,9 +63,11 @@ const cy_app_desc_t *get_inheritance_app_desc();
 void wallet_login(inheritance_query_t *query);
 
 // TODO: desc
-void inheritance_setup(inheritance_query_t *query);
+void inheritance_setup(inheritance_query_t *query,
+                       inheritance_result_t *response);
 
 // TODO: desc
-void inheritance_recovery(inheritance_query_t *query);
+void inheritance_recovery(inheritance_query_t *query,
+                          inheritance_result_t *response);
 
 #endif /* INHERITANCE_MAIN_H */
