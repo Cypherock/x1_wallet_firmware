@@ -60,14 +60,61 @@ const cy_app_desc_t *get_inheritance_app_desc();
  * @param query The reference to the inheritance query containing wallet
  * authentication data.
  */
-void wallet_login(inheritance_query_t *query);
+void inheritance_wallet_login(inheritance_query_t *query);
 
-// TODO: desc
+/**
+ * @brief This API processes a login session request for inheritance operations.
+ *
+ * This function handles login sessions by processing requests of type
+ * `inheritance_query_t`. Depending on the type of request specified in
+ * `query.which_request`, it either sets up an inheritance session or performs
+ * a recovery operation. The function uses a simulator for debugging purposes
+ * if enabled, and sends results accordingly.
+ *
+ * @param query A pointer to the `inheritance_query_t` structure containing the
+ *        request details.
+ */
+void inheritance_session_login(inheritance_query_t *query);
+
+/**
+ * @brief This API handles the setup phase of an inheritance session.
+ *
+ * This function processes an inheritance setup request by converting plain data
+ * into secure messages, encrypting them, and then packaging them into an
+ * encrypted packet. The resulting encrypted data is then stored in the response
+ * structure. If any errors occur during the process, appropriate error logging
+ * is performed.
+ *
+ * @param query A pointer to the `inheritance_query_t` structure containing the
+ *        setup request details, including plain data and wallet ID.
+ * @param msgs A pointer to an array of `SecureData` structures to hold the
+ *        converted plain data.
+ * @param response A pointer to the `inheritance_result_t` structure where the
+ *        encrypted result will be stored.
+ */
 void inheritance_setup(inheritance_query_t *query,
+                       SecureData *msgs,
                        inheritance_result_t *response);
 
-// TODO: desc
+/**
+ * @brief This API handles the recovery phase of an inheritance session.
+ *
+ * This function processes an inheritance recovery request by decrypting an
+ * encrypted packet into secure messages, decrypting the secure data, and then
+ * converting it back into plain data. The resulting plain data is then stored
+ * in the response structure. If any errors occur during the process,
+ * appropriate error logging is performed.
+ *
+ * @param query A pointer to the `inheritance_query_t` structure containing the
+ *        recovery request details, including encrypted data and wallet
+ *        authentication information.
+ * @param msgs A pointer to an array of `SecureData` structures to hold the
+ *        decrypted secure data.
+ * @param response A pointer to the `inheritance_result_t` structure where the
+ *        decrypted result will be stored.
+ */
 void inheritance_recovery(inheritance_query_t *query,
+                          SecureData *msgs,
                           inheritance_result_t *response);
 
 #endif /* INHERITANCE_MAIN_H */

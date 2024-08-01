@@ -1,5 +1,5 @@
 /**
- * @file    inheritance_helpers.c
+ * @file    inheritance_setup.c
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -98,17 +98,10 @@
  *****************************************************************************/
 
 void inheritance_setup(inheritance_query_t *query,
+                       SecureData *msgs,
                        inheritance_result_t *response) {
   uint32_t msg_count = query->setup.plain_data_count;
   if (SESSION_MSG_MAX < msg_count) {
-    // ADD error
-    LOG_CRITICAL("xxec %d", __LINE__);
-    return;
-  }
-
-  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * msg_count);
-  memzero(msgs, sizeof(msgs));
-  if (NULL == msgs) {
     // ADD error
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
@@ -120,10 +113,6 @@ void inheritance_setup(inheritance_query_t *query,
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
-
-#if USE_SIMULATOR == 1
-  set_dummy_session();
-#endif
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
   size_t packet_size = 0;
@@ -144,11 +133,8 @@ void inheritance_setup(inheritance_query_t *query,
     printf("%02x", response->setup.encrypted_data.packet.bytes[i]);
     fflush(stdout);
   }
-  printf("\nEnd");
+  printf("\nEnd\n");
 #endif
-
-  inheritance_send_result(&response);
-  delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   free(msgs);
 }

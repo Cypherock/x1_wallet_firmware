@@ -1,5 +1,5 @@
 /**
- * @file    inheritance_recovery.c
+ * @file    inheritance_session.c
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -97,51 +97,34 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_recovery(inheritance_query_t *query,
-                          SecureData *msgs,
-                          inheritance_result_t *response) {
-  uint32_t msg_count = 0;
-
-  uint8_t packet[SESSION_PACKET_SIZE] = {0};
-  size_t packet_size = query->recovery.encrypted_data.packet.size;
-  memcpy(packet, query->recovery.encrypted_data.packet.bytes, packet_size);
-
-  if (!session_decrypt_packet(msgs, &msg_count, packet, &packet_size)) {
+void inheritance_session_login(inheritance_query_t *query) {
+  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
+  memzero(msgs, sizeof(msgs));
+  if (NULL == msgs) {
+    // ADD error
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
 
-  if (!session_decrypt_secure_data(
-          query->wallet_auth.initiate.wallet_id, msgs, msg_count)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    return;
+  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
+
+  switch ((uint8_t)query->which_request) {
+    case INHERITANCE_QUERY_SETUP_TAG: {
+      inheritance_setup(query, msgs, &response);
+      break;
+    }
+    case INHERITANCE_QUERY_RECOVERY_TAG: {
+      inheritance_recovery(query, msgs, &response);
+      break;
+    }
+
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_QUERY);
+    } break;
   }
 
-  response->which_response = INHERITANCE_RESULT_RECOVERY_TAG;
-  response->recovery.plain_data_count = msg_count;
-
-  convert_msg_to_plaindata(response->recovery.plain_data, msgs, msg_count);
-
-#if USE_SIMULATOR == 1
-  printf("Inheritance Recovery Result: <Plain Data>\n");
-  for (int i = 0; i < response->recovery.plain_data_count; i++) {
-    printf("\nMessage #%d:\n", i);
-    printf("%s", (char *)response->recovery.plain_data[i].message.bytes);
-  }
-  printf("\nEnd\n");
-#endif
-}
-
-void convert_msg_to_plaindata(inheritance_plain_data_t *plain_data,
-                              SecureData *msgs,
-                              uint8_t msg_count) {
-  for (uint8_t i = 0; i < msg_count; i++) {
-    if (1 == msgs[i].plain_data[0])
-      plain_data[i].is_private = true;
-
-    memcpy(plain_data[i].message.bytes,
-           msgs[i].plain_data + 1,
-           msgs[i].plain_data_size - 1);
-    plain_data[i].message.size = msgs[i].plain_data_size - 1;
-  }
+  inheritance_send_result(&response);
+  delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 }

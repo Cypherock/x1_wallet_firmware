@@ -55,10 +55,49 @@
  *
  ******************************************************************************
  */
+/*****************************************************************************
+ * INCLUDES
+ *****************************************************************************/
+#include <string.h>
 
 #include "inheritance_api.h"
 #include "inheritance_main.h"
 #include "unity_fixture.h"
+
+/*****************************************************************************
+ * EXTERN VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE MACROS AND DEFINES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
+static inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
+static SecureData *msgs = NULL;
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 
 TEST_GROUP(inheritance_session_data_test);
 
@@ -69,8 +108,8 @@ TEST_GROUP(inheritance_session_data_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(inheritance_session_data_test) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
+  msgs = (SecureData *)calloc(SESSION_MSG_MAX, sizeof(SecureData));
+  set_dummy_session();
 }
 
 /**
@@ -80,12 +119,13 @@ TEST_SETUP(inheritance_session_data_test) {
  * api of usb-event and clearing buffers using usb-comm APIs.
  */
 TEST_TEAR_DOWN(inheritance_session_data_test) {
+  memset(&query, 0, sizeof(query));
+  memset(&response, 0, sizeof(response));
+  memset(msgs, 0, sizeof(msgs));
 }
 
 TEST(inheritance_session_data_test, inheritance_setup_one) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_SETUP_TAG;
-
   query.setup.plain_data_count = 1;
 
   char message_1[PLAIN_DATA_SIZE] = "An important message.";
@@ -93,10 +133,9 @@ TEST(inheritance_session_data_test, inheritance_setup_one) {
   query.setup.plain_data[0].message.size = 21;
   query.setup.plain_data[0].is_private = true;
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_setup(&query, &response);
+  inheritance_setup(&query, msgs, &response);
 
-  uint8_t encrpyted_result[ENCRYPTED_DATA_SIZE / 2];
+  uint8_t encrpyted_result[SESSION_PACKET_SIZE] = {0};
   hex_string_to_byte_array(
       "eb3c8139d596dae909477a6e676499f23f24ed643496e1ca1c656533f02a852d",
       64,
@@ -107,7 +146,6 @@ TEST(inheritance_session_data_test, inheritance_setup_one) {
 }
 
 TEST(inheritance_session_data_test, inheritance_recovery_one) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_RECOVERY_TAG;
 
   uint8_t encrpyted_data_packet[SESSION_PACKET_SIZE];
@@ -117,12 +155,10 @@ TEST(inheritance_session_data_test, inheritance_recovery_one) {
       encrpyted_data_packet);
 
   query.recovery.has_encrypted_data = true;
-  query.which_request = INHERITANCE_QUERY_RECOVERY_TAG;
   memcpy(query.recovery.encrypted_data.packet.bytes, encrpyted_data_packet, 32);
   query.recovery.encrypted_data.packet.size = 32;
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_recovery(&query, &response);
+  inheritance_recovery(&query, msgs, &response);
 
   char plain_data_1_message[PLAIN_DATA_SIZE] = "An important message.";
   bool plain_data_1_is_private = true;
@@ -137,7 +173,7 @@ TEST(inheritance_session_data_test, inheritance_recovery_one) {
 const uint8_t msg_count = 5;
 static const uint16_t *sizes[] = {8, 79, 123, 445, 900};
 static const bool *is_privates[] = {true, false, true, false, true};
-static const char *msgs[] = {
+static const char *messages[] = {
     "Shortest",    // 8 chars
 
     "This is a slightly longer message to test the 50 characters "
@@ -171,20 +207,18 @@ static const char *msgs[] = {
 };
 
 TEST(inheritance_session_data_test, inheritance_setup_five) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_SETUP_TAG;
   query.setup.plain_data_count = msg_count;
 
   for (int i = 0; i < msg_count; i++) {
-    memcpy(query.setup.plain_data[i].message.bytes, msgs[i], sizes[i]);
+    memcpy(query.setup.plain_data[i].message.bytes, messages[i], sizes[i]);
     query.setup.plain_data[i].message.size = sizes[i];
     query.setup.plain_data[i].is_private = is_privates[i];
   }
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_setup(&query, &response);
+  inheritance_setup(&query, msgs, &response);
 
-  uint8_t encrpyted_result[SESSION_PACKET_SIZE];
+  uint8_t encrpyted_result[SESSION_PACKET_SIZE] = {0};
   hex_string_to_byte_array(
       "9e8117143bdbc11c0fbed0383a6bc12f7e62b56bf77384ce0eddd1ee9e9193fb73c157c0"
       "5e8da3ecf2a0f88bd13149d423875c4ead17120acffa6e45d8115a033c47929a5cb0ba64"
@@ -239,7 +273,6 @@ TEST(inheritance_session_data_test, inheritance_setup_five) {
 }
 
 TEST(inheritance_session_data_test, inheritance_recovery_five) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_RECOVERY_TAG;
 
   uint8_t encrpyted_data_packet[SESSION_PACKET_SIZE];
@@ -294,16 +327,14 @@ TEST(inheritance_session_data_test, inheritance_recovery_five) {
 
   query.recovery.has_encrypted_data = true;
   query.which_request = INHERITANCE_QUERY_RECOVERY_TAG;
-  memcpy(query.recovery.encrypted_data.packet.bytes,
-         encrpyted_data_packet,
-         3232 / 2);
-  query.recovery.encrypted_data.packet.size = 3232 / 2;
+  memcpy(
+      query.recovery.encrypted_data.packet.bytes, encrpyted_data_packet, 1616);
+  query.recovery.encrypted_data.packet.size = 1616;
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_recovery(&query, &response);
+  inheritance_recovery(&query, msgs, &response);
 
   for (int i = 0; i < msg_count; i++) {
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(msgs[i],
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(messages[i],
                                  response.recovery.plain_data[i].message.bytes,
                                  response.recovery.plain_data[i].message.size);
     TEST_ASSERT_EQUAL_INT8(is_privates[i],
@@ -312,21 +343,19 @@ TEST(inheritance_session_data_test, inheritance_recovery_five) {
 }
 
 TEST(inheritance_session_data_test, inheritance_setup_max) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_SETUP_TAG;
   query.setup.plain_data_count = msg_count;
 
   int8_t n = 4;
   for (int i = 0; i < msg_count; i++) {
-    memcpy(query.setup.plain_data[i].message.bytes, msgs[n], sizes[n]);
+    memcpy(query.setup.plain_data[i].message.bytes, messages[n], sizes[n]);
     query.setup.plain_data[i].message.size = sizes[n];
     query.setup.plain_data[i].is_private = is_privates[n];
   }
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_setup(&query, &response);
+  inheritance_setup(&query, msgs, &response);
 
-  uint8_t encrpyted_result[SESSION_PACKET_SIZE];
+  uint8_t encrpyted_result[SESSION_PACKET_SIZE] = {0};
   hex_string_to_byte_array(
       "9c532ccd33a6a3fe3607f70d08603a3dfebb5c445c6f2117a831b81df53b465700b11b30"
       "479513cf6f97442dfd50f2bd885ef1734df9de2921ec2af32876bb6eb1eae41f0ad11a81"
@@ -465,7 +494,6 @@ TEST(inheritance_session_data_test, inheritance_setup_max) {
 }
 
 TEST(inheritance_session_data_test, inheritance_recovery_max) {
-  inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
   query.which_request = INHERITANCE_QUERY_RECOVERY_TAG;
 
   uint8_t encrpyted_data_packet[SESSION_PACKET_SIZE];
@@ -608,12 +636,11 @@ TEST(inheritance_session_data_test, inheritance_recovery_max) {
       query.recovery.encrypted_data.packet.bytes, encrpyted_data_packet, 4624);
   query.recovery.encrypted_data.packet.size = 4624;
 
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-  inheritance_recovery(&query, &response);
+  inheritance_recovery(&query, msgs, &response);
 
   int8_t n = 4;
   for (int i = 0; i < msg_count; i++) {
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(msgs[n],
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(messages[n],
                                  response.recovery.plain_data[i].message.bytes,
                                  response.recovery.plain_data[i].message.size);
     TEST_ASSERT_EQUAL_INT8(is_privates[n],

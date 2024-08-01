@@ -245,12 +245,12 @@ TEST_GROUP_RUNNER(utils_tests) {
 }
 
 TEST_GROUP_RUNNER(inheritance_session_data_test) {
-  // RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_one);
-  // RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_one);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_one);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_one);
   RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_five);
   RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_five);
-  // RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_max);
-  // RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_max);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_setup_max);
+  RUN_TEST_CASE(inheritance_session_data_test, inheritance_recovery_max);
 }
 
 TEST_GROUP_RUNNER(session_tests) {

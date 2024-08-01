@@ -125,7 +125,7 @@ bool wallet_auth_get_signature(wallet_auth_t *auth) {
   return true;
 }
 
-void wallet_login(inheritance_query_t *query) {
+void inheritance_wallet_login(inheritance_query_t *query) {
   auth = (wallet_auth_t *)malloc(sizeof(wallet_auth_t));
   memzero(auth, sizeof(wallet_auth_t));
 

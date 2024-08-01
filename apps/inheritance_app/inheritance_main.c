@@ -110,7 +110,6 @@ static const cy_app_desc_t inheritance_app_desc = {.id = 19,
  *****************************************************************************/
 void inheritance_main(usb_event_t usb_evt, const void *app_config) {
   inheritance_query_t query = INHERITANCE_QUERY_INIT_DEFAULT;
-  inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
 
   if (false ==
       decode_inheritance_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
@@ -123,15 +122,12 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
 
   switch ((uint8_t)query.which_request) {
     case INHERITANCE_QUERY_WALLET_AUTH_TAG: {
-      wallet_login(&query);
+      inheritance_wallet_login(&query);
       break;
     }
-    case INHERITANCE_QUERY_SETUP_TAG: {
-      inheritance_setup(&query, &response);
-      break;
-    }
+    case INHERITANCE_QUERY_SETUP_TAG:
     case INHERITANCE_QUERY_RECOVERY_TAG: {
-      inheritance_recovery(&query, &response);
+      inheritance_session_login(&query);
       break;
     }
 
