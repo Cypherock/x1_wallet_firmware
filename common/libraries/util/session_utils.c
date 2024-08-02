@@ -214,9 +214,10 @@ bool session_get_random_keys(uint8_t *random,
                                0xf9, 0x10, 0x01, 0xc1, 0xa8, 0x30, 0xde, 0xb1};
   memcpy(random, get_ec_random, SESSION_PRIV_KEY_SIZE);
 #endif
+  session_curve_init();
   ecdsa_get_public_key33(curve, random, random_public);
-  print_arr("private key", random, SESSION_PRIV_KEY_SIZE);
-  print_arr("public key", random_public, SESSION_PUB_KEY_SIZE);
+  // print_arr("private key", random, SESSION_PRIV_KEY_SIZE);
+  // print_arr("public key", random_public, SESSION_PUB_KEY_SIZE);
 
   if (!ecdsa_read_pubkey(curve, random_public, &random_public_point)) {
     printf("\nERROR: Random public key point not read");
@@ -225,9 +226,7 @@ bool session_get_random_keys(uint8_t *random,
 
   // bn_print(&random_public_point.x);
   // bn_print(&random_public_point.y);
-
-  send_session_start_response_to_host(random_public);
-  return true;
+  return;
 }
 
 bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
@@ -254,7 +253,7 @@ bool session_send_device_key(uint8_t *payload) {
   memcpy(session.device_id, session.device_random, DEVICE_SERIAL_SIZE);
 #endif
 
-  uint8_t offset = 0;
+  uint32_t offset = 0;
   memcpy(payload + offset, session.device_random_public, SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
   memcpy(payload + offset, session.device_id, DEVICE_SERIAL_SIZE);
@@ -869,4 +868,54 @@ bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
   }
 
   return true;
+}
+
+void core_session_start_parse(core_msg_t *core_msg) {
+  size_t request_type = core_msg->session_start.request.which_request;
+  switch (request_type) {
+    case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
+      // send device data to server
+      uint8_t payload[SESSION_BUFFER_SIZE] = {0};
+      if (!session_send_device_key(payload)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
+
+        return SESSION_ERR_DEVICE_KEY;
+      }
+      send_session_start_response_to_host(payload);
+
+      // evt_status_t event = get_events(EVENT_CONFIG_USB,
+      // MAX_INACTIVITY_TIMEOUT);
+
+      // if (true == event.p0_event.flag) {
+      //   return false;
+      // }
+
+    } break;
+
+    case CORE_SESSION_START_REQUEST_START_TAG: {
+      // recieve server data
+      if (!core_confirmation("REACH HERE", send_core_error_msg_to_host)) {
+        return;
+      }
+      uint8_t dummy_test[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
+                         DEVICE_SERIAL_SIZE];
+      if (!session_receive_server_key(dummy_test)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
+
+        return SESSION_ERR_SERVER_KEY;
+      }
+      send_session_start_ack_to_host();
+    } break;
+
+    default:
+      /* In case we ever encounter invalid query, convey to the host app */
+      session_send_error();
+      session.status = SESSION_ERR_INVALID;
+      return;
+      break;
+  }
 }

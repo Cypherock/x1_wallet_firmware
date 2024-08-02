@@ -68,6 +68,7 @@
 #include "memzero.h"
 #include "pb_decode.h"
 #include "session_utils.h"
+#include "ui_core_confirm.h"
 #include "usb_api.h"
 #include "usb_api_priv.h"
 
@@ -186,11 +187,10 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     } break;
 
     case CORE_MSG_SESSION_START_TAG: {
-      uint8_t *random;
-      uint8_t *random_public;
-      curve_point random_public_point;
-      session_get_random_keys(random, random_public, random_public_point);
-    }
+      // uint8_t random[32];
+      core_session_start_parse(&core_msg_p);
+      status = CORE_NO_ERROR;
+    } break;
 
     default:
       break;
@@ -285,6 +285,8 @@ bool usb_get_event(usb_event_t *evt) {
         populate_version_list(&resp);
         send_app_version_list_to_host(&resp);
         reset_event_obj(&usb_event);
+      } else if (CORE_MSG_SESSION_START_TAG == request_type) {
+        // usb_set_state_executing();
       }
     }
   }
