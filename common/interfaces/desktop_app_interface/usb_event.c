@@ -169,6 +169,7 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
   // invalid buffer ref, 0 size & decode failure are error situation
   if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
       NULL == msg.buffer || 0 == msg.size) {
+    // TODO: ADD PBERROR LOG
     return status;
   }
 
@@ -187,6 +188,7 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     } break;
 
     case CORE_MSG_SESSION_START_TAG: {
+      printf("\n---------------XXX\n");
       // uint8_t random[32];
       core_session_start_parse(&core_msg_p);
       status = CORE_NO_ERROR;
@@ -260,6 +262,7 @@ bool usb_get_event(usb_event_t *evt) {
   reset_event_obj(evt);
 
   if (usb_event.flag) {
+    printf("\n---------------XXX2\n");
     core_error_type_t status = get_core_req_type(core_msg, &request_type);
     if (CORE_NO_ERROR != status) {
       // now clear event as it is not supposed to reach the app
