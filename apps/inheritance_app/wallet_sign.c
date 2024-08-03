@@ -80,13 +80,14 @@ bool wallet_auth_get_entropy(wallet_auth_t *auth) {
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 
   card_error_type_e status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
-  // TODO: Set App Flow Status
+
   delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
 
   if (status != CARD_OPERATION_SUCCESS ||
       msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
     return false;
   }
+  set_app_flow_status(INHERITANCE_WALLET_AUTH_STATUS_CARD_TAPPED);
 
   memcpy((void *)auth->entropy,
          msgs[0].encrypted_data,
@@ -140,6 +141,7 @@ void wallet_login(inheritance_query_t *query) {
          auth->challenge_size);
   auth->is_setup = query->wallet_auth.initiate.is_publickey;
 
+  set_app_flow_status(INHERITANCE_WALLET_AUTH_STATUS_INIT);
   if (!verify_wallet_auth_inputs(auth) || !wallet_auth_get_entropy(auth) ||
       !wallet_auth_get_pairs(auth) || !wallet_auth_get_signature(auth)) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
