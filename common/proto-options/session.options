@@ -4,5 +4,6 @@ core.SessionStartIntiateResultResponse.device_id type:FT_STATIC max_size:32 fixe
 core.SessionStartIntiateResultResponse.signature type:FT_STATIC max_size:64 fixed_length:true
 core.SessionStartIntiateResultResponse.postfix1 type:FT_STATIC max_size:7 fixed_length:true
 core.SessionStartIntiateResultResponse.postfix2 type:FT_STATIC max_size:23 fixed_length:true
-core.SessionStartBeginRequest.session_random_public type:FT_STATIC max_size:32 fixed_length:false
+core.SessionStartBeginRequest.session_random_public type:FT_STATIC max_size:32 fixed_length:true
 core.SessionStartBeginRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+core.SessionStartBeginRequest.device_id type:FT_STATIC max_size:32 fixed_length:true

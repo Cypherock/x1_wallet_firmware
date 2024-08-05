@@ -188,8 +188,6 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     } break;
 
     case CORE_MSG_SESSION_START_TAG: {
-      printf("\n---------------XXX\n");
-      // uint8_t random[32];
       core_session_start_parse(&core_msg_p);
       status = CORE_NO_ERROR;
     } break;
@@ -262,7 +260,6 @@ bool usb_get_event(usb_event_t *evt) {
   reset_event_obj(evt);
 
   if (usb_event.flag) {
-    printf("\n---------------XXX2\n");
     core_error_type_t status = get_core_req_type(core_msg, &request_type);
     if (CORE_NO_ERROR != status) {
       // now clear event as it is not supposed to reach the app
@@ -288,8 +285,6 @@ bool usb_get_event(usb_event_t *evt) {
         populate_version_list(&resp);
         send_app_version_list_to_host(&resp);
         reset_event_obj(&usb_event);
-      } else if (CORE_MSG_SESSION_START_TAG == request_type) {
-        // usb_set_state_executing();
       }
     }
   }

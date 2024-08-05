@@ -277,13 +277,12 @@ bool session_receive_server_key(uint8_t *server_message) {
       SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE;
 
   // TODO: uncomment when server test starts
-  /* if (!verify_session_signature(server_message,
-                                 server_message_size,
-                                 server_message + server_message_size)) {
-     printf("\nERROR: Message from server invalid");
-     return false;
-   }
-  */
+  //  if (!verify_session_signature(server_message,
+  //                                server_message_size,
+  //                                server_message + server_message_size)) {
+  //    printf("\nERROR: Message from server invalid");
+  //    return false;
+  //  }
 
   uint8_t offset = 0;
   memcpy(session.server_random_public,
@@ -292,10 +291,10 @@ bool session_receive_server_key(uint8_t *server_message) {
   offset += SESSION_PUB_KEY_SIZE;
   memcpy(session.session_age, server_message + offset, SESSION_AGE_SIZE);
   offset += SESSION_AGE_SIZE;
-
+  // Verify Device ID
   if (memcmp(session.device_id, server_message + offset, DEVICE_SERIAL_SIZE) !=
       0) {
-#if USE_SIMULATOR == 0
+#if USE_SIMULATOR == 1
     print_arr("session.device_id", session.device_id, DEVICE_SERIAL_SIZE);
     print_arr(
         "server_message + offset", server_message + offset, DEVICE_SERIAL_SIZE);
@@ -304,15 +303,19 @@ bool session_receive_server_key(uint8_t *server_message) {
   }
   offset += DEVICE_SERIAL_SIZE;
 
-  if (!ecdsa_read_pubkey(curve,
-                         session.server_random_public,
-                         &session.server_random_public_point)) {
-    printf("\nERROR: Server random public key point not read");
-    return false;
-  }
-  print_arr("session.server_random_public",
-            session.server_random_public,
-            SESSION_PUB_KEY_SIZE);
+  // TODO:
+  // Uncomment in production
+  // Test with authentic data
+
+  // if (!ecdsa_read_pubkey(curve,
+  //                        session.server_random_public,
+  //                        &session.server_random_public_point)) {
+  //   printf("\nERROR: Server random public key point not read");
+  //   return false;
+  // }
+  // print_arr("session.server_random_public",
+  //           session.server_random_public,
+  //           SESSION_PUB_KEY_SIZE);
 
   if (!derive_session_id() || !derive_session_key()) {
     printf("\nERROR: Generation session keys");
@@ -885,23 +888,29 @@ void core_session_start_parse(core_msg_t *core_msg) {
       }
       send_session_start_response_to_host(payload);
 
-      // evt_status_t event = get_events(EVENT_CONFIG_USB,
-      // MAX_INACTIVITY_TIMEOUT);
-
-      // if (true == event.p0_event.flag) {
-      //   return false;
-      // }
-
     } break;
 
     case CORE_SESSION_START_REQUEST_START_TAG: {
       // recieve server data
-      if (!core_confirmation("REACH HERE", send_core_error_msg_to_host)) {
-        return;
-      }
-      uint8_t dummy_test[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
-                         DEVICE_SERIAL_SIZE];
-      if (!session_receive_server_key(dummy_test)) {
+      uint8_t server_message_payload[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
+                                     DEVICE_SERIAL_SIZE];
+      uint32_t offset = 0;
+      core_session_start_begin_request_t request =
+          core_msg->session_start.request.start;
+      memcpy(server_message_payload,
+             request.session_random_public,
+             SESSION_PUB_KEY_SIZE);
+      offset += SESSION_PUB_KEY_SIZE;
+      test_uint32_to_uint8_array(
+          core_msg->session_start.request.start.session_age,
+          server_message_payload + SESSION_PUB_KEY_SIZE);
+      offset += SESSION_AGE_SIZE;
+      memcpy(server_message_payload + offset,
+             core_msg->session_start.request.start.device_id,
+             DEVICE_SERIAL_SIZE);
+
+      if (!session_receive_server_key(server_message_payload)) {
+        // TODO: Check error Handling
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
