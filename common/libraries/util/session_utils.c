@@ -535,7 +535,7 @@ bool session_encrypt_packet(SecureData *msgs,
 }
 
 bool session_decrypt_packet(SecureData *msgs,
-                            uint8_t *msg_count,
+                            uint32_t *msg_count,
                             uint8_t *packet,
                             size_t *packet_size) {
   memcpy(session.packet, packet, *packet_size);

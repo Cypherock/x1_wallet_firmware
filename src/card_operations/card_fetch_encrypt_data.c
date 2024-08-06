@@ -181,7 +181,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
     }
 
     if (card_data.nfc_data.status == SW_NO_ERROR) {
-      // buzzer_start(BUZZER_DURATION);
+      buzzer_start(BUZZER_DURATION);
       break;
     } else {
       card_handle_errors(&card_data);

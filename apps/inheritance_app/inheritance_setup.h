@@ -1,5 +1,5 @@
 /**
- * @file    inheritance_recovery.c
+ * @file    inheritance_setup.h
  * @author  Cypherock X1 Team
  * @brief
  * @details
@@ -61,8 +61,6 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "inheritance_recovery.h"
-
 #include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -99,37 +97,16 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_recovery(inheritance_query_t *query,
-                          SecureData *msgs,
-                          inheritance_result_t *response) {
-  uint32_t msg_count = 0;
+void convert_plaindata_to_msg(inheritance_plain_data_t *plain_data,
+                              SecureData *msgs,
+                              size_t msg_count) {
+  for (uint8_t i = 0; i < msg_count; i++) {
+    msgs[i].plain_data[0] = plain_data[i].is_private ? 1 : 0;
+    msgs[i].plain_data_size += 1;
 
-  uint8_t packet[SESSION_PACKET_SIZE] = {0};
-  size_t packet_size = query->recovery.encrypted_data.packet.size;
-  memcpy(packet, query->recovery.encrypted_data.packet.bytes, packet_size);
-
-  if (!session_decrypt_packet(msgs, &msg_count, packet, &packet_size)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    return;
+    memcpy(msgs[i].plain_data + 1,
+           plain_data[i].message.bytes,
+           plain_data[i].message.size);
+    msgs[i].plain_data_size += plain_data[i].message.size;
   }
-
-  if (!session_decrypt_secure_data(
-          query->wallet_auth.initiate.wallet_id, msgs, msg_count)) {
-    LOG_CRITICAL("xxec %d", __LINE__);
-    return;
-  }
-
-  response->which_response = INHERITANCE_RESULT_RECOVERY_TAG;
-  response->recovery.plain_data_count = msg_count;
-
-  convert_msg_to_plaindata(response->recovery.plain_data, msgs, msg_count);
-
-#if USE_SIMULATOR == 1
-  printf("Inheritance Recovery Result: <Plain Data>\n");
-  for (int i = 0; i < response->recovery.plain_data_count; i++) {
-    printf("\nMessage #%d:\n", i);
-    printf("%s", (char *)response->recovery.plain_data[i].message.bytes);
-  }
-  printf("\nEnd\n");
-#endif
 }

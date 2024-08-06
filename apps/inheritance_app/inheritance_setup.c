@@ -61,6 +61,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "inheritance_setup.h"
+
 #include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -137,18 +139,4 @@ void inheritance_setup(inheritance_query_t *query,
 #endif
 
   free(msgs);
-}
-
-void convert_plaindata_to_msg(inheritance_plain_data_t *plain_data,
-                              SecureData *msgs,
-                              size_t msg_count) {
-  for (uint8_t i = 0; i < msg_count; i++) {
-    msgs[i].plain_data[0] = plain_data[i].is_private ? 1 : 0;
-    msgs[i].plain_data_size += 1;
-
-    memcpy(msgs[i].plain_data + 1,
-           plain_data[i].message.bytes,
-           plain_data[i].message.size);
-    msgs[i].plain_data_size += plain_data[i].message.size;
-  }
 }

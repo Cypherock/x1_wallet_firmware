@@ -17,6 +17,7 @@
 
 #include "bip39.h"
 #include "inheritance_main.h"
+#include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 
@@ -99,7 +100,7 @@ bool wallet_auth_get_entropy(wallet_auth_t *auth) {
 }
 
 bool wallet_auth_get_pairs(wallet_auth_t *auth) {
-  mnemonic_to_seed(auth->entropy, "", auth->private_key, NULL);
+  mnemonic_to_seed((char *)auth->entropy, "", auth->private_key, NULL);
   ed25519_publickey(auth->private_key, auth->public_key);
 
   return true;

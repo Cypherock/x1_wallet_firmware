@@ -162,7 +162,7 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
                                  SecureData *msgs,
                                  size_t msg_count);
 bool session_decrypt_packet(SecureData *msgs,
-                            uint8_t *msg_count,
+                            uint32_t *msg_count,
                             uint8_t *packet,
                             size_t *packet_size);
 

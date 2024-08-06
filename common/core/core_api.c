@@ -206,9 +206,6 @@ void send_session_close_response_to_host(const uint8_t *msg,
   core_msg_t core_msg = CORE_MSG_INIT_ZERO;
   core_msg.which_type = CORE_MSG_SESSION_CLOSE_TAG;
 
-  core_msg.session_close.response.which_response =
-      CORE_SESSION_CLOSE_CLEAR_RESPONSE_DEFAULT;
-
   send_core_msg(&core_msg, msg, size);
   return;
 }
