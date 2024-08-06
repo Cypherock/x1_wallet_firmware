@@ -66,6 +66,7 @@
 
 #include "assert_conf.h"
 #include "pb_encode.h"
+#include "session_utils.h"
 #include "status_api.h"
 #include "usb_api.h"
 
@@ -157,18 +158,46 @@ void send_app_version_list_to_host(
   return;
 }
 
-// TODO: ADD remaining result parameters
-void send_session_start_response_to_host(const uint8_t *random_public) {
-  core_msg_t core_msg = CORE_MSG_INIT_DEFAULT;
+void send_session_start_response_to_host(const uint8_t *payload) {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
   core_msg.which_type = CORE_MSG_SESSION_START_TAG;
+  core_msg.session_start.which_cmd = CORE_SESSION_START_CMD_RESPONSE_TAG;
   core_msg.session_start.response.which_response =
       CORE_SESSION_START_RESPONSE_CONFIRMATION_INITIATE_TAG;
+  uint32_t offset = 0;
   memcpy(core_msg.session_start.response.confirmation_initiate
              .device_random_public,
-         random_public,
-         32);
+         payload + offset,
+         SESSION_PUB_KEY_SIZE);
+  offset += SESSION_PUB_KEY_SIZE;
+  memcpy(core_msg.session_start.response.confirmation_initiate.device_id,
+         payload + offset,
+         DEVICE_SERIAL_SIZE);
+  offset += DEVICE_SERIAL_SIZE;
+  memcpy(core_msg.session_start.response.confirmation_initiate.signature,
+         payload + offset,
+         SIGNATURE_SIZE);
+  offset += SIGNATURE_SIZE;
+  memcpy(core_msg.session_start.response.confirmation_initiate.postfix1,
+         payload + offset,
+         POSTFIX1_SIZE);
+  offset += POSTFIX1_SIZE;
+  memcpy(core_msg.session_start.response.confirmation_initiate.postfix2,
+         payload + offset,
+         POSTFIX2_SIZE);
 
   send_core_msg(&core_msg, NULL, 0);
+  return;
+}
+
+void send_session_start_ack_to_host() {
+  core_msg_t core_msg = CORE_MSG_INIT_ZERO;
+  core_msg.which_type = CORE_MSG_SESSION_START_TAG;
+  core_msg.session_start.which_cmd = CORE_SESSION_START_CMD_RESPONSE_TAG;
+  core_msg.session_start.response.which_response =
+      CORE_SESSION_START_RESPONSE_CONFIRMATION_START_TAG;
+  send_core_msg(&core_msg, NULL, 0);
+
   return;
 }
 

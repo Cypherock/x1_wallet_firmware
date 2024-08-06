@@ -68,6 +68,7 @@
 #include "memzero.h"
 #include "pb_decode.h"
 #include "session_utils.h"
+#include "ui_core_confirm.h"
 #include "usb_api.h"
 #include "usb_api_priv.h"
 
@@ -168,6 +169,7 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
   // invalid buffer ref, 0 size & decode failure are error situation
   if (false == pb_decode(&stream, CORE_MSG_FIELDS, &core_msg_p) ||
       NULL == msg.buffer || 0 == msg.size) {
+    // TODO: ADD PBERROR LOG
     return status;
   }
 
@@ -186,11 +188,9 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     } break;
 
     case CORE_MSG_SESSION_START_TAG: {
-      uint8_t *random;
-      uint8_t *random_public;
-      curve_point random_public_point;
-      session_get_random_keys(random, random_public, random_public_point);
-    }
+      core_session_start_parse(&core_msg_p);
+      status = CORE_NO_ERROR;
+    } break;
 
     default:
       break;

@@ -79,10 +79,12 @@ typedef struct {
   uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
   curve_point device_random_public_point;
 
-  uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
+  uint8_t
+      derived_server_public_key[SESSION_PUB_KEY_SIZE];    // update macro names
   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
+  uint8_t server_signature[64];
 
   const char wallet_name[NAME_SIZE];
   SecureData SessionMsgs[SESSION_MSG_MAX];
@@ -123,7 +125,7 @@ typedef struct {
  * @see SESSION_INIT
  * @since v1.0.0
  */
-bool session_send_device_key(uint8_t *payload);
+bool session_send_device_key();
 
 /**
  * @brief Completes the session creation process
@@ -167,6 +169,8 @@ bool session_decrypt_packet(SecureData *msgs,
 bool session_get_random_keys(uint8_t *random,
                              uint8_t *random_public,
                              curve_point random_public_point);
+
+void core_session_start_parse(core_msg_t *core_msg);
 
 // TODO: Remove after testing
 void print_msg(SecureData msg, uint8_t index);
