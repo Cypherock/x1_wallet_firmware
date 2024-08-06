@@ -13,11 +13,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+#include "inheritance_wallet_auth.h"
+
 #include "bip39.h"
 #include "inheritance_app.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-#include "wallet_auth_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
