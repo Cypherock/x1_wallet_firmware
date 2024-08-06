@@ -28,8 +28,10 @@
 
 typedef enum {
   WALLET_AUTH_OK = 0,
-  WALLET_AUTH_TYPE_INVALID, // TODO: In inheriance app - Show error message on ui that which assert is wrong 
-  WALLET_AUTH_INPUTS_INVALID, // TODO: In inheritance app - Add in wallet id comparison, show error message on ui
+  WALLET_AUTH_TYPE_INVALID,      // TODO: In inheriance app - Show error message
+                                 // on ui that which assert is wrong
+  WALLET_AUTH_INPUTS_INVALID,    // TODO: In inheritance app - Add in wallet id
+                                 // comparison, show error message on ui
 } wallet_auth_error_type_e;
 
 #pragma pack(push, 1)
@@ -51,32 +53,37 @@ typedef struct {
 #pragma pack(pop)
 
 /**
- * @brief Retrieves encrypted data (entropy) from the card based on the wallet ID.
+ * @brief Retrieves encrypted data (entropy) from the card based on the wallet
+ * ID.
  *
  * This function initializes a SecureData structure, fetches encrypted data from
- * the card, and stores the result in the auth structure. It checks if the operation
- * was successful and if the encrypted data size is within the allowed limit.
+ * the card, and stores the result in the auth structure. It checks if the
+ * operation was successful and if the encrypted data size is within the allowed
+ * limit.
  *
  * @return true If the entropy was successfully fetched and stored.
- * @return false If there was an error in fetching the encrypted data or if the data size exceeds the limit.
+ * @return false If there was an error in fetching the encrypted data or if the
+ * data size exceeds the limit.
  */
 bool wallet_auth_get_entropy(wallet_auth_t *auth);
 
 /**
  * @brief Generates the public and private key pairs based on the entropy.
  *
- * This function derives a seed from the entropy and generates an Ed25519 key pair
- * (private and public keys). It stores the keys in the auth structure.
+ * This function derives a seed from the entropy and generates an Ed25519 key
+ * pair (private and public keys). It stores the keys in the auth structure.
  *
  * @return true Always returns true.
  */
 bool wallet_auth_get_pairs(wallet_auth_t *auth);
 
 /**
- * @brief Generates and verifies a digital signature for the wallet authentication.
+ * @brief Generates and verifies a digital signature for the wallet
+ * authentication.
  *
- * This function creates an unsigned transaction by concatenating the challenge and wallet ID.
- * It then signs the transaction using the private key and verifies the signature using the public key.
+ * This function creates an unsigned transaction by concatenating the challenge
+ * and wallet ID. It then signs the transaction using the private key and
+ * verifies the signature using the public key.
  *
  * @return true If the signature was successfully generated and verified.
  * @return false If the signature verification failed.

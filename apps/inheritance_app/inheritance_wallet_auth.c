@@ -82,10 +82,13 @@ bool wallet_auth_get_entropy(wallet_auth_t *auth) {
 
   card_error_type_e status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
 
+  delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
+
   if (status != CARD_OPERATION_SUCCESS ||
       msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
     return false;
   }
+  set_app_flow_status(INHERITANCE_WALLET_AUTH_STATUS_CARD_TAPPED);
 
   memcpy((void *)auth->entropy,
          msgs[0].encrypted_data,
@@ -119,6 +122,8 @@ bool wallet_auth_get_signature(wallet_auth_t *auth) {
       unsigned_txn, unsigned_txn_size, auth->public_key, auth->signature);
 
   if (0 != valid) {
+    // Set App flow status
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
 
@@ -137,12 +142,15 @@ void inheritance_wallet_login(inheritance_query_t *query) {
          auth->challenge_size);
   auth->is_setup = query->wallet_auth.initiate.is_publickey;
 
+  set_app_flow_status(INHERITANCE_WALLET_AUTH_STATUS_INIT);
   if (!verify_wallet_auth_inputs(auth) || !wallet_auth_get_entropy(auth) ||
       !wallet_auth_get_pairs(auth) || !wallet_auth_get_signature(auth)) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_DATA);
     return;
   }
+  // Set App flow status
+  delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
 
   inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
   result.which_response = INHERITANCE_RESULT_WALLET_AUTH_TAG;

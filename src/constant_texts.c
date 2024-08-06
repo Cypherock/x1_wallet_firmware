@@ -173,7 +173,8 @@ const char
 };
 
 // card derive wallet name
-const char* ui_text_card_get_wallet_info = "Tap a card to check get wallet info from card";
+const char *ui_text_card_get_wallet_info =
+    "Tap a card to check get wallet info from card";
 
 // Manager app text
 // Device authentication text
@@ -529,6 +530,16 @@ const char *ui_text_unreliable_cards =
     "Warning, your cards are unreliable! Contact support";
 const char *ui_critical_card_health_migrate_data =
     "Card health is critical! Migrate to new set of cards";
+
+// App specific
+
+// Inheritance
+const char *ui_text_inheritance_wallet_authenticating =
+    "Wallet\nauthenticating...";
+const char *ui_text_inheritance_wallet_auth_success =
+    "Wallet\nauthentication\nsuccessfully";
+const char *ui_text_inheritance_wallet_auth_fail =
+    "Wallet\nauthentication\nfailed";
 
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";

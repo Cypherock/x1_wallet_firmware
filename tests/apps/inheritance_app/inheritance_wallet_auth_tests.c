@@ -63,7 +63,6 @@
 #include "inheritance_wallet_auth.h"
 #include "unity_fixture.h"
 #include "wallet.h"
-#include "ed25519.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -108,15 +107,18 @@ TEST_TEAR_DOWN(inheritance_wallet_auth_tests) {
 }
 
 TEST(inheritance_wallet_auth_tests, wallet_auth_get_entropy_action) {
-  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth->wallet_id);
+  hex_string_to_byte_array(
+      "edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec",
+      WALLET_ID_SIZE * 2,
+      auth->wallet_id);
 
   wallet_auth_get_entropy(auth);
 
   uint8_t expected_entropy[ENTROPY_SIZE_LIMIT] = {0};
   hex_string_to_byte_array(
-    "2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe",
-    68,
-    expected_entropy);
+      "2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe",
+      68,
+      expected_entropy);
 
   uint8_t public_key[64] = {0};
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
@@ -125,15 +127,18 @@ TEST(inheritance_wallet_auth_tests, wallet_auth_get_entropy_action) {
 
 TEST(inheritance_wallet_auth_tests, wallet_auth_get_pairs_action) {
   auth->entropy_size = 68;
-  hex_string_to_byte_array("2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe", auth->entropy_size, auth->entropy);
+  hex_string_to_byte_array(
+      "2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe",
+      auth->entropy_size,
+      auth->entropy);
 
   wallet_auth_get_pairs(auth);
 
   uint8_t expected_public_key[32] = {0};
   hex_string_to_byte_array(
-    "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
-    64,
-    expected_public_key);
+      "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
+      64,
+      expected_public_key);
 
   uint8_t public_key[64] = {0};
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
@@ -141,19 +146,29 @@ TEST(inheritance_wallet_auth_tests, wallet_auth_get_pairs_action) {
 }
 
 TEST(inheritance_wallet_auth_tests, wallet_auth_get_signature_action) {
-  hex_string_to_byte_array("edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec", WALLET_ID_SIZE*2, auth->wallet_id);
-  hex_string_to_byte_array("947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e", sizeof(ed25519_secret_key)*2, auth->private_key);
-  hex_string_to_byte_array("a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c", sizeof(ed25519_public_key)*2, auth->public_key);
+  hex_string_to_byte_array(
+      "edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec",
+      WALLET_ID_SIZE * 2,
+      auth->wallet_id);
+  hex_string_to_byte_array(
+      "947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e",
+      sizeof(ed25519_secret_key) * 2,
+      auth->private_key);
+  hex_string_to_byte_array(
+      "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
+      sizeof(ed25519_public_key) * 2,
+      auth->public_key);
   auth->challenge_size = 28;
   memcpy(auth->challenge, "This is an example challenge", auth->challenge_size);
-  
+
   wallet_auth_get_signature(auth);
 
   uint8_t expected_signature[64] = {0};
   hex_string_to_byte_array(
-    "b522e317d22a17177969383e204c6bef1762dde4218d823bac3a7c400f4f303690e103a4b9160d15e3df0ea2aadf4dee6a7cf4bb3c9db3e69cd04cf14edb6c06",
-    128,
-    expected_signature);
+      "b522e317d22a17177969383e204c6bef1762dde4218d823bac3a7c400f4f303690e103a4"
+      "b9160d15e3df0ea2aadf4dee6a7cf4bb3c9db3e69cd04cf14edb6c06",
+      128,
+      expected_signature);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
       expected_signature, auth->signature, sizeof(expected_signature));
