@@ -136,13 +136,14 @@ bool verify_session_signature(uint8_t *payload,
   sha256_Raw(payload, payload_size, hash);
 
   // TODO: uncomment while integrating the sdk
-  // uint8_t status = ecdsa_verify_digest(
-  // &nist256p1, session.derived_server_public_key, signature, hash);
-  uint8_t status =
-      ecdsa_verify_digest(&nist256p1,
-                          session.device_random_public,
-                          signature,
-                          hash);    // since signing with device_random
+  print_arr("derived Server Kwy\n", session.derived_server_public_key, 32);
+  uint8_t status = ecdsa_verify_digest(
+      &nist256p1, session.derived_server_public_key, signature, hash);
+  // uint8_t status =
+  //     ecdsa_verify_digest(&nist256p1,
+  //                         session.device_random_public,
+  //                         signature,
+  //                         hash);    // since signing with device_random
   return (status == 0);
 };
 
@@ -162,6 +163,9 @@ bool derive_session_id() {
 
   print_arr("session id temp", temp, 2 * SESSION_PRIV_KEY_SIZE);
 
+  // TODO:
+  // SHA3 Update
+  // Confirm from Clickup flow
   sha256_Raw(temp, 2 * SESSION_PUB_KEY_SIZE, session.session_id);
 
   print_arr("session.session_id", session.session_id, SESSION_ID_SIZE);
@@ -306,17 +310,15 @@ bool session_receive_server_key(uint8_t *server_message) {
   // TODO:
   // Uncomment in production
   // Test with authentic data
-
-  // if (!ecdsa_read_pubkey(curve,
-  //                        session.server_random_public,
-  //                        &session.server_random_public_point)) {
-  //   printf("\nERROR: Server random public key point not read");
-  //   return false;
-  // }
+  if (!ecdsa_read_pubkey(curve,
+                         session.server_random_public,
+                         &session.server_random_public_point)) {
+    printf("\nERROR: Server random public key point not read");
+    return false;
+  }
   // print_arr("session.server_random_public",
   //           session.server_random_public,
   //           SESSION_PUB_KEY_SIZE);
-
   if (!derive_session_id() || !derive_session_key()) {
     printf("\nERROR: Generation session keys");
     return false;

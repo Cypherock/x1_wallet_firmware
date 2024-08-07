@@ -34,7 +34,7 @@
 #define SESSION_AGE_SIZE 4
 
 #define SESSION_ID_SIZE 16
-#define SESSION_KEY_SIZE 32
+#define SESSION_KEY_SIZE 65
 
 #define SESSION_MSG_MAX 5
 #define SESSION_PACKET_SIZE                                                    \
