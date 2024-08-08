@@ -201,11 +201,13 @@ void send_session_start_ack_to_host() {
   return;
 }
 
-void send_session_close_response_to_host(const uint8_t *msg,
-                                         const uint32_t size) {
+void send_session_close_response_to_host() {
   core_msg_t core_msg = CORE_MSG_INIT_ZERO;
   core_msg.which_type = CORE_MSG_SESSION_CLOSE_TAG;
+  core_msg.session_close.which_cmd = CORE_SESSION_CLOSE_CMD_RESPONSE_TAG;
+  core_msg.session_close.response.which_response =
+      CORE_SESSION_CLOSE_RESPONSE_CLEAR_TAG;
 
-  send_core_msg(&core_msg, msg, size);
+  send_core_msg(&core_msg, NULL, 0);
   return;
 }

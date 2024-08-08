@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "application_startup.h"
 #include "atecc_utils.h"
 #include "base58.h"
 #include "bip32.h"
@@ -34,7 +35,7 @@
 #define SESSION_AGE_SIZE 4
 
 #define SESSION_IV_SIZE 16
-#define SESSION_KEY_SIZE 65
+#define SESSION_KEY_SIZE 32
 
 #define SESSION_MSG_MAX 5
 #define SESSION_PACKET_BUFFER 400
@@ -170,11 +171,12 @@ bool session_get_random_keys(uint8_t *random,
                              uint8_t *random_public,
                              curve_point random_public_point);
 
-void core_session_start_parse(core_msg_t *core_msg);
-
+void core_session_start_parse(const core_msg_t *core_msg);
 // TODO: Remove after testing
 void print_msg(SecureData msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
+
+void session_close();
 
 #endif    // SESSION_UTILS

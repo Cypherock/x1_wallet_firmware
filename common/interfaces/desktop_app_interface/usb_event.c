@@ -98,6 +98,12 @@ static usb_core_msg_t core_msg;
 // TODO: Following will be replaced when core starts maintaining it
 static uint32_t applet_id = 0;
 
+/**
+ * Decoded core_msg_t while parsing by @ref get_core_req_type,
+ * to be used for any further processing required.
+ */
+static core_msg_t core_msg_p;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -163,7 +169,7 @@ static void clear_msg_context() {
 
 static core_error_type_t get_core_req_type(usb_core_msg_t msg,
                                            size_t *request_type) {
-  core_msg_t core_msg_p = CORE_MSG_INIT_ZERO;
+  memzero(&core_msg_p, sizeof(core_msg_t));
   pb_istream_t stream = pb_istream_from_buffer(msg.buffer, msg.size);
   core_error_type_t status = CORE_INVALID_MSG;
   // invalid buffer ref, 0 size & decode failure are error situation
@@ -188,7 +194,10 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
     } break;
 
     case CORE_MSG_SESSION_START_TAG: {
-      core_session_start_parse(&core_msg_p);
+      status = CORE_NO_ERROR;
+    } break;
+
+    case CORE_MSG_SESSION_CLOSE_TAG: {
       status = CORE_NO_ERROR;
     } break;
 
@@ -284,6 +293,13 @@ bool usb_get_event(usb_event_t *evt) {
         core_app_version_result_response_t resp;
         populate_version_list(&resp);
         send_app_version_list_to_host(&resp);
+        reset_event_obj(&usb_event);
+      } else if (CORE_MSG_SESSION_START_TAG == request_type) {
+        core_session_start_parse(&core_msg_p);
+        reset_event_obj(&usb_event);
+      } else if (CORE_MSG_SESSION_CLOSE_TAG == request_type) {
+        session_close();
+        send_session_close_response_to_host();
         reset_event_obj(&usb_event);
       }
     }

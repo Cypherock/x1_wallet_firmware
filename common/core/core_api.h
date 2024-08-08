@@ -64,4 +64,6 @@ void send_app_version_list_to_host(
 void send_session_start_response_to_host(const uint8_t *random_public);
 
 void send_session_start_ack_to_host();
+
+void send_session_close_response_to_host();
 #endif /* CORE_API_H */

@@ -64,8 +64,9 @@
  *****************************************************************************/
 #include "session_utils.h"
 
+#include "core.pb.h"
 #include "inheritance_main.h"
-
+#include "pb_decode.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -135,38 +136,32 @@ bool verify_session_signature(uint8_t *payload,
   uint8_t hash[32] = {0};
   sha256_Raw(payload, payload_size, hash);
 
-  // TODO: uncomment while integrating the sdk
-  print_arr("derived Server Kwy\n", session.derived_server_public_key, 32);
   uint8_t status = ecdsa_verify_digest(
       &nist256p1, session.derived_server_public_key, signature, hash);
-  // uint8_t status =
-  //     ecdsa_verify_digest(&nist256p1,
-  //                         session.device_random_public,
-  //                         signature,
-  //                         hash);    // since signing with device_random
+
   return (status == 0);
 };
 
 bool derive_session_iv() {
-  curve_point random_point;
-  memcpy(
-      &random_point, &session.server_random_public_point, sizeof(curve_point));
-  point_add(curve, &session.device_random_public_point, &random_point);
+  curve_point server_random_public_point;
+  memcpy(&server_random_public_point,
+         &session.server_random_public_point,
+         sizeof(curve_point));
+  point_add(
+      curve, &session.device_random_public_point, &server_random_public_point);
 
   // printf("\nsession id random_point: ");
   // bn_print(&random_point.x);
   // bn_print(&random_point.y);
 
-  uint8_t temp[2 * SESSION_PRIV_KEY_SIZE];
-  bn_write_be(&random_point.x, temp);
-  bn_write_be(&random_point.y, temp + SESSION_PRIV_KEY_SIZE);
+  uint8_t session_iv[2 * SESSION_PRIV_KEY_SIZE];
+  bn_write_be(&server_random_public_point.x, session_iv);
+  bn_write_be(&server_random_public_point.y,
+              session_iv + SESSION_PRIV_KEY_SIZE);
 
-  print_arr("session id temp", temp, 2 * SESSION_PRIV_KEY_SIZE);
+  print_arr("session id temp", session_iv, 2 * SESSION_PRIV_KEY_SIZE);
 
-  // TODO:
-  // SHA3 Update
-  // Confirm from Clickup flow
-  sha256_Raw(temp, 2 * SESSION_PUB_KEY_SIZE, session.session_iv);
+  sha256_Raw(session_iv, 2 * SESSION_PUB_KEY_SIZE, session.session_iv);
 
   print_arr("session.session_iv", session.session_iv, SESSION_IV_SIZE);
 
@@ -193,13 +188,15 @@ void session_append_signature(uint8_t *payload, size_t payload_size) {
   uint8_t offset = payload_size;
   memcpy(payload + offset, signed_data.signature, SIGNATURE_SIZE);
   offset += SIGNATURE_SIZE;
-  print_arr("sig detail", signed_data.signature, SIGNATURE_SIZE);
   memcpy(payload + offset, signed_data.postfix1, POSTFIX1_SIZE);
   offset += POSTFIX1_SIZE;
-  print_arr("sig detail", signed_data.postfix1, POSTFIX1_SIZE);
   memcpy(payload + offset, signed_data.postfix2, POSTFIX2_SIZE);
   offset += POSTFIX2_SIZE;
+#if USE_SIMULATOR == 1
+  print_arr("sig detail", signed_data.signature, SIGNATURE_SIZE);
+  print_arr("sig detail", signed_data.postfix1, POSTFIX1_SIZE);
   print_arr("sig detail", signed_data.postfix2, POSTFIX2_SIZE);
+#endif
 }
 
 bool session_get_random_keys(uint8_t *random,
@@ -596,7 +593,7 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
       }
       byte_array_to_hex_string(
           query->device_message, size, buffer, size * 2 + 1);
-      printf("Device Message: %s", buffer, size * 2 + 1);
+      // printf("Device Message: %s", buffer, size * 2 + 1);
       break;
 
     case SESSION_MSG_RECEIVE_SERVER_KEY:
@@ -664,35 +661,35 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
   session.status = SESSION_OK;
 }
 
-void test_session_main(session_msg_type_e type) {
-  dummy_inheritance_query_t *query = malloc(sizeof(dummy_inheritance_query_t));
-  query->type = type;
+// void test_session_main(session_msg_type_e type) {
+//   dummy_inheritance_query_t *query =
+//   malloc(sizeof(dummy_inheritance_query_t)); query->type = type;
 
-  session.status = SESSION_ERR_INVALID;
-  session_curve_init();
+//   session.status = SESSION_ERR_INVALID;
+//   session_curve_init();
 
-  switch (query->type) {
-    case SESSION_MSG_SEND_DEVICE_KEY:
-      break;
-    case SESSION_MSG_RECEIVE_SERVER_KEY:
-      test_generate_server_data(query);
-      break;
-    case SESSION_MSG_ENCRYPT:
-      test_generate_server_encrypt_data(query);
-      break;
-    case SESSION_MSG_DECRYPT:
-      break;
-  }
+//   switch (query->type) {
+//     case SESSION_MSG_SEND_DEVICE_KEY:
+//       break;
+//     case SESSION_MSG_RECEIVE_SERVER_KEY:
+//       test_generate_server_data(query);
+//       break;
+//     case SESSION_MSG_ENCRYPT:
+//       test_generate_server_encrypt_data(query);
+//       break;
+//     case SESSION_MSG_DECRYPT:
+//       break;
+//   }
 
-  session_main(query);
-  free(query);
+//   session_main(query);
+//   free(query);
 
-  if (session.status != SESSION_OK) {
-    printf("\nERORR: SESSION COMMAND FAILED");
-    return;
-  }
-  printf("\nSESSION MSG STATUS: %d", session.status);
-}
+//   if (session.status != SESSION_OK) {
+//     printf("\nERORR: SESSION COMMAND FAILED");
+//     return;
+//   }
+//   printf("\nSESSION MSG STATUS: %d", session.status);
+// }
 
 // TODO: functions to remove after testing
 
@@ -724,7 +721,7 @@ void print_msg(SecureData msg, uint8_t index) {
 bool debug = true;
 // TODO cleanup: delete after testing
 char *print_arr(char *name, uint8_t *bytearray, size_t size) {
-  char bytearray_hex[size * 2 + 1];
+  char *bytearray_hex = (char *)malloc(size * 2 + 1);
   if (debug == true) {
     uint8ToHexString(bytearray, size, bytearray_hex);
     printf("\n%s[%d bytes]: %s\n",
@@ -742,44 +739,44 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
   arr[3] = value & 0xFF;            // Extract the lowest byte
 }
 
-void test_generate_server_data(dummy_inheritance_query_t *query) {
-  uint8_t server_message[SESSION_BUFFER_SIZE];
+// // void test_generate_server_data(dummy_inheritance_query_t *query) {
+//   uint8_t server_message[SESSION_BUFFER_SIZE];
 
-  uint8_t server_random[SESSION_PRIV_KEY_SIZE];
-  uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
-  curve_point server_random_public_point;
-  if (!session_get_random_keys(
-          server_random, server_random_public, server_random_public_point)) {
-    printf("\nERROR: Server Random keys not generated");
-    return false;
-  }
+//   uint8_t server_random[SESSION_PRIV_KEY_SIZE];
+//   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
+//   curve_point server_random_public_point;
+//   if (!session_get_random_keys(
+//           server_random, server_random_public, server_random_public_point)) {
+//     printf("\nERROR: Server Random keys not generated");
+//     return false;
+//   }
 
-  uint32_t session_age_int = 1234;
-  uint8_t session_age[SESSION_AGE_SIZE];
-  test_uint32_to_uint8_array(session_age_int, session_age);
+//   uint32_t session_age_int = 1234;
+//   uint8_t session_age[SESSION_AGE_SIZE];
+//   test_uint32_to_uint8_array(session_age_int, session_age);
 
-  uint8_t offset = 0;
-  memcpy(server_message + offset, server_random_public, SESSION_PUB_KEY_SIZE);
-  offset += SESSION_PUB_KEY_SIZE;
-  memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
-  offset += SESSION_AGE_SIZE;
-  memcpy(server_message + offset, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-  offset += DEVICE_SERIAL_SIZE;
+//   uint8_t offset = 0;
+//   memcpy(server_message + offset, server_random_public,
+//   SESSION_PUB_KEY_SIZE); offset += SESSION_PUB_KEY_SIZE;
+//   memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
+//   offset += SESSION_AGE_SIZE;
+//   memcpy(server_message + offset, atecc_data.device_serial,
+//   DEVICE_SERIAL_SIZE); offset += DEVICE_SERIAL_SIZE;
 
-  uint8_t hash[32] = {0};
-  uint8_t signature[SIGNATURE_SIZE] = {0};
-  sha256_Raw(server_message, offset, hash);
-  // NOTE: MSG would be signed by server_key (added from master device in
-  // server)
-  int res =
-      ecdsa_sign_digest(curve, session.device_random, hash, signature, 0, 0);
-  memcpy(server_message + offset, signature, SIGNATURE_SIZE);
-  offset += SIGNATURE_SIZE;
+//   uint8_t hash[32] = {0};
+//   uint8_t signature[SIGNATURE_SIZE] = {0};
+//   sha256_Raw(server_message, offset, hash);
+//   // NOTE: MSG would be signed by server_key (added from master device in
+//   // server)
+//   int res =
+//       ecdsa_sign_digest(curve, session.device_random, hash, signature, 0, 0);
+//   memcpy(server_message + offset, signature, SIGNATURE_SIZE);
+//   offset += SIGNATURE_SIZE;
 
-  print_arr("server data", server_message, offset);
+//   print_arr("server data", server_message, offset);
 
-  memcpy(query->server_message, server_message, offset);
-}
+//   memcpy(query->server_message, server_message, offset);
+// }
 
 void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
   const uint8_t msg_count = 5;
@@ -849,7 +846,12 @@ bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
   return true;
 }
 
-void core_session_start_parse(core_msg_t *core_msg) {
+void session_close() {
+  // Clear Session metadata
+  memzero(&session, sizeof(Session));
+}
+
+void core_session_start_parse(const core_msg_t *core_msg) {
   size_t request_type = core_msg->session_start.request.which_request;
   switch (request_type) {
     case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
