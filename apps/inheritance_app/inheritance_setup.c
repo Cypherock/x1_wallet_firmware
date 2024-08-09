@@ -61,8 +61,6 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "inheritance_setup.h"
-
 #include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -94,13 +92,25 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void convert_plaindata_to_msg(inheritance_plain_data_t *plain_data,
+                              secure_data_t *msgs,
+                              size_t msg_count) {
+  for (uint8_t i = 0; i < msg_count; i++) {
+    msgs[i].plain_data[0] = plain_data[i].is_private ? 1 : 0;
+    msgs[i].plain_data_size += 1;
 
+    memcpy(msgs[i].plain_data + 1,
+           plain_data[i].message.bytes,
+           plain_data[i].message.size);
+    msgs[i].plain_data_size += plain_data[i].message.size;
+  }
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void inheritance_setup(inheritance_query_t *query,
-                       SecureData *msgs,
+                       secure_data_t *msgs,
                        inheritance_result_t *response) {
   uint32_t msg_count = query->setup.plain_data_count;
   if (SESSION_MSG_MAX < msg_count) {
@@ -110,6 +120,11 @@ void inheritance_setup(inheritance_query_t *query,
   }
 
   convert_plaindata_to_msg(query->setup.plain_data, msgs, msg_count);
+  // plain data count is 0
+  // direct pin
+  // verify msgs if_private
+  // verify msgs
+  // fetch pin
 
   if (!session_encrypt_secure_data(query->setup.wallet_id, msgs, msg_count)) {
     LOG_CRITICAL("xxec %d", __LINE__);

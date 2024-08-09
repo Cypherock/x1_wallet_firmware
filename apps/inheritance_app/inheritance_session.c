@@ -98,7 +98,8 @@
  *****************************************************************************/
 
 void inheritance_session_login(inheritance_query_t *query) {
-  SecureData *msgs = (SecureData *)malloc(sizeof(SecureData) * SESSION_MSG_MAX);
+  secure_data_t *msgs =
+      (secure_data_t *)malloc(sizeof(secure_data_t) * SESSION_MSG_MAX);
   memzero(msgs, sizeof(msgs));
   if (NULL == msgs) {
     // ADD error

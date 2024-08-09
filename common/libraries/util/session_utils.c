@@ -88,21 +88,43 @@
  *****************************************************************************/
 const ecdsa_curve *curve;
 const uint32_t session_key_rotation[2] = {6, 7};
-Session session = {0};
+session_config_t session = {0};
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Starts the session creation process
+ * @details It generates the device random, derives and stores the device
+ * public key. It also generates the payload to be sent to the server.
+ * @param session_details_data_array The buffer to store the payload to be sent
+ *
+ * @see SESSION_INIT
+ * @since v1.0.0
+ */
+static bool session_send_device_key();
+
+/**
+ * @brief Completes the session creation process
+ * @details It verifies the server response and stores the session id and
+ * session random.
+ * @param session_init_details The server response
+ * @param verification_details The buffer to store the details
+ * to be send back to the server to confirm
+ * /home/parnika/Documents/GitHub/x1_wallet_firmware/common/libraries/util/session_utils.c:394:6the
+ * verification.
+ * @return true if the session is created, false otherwise
+ *
+ * @see SESSION_ESTABLISH
+ * @since v1.0.0
+ */
+static bool session_receive_server_key(uint8_t *server_message);
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-void session_curve_init() {
+static void session_curve_init() {
   curve = get_curve_by_name(SECP256K1_NAME)->params;
 }
 
@@ -130,9 +152,9 @@ static bool derive_server_public_key() {
   return true;
 }
 
-bool verify_session_signature(uint8_t *payload,
-                              size_t payload_size,
-                              uint8_t *signature) {
+static bool verify_session_signature(uint8_t *payload,
+                                     size_t payload_size,
+                                     uint8_t *signature) {
   uint8_t hash[32] = {0};
   sha256_Raw(payload, payload_size, hash);
 
@@ -140,19 +162,15 @@ bool verify_session_signature(uint8_t *payload,
       &nist256p1, session.derived_server_public_key, signature, hash);
 
   return (status == 0);
-};
+}
 
-bool derive_session_iv() {
+static bool derive_session_iv() {
   curve_point server_random_public_point;
   memcpy(&server_random_public_point,
          &session.server_random_public_point,
          sizeof(curve_point));
   point_add(
       curve, &session.device_random_public_point, &server_random_public_point);
-
-  // printf("\nsession id random_point: ");
-  // bn_print(&random_point.x);
-  // bn_print(&random_point.y);
 
   uint8_t session_iv[2 * SESSION_PRIV_KEY_SIZE];
   bn_write_be(&server_random_public_point.x, session_iv);
@@ -168,7 +186,7 @@ bool derive_session_iv() {
   return true;
 }
 
-bool derive_session_key() {
+static bool derive_session_key() {
   if (ecdh_multiply(curve,
                     session.device_random,
                     session.server_random_public,
@@ -180,7 +198,7 @@ bool derive_session_key() {
   return true;
 }
 
-void session_append_signature(uint8_t *payload, size_t payload_size) {
+static void session_append_signature(uint8_t *payload, size_t payload_size) {
   uint8_t hash[32] = {0};
   sha256_Raw(payload, payload_size, hash);
   auth_data_t signed_data = atecc_sign(hash);
@@ -199,9 +217,9 @@ void session_append_signature(uint8_t *payload, size_t payload_size) {
 #endif
 }
 
-bool session_get_random_keys(uint8_t *random,
-                             uint8_t *random_public,
-                             curve_point random_public_point) {
+static bool session_get_random_keys(uint8_t *random,
+                                    uint8_t *random_public,
+                                    curve_point random_public_point) {
   memzero(random, SESSION_PRIV_KEY_SIZE);
   memzero(random_public, SESSION_PUB_KEY_SIZE);
   memset(&random_public_point, 0, sizeof(random_public_point));
@@ -230,12 +248,12 @@ bool session_get_random_keys(uint8_t *random,
   return;
 }
 
-bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
+static bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
   return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 &&
           memcmp(pass_id, session.session_iv, SESSION_IV_SIZE) == 0);
 }
 
-bool session_send_device_key(uint8_t *payload) {
+static bool session_send_device_key(uint8_t *payload) {
   if (!session_get_random_keys(session.device_random,
                                session.device_random_public,
                                session.device_random_public_point)) {
@@ -265,7 +283,7 @@ bool session_send_device_key(uint8_t *payload) {
   return true;
 }
 
-bool session_receive_server_key(uint8_t *server_message) {
+static bool session_receive_server_key(uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
   ASSERT(server_message != NULL);
 
@@ -304,9 +322,6 @@ bool session_receive_server_key(uint8_t *server_message) {
   }
   offset += DEVICE_SERIAL_SIZE;
 
-  // TODO:
-  // Uncomment in production
-  // Test with authentic data
   if (!ecdsa_read_pubkey(curve,
                          session.server_random_public,
                          &session.server_random_public_point)) {
@@ -325,75 +340,10 @@ bool session_receive_server_key(uint8_t *server_message) {
   return true;
 }
 
-bool session_encrypt_secure_data(uint8_t *wallet_id,
-                                 SecureData *msgs,
-                                 size_t msg_count) {
-  ASSERT(wallet_id != NULL);
-  ASSERT(msgs != NULL);
-  ASSERT(msg_count != 0);
-  ASSERT(msg_count <= SESSION_MSG_MAX);
-
-  card_error_type_e status =
-      card_fetch_encrypt_data(wallet_id, msgs, msg_count);
-  if (status != CARD_OPERATION_SUCCESS) {
-    printf("Card encrypt err: %x", status);
-    return false;
-  }
-
-  memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
-  session.msg_count = msg_count;
-
-  // TODO: remove after testing session core
-  // if (!session_iv_is_valid(session.session_iv)) {
-  //   printf("ERROR: Session is invalid");
-  //   return false;
-  // }
-  // uint8_t packet[SESSION_PACKET_SIZE] = {0};
-  // size_t packet_size = 0;
-
-  // session_encrypt_packet(session.SessionMsgs,
-  //                        session.msg_count,
-  //                        session.session_key,
-  //                        session.session_iv,
-  //                        packet,
-  //                        &packet_size);
-  // session_reset_secure_data();
-  // session_decrypt_packet(session.SessionMsgs,
-  //                        session.msg_count,
-  //                        session.session_key,
-  //                        session.session_iv,
-  //                        packet,
-  //                        &packet_size);
-
-  return true;
-}
-
-bool session_decrypt_secure_data(uint8_t *wallet_id,
-                                 SecureData *msgs,
-                                 size_t msg_count) {
-  ASSERT(wallet_id != NULL);
-  ASSERT(msgs != NULL);
-  ASSERT(msg_count != 0);
-  ASSERT(msg_count <= SESSION_MSG_MAX);
-
-  card_error_type_e status =
-      card_fetch_decrypt_data(wallet_id, msgs, msg_count);
-
-  if (status != CARD_OPERATION_SUCCESS) {
-    printf("ERROR: Card is invalid: %x", status);
-    return false;
-  }
-
-  memcpy(session.SessionMsgs, msgs, sizeof(SecureData) * msg_count);
-  session.msg_count = msg_count;
-
-  return true;
-}
-
-void session_serialise_packet(SecureData *msgs,
-                              size_t msg_count,
-                              uint8_t *data,
-                              size_t *len) {
+static void session_serialise_packet(secure_data_t *msgs,
+                                     size_t msg_count,
+                                     uint8_t *data,
+                                     size_t *len) {
   size_t size = *len;
 
   ASSERT(msgs != NULL);
@@ -415,10 +365,10 @@ void session_serialise_packet(SecureData *msgs,
   *len = size;
 }
 
-void session_deserialise_packet(SecureData *msgs,
-                                uint8_t *msg_count,
-                                uint8_t *data,
-                                size_t *len) {
+static void session_deserialise_packet(secure_data_t *msgs,
+                                       uint32_t *msg_count,
+                                       uint8_t *data,
+                                       size_t *len) {
   ASSERT(data != NULL);
   ASSERT(*len > 0);
 
@@ -436,10 +386,10 @@ void session_deserialise_packet(SecureData *msgs,
   }
 }
 
-session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
-                                                size_t *len,
-                                                uint8_t *key,
-                                                uint8_t *iv_immut) {
+static session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
+                                                       size_t *len,
+                                                       uint8_t *key,
+                                                       uint8_t *iv_immut) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
@@ -490,10 +440,10 @@ session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
   return SESSION_ENCRYPT_PACKET_SUCCESS;
 }
 
-session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
-                                                uint16_t *len,
-                                                uint8_t *key,
-                                                uint8_t *iv) {
+static session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
+                                                       uint16_t *len,
+                                                       uint8_t *key,
+                                                       uint8_t *iv) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
@@ -518,7 +468,96 @@ session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
   return SESSION_DECRYPT_PACKET_SUCCESS;
 }
 
-bool session_encrypt_packet(SecureData *msgs,
+static void session_reset() {
+  memset(&session, 0, sizeof(session));
+}
+
+static void session_reset_secure_data() {
+  memset(&session.session_msgs, 0, sizeof(session.session_msgs));
+  session.msg_count = 0;
+}
+
+static void session_send_error() {
+  LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
+}
+
+static void uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
+  arr[0] = (value >> 24) & 0xFF;    // Extract the highest byte
+  arr[1] = (value >> 16) & 0xFF;    // Extract the second highest byte
+  arr[2] = (value >> 8) & 0xFF;     // Extract the second lowest byte
+  arr[3] = value & 0xFF;            // Extract the lowest byte
+}
+
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+
+bool session_encrypt_secure_data(uint8_t *wallet_id,
+                                 secure_data_t *msgs,
+                                 size_t msg_count) {
+  ASSERT(wallet_id != NULL);
+  ASSERT(msgs != NULL);
+  ASSERT(msg_count != 0);
+  ASSERT(msg_count <= SESSION_MSG_MAX);
+
+  card_error_type_e status =
+      card_fetch_encrypt_data(wallet_id, msgs, msg_count);
+  if (status != CARD_OPERATION_SUCCESS) {
+    printf("Card encrypt err: %x", status);
+    return false;
+  }
+
+  memcpy(session.session_msgs, msgs, sizeof(secure_data_t) * msg_count);
+  session.msg_count = msg_count;
+
+  // TODO: remove after testing session core
+  // if (!session_iv_is_valid(session.session_iv)) {
+  //   printf("ERROR: Session is invalid");
+  //   return false;
+  // }
+  // uint8_t packet[SESSION_PACKET_SIZE] = {0};
+  // size_t packet_size = 0;
+
+  // session_encrypt_packet(session.session_msgs,
+  //                        session.msg_count,
+  //                        session.session_key,
+  //                        session.session_iv,
+  //                        packet,
+  //                        &packet_size);
+  // session_reset_secure_data();
+  // session_decrypt_packet(session.session_msgs,
+  //                        session.msg_count,
+  //                        session.session_key,
+  //                        session.session_iv,
+  //                        packet,
+  //                        &packet_size);
+
+  return true;
+}
+
+bool session_decrypt_secure_data(uint8_t *wallet_id,
+                                 secure_data_t *msgs,
+                                 size_t msg_count) {
+  ASSERT(wallet_id != NULL);
+  ASSERT(msgs != NULL);
+  ASSERT(msg_count != 0);
+  ASSERT(msg_count <= SESSION_MSG_MAX);
+
+  card_error_type_e status =
+      card_fetch_decrypt_data(wallet_id, msgs, msg_count);
+
+  if (status != CARD_OPERATION_SUCCESS) {
+    printf("ERROR: Card is invalid: %x", status);
+    return false;
+  }
+
+  memcpy(session.session_msgs, msgs, sizeof(secure_data_t) * msg_count);
+  session.msg_count = msg_count;
+
+  return true;
+}
+
+bool session_encrypt_packet(secure_data_t *msgs,
                             uint8_t msg_count,
                             uint8_t *packet,
                             size_t *packet_size) {
@@ -534,10 +573,10 @@ bool session_encrypt_packet(SecureData *msgs,
   return true;
 }
 
-bool session_decrypt_packet(SecureData *msgs,
+bool session_decrypt_packet(secure_data_t *msgs,
                             uint32_t *msg_count,
                             uint8_t *packet,
-                            size_t *packet_size) {
+                            uint16_t *packet_size) {
   memcpy(session.packet, packet, *packet_size);
 
   if (SESSION_DECRYPT_PACKET_SUCCESS !=
@@ -553,113 +592,216 @@ bool session_decrypt_packet(SecureData *msgs,
   return true;
 }
 
-void session_reset() {
-  memset(&session, 0, sizeof(session));
+void session_close() {
+  // Clear Session metadata
+  memzero(&session, sizeof(session_config_t));
 }
 
-void session_reset_secure_data() {
-  memset(&session.SessionMsgs, 0, sizeof(session.SessionMsgs));
-  session.msg_count = 0;
-}
-
-void session_send_error() {
-  LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
-}
-
-void set_dummy_session() {
-  // TODO: Recieve values from core
-  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-
-  memcpy(session.session_key, key, SESSION_KEY_SIZE);
-  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
-}
-
-session_error_type_e session_main(dummy_inheritance_query_t *query) {
-  char buffer[SESSION_BUFFER_SIZE] = {0};
-  size_t size;
-
-  switch (query->type) {
-    case SESSION_MSG_SEND_DEVICE_KEY:
-      size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-             POSTFIX1_SIZE + POSTFIX2_SIZE;
-      if (!session_send_device_key(query->device_message)) {
+void core_session_start_parse(const core_msg_t *core_msg) {
+  size_t request_type = core_msg->session_start.request.which_request;
+  switch (request_type) {
+    case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
+      // send device data to server
+      uint8_t payload[SESSION_BUFFER_SIZE] = {0};
+      if (!session_send_device_key(payload)) {
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
         return SESSION_ERR_DEVICE_KEY;
       }
-      byte_array_to_hex_string(
-          query->device_message, size, buffer, size * 2 + 1);
-      // printf("Device Message: %s", buffer, size * 2 + 1);
-      break;
+      send_session_start_response_to_host(payload);
 
-    case SESSION_MSG_RECEIVE_SERVER_KEY:
-      if (!session_receive_server_key(query->server_message)) {
+    } break;
+
+    case CORE_SESSION_START_REQUEST_START_TAG: {
+      // recieve server data
+      uint8_t server_message_payload[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
+                                     DEVICE_SERIAL_SIZE];
+      uint32_t offset = 0;
+      core_session_start_begin_request_t request =
+          core_msg->session_start.request.start;
+      memcpy(server_message_payload,
+             request.session_random_public,
+             SESSION_PUB_KEY_SIZE);
+      offset += SESSION_PUB_KEY_SIZE;
+      uint32_to_uint8_array(core_msg->session_start.request.start.session_age,
+                            server_message_payload + SESSION_PUB_KEY_SIZE);
+      offset += SESSION_AGE_SIZE;
+      memcpy(server_message_payload + offset,
+             core_msg->session_start.request.start.device_id,
+             DEVICE_SERIAL_SIZE);
+
+      if (!session_receive_server_key(server_message_payload)) {
+        // TODO: Check error Handling
         LOG_CRITICAL("xxec %d", __LINE__);
         comm_reject_invalid_cmd();
         clear_message_received_data();
 
         return SESSION_ERR_SERVER_KEY;
       }
+      send_session_start_ack_to_host();
+    } break;
 
-      size = SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE +
-             SIGNATURE_SIZE;
-      byte_array_to_hex_string(
-          query->server_message, size, buffer, size * 2 + 1);
-      printf("Server Message: %s", buffer, size * 2 + 1);
-      break;
-
-    case SESSION_MSG_ENCRYPT:
-      // TODO: Remove after testing
-      for (int i = 0; i < query->msg_count; i++) {
-        memzero(query->SessionMsgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
-        query->SessionMsgs[i].encrypted_data_size = 0;
-      }
-      if (!session_encrypt_secure_data(
-              query->wallet_id, query->SessionMsgs, query->msg_count)) {
-        LOG_CRITICAL("xxec %d", __LINE__);
-        comm_reject_invalid_cmd();
-        clear_message_received_data();
-
-        return SESSION_ERR_ENCRYPT;
-      }
-      session_reset_secure_data();
-      break;
-
-    case SESSION_MSG_DECRYPT:
-      // TODO: Remove after testing
-      for (int i = 0; i < query->msg_count; i++) {
-        memzero(query->SessionMsgs[i].plain_data, PLAIN_DATA_SIZE);
-        query->SessionMsgs[i].plain_data_size = 0;
-      }
-      if (!session_decrypt_secure_data(
-              query->wallet_id, query->SessionMsgs, query->msg_count)) {
-        LOG_CRITICAL("xxec %d", __LINE__);
-        comm_reject_invalid_cmd();
-        clear_message_received_data();
-
-        return SESSION_ERR_DECRYPT;
-      }
-      session_reset_secure_data();
-      break;
-
-    case SESSION_CLOSE:
-      session_reset();
-      break;
-
-    default: {
+    default:
       /* In case we ever encounter invalid query, convey to the host app */
       session_send_error();
       session.status = SESSION_ERR_INVALID;
       return;
-    }
+      break;
+  }
+}
+
+/*****************************************************************************
+ * TEST
+ *****************************************************************************/
+
+bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
+                             secure_data_t *msgs,
+                             size_t msgs_count) {
+  for (uint8_t i = 0; i < msgs_count; i++) {
+    memcpy(msgs[i].plain_data,
+           plain_data[i].message.bytes,
+           plain_data[i].message.size);
+    msgs[i].plain_data_size = plain_data[i].message.size;
   }
 
-  session.status = SESSION_OK;
+  return true;
 }
+
+void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
+  for (size_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
+      sprintf(hexstring + 2 * i,
+              "%02x",
+              data[i]);    // Each byte represented by 2 characters + '\0'
+    }
+  }
+  hexstring[size * 2] = '\0';    // Null-terminate the string
+}
+
+void print_msg(secure_data_t msg, uint8_t index) {
+  char hex[200];
+  byte_array_to_hex_string(
+      msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);
+  printf("\nData [%d] plain_data: %s\n", index + 1, msg.plain_data);
+  printf("Data [%d] plain_size: %d\n", index + 1, msg.plain_data_size);
+  byte_array_to_hex_string(msg.encrypted_data,
+                           msg.encrypted_data_size,
+                           hex,
+                           msg.encrypted_data_size * 2 + 1);
+  printf("Data [%d] encrypted_data: %s\n", index + 1, msg.encrypted_data);
+  printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
+}
+
+bool debug = true;
+// TODO cleanup: delete after testing
+char *print_arr(char *name, uint8_t *bytearray, size_t size) {
+  char *bytearray_hex = (char *)malloc(size * 2 + 1);
+  if (debug == true) {
+    uint8ToHexString(bytearray, size, bytearray_hex);
+    printf("\n%s[%d bytes]: %s\n",
+           name,
+           (strlen(bytearray_hex) / 2),
+           bytearray_hex);
+  }
+  return bytearray_hex;
+}
+
+// void set_dummy_session() {
+//   // TODO: Recieve values from core
+//   uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+//                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+//   uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+//   memcpy(session.session_key, key, SESSION_KEY_SIZE);
+//   memcpy(session.session_iv, iv, SESSION_IV_SIZE);
+// }
+
+// session_error_type_e session_main(dummy_inheritance_query_t *query) {
+//   char buffer[SESSION_BUFFER_SIZE] = {0};
+//   size_t size;
+
+//   switch (query->type) {
+//     case SESSION_MSG_SEND_DEVICE_KEY:
+//       size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
+//              POSTFIX1_SIZE + POSTFIX2_SIZE;
+//       if (!session_send_device_key(query->device_message)) {
+//         LOG_CRITICAL("xxec %d", __LINE__);
+//         comm_reject_invalid_cmd();
+//         clear_message_received_data();
+
+//         return SESSION_ERR_DEVICE_KEY;
+//       }
+//       byte_array_to_hex_string(
+//           query->device_message, size, buffer, size * 2 + 1);
+//       // printf("Device Message: %s", buffer, size * 2 + 1);
+//       break;
+
+//     case SESSION_MSG_RECEIVE_SERVER_KEY:
+//       if (!session_receive_server_key(query->server_message)) {
+//         LOG_CRITICAL("xxec %d", __LINE__);
+//         comm_reject_invalid_cmd();
+//         clear_message_received_data();
+
+//         return SESSION_ERR_SERVER_KEY;
+//       }
+
+//       size = SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE +
+//              SIGNATURE_SIZE;
+//       byte_array_to_hex_string(
+//           query->server_message, size, buffer, size * 2 + 1);
+//       // printf("Server Message: %s", buffer, size * 2 + 1);
+//       break;
+
+//     case SESSION_MSG_ENCRYPT:
+//       // TODO: Remove after testing
+//       for (int i = 0; i < query->msg_count; i++) {
+//         memzero(query->session_msgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
+//         query->session_msgs[i].encrypted_data_size = 0;
+//       }
+//       if (!session_encrypt_secure_data(
+//               query->wallet_id, query->session_msgs, query->msg_count)) {
+//         LOG_CRITICAL("xxec %d", __LINE__);
+//         comm_reject_invalid_cmd();
+//         clear_message_received_data();
+
+//         return SESSION_ERR_ENCRYPT;
+//       }
+//       session_reset_secure_data();
+//       break;
+
+//     case SESSION_MSG_DECRYPT:
+//       // TODO: Remove after testing
+//       for (int i = 0; i < query->msg_count; i++) {
+//         memzero(query->session_msgs[i].plain_data, PLAIN_DATA_SIZE);
+//         query->session_msgs[i].plain_data_size = 0;
+//       }
+//       if (!session_decrypt_secure_data(
+//               query->wallet_id, query->session_msgs, query->msg_count)) {
+//         LOG_CRITICAL("xxec %d", __LINE__);
+//         comm_reject_invalid_cmd();
+//         clear_message_received_data();
+
+//         return SESSION_ERR_DECRYPT;
+//       }
+//       session_reset_secure_data();
+//       break;
+
+//     case SESSION_CLOSE:
+//       session_reset();
+//       break;
+
+//     default: {
+//       /* In case we ever encounter invalid query, convey to the host app */
+//       session_send_error();
+//       session.status = SESSION_ERR_INVALID;
+//       return;
+//     }
+//   }
+
+//   session.status = SESSION_OK;
+// }
 
 // void test_session_main(session_msg_type_e type) {
 //   dummy_inheritance_query_t *query =
@@ -693,52 +835,6 @@ session_error_type_e session_main(dummy_inheritance_query_t *query) {
 
 // TODO: functions to remove after testing
 
-void uint8ToHexString(const uint8_t *data, size_t size, char *hexstring) {
-  for (size_t i = 0; i < size; ++i) {
-    for (size_t i = 0; i < size; ++i) {
-      sprintf(hexstring + 2 * i,
-              "%02x",
-              data[i]);    // Each byte represented by 2 characters + '\0'
-    }
-  }
-  hexstring[size * 2] = '\0';    // Null-terminate the string
-}
-
-void print_msg(SecureData msg, uint8_t index) {
-  char hex[200];
-  byte_array_to_hex_string(
-      msg.plain_data, msg.plain_data_size, hex, msg.plain_data_size * 2 + 1);
-  printf("\nData [%d] plain_data: %s\n", index + 1, msg.plain_data);
-  printf("Data [%d] plain_size: %d\n", index + 1, msg.plain_data_size);
-  byte_array_to_hex_string(msg.encrypted_data,
-                           msg.encrypted_data_size,
-                           hex,
-                           msg.encrypted_data_size * 2 + 1);
-  printf("Data [%d] encrypted_data: %s\n", index + 1, msg.encrypted_data);
-  printf("Data [%d] encrypted_size: %d\n", index + 1, msg.encrypted_data_size);
-}
-
-bool debug = true;
-// TODO cleanup: delete after testing
-char *print_arr(char *name, uint8_t *bytearray, size_t size) {
-  char *bytearray_hex = (char *)malloc(size * 2 + 1);
-  if (debug == true) {
-    uint8ToHexString(bytearray, size, bytearray_hex);
-    printf("\n%s[%d bytes]: %s\n",
-           name,
-           (strlen(bytearray_hex) / 2),
-           bytearray_hex);
-  }
-  return bytearray_hex;
-}
-
-void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
-  arr[0] = (value >> 24) & 0xFF;    // Extract the highest byte
-  arr[1] = (value >> 16) & 0xFF;    // Extract the second highest byte
-  arr[2] = (value >> 8) & 0xFF;     // Extract the second lowest byte
-  arr[3] = value & 0xFF;            // Extract the lowest byte
-}
-
 // // void test_generate_server_data(dummy_inheritance_query_t *query) {
 //   uint8_t server_message[SESSION_BUFFER_SIZE];
 
@@ -753,7 +849,7 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
 
 //   uint32_t session_age_int = 1234;
 //   uint8_t session_age[SESSION_AGE_SIZE];
-//   test_uint32_to_uint8_array(session_age_int, session_age);
+//   uint32_to_uint8_array(session_age_int, session_age);
 
 //   uint8_t offset = 0;
 //   memcpy(server_message + offset, server_random_public,
@@ -778,131 +874,60 @@ void test_uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
 //   memcpy(query->server_message, server_message, offset);
 // }
 
-void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
-  const uint8_t msg_count = 5;
-  static const char *messages[] = {
-      "Shortest",    // 8 chars
+// void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
+//   const uint8_t msg_count = 5;
+//   static const char *messages[] = {
+//       "Shortest",    // 8 chars
 
-      "This is a slightly longer message to test the 50 characters "
-      "length requirement.",    // 79 chars
+//       "This is a slightly longer message to test the 50 characters "
+//       "length requirement.",    // 79 chars
 
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
-      "tempor incididunt ut labore et dolore magna aliqua.",    // 123 chars
+//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+//       eiusmod " "tempor incididunt ut labore et dolore magna aliqua.",    //
+//       123 chars
 
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
-      "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim "
-      "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea "
-      "commodo consequat. Duis aute irure dolor in reprehenderit in voluptate "
-      "velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint "
-      "occaecat cupidatat non proident, sunt in culpa qui officia deserunt "
-      "mollit anim id est laborum.",    // 445 chars
+//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+//       eiusmod " "tempor incididunt ut labore et dolore magna aliqua. Ut enim
+//       ad minim " "veniam, quis nostrud exercitation ullamco laboris nisi ut
+//       aliquip ex ea " "commodo consequat. Duis aute irure dolor in
+//       reprehenderit in voluptate " "velit esse cillum dolore eu fugiat nulla
+//       pariatur. Excepteur sint " "occaecat cupidatat non proident, sunt in
+//       culpa qui officia deserunt " "mollit anim id est laborum.",    // 445
+//       chars
 
-      "Embarking on a journey to write a 900-character piece necessitates "
-      "precision and clarity, ensuring each word contributes to the overall "
-      "message. Begin by defining the central theme or purpose, whether it's "
-      "to inform, persuade, or entertain. Structure is crucial: start with an "
-      "engaging introduction to hook the reader, followed by the main content "
-      "divided into concise paragraphs, and conclude with a memorable closing "
-      "statement. Use active voice and vary sentence lengths to maintain "
-      "reader interest. Edit ruthlessly to eliminate redundant words and "
-      "ensure each sentence flows seamlessly into the next. Pay attention to "
-      "grammar and punctuation, as these details enhance readability and "
-      "professionalism. Finally, read the piece aloud to catch any awkward "
-      "phrasing or overlooked errors, ensuring the final draft is polished and "
-      "impactful. This approach not only adheres to the character limit of "
-      "msgs.",    // 900 char
-  };
+//       "Embarking on a journey to write a 900-character piece necessitates "
+//       "precision and clarity, ensuring each word contributes to the overall "
+//       "message. Begin by defining the central theme or purpose, whether it's
+//       " "to inform, persuade, or entertain. Structure is crucial: start with
+//       an " "engaging introduction to hook the reader, followed by the main
+//       content " "divided into concise paragraphs, and conclude with a
+//       memorable closing " "statement. Use active voice and vary sentence
+//       lengths to maintain " "reader interest. Edit ruthlessly to eliminate
+//       redundant words and " "ensure each sentence flows seamlessly into the
+//       next. Pay attention to " "grammar and punctuation, as these details
+//       enhance readability and " "professionalism. Finally, read the piece
+//       aloud to catch any awkward " "phrasing or overlooked errors, ensuring
+//       the final draft is polished and " "impactful. This approach not only
+//       adheres to the character limit of " "msgs.",    // 900 char
+//   };
 
-  query->msg_count = msg_count;
-  for (int i = 0; i < msg_count; i++) {
-    memcpy(query->SessionMsgs[i].plain_data, messages[i], strlen(messages[i]));
-    query->SessionMsgs[i].plain_data_size = strlen(messages[i]);
-    // print_msg(query->SessionMsgs[i], i);
-  }
+//   query->msg_count = msg_count;
+//   for (int i = 0; i < msg_count; i++) {
+//     memcpy(query->session_msgs[i].plain_data, messages[i],
+//     strlen(messages[i])); query->session_msgs[i].plain_data_size =
+//     strlen(messages[i]);
+//     // print_msg(query->session_msgs[i], i);
+//   }
 
-#if USE_SIMULATOR == 0
-  memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
-#else
-  memcpy(query->wallet_id,
-         session.device_id,
-         WALLET_ID_SIZE);    // will get wallet id from cysync
-#endif
-  print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
+// #if USE_SIMULATOR == 0
+//   memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
+// #else
+//   memcpy(query->wallet_id,
+//          session.device_id,
+//          WALLET_ID_SIZE);    // will get wallet id from cysync
+// #endif
+//   print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
 
-  memcpy(query->pass_key, session.session_iv, SESSION_IV_SIZE);
-  print_arr("query->pass_key", query->pass_key, SESSION_IV_SIZE);
-}
-
-bool plain_data_to_array_obj(inheritance_plain_data_t *plain_data,
-                             SecureData *msgs,
-                             size_t msgs_count) {
-  for (uint8_t i = 0; i < msgs_count; i++) {
-    memcpy(msgs[i].plain_data,
-           plain_data[i].message.bytes,
-           plain_data[i].message.size);
-    msgs[i].plain_data_size = plain_data[i].message.size;
-  }
-
-  return true;
-}
-
-void session_close() {
-  // Clear Session metadata
-  memzero(&session, sizeof(Session));
-}
-
-void core_session_start_parse(const core_msg_t *core_msg) {
-  size_t request_type = core_msg->session_start.request.which_request;
-  switch (request_type) {
-    case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
-      // send device data to server
-      uint8_t payload[SESSION_BUFFER_SIZE] = {0};
-      if (!session_send_device_key(payload)) {
-        LOG_CRITICAL("xxec %d", __LINE__);
-        comm_reject_invalid_cmd();
-        clear_message_received_data();
-
-        return SESSION_ERR_DEVICE_KEY;
-      }
-      send_session_start_response_to_host(payload);
-
-    } break;
-
-    case CORE_SESSION_START_REQUEST_START_TAG: {
-      // recieve server data
-      uint8_t server_message_payload[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
-                                     DEVICE_SERIAL_SIZE];
-      uint32_t offset = 0;
-      core_session_start_begin_request_t request =
-          core_msg->session_start.request.start;
-      memcpy(server_message_payload,
-             request.session_random_public,
-             SESSION_PUB_KEY_SIZE);
-      offset += SESSION_PUB_KEY_SIZE;
-      test_uint32_to_uint8_array(
-          core_msg->session_start.request.start.session_age,
-          server_message_payload + SESSION_PUB_KEY_SIZE);
-      offset += SESSION_AGE_SIZE;
-      memcpy(server_message_payload + offset,
-             core_msg->session_start.request.start.device_id,
-             DEVICE_SERIAL_SIZE);
-
-      if (!session_receive_server_key(server_message_payload)) {
-        // TODO: Check error Handling
-        LOG_CRITICAL("xxec %d", __LINE__);
-        comm_reject_invalid_cmd();
-        clear_message_received_data();
-
-        return SESSION_ERR_SERVER_KEY;
-      }
-      send_session_start_ack_to_host();
-    } break;
-
-    default:
-      /* In case we ever encounter invalid query, convey to the host app */
-      session_send_error();
-      session.status = SESSION_ERR_INVALID;
-      return;
-      break;
-  }
-}
+//   memcpy(query->pass_key, session.session_iv, SESSION_IV_SIZE);
+//   print_arr("query->pass_key", query->pass_key, SESSION_IV_SIZE);
+// }

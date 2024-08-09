@@ -77,7 +77,7 @@ static bool verify_wallet_auth_inputs(wallet_auth_t *auth) {
  *****************************************************************************/
 
 bool wallet_auth_get_entropy(wallet_auth_t *auth) {
-  SecureData msgs[1] = {0};
+  secure_data_t msgs[1] = {0};
   msgs[0].plain_data_size = WALLET_ID_SIZE;
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 

@@ -87,13 +87,13 @@ void inheritance_session_login(inheritance_query_t *query);
  *
  * @param query A pointer to the `inheritance_query_t` structure containing the
  *        setup request details, including plain data and wallet ID.
- * @param msgs A pointer to an array of `SecureData` structures to hold the
+ * @param msgs A pointer to an array of `secure_data_t` structures to hold the
  *        converted plain data.
  * @param response A pointer to the `inheritance_result_t` structure where the
  *        encrypted result will be stored.
  */
 void inheritance_setup(inheritance_query_t *query,
-                       SecureData *msgs,
+                       secure_data_t *msgs,
                        inheritance_result_t *response);
 
 /**
@@ -108,13 +108,13 @@ void inheritance_setup(inheritance_query_t *query,
  * @param query A pointer to the `inheritance_query_t` structure containing the
  *        recovery request details, including encrypted data and wallet
  *        authentication information.
- * @param msgs A pointer to an array of `SecureData` structures to hold the
+ * @param msgs A pointer to an array of `secure_data_t` structures to hold the
  *        decrypted secure data.
  * @param response A pointer to the `inheritance_result_t` structure where the
  *        decrypted result will be stored.
  */
 void inheritance_recovery(inheritance_query_t *query,
-                          SecureData *msgs,
+                          secure_data_t *msgs,
                           inheritance_result_t *response);
 
 #endif /* INHERITANCE_MAIN_H */

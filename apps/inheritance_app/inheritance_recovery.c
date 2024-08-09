@@ -61,8 +61,6 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "inheritance_recovery.h"
-
 #include "inheritance_main.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -94,18 +92,30 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void convert_msg_to_plaindata(inheritance_plain_data_t *plain_data,
+                              secure_data_t *msgs,
+                              uint8_t msg_count) {
+  for (uint8_t i = 0; i < msg_count; i++) {
+    if (1 == msgs[i].plain_data[0])
+      plain_data[i].is_private = true;
 
+    memcpy(plain_data[i].message.bytes,
+           msgs[i].plain_data + 1,
+           msgs[i].plain_data_size - 1);
+    plain_data[i].message.size = msgs[i].plain_data_size - 1;
+  }
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
 void inheritance_recovery(inheritance_query_t *query,
-                          SecureData *msgs,
+                          secure_data_t *msgs,
                           inheritance_result_t *response) {
   uint32_t msg_count = 0;
 
   uint8_t packet[SESSION_PACKET_SIZE] = {0};
-  size_t packet_size = query->recovery.encrypted_data.packet.size;
+  uint16_t packet_size = query->recovery.encrypted_data.packet.size;
   memcpy(packet, query->recovery.encrypted_data.packet.bytes, packet_size);
 
   if (!session_decrypt_packet(msgs, &msg_count, packet, &packet_size)) {

@@ -80,15 +80,14 @@ typedef struct {
   uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
   curve_point device_random_public_point;
 
-  uint8_t
-      derived_server_public_key[SESSION_PUB_KEY_SIZE];    // update macro names
+  uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
   uint8_t server_signature[64];
 
   const char wallet_name[NAME_SIZE];
-  SecureData SessionMsgs[SESSION_MSG_MAX];
+  secure_data_t session_msgs[SESSION_MSG_MAX];
   uint8_t msg_count;
 
   uint8_t session_iv[SESSION_IV_SIZE];
@@ -97,10 +96,10 @@ typedef struct {
   uint8_t packet[SESSION_PACKET_SIZE];
 
   session_error_type_e status;
-} Session;
+} session_config_t;
 #pragma pack(pop)
 
-extern Session session;
+extern session_config_t session;
 
 typedef struct {
   // session_init
@@ -109,7 +108,7 @@ typedef struct {
 
   // session_enc
   uint8_t msg_count;
-  SecureData SessionMsgs[SESSION_MSG_MAX];
+  secure_data_t session_msgs[SESSION_MSG_MAX];
   uint8_t pass_key[SESSION_IV_SIZE];
   uint8_t wallet_id[WALLET_ID_SIZE];
 
@@ -117,63 +116,34 @@ typedef struct {
   uint8_t device_message[SESSION_BUFFER_SIZE];
 } dummy_inheritance_query_t;
 
-/**
- * @brief Starts the session creation process
- * @details It generates the device random, derives and stores the device
- * public key. It also generates the payload to be sent to the server.
- * @param session_details_data_array The buffer to store the payload to be sent
- *
- * @see SESSION_INIT
- * @since v1.0.0
- */
-bool session_send_device_key();
-
-/**
- * @brief Completes the session creation process
- * @details It verifies the server response and stores the session id and
- * session random.
- * @param session_init_details The server response
- * @param verification_details The buffer to store the details
- * to be send back to the server to confirm
- * /home/parnika/Documents/GitHub/x1_wallet_firmware/common/libraries/util/session_utils.c:394:6the
- * verification.
- * @return true if the session is created, false otherwise
- *
- * @see SESSION_ESTABLISH
- * @since v1.0.0
- */
-bool session_receive_server_key(uint8_t *server_message);
+// bool session_receive_server_key(uint8_t *server_message);
 
 bool session_plaindata_to_msg(uint8_t *plain_data[],
-                              SecureData *msgs,
+                              secure_data_t *msgs,
                               size_t *msg_count);
 bool session_msg_to_plaindata(inheritance_plain_data_t *plain_data,
-                              SecureData *msgs,
+                              secure_data_t *msgs,
                               uint8_t *msg_count);
 
 bool session_encrypt_secure_data(uint8_t *wallet_id,
-                                 SecureData *msgs,
+                                 secure_data_t *msgs,
                                  size_t msg_count);
-bool session_encrypt_packet(SecureData *msgs,
+bool session_encrypt_packet(secure_data_t *msgs,
                             uint8_t msg_count,
                             uint8_t *packet,
                             size_t *packet_size);
 
 bool session_decrypt_secure_data(uint8_t *wallet_id,
-                                 SecureData *msgs,
+                                 secure_data_t *msgs,
                                  size_t msg_count);
-bool session_decrypt_packet(SecureData *msgs,
+bool session_decrypt_packet(secure_data_t *msgs,
                             uint32_t *msg_count,
                             uint8_t *packet,
-                            size_t *packet_size);
-
-bool session_get_random_keys(uint8_t *random,
-                             uint8_t *random_public,
-                             curve_point random_public_point);
+                            uint16_t *packet_size);
 
 void core_session_start_parse(const core_msg_t *core_msg);
 // TODO: Remove after testing
-void print_msg(SecureData msg, uint8_t index);
+void print_msg(secure_data_t msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
 

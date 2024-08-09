@@ -56,8 +56,8 @@ typedef struct {
  * @brief Retrieves encrypted data (entropy) from the card based on the wallet
  * ID.
  *
- * This function initializes a SecureData structure, fetches encrypted data from
- * the card, and stores the result in the auth structure. It checks if the
+ * This function initializes a secure_data_t structure, fetches encrypted data
+ * from the card, and stores the result in the auth structure. It checks if the
  * operation was successful and if the encrypted data size is within the allowed
  * limit.
  *

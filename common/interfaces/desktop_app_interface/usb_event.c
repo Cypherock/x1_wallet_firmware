@@ -294,9 +294,11 @@ bool usb_get_event(usb_event_t *evt) {
         populate_version_list(&resp);
         send_app_version_list_to_host(&resp);
         reset_event_obj(&usb_event);
+
       } else if (CORE_MSG_SESSION_START_TAG == request_type) {
         core_session_start_parse(&core_msg_p);
         reset_event_obj(&usb_event);
+
       } else if (CORE_MSG_SESSION_CLOSE_TAG == request_type) {
         session_close();
         send_session_close_response_to_host();

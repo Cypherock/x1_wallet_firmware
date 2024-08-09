@@ -81,7 +81,7 @@
  *****************************************************************************/
 static inheritance_query_t query = INHERITANCE_QUERY_INIT_ZERO;
 static inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
-static SecureData *msgs = NULL;
+static secure_data_t *msgs = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -108,7 +108,7 @@ TEST_GROUP(inheritance_session_data_test);
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(inheritance_session_data_test) {
-  msgs = (SecureData *)calloc(SESSION_MSG_MAX, sizeof(SecureData));
+  msgs = (secure_data_t *)calloc(SESSION_MSG_MAX, sizeof(secure_data_t));
   set_dummy_session();
 }
 
