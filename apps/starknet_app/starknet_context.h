@@ -38,7 +38,7 @@
 #define STARKNET_PURPOSE_INDEX (0x8000002C)    // 44'
 #define STARKNET_COIN_INDEX (0x8000232C)       // 9004'
 #define STARKNET_ACCOUNT_INDEX 0x80000000      // 0'
-#define STARKNET_CHANGE_INDEX 0x0000000        // 0
+#define STARKNET_CHANGE_INDEX 0x00000000       // 0
 
 /// this makes length of 5 with a termination NULL byte
 #define STARKNET_SHORT_NAME_MAX_SIZE 6
@@ -53,7 +53,8 @@ typedef struct {
   /** Largest unit/denomination indicator/symbol. This will be used in UX for
    * displaying fees and amount.
    */
-  const char lunit_name[STARKNET_SHORT_NAME_MAX_SIZE];
+  const char lunit1_name[STARKNET_SHORT_NAME_MAX_SIZE];
+  const char lunit2_name[STARKNET_SHORT_NAME_MAX_SIZE];
   /** Common name of the blockchain known to the users. This will be used in UX
    */
   const char name[STARKNET_LONG_NAME_MAX_SIZE];

@@ -85,7 +85,8 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 const starknet_config_t starknet_app = {
-    .lunit_name = "ETH",
+    .lunit1_name = "STRK",
+    .lunit2_name = "STRK",
     .name = "Starknet",
 };
 

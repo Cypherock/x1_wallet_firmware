@@ -210,5 +210,6 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   }
 
   memzero(private_key, 32);
+  // TODO: Generate public key = G * private_key from private key after grind
   return grind_key(node.private_key, private_key);
 }

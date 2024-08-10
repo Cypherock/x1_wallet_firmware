@@ -242,8 +242,6 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
   return status;
 }
 
-#include "e"
-
 static bool fill_public_keys(
     const starknet_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
@@ -258,7 +256,6 @@ static bool fill_public_keys(
                                        current->path,
                                        current->path_count,
                                        public_key_list[index])) {
-      // TODO: Generate public key from private key
       return false;
     }
   }
