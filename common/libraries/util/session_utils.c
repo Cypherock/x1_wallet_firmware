@@ -625,6 +625,7 @@ void core_session_start_parse(const core_msg_t *core_msg) {
              request.session_random_public,
              SESSION_PUB_KEY_SIZE);
       offset += SESSION_PUB_KEY_SIZE;
+      // TODO: Reset close_session in after the session_age milli seconds
       uint32_to_uint8_array(core_msg->session_start.request.start.session_age,
                             server_message_payload + SESSION_PUB_KEY_SIZE);
       offset += SESSION_AGE_SIZE;
