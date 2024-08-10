@@ -68,6 +68,9 @@
 /// NON SEGWIT purpose id
 #define NON_SEGWIT 0x8000002C
 
+/// NON SEGWIT purpose id
+#define STARK (BITCOIN + 0x232C)
+
 typedef enum Coin_Type {
   COIN_TYPE_BITCOIN = 0x01,
   COIN_TYPE_BTC_TEST = 0x02,
@@ -85,6 +88,7 @@ typedef enum Coin_Type {
   COIN_TYPE_HARMONY = 0x0E,
   COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
   COIN_TYPE_ARBITRUM = 0x10,
+  COIN_TYPE_STARKNET = 0x11,
 } Coin_Type;
 
 #pragma pack(push, 1)

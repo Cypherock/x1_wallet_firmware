@@ -81,8 +81,6 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 
-#define STARKNET_PUB_KEY_SIZE 65
-
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -243,6 +241,8 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
 
   return status;
 }
+
+#include "e"
 
 static bool fill_public_keys(
     const starknet_get_public_keys_derivation_path_t *path,

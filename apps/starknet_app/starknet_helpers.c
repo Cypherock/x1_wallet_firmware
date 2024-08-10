@@ -65,6 +65,7 @@
 #include <error.pb.h>
 
 #include "bn.h"
+#include "coin_utils.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
 
@@ -181,7 +182,7 @@ bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels) {
 
 bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
   uint32_t eth_acc0_path[] = {
-      STARKNET_PURPOSE_INDEX, 0x8000003C, 0x80000000, 0, 0};
+      STARKNET_PURPOSE_INDEX, ETHEREUM, 0x80000000, 0, 0};
   HDNode strkSeedNode = {0};
 
   // derive node at m/44'/60'/0'/0/0
