@@ -314,10 +314,11 @@ static bool get_user_consent(const pb_size_t which_request,
              starknet_app.name,
              wallet_name);
   } else {
+    // TODO: Fetch unit name from sdk also
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_RECEIVE_TOKEN_PROMPT,
-             starknet_app.lunit_name,
+             starknet_app.lunit2_name,
              starknet_app.name,
              wallet_name);
   }
