@@ -199,8 +199,10 @@ static bool derive_session_key() {
 }
 
 static void session_append_signature(uint8_t *payload, size_t payload_size) {
-  uint8_t hash[32] = {0};
+  uint8_t hash[32] = {0};    // hash size reference taken from the atecc_sign
+  print_arr("payload detail", payload, payload_size);
   sha256_Raw(payload, payload_size, hash);
+  print_arr("hash detail", hash, sizeof(hash) / sizeof(uint8_t));
   auth_data_t signed_data = atecc_sign(hash);
 
   uint8_t offset = payload_size;
@@ -210,11 +212,9 @@ static void session_append_signature(uint8_t *payload, size_t payload_size) {
   offset += POSTFIX1_SIZE;
   memcpy(payload + offset, signed_data.postfix2, POSTFIX2_SIZE);
   offset += POSTFIX2_SIZE;
-#if USE_SIMULATOR == 1
   print_arr("sig detail", signed_data.signature, SIGNATURE_SIZE);
-  print_arr("sig detail", signed_data.postfix1, POSTFIX1_SIZE);
-  print_arr("sig detail", signed_data.postfix2, POSTFIX2_SIZE);
-#endif
+  print_arr("postfix1 detail", signed_data.postfix1, POSTFIX1_SIZE);
+  print_arr("postfix2 detail", signed_data.postfix2, POSTFIX2_SIZE);
 }
 
 static bool session_get_random_keys(uint8_t *random,
@@ -277,6 +277,10 @@ static bool session_send_device_key(uint8_t *payload) {
   offset += SESSION_PUB_KEY_SIZE;
   memcpy(payload + offset, session.device_id, DEVICE_SERIAL_SIZE);
   offset += DEVICE_SERIAL_SIZE;
+  print_arr("device_random_public",
+            session.device_random_public,
+            SESSION_PUB_KEY_SIZE);
+  print_arr("device_id", session.device_id, DEVICE_SERIAL_SIZE);
   session_append_signature(payload, offset);
   print_arr("payload after signature", payload, offset + 64 + 7 + 23);
 
@@ -709,226 +713,223 @@ char *print_arr(char *name, uint8_t *bytearray, size_t size) {
   return bytearray_hex;
 }
 
-// void set_dummy_session() {
-//   // TODO: Recieve values from core
-//   uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-//                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-//   uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+void set_dummy_session() {
+  // TODO: Recieve values from core
+  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-//   memcpy(session.session_key, key, SESSION_KEY_SIZE);
-//   memcpy(session.session_iv, iv, SESSION_IV_SIZE);
-// }
+  memcpy(session.session_key, key, SESSION_KEY_SIZE);
+  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
+}
 
-// session_error_type_e session_main(dummy_inheritance_query_t *query) {
-//   char buffer[SESSION_BUFFER_SIZE] = {0};
-//   size_t size;
+session_error_type_e session_main(dummy_inheritance_query_t *query) {
+  char buffer[SESSION_BUFFER_SIZE] = {0};
+  size_t size;
 
-//   switch (query->type) {
-//     case SESSION_MSG_SEND_DEVICE_KEY:
-//       size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
-//              POSTFIX1_SIZE + POSTFIX2_SIZE;
-//       if (!session_send_device_key(query->device_message)) {
-//         LOG_CRITICAL("xxec %d", __LINE__);
-//         comm_reject_invalid_cmd();
-//         clear_message_received_data();
+  switch (query->type) {
+    case SESSION_MSG_SEND_DEVICE_KEY:
+      size = SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
+             POSTFIX1_SIZE + POSTFIX2_SIZE;
+      if (!session_send_device_key(query->device_message)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
 
-//         return SESSION_ERR_DEVICE_KEY;
-//       }
-//       byte_array_to_hex_string(
-//           query->device_message, size, buffer, size * 2 + 1);
-//       // printf("Device Message: %s", buffer, size * 2 + 1);
-//       break;
+        return SESSION_ERR_DEVICE_KEY;
+      }
+      byte_array_to_hex_string(
+          query->device_message, size, buffer, size * 2 + 1);
+      // printf("Device Message: %s", buffer, size * 2 + 1);
+      break;
 
-//     case SESSION_MSG_RECEIVE_SERVER_KEY:
-//       if (!session_receive_server_key(query->server_message)) {
-//         LOG_CRITICAL("xxec %d", __LINE__);
-//         comm_reject_invalid_cmd();
-//         clear_message_received_data();
+    case SESSION_MSG_RECEIVE_SERVER_KEY:
+      if (!session_receive_server_key(query->server_message)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
 
-//         return SESSION_ERR_SERVER_KEY;
-//       }
+        return SESSION_ERR_SERVER_KEY;
+      }
 
-//       size = SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE +
-//              SIGNATURE_SIZE;
-//       byte_array_to_hex_string(
-//           query->server_message, size, buffer, size * 2 + 1);
-//       // printf("Server Message: %s", buffer, size * 2 + 1);
-//       break;
+      size = SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE +
+             SIGNATURE_SIZE;
+      byte_array_to_hex_string(
+          query->server_message, size, buffer, size * 2 + 1);
+      // printf("Server Message: %s", buffer, size * 2 + 1);
+      break;
 
-//     case SESSION_MSG_ENCRYPT:
-//       // TODO: Remove after testing
-//       for (int i = 0; i < query->msg_count; i++) {
-//         memzero(query->session_msgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
-//         query->session_msgs[i].encrypted_data_size = 0;
-//       }
-//       if (!session_encrypt_secure_data(
-//               query->wallet_id, query->session_msgs, query->msg_count)) {
-//         LOG_CRITICAL("xxec %d", __LINE__);
-//         comm_reject_invalid_cmd();
-//         clear_message_received_data();
+    case SESSION_MSG_ENCRYPT:
+      // TODO: Remove after testing
+      for (int i = 0; i < query->msg_count; i++) {
+        memzero(query->session_msgs[i].encrypted_data, ENCRYPTED_DATA_SIZE);
+        query->session_msgs[i].encrypted_data_size = 0;
+      }
+      if (!session_encrypt_secure_data(
+              query->wallet_id, query->session_msgs, query->msg_count)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
 
-//         return SESSION_ERR_ENCRYPT;
-//       }
-//       session_reset_secure_data();
-//       break;
+        return SESSION_ERR_ENCRYPT;
+      }
+      session_reset_secure_data();
+      break;
 
-//     case SESSION_MSG_DECRYPT:
-//       // TODO: Remove after testing
-//       for (int i = 0; i < query->msg_count; i++) {
-//         memzero(query->session_msgs[i].plain_data, PLAIN_DATA_SIZE);
-//         query->session_msgs[i].plain_data_size = 0;
-//       }
-//       if (!session_decrypt_secure_data(
-//               query->wallet_id, query->session_msgs, query->msg_count)) {
-//         LOG_CRITICAL("xxec %d", __LINE__);
-//         comm_reject_invalid_cmd();
-//         clear_message_received_data();
+    case SESSION_MSG_DECRYPT:
+      // TODO: Remove after testing
+      for (int i = 0; i < query->msg_count; i++) {
+        memzero(query->session_msgs[i].plain_data, PLAIN_DATA_SIZE);
+        query->session_msgs[i].plain_data_size = 0;
+      }
+      if (!session_decrypt_secure_data(
+              query->wallet_id, query->session_msgs, query->msg_count)) {
+        LOG_CRITICAL("xxec %d", __LINE__);
+        comm_reject_invalid_cmd();
+        clear_message_received_data();
 
-//         return SESSION_ERR_DECRYPT;
-//       }
-//       session_reset_secure_data();
-//       break;
+        return SESSION_ERR_DECRYPT;
+      }
+      session_reset_secure_data();
+      break;
 
-//     case SESSION_CLOSE:
-//       session_reset();
-//       break;
+    case SESSION_CLOSE:
+      session_reset();
+      break;
 
-//     default: {
-//       /* In case we ever encounter invalid query, convey to the host app */
-//       session_send_error();
-//       session.status = SESSION_ERR_INVALID;
-//       return;
-//     }
-//   }
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      session_send_error();
+      session.status = SESSION_ERR_INVALID;
+      return;
+    }
+  }
 
-//   session.status = SESSION_OK;
-// }
+  session.status = SESSION_OK;
+}
 
-// void test_session_main(session_msg_type_e type) {
-//   dummy_inheritance_query_t *query =
-//   malloc(sizeof(dummy_inheritance_query_t)); query->type = type;
+void test_session_main(session_msg_type_e type) {
+  dummy_inheritance_query_t *query = malloc(sizeof(dummy_inheritance_query_t));
+  query->type = type;
 
-//   session.status = SESSION_ERR_INVALID;
-//   session_curve_init();
+  session.status = SESSION_ERR_INVALID;
+  session_curve_init();
 
-//   switch (query->type) {
-//     case SESSION_MSG_SEND_DEVICE_KEY:
-//       break;
-//     case SESSION_MSG_RECEIVE_SERVER_KEY:
-//       test_generate_server_data(query);
-//       break;
-//     case SESSION_MSG_ENCRYPT:
-//       test_generate_server_encrypt_data(query);
-//       break;
-//     case SESSION_MSG_DECRYPT:
-//       break;
-//   }
+  switch (query->type) {
+    case SESSION_MSG_SEND_DEVICE_KEY:
+      break;
+    case SESSION_MSG_RECEIVE_SERVER_KEY:
+      test_generate_server_data(query);
+      break;
+    case SESSION_MSG_ENCRYPT:
+      test_generate_server_encrypt_data(query);
+      break;
+    case SESSION_MSG_DECRYPT:
+      break;
+  }
 
-//   session_main(query);
-//   free(query);
+  session_main(query);
+  free(query);
 
-//   if (session.status != SESSION_OK) {
-//     printf("\nERORR: SESSION COMMAND FAILED");
-//     return;
-//   }
-//   printf("\nSESSION MSG STATUS: %d", session.status);
-// }
+  if (session.status != SESSION_OK) {
+    printf("\nERORR: SESSION COMMAND FAILED");
+    return;
+  }
+  printf("\nSESSION MSG STATUS: %d", session.status);
+}
 
 // TODO: functions to remove after testing
 
-// // void test_generate_server_data(dummy_inheritance_query_t *query) {
-//   uint8_t server_message[SESSION_BUFFER_SIZE];
+void test_generate_server_data(dummy_inheritance_query_t *query) {
+  uint8_t server_message[SESSION_BUFFER_SIZE];
 
-//   uint8_t server_random[SESSION_PRIV_KEY_SIZE];
-//   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
-//   curve_point server_random_public_point;
-//   if (!session_get_random_keys(
-//           server_random, server_random_public, server_random_public_point)) {
-//     printf("\nERROR: Server Random keys not generated");
-//     return false;
-//   }
+  uint8_t server_random[SESSION_PRIV_KEY_SIZE];
+  uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
+  curve_point server_random_public_point;
+  if (!session_get_random_keys(
+          server_random, server_random_public, server_random_public_point)) {
+    printf("\nERROR: Server Random keys not generated");
+    return false;
+  }
 
-//   uint32_t session_age_int = 1234;
-//   uint8_t session_age[SESSION_AGE_SIZE];
-//   uint32_to_uint8_array(session_age_int, session_age);
+  uint32_t session_age_int = 1234;
+  uint8_t session_age[SESSION_AGE_SIZE];
+  uint32_to_uint8_array(session_age_int, session_age);
 
-//   uint8_t offset = 0;
-//   memcpy(server_message + offset, server_random_public,
-//   SESSION_PUB_KEY_SIZE); offset += SESSION_PUB_KEY_SIZE;
-//   memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
-//   offset += SESSION_AGE_SIZE;
-//   memcpy(server_message + offset, atecc_data.device_serial,
-//   DEVICE_SERIAL_SIZE); offset += DEVICE_SERIAL_SIZE;
+  uint8_t offset = 0;
+  memcpy(server_message + offset, server_random_public, SESSION_PUB_KEY_SIZE);
+  offset += SESSION_PUB_KEY_SIZE;
+  memcpy(server_message + offset, session_age, SESSION_AGE_SIZE);
+  offset += SESSION_AGE_SIZE;
+  memcpy(server_message + offset, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
+  offset += DEVICE_SERIAL_SIZE;
 
-//   uint8_t hash[32] = {0};
-//   uint8_t signature[SIGNATURE_SIZE] = {0};
-//   sha256_Raw(server_message, offset, hash);
-//   // NOTE: MSG would be signed by server_key (added from master device in
-//   // server)
-//   int res =
-//       ecdsa_sign_digest(curve, session.device_random, hash, signature, 0, 0);
-//   memcpy(server_message + offset, signature, SIGNATURE_SIZE);
-//   offset += SIGNATURE_SIZE;
+  uint8_t hash[32] = {0};
+  uint8_t signature[SIGNATURE_SIZE] = {0};
+  sha256_Raw(server_message, offset, hash);
+  // NOTE: MSG would be signed by server_key (added from master device in
+  // server)
+  int res =
+      ecdsa_sign_digest(curve, session.device_random, hash, signature, 0, 0);
+  memcpy(server_message + offset, signature, SIGNATURE_SIZE);
+  offset += SIGNATURE_SIZE;
 
-//   print_arr("server data", server_message, offset);
+  print_arr("server data", server_message, offset);
 
-//   memcpy(query->server_message, server_message, offset);
-// }
+  memcpy(query->server_message, server_message, offset);
+}
 
-// void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
-//   const uint8_t msg_count = 5;
-//   static const char *messages[] = {
-//       "Shortest",    // 8 chars
+void test_generate_server_encrypt_data(dummy_inheritance_query_t *query) {
+  const uint8_t msg_count = 5;
+  static const char *messages[] = {
+      "Shortest",    // 8 chars
 
-//       "This is a slightly longer message to test the 50 characters "
-//       "length requirement.",    // 79 chars
+      "This is a slightly longer message to test the 50 characters "
+      "length requirement.",    // 79 chars
 
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-//       eiusmod " "tempor incididunt ut labore et dolore magna aliqua.",    //
-//       123 chars
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
+      "tempor incididunt ut labore et dolore magna aliqua.",    // 123 chars
 
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-//       eiusmod " "tempor incididunt ut labore et dolore magna aliqua. Ut enim
-//       ad minim " "veniam, quis nostrud exercitation ullamco laboris nisi ut
-//       aliquip ex ea " "commodo consequat. Duis aute irure dolor in
-//       reprehenderit in voluptate " "velit esse cillum dolore eu fugiat nulla
-//       pariatur. Excepteur sint " "occaecat cupidatat non proident, sunt in
-//       culpa qui officia deserunt " "mollit anim id est laborum.",    // 445
-//       chars
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
+      "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim "
+      "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea "
+      "commodo consequat. Duis aute irure dolor in reprehenderit in voluptate "
+      "velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint "
+      "occaecat cupidatat non proident, sunt in culpa qui officia deserunt "
+      "mollit anim id est laborum.",    // 445 chars
 
-//       "Embarking on a journey to write a 900-character piece necessitates "
-//       "precision and clarity, ensuring each word contributes to the overall "
-//       "message. Begin by defining the central theme or purpose, whether it's
-//       " "to inform, persuade, or entertain. Structure is crucial: start with
-//       an " "engaging introduction to hook the reader, followed by the main
-//       content " "divided into concise paragraphs, and conclude with a
-//       memorable closing " "statement. Use active voice and vary sentence
-//       lengths to maintain " "reader interest. Edit ruthlessly to eliminate
-//       redundant words and " "ensure each sentence flows seamlessly into the
-//       next. Pay attention to " "grammar and punctuation, as these details
-//       enhance readability and " "professionalism. Finally, read the piece
-//       aloud to catch any awkward " "phrasing or overlooked errors, ensuring
-//       the final draft is polished and " "impactful. This approach not only
-//       adheres to the character limit of " "msgs.",    // 900 char
-//   };
+      "Embarking on a journey to write a 900-character piece necessitates "
+      "precision and clarity, ensuring each word contributes to the overall "
+      "message. Begin by defining the central theme or purpose, whether it's "
+      "to inform, persuade, or entertain. Structure is crucial: start with an "
+      "engaging introduction to hook the reader, followed by the main content "
+      "divided into concise paragraphs, and conclude with a memorable closing "
+      "statement. Use active voice and vary sentence lengths to maintain "
+      "reader interest. Edit ruthlessly to eliminate redundant words and "
+      "ensure each sentence flows seamlessly into the next. Pay attention to "
+      "grammar and punctuation, as these details enhance readability and "
+      "professionalism. Finally, read the piece aloud to catch any awkward "
+      "phrasing or overlooked errors, ensuring the final draft is polished and "
+      "impactful. This approach not only adheres to the character limit of "
+      "msgs.",    // 900 char
+  };
 
-//   query->msg_count = msg_count;
-//   for (int i = 0; i < msg_count; i++) {
-//     memcpy(query->session_msgs[i].plain_data, messages[i],
-//     strlen(messages[i])); query->session_msgs[i].plain_data_size =
-//     strlen(messages[i]);
-//     // print_msg(query->session_msgs[i], i);
-//   }
+  query->msg_count = msg_count;
+  for (int i = 0; i < msg_count; i++) {
+    memcpy(query->session_msgs[i].plain_data, messages[i], strlen(messages[i]));
+    query->session_msgs[i].plain_data_size = strlen(messages[i]);
+    // print_msg(query->session_msgs[i], i);
+  }
 
-// #if USE_SIMULATOR == 0
-//   memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
-// #else
-//   memcpy(query->wallet_id,
-//          session.device_id,
-//          WALLET_ID_SIZE);    // will get wallet id from cysync
-// #endif
-//   print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
+#if USE_SIMULATOR == 0
+  memcpy(query->wallet_id, get_wallet_id(0), WALLET_ID_SIZE);
+#else
+  memcpy(query->wallet_id,
+         session.device_id,
+         WALLET_ID_SIZE);    // will get wallet id from cysync
+#endif
+  print_arr("query->wallet_id", query->wallet_id, WALLET_ID_SIZE);
 
-//   memcpy(query->pass_key, session.session_iv, SESSION_IV_SIZE);
-//   print_arr("query->pass_key", query->pass_key, SESSION_IV_SIZE);
-// }
+  memcpy(query->pass_key, session.session_iv, SESSION_IV_SIZE);
+  print_arr("query->pass_key", query->pass_key, SESSION_IV_SIZE);
+}
