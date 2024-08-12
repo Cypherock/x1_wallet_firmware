@@ -64,10 +64,10 @@
 
 #include <error.pb.h>
 
-#include "bn.h"
 #include "coin_utils.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
+#include "starknet_crypto.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -121,6 +121,7 @@ static bool temp_func(const uint32_t *path,
 
 static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
   uint8_t key[32] = {0};
+  struct bn a;
   struct bn strk_limit;
   struct bn strk_key;
   struct bn stark_order;

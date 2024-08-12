@@ -23,5 +23,6 @@
         "*.ld": "c",
         "*.cmake": "cmake",
         "CMakeLists.txt": "cmake",
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }
