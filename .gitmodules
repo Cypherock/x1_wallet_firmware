@@ -10,4 +10,3 @@
 [submodule "tinybn"]
 	path = vendor/tinybn
 	url = ../tiny-bignum-c
-	branch = feat/starknet

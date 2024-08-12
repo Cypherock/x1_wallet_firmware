@@ -65,6 +65,7 @@
 #include "coin_utils.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
+#include "starknet_crypto.h"
 #include "starknet_helpers.h"
 
 /*****************************************************************************
@@ -94,3 +95,66 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
+  ASSERT(NULL != x);
+  ASSERT(NULL != y);
+  ASSERT(0 < size);
+
+  const stark_curve *curve = &stark256;
+
+  // Convert to bn
+  char hex[100] = {0};
+  struct bn a, b, result;
+
+  byte_array_to_hex_string(x, size, hex, size * 2 + 1);
+  bignum_from_string(&a, hex, size);
+  byte_array_to_hex_string(x, size, hex, size * 2 + 1);
+  bignum_from_string(&b, hex, size);
+
+  // Get shift point
+  stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
+  stark_point_copy(&HASH_SHIFT_POINT, &pedersen.P[0]);
+  stark_point_copy(&P_1, &pedersen.P[1]);
+  stark_point_copy(&P_2, &pedersen.P[2]);
+  stark_point_copy(&P_3, &pedersen.P[3]);
+  stark_point_copy(&P_4, &pedersen.P[4]);
+
+  // Compute the hash using the Starkware Pedersen hash definition
+  stark_point x_part, y_part, hash_point;
+  process_single_element(x, &P_1, &P_2, &x_part);
+  process_single_element(y, &P_3, &P_4, &y_part);
+
+  stark_point_add(curve, &HASH_SHIFT_POINT, &x_part, &hash_point);
+  stark_point_add(curve, &hash_point, &y_part, &hash_point);
+
+  memzero(hash, 32);
+  memzero(hex, 100);
+  bignum_to_string(&hash_point.x, hex, size * 2 + 1);
+  hex_string_to_byte_array(hex, size * 2 + 1, hash);
+
+  return true;
+}
+
+void process_single_element(const stark_curve *curve,
+                            struct bn *element,
+                            stark_point *p1,
+                            stark_point *p2,
+                            stark_point *result) {
+  ASSERT(bignum_cmp(element, &stark256.prime) == SMALLER);
+
+  struct bn low_part, high_nibble;
+  bignum_init(&low_part);
+  bignum_init(&high_nibble);
+
+  // Extract the low 248 bits and high bits from the element
+  bignum_and(&low_part, element, LOW_PART_MASK);
+  bignum_rshift(&high_nibble, element, LOW_PART_BITS);
+
+  stark_point res1, res2;
+  // point_multiply(stark256, p1, &low_part, &res1);    // low_part * p1
+  // point_multiply(stark256, p2, &high_nibble, &res2); // high_nibble * p2
+  stark_point_add(curve, &res1, &res2, result);    // Combine results
+
+  stark_point_copy(&res2, result);
+}
