@@ -219,14 +219,25 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   }
 
   memzero(stark_public_key, 32);
-  ecdsa_get_public_key33(stark256, stark_private_key, stark_public_key);
+
+  // Implement: ecdsa_get_public_key33(stark256, stark_private_key,
+  // stark_public_key);
+  stark_point R = {0};    // curve_point R = {0};
+  struct bn k = {0};      // bignum256 k = {0};
+  // bn_read_be(priv_key, &k);
+  // //compute k*G
+  // scalar_multiply(curve, &k, &R); // convert for stark curve
+  // pub_key[0] = 0x02 | (R.y.val[0] & 0x01);
+  // bn_write_be(&R.x, pub_key + 1);
+  // memzero(&R, sizeof(R));
+  // memzero(&k, sizeof(k));
 
   char hex[100];
   byte_array_to_hex_string(stark_private_key, 32, hex, 32 * 2 + 1);
-  print_hex_array("stark_private_key", stark_private_key);
+  print_hex_array("stark_private_key", stark_private_key, 32);
 
-  byte_array_to_hex_string(stark_public_key, 33, hex, 33 * 2 + 1);
-  print_hex_array("stark_public_key", stark_public_key);
+  // byte_array_to_hex_string(stark_public_key, 33, hex, 33 * 2 + 1);
+  // print_hex_array("stark_public_key", stark_public_key);
 
   return true;
 }
