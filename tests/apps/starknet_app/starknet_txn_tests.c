@@ -125,7 +125,13 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
       128,
       seed);
 
-  starknet_get_pub_keys(&query);
+  stark_curve_init();
+
+  TEST_ASSERT_TRUE(fill_starknet_public_keys(
+      query.get_public_keys.initiate.derivation_paths,
+      seed,
+      public_keys,
+      query.get_public_keys.initiate.derivation_paths_count));
 
   TEST_ASSERT_EQUAL_STRING(expected_public_key, (char *)(public_keys[0]));
 }

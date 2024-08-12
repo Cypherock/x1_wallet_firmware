@@ -18,7 +18,7 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-
+#define STARK_BN_LEN = 64;
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -35,13 +35,16 @@ typedef struct {
   struct bn order_half;    // order of G divided by 2
   struct bn a;             // coefficient 'a' of the elliptic curve
   struct bn b;             // coefficient 'b' of the elliptic curve
+
+  stark_point S;
+  stark_point P[3];
 } stark_curve;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
 
-extern const stark_curve stark256;
+extern stark_curve stark256;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
