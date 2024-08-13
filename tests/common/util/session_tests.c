@@ -117,6 +117,6 @@ TEST(session_tests, session_entire_flow_action) {
        type < NUM_SESSION_MSG_TYPE_E;
        type = (session_msg_type_e)(type + 1)) {
     printf("\n\n--------> TYPE: %s\n", session_status_string(type));
-    // test_session_main(type);
+    test_session_main(type);
   }
 }
