@@ -132,7 +132,7 @@ bool wallet_auth_get_signature(wallet_auth_t *auth) {
 }
 
 void inheritance_wallet_login(inheritance_query_t *query) {
-  auth = (wallet_auth_t *)malloc(sizeof(wallet_auth_t));
+  auth = (wallet_auth_t *)cy_malloc(sizeof(wallet_auth_t));
   memzero(auth, sizeof(wallet_auth_t));
 
   memcpy(
@@ -167,9 +167,4 @@ void inheritance_wallet_login(inheritance_query_t *query) {
          auth->signature,
          sizeof(ed25519_signature));
   inheritance_send_result(&result);
-
-  if (NULL != auth) {
-    free(auth);
-    auth = NULL;
-  }
 }

@@ -118,18 +118,18 @@ typedef struct {
 
 // bool session_receive_server_key(uint8_t *server_message);
 
-bool session_plaindata_to_msg(uint8_t *plain_data[],
-                              secure_data_t *msgs,
-                              size_t *msg_count);
-bool session_msg_to_plaindata(inheritance_plain_data_t *plain_data,
-                              secure_data_t *msgs,
-                              uint8_t *msg_count);
+// bool session_plaindata_to_msg(uint8_t *plain_data[],
+//                               secure_data_t *msgs,
+//                               size_t *msg_count);
+// bool session_msg_to_plaindata(inheritance_plain_data_t *plain_data,
+//                               secure_data_t *msgs,
+//                               uint8_t *msg_count);
 
 bool session_encrypt_secure_data(uint8_t *wallet_id,
                                  secure_data_t *msgs,
                                  size_t msg_count);
 bool session_encrypt_packet(secure_data_t *msgs,
-                            uint8_t msg_count,
+                            size_t msg_count,
                             uint8_t *packet,
                             size_t *packet_size);
 
@@ -139,14 +139,14 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
 bool session_decrypt_packet(secure_data_t *msgs,
                             uint32_t *msg_count,
                             uint8_t *packet,
-                            uint16_t *packet_size);
+                            size_t *packet_size);
 
 void core_session_start_parse(const core_msg_t *core_msg);
 // TODO: Remove after testing
 void print_msg(secure_data_t msg, uint8_t index);
 char *print_arr(char *name, uint8_t *bytearray, size_t size);
 void test_session_main(session_msg_type_e type);
-
+void set_dummy_session();
 void session_close();
 
 #endif    // SESSION_UTILS

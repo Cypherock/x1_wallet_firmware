@@ -106,11 +106,10 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
-  const char wallet_name[NAME_SIZE] = "";
-  rejection_cb *reject_cb;
+  char wallet_name[NAME_SIZE] = "";
 #if USE_SIMULATOR == 0
-  ASSERT(get_wallet_name_by_id(
-      wallet_id, (const uint8_t *)wallet_name, reject_cb));
+  // Confirm NULL use for rejection_cb
+  ASSERT(get_wallet_name_by_id(wallet_id, (uint8_t *)wallet_name, NULL));
 #endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
@@ -148,7 +147,7 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
 #if USE_SIMULATOR == 0
           card_data.nfc_data.status =
-              nfc_encrypt_data(wallet_name,
+              nfc_encrypt_data((const uint8_t *)wallet_name,
                                plain_data_buffer,
                                plain_data_buffer_size,
                                encrypted_data_buffer,

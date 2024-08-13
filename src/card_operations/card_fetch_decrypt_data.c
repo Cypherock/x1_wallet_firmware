@@ -107,8 +107,8 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
 
-  const char wallet_name[NAME_SIZE] = "";
-  rejection_cb *reject_cb;
+  char wallet_name[NAME_SIZE] = "";
+  // rejection_cb *reject_cb;
 #if USE_SIMULATOR == 0
   card_get_wallet_name(wallet_id, wallet_name);
 #endif
@@ -144,7 +144,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
                  encrypted_data_buffer_size);
 #if USE_SIMULATOR == 0
           card_data.nfc_data.status =
-              nfc_decrypt_data(wallet_name,
+              nfc_decrypt_data((const uint8_t *)wallet_name,
                                plain_data_buffer,
                                &plain_data_buffer_size,
                                encrypted_data_buffer,
@@ -173,7 +173,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
     }
 
     if (card_data.nfc_data.status == SW_NO_ERROR) {
-      // buzzer_start(BUZZER_DURATION);
+      buzzer_start(BUZZER_DURATION);
       break;
     } else {
       card_handle_errors(&card_data);

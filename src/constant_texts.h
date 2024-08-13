@@ -379,6 +379,7 @@ extern const char *ui_critical_card_health_migrate_data;
 extern const char *ui_text_inheritance_wallet_authenticating;
 extern const char *ui_text_inheritance_wallet_auth_success;
 extern const char *ui_text_inheritance_wallet_auth_fail;
+extern const char *ui_text_inheritance_verify_message;
 
 // session
 #define UI_TEXT_CARD_FETCH_WALLET "Found `%s` wallet in your Card!"

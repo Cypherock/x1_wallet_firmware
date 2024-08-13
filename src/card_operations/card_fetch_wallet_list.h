@@ -67,6 +67,6 @@ card_error_type_e card_fetch_wallet_list(
  * @return true If the operation was performed successfully
  * @return false If the operation did not complete
  */
-bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name);
+bool card_get_wallet_name(const uint8_t *wallet_id, char *wallet_name);
 
 #endif /* CARD_FETCH_WALLET_LIST_H */

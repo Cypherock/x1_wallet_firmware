@@ -66,6 +66,7 @@
 
 #include "core.pb.h"
 #include "inheritance_main.h"
+#include "options.h"
 #include "pb_decode.h"
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -88,7 +89,7 @@
  *****************************************************************************/
 const ecdsa_curve *curve;
 const uint32_t session_key_rotation[2] = {6, 7};
-session_config_t session = {0};
+session_config_t CONFIDENTIAL session = {0};
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -247,11 +248,11 @@ static bool session_get_random_keys(uint8_t *random,
   // bn_print(&random_public_point.y);
   return;
 }
-
-static bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
-  return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 &&
-          memcmp(pass_id, session.session_iv, SESSION_IV_SIZE) == 0);
-}
+// TODO: Use this function
+// static bool session_is_valid(uint8_t *pass_key, uint8_t *pass_id) {
+//   return (memcmp(pass_key, session.session_key, SESSION_KEY_SIZE) == 0 &&
+//           memcmp(pass_id, session.session_iv, SESSION_IV_SIZE) == 0);
+// }
 
 static bool session_send_device_key(uint8_t *payload) {
   if (!session_get_random_keys(session.device_random,
@@ -296,12 +297,12 @@ static bool session_receive_server_key(uint8_t *server_message) {
       SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE + DEVICE_SERIAL_SIZE;
 
   // TODO: uncomment when server test starts
-  //  if (!verify_session_signature(server_message,
-  //                                server_message_size,
-  //                                server_message + server_message_size)) {
-  //    printf("\nERROR: Message from server invalid");
-  //    return false;
-  //  }
+  if (!verify_session_signature(server_message,
+                                server_message_size,
+                                server_message + server_message_size)) {
+    printf("\nERROR: Message from server invalid");
+    return false;
+  }
 
   uint8_t offset = 0;
   memcpy(session.server_random_public,
@@ -441,7 +442,7 @@ static session_error_type_e session_aes_encrypt_packet(uint8_t *InOut_data,
 }
 
 static session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
-                                                       uint16_t *len,
+                                                       size_t *len,
                                                        uint8_t *key,
                                                        uint8_t *iv) {
   ASSERT(InOut_data != NULL);
@@ -468,14 +469,14 @@ static session_error_type_e session_aes_decrypt_packet(uint8_t *InOut_data,
   return SESSION_DECRYPT_PACKET_SUCCESS;
 }
 
-static void session_reset() {
-  memset(&session, 0, sizeof(session));
-}
+// static void session_reset() {
+//   memset(&session, 0, sizeof(session));
+// }
 
-static void session_reset_secure_data() {
-  memset(&session.session_msgs, 0, sizeof(session.session_msgs));
-  session.msg_count = 0;
-}
+// static void session_reset_secure_data() {
+//   memset(&session.session_msgs, 0, sizeof(session.session_msgs));
+//   session.msg_count = 0;
+// }
 
 static void session_send_error() {
   LOG_ERROR("\nSESSION invalid session query err: %d", session.status);
@@ -558,7 +559,7 @@ bool session_decrypt_secure_data(uint8_t *wallet_id,
 }
 
 bool session_encrypt_packet(secure_data_t *msgs,
-                            uint8_t msg_count,
+                            size_t msg_count,
                             uint8_t *packet,
                             size_t *packet_size) {
   session_serialise_packet(msgs, msg_count, packet, packet_size);
@@ -576,7 +577,7 @@ bool session_encrypt_packet(secure_data_t *msgs,
 bool session_decrypt_packet(secure_data_t *msgs,
                             uint32_t *msg_count,
                             uint8_t *packet,
-                            uint16_t *packet_size) {
+                            size_t *packet_size) {
   memcpy(session.packet, packet, *packet_size);
 
   if (SESSION_DECRYPT_PACKET_SUCCESS !=
@@ -708,15 +709,15 @@ char *print_arr(char *name, uint8_t *bytearray, size_t size) {
   return bytearray_hex;
 }
 
-// void set_dummy_session() {
-//   // TODO: Recieve values from core
-//   uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-//                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-//   uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+void set_dummy_session() {
+  // TODO: Recieve values from core
+  uint8_t key[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t iv[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-//   memcpy(session.session_key, key, SESSION_KEY_SIZE);
-//   memcpy(session.session_iv, iv, SESSION_IV_SIZE);
-// }
+  memcpy(session.session_key, key, SESSION_KEY_SIZE);
+  memcpy(session.session_iv, iv, SESSION_IV_SIZE);
+}
 
 // session_error_type_e session_main(dummy_inheritance_query_t *query) {
 //   char buffer[SESSION_BUFFER_SIZE] = {0};

@@ -64,10 +64,12 @@
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_utils.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
+#include "ui_core_confirm.h"
 #include "ui_screens.h"
-
+#include "ui_state_machine.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -174,7 +176,7 @@ card_error_type_e card_fetch_wallet_list(
   return card_data.error_type;
 }
 
-bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name) {
+bool card_get_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   wallet_list_t wallets_in_card = {0};
 
   card_fetch_wallet_list_config_t configuration = {0};
@@ -228,7 +230,7 @@ bool card_get_wallet_name(uint8_t *wallet_id, const char *wallet_name) {
     }
   }
 
-  if (wallet_name == "") {
+  if (0 == strlen(wallet_name)) {
     return false;
   }
 

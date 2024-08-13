@@ -540,6 +540,7 @@ const char *ui_text_inheritance_wallet_auth_success =
     "Wallet\nauthentication\nsuccessfully";
 const char *ui_text_inheritance_wallet_auth_fail =
     "Wallet\nauthentication\nfailed";
+const char *ui_text_inheritance_verify_message = "Proceed to verify\nMessage?";
 
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";

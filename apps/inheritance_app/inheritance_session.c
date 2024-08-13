@@ -98,14 +98,16 @@
  *****************************************************************************/
 
 void inheritance_session_login(inheritance_query_t *query) {
-  secure_data_t *msgs =
-      (secure_data_t *)malloc(sizeof(secure_data_t) * SESSION_MSG_MAX);
+  secure_data_t msgs[2];
+  //= (secure_data_t *)cy_malloc(sizeof(secure_data_t) * 1); //SESSION_MSG_MAX);
   memzero(msgs, sizeof(msgs));
   if (NULL == msgs) {
     // ADD error
     LOG_CRITICAL("xxec %d", __LINE__);
     return;
   }
+  // TODO:REMOVE AFTER TEST
+  // set_dummy_session();
 
   inheritance_result_t response = INHERITANCE_RESULT_INIT_ZERO;
 

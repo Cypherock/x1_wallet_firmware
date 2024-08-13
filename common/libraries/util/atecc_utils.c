@@ -60,8 +60,12 @@
 
 #include "atecc_utils.h"
 
+#include "board.h"
 #include "flash_api.h"
 #include "sha2.h"
+#if USE_SIMULATOR == 0
+#include "stm32l4xx_it.h"
+#endif
 
 static ATCA_STATUS helper_config_to_sign_internal(
     ATCADeviceType device_type,
