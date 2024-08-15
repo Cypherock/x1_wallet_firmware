@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include "coin_utils.h"
+#include "starknet_crypto.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
