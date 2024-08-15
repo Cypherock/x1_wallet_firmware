@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    inheritance_main.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   A common entry point to various Inheritance actions supported.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,31 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
 #include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "tron_main.h"
+
+#include "inheritance/core.pb.h"
+#include "inheritance_api.h"
+#include "inheritance_priv.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -92,22 +74,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -116,69 +86,69 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Entry point for the INHERITANCE application of the X1 vault. It is
+ * invoked by the X1 vault firmware, as soon as there is a USB request raised
+ * for the Inheritance app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the inheritance
+ * app
+ */
+void inheritance_main(usb_event_t usb_evt, const void *app_config);
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static const cy_app_desc_t inheritance_app_desc = {.id = 19,
+                                                   .version =
+                                                       {
+                                                           .major = 1,
+                                                           .minor = 0,
+                                                           .patch = 0,
+                                                       },
+                                                   .app = inheritance_main,
+                                                   .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void inheritance_main(usb_event_t usb_evt, const void *app_config) {
+  inheritance_query_t query = INHERITANCE_QUERY_INIT_DEFAULT;
+
+  if (false ==
+      decode_inheritance_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case INHERITANCE_QUERY_AUTH_WALLET_TAG: {
+      // TODO: Add auth wallet functionality
+      break;
+    }
+    case INHERITANCE_QUERY_ENCRYPT_TAG: {
+      // TODO: Add Encryption functionality
+      break;
+    }
+    case INHERITANCE_QUERY_DECRYPT_TAG: {
+      // TODO: Add Decryption functionality
+      break;
+    }
+
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_QUERY);
+    } break;
+  }
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
-  }
-
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
-
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
-
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
-}
-
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
+const cy_app_desc_t *get_inheritance_app_desc() {
+  return &inheritance_app_desc;
 }
