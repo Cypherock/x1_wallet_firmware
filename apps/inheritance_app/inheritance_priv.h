@@ -22,4 +22,16 @@
  * TYPEDEFS
  *****************************************************************************/
 
+typedef struct {
+} inheritance_encryption_context_t;
+
+/**
+ * @brief Handler for inheritance messages encrytion flow.
+ * @details The expected request type is INHERITANCE_QUERY_ENCRYPT_TAG.
+ * The function controls the complete data exchange with host, user prompts and
+ * confirmations for encrytion of inheritance messages.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void inheritance_encrypt_data(inheritance_query_t *query);
 #endif /* INHERITANCE_PRIV_H */

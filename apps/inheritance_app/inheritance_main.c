@@ -130,7 +130,7 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
       break;
     }
     case INHERITANCE_QUERY_ENCRYPT_TAG: {
-      // TODO: Add Encryption functionality
+      inheritance_encrypt_data(&query);
       break;
     }
     case INHERITANCE_QUERY_DECRYPT_TAG: {
