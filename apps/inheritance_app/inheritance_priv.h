@@ -107,4 +107,16 @@ void inheritance_auth_wallet(inheritance_query_t *query);
  */
 void inheritance_encrypt_data(inheritance_query_t *query);
 
+typedef struct {
+} inheritance_decryption_context_t;
+
+/**
+ * @brief Handler for inheritance message decryption
+ * @details This flow expects INHERITANCE_QUERY_DECRYPT_TAG as initial query.
+ * The function controls the complete data exchange with host, user prompts and
+ * confirmations for decryption of inheritance data.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void inheritance_decrypt_data(inheritance_query_t *query);
 #endif /* INHERITANCE_PRIV_H */

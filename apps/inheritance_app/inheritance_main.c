@@ -134,7 +134,7 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
       break;
     }
     case INHERITANCE_QUERY_DECRYPT_TAG: {
-      // TODO: Add Decryption functionality
+      inheritance_decrypt_data(&query);
       break;
     }
 
