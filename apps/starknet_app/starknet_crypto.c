@@ -277,6 +277,7 @@ void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
   *cp2 = *cp1;
 }
 
+// TODO: Optimmise sub and mul
 // cp2 = cp1 + cp2
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
@@ -354,29 +355,6 @@ int stark_point_is_negative_of(const stark_point *p, const stark_point *q) {
   }
 
   return (bignum_cmp(&(p->y), &(q->y)) != 0);
-}
-
-// ECDSA multiply; g^k; private to public
-void private_to_public_key(const uint8_t *private, uint8_t *public_65) {
-  stark_point R = {0}, temp = {0};
-
-  const stark_curve *curve = starkCurve;
-  stark_point_set_infinity(&R);
-  stark_point_copy(&curve->G, &temp);
-
-  for (int i = 255; i >= 0; i--) {
-    int offset = i / 8;
-    int bit = 7 - (i % 8);
-    if (private[offset] & (1 << bit)) {
-      // bit is set; do add current doubled value to result
-      stark_point_add(curve, &temp, &R, &R);
-    }
-    // stark_point_double(curve, &temp);
-  }
-
-  public_65[0] = 0x04;
-  // bn_write_be(&R.x, public_65 + 1);
-  // bn_write_be(&R.y, public_65 + 33);
 }
 
 void stark_point_multiply(const stark_curve *curve,
