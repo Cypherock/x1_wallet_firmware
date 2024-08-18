@@ -37,19 +37,19 @@
  *****************************************************************************/
 #define CHALLENGE_SIZE_MAX 32
 #define CHALLENGE_SIZE_MIN 16
-#define ENTROPY_SIZE_LIMIT 100
+#define ENTROPY_SIZE_LIMIT 100    // TODO:CONFIRM
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 typedef enum {
-  WALLET_AUTH_OK = 0,
-  WALLET_AUTH_TYPE_INVALID,      // TODO: In inheriance app - Show error message
+  AUTH_WALLET_OK = 0,
+  AUTH_WALLET_TYPE_INVALID,      // TODO: In inheriance app - Show error message
                                  // on ui that which assert is wrong
-  WALLET_AUTH_INPUTS_INVALID,    // TODO: In inheritance app - Add in wallet id
+  AUTH_WALLET_INPUTS_INVALID,    // TODO: In inheritance app - Add in wallet id
                                  // comparison, show error message on ui
-} wallet_auth_error_type_e;
+} auth_wallet_error_type_e;
 
 #pragma pack(push, 1)
 typedef struct {
@@ -65,14 +65,14 @@ typedef struct {
   ed25519_public_key public_key;
 
   bool is_setup;
-  wallet_auth_error_type_e status;
-} wallet_auth_t;
+  auth_wallet_error_type_e status;
+} auth_wallet_config_t;
 #pragma pack(pop)
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static wallet_auth_t *auth = NULL;
+static auth_wallet_config_t *auth = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -92,7 +92,7 @@ static wallet_auth_t *auth = NULL;
  *
  * @return true Always returns true if all assertions pass.
  */
-static bool verify_auth_wallet_inputs(wallet_auth_t *auth);
+static bool verify_auth_wallet_inputs();
 
 /**
  * @brief Retrieves encrypted data (entropy) from the card based on the wallet
@@ -107,7 +107,7 @@ static bool verify_auth_wallet_inputs(wallet_auth_t *auth);
  * @return false If there was an error in fetching the encrypted data or if the
  * data size exceeds the limit.
  */
-static bool auth_wallet_get_entropy(wallet_auth_t *auth);
+static bool auth_wallet_get_entropy();
 
 /**
  * @brief Generates the public and private key pairs based on the entropy.
@@ -117,7 +117,7 @@ static bool auth_wallet_get_entropy(wallet_auth_t *auth);
  *
  * @return true Always returns true.
  */
-static bool auth_wallet_get_pairs(wallet_auth_t *auth);
+static bool auth_wallet_get_pairs();
 
 /**
  * @brief Generates and verifies a digital signature for the wallet
@@ -130,13 +130,13 @@ static bool auth_wallet_get_pairs(wallet_auth_t *auth);
  * @return true If the signature was successfully generated and verified.
  * @return false If the signature verification failed.
  */
-static bool auth_wallet_get_signature(wallet_auth_t *auth);
+static bool auth_wallet_get_signature();
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool verify_auth_wallet_inputs(wallet_auth_t *auth) {
+static bool verify_auth_wallet_inputs() {
   ASSERT(auth->challenge != 0);
   ASSERT(auth->wallet_id != 0);
   ASSERT(auth->challenge_size != 0);
@@ -146,7 +146,7 @@ static bool verify_auth_wallet_inputs(wallet_auth_t *auth) {
   return true;
 }
 
-static bool auth_wallet_get_entropy(wallet_auth_t *auth) {
+static bool auth_wallet_get_entropy() {
   secure_data_t msgs[1] = {0};
   msgs[0].plain_data_size = WALLET_ID_SIZE;
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
@@ -169,14 +169,14 @@ static bool auth_wallet_get_entropy(wallet_auth_t *auth) {
   return true;
 }
 
-static bool auth_wallet_get_pairs(wallet_auth_t *auth) {
+static bool auth_wallet_get_pairs() {
   mnemonic_to_seed((char *)auth->entropy, "", auth->private_key, NULL);
   ed25519_publickey(auth->private_key, auth->public_key);
 
   return true;
 }
 
-static bool auth_wallet_get_signature(wallet_auth_t *auth) {
+static bool auth_wallet_get_signature() {
   const size_t unsigned_txn_size = auth->challenge_size + WALLET_ID_SIZE;
   uint8_t unsigned_txn[unsigned_txn_size];
 
@@ -193,8 +193,6 @@ static bool auth_wallet_get_signature(wallet_auth_t *auth) {
       unsigned_txn, unsigned_txn_size, auth->public_key, auth->signature);
 
   if (0 != valid) {
-    // Set App flow status
-    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
 
@@ -206,8 +204,8 @@ static bool auth_wallet_get_signature(wallet_auth_t *auth) {
  *****************************************************************************/
 
 void inheritance_wallet_login(inheritance_query_t *query) {
-  auth = (wallet_auth_t *)cy_malloc(sizeof(wallet_auth_t));
-  memzero(auth, sizeof(wallet_auth_t));
+  auth = (auth_wallet_config_t *)cy_malloc(sizeof(auth_wallet_config_t));
+  memzero(auth, sizeof(auth_wallet_config_t));
 
   memcpy(
       auth->wallet_id, query->auth_wallet.initiate.wallet_id, WALLET_ID_SIZE);
@@ -222,6 +220,8 @@ void inheritance_wallet_login(inheritance_query_t *query) {
       !auth_wallet_get_pairs(auth) || !auth_wallet_get_signature(auth)) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_DATA);
+    // Set App flow status
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return;
   }
   // Set App flow status
@@ -232,13 +232,15 @@ void inheritance_wallet_login(inheritance_query_t *query) {
   result.auth_wallet.which_response =
       INHERITANCE_AUTH_WALLET_RESPONSE_RESULT_TAG;
   // send public key if Setup
+  memcpy(result.auth_wallet.result.signature,
+         auth->signature,
+         sizeof(ed25519_signature));
+
   if (auth->is_setup) {
     memcpy(result.auth_wallet.result.public_key,
            auth->public_key,
            sizeof(ed25519_public_key));
   }
-  memcpy(result.auth_wallet.result.signature,
-         auth->signature,
-         sizeof(ed25519_signature));
+
   inheritance_send_result(&result);
 }
