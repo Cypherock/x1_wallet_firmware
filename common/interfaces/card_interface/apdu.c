@@ -428,7 +428,6 @@ uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE],
   ASSERT(data != NULL);
   ASSERT(apdu != NULL);
   ASSERT(data_size != 0);
-  ASSERT(operation != 0);
 
   apdu[OFFSET_CLA] = CLA_ISO7816;
   apdu[OFFSET_INS] = APDU_INHERITANCE;
