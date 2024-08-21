@@ -153,12 +153,6 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
                                encrypted_data_buffer,
                                &encrypted_data_buffer_size);
 #else
-          memcpy(wallet_name, "FIRST", 5);
-          dummy_nfc_encrypt_data(wallet_name,
-                                 plain_data_buffer,
-                                 plain_data_buffer_size,
-                                 encrypted_data_buffer,
-                                 &encrypted_data_buffer_size);
           card_data.nfc_data.status = SW_NO_ERROR;
           result = CARD_OPERATION_SUCCESS;
 #endif

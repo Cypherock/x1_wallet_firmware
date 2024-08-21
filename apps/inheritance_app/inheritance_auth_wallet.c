@@ -37,7 +37,7 @@
  *****************************************************************************/
 #define CHALLENGE_SIZE_MAX 32
 #define CHALLENGE_SIZE_MIN 16
-#define ENTROPY_SIZE_LIMIT 100    // TODO:CONFIRM
+#define ENTROPY_SIZE_LIMIT 100
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -137,11 +137,14 @@ static bool auth_wallet_get_signature();
  *****************************************************************************/
 
 static bool verify_auth_wallet_inputs() {
-  ASSERT(auth->challenge != 0);
-  ASSERT(auth->wallet_id != 0);
-  ASSERT(auth->challenge_size != 0);
-  ASSERT(CHALLENGE_SIZE_MIN <= auth->challenge_size &&
-         auth->challenge_size <= CHALLENGE_SIZE_MAX);
+  if (NULL == auth->challenge || NULL == auth->wallet_id ||
+      auth->challenge_size ||
+      (CHALLENGE_SIZE_MIN <= auth->challenge_size &&
+       auth->challenge_size <= CHALLENGE_SIZE_MAX)) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
 
   return true;
 }
@@ -216,22 +219,19 @@ void inheritance_wallet_login(inheritance_query_t *query) {
   auth->is_setup = query->auth_wallet.initiate.is_public_key;
 
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_INIT);
-  if (!verify_auth_wallet_inputs(auth) || !auth_wallet_get_entropy(auth) ||
-      !auth_wallet_get_pairs(auth) || !auth_wallet_get_signature(auth)) {
+  if (!verify_auth_wallet_inputs() || !auth_wallet_get_entropy() ||
+      !auth_wallet_get_pairs() || !auth_wallet_get_signature()) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_DATA);
-    // Set App flow status
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return;
   }
-  // Set App flow status
   delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
 
   inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
   result.which_response = INHERITANCE_RESULT_AUTH_WALLET_TAG;
   result.auth_wallet.which_response =
       INHERITANCE_AUTH_WALLET_RESPONSE_RESULT_TAG;
-  // send public key if Setup
   memcpy(result.auth_wallet.result.signature,
          auth->signature,
          sizeof(ed25519_signature));
