@@ -138,9 +138,8 @@ static bool auth_wallet_get_signature();
 
 static bool verify_auth_wallet_inputs() {
   if (NULL == auth->challenge || NULL == auth->wallet_id ||
-      auth->challenge_size ||
-      (CHALLENGE_SIZE_MIN <= auth->challenge_size &&
-       auth->challenge_size <= CHALLENGE_SIZE_MAX)) {
+      auth->challenge_size < CHALLENGE_SIZE_MIN ||
+      auth->challenge_size > CHALLENGE_SIZE_MAX) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
