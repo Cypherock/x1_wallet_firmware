@@ -19,6 +19,7 @@
 
 #include "bip39.h"
 #include "card_fetch_data.h"
+#include "card_pair.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_main.h"
@@ -28,7 +29,6 @@
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -123,6 +123,15 @@ static bool auth_wallet_get_entropy() {
   memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 
   card_error_type_e status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
+  // Pair the card first
+  if (CARD_OPERATION_UNPAIRED_CARD == status) {
+    card_error_type_e value =
+        single_card_pair_operation("Pair Card", "Tap to start");
+    if (value != CARD_OPERATION_SUCCESS) {
+      return false;
+    }
+    status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
+  }
 
   delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
 
