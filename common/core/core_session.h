@@ -1,7 +1,6 @@
 /**
- * @file    core_session.h
  * @author  Cypherock X1 Team
- * @brief   Header file containing the session utility functions
+ * @brief   Header file containing the session functions
  *          This file declares the functions used to create and manage the
  *          session, send authentication requests and verify the responses.
  *
@@ -34,6 +33,8 @@
 #define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 4
 
+#define SESSION_SERVER_SIGNATURE_SIZE 64
+
 #define SESSION_IV_SIZE 16
 #define SESSION_KEY_SIZE 32
 
@@ -47,7 +48,6 @@ extern const uint32_t session_key_rotation[2];
 
 /**
  * @brief Stores the session information
- * @since v1.0.0
  */
 #pragma pack(push, 1)
 typedef struct {
@@ -60,7 +60,7 @@ typedef struct {
   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
   curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
-  uint8_t server_signature[64];
+  uint8_t server_signature[SESSION_SERVER_SIGNATURE_SIZE];
 
   const char wallet_name[NAME_SIZE];
   secure_data_t session_msgs[SESSION_MSG_MAX];
@@ -76,7 +76,7 @@ typedef struct {
 
 extern session_config_t session;
 
-void core_session_parse_message(const core_msg_t *core_msg);
+void core_session_parse_start_message(const core_msg_t *core_msg);
 
 void core_session_clear_metadata();
 

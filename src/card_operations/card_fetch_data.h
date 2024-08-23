@@ -1,7 +1,6 @@
 /**
- * @file    card_fetch_data.h
  * @author  Cypherock X1 Team
- * @brief   API for deleting wallet share from a card
+ * @brief   API for fetching data from card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
@@ -40,7 +39,6 @@ typedef struct {
   uint16_t plain_data_size;
   uint8_t encrypted_data[ENCRYPTED_DATA_SIZE];
   uint16_t encrypted_data_size;
-  // is private
 } secure_data_t;
 #pragma pack(pop)
 
