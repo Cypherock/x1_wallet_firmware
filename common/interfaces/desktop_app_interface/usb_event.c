@@ -293,7 +293,7 @@ bool usb_get_event(usb_event_t *evt) {
         reset_event_obj(&usb_event);
 
       } else if (CORE_MSG_SESSION_START_TAG == request_type) {
-        core_session_parse_message(&core_msg_p);
+        core_session_parse_start_message(&core_msg_p);
         reset_event_obj(&usb_event);
 
       } else if (CORE_MSG_SESSION_CLOSE_TAG == request_type) {

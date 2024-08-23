@@ -1,6 +1,6 @@
 /**
  * @author  Cypherock X1 Team
- * @brief   APIs encrypting and decrypting data via cards
+ * @brief   API for fetching data from card
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>

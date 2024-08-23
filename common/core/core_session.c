@@ -1,7 +1,6 @@
 /**
- * @file    session_utils.c
  * @author  Cypherock X1 Team
- * @brief   Definition of the session utility functions
+ * @brief   Definition of the session functions
  *          This file defines the functions used to create and manage the
  *          session, send authentication requests and verify the responses.
  *
@@ -97,24 +96,121 @@ session_config_t CONFIDENTIAL session = {0};
  *****************************************************************************/
 
 /**
- * @brief Completes the session creation process
- * @details It verifies the server response and stores the session id and
- * session random.
- * @param session_init_details The server response
- * @param verification_details The buffer to store the details
- * to be send back to the server to confirm
- * /home/parnika/Documents/GitHub/x1_wallet_firmware/common/libraries/util/session_utils.c:394:6the
- * verification.
- * @return true if the session is created, false otherwise
+ * @brief Receives and processes the server's key as part of the session
+ * initialization.
  *
- * @see SESSION_ESTABLISH
- * @since v1.0.0
+ * @param server_message The buffer containing the server's message, which
+ * includes the server's random public key, session age, and device ID.
+ * @return true if the server's key is successfully received and processed.
+ * @return false otherwise.
  */
 static bool session_receive_server_key(uint8_t *server_message);
+
+/**
+ * @brief Initializes the curve parameters for the session.
+ */
+static void session_curve_init();
+
+/**
+ * @brief Derives the server's public key from the extended public key.
+ *
+ * @return true if the server's public key is successfully derived.
+ * @return false otherwise.
+ */
+static bool derive_server_public_key();
+
+/**
+ * @brief Verifies the session signature using the provided payload and
+ * signature.
+ *
+ * @param payload The payload data to verify.
+ * @param payload_size The size of the payload.
+ * @param signature The signature to verify.
+ * @return true if the signature is valid.
+ * @return false otherwise.
+ */
+static bool verify_session_signature(const uint8_t *payload,
+                                     const size_t payload_size,
+                                     const uint8_t *signature);
+
+/**
+ * @brief Derives the session initialization vector (IV) using the server's and
+ * device's random public points.
+ */
+static void derive_session_iv();
+
+/**
+ * @brief Derives the session key using ECDH multiplication.
+ *
+ * @return true if the session key is successfully derived.
+ * @return false otherwise.
+ */
+static bool derive_session_key();
+
+/**
+ * @brief Derives both the session IV and session key.
+ *
+ * @return true if both the session IV and session key are successfully derived.
+ * @return false otherwise.
+ */
+static bool derive_session_iv_and_session_key();
+
+/**
+ * @brief Appends a signature to the payload.
+ *
+ * @param payload The payload to append the signature to.
+ * @param payload_size The size of the payload.
+ */
+static void session_append_signature(uint8_t *payload,
+                                     const size_t payload_size);
+
+/**
+ * @brief Generates random keys for the session.
+ *
+ * @param random The buffer to store the generated random key.
+ * @param random_public The buffer to store the generated random public key.
+ * @param random_public_point The curve point to store the random public key
+ * point.
+ * @return true if the random keys are successfully generated.
+ * @return false otherwise.
+ */
+static bool session_get_random_keys(uint8_t *random,
+                                    uint8_t *random_public,
+                                    curve_point random_public_point);
+
+/**
+ * @brief Sends the device key as part of the session initialization.
+ *
+ * @param payload The buffer to store the payload data.
+ * @return true if the device key is successfully sent.
+ * @return false otherwise.
+ */
+static bool session_send_device_key(uint8_t *payload);
+
+/**
+ * @brief Converts a 32-bit unsigned integer to a 4-byte array.
+ *
+ * @param value The 32-bit unsigned integer to convert.
+ * @param arr The array to store the converted bytes.
+ */
+static void uint32_to_uint8_array(uint32_t value, uint8_t arr[4]);
+
+/**
+ * @brief Initiates a request by sending the device key.
+ */
+static void initiate_request(void);
+
+/**
+ * @brief Starts a request by processing the core message.
+ *
+ * @param core_msg The core message containing the request data.
+ */
+static void start_request(const core_msg_t *core_msg);
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
 static void session_curve_init() {
   curve = get_curve_by_name(SECP256K1_NAME)->params;
 }
@@ -143,19 +239,20 @@ static bool derive_server_public_key() {
   return true;
 }
 
-static bool verify_session_signature(uint8_t *payload,
-                                     size_t payload_size,
-                                     uint8_t *signature) {
+static bool verify_session_signature(const uint8_t *payload,
+                                     const size_t payload_size,
+                                     const uint8_t *signature) {
   uint8_t hash[32] = {0};
   sha256_Raw(payload, payload_size, hash);
 
-  uint8_t status = ecdsa_verify_digest(
-      &nist256p1, session.derived_server_public_key, signature, hash);
+  bool is_signature_valid =
+      ecdsa_verify_digest(
+          &nist256p1, session.derived_server_public_key, signature, hash) == 0;
 
-  return (status == 0);
+  return is_signature_valid;
 }
 
-static bool derive_session_iv() {
+static void derive_session_iv() {
   curve_point server_random_public_point;
   memcpy(&server_random_public_point,
          &session.server_random_public_point,
@@ -169,8 +266,6 @@ static bool derive_session_iv() {
               session_iv + SESSION_PRIV_KEY_SIZE);
 
   sha256_Raw(session_iv, 2 * SESSION_PUB_KEY_SIZE, session.session_iv);
-
-  return true;
 }
 
 static bool derive_session_key() {
@@ -184,7 +279,13 @@ static bool derive_session_key() {
   return true;
 }
 
-static void session_append_signature(uint8_t *payload, size_t payload_size) {
+static bool derive_session_iv_and_session_key() {
+  derive_session_iv();
+  return derive_session_key();
+}
+
+static void session_append_signature(uint8_t *payload,
+                                     const size_t payload_size) {
   uint8_t hash[32] = {0};    // hash size reference taken from the atecc_sign
   sha256_Raw(payload, payload_size, hash);
   auth_data_t signed_data = atecc_sign(hash);
@@ -222,7 +323,7 @@ static bool session_get_random_keys(uint8_t *random,
     return false;
   }
 
-  return;
+  return true;
 }
 
 static bool session_send_device_key(uint8_t *payload) {
@@ -233,7 +334,7 @@ static bool session_send_device_key(uint8_t *payload) {
     return false;
   }
 
-  // Get device_id
+// TODO: standardize simulator handling for hardware specific functionality
 #if USE_SIMULATOR == 0
   if (get_device_serial() != 0) {
     LOG_ERROR("\nERROR: Device Serial fetch failed");
@@ -256,7 +357,10 @@ static bool session_send_device_key(uint8_t *payload) {
 
 static bool session_receive_server_key(uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
-  ASSERT(server_message != NULL);
+  if (server_message != NULL) {
+    LOG_ERROR("\nERROR: server_message not set");
+    return false;
+  }
 
   if (!derive_server_public_key()) {
     LOG_ERROR("\nERROR: Server Randoms not read");
@@ -293,7 +397,7 @@ static bool session_receive_server_key(uint8_t *server_message) {
     return false;
   }
 
-  if (!derive_session_iv() || !derive_session_key()) {
+  if (!derive_session_iv_and_session_key()) {
     LOG_ERROR("\nERROR: Generation session keys");
     return false;
   }
@@ -325,7 +429,6 @@ static void start_request(const core_msg_t *core_msg) {
   uint8_t server_message_payload[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
                                  DEVICE_SERIAL_SIZE];
   uint32_t offset = 0;
-  core_msg = NULL;
   core_session_start_begin_request_t request =
       core_msg->session_start.request.start;
   memcpy(server_message_payload,
@@ -359,7 +462,7 @@ void core_session_clear_metadata() {
   memzero(&session, sizeof(session_config_t));
 }
 
-void core_session_parse_message(const core_msg_t *core_msg) {
+void core_session_parse_start_message(const core_msg_t *core_msg) {
   size_t request_type = core_msg->session_start.request.which_request;
   switch (request_type) {
     case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
@@ -372,6 +475,8 @@ void core_session_parse_message(const core_msg_t *core_msg) {
 
     default:
       // TODO: Error Handling
+      comm_reject_invalid_cmd();
+      clear_message_received_data();
       break;
   }
 }
