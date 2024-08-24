@@ -51,17 +51,7 @@ typedef struct {
  *****************************************************************************/
 
 /**
- * @brief Deletes wallet share data from a card.
- * @details This function initializes the applet, deletes the wallet data on
- * the card, and updates wallet data on flash accordingly. It handles various
- * error cases and returns an appropriate error code. For special case such as
- * incorrect pin, it indicates the no. of attempts left.
- *
- * @param delete_config A pointer to the configuration of the card delete
- * operation.
- * @param handle_wallet_deleted_from_card Function pointer that needs to be
- * called to handle successful deletion of wallet on a card. The function takes
- * the delete_config as an argument.
+ * @brief
  *
  * @return A card_error_type_e value representing the result of the operation.
  */
