@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "inheritance_context.h"
+#include "nem.h"
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
