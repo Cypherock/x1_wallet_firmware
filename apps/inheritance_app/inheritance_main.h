@@ -43,11 +43,4 @@
  * @return A const reference to cy_app_desc_t
  */
 const cy_app_desc_t *get_inheritance_app_desc();
-
-/**
- * @brief Entry point to auth wallet flow
- *
- */
-void inheritance_wallet_login(inheritance_query_t *query);
-
 #endif /* INHERITANCE_MAIN_H */

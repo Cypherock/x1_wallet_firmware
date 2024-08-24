@@ -22,8 +22,9 @@
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_main.h"
-#include "nem.h"
+#include "inheritance_priv.h"
 #include "nfc.h"
+#include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
@@ -35,39 +36,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CHALLENGE_SIZE_MAX 32
-#define CHALLENGE_SIZE_MIN 16
-#define ENTROPY_SIZE_LIMIT 100
-
-/*****************************************************************************
- * PRIVATE TYPEDEFS
- *****************************************************************************/
-
-typedef enum {
-  AUTH_WALLET_OK = 0,
-  AUTH_WALLET_TYPE_INVALID,      // TODO: In inheriance app - Show error message
-                                 // on ui that which assert is wrong
-  AUTH_WALLET_INPUTS_INVALID,    // TODO: In inheritance app - Add in wallet id
-                                 // comparison, show error message on ui
-} auth_wallet_error_type_e;
-
-#pragma pack(push, 1)
-typedef struct {
-  uint8_t wallet_id[WALLET_ID_SIZE];
-  uint8_t challenge[CHALLENGE_SIZE_MAX];
-  size_t challenge_size;
-
-  const uint8_t entropy[ENTROPY_SIZE_LIMIT];
-  uint8_t entropy_size;
-  ed25519_secret_key private_key;
-
-  ed25519_signature signature;
-  ed25519_public_key public_key;
-
-  bool is_setup;
-  auth_wallet_error_type_e status;
-} auth_wallet_config_t;
-#pragma pack(pop)
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -142,6 +110,7 @@ static bool verify_auth_wallet_inputs() {
       auth->challenge_size > CHALLENGE_SIZE_MAX) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_QUERY);
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
 
@@ -195,12 +164,33 @@ static bool auth_wallet_get_signature() {
       unsigned_txn, unsigned_txn_size, auth->public_key, auth->signature);
 
   if (0 != valid) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_DATA);
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
 
   return true;
 }
 
+static bool send_result() {
+  inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
+  result.which_response = INHERITANCE_RESULT_AUTH_WALLET_TAG;
+  result.auth_wallet.which_response =
+      INHERITANCE_AUTH_WALLET_RESPONSE_RESULT_TAG;
+  memcpy(result.auth_wallet.result.signature,
+         auth->signature,
+         sizeof(ed25519_signature));
+
+  if (auth->is_setup) {
+    memcpy(result.auth_wallet.result.public_key,
+           auth->public_key,
+           sizeof(ed25519_public_key));
+  }
+
+  inheritance_send_result(&result);
+  return true;
+}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -218,28 +208,8 @@ void inheritance_wallet_login(inheritance_query_t *query) {
   auth->is_setup = query->auth_wallet.initiate.is_public_key;
 
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_INIT);
-  if (!verify_auth_wallet_inputs() || !auth_wallet_get_entropy() ||
-      !auth_wallet_get_pairs() || !auth_wallet_get_signature()) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_INVALID_DATA);
-    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
-    return;
+  if (verify_auth_wallet_inputs() && auth_wallet_get_entropy() &&
+      auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
+    delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
   }
-  delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
-
-  inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
-  result.which_response = INHERITANCE_RESULT_AUTH_WALLET_TAG;
-  result.auth_wallet.which_response =
-      INHERITANCE_AUTH_WALLET_RESPONSE_RESULT_TAG;
-  memcpy(result.auth_wallet.result.signature,
-         auth->signature,
-         sizeof(ed25519_signature));
-
-  if (auth->is_setup) {
-    memcpy(result.auth_wallet.result.public_key,
-           auth->public_key,
-           sizeof(ed25519_public_key));
-  }
-
-  inheritance_send_result(&result);
 }
