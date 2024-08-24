@@ -51,6 +51,7 @@ typedef struct {
   ed25519_public_key public_key;
 
   bool is_setup;
+  bool is_seed_based;
   auth_wallet_error_type_e status;
 } auth_wallet_config_t;
 #pragma pack(pop)

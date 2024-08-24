@@ -118,24 +118,40 @@ static bool verify_auth_wallet_inputs() {
 }
 
 static bool auth_wallet_get_entropy() {
-  secure_data_t msgs[1] = {0};
-  msgs[0].plain_data_size = WALLET_ID_SIZE;
-  memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
+  if (!auth->is_seed_based) {
+    secure_data_t msgs[1] = {0};
+    msgs[0].plain_data_size = WALLET_ID_SIZE;
+    memcpy(msgs[0].plain_data, auth->wallet_id, WALLET_ID_SIZE);
 
-  card_error_type_e status = card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
-
-  delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
-
-  if (status != CARD_OPERATION_SUCCESS ||
-      msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
-    return false;
+    card_error_type_e status =
+        card_fetch_encrypt_data(auth->wallet_id, msgs, 1);
+    if (status != CARD_OPERATION_SUCCESS ||
+        msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+      delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
+      return false;
+    }
+    memcpy((void *)auth->entropy,
+           msgs[0].encrypted_data,
+           msgs[0].encrypted_data_size);
+    auth->entropy_size = msgs[0].encrypted_data_size;
+  } else {
+    uint8_t seed[64] = {0};
+    if (!reconstruct_seed_without_passphrase(
+            auth->wallet_id, seed, inheritance_send_error)) {
+      memzero(seed, sizeof(seed));
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_QUERY);
+      delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
+      return false;
+    }
+    memcpy((void *)auth->entropy, seed, 64);
+    auth->entropy_size = 64;
+    memzero(seed, sizeof(seed));
   }
+  delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_CARD_TAPPED);
-
-  memcpy((void *)auth->entropy,
-         msgs[0].encrypted_data,
-         msgs[0].encrypted_data_size);
-  auth->entropy_size = msgs[0].encrypted_data_size;
 
   return true;
 }
@@ -143,7 +159,8 @@ static bool auth_wallet_get_entropy() {
 static bool auth_wallet_get_pairs() {
   mnemonic_to_seed((char *)auth->entropy, "", auth->private_key, NULL);
   ed25519_publickey(auth->private_key, auth->public_key);
-
+  // Clear seed as soon as it is not needed
+  memzero((void *const)auth->entropy, sizeof(auth->entropy));
   return true;
 }
 
@@ -206,6 +223,7 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
          query->auth_wallet.initiate.challenge.bytes,
          auth->challenge_size);
   auth->is_setup = query->auth_wallet.initiate.is_public_key;
+  auth->is_seed_based = query->auth_wallet.initiate.is_seed_based;
 
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_INIT);
   if (verify_auth_wallet_inputs() && auth_wallet_get_entropy() &&

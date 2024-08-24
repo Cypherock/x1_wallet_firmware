@@ -379,6 +379,31 @@ static const char *reconstruct_wallet(const uint8_t *wallet_id,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+bool reconstruct_seed_without_passphrase(const uint8_t *wallet_id,
+                                         uint8_t *seed_out,
+                                         rejection_cb *reject_cb) {
+  if ((NULL == wallet_id) || (NULL == seed_out)) {
+    return false;
+  }
+
+  uint8_t result = false;
+
+  clear_wallet_data();
+  mnemonic_clear();
+
+  const char *mnemonics = reconstruct_wallet(wallet_id, PIN_INPUT, reject_cb);
+
+  if (NULL != mnemonics) {
+    mnemonic_to_seed(
+        mnemonics, wallet_credential_data.passphrase, seed_out, NULL);
+    result = true;
+  }
+
+  mnemonic_clear();
+  clear_wallet_data();
+  return result;
+}
+
 bool reconstruct_seed(const uint8_t *wallet_id,
                       uint8_t *seed_out,
                       rejection_cb *reject_cb) {
