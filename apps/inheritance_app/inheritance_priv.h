@@ -71,6 +71,6 @@ typedef struct {
  * @brief Entry point to auth wallet flow
  *
  */
-void inheritance_wallet_login(inheritance_query_t *query);
+void inheritance_auth_wallet(inheritance_query_t *query);
 
 #endif /* INHERITANCE_PRIV_H */

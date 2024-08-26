@@ -195,7 +195,7 @@ static bool send_result() {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_wallet_login(inheritance_query_t *query) {
+void inheritance_auth_wallet(inheritance_query_t *query) {
   auth = (auth_wallet_config_t *)cy_malloc(sizeof(auth_wallet_config_t));
   memzero(auth, sizeof(auth_wallet_config_t));
 
