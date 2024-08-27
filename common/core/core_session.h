@@ -102,6 +102,18 @@ void core_session_clear_metadata();
  */
 void core_session_parse_start_message(const core_msg_t *core_msg);
 
+/**
+ * @brief Encrypts data using AES-CBC mode.
+ *
+ * This function encrypts the input data using AES-CBC (Cipher Block Chaining)
+ * mode. It operates on the provided data in-place, updating the `InOut_data`
+ * buffer with the encrypted result. The function also handles padding and IV
+ * (Initialization Vector).
+ *
+ * @param InOut_data Pointer to the data to be encrypted (input and output).
+ * @param len Pointer to the length of the data (input and output).
+ * @return The encryption status (success or error code).
+ */
 session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len);
 
 #endif    // CORE_SESSION

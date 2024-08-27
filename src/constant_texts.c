@@ -527,6 +527,9 @@ const char *ui_text_unreliable_cards =
 const char *ui_critical_card_health_migrate_data =
     "Card health is critical! Migrate to new set of cards";
 
+const char *ui_text_inheritance_flow_confirmation =
+    "Proceed to encrypt data for %s?";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif

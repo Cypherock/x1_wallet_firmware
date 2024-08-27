@@ -62,6 +62,7 @@
 #include <stdint.h>
 
 #include "card_fetch_data.h"
+#include "constant_texts.h"
 #include "core_session.h"
 #include "inheritance/common.pb.h"
 #include "inheritance/core.pb.h"
@@ -94,74 +95,133 @@
  *****************************************************************************/
 
 /**
- * @brief Checks if the provided query contains expected request.
- * @details The function performs the check on the request type and if the check
- * fails, then it will send an error to the host inheritance app and return
- * false.
+ * @brief Checks the type of request in the inheritance query.
  *
- * @param query Reference to an instance of inheritance_query_t containing query
- * received from host app
- * @param which_request The expected request type enum
+ * This function verifies whether the specified request type matches the one
+ * contained in the query. If not, it sends an error message and returns false.
  *
- * @return bool Indicating if the check succeeded or failed
- * @retval true If the query contains the expected request
- * @retval false If the query does not contain the expected request
+ * @param query Pointer to the inheritance query.
+ * @param which_request The expected request type.
+ * @return True if the request type matches; false otherwise.
  */
 static bool check_which_request(const inheritance_query_t *query,
                                 pb_size_t which_request);
 
 /**
- * @brief Validates the derivation path received in the request from host
- * @details The function validates the provided account derivation path in the
- * request. If invalid path is detected, the function will send an error to the
- * host and return false.
+ * @brief Validates the request data for encrypting data with a PIN.
  *
- * @param request Reference to an instance of inheritance_encrypt_data_request_t
- * @return bool Indicating if the verification passed or failed
- * @retval true If all the derivation path entries are valid
- * @retval false If any of the derivation path entries are invalid
+ * This function ensures that the provided request data is valid. It checks if
+ * the wallet associated with the request has a set PIN. If not, it sends an
+ * error message and returns false.
+ *
+ * @param request Pointer to the encrypt data request.
+ * @return True if the request data is valid; false otherwise.
  */
 static bool validate_request_data(
     const inheritance_encrypt_data_with_pin_request_t *request);
 
 /**
- * @brief Takes already received and decoded query for the user confirmation.
- * @details The function will verify if the query contains the
- * INHERITANCE_ENCRYPT_DATA type of request. Additionally, the wallet-id is
- * validated for sanity and the derivation path for the account is also
- * validated. After the validations, user is prompted about the action for
- * confirmation. The function returns true indicating all the validation and
- * user confirmation was a success. The function also duplicates the data from
- * query into the inheritance_txn_context  for further processing.
+ * @brief Handles the initiate query for encrypting data with a PIN.
  *
- * @param query Constant reference to the decoded query received from the host
+ * This function processes the initiate query, including verifying the request
+ * type, validating the request data, and obtaining the wallet name. It prompts
+ * the user for confirmation and sets the application flow status accordingly.
  *
- * @return bool Indicating if the function actions succeeded or failed
- * @retval true If all the validation and user confirmation was positive
- * @retval false If any of the validation or user confirmation was negative
+ * @param query Pointer to the inheritance query.
+ * @return True if the query is successfully handled; false otherwise.
  */
-STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query);
+STATIC bool inheritance_encryption_handle_inititate_query(
+    inheritance_query_t *query);
 
 /**
- * @brief Aggregates user consent for the encrytion info
- * @details The function displays the required messages for user to very
+ * @brief Obtains user verification for specific plain data messages.
  *
+ * This function prompts the user to verify specific plain data messages. If the
+ * messages are verified, it updates the application flow status accordingly.
  *
- * @return bool Indicating if the user confirmed the messages
- * @retval true If user confirmed the messages displayed
- * @retval false Immediate return if any of the messages are disapproved
+ * @return True if user verification is successful; false otherwise.
  */
-STATIC bool inheritance_get_user_verification(void);
+STATIC bool inheritance_encryption_get_user_verification(void);
 
 /**
- * @brief Sends the encrypted data to the host
- * @details The function encrypts the data and sends it to the host
+ * @brief Verifies the PIN associated with the request.
  *
- * @param query Reference to an instance of inheritance_query_t to store
- * transient request from the host
- * @return bool Indicating if the encrypted data is sent to the host
- * @retval true If the encrypted data was sent to host successfully
- * @retval false If the host responded with unknown/wrong query
+ * This function verifies the PIN for the specified wallet ID. It communicates
+ * with the PIN verification mechanism and returns the verification status.
+ *
+ * @return True if the PIN is verified; false otherwise.
+ */
+static bool inheritance_verify_pin(void);
+
+/**
+ * @brief Fills a TLV (Tag-Length-Value) structure.
+ *
+ * This function constructs a TLV structure by populating the destination buffer
+ * with the specified tag, length, and value. It updates the starting index
+ * accordingly.
+ *
+ * @param destination Pointer to the destination buffer.
+ * @param starting_index Pointer to the starting index within the buffer.
+ * @param tag The TLV tag.
+ * @param length The length of the value.
+ * @param value Pointer to the value data.
+ */
+static void inheritance_fill_tlv(uint8_t *destination,
+                                 uint16_t *starting_index,
+                                 uint8_t tag,
+                                 uint16_t length,
+                                 const uint8_t *value);
+
+/**
+ * @brief Serializes the message data for encryption.
+ *
+ * This function prepares the plain data messages for encryption. It constructs
+ * TLV (Tag-Length-Value) structures for each message, including a special tag
+ * for the PIN. The resulting data is stored in the context data array.
+ *
+ * @return True if serialization is successful; false otherwise.
+ */
+static bool serialize_message_data(void);
+
+/**
+ * @brief Encrypts the prepared message data.
+ *
+ * This function fetches and encrypts the data associated with the wallet ID.
+ * If successful, it updates the application flow status accordingly.
+ *
+ * @return True if encryption is successful; false otherwise.
+ */
+static bool encrypt_message_data(void);
+
+/**
+ * @brief Serializes the encrypted data into a packet.
+ *
+ * This function constructs a packet containing the serialized TLV structures
+ * for the encrypted data messages. The last entry in the packet corresponds
+ * to the encrypted PIN.
+ *
+ * @return True if serialization is successful; false otherwise.
+ */
+static bool serialize_packet(void);
+
+/**
+ * @brief Encrypts the entire packet.
+ *
+ * This function performs AES encryption on the packet data. If successful,
+ * it returns true; otherwise, false.
+ *
+ * @return True if packet encryption is successful; false otherwise.
+ */
+static bool encrypt_packet(void);
+
+/**
+ * @brief Encrypts the data and sends the result.
+ *
+ * This function orchestrates the entire process of verifying the PIN,
+ * serializing and encrypting the data, and sending the result back to the user.
+ *
+ * @param query Pointer to the inheritance query.
+ * @return True if the process completes successfully; false otherwise.
  */
 static bool send_encrypted_data(inheritance_query_t *query);
 
@@ -215,7 +275,8 @@ static bool validate_request_data(
   return status;
 }
 
-STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
+STATIC bool inheritance_encryption_handle_inititate_query(
+    inheritance_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -228,10 +289,8 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
     return false;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           "Proceed to encrypt data for %s",
-           wallet_name);    // TODO: update message
+  snprintf(
+      msg, sizeof(msg), ui_text_inheritance_flow_confirmation, wallet_name);
 
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;
@@ -244,13 +303,13 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
   return true;
 }
 
-STATIC bool inheritance_get_user_verification(void) {
+STATIC bool inheritance_encryption_get_user_verification(void) {
   for (int i = 0; i < context->request_pointer->plain_data_count; i++) {
     const inheritance_plain_data_t *data =
         &context->request_pointer->plain_data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
-      if (!core_scroll_page("Verify message",
+      if (!core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
                             (const char *)&data->message.bytes,
                             inheritance_send_error)) {
         return false;
@@ -366,34 +425,29 @@ static bool encrypt_data(void) {
   do {
     if (!inheritance_verify_pin()) {
       // TODO: Throw user rejceted
-      core_confirmation("pin verification failed", inheritance_send_error);
       status = false;
       break;
     }
     if (!serialize_message_data()) {
       // TODO: Throw serialization failed
-      core_confirmation("serialization failed", inheritance_send_error);
       status = false;
       break;
     }
 
     if (!encrypt_message_data()) {
       // TODO: Throw encryption failed
-      core_confirmation("encryption failed", inheritance_send_error);
       status = false;
       break;
     }
 
     if (!serialize_packet()) {
       // TODO: Throw packet serialization error
-      core_confirmation("packet serialization failed", inheritance_send_error);
       status = false;
       break;
     }
 
     if (!encrypt_packet()) {
       // TODO: Throw packet encryption error
-      core_confirmation("packet encryption failed", inheritance_send_error);
       status = false;
       break;
     }
@@ -432,13 +486,11 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   ASSERT(context != NULL);
   memzero(context, sizeof(inheritance_encryption_context_t));
 
-  if (inheritance_handle_initiate_query(query) &&
-      inheritance_get_user_verification() && encrypt_data() &&
+  if (inheritance_encryption_handle_inititate_query(query) &&
+      inheritance_encryption_get_user_verification() && encrypt_data() &&
       send_encrypted_data(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
-
-  core_confirmation("flow over", inheritance_send_error);
 
   free(context);
   context = NULL;
