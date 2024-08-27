@@ -16,13 +16,21 @@
 #include <inheritance/core.pb.h>
 #include <stdint.h>
 
+#include "card_fetch_data.h"
 #include "inheritance_context.h"
+#include "ui_input_text.h"
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
 
 typedef struct {
+  secure_data_t data[INHERITANCE_MESSAGES_MAX_COUNT];
+  uint8_t data_count;
+  inheritance_encrypt_data_with_pin_initiate_request_t *request_pointer;
+  uint8_t pin_value[MAX_PIN_SIZE];
+  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
+  uint16_t packet_size;
 } inheritance_encryption_context_t;
 
 /**

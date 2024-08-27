@@ -1,7 +1,6 @@
 /**
- * @file    inheritance_encrypt_data.c
  * @author  Cypherock X1 Team
- * @brief   Inheritance message encrytion login
+ * @brief   Data encryption flow for inheritance
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -62,14 +61,20 @@
 
 #include <stdint.h>
 
+#include "card_fetch_data.h"
+#include "core_session.h"
+#include "inheritance/common.pb.h"
 #include "inheritance/core.pb.h"
 #include "inheritance/encrypt_data_with_pin.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_priv.h"
-#include "reconstruct_wallet_flow.h"
+#include "pb.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
-#include "ui_screens.h"
+#include "ui_delay.h"
+#include "ui_input_text.h"
+#include "verify_pin_flow.h"
+#include "wallet.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -135,7 +140,7 @@ static bool validate_request_data(
  * @retval true If all the validation and user confirmation was positive
  * @retval false If any of the validation or user confirmation was negative
  */
-STATIC bool inheritance_handle_initiate_query(const inheritance_query_t *query);
+STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query);
 
 /**
  * @brief Aggregates user consent for the encrytion info
@@ -146,7 +151,7 @@ STATIC bool inheritance_handle_initiate_query(const inheritance_query_t *query);
  * @retval true If user confirmed the messages displayed
  * @retval false Immediate return if any of the messages are disapproved
  */
-STATIC bool inheritance_get_user_verification();
+STATIC bool inheritance_get_user_verification(void);
 
 /**
  * @brief Sends the encrypted data to the host
@@ -164,7 +169,7 @@ static bool send_encrypted_data(inheritance_query_t *query);
  * STATIC VARIABLES
  *****************************************************************************/
 
-STATIC inheritance_encryption_context_t *inheritance_encryption_context = NULL;
+STATIC inheritance_encryption_context_t *context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -188,14 +193,29 @@ static bool check_which_request(const inheritance_query_t *query,
 static bool validate_request_data(
     const inheritance_encrypt_data_with_pin_request_t *request) {
   bool status = true;
+  Wallet wallet = {0};
 
-  // TODO: check the current request and session validity here
+  do {
+    if (!get_wallet_data_by_id(
+            request->initiate.wallet_id, &wallet, inheritance_send_error)) {
+      status = false;
+      break;
+    }
+
+    if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
+      status = false;
+
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_REQUEST);
+      break;
+    }
+
+  } while (0);
 
   return status;
 }
 
-STATIC bool inheritance_handle_initiate_query(
-    const inheritance_query_t *query) {
+STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -208,32 +228,178 @@ STATIC bool inheritance_handle_initiate_query(
     return false;
   }
 
-  snprintf(msg, sizeof(msg), "Test %s", wallet_name);    // TODO: update message
-                                                         //
-  // Take user consent to sign the transaction for the wallet
+  snprintf(msg,
+           sizeof(msg),
+           "Proceed to encrypt data for %s",
+           wallet_name);    // TODO: update message
+
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;
   }
 
   set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  // TODO: copy data to local context;
+  context->request_pointer = &(query->encrypt.initiate);
 
-  // show processing screen for a minimum duration (additional time will add due
-  // to actual processing)
-  delay_scr_init(ui_text_processing, DELAY_SHORT);
   return true;
 }
 
-STATIC bool inheritance_get_user_verification() {
-  // TODO: Iterate through messages that needs to be verified
-  if (!core_scroll_page(
-          "Demo title", "message preview", inheritance_send_error)) {
-    return false;
+STATIC bool inheritance_get_user_verification(void) {
+  for (int i = 0; i < context->request_pointer->plain_data_count; i++) {
+    const inheritance_plain_data_t *data =
+        &context->request_pointer->plain_data[i];
+
+    if (data->has_is_verified_on_device && data->is_verified_on_device) {
+      if (!core_scroll_page("Verify message",
+                            (const char *)&data->message.bytes,
+                            inheritance_send_error)) {
+        return false;
+      }
+    }
   }
 
   set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_MESSAGE_VERIFIED);
   return true;
+}
+
+static bool inheritance_verify_pin(void) {
+  return verify_pin(context->request_pointer->wallet_id,
+                    context->pin_value,
+                    inheritance_send_error);
+}
+
+static void inheritance_fill_tlv(uint8_t *destination,
+                                 uint16_t *starting_index,
+                                 uint8_t tag,
+                                 uint16_t length,
+                                 const uint8_t *value) {
+  destination[(*starting_index)++] = tag;
+  destination[(*starting_index)++] = length;
+  destination[(*starting_index)++] = (length >> 8);
+
+  memcpy(destination + *starting_index, value, length);
+  *starting_index = *starting_index + length;
+}
+
+static bool serialize_message_data(void) {
+  if (context->request_pointer->plain_data_count >=
+      INHERITANCE_MESSAGES_MAX_COUNT) {
+    // TODO: Throw invalid message count error;
+    return false;
+  }
+  pb_size_t index = 0;
+  uint16_t zero_index = 0;
+  for (index = 0; index < context->request_pointer->plain_data_count; index++) {
+    uint16_t length = context->request_pointer->plain_data[index].message.size;
+    if (length > (PLAIN_DATA_SIZE - 3)) {
+      length = PLAIN_DATA_SIZE - 3;
+    }
+    zero_index = 0;
+    inheritance_fill_tlv(
+        context->data[index].plain_data,
+        &zero_index,
+        0x00,    ///< Default tag for every message
+        length,
+        context->request_pointer->plain_data[index].message.bytes);
+    context->data[index].plain_data_size = length;
+  }
+  zero_index = 0;
+  inheritance_fill_tlv(context->data[index].plain_data,
+                       &zero_index,
+                       0x01,    ///< Special tag for private messages
+                       MAX_PIN_SIZE,
+                       context->pin_value);
+  context->data[index].plain_data_size = MAX_PIN_SIZE;
+
+  context->data_count = context->request_pointer->plain_data_count + 1;
+  memzero(context->pin_value, sizeof(context->pin_value));
+  return true;
+}
+
+static bool encrypt_message_data(void) {
+  card_error_type_e status = card_fetch_encrypt_data(
+      context->request_pointer->wallet_id, context->data, context->data_count);
+
+  if (status != CARD_OPERATION_SUCCESS) {
+    // TODO: throw encryption failed error
+    return false;
+  }
+  set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_CARD_TAPPED);
+  return true;
+}
+
+static bool serialize_packet(void) {
+  context->packet_size = 0;
+  context->packet[context->packet_size++] = context->data_count;
+  pb_size_t index = 0;
+
+  for (index = 0; index < context->data_count - 1; index++) {
+    inheritance_fill_tlv(context->packet,
+                         &context->packet_size,
+                         0x00,
+                         context->data[index].encrypted_data_size,
+                         context->data[index].encrypted_data);
+  }
+
+  // The last encrypted message is the PIN
+  inheritance_fill_tlv(context->packet,
+                       &context->packet_size,
+                       0x50,
+                       context->data[index].encrypted_data_size,
+                       context->data[index].encrypted_data);
+
+  return true;
+}
+
+static bool encrypt_packet(void) {
+  if (SESSION_ENCRYPT_PACKET_SUCCESS !=
+      session_aes_encrypt(context->packet, &context->packet_size)) {
+    return false;
+  }
+
+  return true;
+}
+
+static bool encrypt_data(void) {
+  bool status = true;
+
+  do {
+    if (!inheritance_verify_pin()) {
+      // TODO: Throw user rejceted
+      core_confirmation("pin verification failed", inheritance_send_error);
+      status = false;
+      break;
+    }
+    if (!serialize_message_data()) {
+      // TODO: Throw serialization failed
+      core_confirmation("serialization failed", inheritance_send_error);
+      status = false;
+      break;
+    }
+
+    if (!encrypt_message_data()) {
+      // TODO: Throw encryption failed
+      core_confirmation("encryption failed", inheritance_send_error);
+      status = false;
+      break;
+    }
+
+    if (!serialize_packet()) {
+      // TODO: Throw packet serialization error
+      core_confirmation("packet serialization failed", inheritance_send_error);
+      status = false;
+      break;
+    }
+
+    if (!encrypt_packet()) {
+      // TODO: Throw packet encryption error
+      core_confirmation("packet encryption failed", inheritance_send_error);
+      status = false;
+      break;
+    }
+  } while (0);
+
+  return status;
 }
 
 static bool send_encrypted_data(inheritance_query_t *query) {
@@ -247,13 +413,10 @@ static bool send_encrypted_data(inheritance_query_t *query) {
     return false;
   }
 
-  inheritance_encrypt_data_with_pin_result_response_t dummy = {0};
-
-  dummy.encrypted_data.size = 32;
-
-  memcpy(&result.encrypt.result,
-         &dummy,
-         sizeof(inheritance_encrypt_data_with_pin_result_response_t));
+  result.encrypt.result.encrypted_data.size = context->packet_size;
+  memcpy(&result.encrypt.result.encrypted_data.bytes,
+         context->packet,
+         context->packet_size);
 
   inheritance_send_result(&result);
   return true;
@@ -264,17 +427,19 @@ static bool send_encrypted_data(inheritance_query_t *query) {
  *****************************************************************************/
 
 void inheritance_encrypt_data(inheritance_query_t *query) {
-  inheritance_encryption_context = (inheritance_encryption_context_t *)malloc(
+  context = (inheritance_encryption_context_t *)malloc(
       sizeof(inheritance_encryption_context_t));
-  memzero(inheritance_encryption_context,
-          sizeof(inheritance_encryption_context_t));
+  ASSERT(context != NULL);
+  memzero(context, sizeof(inheritance_encryption_context_t));
 
-  // TODO: add actual encryption and decrypiton function
   if (inheritance_handle_initiate_query(query) &&
-      inheritance_get_user_verification() && send_encrypted_data(query)) {
+      inheritance_get_user_verification() && encrypt_data() &&
+      send_encrypted_data(query)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
-  free(inheritance_encryption_context);
-  inheritance_encryption_context = NULL;
+  core_confirmation("flow over", inheritance_send_error);
+
+  free(context);
+  context = NULL;
 }

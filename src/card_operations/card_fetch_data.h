@@ -50,4 +50,14 @@ typedef struct {
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Encrypts given secure_data_t with card and stores the encrypted data
+ * in the same struct
+ *
+ * @return A card_error_type_e value representing the result of the operation.
+ */
+card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
+                                          secure_data_t *msgs,
+                                          size_t msg_count);
+
 #endif
