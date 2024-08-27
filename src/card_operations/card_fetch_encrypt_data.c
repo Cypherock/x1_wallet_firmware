@@ -128,6 +128,9 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 #if USE_SIMULATOR == 0
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     result = card_initialize_applet(&card_data);
+    if (true == card_data.nfc_data.pairing_error) {
+      result = CARD_OPERATION_UNPAIRED_CARD;
+    }
 #endif
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
