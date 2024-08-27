@@ -63,6 +63,7 @@
  *****************************************************************************/
 #include "core_session.h"
 
+#include "bignum.h"
 #include "core.pb.h"
 #include "inheritance_main.h"
 #include "logger.h"
@@ -96,17 +97,6 @@ session_config_t CONFIDENTIAL session = {0};
  *****************************************************************************/
 
 /**
- * @brief Receives and processes the server's key as part of the session
- * initialization.
- *
- * @param server_message The buffer containing the server's message, which
- * includes the server's random public key, session age, and device ID.
- * @return true if the server's key is successfully received and processed.
- * @return false otherwise.
- */
-static bool session_receive_server_key(uint8_t *server_message);
-
-/**
  * @brief Initializes the curve parameters for the session.
  */
 static void session_curve_init();
@@ -118,6 +108,17 @@ static void session_curve_init();
  * @return false otherwise.
  */
 static bool derive_server_public_key();
+
+/**
+ * @brief Receives and processes the server's key as part of the session
+ * initialization.
+ *
+ * @param server_message The buffer containing the server's message, which
+ * includes the server's random public key, session age, and device ID.
+ * @return true if the server's key is successfully received and processed.
+ * @return false otherwise.
+ */
+static bool session_receive_server_key(const uint8_t *server_message);
 
 /**
  * @brief Verifies the session signature using the provided payload and
@@ -179,21 +180,13 @@ static bool session_get_random_keys(uint8_t *random,
                                     curve_point random_public_point);
 
 /**
- * @brief Sends the device key as part of the session initialization.
+ * @brief Generates the device key as part of the session initialization.
  *
  * @param payload The buffer to store the payload data.
- * @return true if the device key is successfully sent.
+ * @return true if the device key is successfully generated.
  * @return false otherwise.
  */
-static bool session_send_device_key(uint8_t *payload);
-
-/**
- * @brief Converts a 32-bit unsigned integer to a 4-byte array.
- *
- * @param value The 32-bit unsigned integer to convert.
- * @param arr The array to store the converted bytes.
- */
-static void uint32_to_uint8_array(uint32_t value, uint8_t arr[4]);
+static bool session_generate_device_key(uint8_t *payload);
 
 /**
  * @brief Initiates a request by sending the device key.
@@ -326,7 +319,7 @@ static bool session_get_random_keys(uint8_t *random,
   return true;
 }
 
-static bool session_send_device_key(uint8_t *payload) {
+static bool session_generate_device_key(uint8_t *payload) {
   if (!session_get_random_keys(session.device_random,
                                session.device_random_public,
                                session.device_random_public_point)) {
@@ -355,7 +348,7 @@ static bool session_send_device_key(uint8_t *payload) {
   return true;
 }
 
-static bool session_receive_server_key(uint8_t *server_message) {
+static bool session_receive_server_key(const uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
   if (server_message != NULL) {
     LOG_ERROR("\nERROR: server_message not set");
@@ -405,17 +398,9 @@ static bool session_receive_server_key(uint8_t *server_message) {
   return true;
 }
 
-// TODO: convert this into macro
-static void uint32_to_uint8_array(uint32_t value, uint8_t arr[4]) {
-  arr[0] = (value >> 24) & 0xFF;    // Extract the highest byte
-  arr[1] = (value >> 16) & 0xFF;    // Extract the second highest byte
-  arr[2] = (value >> 8) & 0xFF;     // Extract the second lowest byte
-  arr[3] = value & 0xFF;            // Extract the lowest byte
-}
-
 static void initiate_request(void) {
   uint8_t payload[SESSION_BUFFER_SIZE] = {0};
-  if (!session_send_device_key(payload)) {
+  if (!session_generate_device_key(payload)) {
     // TODO: Error Handling
     LOG_ERROR("xxec %d", __LINE__);
     comm_reject_invalid_cmd();
@@ -436,8 +421,8 @@ static void start_request(const core_msg_t *core_msg) {
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
 
-  uint32_to_uint8_array(core_msg->session_start.request.start.session_age,
-                        server_message_payload + SESSION_PUB_KEY_SIZE);
+  write_be(server_message_payload + SESSION_PUB_KEY_SIZE,
+           core_msg->session_start.request.start.session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(server_message_payload + offset,
          core_msg->session_start.request.start.device_id,
