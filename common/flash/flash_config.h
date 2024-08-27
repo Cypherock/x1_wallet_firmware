@@ -26,7 +26,7 @@
   32    ///< Size of IO protection key (used for encrypted comm b/w MCU and
         ///< ATECC608A)
 #define ECDSA_PUB_KEY_SIZE 33        ///< Size of ECDSA (compressed) public key
-#define MAX_KEYSTORE_ENTRY 4 + 1     ///< Maximum number of keystore entries
+#define MAX_KEYSTORE_ENTRY 4         ///< Maximum number of keystore entries
 #define FS_KEYSTORE_KEYID_LEN 4      ///< Length of key id in keystore entry
 #define FS_KEYSTORE_KEYPATH_LEN 8    ///< Length of key path in keystore entry
 #define FS_KEYSTORE_PRIVKEY_LEN                                                \
