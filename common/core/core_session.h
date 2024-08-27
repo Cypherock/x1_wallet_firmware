@@ -76,8 +76,25 @@ typedef struct {
 
 extern session_config_t session;
 
-void core_session_parse_start_message(const core_msg_t *core_msg);
-
+/**
+ * @brief Clears the metadata related to the session configuration.
+ *
+ * This function zeroes out the memory occupied by the session configuration
+ * structure (`session_config_t`). It is typically called when closing or
+ * resetting a session.
+ */
 void core_session_clear_metadata();
+
+/**
+ * @brief Parses the start message received from the host.
+ *
+ * This function processes the session start message and determines the type of
+ * request (initiate or start). Depending on the request type, it invokes the
+ * corresponding handler functions (`initiate_request()` or `start_request()`).
+ *
+ * @param core_msg Pointer to the core message containing the session start
+ * data.
+ */
+void core_session_parse_start_message(const core_msg_t *core_msg);
 
 #endif    // CORE_SESSION
