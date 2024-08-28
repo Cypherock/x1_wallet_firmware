@@ -13,6 +13,7 @@
  *****************************************************************************/
 
 #include <assert.h>
+
 #include "card_operation_typedefs.h"
 #include "stdbool.h"
 #include "stdint.h"

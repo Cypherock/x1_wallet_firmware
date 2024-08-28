@@ -16,10 +16,10 @@
 #include <stdint.h>
 
 #include "card_fetch_data.h"
-#include "inheritance_context.h"
-#include "ui_input_text.h"
 #include "ed25519.h"
 #include "inheritance/core.pb.h"
+#include "inheritance_context.h"
+#include "ui_input_text.h"
 #include "wallet.h"
 
 /*****************************************************************************
