@@ -13,11 +13,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <inheritance/core.pb.h>
 #include <stdint.h>
 
-#include "inheritance_context.h"
-#include "nem.h"
+#include "ed25519.h"
+#include "inheritance/core.pb.h"
+#include "wallet.h"
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES

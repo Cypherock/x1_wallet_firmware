@@ -21,13 +21,9 @@
 #include "card_fetch_data.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
-#include "inheritance_main.h"
 #include "inheritance_priv.h"
-#include "nfc.h"
-#include "reconstruct_wallet_flow.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
+#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -128,6 +124,9 @@ static bool auth_wallet_get_entropy() {
 
   if (status != CARD_OPERATION_SUCCESS ||
       msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_QUERY);
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_CARD_TAPPED);
@@ -196,7 +195,8 @@ static bool send_result() {
  *****************************************************************************/
 
 void inheritance_auth_wallet(inheritance_query_t *query) {
-  auth = (auth_wallet_config_t *)cy_malloc(sizeof(auth_wallet_config_t));
+  auth = (auth_wallet_config_t *)malloc(sizeof(auth_wallet_config_t));
+  ASSERT(auth != NULL);
   memzero(auth, sizeof(auth_wallet_config_t));
 
   memcpy(
@@ -212,4 +212,8 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
       auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
   }
+
+  memzero(auth, sizeof(auth_wallet_config_t));
+  free(auth);
+  auth = NULL;
 }
