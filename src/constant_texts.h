@@ -370,6 +370,13 @@ extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
 
+// App specific
+
+// Inheritance
+extern const char *ui_text_inheritance_wallet_authenticating;
+extern const char *ui_text_inheritance_wallet_auth_success;
+extern const char *ui_text_inheritance_wallet_auth_fail;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
