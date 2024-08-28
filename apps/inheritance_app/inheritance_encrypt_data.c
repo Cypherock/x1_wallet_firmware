@@ -289,8 +289,10 @@ STATIC bool inheritance_encryption_handle_inititate_query(
     return false;
   }
 
-  snprintf(
-      msg, sizeof(msg), ui_text_inheritance_flow_confirmation, wallet_name);
+  snprintf(msg,
+           sizeof(msg),
+           ui_text_inheritance_encryption_flow_confirmation,
+           wallet_name);
 
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;
@@ -489,9 +491,13 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   if (inheritance_encryption_handle_inititate_query(query) &&
       inheritance_encryption_get_user_verification() && encrypt_data() &&
       send_encrypted_data(query)) {
-    delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+    delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
+  } else {
+    delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
+  delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
+  memzero(context, sizeof(inheritance_encryption_context_t));
   free(context);
   context = NULL;
 }
