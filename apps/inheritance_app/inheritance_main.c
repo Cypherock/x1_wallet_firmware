@@ -126,7 +126,7 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
 
   switch ((uint8_t)query.which_request) {
     case INHERITANCE_QUERY_AUTH_WALLET_TAG: {
-      // TODO: Add auth wallet functionality
+      inheritance_auth_wallet(&query);
       break;
     }
     case INHERITANCE_QUERY_ENCRYPT_TAG: {

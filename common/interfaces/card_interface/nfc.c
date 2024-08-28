@@ -548,6 +548,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   ASSERT(plain_data_size != 0);
   ASSERT(encrypted_data != NULL);
 
+#if USE_SIMULATOR == 0
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
   uint16_t send_len = 0, recv_len = 236;
@@ -579,9 +580,15 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
       memcpy(encrypted_data, recv_apdu + 3, recv_len - 5);
     }
   }
-
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;
+#else
+  // TODO: Standardize simulator/test wallet info
+  memcpy(name, "FIRST", 5);
+  memcpy(encrypted_data, name, 1);
+  memcpy(encrypted_data + 1, plain_data, plain_data_size);
+  *encrypted_data_size = 1 + plain_data_size;
+#endif
 }
 
 ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
