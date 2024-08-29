@@ -20,14 +20,13 @@
 #include "bip39.h"
 #include "card_fetch_data.h"
 #include "card_pair.h"
+#include "core_error.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_priv.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
 #include "ui_delay.h"
-#include "ui_screens.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -128,7 +127,6 @@ static bool verify_auth_wallet_inputs() {
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
-
   return true;
 }
 
@@ -151,20 +149,20 @@ static bool auth_wallet_get_entropy() {
     set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_SEED_BASED_COMPLETED);
   }
   if (auth->do_wallet_based) {
+    // Pair the card first
+    card_error_type_e status = single_card_pair_operation(
+        (char *)ui_text_tap_the_card, ui_text_place_card_below);
+    if (status != CARD_OPERATION_SUCCESS) {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+      delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
+      return false;
+    }
     secure_data_t msgs[1] = {0};
     msgs[0].plain_data_size = WALLET_ID_SIZE;
     memcpy(msgs[0].plain_data, auth->data.wallet_id, WALLET_ID_SIZE);
-    card_error_type_e status =
-        card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
-    // Pair the card first
-    if (CARD_OPERATION_UNPAIRED_CARD == status) {
-      card_error_type_e value =
-          single_card_pair_operation("Pair Card", "Tap to start");
-      if (value != CARD_OPERATION_SUCCESS) {
-        return false;
-      }
-      status = card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
-    }
+    // fetch encrypted wallet_id
+    status = card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
     if (status != CARD_OPERATION_SUCCESS ||
         msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
