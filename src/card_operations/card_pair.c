@@ -514,10 +514,6 @@ card_error_type_e single_card_pair_operation(char *heading,
       }
 
       buzzer_start(BUZZER_DURATION);
-      // if (4 != card_number) {
-      //   wait_for_card_removal();
-      // }
-      // since we are pairing only one card
       wait_for_card_removal();
 
       break;
