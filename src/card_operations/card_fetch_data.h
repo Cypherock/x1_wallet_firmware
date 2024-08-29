@@ -11,6 +11,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+
+#include <assert.h>
+
 #include "card_operation_typedefs.h"
 #include "stdbool.h"
 #include "stdint.h"
@@ -49,7 +52,8 @@ typedef struct {
  *****************************************************************************/
 
 /**
- * @brief
+ * @brief Encrypts given secure_data_t with card and stores the encrypted data
+ * in the same struct
  *
  * @return A card_error_type_e value representing the result of the operation.
  */

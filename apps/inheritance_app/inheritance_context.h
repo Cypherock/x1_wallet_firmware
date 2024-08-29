@@ -19,13 +19,12 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 
+#define INHERITANCE_MESSAGES_MAX_COUNT 5
+#define INHERITANCE_PACKET_MAX_SIZE 6000
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
-
-// TODO: Populate structure for INHERITANCE
-typedef struct {
-} inheritance_config_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

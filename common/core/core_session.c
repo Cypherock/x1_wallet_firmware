@@ -63,6 +63,8 @@
  *****************************************************************************/
 #include "core_session.h"
 
+#include <stdint.h>
+
 #include "bignum.h"
 #include "core.pb.h"
 #include "inheritance_main.h"
@@ -464,4 +466,54 @@ void core_session_parse_start_message(const core_msg_t *core_msg) {
       clear_message_received_data();
       break;
   }
+}
+
+session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  uint16_t size = *len;
+  uint8_t payload[size];
+
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  uint8_t last_block[AES_BLOCK_SIZE] = {0};
+  uint8_t remainder = size % AES_BLOCK_SIZE;
+
+  // Round down to last whole block
+  size -= remainder;
+  // Copy old last block
+  memcpy(last_block, payload + size, remainder);
+  // Pad new last block with number of missing bytes
+  memset(last_block + remainder,
+         AES_BLOCK_SIZE - remainder,
+         AES_BLOCK_SIZE - remainder);
+
+  // the IV gets mutated, so we make a copy not to touch the original
+  uint8_t iv[AES_BLOCK_SIZE] = {0};
+  memcpy(iv, session.session_iv, AES_BLOCK_SIZE);
+
+  aes_encrypt_ctx ctx = {0};
+
+  if (aes_encrypt_key256(session.session_key, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_KEY_ERR;
+  }
+
+  if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  if (aes_cbc_encrypt(
+          last_block, InOut_data + size, sizeof(last_block), iv, &ctx) !=
+      EXIT_SUCCESS) {
+    return SESSION_ENCRYPT_PACKET_ERR;
+  }
+
+  size += sizeof(last_block);
+  *len = size;
+
+  memzero(&ctx, sizeof(ctx));
+
+  return SESSION_ENCRYPT_PACKET_SUCCESS;
 }

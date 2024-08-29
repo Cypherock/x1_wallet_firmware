@@ -38,13 +38,22 @@
 #define SESSION_IV_SIZE 16
 #define SESSION_KEY_SIZE 32
 
-#define SESSION_MSG_MAX 5
-#define SESSION_PACKET_BUFFER 400
-#define SESSION_PACKET_SIZE                                                    \
-  (ENCRYPTED_DATA_SIZE * SESSION_MSG_MAX) +                                    \
-      SESSION_PACKET_BUFFER    // (112 * 10) * 5 + 400 = 6000
-
 extern const uint32_t session_key_rotation[2];
+
+typedef enum {
+  SESSION_OK = 0,
+  SESSION_ERR_INVALID,
+  SESSION_ERR_DEVICE_KEY,
+  SESSION_ERR_SERVER_KEY,
+  SESSION_ERR_ENCRYPT,
+  SESSION_ERR_DECRYPT,
+  SESSION_ENCRYPT_PACKET_SUCCESS,
+  SESSION_DECRYPT_PACKET_SUCCESS,
+  SESSION_ENCRYPT_PACKET_KEY_ERR,
+  SESSION_ENCRYPT_PACKET_ERR,
+  SESSION_DECRYPT_PACKET_KEY_ERR,
+  SESSION_DECRYPT_PACKET_ERR
+} session_error_type_e;
 
 /**
  * @brief Stores the session information
@@ -63,13 +72,9 @@ typedef struct {
   uint8_t server_signature[SESSION_SERVER_SIGNATURE_SIZE];
 
   const char wallet_name[NAME_SIZE];
-  secure_data_t session_msgs[SESSION_MSG_MAX];
-  uint8_t msg_count;
 
   uint8_t session_iv[SESSION_IV_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
-
-  uint8_t packet[SESSION_PACKET_SIZE];
 
 } session_config_t;
 #pragma pack(pop)
@@ -96,5 +101,19 @@ void core_session_clear_metadata();
  * data.
  */
 void core_session_parse_start_message(const core_msg_t *core_msg);
+
+/**
+ * @brief Encrypts data using AES-CBC mode.
+ *
+ * This function encrypts the input data using AES-CBC (Cipher Block Chaining)
+ * mode. It operates on the provided data in-place, updating the `InOut_data`
+ * buffer with the encrypted result. The function also handles padding and IV
+ * (Initialization Vector).
+ *
+ * @param InOut_data Pointer to the data to be encrypted (input and output).
+ * @param len Pointer to the length of the data (input and output).
+ * @return The encryption status (success or error code).
+ */
+session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len);
 
 #endif    // CORE_SESSION

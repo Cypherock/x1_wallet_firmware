@@ -378,6 +378,10 @@ extern const char *ui_text_inheritance_wallet_auth_success;
 extern const char *ui_text_inheritance_wallet_auth_fail;
 extern const char *ui_text_tap_the_card;
 
+extern const char *ui_text_inheritance_encryption_flow_confirmation;
+extern const char *ui_text_inheritance_encryption_flow_success;
+extern const char *ui_text_inheritance_encryption_flow_failure;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
