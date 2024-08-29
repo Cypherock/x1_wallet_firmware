@@ -537,6 +537,11 @@ const char *ui_text_inheritance_wallet_auth_success =
 const char *ui_text_inheritance_wallet_auth_fail =
     "Wallet\nauthentication\nfailed";
 
+const char *ui_text_inheritance_encryption_flow_confirmation =
+    "Proceed to encrypt data for %s?";
+const char *ui_text_inheritance_encryption_flow_success = "Encryption Success";
+const char *ui_text_inheritance_encryption_flow_failure = "Encryption Failed";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif

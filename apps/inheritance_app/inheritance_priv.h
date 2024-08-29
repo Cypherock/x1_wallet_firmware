@@ -15,8 +15,11 @@
  *****************************************************************************/
 #include <stdint.h>
 
+#include "card_fetch_data.h"
 #include "ed25519.h"
 #include "inheritance/core.pb.h"
+#include "inheritance_context.h"
+#include "ui_input_text.h"
 #include "wallet.h"
 
 /*****************************************************************************
@@ -58,6 +61,14 @@ typedef struct {
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  secure_data_t data[INHERITANCE_MESSAGES_MAX_COUNT];
+  uint8_t data_count;
+  inheritance_encrypt_data_with_pin_initiate_request_t *request_pointer;
+  uint8_t pin_value[MAX_PIN_SIZE];
+  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
+  uint16_t packet_size;
+} inheritance_encryption_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -72,5 +83,15 @@ typedef struct {
  *
  */
 void inheritance_auth_wallet(inheritance_query_t *query);
+
+/**
+ * @brief Handler for inheritance messages encrytion flow.
+ * @details The expected request type is INHERITANCE_QUERY_ENCRYPT_TAG.
+ * The function controls the complete data exchange with host, user prompts and
+ * confirmations for encrytion of inheritance messages.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void inheritance_encrypt_data(inheritance_query_t *query);
 
 #endif /* INHERITANCE_PRIV_H */

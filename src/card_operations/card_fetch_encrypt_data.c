@@ -1,7 +1,6 @@
 /**
- * @file    card_fetch_encrypt_data.c
  * @author  Cypherock X1 Team
- * @brief   Wallet unlock flow controller
+ * @brief   Card encryption data implementation
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -119,9 +118,9 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
 
   uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE];
   uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE];
-  uint16_t encrypted_data_buffer_size;
-  uint16_t plain_data_buffer_size;
-  size_t index;
+  uint16_t encrypted_data_buffer_size = 0;
+  uint16_t plain_data_buffer_size = 0;
+  size_t index = 0;
 
   while (1) {
     card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
@@ -176,9 +175,9 @@ card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
     if (card_data.nfc_data.status == SW_NO_ERROR) {
       buzzer_start(BUZZER_DURATION);
       break;
-    } else {
-      card_handle_errors(&card_data);
     }
+
+    card_handle_errors(&card_data);
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
