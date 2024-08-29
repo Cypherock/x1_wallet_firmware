@@ -147,7 +147,7 @@ static bool auth_wallet_get_entropy() {
     auth->seed_based_data.has_data = true;
     memzero(seed, sizeof(seed));
     // seed generation complete
-    set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_SEED_BASED_COMPLETED);
+    set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_SEED_BASED_CARD_TAPPED);
   }
   if (auth->do_wallet_based) {
     secure_data_t msgs[1] = {0};
@@ -169,7 +169,8 @@ static bool auth_wallet_get_entropy() {
     auth->wallet_based_data.entropy_size = msgs[0].encrypted_data_size;
     auth->wallet_based_data.has_data = true;
     // wallet id encryption complete
-    set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_WALLET_BASED_COMPLETED);
+    set_app_flow_status(
+        INHERITANCE_AUTH_WALLET_STATUS_WALLET_BASED_CARD_TAPPED);
   }
 
   delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
