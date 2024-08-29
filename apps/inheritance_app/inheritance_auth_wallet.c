@@ -281,7 +281,8 @@ static bool send_result() {
  *****************************************************************************/
 
 void inheritance_auth_wallet(inheritance_query_t *query) {
-  auth = (auth_wallet_config_t *)cy_malloc(sizeof(auth_wallet_config_t));
+  auth = (auth_wallet_config_t *)malloc(sizeof(auth_wallet_config_t));
+  ASSERT(auth != NULL);
   memzero(auth, sizeof(auth_wallet_config_t));
 
   memcpy(auth->data.wallet_id,
@@ -300,4 +301,8 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
       auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
   }
+
+  memzero(auth, sizeof(auth_wallet_config_t));
+  free(auth);
+  auth = NULL;
 }
