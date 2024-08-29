@@ -385,7 +385,6 @@ static bool encrypt_message_data(void) {
     // TODO: throw encryption failed error
     return false;
   }
-  set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_CARD_TAPPED);
   return true;
 }
 

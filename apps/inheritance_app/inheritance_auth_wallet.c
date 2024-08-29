@@ -25,7 +25,6 @@
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_delay.h"
-#include "ui_delay.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
