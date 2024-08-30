@@ -20,12 +20,14 @@
 #include "bip39.h"
 #include "card_fetch_data.h"
 #include "card_pair.h"
+#include "constant_texts.h"
 #include "core_error.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_priv.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
+#include "ui_core_confirm.h"
 #include "ui_delay.h"
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -147,6 +149,44 @@ static bool auth_wallet_get_signature();
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static bool check_which_request(const inheritance_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->encrypt.which_request) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
+
+  return true;
+}
+
+STATIC bool auth_wallet_handle_inititate_query(inheritance_query_t *query) {
+  char wallet_name[NAME_SIZE] = "";
+  char msg[100] = "";
+
+  if (!check_which_request(query,
+                           INHERITANCE_AUTH_WALLET_REQUEST_INITIATE_TAG) ||
+      !get_wallet_name_by_id(query->auth_wallet.initiate.wallet_id,
+                             (uint8_t *)wallet_name,
+                             inheritance_send_error)) {
+    // TODO: update this for nominee
+    return false;
+  }
+
+  snprintf(msg,
+           sizeof(msg),
+           ui_text_inheritance_wallet_auth_flow_confirmation,
+           wallet_name);
+
+  if (!core_confirmation(msg, inheritance_send_error)) {
+    return false;
+  }
+
+  // TODO: update flow status here
+
+  return true;
+}
 
 static bool verify_auth_wallet_inputs() {
   if (auth->data.challenge_size == 0 ||
@@ -351,7 +391,8 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
   auth->do_wallet_based = query->auth_wallet.initiate.do_wallet_based;
 
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_INIT);
-  if (verify_auth_wallet_inputs() && auth_wallet_get_entropy() &&
+  if (verify_auth_wallet_inputs() &&
+      auth_wallet_handle_inititate_query(query) && auth_wallet_get_entropy() &&
       auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
   }
