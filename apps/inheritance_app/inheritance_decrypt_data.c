@@ -218,7 +218,7 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
 
   snprintf(msg,
            sizeof(msg),
-           ui_text_inheritance_decryption_flow_failure,
+           ui_text_inheritance_decryption_flow_confirmation,
            wallet_name);
 
   if (!core_confirmation(msg, inheritance_send_error)) {
@@ -359,8 +359,8 @@ void inheritance_decrypt_data(inheritance_query_t *query) {
   } else {
     delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_TIME);
   }
-
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+
   memzero(decryption_context, sizeof(inheritance_decryption_context_t));
   free(decryption_context);
   decryption_context = NULL;
