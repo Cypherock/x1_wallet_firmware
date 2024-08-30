@@ -99,7 +99,7 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
+card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
                                           size_t msg_count) {
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;

@@ -95,6 +95,80 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Checks if the given request matches the expected request type.
+ *
+ * @param query Pointer to the inheritance query.
+ * @param which_request The expected request type.
+ * @return true if the request type matches, false otherwise.
+ */
+static bool check_which_request(const inheritance_query_t *query,
+                                pb_size_t which_request);
+
+/**
+ * @brief Validates the request data for decryption.
+ *
+ * @param request Pointer to the decryption request data.
+ * @return true if the request data is valid, false otherwise.
+ */
+static bool validate_request_data(
+    const inheritance_decrypt_data_with_pin_request_t *request);
+
+/**
+ * @brief Handles the initiation of the decryption query.
+ *
+ * @param query Pointer to the inheritance query.
+ * @return true if the initiation is successful, false otherwise.
+ */
+STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query);
+
+/**
+ * @brief Sends the decrypted data as a response.
+ *
+ * @param query Pointer to the inheritance query.
+ * @return true if sending the response is successful, false otherwise.
+ */
+static bool send_decrypted_data(inheritance_query_t *query);
+
+/**
+ * @brief Decrypts the packet containing encrypted data.
+ *
+ * @return true if decryption is successful, false otherwise.
+ */
+static bool decrypt_packet(void);
+
+/**
+ * @brief Deserializes the decrypted packet into individual data items.
+ *
+ * @return true if deserialization is successful, false otherwise.
+ */
+static bool deserialize_packet(void);
+
+/**
+ * @brief Decrypts the message data within the packet.
+ *
+ * @return true if message data decryption is successful, false otherwise.
+ */
+static bool decrypt_message_data(void);
+
+/**
+ * @brief Decrypts the overall data.
+ *
+ * @return true if decryption is successful, false otherwise.
+ */
+static bool decrypt_data(void);
+
+/**
+ * @brief Displays decrypted data or performs related actions based on the data.
+ *
+ * This function processes the decrypted data and either shows it on the device
+ * screen (if the tag indicates display-only) or prepares it for further
+ * response.
+ *
+ * @return true if the operation is successful, false otherwise.
+ */
+static bool show_data(void);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
