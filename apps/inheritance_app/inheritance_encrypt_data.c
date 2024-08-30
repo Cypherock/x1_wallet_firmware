@@ -315,9 +315,10 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
         &encryption_context->request_pointer->plain_data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
-      if (!core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
-                            (const char *)&data->message.bytes,
-                            inheritance_send_error)) {
+      if (!core_scroll_non_sticky_heading_page(
+              UI_TEXT_VERIFY_MESSAGE,
+              (const char *)&data->message.bytes,
+              inheritance_send_error)) {
         return false;
       }
     }
