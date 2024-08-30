@@ -116,4 +116,17 @@ void core_session_parse_start_message(const core_msg_t *core_msg);
  */
 session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len);
 
+/**
+ * @brief Decrypts data using AES-CBC mode.
+ *
+ * This function decrypts the input data using the session key and IV.
+ *
+ * @param InOut_data Pointer to the input data (encrypted) and output data
+ * (decrypted).
+ * @param len Pointer to the length of the data (updated with actual decrypted
+ * length).
+ * @return The session error type indicating the decryption result.
+ */
+session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len);
+
 #endif    // CORE_SESSION

@@ -52,13 +52,35 @@ typedef struct {
  *****************************************************************************/
 
 /**
- * @brief Encrypts given secure_data_t with card and stores the encrypted data
- * in the same struct
+ * @brief Fetches and encrypts data for a given wallet ID.
  *
- * @return A card_error_type_e value representing the result of the operation.
+ * This function retrieves plain data associated with a wallet ID, encrypts it,
+ * and stores the encrypted data in the provided secure_data_t structures.
+ *
+ * @param wallet_id Pointer to the wallet ID.
+ * @param msgs Pointer to an array of secure_data_t structures to store the
+ * encrypted data.
+ * @param msg_count Number of secure_data_t structures in the array.
+ * @return The card error type indicating the result of the operation.
  */
-card_error_type_e card_fetch_encrypt_data(uint8_t *wallet_id,
+card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
                                           size_t msg_count);
 
+/**
+ * @brief Fetches and decrypts data from the card.
+ *
+ * This function retrieves encrypted data associated with a wallet ID from the
+ * card, decrypts it, and stores the plain data in the provided secure_data_t
+ * structures.
+ *
+ * @param wallet_id Pointer to the wallet ID.
+ * @param msgs Pointer to an array of secure_data_t structures to store the
+ * decrypted data.
+ * @param msg_count Number of secure_data_t structures in the array.
+ * @return The card error type indicating the result of the operation.
+ */
+card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
+                                          secure_data_t *msgs,
+                                          size_t msg_count);
 #endif

@@ -83,6 +83,15 @@ typedef struct {
   uint16_t packet_size;
 } inheritance_encryption_context_t;
 
+typedef struct {
+  secure_data_t data[INHERITANCE_MESSAGES_MAX_COUNT];
+  uint8_t data_count;
+  inheritance_decrypt_data_with_pin_initiate_request_t *request_pointer;
+  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
+  uint16_t packet_size;
+  inheritance_decrypt_data_with_pin_messages_response_t response;
+} inheritance_decryption_context_t;
+
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -107,4 +116,13 @@ void inheritance_auth_wallet(inheritance_query_t *query);
  */
 void inheritance_encrypt_data(inheritance_query_t *query);
 
+/**
+ * @brief Handler for inheritance message decryption
+ * @details This flow expects INHERITANCE_QUERY_DECRYPT_TAG as initial query.
+ * The function controls the complete data exchange with host, user prompts and
+ * confirmations for decryption of inheritance data.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void inheritance_decrypt_data(inheritance_query_t *query);
 #endif /* INHERITANCE_PRIV_H */

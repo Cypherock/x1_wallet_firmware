@@ -381,6 +381,10 @@ extern const char *ui_text_inheritance_encryption_flow_confirmation;
 extern const char *ui_text_inheritance_encryption_flow_success;
 extern const char *ui_text_inheritance_encryption_flow_failure;
 
+extern const char *ui_text_inheritance_decryption_flow_confirmation;
+extern const char *ui_text_inheritance_decryption_flow_success;
+extern const char *ui_text_inheritance_decryption_flow_failure;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif

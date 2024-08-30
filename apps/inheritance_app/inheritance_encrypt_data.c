@@ -68,6 +68,7 @@
 #include "inheritance/core.pb.h"
 #include "inheritance/encrypt_data_with_pin.pb.h"
 #include "inheritance_api.h"
+#include "inheritance_context.h"
 #include "inheritance_priv.h"
 #include "pb.h"
 #include "status_api.h"
@@ -229,7 +230,7 @@ static bool send_encrypted_data(inheritance_query_t *query);
  * STATIC VARIABLES
  *****************************************************************************/
 
-STATIC inheritance_encryption_context_t *context = NULL;
+STATIC inheritance_encryption_context_t *encryption_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -270,6 +271,8 @@ static bool validate_request_data(
       break;
     }
 
+    // TODO: check the current session validity here
+
   } while (0);
 
   return status;
@@ -300,15 +303,16 @@ STATIC bool inheritance_encryption_handle_inititate_query(
 
   set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  context->request_pointer = &(query->encrypt.initiate);
+  encryption_context->request_pointer = &(query->encrypt.initiate);
 
   return true;
 }
 
 STATIC bool inheritance_encryption_get_user_verification(void) {
-  for (int i = 0; i < context->request_pointer->plain_data_count; i++) {
+  for (int i = 0; i < encryption_context->request_pointer->plain_data_count;
+       i++) {
     const inheritance_plain_data_t *data =
-        &context->request_pointer->plain_data[i];
+        &encryption_context->request_pointer->plain_data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
       if (!core_scroll_page(UI_TEXT_VERIFY_MESSAGE,
@@ -324,8 +328,8 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
 }
 
 static bool inheritance_verify_pin(void) {
-  return verify_pin(context->request_pointer->wallet_id,
-                    context->pin_value,
+  return verify_pin(encryption_context->request_pointer->wallet_id,
+                    encryption_context->pin_value,
                     inheritance_send_error);
 }
 
@@ -335,51 +339,56 @@ static void inheritance_fill_tlv(uint8_t *destination,
                                  uint16_t length,
                                  const uint8_t *value) {
   destination[(*starting_index)++] = tag;
-  destination[(*starting_index)++] = length;
   destination[(*starting_index)++] = (length >> 8);
+  destination[(*starting_index)++] = length;
 
   memcpy(destination + *starting_index, value, length);
   *starting_index = *starting_index + length;
 }
 
 static bool serialize_message_data(void) {
-  if (context->request_pointer->plain_data_count >=
+  if (encryption_context->request_pointer->plain_data_count >=
       INHERITANCE_MESSAGES_MAX_COUNT) {
     // TODO: Throw invalid message count error;
     return false;
   }
   pb_size_t index = 0;
-  uint16_t zero_index = 0;
-  for (index = 0; index < context->request_pointer->plain_data_count; index++) {
-    uint16_t length = context->request_pointer->plain_data[index].message.size;
+  uint16_t written_length = 0;
+  for (index = 0; index < encryption_context->request_pointer->plain_data_count;
+       index++) {
+    uint16_t length =
+        encryption_context->request_pointer->plain_data[index].message.size;
     if (length > (PLAIN_DATA_SIZE - 3)) {
       length = PLAIN_DATA_SIZE - 3;
     }
-    zero_index = 0;
+    written_length = 0;
     inheritance_fill_tlv(
-        context->data[index].plain_data,
-        &zero_index,
-        0x00,    ///< Default tag for every message
+        encryption_context->data[index].plain_data,
+        &written_length,
+        INHERITANCE_DEFAULT_MESSAGE,
         length,
-        context->request_pointer->plain_data[index].message.bytes);
-    context->data[index].plain_data_size = length;
+        encryption_context->request_pointer->plain_data[index].message.bytes);
+    encryption_context->data[index].plain_data_size = written_length;
   }
-  zero_index = 0;
-  inheritance_fill_tlv(context->data[index].plain_data,
-                       &zero_index,
-                       0x01,    ///< Special tag for private messages
+  written_length = 0;
+  inheritance_fill_tlv(encryption_context->data[index].plain_data,
+                       &written_length,
+                       INHERITANCE_ONLY_SHOW_ON_DEVICE,
                        MAX_PIN_SIZE,
-                       context->pin_value);
-  context->data[index].plain_data_size = MAX_PIN_SIZE;
+                       encryption_context->pin_value);
+  encryption_context->data[index].plain_data_size = written_length;
 
-  context->data_count = context->request_pointer->plain_data_count + 1;
-  memzero(context->pin_value, sizeof(context->pin_value));
+  encryption_context->data_count =
+      encryption_context->request_pointer->plain_data_count + 1;
+  memzero(encryption_context->pin_value, sizeof(encryption_context->pin_value));
   return true;
 }
 
 static bool encrypt_message_data(void) {
-  card_error_type_e status = card_fetch_encrypt_data(
-      context->request_pointer->wallet_id, context->data, context->data_count);
+  card_error_type_e status =
+      card_fetch_encrypt_data(encryption_context->request_pointer->wallet_id,
+                              encryption_context->data,
+                              encryption_context->data_count);
 
   if (status != CARD_OPERATION_SUCCESS) {
     // TODO: throw encryption failed error
@@ -389,31 +398,33 @@ static bool encrypt_message_data(void) {
 }
 
 static bool serialize_packet(void) {
-  context->packet_size = 0;
-  context->packet[context->packet_size++] = context->data_count;
+  encryption_context->packet_size = 0;
+  encryption_context->packet[encryption_context->packet_size++] =
+      encryption_context->data_count;
   pb_size_t index = 0;
 
-  for (index = 0; index < context->data_count - 1; index++) {
-    inheritance_fill_tlv(context->packet,
-                         &context->packet_size,
-                         0x00,
-                         context->data[index].encrypted_data_size,
-                         context->data[index].encrypted_data);
+  for (index = 0; index < encryption_context->data_count - 1; index++) {
+    inheritance_fill_tlv(encryption_context->packet,
+                         &encryption_context->packet_size,
+                         0x00,    ///< TODO: take this from sdk
+                         encryption_context->data[index].encrypted_data_size,
+                         encryption_context->data[index].encrypted_data);
   }
 
   // The last encrypted message is the PIN
-  inheritance_fill_tlv(context->packet,
-                       &context->packet_size,
-                       0x50,
-                       context->data[index].encrypted_data_size,
-                       context->data[index].encrypted_data);
+  inheritance_fill_tlv(encryption_context->packet,
+                       &encryption_context->packet_size,
+                       INHERITANCE_PIN_TAG,
+                       encryption_context->data[index].encrypted_data_size,
+                       encryption_context->data[index].encrypted_data);
 
   return true;
 }
 
 static bool encrypt_packet(void) {
   if (SESSION_ENCRYPT_PACKET_SUCCESS !=
-      session_aes_encrypt(context->packet, &context->packet_size)) {
+      session_aes_encrypt(encryption_context->packet,
+                          &encryption_context->packet_size)) {
     return false;
   }
 
@@ -468,10 +479,10 @@ static bool send_encrypted_data(inheritance_query_t *query) {
     return false;
   }
 
-  result.encrypt.result.encrypted_data.size = context->packet_size;
+  result.encrypt.result.encrypted_data.size = encryption_context->packet_size;
   memcpy(&result.encrypt.result.encrypted_data.bytes,
-         context->packet,
-         context->packet_size);
+         encryption_context->packet,
+         encryption_context->packet_size);
 
   inheritance_send_result(&result);
   return true;
@@ -482,10 +493,10 @@ static bool send_encrypted_data(inheritance_query_t *query) {
  *****************************************************************************/
 
 void inheritance_encrypt_data(inheritance_query_t *query) {
-  context = (inheritance_encryption_context_t *)malloc(
+  encryption_context = (inheritance_encryption_context_t *)malloc(
       sizeof(inheritance_encryption_context_t));
-  ASSERT(context != NULL);
-  memzero(context, sizeof(inheritance_encryption_context_t));
+  ASSERT(encryption_context != NULL);
+  memzero(encryption_context, sizeof(inheritance_encryption_context_t));
 
   if (inheritance_encryption_handle_inititate_query(query) &&
       inheritance_encryption_get_user_verification() && encrypt_data() &&
@@ -496,7 +507,7 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   }
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
-  memzero(context, sizeof(inheritance_encryption_context_t));
-  free(context);
-  context = NULL;
+  memzero(encryption_context, sizeof(inheritance_encryption_context_t));
+  free(encryption_context);
+  encryption_context = NULL;
 }

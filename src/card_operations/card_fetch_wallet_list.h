@@ -57,4 +57,18 @@ card_error_type_e card_fetch_wallet_list(
     const card_fetch_wallet_list_config_t *config,
     card_fetch_wallet_list_response_t *response);
 
+/**
+ * @brief Fetches the wallet name associated with a given wallet ID.
+ *
+ * This function retrieves the list of wallets from the card and searches for
+ * the wallet with the specified wallet ID. If found, it copies the wallet name
+ * to the provided buffer.
+ *
+ * @param wallet_id Pointer to the wallet ID.
+ * @param wallet_name Pointer to the buffer where the wallet name will be
+ * copied.
+ * @return true if the wallet name is successfully fetched, false otherwise.
+ */
+bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name);
+
 #endif /* CARD_FETCH_WALLET_LIST_H */
