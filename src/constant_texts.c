@@ -530,6 +530,8 @@ const char *ui_critical_card_health_migrate_data =
 // App specific
 
 // Inheritance
+const char *ui_text_inheritance_wallet_auth_flow_confirmation =
+    "Start %s wallet authentication?";
 const char *ui_text_inheritance_wallet_authenticating =
     "Wallet\nauthenticating...";
 const char *ui_text_inheritance_wallet_auth_success =
