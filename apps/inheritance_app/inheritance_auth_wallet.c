@@ -19,13 +19,14 @@
 
 #include "bip39.h"
 #include "card_fetch_data.h"
+#include "card_pair.h"
+#include "core_error.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_priv.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_delay.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -60,8 +61,39 @@ static auth_wallet_config_t *auth = NULL;
 static bool verify_auth_wallet_inputs();
 
 /**
- * @brief Retrieves encrypted data (entropy) from the card based on the wallet
- * ID.
+ * @brief Retrieves and stores seed-based entropy for authentication.
+ *
+ * Generates entropy from the seed based on the wallet ID and stores it in the
+ * auth structure.
+ *
+ * @return true if seed-based entropy is successfully generated and stored,
+ * false otherwise.
+ */
+static bool auth_wallet_get_seed_entropy();
+
+/**
+ * @brief Pairs the card with the device.
+ *
+ * Initiates the card pairing process and updates the app flow status upon
+ * success.
+ *
+ * @return true if the card is successfully paired, false otherwise.
+ */
+static bool auth_wallet_pair_card();
+
+/**
+ * @brief Retrieves and stores wallet-based entropy from the card.
+ *
+ * Fetches encrypted wallet ID data from the card to generate entropy.
+ *
+ * @return true if wallet-based entropy is successfully fetched and stored,
+ * false otherwise.
+ */
+static bool auth_wallet_get_wallet_entropy();
+
+/**
+ * @brief Retrieves encrypted data (entropy) from the card based on the type
+ * requested from the host (seed based and/or wallet_id based)
  *
  * This function initializes a secure_data_t structure, fetches encrypted data
  * from the card, and stores the result in the auth structure. It checks if the
@@ -126,19 +158,15 @@ static bool verify_auth_wallet_inputs() {
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
     return false;
   }
-
   return true;
 }
 
-static bool auth_wallet_get_entropy() {
+static bool auth_wallet_get_seed_entropy() {
   if (auth->do_seed_based) {
     uint8_t seed[SIZE_SEED] = {0};
     if (!reconstruct_seed_without_passphrase(
             auth->data.wallet_id, seed, inheritance_send_error)) {
       memzero(seed, sizeof(seed));
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_QUERY);
-      delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
       return false;
     }
     memcpy((void *)auth->seed_based_data.entropy, seed, SIZE_SEED);
@@ -148,18 +176,30 @@ static bool auth_wallet_get_entropy() {
     // seed generation complete
     set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_SEED_BASED_CARD_TAPPED);
   }
+  return true;
+}
+
+static bool auth_wallet_pair_card() {
+  // Pair the card first
+  card_error_type_e status = single_card_pair_operation(
+      (char *)ui_text_tap_the_card, ui_text_place_card_below);
+  if (status != CARD_OPERATION_SUCCESS) {
+    return false;
+  }
+  set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_PAIRING_CARD_TAPPED);
+  return true;
+}
+
+static bool auth_wallet_get_wallet_entropy() {
   if (auth->do_wallet_based) {
     secure_data_t msgs[1] = {0};
     msgs[0].plain_data_size = WALLET_ID_SIZE;
     memcpy(msgs[0].plain_data, auth->data.wallet_id, WALLET_ID_SIZE);
-
+    // fetch encrypted wallet_id
     card_error_type_e status =
         card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
     if (status != CARD_OPERATION_SUCCESS ||
         msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
-      delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
       return false;
     }
     memcpy((void *)auth->wallet_based_data.entropy,
@@ -171,9 +211,18 @@ static bool auth_wallet_get_entropy() {
     set_app_flow_status(
         INHERITANCE_AUTH_WALLET_STATUS_WALLET_BASED_CARD_TAPPED);
   }
+  return true;
+}
 
+static bool auth_wallet_get_entropy() {
+  if (!auth_wallet_get_seed_entropy() || !auth_wallet_pair_card() ||
+      !auth_wallet_get_wallet_entropy()) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_DATA);
+    delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
+    return false;
+  }
   delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
-
   return true;
 }
 

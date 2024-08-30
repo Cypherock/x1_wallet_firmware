@@ -376,6 +376,7 @@ extern const char *ui_critical_card_health_migrate_data;
 extern const char *ui_text_inheritance_wallet_authenticating;
 extern const char *ui_text_inheritance_wallet_auth_success;
 extern const char *ui_text_inheritance_wallet_auth_fail;
+extern const char *ui_text_tap_the_card;
 
 extern const char *ui_text_inheritance_encryption_flow_confirmation;
 extern const char *ui_text_inheritance_encryption_flow_success;
