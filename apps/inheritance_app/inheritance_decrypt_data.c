@@ -173,7 +173,7 @@ static bool show_data(void);
  * STATIC VARIABLES
  *****************************************************************************/
 
-STATIC inheritance_decryption_context_t *context = NULL;
+STATIC inheritance_decryption_context_t *decryption_context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -227,7 +227,7 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
 
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  context->request_pointer = &(query->decrypt.initiate);
+  decryption_context->request_pointer = &(query->decrypt.initiate);
   return true;
 }
 
@@ -243,7 +243,7 @@ static bool send_decrypted_data(inheritance_query_t *query) {
   }
 
   memcpy(&result.decrypt.messages,
-         &context->response,
+         &decryption_context->response,
          sizeof(inheritance_decrypt_data_with_pin_messages_response_t));
 
   inheritance_send_result(&result);
@@ -251,37 +251,40 @@ static bool send_decrypted_data(inheritance_query_t *query) {
 }
 
 static bool decrypt_packet(void) {
-  context->packet_size = context->request_pointer->encrypted_data.size;
-  memcpy(context->packet,
-         context->request_pointer->encrypted_data.bytes,
-         context->packet_size);
-  return session_aes_decrypt(context->packet, &context->packet_size) ==
+  decryption_context->packet_size =
+      decryption_context->request_pointer->encrypted_data.size;
+  memcpy(decryption_context->packet,
+         decryption_context->request_pointer->encrypted_data.bytes,
+         decryption_context->packet_size);
+  return session_aes_decrypt(decryption_context->packet,
+                             &decryption_context->packet_size) ==
          SESSION_DECRYPT_PACKET_SUCCESS;
 }
 
 static bool deserialize_packet(void) {
   uint16_t packet_index = 0;
-  context->data_count = context->packet[packet_index++];
-  for (uint8_t index = 0; index < context->data_count; index++) {
+  decryption_context->data_count = decryption_context->packet[packet_index++];
+  for (uint8_t index = 0; index < decryption_context->data_count; index++) {
     packet_index++;    ///< Skip tag
 
-    context->data[index].encrypted_data_size =
-        U16_READ_BE_ARRAY(&context->packet[packet_index]);
+    decryption_context->data[index].encrypted_data_size =
+        U16_READ_BE_ARRAY(&decryption_context->packet[packet_index]);
     packet_index += 2;    ///< Read length
 
-    memcpy(context->data[index].encrypted_data,
-           &context->packet[packet_index],
-           context->data[index].encrypted_data_size);
-    packet_index += context->data[index].encrypted_data_size;
+    memcpy(decryption_context->data[index].encrypted_data,
+           &decryption_context->packet[packet_index],
+           decryption_context->data[index].encrypted_data_size);
+    packet_index += decryption_context->data[index].encrypted_data_size;
   }
 
-  return packet_index <= context->packet_size;
+  return packet_index <= decryption_context->packet_size;
 }
 
 static bool decrypt_message_data(void) {
-  return card_fetch_decrypt_data(context->request_pointer->wallet_id,
-                                 context->data,
-                                 context->data_count) == CARD_OPERATION_SUCCESS;
+  return card_fetch_decrypt_data(decryption_context->request_pointer->wallet_id,
+                                 decryption_context->data,
+                                 decryption_context->data_count) ==
+         CARD_OPERATION_SUCCESS;
 }
 
 static bool decrypt_data(void) {
@@ -313,26 +316,27 @@ static bool decrypt_data(void) {
 static bool show_data(void) {
   pb_size_t response_count = 0;
 
-  for (uint8_t i = 0; i < context->data_count; i++) {
-    uint8_t tag = context->data[i].plain_data[0];
+  for (uint8_t i = 0; i < decryption_context->data_count; i++) {
+    uint8_t tag = decryption_context->data[i].plain_data[0];
 
     if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
       if (!core_scroll_page(
               UI_TEXT_VERIFY_MESSAGE,
-              (const char *)&context->data[i]
+              (const char *)&decryption_context->data[i]
                   .plain_data[3],    ///> sizeof (tag) + sizeof (length) = 3
               inheritance_send_error)) {
         return false;
       }
     } else {
       uint16_t offset = 1;    // Skip tag
-      context->response.plain_data[response_count].message.size =
-          U16_READ_BE_ARRAY(context->data[i].plain_data + offset);
+      decryption_context->response.plain_data[response_count].message.size =
+          U16_READ_BE_ARRAY(decryption_context->data[i].plain_data + offset);
       offset += 2;    // Skip length
-      memcpy(context->response.plain_data[response_count].message.bytes,
-             context->data[i].plain_data + offset,
-             context->response.plain_data[response_count].message.size);
-      context->response.plain_data_count = ++response_count;
+      memcpy(
+          decryption_context->response.plain_data[response_count].message.bytes,
+          decryption_context->data[i].plain_data + offset,
+          decryption_context->response.plain_data[response_count].message.size);
+      decryption_context->response.plain_data_count = ++response_count;
     }
   }
 
@@ -345,9 +349,9 @@ static bool show_data(void) {
  *****************************************************************************/
 
 void inheritance_decrypt_data(inheritance_query_t *query) {
-  context = (inheritance_decryption_context_t *)malloc(
+  decryption_context = (inheritance_decryption_context_t *)malloc(
       sizeof(inheritance_decryption_context_t));
-  memzero(context, sizeof(inheritance_decryption_context_t));
+  memzero(decryption_context, sizeof(inheritance_decryption_context_t));
 
   if (inheritance_handle_initiate_query(query) && decrypt_data() &&
       show_data() && send_decrypted_data(query)) {
@@ -357,7 +361,7 @@ void inheritance_decrypt_data(inheritance_query_t *query) {
   }
 
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
-  memzero(context, sizeof(inheritance_decryption_context_t));
-  free(context);
-  context = NULL;
+  memzero(decryption_context, sizeof(inheritance_decryption_context_t));
+  free(decryption_context);
+  decryption_context = NULL;
 }
