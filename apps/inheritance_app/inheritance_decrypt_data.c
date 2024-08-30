@@ -321,9 +321,9 @@ static bool show_data(void) {
 
     if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
       if (!core_scroll_page(
-              UI_TEXT_VERIFY_MESSAGE,
+              UI_TEXT_PIN,    ///< TODO: Figure out a way to make this generic
               (const char *)&decryption_context->data[i]
-                  .plain_data[3],    ///> sizeof (tag) + sizeof (length) = 3
+                  .plain_data[3],    ///< sizeof (tag) + sizeof (length) = 3
               inheritance_send_error)) {
         return false;
       }
