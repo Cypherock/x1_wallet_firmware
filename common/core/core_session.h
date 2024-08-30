@@ -116,4 +116,6 @@ void core_session_parse_start_message(const core_msg_t *core_msg);
  */
 session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len);
 
+session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len);
+
 #endif    // CORE_SESSION

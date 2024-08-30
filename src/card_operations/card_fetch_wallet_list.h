@@ -57,4 +57,6 @@ card_error_type_e card_fetch_wallet_list(
     const card_fetch_wallet_list_config_t *config,
     card_fetch_wallet_list_response_t *response);
 
+bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name);
+
 #endif /* CARD_FETCH_WALLET_LIST_H */

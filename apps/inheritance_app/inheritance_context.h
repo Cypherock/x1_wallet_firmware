@@ -21,10 +21,15 @@
 
 #define INHERITANCE_MESSAGES_MAX_COUNT 5
 #define INHERITANCE_PACKET_MAX_SIZE 6000
+#define INHERITANCE_PIN_TAG 0x50
 
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef enum inheritance_message_type {
+  INHERITANCE_DEFAULT_MESSAGE = 0x00,
+  INHERITANCE_ONLY_SHOW_ON_DEVICE = 0x50,
+} inheritance_message_type_e;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

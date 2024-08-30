@@ -68,6 +68,7 @@
 #include "inheritance/core.pb.h"
 #include "inheritance/encrypt_data_with_pin.pb.h"
 #include "inheritance_api.h"
+#include "inheritance_context.h"
 #include "inheritance_priv.h"
 #include "pb.h"
 #include "status_api.h"
@@ -270,6 +271,8 @@ static bool validate_request_data(
       break;
     }
 
+    // TODO: check the current session validity here
+
   } while (0);
 
   return status;
@@ -335,8 +338,8 @@ static void inheritance_fill_tlv(uint8_t *destination,
                                  uint16_t length,
                                  const uint8_t *value) {
   destination[(*starting_index)++] = tag;
-  destination[(*starting_index)++] = length;
   destination[(*starting_index)++] = (length >> 8);
+  destination[(*starting_index)++] = length;
 
   memcpy(destination + *starting_index, value, length);
   *starting_index = *starting_index + length;
@@ -349,28 +352,28 @@ static bool serialize_message_data(void) {
     return false;
   }
   pb_size_t index = 0;
-  uint16_t zero_index = 0;
+  uint16_t written_length = 0;
   for (index = 0; index < context->request_pointer->plain_data_count; index++) {
     uint16_t length = context->request_pointer->plain_data[index].message.size;
     if (length > (PLAIN_DATA_SIZE - 3)) {
       length = PLAIN_DATA_SIZE - 3;
     }
-    zero_index = 0;
+    written_length = 0;
     inheritance_fill_tlv(
         context->data[index].plain_data,
-        &zero_index,
-        0x00,    ///< Default tag for every message
+        &written_length,
+        INHERITANCE_DEFAULT_MESSAGE,
         length,
         context->request_pointer->plain_data[index].message.bytes);
-    context->data[index].plain_data_size = length;
+    context->data[index].plain_data_size = written_length;
   }
-  zero_index = 0;
+  written_length = 0;
   inheritance_fill_tlv(context->data[index].plain_data,
-                       &zero_index,
-                       0x01,    ///< Special tag for private messages
+                       &written_length,
+                       INHERITANCE_ONLY_SHOW_ON_DEVICE,
                        MAX_PIN_SIZE,
                        context->pin_value);
-  context->data[index].plain_data_size = MAX_PIN_SIZE;
+  context->data[index].plain_data_size = written_length;
 
   context->data_count = context->request_pointer->plain_data_count + 1;
   memzero(context->pin_value, sizeof(context->pin_value));
@@ -396,7 +399,7 @@ static bool serialize_packet(void) {
   for (index = 0; index < context->data_count - 1; index++) {
     inheritance_fill_tlv(context->packet,
                          &context->packet_size,
-                         0x00,
+                         0x00,    ///< TODO: take this from sdk
                          context->data[index].encrypted_data_size,
                          context->data[index].encrypted_data);
   }
@@ -404,7 +407,7 @@ static bool serialize_packet(void) {
   // The last encrypted message is the PIN
   inheritance_fill_tlv(context->packet,
                        &context->packet_size,
-                       0x50,
+                       INHERITANCE_PIN_TAG,
                        context->data[index].encrypted_data_size,
                        context->data[index].encrypted_data);
 

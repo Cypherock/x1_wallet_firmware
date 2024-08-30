@@ -1,5 +1,4 @@
 /**
- * @file    inheritance_decrypt_data.c
  * @author  Cypherock X1 Team
  * @brief   Inheritance message decryption login
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -61,15 +60,23 @@
  *****************************************************************************/
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
+#include "card_fetch_data.h"
+#include "card_operation_typedefs.h"
+#include "constant_texts.h"
+#include "core_session.h"
 #include "inheritance/core.pb.h"
 #include "inheritance/decrypt_data_with_pin.pb.h"
 #include "inheritance_api.h"
+#include "inheritance_context.h"
 #include "inheritance_priv.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "utils.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -88,90 +95,11 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Checks if the provided query contains expected request.
- * @details The function performs the check on the request type and if the check
- * fails, then it will send an error to the host inheritance app and return
- * false.
- *
- * @param query Reference to an instance of inheritance_query_t containing query
- * received from host app
- * @param which_request The expected request type enum
- *
- * @return bool Indicating if the check succeeded or failed
- * @retval true If the query contains the expected request
- * @retval false If the query does not contain the expected request
- */
-static bool check_which_request(const inheritance_query_t *query,
-                                pb_size_t which_request);
-
-/**
- * @brief Validates the derivation path received in the request from host
- * @details The function validates the provided account derivation path in the
- * request. If invalid path is detected, the function will send an error to the
- * host and return false.
- *
- * @param request Reference to an instance of inheritance_decrypt_data_request_t
- * @return bool Indicating if the verification passed or failed
- * @retval true If all the derivation path entries are valid
- * @retval false If any of the derivation path entries are invalid
- */
-static bool validate_request_data(
-    const inheritance_decrypt_data_with_pin_request_t *request);
-
-/**
- * @brief Takes already received and decoded query for the user confirmation.
- * @details The function will verify if the query contains the
- * INHERITANCE_DECRYPT_DATA type of request. Additionally, the wallet-id is
- * validated for sanity and the derivation path for the account is also
- * validated. After the validations, user is prompted about the action for
- * confirmation. The function returns true indicating all the validation and
- * user confirmation was a success. The function also duplicates the data from
- * query into the inheritance_txn_context  for further processing.
- *
- * @param query Constant reference to the decoded query received from the host
- *
- * @return bool Indicating if the function actions succeeded or failed
- * @retval true If all the validation and user confirmation was positive
- * @retval false If any of the validation or user confirmation was negative
- */
-STATIC bool inheritance_handle_initiate_query(const inheritance_query_t *query);
-
-/**
- * @brief Aggregates user consent for the decryption info
- * @details The function displays the required messages for user to very
- *
- *
- * @return bool Indicating if the user confirmed the messages
- * @retval true If user confirmed the messages displayed
- * @retval false Immediate return if any of the messages are disapproved
- */
-STATIC bool inheritance_get_user_pin_verification(inheritance_query_t *query);
-
-/**
- * @brief Sends the decrypted data to the host
- * @details The function decrypts the data and sends it to the host
- *
- * @param query Reference to an instance of inheritance_query_t to store
- * transient request from the host
- * @return bool Indicating if the decrypted data is sent to the host
- * @retval true If the decrypted data was sent to host successfully
- * @retval false If the host responded with unknown/wrong query
- */
-static bool send_decrypted_data(inheritance_query_t *query);
-
-/**
- * @brief The function prepares and sends empty responses
- *
- * @param which_response Constant value for the response type to be sent
- */
-static void send_response(pb_size_t which_response);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
-STATIC inheritance_decryption_context_t *inheritance_decryption_context = NULL;
+STATIC inheritance_decryption_context_t *context = NULL;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -196,13 +124,12 @@ static bool validate_request_data(
     const inheritance_decrypt_data_with_pin_request_t *request) {
   bool status = true;
 
-  // TODO: check the current request and session validity here
+  // TODO: check the current session validity here
 
   return status;
 }
 
-STATIC bool inheritance_handle_initiate_query(
-    const inheritance_query_t *query) {
+STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -215,28 +142,19 @@ STATIC bool inheritance_handle_initiate_query(
     return false;
   }
 
-  snprintf(msg, sizeof(msg), "Test %s", wallet_name);    // TODO: update message
-                                                         //
-  // Take user consent to sign the transaction for the wallet
+  snprintf(msg,
+           sizeof(msg),
+           ui_text_inheritance_decryption_flow_failure,
+           wallet_name);
+
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;
   }
 
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  // TODO: copy data to local context;
-
-  // show processing screen for a minimum duration (additional time will add due
-  // to actual processing)
-  delay_scr_init(ui_text_processing, DELAY_SHORT);
+  context->request_pointer = &(query->decrypt.initiate);
   return true;
-}
-
-static void send_response(const pb_size_t which_response) {
-  inheritance_result_t result =
-      init_inheritance_result(INHERITANCE_RESULT_DECRYPT_TAG);
-  result.decrypt.which_response = which_response;
-  inheritance_send_result(&result);
 }
 
 static bool send_decrypted_data(inheritance_query_t *query) {
@@ -250,34 +168,101 @@ static bool send_decrypted_data(inheritance_query_t *query) {
     return false;
   }
 
-  inheritance_decrypt_data_with_pin_messages_response_t dummy = {0};
-
-  dummy.plain_data_count = 1;
-  dummy.plain_data[0].message.size = 1;
-  dummy.plain_data[0].message.bytes[0] = 97;
-
   memcpy(&result.decrypt.messages,
-         &dummy,
+         &context->response,
          sizeof(inheritance_decrypt_data_with_pin_messages_response_t));
 
-  set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
   inheritance_send_result(&result);
   return true;
 }
 
-STATIC bool inheritance_get_user_pin_verification(inheritance_query_t *query) {
-  if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
-      !check_which_request(query,
-                           INHERITANCE_DECRYPT_DATA_WITH_PIN_REQUEST_ACK_TAG)) {
-    return false;
+static bool decrypt_packet(void) {
+  context->packet_size = context->request_pointer->encrypted_data.size;
+  memcpy(context->packet,
+         context->request_pointer->encrypted_data.bytes,
+         context->packet_size);
+  return session_aes_decrypt(context->packet, &context->packet_size) ==
+         SESSION_DECRYPT_PACKET_SUCCESS;
+}
+
+static bool deserialize_packet(void) {
+  uint16_t packet_index = 0;
+  context->data_count = context->packet[packet_index++];
+  for (uint8_t index = 0; index < context->data_count; index++) {
+    packet_index++;    ///< Skip tag
+
+    context->data[index].encrypted_data_size =
+        U16_READ_BE_ARRAY(&context->packet[packet_index]);
+    packet_index += 2;    ///< Read length
+
+    memcpy(context->data[index].encrypted_data,
+           &context->packet[packet_index],
+           context->data[index].encrypted_data_size);
+    packet_index += context->data[index].encrypted_data_size;
   }
-  // TODO: Show user the pin
-  if (!core_scroll_page("Your PIN", "1234", inheritance_send_error)) {
-    return false;
+
+  return packet_index <= context->packet_size;
+}
+
+static bool decrypt_message_data(void) {
+  return card_fetch_decrypt_data(context->request_pointer->wallet_id,
+                                 context->data,
+                                 context->data_count) == CARD_OPERATION_SUCCESS;
+}
+
+static bool decrypt_data(void) {
+  bool status = true;
+
+  do {
+    if (!decrypt_packet()) {
+      // TODO: Throw packet decryption error
+      status = false;
+      break;
+    }
+
+    if (!deserialize_packet()) {
+      // TODO: Throw packet serialization error
+      status = false;
+      break;
+    }
+    if (!decrypt_message_data()) {
+      // TODO: Throw decryption failed
+      status = false;
+      break;
+    }
+
+  } while (0);
+  set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
+  return status;
+}
+
+static bool show_data(void) {
+  pb_size_t response_count = 0;
+
+  for (uint8_t i = 0; i < context->data_count; i++) {
+    uint8_t tag = context->data[i].plain_data[0];
+
+    if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
+      if (!core_scroll_page(
+              UI_TEXT_VERIFY_MESSAGE,
+              (const char *)&context->data[i]
+                  .plain_data[3],    ///> sizeof (tag) + sizeof (length) = 3
+              inheritance_send_error)) {
+        return false;
+      }
+    } else {
+      uint16_t offset = 1;    // Skip tag
+      context->response.plain_data[response_count].message.size =
+          U16_READ_BE_ARRAY(context->data[i].plain_data + offset);
+      offset += 2;    // Skip length
+      memcpy(context->response.plain_data[response_count].message.bytes,
+             context->data[i].plain_data + offset,
+             context->response.plain_data[response_count].message.size);
+      context->response.plain_data_count = ++response_count;
+    }
   }
 
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_PIN_VERIFIED);
-  send_response(INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_ACK_TAG);
   return true;
 }
 
@@ -286,17 +271,19 @@ STATIC bool inheritance_get_user_pin_verification(inheritance_query_t *query) {
  *****************************************************************************/
 
 void inheritance_decrypt_data(inheritance_query_t *query) {
-  inheritance_decryption_context = (inheritance_decryption_context_t *)malloc(
+  context = (inheritance_decryption_context_t *)malloc(
       sizeof(inheritance_decryption_context_t));
-  memzero(inheritance_decryption_context,
-          sizeof(inheritance_decryption_context_t));
+  memzero(context, sizeof(inheritance_decryption_context_t));
 
-  // TODO: add actual decryption and decrypiton function
-  if (inheritance_handle_initiate_query(query) && send_decrypted_data(query) &&
-      inheritance_get_user_pin_verification(query)) {
-    delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+  if (inheritance_handle_initiate_query(query) && decrypt_data() &&
+      show_data() && send_decrypted_data(query)) {
+    delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_TIME);
+  } else {
+    delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_TIME);
   }
 
-  free(inheritance_decryption_context);
-  inheritance_decryption_context = NULL;
+  delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+  memzero(context, sizeof(inheritance_decryption_context_t));
+  free(context);
+  context = NULL;
 }

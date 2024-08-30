@@ -491,8 +491,8 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
          AES_BLOCK_SIZE - remainder);
 
   // the IV gets mutated, so we make a copy not to touch the original
-  uint8_t iv[AES_BLOCK_SIZE] = {0};
-  memcpy(iv, session.session_iv, AES_BLOCK_SIZE);
+  uint8_t initialization_vector[AES_BLOCK_SIZE] = {0};
+  memcpy(initialization_vector, session.session_iv, AES_BLOCK_SIZE);
 
   aes_encrypt_ctx ctx = {0};
 
@@ -500,13 +500,16 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
     return SESSION_ENCRYPT_PACKET_KEY_ERR;
   }
 
-  if (aes_cbc_encrypt(payload, InOut_data, size, iv, &ctx) != EXIT_SUCCESS) {
+  if (aes_cbc_encrypt(payload, InOut_data, size, initialization_vector, &ctx) !=
+      EXIT_SUCCESS) {
     return SESSION_ENCRYPT_PACKET_ERR;
   }
 
-  if (aes_cbc_encrypt(
-          last_block, InOut_data + size, sizeof(last_block), iv, &ctx) !=
-      EXIT_SUCCESS) {
+  if (aes_cbc_encrypt(last_block,
+                      InOut_data + size,
+                      sizeof(last_block),
+                      initialization_vector,
+                      &ctx) != EXIT_SUCCESS) {
     return SESSION_ENCRYPT_PACKET_ERR;
   }
 
@@ -516,4 +519,31 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
   memzero(&ctx, sizeof(ctx));
 
   return SESSION_ENCRYPT_PACKET_SUCCESS;
+}
+
+session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len) {
+  ASSERT(InOut_data != NULL);
+  ASSERT(len != NULL);
+
+  size_t size = *len;
+
+  uint8_t payload[size];
+  memcpy(payload, InOut_data, size);
+  memzero(InOut_data, size);
+
+  aes_decrypt_ctx ctx = {0};
+
+  if (EXIT_SUCCESS != aes_decrypt_key256(session.session_key, &ctx)) {
+    return SESSION_DECRYPT_PACKET_KEY_ERR;
+  }
+
+  if (aes_cbc_decrypt(payload, InOut_data, size, session.session_iv, &ctx) !=
+      EXIT_SUCCESS) {
+    return SESSION_DECRYPT_PACKET_ERR;
+  }
+
+  *len = size;
+  memzero(&ctx, sizeof(ctx));
+
+  return SESSION_DECRYPT_PACKET_SUCCESS;
 }

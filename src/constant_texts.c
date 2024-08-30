@@ -542,6 +542,11 @@ const char *ui_text_inheritance_encryption_flow_confirmation =
 const char *ui_text_inheritance_encryption_flow_success = "Encryption Success";
 const char *ui_text_inheritance_encryption_flow_failure = "Encryption Failed";
 
+const char *ui_text_inheritance_decryption_flow_confirmation =
+    "Proceed to decrypt data for %s?";
+const char *ui_text_inheritance_decryption_flow_success = "Decryption Success";
+const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif
