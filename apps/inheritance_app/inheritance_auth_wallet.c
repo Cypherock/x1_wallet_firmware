@@ -310,6 +310,7 @@ static bool send_result() {
       memcpy(result.auth_wallet.result.seed_based.public_key,
              auth->seed_based_data.result.public_key,
              sizeof(ed25519_public_key));
+      result.auth_wallet.result.seed_based.has_public_key = true;
     }
   }
   if (auth->do_wallet_based) {
@@ -321,6 +322,7 @@ static bool send_result() {
       memcpy(result.auth_wallet.result.wallet_based.public_key,
              auth->wallet_based_data.result.public_key,
              sizeof(ed25519_public_key));
+      result.auth_wallet.result.wallet_based.has_public_key = true;
     }
   }
   inheritance_send_result(&result);
