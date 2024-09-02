@@ -187,8 +187,8 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
       .operation = {.acceptable_cards = ACCEPTABLE_CARDS_ALL,
                     .skip_card_removal = true,
                     .expected_family_id = get_family_id()},
-      .frontend = {.heading = ui_text_place_card_below,
-                   .msg = ui_text_tap_1_2_cards}};
+      .frontend = {.heading = ui_text_tap_1_2_cards,
+                   .msg = ui_text_place_card_below}};
 
   card_fetch_wallet_list_response_t response = {.wallet_list = &wallets_in_card,
                                                 .card_info = {0}};
