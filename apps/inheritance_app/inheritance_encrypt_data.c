@@ -343,7 +343,9 @@ STATIC bool inheritance_encryption_handle_inititate_query(
 
   set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  memcpy(encryption_context->wallet_id, query->encrypt.initiate.wallet_id, WALLET_ID_SIZE);
+  memcpy(encryption_context->wallet_id,
+         query->encrypt.initiate.wallet_id,
+         WALLET_ID_SIZE);
   inheritance_result_t result =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
   result.encrypt.which_response =
@@ -440,7 +442,8 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
 
 STATIC bool inheritance_encryption_get_user_verification(void) {
   for (int i = 0; i < encryption_context->plain_data.data_count; i++) {
-    const inheritance_plain_data_t *data = &encryption_context->plain_data.data[i];
+    const inheritance_plain_data_t *data =
+        &encryption_context->plain_data.data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
       if (!core_scroll_non_sticky_heading_page(
@@ -457,8 +460,9 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
 }
 
 static bool inheritance_verify_pin(void) {
-  return verify_pin(
-      encryption_context->wallet_id, encryption_context->pin_value, inheritance_send_error);
+  return verify_pin(encryption_context->wallet_id,
+                    encryption_context->pin_value,
+                    inheritance_send_error);
 }
 
 static void inheritance_fill_tlv(uint8_t *destination,
@@ -475,7 +479,8 @@ static void inheritance_fill_tlv(uint8_t *destination,
 }
 
 static bool serialize_message_data(void) {
-  if (encryption_context->plain_data.data_count >= INHERITANCE_MESSAGES_MAX_COUNT) {
+  if (encryption_context->plain_data.data_count >=
+      INHERITANCE_MESSAGES_MAX_COUNT) {
     // TODO: Throw invalid message count error;
     return false;
   }
@@ -510,8 +515,10 @@ static bool serialize_message_data(void) {
 }
 
 static bool encrypt_message_data(void) {
-  card_error_type_e status = card_fetch_encrypt_data(
-      encryption_context->wallet_id, encryption_context->data, encryption_context->data_count);
+  card_error_type_e status =
+      card_fetch_encrypt_data(encryption_context->wallet_id,
+                              encryption_context->data,
+                              encryption_context->data_count);
 
   if (status != CARD_OPERATION_SUCCESS) {
     // TODO: throw encryption failed error
