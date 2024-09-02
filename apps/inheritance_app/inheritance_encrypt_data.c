@@ -61,20 +61,25 @@
 
 #include <stdint.h>
 
+#include "bignum.h"
 #include "card_fetch_data.h"
 #include "constant_texts.h"
 #include "core_session.h"
 #include "inheritance/common.pb.h"
 #include "inheritance/core.pb.h"
+#include "inheritance/decrypt_data_with_pin.pb.h"
 #include "inheritance/encrypt_data_with_pin.pb.h"
 #include "inheritance_api.h"
 #include "inheritance_context.h"
 #include "inheritance_priv.h"
 #include "pb.h"
+#include "pb_decode.h"
+#include "pb_encode.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
+#include "utils.h"
 #include "verify_pin_flow.h"
 #include "wallet.h"
 #include "wallet_list.h"
@@ -86,7 +91,7 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-
+#define ENCRYPTED_CHUNK_SIZE (2048)
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -133,6 +138,25 @@ static bool validate_request_data(
  */
 STATIC bool inheritance_encryption_handle_inititate_query(
     inheritance_query_t *query);
+
+/**
+ * @brief Function responsible for decoding pb_encoded buffer to @ref
+ * inheritance_encrypt_data_with_pin_plain_data_structure_t
+ *
+ * @return true if decoding successful, false otherwise.
+ */
+static bool decode_inheritance_plain_data(
+    const uint8_t *data,
+    uint16_t data_size,
+    inheritance_encrypt_data_with_pin_plain_data_structure_t *plain_data);
+
+/**
+ * @brief Retrieves pb_encoded plain data chunks from the host and creates input
+ * buffer for @ref decode_inheritance_plain_data.
+ *
+ * @return true if data is successfully retrieved and decoded, false otherwise.
+ */
+static bool inheritance_get_plain_data(inheritance_query_t *query);
 
 /**
  * @brief Obtains user verification for specific plain data messages.
@@ -214,6 +238,22 @@ static bool serialize_packet(void);
  * @return True if packet encryption is successful; false otherwise.
  */
 static bool encrypt_packet(void);
+
+/**
+ * @brief
+ */
+static bool get_pb_encoded_buffer(
+    const inheritance_encrypt_data_with_pin_encrypted_data_structure_t *result,
+    uint8_t *buffer,
+    uint16_t max_buffer_len,
+    size_t *bytes_written_out);
+
+/**
+ * @brief
+ */
+static bool encrypted_struct_to_byte_array(uint8_t *buffer,
+                                           size_t buffer_size,
+                                           size_t *bytes_encoded);
 
 /**
  * @brief Encrypts the data and sends the result.
@@ -303,16 +343,104 @@ STATIC bool inheritance_encryption_handle_inititate_query(
 
   set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_USER_CONFIRMED);
 
-  encryption_context->request_pointer = &(query->encrypt.initiate);
+  memcpy(encryption_context->wallet_id, query->encrypt.initiate.wallet_id, WALLET_ID_SIZE);
+  inheritance_result_t result =
+      init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
+  result.encrypt.which_response =
+      INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_CONFIRMATION_TAG;
+  inheritance_send_result(&result);
+  return true;
+}
+
+static bool decode_inheritance_plain_data(
+    const uint8_t *data,
+    uint16_t data_size,
+    inheritance_encrypt_data_with_pin_plain_data_structure_t *plain_data) {
+  if (NULL == data || NULL == plain_data || 0 == data_size) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
+  }
+
+  // zeroise for safety from garbage in the query reference
+  memzero(plain_data,
+          sizeof(inheritance_encrypt_data_with_pin_plain_data_structure_t));
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status =
+      pb_decode(&stream,
+                INHERITANCE_ENCRYPT_DATA_WITH_PIN_PLAIN_DATA_STRUCTURE_FIELDS,
+                plain_data);
+
+  /* Send error to host if status is false*/
+  if (false == status) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_DECODING_FAILED);
+  }
+
+  return status;
+}
+
+static bool inheritance_get_plain_data(inheritance_query_t *query) {
+  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {
+      0};    ///< CONFIRM ENCODED DATA MAX SIZE
+  inheritance_result_t response =
+      init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
+  const inheritance_encrypt_data_with_pin_plain_data_t *plain_data =
+      &(query->encrypt.plain_data);
+  const common_chunk_payload_t *payload = &(plain_data->chunk_payload);
+  const common_chunk_payload_chunk_t *chunk = &(payload->chunk);
+  uint32_t total_size = 0;
+  uint32_t size = 0;
+  while (1) {
+    // req plain data chunk from host
+    if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
+        !check_which_request(
+            query, INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_PLAIN_DATA_TAG)) {
+      return false;
+    }
+    if (size == 0) {
+      total_size = chunk->size + payload->remaining_size;
+    }
+
+    if (false == query->encrypt.plain_data.has_chunk_payload ||
+        payload->chunk_index >= payload->total_chunks ||
+        size + chunk->size > total_size) {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+
+    memcpy(encoded_data + size, chunk->bytes, chunk->size);
+    size += chunk->size;
+
+    // Send chunk ack to host
+    response.encrypt.which_response =
+        INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_DATA_ACCEPTED_TAG;
+    response.encrypt.data_accepted.has_chunk_ack = true;
+    response.encrypt.data_accepted.chunk_ack.chunk_index = payload->chunk_index;
+    inheritance_send_result(&response);
+
+    // If no data remaining to be received from the host, then exit
+    if (0 == payload->remaining_size ||
+        payload->chunk_index + 1 == payload->total_chunks) {
+      break;
+    }
+  }
+  if (!decode_inheritance_plain_data(
+          encoded_data, total_size, &encryption_context->plain_data)) {
+    return false;
+  }
 
   return true;
 }
 
 STATIC bool inheritance_encryption_get_user_verification(void) {
-  for (int i = 0; i < encryption_context->request_pointer->plain_data_count;
-       i++) {
-    const inheritance_plain_data_t *data =
-        &encryption_context->request_pointer->plain_data[i];
+  for (int i = 0; i < encryption_context->plain_data.data_count; i++) {
+    const inheritance_plain_data_t *data = &encryption_context->plain_data.data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
       if (!core_scroll_non_sticky_heading_page(
@@ -329,9 +457,8 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
 }
 
 static bool inheritance_verify_pin(void) {
-  return verify_pin(encryption_context->request_pointer->wallet_id,
-                    encryption_context->pin_value,
-                    inheritance_send_error);
+  return verify_pin(
+      encryption_context->wallet_id, encryption_context->pin_value, inheritance_send_error);
 }
 
 static void inheritance_fill_tlv(uint8_t *destination,
@@ -348,17 +475,14 @@ static void inheritance_fill_tlv(uint8_t *destination,
 }
 
 static bool serialize_message_data(void) {
-  if (encryption_context->request_pointer->plain_data_count >=
-      INHERITANCE_MESSAGES_MAX_COUNT) {
+  if (encryption_context->plain_data.data_count >= INHERITANCE_MESSAGES_MAX_COUNT) {
     // TODO: Throw invalid message count error;
     return false;
   }
   pb_size_t index = 0;
   uint16_t written_length = 0;
-  for (index = 0; index < encryption_context->request_pointer->plain_data_count;
-       index++) {
-    uint16_t length =
-        encryption_context->request_pointer->plain_data[index].message.size;
+  for (index = 0; index < encryption_context->plain_data.data_count; index++) {
+    uint16_t length = encryption_context->plain_data.data[index].message.size;
     if (length > (PLAIN_DATA_SIZE - 3)) {
       length = PLAIN_DATA_SIZE - 3;
     }
@@ -368,7 +492,7 @@ static bool serialize_message_data(void) {
         &written_length,
         INHERITANCE_DEFAULT_MESSAGE,
         length,
-        encryption_context->request_pointer->plain_data[index].message.bytes);
+        encryption_context->plain_data.data[index].message.bytes);
     encryption_context->data[index].plain_data_size = written_length;
   }
   written_length = 0;
@@ -380,16 +504,14 @@ static bool serialize_message_data(void) {
   encryption_context->data[index].plain_data_size = written_length;
 
   encryption_context->data_count =
-      encryption_context->request_pointer->plain_data_count + 1;
+      encryption_context->plain_data.data_count + 1;
   memzero(encryption_context->pin_value, sizeof(encryption_context->pin_value));
   return true;
 }
 
 static bool encrypt_message_data(void) {
-  card_error_type_e status =
-      card_fetch_encrypt_data(encryption_context->request_pointer->wallet_id,
-                              encryption_context->data,
-                              encryption_context->data_count);
+  card_error_type_e status = card_fetch_encrypt_data(
+      encryption_context->wallet_id, encryption_context->data, encryption_context->data_count);
 
   if (status != CARD_OPERATION_SUCCESS) {
     // TODO: throw encryption failed error
@@ -469,23 +591,88 @@ static bool encrypt_data(void) {
   return status;
 }
 
+static bool get_pb_encoded_buffer(
+    const inheritance_encrypt_data_with_pin_encrypted_data_structure_t *result,
+    uint8_t *buffer,
+    uint16_t max_buffer_len,
+    size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
+    return false;
+  }
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(
+      &stream,
+      INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_FIELDS,
+      result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
+  }
+
+  return status;
+}
+
+static bool encrypted_struct_to_byte_array(uint8_t *buffer,
+                                           size_t buffer_size,
+                                           size_t *bytes_encoded) {
+  inheritance_encrypt_data_with_pin_encrypted_data_structure_t encrypted_data =
+      INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_INIT_DEFAULT;
+  memcpy(encrypted_data.encrypted_data.bytes,
+         encryption_context->packet,
+         encryption_context->packet_size);
+  encrypted_data.encrypted_data.size = encryption_context->packet_size;
+  bool status = get_pb_encoded_buffer(
+      &encrypted_data, buffer, buffer_size, bytes_encoded);
+  return status;
+}
+
 static bool send_encrypted_data(inheritance_query_t *query) {
+  uint8_t buffer[1700] = {0};
+  size_t bytes_encoded = 0;
+  if (!encrypted_struct_to_byte_array(buffer, 1700, &bytes_encoded)) {
+    return false;
+  }
+  size_t total_count = ((bytes_encoded % ENCRYPTED_CHUNK_SIZE) > 0)
+                           ? (bytes_encoded / ENCRYPTED_CHUNK_SIZE) + 1
+                           : (bytes_encoded / ENCRYPTED_CHUNK_SIZE);
+  size_t remaining_size = (size_t)bytes_encoded;
+  size_t offset = 0;
   inheritance_result_t result =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
   result.encrypt.which_response =
-      INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_RESULT_TAG;
-  if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
-      !check_which_request(
-          query, INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_INITIATE_TAG)) {
-    return false;
+      INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_ENCRYPTED_DATA_TAG;
+  result.encrypt.encrypted_data.chunk_payload.chunk_index = 0;
+  result.encrypt.encrypted_data.chunk_payload.total_chunks = total_count;
+
+  for (int index = 0; index < total_count; index++) {
+    if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
+        !check_which_request(
+            query,
+            INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_ENCRYPTED_DATA_REQUEST_TAG)) {
+      return false;
+    }
+    // Add chunk_payload validation checks
+    if (query->encrypt.encrypted_data_request.has_chunk_ack == false) {
+      return false;
+    }
+    size_t chunk_size = (remaining_size > ENCRYPTED_CHUNK_SIZE)
+                            ? ENCRYPTED_CHUNK_SIZE
+                            : remaining_size;
+    remaining_size -= chunk_size;
+    result.encrypt.encrypted_data.chunk_payload.remaining_size = remaining_size;
+    result.encrypt.encrypted_data.has_chunk_payload = true;
+    memcpy(result.encrypt.encrypted_data.chunk_payload.chunk.bytes,
+           buffer + offset,
+           chunk_size);
+    result.encrypt.encrypted_data.chunk_payload.chunk.size = chunk_size;
+    inheritance_send_result(&result);
+    offset += chunk_size;
+    result.encrypt.encrypted_data.chunk_payload.chunk_index++;
+    result.encrypt.encrypted_data.chunk_payload.total_chunks--;
   }
-
-  result.encrypt.result.encrypted_data.size = encryption_context->packet_size;
-  memcpy(&result.encrypt.result.encrypted_data.bytes,
-         encryption_context->packet,
-         encryption_context->packet_size);
-
-  inheritance_send_result(&result);
   return true;
 }
 
@@ -500,6 +687,7 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
 
   if (inheritance_encryption_handle_inititate_query(query) &&
+      inheritance_get_plain_data(query) &&
       inheritance_encryption_get_user_verification() && encrypt_data() &&
       send_encrypted_data(query)) {
     delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
