@@ -61,6 +61,7 @@
 
 #include "buzzer.h"
 #include "card_fetch_data.h"
+#include "card_fetch_wallet_list.h"
 #include "card_internal.h"
 #include "card_utils.h"
 #include "nfc.h"
@@ -107,8 +108,7 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
 
   char wallet_name[NAME_SIZE] = "";
 #if USE_SIMULATOR == 0
-  // Confirm NULL use for rejection_cb
-  ASSERT(get_wallet_name_by_id(wallet_id, (uint8_t *)wallet_name, NULL));
+  card_fetch_wallet_name(wallet_id, wallet_name);
 #endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);

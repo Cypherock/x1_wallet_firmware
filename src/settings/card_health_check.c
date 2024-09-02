@@ -107,6 +107,7 @@ void card_health_check(void) {
   configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
   configuration.operation.skip_card_removal = true;
   configuration.operation.expected_family_id = get_family_id();
+  configuration.operation.buzzer_on_success = true;
   configuration.frontend.heading = NULL;
   configuration.frontend.msg = ui_text_card_health_check_start;
 

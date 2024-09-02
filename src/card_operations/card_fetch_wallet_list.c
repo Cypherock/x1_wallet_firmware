@@ -63,6 +63,7 @@
 
 #include <stdint.h>
 
+#include "app_error.h"
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_utils.h"
@@ -132,7 +133,10 @@ card_error_type_e card_fetch_wallet_list(
 
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
-        buzzer_start(BUZZER_DURATION);
+        if (card_data.nfc_data.status == SW_RECORD_NOT_FOUND ||
+            config->operation.buzzer_on_success) {
+          buzzer_start(BUZZER_DURATION);
+        }
         if (!config->operation.skip_card_removal) {
           wait_for_card_removal();
         }
@@ -186,7 +190,8 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   card_fetch_wallet_list_config_t configuration = {
       .operation = {.acceptable_cards = ACCEPTABLE_CARDS_ALL,
                     .skip_card_removal = true,
-                    .expected_family_id = get_family_id()},
+                    .expected_family_id = get_family_id(),
+                    .buzzer_on_success = false},
       .frontend = {.heading = ui_text_tap_1_2_cards,
                    .msg = ui_text_place_card_below}};
 
