@@ -532,6 +532,8 @@ const char *ui_critical_card_health_migrate_data =
 // Inheritance
 const char *ui_text_inheritance_wallet_auth_flow_confirmation =
     "Start %s wallet authentication?";
+const char *ui_text_inheritance_wallet_auth_flow_confirmation_generic =
+    "Start wallet authentication?";
 const char *ui_text_inheritance_wallet_authenticating =
     "Wallet\nauthenticating...";
 const char *ui_text_inheritance_wallet_auth_success =
@@ -547,6 +549,8 @@ const char *ui_text_inheritance_encryption_flow_failure = "Encryption Failed";
 
 const char *ui_text_inheritance_decryption_flow_confirmation =
     "Proceed to decrypt data for %s?";
+const char *ui_text_inheritance_decryption_flow_confirmation_generic =
+    "Proceed to decrypt data?";
 const char *ui_text_inheritance_decryption_flow_success = "Decryption Success";
 const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 

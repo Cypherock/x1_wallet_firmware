@@ -166,18 +166,23 @@ STATIC bool auth_wallet_handle_inititate_query(inheritance_query_t *query) {
   char msg[100] = "";
 
   if (!check_which_request(query,
-                           INHERITANCE_AUTH_WALLET_REQUEST_INITIATE_TAG) ||
-      !get_wallet_name_by_id(query->auth_wallet.initiate.wallet_id,
-                             (uint8_t *)wallet_name,
-                             inheritance_send_error)) {
-    // TODO: update this for nominee
+                           INHERITANCE_AUTH_WALLET_REQUEST_INITIATE_TAG)) {
     return false;
   }
+  if (get_wallet_name_by_id(query->auth_wallet.initiate.wallet_id,
+                            (uint8_t *)wallet_name,
+                            NULL)) {
+    snprintf(msg,
+             sizeof(msg),
+             ui_text_inheritance_wallet_auth_flow_confirmation,
+             wallet_name);
 
-  snprintf(msg,
-           sizeof(msg),
-           ui_text_inheritance_wallet_auth_flow_confirmation,
-           wallet_name);
+  } else {
+    snprintf(msg,
+             sizeof(msg),
+             "%s",
+             ui_text_inheritance_wallet_auth_flow_confirmation_generic);
+  }
 
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;

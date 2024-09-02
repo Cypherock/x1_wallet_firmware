@@ -209,17 +209,23 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
 
   if (!check_which_request(
           query, INHERITANCE_DECRYPT_DATA_WITH_PIN_REQUEST_INITIATE_TAG) ||
-      !validate_request_data(&query->decrypt) ||
-      !get_wallet_name_by_id(query->decrypt.initiate.wallet_id,
-                             (uint8_t *)wallet_name,
-                             inheritance_send_error)) {
+      !validate_request_data(&query->decrypt)) {
     return false;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           ui_text_inheritance_decryption_flow_confirmation,
-           wallet_name);
+  if (get_wallet_name_by_id(
+          query->decrypt.initiate.wallet_id, (uint8_t *)wallet_name, NULL)) {
+    snprintf(msg,
+             sizeof(msg),
+             ui_text_inheritance_decryption_flow_confirmation,
+             wallet_name);
+
+  } else {
+    snprintf(msg,
+             sizeof(msg),
+             "%s",
+             ui_text_inheritance_decryption_flow_confirmation_generic);
+  }
 
   if (!core_confirmation(msg, inheritance_send_error)) {
     return false;
