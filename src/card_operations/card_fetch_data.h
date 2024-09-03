@@ -14,6 +14,8 @@
 
 #include <assert.h>
 
+#include "card_fetch_wallet_list.h"
+#include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "stdbool.h"
 #include "stdint.h"
@@ -50,6 +52,18 @@ typedef struct {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+
+/**
+ * @brief Fetches wallet list from card after applet initialization.
+ *
+ * @param card_data card_operation_data_t used for applet init.
+ *
+ * @return The card error type indicating the result of the operation.
+ */
+card_error_type_e card_get_wallet_list(
+    card_operation_data_t card_data,
+    const card_fetch_wallet_list_config_t *configuration,
+    card_fetch_wallet_list_response_t *response);
 
 /**
  * @brief Fetches and encrypts data for a given wallet ID.

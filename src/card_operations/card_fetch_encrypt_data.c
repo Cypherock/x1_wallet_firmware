@@ -66,6 +66,7 @@
 #include "card_utils.h"
 #include "nfc.h"
 #include "pow_utilities.h"
+#include "ui_delay.h"
 #include "ui_instruction.h"
 
 /*****************************************************************************
@@ -87,7 +88,38 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+card_error_type_e card_get_wallet_list(
+    card_operation_data_t card_data,
+    const card_fetch_wallet_list_config_t *configuration,
+    card_fetch_wallet_list_response_t *response) {
+  if (NULL == configuration || NULL == response ||
+      NULL == response->wallet_list) {
+    return CARD_OPERATION_DEFAULT_INVALID;
+  }
+  if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+    card_data.nfc_data.status = nfc_list_all_wallet(response->wallet_list);
 
+    if (card_data.nfc_data.status == SW_NO_ERROR ||
+        card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
+      if (card_data.nfc_data.status == SW_RECORD_NOT_FOUND ||
+          configuration->operation.buzzer_on_success) {
+        buzzer_start(BUZZER_DURATION);
+      }
+      if (!configuration->operation.skip_card_removal) {
+        wait_for_card_removal();
+      }
+      // break;
+    } else {
+      card_handle_errors(&card_data);
+    }
+  }
+
+  response->card_info.pairing_error = card_data.nfc_data.pairing_error;
+  response->card_info.tapped_card = card_data.nfc_data.tapped_card;
+  response->card_info.recovery_mode = card_data.nfc_data.recovery_mode;
+  response->card_info.status = card_data.nfc_data.status;
+  return card_data.error_type;
+}
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -107,9 +139,6 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
   card_operation_data_t card_data = {0};
 
   char wallet_name[NAME_SIZE] = "";
-#if USE_SIMULATOR == 0
-  card_fetch_wallet_name(wallet_id, wallet_name);
-#endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
 
@@ -128,6 +157,50 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     result = card_initialize_applet(&card_data);
 #endif
+    // Fetch wallet list from card
+    wallet_list_t wallets_in_card = {0};
+    card_fetch_wallet_list_config_t configuration = {
+        .operation = {.acceptable_cards = ACCEPTABLE_CARDS_ALL,
+                      .skip_card_removal = true,
+                      .expected_family_id = card_data.nfc_data.family_id,
+                      .buzzer_on_success = false},
+        .frontend = {.heading = ui_text_tap_1_2_cards,
+                     .msg = ui_text_place_card_below}};
+
+    card_fetch_wallet_list_response_t response = {
+        .wallet_list = &wallets_in_card, .card_info = {0}};
+#if USE_SIMULATOR == 0
+    card_error_type_e status =
+        card_get_wallet_list(card_data, &configuration, &response);
+#endif
+    // If the tapped card is not paired, it is a terminal case in the flow
+    if (true == response.card_info.pairing_error) {
+      return CARD_OPERATION_DEFAULT_INVALID;
+    }
+
+    // At this stage, either there is no core error message set, or it is set
+    // but we want to overwrite the error message using user facing messages in
+    // this flow
+    uint32_t card_fault_status = 0;
+    if (1 == response.card_info.recovery_mode) {
+      card_fault_status = NFC_NULL_PTR_ERROR;
+    } else if (CARD_OPERATION_SUCCESS != status) {
+      card_fault_status = response.card_info.status;
+    }
+
+    for (uint8_t i = 0; i < wallets_in_card.count; i++) {
+      if (memcmp(wallet_id, wallets_in_card.wallet[i].id, WALLET_ID_SIZE) ==
+          0) {
+        memcpy(wallet_name,
+               (const char *)wallets_in_card.wallet[i].name,
+               NAME_SIZE);
+        break;
+      }
+    }
+    if (0 == strlen(wallet_name)) {
+      delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
+      return CARD_OPERATION_DEFAULT_INVALID;
+    }
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_count; i++) {
