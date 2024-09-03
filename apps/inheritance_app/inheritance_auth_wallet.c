@@ -180,7 +180,6 @@ static bool auth_wallet_get_seed_entropy() {
 }
 
 static bool auth_wallet_pair_card() {
-  // Pair the card first
   card_error_type_e status = single_card_pair_operation(
       (char *)ui_text_tap_the_card, ui_text_place_card_below);
   if (status != CARD_OPERATION_SUCCESS) {
@@ -192,6 +191,10 @@ static bool auth_wallet_pair_card() {
 
 static bool auth_wallet_get_wallet_entropy() {
   if (auth->do_wallet_based) {
+    // Pair the card first
+    if (!auth_wallet_pair_card()) {
+      return false;
+    }
     secure_data_t msgs[1] = {0};
     msgs[0].plain_data_size = WALLET_ID_SIZE;
     memcpy(msgs[0].plain_data, auth->data.wallet_id, WALLET_ID_SIZE);
@@ -215,8 +218,7 @@ static bool auth_wallet_get_wallet_entropy() {
 }
 
 static bool auth_wallet_get_entropy() {
-  if (!auth_wallet_get_seed_entropy() || !auth_wallet_pair_card() ||
-      !auth_wallet_get_wallet_entropy()) {
+  if (!auth_wallet_get_seed_entropy() || !auth_wallet_get_wallet_entropy()) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_INVALID_DATA);
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
