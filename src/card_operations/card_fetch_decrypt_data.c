@@ -143,7 +143,6 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
 #if USE_SIMULATOR == 0
     card_error_type_e status =
         card_get_wallet_list(card_data, &configuration, &response);
-#endif
     // If the tapped card is not paired, it is a terminal case in the flow
     if (true == response.card_info.pairing_error) {
       return CARD_OPERATION_DEFAULT_INVALID;
@@ -172,6 +171,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
       delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
       return CARD_OPERATION_DEFAULT_INVALID;
     }
+#endif
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_count; i++) {
