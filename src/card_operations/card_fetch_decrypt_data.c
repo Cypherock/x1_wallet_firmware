@@ -107,9 +107,6 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
   card_operation_data_t card_data = {0};
 
   char wallet_name[NAME_SIZE] = "";
-#if USE_SIMULATOR == 0
-  card_fetch_wallet_name(wallet_id, wallet_name);
-#endif
 
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
 
