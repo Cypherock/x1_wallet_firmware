@@ -80,8 +80,7 @@ typedef struct {
   uint8_t wallet_id[WALLET_ID_SIZE];
   inheritance_encrypt_data_with_pin_plain_data_structure_t plain_data;
   uint8_t pin_value[MAX_PIN_SIZE];
-  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
-  uint16_t packet_size;
+  inheritance_encrypt_data_with_pin_encrypted_data_structure_t payload;
 } inheritance_encryption_context_t;
 
 typedef struct {

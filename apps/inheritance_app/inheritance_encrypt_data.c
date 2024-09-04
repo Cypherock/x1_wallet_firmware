@@ -251,10 +251,9 @@ static bool get_pb_encoded_buffer(
 /**
  * @brief
  */
-static bool encrypted_struct_to_byte_array(uint8_t *buffer,
-                                           size_t buffer_size,
-                                           size_t *bytes_encoded);
-
+static bool inheritance_send_in_chunks(inheritance_query_t *query,
+                                       const uint8_t *buffer,
+                                       const size_t buffer_len);
 /**
  * @brief Encrypts the data and sends the result.
  *
@@ -528,22 +527,23 @@ static bool encrypt_message_data(void) {
 }
 
 static bool serialize_packet(void) {
-  encryption_context->packet_size = 0;
-  encryption_context->packet[encryption_context->packet_size++] =
+  encryption_context->payload.encrypted_data.size = 0;
+  encryption_context->payload.encrypted_data
+      .bytes[encryption_context->payload.encrypted_data.size++] =
       encryption_context->data_count;
   pb_size_t index = 0;
 
   for (index = 0; index < encryption_context->data_count - 1; index++) {
-    inheritance_fill_tlv(encryption_context->packet,
-                         &encryption_context->packet_size,
+    inheritance_fill_tlv(encryption_context->payload.encrypted_data.bytes,
+                         &encryption_context->payload.encrypted_data.size,
                          0x00,    ///< TODO: take this from sdk
                          encryption_context->data[index].encrypted_data_size,
                          encryption_context->data[index].encrypted_data);
   }
 
   // The last encrypted message is the PIN
-  inheritance_fill_tlv(encryption_context->packet,
-                       &encryption_context->packet_size,
+  inheritance_fill_tlv(encryption_context->payload.encrypted_data.bytes,
+                       &encryption_context->payload.encrypted_data.size,
                        INHERITANCE_PIN_TAG,
                        encryption_context->data[index].encrypted_data_size,
                        encryption_context->data[index].encrypted_data);
@@ -553,8 +553,8 @@ static bool serialize_packet(void) {
 
 static bool encrypt_packet(void) {
   if (SESSION_ENCRYPT_PACKET_SUCCESS !=
-      session_aes_encrypt(encryption_context->packet,
-                          &encryption_context->packet_size)) {
+      session_aes_encrypt(encryption_context->payload.encrypted_data.bytes,
+                          &encryption_context->payload.encrypted_data.size)) {
     return false;
   }
 
@@ -622,30 +622,13 @@ static bool get_pb_encoded_buffer(
   return status;
 }
 
-static bool encrypted_struct_to_byte_array(uint8_t *buffer,
-                                           size_t buffer_size,
-                                           size_t *bytes_encoded) {
-  inheritance_encrypt_data_with_pin_encrypted_data_structure_t encrypted_data =
-      INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_INIT_DEFAULT;
-  memcpy(encrypted_data.encrypted_data.bytes,
-         encryption_context->packet,
-         encryption_context->packet_size);
-  encrypted_data.encrypted_data.size = encryption_context->packet_size;
-  bool status = get_pb_encoded_buffer(
-      &encrypted_data, buffer, buffer_size, bytes_encoded);
-  return status;
-}
-
-static bool send_encrypted_data(inheritance_query_t *query) {
-  uint8_t buffer[1700] = {0};
-  size_t bytes_encoded = 0;
-  if (!encrypted_struct_to_byte_array(buffer, 1700, &bytes_encoded)) {
-    return false;
-  }
-  size_t total_count = ((bytes_encoded % ENCRYPTED_CHUNK_SIZE) > 0)
-                           ? (bytes_encoded / ENCRYPTED_CHUNK_SIZE) + 1
-                           : (bytes_encoded / ENCRYPTED_CHUNK_SIZE);
-  size_t remaining_size = (size_t)bytes_encoded;
+static bool inheritance_send_in_chunks(inheritance_query_t *query,
+                                       const uint8_t *buffer,
+                                       const size_t buffer_len) {
+  size_t total_count = ((buffer_len % ENCRYPTED_CHUNK_SIZE) > 0)
+                           ? (buffer_len / ENCRYPTED_CHUNK_SIZE) + 1
+                           : (buffer_len / ENCRYPTED_CHUNK_SIZE);
+  size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
@@ -661,8 +644,9 @@ static bool send_encrypted_data(inheritance_query_t *query) {
             INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_ENCRYPTED_DATA_REQUEST_TAG)) {
       return false;
     }
-    // Add chunk_payload validation checks
-    if (query->encrypt.encrypted_data_request.has_chunk_ack == false) {
+    // chunk_payload validation checks
+    if (query->encrypt.encrypted_data_request.has_chunk_ack == false ||
+        query->encrypt.encrypted_data_request.chunk_ack.chunk_index != index) {
       return false;
     }
     size_t chunk_size = (remaining_size > ENCRYPTED_CHUNK_SIZE)
@@ -678,7 +662,26 @@ static bool send_encrypted_data(inheritance_query_t *query) {
     inheritance_send_result(&result);
     offset += chunk_size;
     result.encrypt.encrypted_data.chunk_payload.chunk_index++;
-    result.encrypt.encrypted_data.chunk_payload.total_chunks--;
+    if (remaining_size == 0) {
+      break;
+    }
+  }
+  return true;
+}
+
+static bool send_encrypted_data(inheritance_query_t *query) {
+  uint8_t
+      buffer[INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_SIZE] =
+          {0};
+  size_t bytes_encoded = 0;
+  if (!get_pb_encoded_buffer(&encryption_context->payload,
+                             buffer,
+                             sizeof(buffer),
+                             &bytes_encoded)) {
+    return false;
+  }
+  if (!inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
+    return false;
   }
   return true;
 }

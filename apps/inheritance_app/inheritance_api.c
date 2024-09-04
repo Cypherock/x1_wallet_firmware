@@ -172,7 +172,7 @@ void inheritance_send_error(pb_size_t which_error, uint32_t error_code) {
 
 void inheritance_send_result(const inheritance_result_t *result) {
   // TODO: Set the options file for all
-  uint8_t buffer[1700] = {0};
+  uint8_t buffer[INHERITANCE_RESULT_SIZE] = {0};
   size_t bytes_encoded = 0;
   ASSERT(encode_inheritance_result(
       result, buffer, sizeof(buffer), &bytes_encoded));
