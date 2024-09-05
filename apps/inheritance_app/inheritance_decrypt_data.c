@@ -128,6 +128,48 @@ static bool validate_request_data(
 STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query);
 
 /**
+ * @brief Function responsible for decoding pb_encoded buffer to @ref
+ * inheritance_decrypt_data_with_pin_encrypted_data_structure_t
+ *
+ * @return true if decoding successful, false otherwise.
+ */
+static bool decode_inheritance_encrypted_data(
+    const uint8_t *data,
+    uint16_t data_size,
+    inheritance_decrypt_data_with_pin_encrypted_data_structure_t
+        *encrypted_data);
+
+/**
+ * @brief Retrieves pb_encoded encrypted data chunks from the host and creates
+ * input buffer for @ref decode_inheritance_encrypted_data().
+ *
+ * @return true if data is successfully retrieved and decoded, false otherwise.
+ */
+static bool inheritance_get_encrypted_data(inheritance_query_t *query);
+
+/**
+ * @brief Creates a pb encoded buffer of @ref
+ * inheritance_decrypt_data_with_pin_decrypted_data_structure_t to be sent to
+ * host
+ *
+ * @return true if encoding is successful, false otherwise.
+ */
+static bool get_pb_encoded_buffer(
+    const inheritance_decrypt_data_with_pin_decrypted_data_structure_t *result,
+    uint8_t *buffer,
+    uint16_t max_buffer_len,
+    size_t *bytes_written_out);
+
+/**
+ * @brief Sends input buffer to host in chunks
+ *
+ * @return true if chunking successful, false otherwise.
+ */
+static bool inheritance_send_in_chunks(inheritance_query_t *query,
+                                       const uint8_t *buffer,
+                                       const size_t buffer_len);
+
+/**
  * @brief Sends the decrypted data as a response.
  *
  * @param query Pointer to the inheritance query.
@@ -164,11 +206,12 @@ static bool decrypt_message_data(void);
 static bool decrypt_data(void);
 
 /**
- * @brief Displays decrypted data or performs related actions based on the data.
+ * @brief Displays decrypted data or performs related actions based on the
+ * data.
  *
- * This function processes the decrypted data and either shows it on the device
- * screen (if the tag indicates display-only) or prepares it for further
- * response.
+ * This function processes the decrypted data and either shows it on the
+ * device screen (if the tag indicates display-only) or prepares it for
+ * further response.
  *
  * @return true if the operation is successful, false otherwise.
  */
@@ -260,20 +303,16 @@ static bool decode_inheritance_encrypted_data(
     return false;
   }
 
-  // zeroise for safety from garbage in the query reference
   memzero(encrypted_data,
           sizeof(inheritance_decrypt_data_with_pin_encrypted_data_structure_t));
 
-  /* Create a stream that reads from the buffer. */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);
 
-  /* Now we are ready to decode the message. */
   bool status = pb_decode(
       &stream,
       INHERITANCE_DECRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_FIELDS,
       encrypted_data);
 
-  /* Send error to host if status is false*/
   if (false == status) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_DECODING_FAILED);
