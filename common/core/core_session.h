@@ -38,7 +38,7 @@
 #define SESSION_IV_SIZE 16
 #define SESSION_KEY_SIZE 32
 
-extern const uint32_t session_key_rotation[2];
+extern const uint32_t session_key_rotation[1];
 
 typedef enum {
   SESSION_OK = 0,

@@ -91,7 +91,7 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 const ecdsa_curve *curve;
-const uint32_t session_key_rotation[2] = {6, 7};
+const uint32_t session_key_rotation[1] = {0};
 session_config_t CONFIDENTIAL session = {0};
 
 /*****************************************************************************
@@ -223,9 +223,6 @@ static bool derive_server_public_key() {
       (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
 
   uint8_t index = 0;
-  hdnode_public_ckd(&node, session_key_rotation[index]);
-
-  index += 1;
   hdnode_public_ckd(&node, session_key_rotation[index]);
 
   memcpy(
