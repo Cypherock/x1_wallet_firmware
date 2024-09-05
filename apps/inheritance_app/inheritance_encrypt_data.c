@@ -240,7 +240,11 @@ static bool serialize_packet(void);
 static bool encrypt_packet(void);
 
 /**
- * @brief
+ * @brief Creates a pb encoded buffer of @ref
+ * inheritance_encrypt_data_with_pin_encrypted_data_structure_t to be sent to
+ * host.
+ *
+ * @return true if encoding is successful, false otherwise.
  */
 static bool get_pb_encoded_buffer(
     const inheritance_encrypt_data_with_pin_encrypted_data_structure_t *result,
@@ -249,7 +253,9 @@ static bool get_pb_encoded_buffer(
     size_t *bytes_written_out);
 
 /**
- * @brief
+ * @brief Sends input buffer to host in chunks.
+ *
+ * @return true if chunking successful, false otherwise.
  */
 static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const uint8_t *buffer,
@@ -363,20 +369,16 @@ static bool decode_inheritance_plain_data(
     return false;
   }
 
-  // zeroise for safety from garbage in the query reference
   memzero(plain_data,
           sizeof(inheritance_encrypt_data_with_pin_plain_data_structure_t));
 
-  /* Create a stream that reads from the buffer. */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);
 
-  /* Now we are ready to decode the message. */
   bool status =
       pb_decode(&stream,
                 INHERITANCE_ENCRYPT_DATA_WITH_PIN_PLAIN_DATA_STRUCTURE_FIELDS,
                 plain_data);
 
-  /* Send error to host if status is false*/
   if (false == status) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_DECODING_FAILED);
@@ -386,8 +388,7 @@ static bool decode_inheritance_plain_data(
 }
 
 static bool inheritance_get_plain_data(inheritance_query_t *query) {
-  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {
-      0};    ///< CONFIRM ENCODED DATA MAX SIZE
+  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
   inheritance_result_t response =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
   const inheritance_encrypt_data_with_pin_plain_data_t *plain_data =
@@ -606,10 +607,8 @@ static bool get_pb_encoded_buffer(
   if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
     return false;
   }
-  /* Create a stream that will write to our buffer. */
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
 
-  /* Now we are ready to encode the message! */
   bool status = pb_encode(
       &stream,
       INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_FIELDS,
@@ -625,19 +624,17 @@ static bool get_pb_encoded_buffer(
 static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const uint8_t *buffer,
                                        const size_t buffer_len) {
-  size_t total_count = ((buffer_len % ENCRYPTED_CHUNK_SIZE) > 0)
-                           ? (buffer_len / ENCRYPTED_CHUNK_SIZE) + 1
-                           : (buffer_len / ENCRYPTED_CHUNK_SIZE);
+  size_t total_count = ((buffer_len + 1) / ENCRYPTED_CHUNK_SIZE);
   size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
   result.encrypt.which_response =
       INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_ENCRYPTED_DATA_TAG;
-  result.encrypt.encrypted_data.chunk_payload.chunk_index = 0;
+  uint32_t *index = &result.encrypt.encrypted_data.chunk_payload.chunk_index;
   result.encrypt.encrypted_data.chunk_payload.total_chunks = total_count;
 
-  for (int index = 0; index < total_count; index++) {
+  for (*index = 0; *index < total_count; (*index)++) {
     if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
         !check_which_request(
             query,
@@ -646,7 +643,7 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     }
     // chunk_payload validation checks
     if (query->encrypt.encrypted_data_request.has_chunk_ack == false ||
-        query->encrypt.encrypted_data_request.chunk_ack.chunk_index != index) {
+        query->encrypt.encrypted_data_request.chunk_ack.chunk_index != *index) {
       return false;
     }
     size_t chunk_size = (remaining_size > ENCRYPTED_CHUNK_SIZE)
@@ -661,7 +658,6 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     result.encrypt.encrypted_data.chunk_payload.chunk.size = chunk_size;
     inheritance_send_result(&result);
     offset += chunk_size;
-    result.encrypt.encrypted_data.chunk_payload.chunk_index++;
     if (remaining_size == 0) {
       break;
     }
@@ -677,10 +673,8 @@ static bool send_encrypted_data(inheritance_query_t *query) {
   if (!get_pb_encoded_buffer(&encryption_context->payload,
                              buffer,
                              sizeof(buffer),
-                             &bytes_encoded)) {
-    return false;
-  }
-  if (!inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
+                             &bytes_encoded) ||
+      !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
     return false;
   }
   return true;
