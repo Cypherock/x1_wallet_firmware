@@ -399,7 +399,8 @@ static bool get_pb_encoded_buffer(
 static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const uint8_t *buffer,
                                        const size_t buffer_len) {
-  size_t total_count = ((buffer_len + 1) / DECRYPTED_CHUNK_SIZE);
+  size_t total_count =
+      ((buffer_len + DECRYPTED_CHUNK_SIZE - 1) / DECRYPTED_CHUNK_SIZE);
   size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
@@ -450,6 +451,7 @@ static bool send_decrypted_data(inheritance_query_t *query) {
                              sizeof(buffer),
                              &bytes_encoded) ||
       !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
+    // TODO: throw decryption failed error
     return false;
   }
   return true;
