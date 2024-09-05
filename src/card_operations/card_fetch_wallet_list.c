@@ -184,42 +184,64 @@ card_error_type_e card_fetch_wallet_list(
   return card_data.error_type;
 }
 
-bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
+bool card_fetch_wallet_name(card_operation_data_t card_data,
+                            const uint8_t *wallet_id,
+                            char *wallet_name) {
   wallet_list_t wallets_in_card = {0};
-
-  card_fetch_wallet_list_config_t configuration = {
-      .operation = {.acceptable_cards = ACCEPTABLE_CARDS_ALL,
-                    .skip_card_removal = true,
-                    .expected_family_id = get_family_id(),
-                    .buzzer_on_success = false},
-      .frontend = {.heading = ui_text_tap_1_2_cards,
-                   .msg = ui_text_place_card_below}};
-
-  card_fetch_wallet_list_response_t response = {.wallet_list = &wallets_in_card,
-                                                .card_info = {0}};
 
   // P0 abort is the only condition we want to exit the flow
   // Card abort error will be explicitly shown here as error codes
-  card_error_type_e status = card_fetch_wallet_list(&configuration, &response);
+  while (1) {
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+    card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status = nfc_list_all_wallet(&wallets_in_card);
+
+      if (card_data.nfc_data.status == SW_NO_ERROR ||
+          card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
+        break;
+      } else {
+        card_handle_errors(&card_data);
+      }
+    }
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      /**
+       * In case the same card as before is tapped, the user should be told to
+       * tap a different card instead of the default message "Wrong card
+       * sequence"
+       */
+      if (SW_CONDITIONS_NOT_SATISFIED == card_data.nfc_data.status) {
+        error_msg = ui_text_tap_another_card;
+      }
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
+        continue;
+      }
+    }
+    // If control reached here, it is an unrecoverable error, so break
+    break;
+  }
+
+  card_error_type_e status = card_data.error_type;
   if (CARD_OPERATION_P0_OCCURED == status) {
     return false;
   }
 
   // If the tapped card is not paired, it is a terminal case in the flow
-  if (true == response.card_info.pairing_error) {
+  if (card_data.nfc_data.pairing_error) {
+    delay_scr_init(ui_text_device_and_card_not_paired, DELAY_TIME);
     return false;
   }
 
-  // At this stage, either there is no core error message set, or it is set but
-  // we want to overwrite the error message using user facing messages in this
-  // flow
-  clear_core_error_screen();
-
   uint32_t card_fault_status = 0;
-  if (1 == response.card_info.recovery_mode) {
+  if (1 == card_data.nfc_data.recovery_mode) {
     card_fault_status = NFC_NULL_PTR_ERROR;
   } else if (CARD_OPERATION_SUCCESS != status) {
-    card_fault_status = response.card_info.status;
+    card_fault_status = card_data.nfc_data.status;
   }
 
   for (uint8_t i = 0; i < wallets_in_card.count; i++) {
@@ -231,6 +253,7 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   }
 
   if (0 == strlen(wallet_name)) {
+    delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
     return false;
   }
 
