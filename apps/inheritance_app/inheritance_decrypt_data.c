@@ -72,6 +72,8 @@
 #include "inheritance_api.h"
 #include "inheritance_context.h"
 #include "inheritance_priv.h"
+#include "memzero.h"
+#include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 #include "reconstruct_wallet_flow.h"
@@ -240,7 +242,7 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
          query->decrypt.initiate.wallet_id,
          WALLET_ID_SIZE);
   inheritance_result_t result =
-      init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
+      init_inheritance_result(INHERITANCE_RESULT_DECRYPT_TAG);
   result.decrypt.which_response =
       INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_CONFIRMATION_TAG;
   inheritance_send_result(&result);
@@ -260,7 +262,7 @@ static bool decode_inheritance_encrypted_data(
 
   // zeroise for safety from garbage in the query reference
   memzero(encrypted_data,
-          sizeof(inheritance_decrypt_data_with_pin_decrypted_data_structure_t));
+          sizeof(inheritance_decrypt_data_with_pin_encrypted_data_structure_t));
 
   /* Create a stream that reads from the buffer. */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);
@@ -268,7 +270,7 @@ static bool decode_inheritance_encrypted_data(
   /* Now we are ready to decode the message. */
   bool status = pb_decode(
       &stream,
-      INHERITANCE_DECRYPT_DATA_WITH_PIN_DECRYPTED_DATA_STRUCTURE_FIELDS,
+      INHERITANCE_DECRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_FIELDS,
       encrypted_data);
 
   /* Send error to host if status is false*/
@@ -281,8 +283,7 @@ static bool decode_inheritance_encrypted_data(
 }
 
 static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
-  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {
-      0};    ///< CONFIRM ENCODED DATA MAX SIZE
+  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
   inheritance_result_t response =
       init_inheritance_result(INHERITANCE_RESULT_DECRYPT_TAG);
   const inheritance_decrypt_data_with_pin_encrypted_data_t *encrypted_data =
@@ -315,7 +316,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
     size += chunk->size;
 
     // Send chunk ack to host
-    response.encrypt.which_response =
+    response.decrypt.which_response =
         INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_DATA_ACCEPTED_TAG;
     response.decrypt.data_accepted.has_chunk_ack = true;
     response.decrypt.data_accepted.chunk_ack.chunk_index = payload->chunk_index;
@@ -342,10 +343,8 @@ static bool get_pb_encoded_buffer(
   if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
     return false;
   }
-  /* Create a stream that will write to our buffer. */
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
 
-  /* Now we are ready to encode the message! */
   bool status = pb_encode(
       &stream,
       INHERITANCE_DECRYPT_DATA_WITH_PIN_DECRYPTED_DATA_STRUCTURE_FIELDS,
@@ -361,19 +360,17 @@ static bool get_pb_encoded_buffer(
 static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const uint8_t *buffer,
                                        const size_t buffer_len) {
-  size_t total_count = ((buffer_len % DECRYPTED_CHUNK_SIZE) > 0)
-                           ? (buffer_len / DECRYPTED_CHUNK_SIZE) + 1
-                           : (buffer_len / DECRYPTED_CHUNK_SIZE);
+  size_t total_count = ((buffer_len + 1) / DECRYPTED_CHUNK_SIZE);
   size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
       init_inheritance_result(INHERITANCE_RESULT_DECRYPT_TAG);
   result.decrypt.which_response =
       INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_DECRYPTED_DATA_TAG;
-  result.decrypt.decrypted_data.chunk_payload.chunk_index = 0;
+  uint32_t *index = &result.decrypt.decrypted_data.chunk_payload.chunk_index;
   result.decrypt.decrypted_data.chunk_payload.total_chunks = total_count;
 
-  for (int index = 0; index < total_count; index++) {
+  for (*index = 0; *index < total_count; (*index)++) {
     if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
         !check_which_request(
             query,
@@ -382,7 +379,7 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     }
     // chunk_payload validation checks
     if (query->decrypt.decrypted_data_request.has_chunk_ack == false ||
-        query->decrypt.decrypted_data_request.chunk_ack.chunk_index != index) {
+        query->decrypt.decrypted_data_request.chunk_ack.chunk_index != *index) {
       return false;
     }
     size_t chunk_size = (remaining_size > DECRYPTED_CHUNK_SIZE)
@@ -397,7 +394,6 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     result.decrypt.decrypted_data.chunk_payload.chunk.size = chunk_size;
     inheritance_send_result(&result);
     offset += chunk_size;
-    result.decrypt.decrypted_data.chunk_payload.chunk_index++;
     if (remaining_size == 0) {
       break;
     }
@@ -407,27 +403,20 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
 
 static bool send_decrypted_data(inheritance_query_t *query) {
   uint8_t
-      buffer[INHERITANCE_DECRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_SIZE] =
+      buffer[INHERITANCE_DECRYPT_DATA_WITH_PIN_DECRYPTED_DATA_STRUCTURE_SIZE] =
           {0};
   size_t bytes_encoded = 0;
   if (!get_pb_encoded_buffer(&decryption_context->response_payload,
                              buffer,
                              sizeof(buffer),
-                             &bytes_encoded)) {
-    return false;
-  }
-  if (!inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
+                             &bytes_encoded) ||
+      !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
     return false;
   }
   return true;
 }
 
 static bool decrypt_packet(void) {
-  // decryption_context->packet_size =
-  //     decryption_context->request_pointer->encrypted_data.size;
-  // memcpy(decryption_context->packet,
-  //        decryption_context->request_pointer->encrypted_data.bytes,
-  //        decryption_context->packet_size);
   return session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
                              &decryption_context->encrypted_data.data.size) ==
          SESSION_DECRYPT_PACKET_SUCCESS;
