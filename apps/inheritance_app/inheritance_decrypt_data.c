@@ -289,6 +289,7 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
   result.decrypt.which_response =
       INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_CONFIRMATION_TAG;
   inheritance_send_result(&result);
+  delay_scr_init(ui_text_processing, DELAY_TIME);
   return true;
 }
 
@@ -513,6 +514,7 @@ static bool decrypt_data(void) {
 
   } while (0);
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
+  delay_scr_init(ui_text_processing, DELAY_TIME);
   return status;
 }
 
