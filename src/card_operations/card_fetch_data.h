@@ -14,6 +14,8 @@
 
 #include <assert.h>
 
+#include "card_fetch_wallet_list.h"
+#include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "stdbool.h"
 #include "stdint.h"
