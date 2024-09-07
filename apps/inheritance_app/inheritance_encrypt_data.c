@@ -388,6 +388,7 @@ static bool decode_inheritance_plain_data(
   return status;
 }
 
+// TODO: Make chunking logic generic to be used by any flow
 static bool inheritance_get_plain_data(inheritance_query_t *query) {
   uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
   inheritance_result_t response =
@@ -623,6 +624,7 @@ static bool get_pb_encoded_buffer(
   return status;
 }
 
+// TODO: Make chunking logic generic to be used by any flow
 static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const uint8_t *buffer,
                                        const size_t buffer_len) {
