@@ -77,19 +77,18 @@ typedef struct {
 typedef struct {
   secure_data_t data[INHERITANCE_MESSAGES_MAX_COUNT];
   uint8_t data_count;
-  inheritance_encrypt_data_with_pin_initiate_request_t *request_pointer;
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  inheritance_encrypt_data_with_pin_plain_data_structure_t plain_data;
   uint8_t pin_value[MAX_PIN_SIZE];
-  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
-  uint16_t packet_size;
+  inheritance_encrypt_data_with_pin_encrypted_data_structure_t payload;
 } inheritance_encryption_context_t;
 
 typedef struct {
   secure_data_t data[INHERITANCE_MESSAGES_MAX_COUNT];
   uint8_t data_count;
-  inheritance_decrypt_data_with_pin_initiate_request_t *request_pointer;
-  uint8_t packet[INHERITANCE_PACKET_MAX_SIZE];
-  uint16_t packet_size;
-  inheritance_decrypt_data_with_pin_messages_response_t response;
+  uint8_t wallet_id[WALLET_ID_SIZE];
+  inheritance_decrypt_data_with_pin_encrypted_data_structure_t encrypted_data;
+  inheritance_decrypt_data_with_pin_decrypted_data_structure_t response_payload;
 } inheritance_decryption_context_t;
 
 /*****************************************************************************
