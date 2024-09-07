@@ -356,6 +356,7 @@ STATIC bool inheritance_encryption_handle_inititate_query(
   result.encrypt.which_response =
       INHERITANCE_ENCRYPT_DATA_WITH_PIN_RESPONSE_CONFIRMATION_TAG;
   inheritance_send_result(&result);
+  delay_scr_init(ui_text_processing, DELAY_TIME);
   return true;
 }
 
@@ -596,6 +597,7 @@ static bool encrypt_data(void) {
     }
   } while (0);
 
+  delay_scr_init(ui_text_processing, DELAY_TIME);
   return status;
 }
 
