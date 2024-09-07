@@ -180,13 +180,11 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
     }
 #endif
 
-    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      for (int i = 0; i < msg_count; i++) {
-        card_data.nfc_data.status =
-            decrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
-        if (card_data.nfc_data.status != SW_NO_ERROR) {
-          break;
-        }
+    for (int i = 0; i < msg_count; i++) {
+      card_data.nfc_data.status =
+          decrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
+      if (card_data.nfc_data.status != SW_NO_ERROR) {
+        break;
       }
     }
 
@@ -194,6 +192,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
       buzzer_start(BUZZER_DURATION);
       break;
     }
+
     card_handle_errors(&card_data);
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||

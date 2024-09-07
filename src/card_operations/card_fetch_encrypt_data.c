@@ -187,13 +187,11 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     }
 #endif
 
-    if (card_data.error_type == CARD_OPERATION_SUCCESS) {
-      for (int i = 0; i < msg_count; i++) {
-        card_data.nfc_data.status =
-            encrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
-        if (card_data.nfc_data.status != SW_NO_ERROR) {
-          break;
-        }
+    for (int i = 0; i < msg_count; i++) {
+      card_data.nfc_data.status =
+          encrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
+      if (card_data.nfc_data.status != SW_NO_ERROR) {
+        break;
       }
     }
 
