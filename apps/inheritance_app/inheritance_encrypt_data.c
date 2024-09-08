@@ -349,30 +349,34 @@ static void encryption_handle_errors(encryption_error_info_t error) {
   switch (type) {
     case ENCRYPTION_ERROR_DEFAULT:
     case ENCRYPTION_INVALID_REQUEST_ERROR:
-    case ENCRYPTION_PB_DECODE_FAIL_ERROR:
     case ENCRYPTION_INVALID_DATA_ERROR:
-    case ENCRYPTION_VERIFICATION_FAIL_ERROR:
-    case ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
-    case ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR:
-    case ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR:
     case ENCRYPTION_PB_ENCODE_FAIL_ERROR:
+    case ENCRYPTION_VERIFICATION_FAIL_ERROR:
+    case ENCRYPTION_PIN_NOT_SET_ERROR:
     case ENCRYPTION_CHUNK_DATA_INVALID_ERROR: {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
+                             ERROR_DATA_FLOW_INVALID_DATA);
     } break;
+    case ENCRYPTION_PB_DECODE_FAIL_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_DECODING_FAILED);
+    } break;
+
     case ENCRYPTION_INVALID_WALLET_ID_ERROR: {
       inheritance_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
+                             ERROR_DATA_FLOW_INVALID_DATA);
     } break;
     case ENCRYPTION_USER_ABORT_FAILURE: {
       inheritance_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
+                             ERROR_DATA_FLOW_INVALID_DATA);
     } break;
-    case ENCRYPTION_PIN_NOT_SET_ERROR:
+    case ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR:
+    case ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
+    case ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR:
     case ENCRYPTION_ASSERT_MALLOC_ERROR:
     default: {
       inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
+                             ERROR_DATA_FLOW_INVALID_DATA);
     } break;
   }
 }
