@@ -72,6 +72,7 @@
 #include "inheritance_api.h"
 #include "inheritance_context.h"
 #include "inheritance_priv.h"
+#include "logger.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -89,16 +90,64 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+typedef enum {
+  ENCRYPTION_ERROR_DEFAULT = 0,
+  ENCRYPTION_INVALID_REQUEST_ERROR,
+  ENCRYPTION_INVALID_WALLET_ID_ERROR,
+  ENCRYPTION_PIN_NOT_SET_ERROR,
+  ENCRYPTION_USER_ABORT_FAILURE,
+  ENCRYPTION_PB_DECODE_FAIL_ERROR,
+  ENCRYPTION_INVALID_DATA_ERROR,
+  ENCRYPTION_VERIFICATION_FAIL_ERROR,
+  ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR,
+  ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR,
+  ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR,
+  ENCRYPTION_PB_ENCODE_FAIL_ERROR,
+  ENCRYPTION_CHUNK_DATA_INVALID_ERROR,
+  ENCRYPTION_ASSERT_MALLOC_ERROR,
+  ENCRYPTION_OK,
+} encryption_error_type_e;
+
+typedef enum {
+  ENCRYPTION_INIT_FLOW = 0,
+  ENCRYPTION_VERIFY_PIN_FLOW,
+  ENCRYPTION_GET_PLAIN_DATA_FLOW,
+  ENCRYPTION_USER_VERIFICATION_FLOW,
+  ENCRYPTION_SERIALIZE_MESSAGE_FLOW,
+  ENCRYPTION_ENCRYPT_MESSAGE_FLOW,
+  ENCRYPTION_SERIALIZE_PACKET_FLOW,
+  ENCRYPTION_ENCRYPT_PACKET_FLOW,
+  ENCRYPTION_SEND_RESULT_FLOW,
+} encryption_flow_t;
+
+typedef struct {
+  encryption_error_type_e type;
+  encryption_flow_t flow;
+} encryption_error_info_t;
+
+static encryption_error_info_t encryption_error;
+
+/*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 #define ENCRYPTED_CHUNK_SIZE (2048)
-/*****************************************************************************
- * PRIVATE TYPEDEFS
- *****************************************************************************/
+#define SET_ERROR_TYPE(x) encryption_error.type = x
+#define SET_ERROR_FLOW_TAG(x) encryption_error.flow = x
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Sets error @ref encryption_error to defaults.
+ */
+static void encryption_set_default();
+
+/**
+ * @brief Error handler for inheritance encryption flow
+ */
+static void encryption_handle_errors(encryption_error_info_t error);
 
 /**
  * @brief Checks the type of request in the inheritance query.
@@ -284,12 +333,54 @@ STATIC inheritance_encryption_context_t *encryption_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void encryption_set_default() {
+  encryption_error.type = ENCRYPTION_ERROR_DEFAULT;
+  encryption_error.flow = ENCRYPTION_INIT_FLOW;
+}
+
+static void encryption_handle_errors(encryption_error_info_t error) {
+  if (error.type == ENCRYPTION_OK) {
+    return;
+  }
+  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
+            error.type,
+            error.flow);
+  encryption_error_type_e type = error.type;
+  switch (type) {
+    case ENCRYPTION_ERROR_DEFAULT:
+    case ENCRYPTION_INVALID_REQUEST_ERROR:
+    case ENCRYPTION_PB_DECODE_FAIL_ERROR:
+    case ENCRYPTION_INVALID_DATA_ERROR:
+    case ENCRYPTION_VERIFICATION_FAIL_ERROR:
+    case ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
+    case ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR:
+    case ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR:
+    case ENCRYPTION_PB_ENCODE_FAIL_ERROR:
+    case ENCRYPTION_CHUNK_DATA_INVALID_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_REQUEST);
+    } break;
+    case ENCRYPTION_INVALID_WALLET_ID_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
+                             ERROR_DATA_FLOW_INVALID_REQUEST);
+    } break;
+    case ENCRYPTION_USER_ABORT_FAILURE: {
+      inheritance_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+                             ERROR_DATA_FLOW_INVALID_REQUEST);
+    } break;
+    case ENCRYPTION_PIN_NOT_SET_ERROR:
+    case ENCRYPTION_ASSERT_MALLOC_ERROR:
+    default: {
+      inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                             ERROR_DATA_FLOW_INVALID_REQUEST);
+    } break;
+  }
+}
 
 static bool check_which_request(const inheritance_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->encrypt.which_request) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_INVALID_REQUEST);
+    SET_ERROR_TYPE(ENCRYPTION_INVALID_REQUEST_ERROR);
     return false;
   }
 
@@ -305,14 +396,14 @@ static bool validate_request_data(
     if (!get_wallet_data_by_id(
             request->initiate.wallet_id, &wallet, inheritance_send_error)) {
       status = false;
+      SET_ERROR_TYPE(ENCRYPTION_INVALID_WALLET_ID_ERROR);
       break;
     }
 
     if (!WALLET_IS_PIN_SET(wallet.wallet_info)) {
       status = false;
 
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
+      SET_ERROR_TYPE(ENCRYPTION_PIN_NOT_SET_ERROR);
       break;
     }
 
@@ -334,6 +425,7 @@ STATIC bool inheritance_encryption_handle_inititate_query(
       !get_wallet_name_by_id(query->encrypt.initiate.wallet_id,
                              (uint8_t *)wallet_name,
                              inheritance_send_error)) {
+    SET_ERROR_FLOW_TAG(ENCRYPTION_INIT_FLOW);
     return false;
   }
 
@@ -343,6 +435,8 @@ STATIC bool inheritance_encryption_handle_inititate_query(
            wallet_name);
 
   if (!core_confirmation(msg, inheritance_send_error)) {
+    SET_ERROR_TYPE(ENCRYPTION_USER_ABORT_FAILURE);
+    SET_ERROR_FLOW_TAG(ENCRYPTION_INIT_FLOW);
     return false;
   }
 
@@ -381,8 +475,7 @@ static bool decode_inheritance_plain_data(
                 plain_data);
 
   if (false == status) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_DECODING_FAILED);
+    SET_ERROR_TYPE(ENCRYPTION_PB_DECODE_FAIL_ERROR);
   }
 
   return status;
@@ -404,6 +497,7 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
     if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
         !check_which_request(
             query, INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_PLAIN_DATA_TAG)) {
+      SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
       return false;
     }
     if (size == 0) {
@@ -413,8 +507,8 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
     if (false == query->encrypt.plain_data.has_chunk_payload ||
         payload->chunk_index >= payload->total_chunks ||
         size + chunk->size > total_size) {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
+      SET_ERROR_TYPE(ENCRYPTION_CHUNK_DATA_INVALID_ERROR);
+      SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
       return false;
     }
 
@@ -436,6 +530,7 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
   }
   if (!decode_inheritance_plain_data(
           encoded_data, total_size, &encryption_context->plain_data)) {
+    SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
     return false;
   }
 
@@ -452,6 +547,8 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
               UI_TEXT_VERIFY_MESSAGE,
               (const char *)&data->message.bytes,
               inheritance_send_error)) {
+        SET_ERROR_TYPE(ENCRYPTION_VERIFICATION_FAIL_ERROR);
+        SET_ERROR_FLOW_TAG(ENCRYPTION_USER_VERIFICATION_FLOW);
         return false;
       }
     }
@@ -462,9 +559,13 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
 }
 
 static bool inheritance_verify_pin(void) {
-  return verify_pin(encryption_context->wallet_id,
-                    encryption_context->pin_value,
-                    inheritance_send_error);
+  if (!verify_pin(encryption_context->wallet_id,
+                  encryption_context->pin_value,
+                  inheritance_send_error)) {
+    SET_ERROR_TYPE(ENCRYPTION_VERIFICATION_FAIL_ERROR);
+    return false;
+  }
+  return true;
 }
 
 static void inheritance_fill_tlv(uint8_t *destination,
@@ -483,7 +584,7 @@ static void inheritance_fill_tlv(uint8_t *destination,
 static bool serialize_message_data(void) {
   if (encryption_context->plain_data.data_count >=
       INHERITANCE_MESSAGES_MAX_COUNT) {
-    // TODO: Throw invalid message count error;
+    SET_ERROR_TYPE(ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR);
     return false;
   }
   pb_size_t index = 0;
@@ -523,7 +624,7 @@ static bool encrypt_message_data(void) {
                               encryption_context->data_count);
 
   if (status != CARD_OPERATION_SUCCESS) {
-    // TODO: throw encryption failed error
+    SET_ERROR_TYPE(ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR);
     return false;
   }
   return true;
@@ -558,6 +659,7 @@ static bool encrypt_packet(void) {
   if (SESSION_ENCRYPT_PACKET_SUCCESS !=
       session_aes_encrypt(encryption_context->payload.encrypted_data.bytes,
                           &encryption_context->payload.encrypted_data.size)) {
+    SET_ERROR_TYPE(ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR);
     return false;
   }
 
@@ -569,30 +671,30 @@ static bool encrypt_data(void) {
 
   do {
     if (!inheritance_verify_pin()) {
-      // TODO: Throw user rejceted
+      SET_ERROR_FLOW_TAG(ENCRYPTION_VERIFY_PIN_FLOW);
       status = false;
       break;
     }
     if (!serialize_message_data()) {
-      // TODO: Throw serialization failed
+      SET_ERROR_FLOW_TAG(ENCRYPTION_SERIALIZE_MESSAGE_FLOW);
       status = false;
       break;
     }
 
     if (!encrypt_message_data()) {
-      // TODO: Throw encryption failed
+      SET_ERROR_FLOW_TAG(ENCRYPTION_ENCRYPT_MESSAGE_FLOW);
       status = false;
       break;
     }
 
     if (!serialize_packet()) {
-      // TODO: Throw packet serialization error
+      SET_ERROR_FLOW_TAG(ENCRYPTION_SERIALIZE_PACKET_FLOW);
       status = false;
       break;
     }
 
     if (!encrypt_packet()) {
-      // TODO: Throw packet encryption error
+      SET_ERROR_FLOW_TAG(ENCRYPTION_ENCRYPT_PACKET_FLOW);
       status = false;
       break;
     }
@@ -608,6 +710,7 @@ static bool get_pb_encoded_buffer(
     uint16_t max_buffer_len,
     size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
+    SET_ERROR_TYPE(ENCRYPTION_INVALID_DATA_ERROR);
     return false;
   }
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
@@ -619,8 +722,9 @@ static bool get_pb_encoded_buffer(
 
   if (true == status) {
     *bytes_written_out = stream.bytes_written;
+  } else {
+    SET_ERROR_TYPE(ENCRYPTION_PB_ENCODE_FAIL_ERROR);
   }
-
   return status;
 }
 
@@ -648,11 +752,13 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
         !check_which_request(
             query,
             INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_ENCRYPTED_DATA_REQUEST_TAG)) {
+      SET_ERROR_TYPE(ENCRYPTION_INVALID_REQUEST_ERROR);
       return false;
     }
     // chunk_payload validation checks
     if (query->encrypt.encrypted_data_request.has_chunk_ack == false ||
         query->encrypt.encrypted_data_request.chunk_ack.chunk_index != *index) {
+      SET_ERROR_TYPE(ENCRYPTION_CHUNK_DATA_INVALID_ERROR);
       return false;
     }
     size_t chunk_size = (remaining_size > ENCRYPTED_CHUNK_SIZE)
@@ -684,7 +790,7 @@ static bool send_encrypted_data(inheritance_query_t *query) {
                              sizeof(buffer),
                              &bytes_encoded) ||
       !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
-    // TODO: throw encryption failed error
+    SET_ERROR_FLOW_TAG(ENCRYPTION_SEND_RESULT_FLOW);
     return false;
   }
   return true;
@@ -695,9 +801,14 @@ static bool send_encrypted_data(inheritance_query_t *query) {
  *****************************************************************************/
 
 void inheritance_encrypt_data(inheritance_query_t *query) {
+  encryption_set_default();
   encryption_context = (inheritance_encryption_context_t *)malloc(
       sizeof(inheritance_encryption_context_t));
-  ASSERT(encryption_context != NULL);
+  if (encryption_context == NULL) {
+    SET_ERROR_TYPE(ENCRYPTION_ASSERT_MALLOC_ERROR);
+    encryption_handle_errors(encryption_error);
+    ASSERT(encryption_context != NULL);
+  }
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
 
   if (inheritance_encryption_handle_inititate_query(query) &&
@@ -705,9 +816,11 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
       inheritance_encryption_get_user_verification() && encrypt_data() &&
       send_encrypted_data(query)) {
     delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
+    SET_ERROR_TYPE(ENCRYPTION_OK);
   } else {
     delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
+  encryption_handle_errors(encryption_error);
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
