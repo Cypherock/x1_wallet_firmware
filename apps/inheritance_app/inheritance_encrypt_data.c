@@ -142,7 +142,7 @@ static encryption_error_info_t encryption_error;
 /**
  * @brief Sets error @ref encryption_error to defaults.
  */
-static void encryption_set_default();
+static void encryption_set_defaults();
 
 /**
  * @brief Error handler for inheritance encryption flow
