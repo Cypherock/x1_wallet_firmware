@@ -75,7 +75,7 @@ static void auth_wallet_error_default();
 /**
  * @brief Error handler for auth wallet flow
  */
-static void auth_wallet_handle_errors(auth_wallet_error_info_t error);
+static void auth_wallet_handle_errors();
 
 /**
  * @brief Verifies the integrity and validity of the wallet authentication
@@ -181,51 +181,30 @@ static void auth_wallet_error_default() {
   auth_wallet_error.type = AUTH_WALLET_INVALID_DEFAULT;
 }
 
-static void auth_wallet_handle_errors(auth_wallet_error_info_t error) {
-  auth_wallet_error_type_e type = error.type;
+static void auth_wallet_handle_errors() {
+  auth_wallet_error_type_e type = auth_wallet_error.type;
+  if (type == AUTH_WALLET_OK) {
+    return;
+  }
+  LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
 
   switch (type) {
-    case AUTH_WALLET_INVALID_DEFAULT: {
-      inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
-      break;
-    }
-    case AUTH_WALLET_ASSERT_MALLOC_ERROR: {
-      inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
-      break;
-    }
-    case AUTH_WALLET_INPUT_INVALID: {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
-      break;
-    }
     case AUTH_WALLET_USER_ABORT: {
       // Error already sent to host
       break;
     }
-    case AUTH_WALLET_SEED_GENERATION_FAIL: {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
-      break;
-    }
-    case AUTH_WALLET_PAIRING_FAIL: {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
-      break;
-    }
-    case AUTH_WALLET_WALLET_BASED_FAIL: {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_REQUEST);
-      break;
-    }
+    case AUTH_WALLET_INPUT_INVALID:
+    case AUTH_WALLET_SEED_GENERATION_FAIL:
+    case AUTH_WALLET_PAIRING_FAIL:
+    case AUTH_WALLET_WALLET_BASED_FAIL:
     case AUTH_WALLET_SIGNATURE_VERIFICATION_FAIL: {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                              ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
     }
+    case AUTH_WALLET_INVALID_DEFAULT:
+    case AUTH_WALLET_ASSERT_MALLOC_ERROR:
     default: {
-      // should not reach here
       inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
                              ERROR_DATA_FLOW_INVALID_REQUEST);
       break;
@@ -463,9 +442,8 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
   auth_wallet_error_default();
   auth = (auth_wallet_config_t *)malloc(sizeof(auth_wallet_config_t));
   if (auth == NULL) {
-    auth_wallet_error.type = AUTH_WALLET_ASSERT_MALLOC_ERROR;
-    auth_wallet_handle_errors(auth_wallet_error);
-    LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
+    SET_ERROR_TYPE(AUTH_WALLET_ASSERT_MALLOC_ERROR);
+    auth_wallet_handle_errors();
     ASSERT(auth != NULL);
   }
   memzero(auth, sizeof(auth_wallet_config_t));
@@ -486,13 +464,10 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
       auth_wallet_handle_inititate_query(query) && auth_wallet_get_entropy() &&
       auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
-    auth_wallet_error.type = AUTH_WALLET_OK;
+    SET_ERROR_TYPE(AUTH_WALLET_OK);
   }
 
-  if (auth_wallet_error.type != AUTH_WALLET_OK) {
-    auth_wallet_handle_errors(auth_wallet_error);
-    LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
-  }
+  auth_wallet_handle_errors();
   memzero(auth, sizeof(auth_wallet_config_t));
   free(auth);
   auth = NULL;
