@@ -147,7 +147,7 @@ static void encryption_set_default();
 /**
  * @brief Error handler for inheritance encryption flow
  */
-static void encryption_handle_errors(encryption_error_info_t error);
+static void encryption_handle_errors();
 
 /**
  * @brief Checks the type of request in the inheritance query.
@@ -333,19 +333,19 @@ STATIC inheritance_encryption_context_t *encryption_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void encryption_set_default() {
+static void encryption_set_defaults() {
   encryption_error.type = ENCRYPTION_ERROR_DEFAULT;
   encryption_error.flow = ENCRYPTION_INIT_FLOW;
 }
 
-static void encryption_handle_errors(encryption_error_info_t error) {
-  if (error.type == ENCRYPTION_OK) {
+static void encryption_handle_errors() {
+  if (encryption_error.type == ENCRYPTION_OK) {
     return;
   }
   LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
-            error.type,
-            error.flow);
-  encryption_error_type_e type = error.type;
+            encryption_error.type,
+            encryption_error.flow);
+  encryption_error_type_e type = encryption_error.type;
   switch (type) {
     case ENCRYPTION_ERROR_DEFAULT:
     case ENCRYPTION_INVALID_REQUEST_ERROR:
@@ -666,7 +666,6 @@ static bool encrypt_packet(void) {
     SET_ERROR_TYPE(ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR);
     return false;
   }
-
   return true;
 }
 
@@ -805,12 +804,12 @@ static bool send_encrypted_data(inheritance_query_t *query) {
  *****************************************************************************/
 
 void inheritance_encrypt_data(inheritance_query_t *query) {
-  encryption_set_default();
+  encryption_set_defaults();
   encryption_context = (inheritance_encryption_context_t *)malloc(
       sizeof(inheritance_encryption_context_t));
   if (encryption_context == NULL) {
     SET_ERROR_TYPE(ENCRYPTION_ASSERT_MALLOC_ERROR);
-    encryption_handle_errors(encryption_error);
+    encryption_handle_errors();
     ASSERT(encryption_context != NULL);
   }
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
@@ -824,7 +823,7 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   } else {
     delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
-  encryption_handle_errors(encryption_error);
+  encryption_handle_errors();
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
