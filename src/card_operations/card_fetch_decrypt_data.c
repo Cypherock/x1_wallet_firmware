@@ -59,13 +59,13 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "app_error.h"
 #include "buzzer.h"
 #include "card_fetch_data.h"
 #include "card_fetch_wallet_list.h"
 #include "card_internal.h"
 #include "card_utils.h"
 #include "nfc.h"
-#include "ui_delay.h"
 #include "ui_instruction.h"
 
 /*****************************************************************************
@@ -83,6 +83,24 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Decrypts the encrypted data in the secure_data_t structure.
+ *
+ * This function decrypts the encrypted data in the provided secure_data_t
+ * structure using the specified wallet name. The decrypted data is stored in
+ * the plain_data field of the secure_data_t structure.
+ *
+ * @param[in,out] message Pointer to the secure_data_t structure containing the
+ *                        encrypted data to be decrypted and where the decrypted
+ *                        data will be stored.
+ * @param[in] wallet_name Pointer to the wallet name used for decryption.
+ *
+ * @return card_error_status_word_e Status of the decryption operation.
+ *         - SW_NO_ERROR: Decryption was successful.
+ *         - Other values: An error occurred during decryption.
+ */
+static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
+                                                    const uint8_t *wallet_name);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -95,6 +113,45 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static card_error_status_word_e decrypt_secure_data(
+    secure_data_t *message,
+    const uint8_t *wallet_name) {
+  memzero(message->plain_data, sizeof(message->plain_data));
+  message->plain_data_size = 0;
+
+  size_t offset = 0;
+  while (offset < message->encrypted_data_size) {
+    uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE] = {0};
+    uint16_t plain_data_buffer_size = 0;
+
+    uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE] = {0};
+    uint16_t encrypted_data_buffer_size = message->encrypted_data[offset++];
+
+    memcpy(encrypted_data_buffer,
+           message->encrypted_data + offset,
+           encrypted_data_buffer_size);
+
+    card_error_status_word_e status =
+        nfc_decrypt_data((const uint8_t *)wallet_name,
+                         plain_data_buffer,
+                         &plain_data_buffer_size,
+                         encrypted_data_buffer,
+                         encrypted_data_buffer_size);
+
+    if (status != SW_NO_ERROR) {
+      return status;
+    }
+
+    memcpy(message->plain_data + message->plain_data_size,
+           plain_data_buffer,
+           plain_data_buffer_size);
+    message->plain_data_size += plain_data_buffer_size;
+
+    offset += encrypted_data_buffer_size;
+  }
+  return SW_NO_ERROR;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -113,12 +170,6 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
-  uint8_t plain_data_buffer[PLAIN_DATA_BUFFER_SIZE];
-  uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE];
-  uint16_t encrypted_data_buffer_size = 0;
-  uint16_t plain_data_buffer_size = 0;
-  size_t index = 0;
-
   while (1) {
     card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
 #if USE_SIMULATOR == 0
@@ -129,39 +180,11 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
     }
 #endif
 
-    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      for (int i = 0; i < msg_count; i++) {
-        memzero(plain_data_buffer, PLAIN_DATA_BUFFER_SIZE);
-        memzero(encrypted_data_buffer, ENCRYPTED_DATA_BUFFER_SIZE);
-
-        index = 0;
-        while (index < msgs[i].encrypted_data_size) {
-          encrypted_data_buffer_size = msgs[i].encrypted_data[index];
-          memcpy(encrypted_data_buffer,
-                 msgs[i].encrypted_data + 1 + index,
-                 encrypted_data_buffer_size);
-#if USE_SIMULATOR == 0
-          card_data.nfc_data.status =
-              nfc_decrypt_data((const uint8_t *)wallet_name,
-                               plain_data_buffer,
-                               &plain_data_buffer_size,
-                               encrypted_data_buffer,
-                               encrypted_data_buffer_size);
-#else
-          memcpy(wallet_name, "FIRST", 5);
-          card_data.nfc_data.status = SW_NO_ERROR;
-          result = CARD_OPERATION_SUCCESS;
-#endif
-          if (card_data.nfc_data.status == SW_NO_ERROR) {
-            memcpy(msgs[i].plain_data + msgs[i].plain_data_size,
-                   plain_data_buffer,
-                   plain_data_buffer_size);
-            msgs[i].plain_data_size += plain_data_buffer_size;
-          } else {
-            card_handle_errors(&card_data);
-          }
-          index += encrypted_data_buffer_size + 1;
-        }
+    for (int i = 0; i < msg_count; i++) {
+      card_data.nfc_data.status =
+          decrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
+      if (card_data.nfc_data.status != SW_NO_ERROR) {
+        break;
       }
     }
 
@@ -169,6 +192,7 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
       buzzer_start(BUZZER_DURATION);
       break;
     }
+
     card_handle_errors(&card_data);
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||

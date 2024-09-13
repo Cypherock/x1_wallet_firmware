@@ -192,19 +192,17 @@ bool card_fetch_wallet_name(card_operation_data_t card_data,
   // P0 abort is the only condition we want to exit the flow
   // Card abort error will be explicitly shown here as error codes
   while (1) {
-    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
-    card_initialize_applet(&card_data);
-
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status = nfc_list_all_wallet(&wallets_in_card);
 
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
         break;
-      } else {
-        card_handle_errors(&card_data);
       }
+
+      card_handle_errors(&card_data);
     }
+
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
@@ -226,8 +224,7 @@ bool card_fetch_wallet_name(card_operation_data_t card_data,
     break;
   }
 
-  card_error_type_e status = card_data.error_type;
-  if (CARD_OPERATION_P0_OCCURED == status) {
+  if (card_data.error_type == CARD_OPERATION_P0_OCCURED) {
     return false;
   }
 
@@ -235,13 +232,6 @@ bool card_fetch_wallet_name(card_operation_data_t card_data,
   if (card_data.nfc_data.pairing_error) {
     delay_scr_init(ui_text_device_and_card_not_paired, DELAY_TIME);
     return false;
-  }
-
-  uint32_t card_fault_status = 0;
-  if (1 == card_data.nfc_data.recovery_mode) {
-    card_fault_status = NFC_NULL_PTR_ERROR;
-  } else if (CARD_OPERATION_SUCCESS != status) {
-    card_fault_status = card_data.nfc_data.status;
   }
 
   for (uint8_t i = 0; i < wallets_in_card.count; i++) {
