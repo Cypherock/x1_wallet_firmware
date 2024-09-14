@@ -138,7 +138,7 @@ static verification_state_e get_verified_pin_handler(verification_state_e state,
  * passphrase input occurs, or a card abort error occurs
  *
  */
-static void get_verified_pin(const uint8_t *wallet_id,
+static bool get_verified_pin(const uint8_t *wallet_id,
                              verification_state_e init_state,
                              uint8_t pin[MAX_PIN_SIZE],
                              rejection_cb *reject_cb);
@@ -232,13 +232,13 @@ static verification_state_e get_verified_pin_handler(verification_state_e state,
   return next_state;
 }
 
-static void get_verified_pin(const uint8_t *wallet_id,
+static bool get_verified_pin(const uint8_t *wallet_id,
                              verification_state_e init_state,
                              uint8_t pin[MAX_PIN_SIZE],
                              rejection_cb *reject_cb) {
   // Select wallet based on wallet_id
   if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
-    return NULL;
+    return false;
   }
 
   // Run flow till it reaches a completion state
@@ -258,6 +258,7 @@ static void get_verified_pin(const uint8_t *wallet_id,
     // Inform the host of any rejection
     reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
               ERROR_USER_REJECTION_CONFIRMATION);
+    return false;
   }
 }
 
@@ -274,7 +275,9 @@ bool verify_pin(const uint8_t *wallet_id,
   clear_wallet_data();
   mnemonic_clear();
 
-  get_verified_pin(wallet_id, PIN_INPUT, pin_out, reject_cb);
+  if (!get_verified_pin(wallet_id, PIN_INPUT, pin_out, reject_cb)) {
+    return false;
+  }
 
   mnemonic_clear();
   clear_wallet_data();
