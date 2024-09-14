@@ -65,12 +65,20 @@
 
 #include <stdint.h>
 
+#include "aes.h"
+#include "application_startup.h"
+#include "atecc_utils.h"
+#include "base58.h"
 #include "bignum.h"
+#include "bip32.h"
 #include "core.pb.h"
-#include "inheritance_main.h"
+#include "core_api.h"
+#include "curves.h"
+#include "flash_api.h"
 #include "logger.h"
+#include "nist256p1.h"
 #include "options.h"
-#include "pb_decode.h"
+#include "utils.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -91,7 +99,6 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 const ecdsa_curve *curve;
-const uint32_t session_key_rotation[1] = {0};
 session_config_t CONFIDENTIAL session = {0};
 
 /*****************************************************************************
@@ -222,8 +229,7 @@ static bool derive_server_public_key() {
   hdnode_deserialize_public(
       (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
 
-  uint8_t index = 0;
-  hdnode_public_ckd(&node, session_key_rotation[index]);
+  hdnode_public_ckd(&node, SESSION_KEY_INDEX);
 
   memcpy(
       session.derived_server_public_key, node.public_key, SESSION_PUB_KEY_SIZE);

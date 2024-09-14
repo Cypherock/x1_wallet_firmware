@@ -17,21 +17,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "application_startup.h"
-#include "atecc_utils.h"
-#include "base58.h"
-#include "bip32.h"
-#include "card_fetch_data.h"
-#include "core_api.h"
-#include "curves.h"
-#include "inheritance_main.h"
-#include "nfc.h"
-#include "rand.h"
+#include "core.pb.h"
+#include "device_authentication_api.h"
+#include "ecdsa.h"
+#include "wallet.h"
 
 #define SESSION_BUFFER_SIZE 1024
 #define SESSION_PUB_KEY_SIZE 33
 #define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 4
+
+#define SESSION_KEY_INDEX 0
 
 #define SESSION_SERVER_SIGNATURE_SIZE 64
 

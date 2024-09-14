@@ -183,6 +183,9 @@ void send_core_session_start_response_to_host(const uint8_t *payload) {
          payload + offset,
          POSTFIX2_SIZE);
 
+  core_msg.session_start.response.confirmation_initiate.key_index =
+      SESSION_KEY_INDEX;
+
   send_core_msg(&core_msg, NULL, 0);
 }
 
