@@ -183,7 +183,17 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
     result = card_initialize_applet(&card_data);
     if (!card_fetch_wallet_name(card_data, wallet_id, wallet_name)) {
-      return CARD_OPERATION_DEFAULT_INVALID;
+      return CARD_OPERATION_VERIFICATION_FAILED;
+    }
+#else
+    // emulate wallet with pin; simulator;
+    uint8_t dev002_id[32] = {0};
+    hex_string_to_byte_array(
+        "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2b88",
+        64,
+        dev002_id);
+    if (memcmp(wallet_id, dev002_id, 32) != 0) {
+      return CARD_OPERATION_VERIFICATION_FAILED;
     }
 #endif
 

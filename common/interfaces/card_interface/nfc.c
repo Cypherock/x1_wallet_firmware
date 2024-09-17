@@ -584,7 +584,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   return status_word;
 #else
   // TODO: Standardize simulator/test wallet info
-  memcpy(name, "FIRST", 5);
+  memcpy(name, "DEV002", 6);
   memcpy(encrypted_data, name, 1);
   memcpy(encrypted_data + 1, plain_data, plain_data_size);
   *encrypted_data_size = 1 + plain_data_size;
