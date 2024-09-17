@@ -111,6 +111,7 @@ void RunAllTests(void) {
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
+  RUN_TEST_GROUP(inheritance_auth_wallet_tests);
   RUN_TEST_GROUP(utils_tests);
   RUN_TEST_GROUP(inheritance_encryption_tests);
 }
