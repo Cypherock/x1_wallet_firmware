@@ -188,7 +188,7 @@ STATIC bool auth_wallet_handle_inititate_query(inheritance_query_t *query) {
     return false;
   }
 
-  // TODO: update flow status here
+  set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_USER_CONFIRMED);
 
   return true;
 }
