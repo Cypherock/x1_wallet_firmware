@@ -223,7 +223,6 @@ STATIC bool auth_wallet_handle_inititate_query(inheritance_query_t *query) {
                            INHERITANCE_AUTH_WALLET_REQUEST_INITIATE_TAG)) {
     return false;
   }
-#if USE_SIMULATOR == 0
   if (get_wallet_name_by_id(query->auth_wallet.initiate.wallet_id,
                             (uint8_t *)wallet_name,
                             NULL)) {
@@ -232,25 +231,17 @@ STATIC bool auth_wallet_handle_inititate_query(inheritance_query_t *query) {
              ui_text_inheritance_wallet_auth_flow_confirmation,
              wallet_name);
 
-  } else
-  // #endif
-  {
+  } else {
     snprintf(msg,
              sizeof(msg),
              "%s",
              ui_text_inheritance_wallet_auth_flow_confirmation_generic);
   }
 
-  // #if USE_SIMULATOR == 0
   if (!core_confirmation(msg, inheritance_send_error)) {
     SET_ERROR_TYPE(AUTH_WALLET_USER_ABORT_ERROR);
     return false;
   }
-#ifdef DEV_BUILD
-  ekp_enqueue(LV_KEY_DOWN, DEFAULT_DELAY);
-  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
-#endif
-#endif
 
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_USER_CONFIRMED);
 
@@ -269,7 +260,6 @@ static bool verify_auth_wallet_inputs() {
 }
 
 static bool auth_wallet_get_seed_entropy() {
-#if USE_SIMULATOR == 0
   if (auth->do_seed_based) {
     uint8_t seed[SIZE_SEED] = {0};
     if (!reconstruct_seed_without_passphrase(
@@ -285,20 +275,16 @@ static bool auth_wallet_get_seed_entropy() {
     // seed generation complete
     set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_SEED_BASED_CARD_TAPPED);
   }
-#endif
-
   return true;
 }
 
 static bool auth_wallet_pair_card() {
-#if USE_SIMULATOR == 0
   card_error_type_e status = single_card_pair_operation(
       (char *)ui_text_tap_the_card, ui_text_place_card_below);
   if (status != CARD_OPERATION_SUCCESS) {
     SET_ERROR_TYPE(AUTH_WALLET_PAIRING_ERROR);
     return false;
   }
-#endif
   set_app_flow_status(INHERITANCE_AUTH_WALLET_STATUS_PAIRING_CARD_TAPPED);
   return true;
 }
@@ -340,9 +326,7 @@ static bool auth_wallet_get_entropy() {
   if (!auth_wallet_get_seed_entropy() || !auth_wallet_get_wallet_entropy()) {
     return false;
   }
-#if USE_SIMULATOR == 0
   delay_scr_init(ui_text_inheritance_wallet_authenticating, DELAY_SHORT);
-#endif
   return true;
 }
 
@@ -476,9 +460,7 @@ auth_wallet_error_type_e inheritance_auth_wallet(inheritance_query_t *query) {
   if (verify_auth_wallet_inputs() &&
       auth_wallet_handle_inititate_query(query) && auth_wallet_get_entropy() &&
       auth_wallet_get_pairs() && auth_wallet_get_signature() && send_result()) {
-#if USE_SIMULATOR == 0
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
-#endif
     SET_ERROR_TYPE(AUTH_WALLET_OK);
   }
   auth_wallet_handle_errors();
