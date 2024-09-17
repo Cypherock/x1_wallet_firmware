@@ -106,14 +106,11 @@ TEST_SETUP(inheritance_auth_wallet_tests) {
 
 TEST_TEAR_DOWN(inheritance_auth_wallet_tests) {
 }
-// inavlid request--
-// both baswd false--
-// invalid wallet id
-// inalvid challenge length
-// Abort error
-// dev001 - no pin no pass phrase
-// dev002 - pin no passphrase
-// dev003 - pin passphrase
+
+// Wallet details used for testing:
+// wallet_name="DEV002"
+// wallet_id="cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2b88"
+
 TEST(inheritance_auth_wallet_tests, auth_wallet_valid_input_fail) {
   inheritance_query_t query = {
       .auth_wallet = {INHERITANCE_AUTH_WALLET_REQUEST_INITIATE_TAG,
@@ -164,7 +161,6 @@ TEST(inheritance_auth_wallet_tests, auth_wallet_valid_wallet_id_fail) {
                               .do_wallet_based = true,
                           }},
   };
-  // For Simulator testing, the wallet id should be of DEV002
   hex_string_to_byte_array("aff4423b5b3061beb079941bfc4cc8d039083721575d3859748"
                            "fa4781c6d6c57",    //  wallet not simulated
                            64,
@@ -175,7 +171,10 @@ TEST(inheritance_auth_wallet_tests, auth_wallet_valid_wallet_id_fail) {
                            64,
                            query.auth_wallet.initiate.challenge.bytes);
   query.auth_wallet.initiate.challenge.size = 32;
-
+#ifdef DEV_BUILD
+  ekp_enqueue(LV_KEY_DOWN, DEFAULT_DELAY);
+  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
+#endif
   auth_wallet_error_type_e status = inheritance_auth_wallet(&query);
   TEST_ASSERT_EQUAL(AUTH_WALLET_INVALID_WALLET_ID_ERROR, status);
 }
@@ -249,53 +248,3 @@ TEST(inheritance_auth_wallet_tests, auth_wallet_ok) {
   auth_wallet_error_type_e status = inheritance_auth_wallet(&query);
   TEST_ASSERT_EQUAL(AUTH_WALLET_OK, status);
 }
-
-// TEST(inheritance_auth_wallet_tests, wallet_auth_get_pairs_action) {
-//   auth->entropy_size = 68;
-//   hex_string_to_byte_array(
-//       "2146edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efe",
-//       auth->entropy_size,
-//       auth->entropy);
-
-//   wallet_auth_get_pairs(auth);
-
-//   uint8_t expected_public_key[32] = {0};
-//   hex_string_to_byte_array(
-//       "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
-//       64,
-//       expected_public_key);
-
-//   uint8_t public_key[64] = {0};
-//   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-//       expected_public_key, auth->public_key, sizeof(expected_public_key));
-// }
-
-// TEST(inheritance_auth_wallet_tests, wallet_auth_get_signature_action) {
-//   hex_string_to_byte_array(
-//       "edf67877bfb47614e82fce98d16e588400af276b7e5032752189d747ff6d1efec",
-//       WALLET_ID_SIZE * 2,
-//       auth->wallet_id);
-//   hex_string_to_byte_array(
-//       "947fce34ee9faddce60e141fbcb667f7d0a1d0ae277a3604140f7facd078349e",
-//       sizeof(ed25519_secret_key) * 2,
-//       auth->private_key);
-//   hex_string_to_byte_array(
-//       "a0d13296a72d3d9dfce4adf908368864a33c6a39767aa040906fa728bf08109c",
-//       sizeof(ed25519_public_key) * 2,
-//       auth->public_key);
-//   auth->challenge_size = 28;
-//   memcpy(auth->challenge, "This is an example challenge",
-//   auth->challenge_size);
-
-//   wallet_auth_get_signature(auth);
-
-//   uint8_t expected_signature[64] = {0};
-//   hex_string_to_byte_array(
-//       "b522e317d22a17177969383e204c6bef1762dde4218d823bac3a7c400f4f303690e103a4"
-//       "b9160d15e3df0ea2aadf4dee6a7cf4bb3c9db3e69cd04cf14edb6c06",
-//       128,
-//       expected_signature);
-
-//   TEST_ASSERT_EQUAL_UINT8_ARRAY(
-//       expected_signature, auth->signature, sizeof(expected_signature));
-// }
