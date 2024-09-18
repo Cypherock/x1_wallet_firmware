@@ -8,7 +8,7 @@
             "type": "shell",
             "command": "utilities/build.sh",
             "args": [
-                "-tdebug",
+                "-tdev",
                 "-fmain",
                 "-psimulator",
             ],

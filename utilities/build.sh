@@ -68,7 +68,7 @@ Dev)
 	;;
 
 Unit_tests)
-	DEV=OFF
+	DEV=ON
 	BUILD_TYPE=Debug
 	UNIT_TESTS=ON
 	;;
