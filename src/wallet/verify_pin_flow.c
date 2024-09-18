@@ -260,6 +260,7 @@ static bool get_verified_pin(const uint8_t *wallet_id,
               ERROR_USER_REJECTION_CONFIRMATION);
     return false;
   }
+  return true;
 }
 
 /*****************************************************************************

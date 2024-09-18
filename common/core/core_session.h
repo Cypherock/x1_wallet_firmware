@@ -59,11 +59,9 @@ typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
   uint8_t device_random[SESSION_PRIV_KEY_SIZE];
   uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
-  curve_point device_random_public_point;
 
   uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
-  curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
   uint8_t server_signature[SESSION_SERVER_SIGNATURE_SIZE];
 
