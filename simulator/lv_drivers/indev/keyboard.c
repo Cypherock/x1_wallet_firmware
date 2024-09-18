@@ -36,10 +36,6 @@ static ekp_process_queue_fptr process_key_presses_queue = NULL;
  **********************/
 
 /**********************
- *      MACROS
- **********************/
-
-/**********************
  *   GLOBAL FUNCTIONS
  **********************/
 #ifdef DEV_BUILD
