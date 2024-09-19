@@ -215,7 +215,9 @@ static bool session_create_device_payload(uint8_t *payload) {
                                0x97, 0xa1, 0x54, 0xd7, 0x0c, 0x5a, 0x53, 0x95,
                                0x6f, 0x9c, 0xed, 0x97, 0x6f, 0xc7, 0xed, 0x7f,
                                0xf9, 0x10, 0x01, 0xc1, 0xa8, 0x30, 0xde, 0xb1};
-  memcpy(priv_key, get_ec_random, SESSION_PRIV_KEY_SIZE);
+  memcpy(session_ctx->device.random_priv_key,
+         get_ec_random,
+         SESSION_PRIV_KEY_SIZE);
 #endif
   ecdsa_get_public_key33(&secp256k1,
                          session_ctx->device.random_priv_key,
@@ -344,7 +346,7 @@ void core_session_clear_metadata() {
 void core_session_parse_start_message(const core_msg_t *core_msg) {
   size_t request_type = core_msg->session_start.request.which_request;
   // used cy_malloc() due to branched flow
-  session_ctx = cy_malloc(sizeof(session_ctx_t));
+  session_ctx = (session_ctx_t *)cy_malloc(sizeof(session_ctx_t));
   ASSERT(session_ctx != NULL);
   session.valid = false;
   switch (request_type) {
