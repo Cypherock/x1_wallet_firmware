@@ -32,14 +32,6 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  AUTH_WALLET_OK = 0,
-  AUTH_WALLET_TYPE_INVALID,      // TODO: In inheriance app - Show error message
-                                 // on ui that which assert is wrong
-  AUTH_WALLET_INPUTS_INVALID,    // TODO: In inheritance app - Add in wallet id
-                                 // comparison, show error message on ui
-} auth_wallet_error_type_e;
-
 #pragma pack(push, 1)
 typedef struct {
   ed25519_signature signature;
@@ -67,7 +59,6 @@ typedef struct {
   bool with_public_key;
   bool do_seed_based;
   bool do_wallet_based;
-  auth_wallet_error_type_e status;
 } auth_wallet_config_t;
 #pragma pack(pop)
 
