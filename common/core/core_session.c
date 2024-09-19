@@ -64,13 +64,26 @@
 #include "core_session.h"
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
+#include "aes.h"
+#include "application_startup.h"
+#include "atecc_utils.h"
+#include "base58.h"
 #include "bignum.h"
+#include "bip32.h"
 #include "core.pb.h"
-#include "inheritance_main.h"
+#include "core_api.h"
+#include "curves.h"
+#include "device_authentication_api.h"
+#include "ecdsa.h"
+#include "flash_api.h"
 #include "logger.h"
+#include "nist256p1.h"
 #include "options.h"
-#include "pb_decode.h"
+#include "sha2.h"
+#include "utils.h"
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -91,7 +104,6 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 const ecdsa_curve *curve;
-const uint32_t session_key_rotation[2] = {6, 7};
 session_config_t CONFIDENTIAL session = {0};
 
 /*****************************************************************************
@@ -172,14 +184,11 @@ static void session_append_signature(uint8_t *payload,
  *
  * @param random The buffer to store the generated random key.
  * @param random_public The buffer to store the generated random public key.
- * @param random_public_point The curve point to store the random public key
  * point.
  * @return true if the random keys are successfully generated.
  * @return false otherwise.
  */
-static bool session_get_random_keys(uint8_t *random,
-                                    uint8_t *random_public,
-                                    curve_point random_public_point);
+static bool session_get_random_keys(uint8_t *random, uint8_t *random_public);
 
 /**
  * @brief Generates the device key as part of the session initialization.
@@ -222,11 +231,7 @@ static bool derive_server_public_key() {
   hdnode_deserialize_public(
       (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
 
-  uint8_t index = 0;
-  hdnode_public_ckd(&node, session_key_rotation[index]);
-
-  index += 1;
-  hdnode_public_ckd(&node, session_key_rotation[index]);
+  hdnode_public_ckd(&node, SESSION_KEY_INDEX);
 
   memcpy(
       session.derived_server_public_key, node.public_key, SESSION_PUB_KEY_SIZE);
@@ -248,19 +253,18 @@ static bool verify_session_signature(const uint8_t *payload,
 }
 
 static void derive_session_iv() {
-  curve_point server_random_public_point;
-  memcpy(&server_random_public_point,
-         &session.server_random_public_point,
-         sizeof(curve_point));
-  point_add(
-      curve, &session.device_random_public_point, &server_random_public_point);
+  uint8_t buffer[SESSION_PUB_KEY_SIZE * 2] = {0};
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
 
-  uint8_t session_iv[2 * SESSION_PRIV_KEY_SIZE];
-  bn_write_be(&server_random_public_point.x, session_iv);
-  bn_write_be(&server_random_public_point.y,
-              session_iv + SESSION_PRIV_KEY_SIZE);
+  memcpy(buffer, session.device_random_public, SESSION_PUB_KEY_SIZE);
+  memcpy(buffer + SESSION_PUB_KEY_SIZE,
+         session.server_random_public,
+         SESSION_PUB_KEY_SIZE);
 
-  sha256_Raw(session_iv, 2 * SESSION_PUB_KEY_SIZE, session.session_iv);
+  sha256_Raw(buffer, sizeof(buffer), hash);
+
+  memzero(session.session_iv, sizeof(session.session_iv));
+  memcpy(session.session_iv, hash, sizeof(session.session_iv));
 }
 
 static bool derive_session_key() {
@@ -294,12 +298,9 @@ static void session_append_signature(uint8_t *payload,
   offset += POSTFIX2_SIZE;
 }
 
-static bool session_get_random_keys(uint8_t *random,
-                                    uint8_t *random_public,
-                                    curve_point random_public_point) {
+static bool session_get_random_keys(uint8_t *random, uint8_t *random_public) {
   memzero(random, SESSION_PRIV_KEY_SIZE);
   memzero(random_public, SESSION_PUB_KEY_SIZE);
-  memset(&random_public_point, 0, sizeof(random_public_point));
 
 #if USE_SIMULATOR == 0
   random_generate(random, SESSION_PRIV_KEY_SIZE);
@@ -313,18 +314,12 @@ static bool session_get_random_keys(uint8_t *random,
   session_curve_init();
   ecdsa_get_public_key33(curve, random, random_public);
 
-  if (!ecdsa_read_pubkey(curve, random_public, &random_public_point)) {
-    LOG_ERROR("\nERROR: Random public key point not read");
-    return false;
-  }
-
   return true;
 }
 
 static bool session_generate_device_key(uint8_t *payload) {
   if (!session_get_random_keys(session.device_random,
-                               session.device_random_public,
-                               session.device_random_public_point)) {
+                               session.device_random_public)) {
     LOG_ERROR("\nERROR: Device Random keys not generated");
     return false;
   }
@@ -352,7 +347,7 @@ static bool session_generate_device_key(uint8_t *payload) {
 
 static bool session_receive_server_key(const uint8_t *server_message) {
   // Input Payload: Server_Random_public + Session Age + Device Id
-  if (server_message != NULL) {
+  if (server_message == NULL) {
     LOG_ERROR("\nERROR: server_message not set");
     return false;
   }
@@ -379,16 +374,10 @@ static bool session_receive_server_key(const uint8_t *server_message) {
   offset += SESSION_PUB_KEY_SIZE;
   memcpy(session.session_age, server_message + offset, SESSION_AGE_SIZE);
   offset += SESSION_AGE_SIZE;
+
   // Verify Device ID
   if (memcmp(session.device_id, server_message + offset, DEVICE_SERIAL_SIZE) !=
       0) {
-  }
-  offset += DEVICE_SERIAL_SIZE;
-
-  if (!ecdsa_read_pubkey(curve,
-                         session.server_random_public,
-                         &session.server_random_public_point)) {
-    LOG_ERROR("\nERROR: Server random public key point not read");
     return false;
   }
 
@@ -405,7 +394,7 @@ static void initiate_request(void) {
   if (!session_generate_device_key(payload)) {
     // TODO: Error Handling
     LOG_ERROR("xxec %d", __LINE__);
-    comm_reject_invalid_cmd();
+    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
     clear_message_received_data();
     return;
   }
@@ -414,7 +403,8 @@ static void initiate_request(void) {
 
 static void start_request(const core_msg_t *core_msg) {
   uint8_t server_message_payload[SESSION_PUB_KEY_SIZE + SESSION_AGE_SIZE +
-                                 DEVICE_SERIAL_SIZE];
+                                 DEVICE_SERIAL_SIZE +
+                                 SESSION_SERVER_SIGNATURE_SIZE];
   uint32_t offset = 0;
   core_session_start_begin_request_t request =
       core_msg->session_start.request.start;
@@ -423,21 +413,26 @@ static void start_request(const core_msg_t *core_msg) {
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
 
-  write_be(server_message_payload + SESSION_PUB_KEY_SIZE,
+  write_be(server_message_payload + offset,
            core_msg->session_start.request.start.session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(server_message_payload + offset,
          core_msg->session_start.request.start.device_id,
          DEVICE_SERIAL_SIZE);
+  offset += DEVICE_SERIAL_SIZE;
+
+  memcpy(server_message_payload + offset,
+         core_msg->session_start.request.start.signature,
+         64);
 
   if (!session_receive_server_key(server_message_payload)) {
     // TODO: Error Handling
     LOG_ERROR("xxec %d", __LINE__);
-    comm_reject_invalid_cmd();
+    send_core_error_msg_to_host(CORE_UNKNOWN_APP);
     clear_message_received_data();
-
     return;
   }
+
   send_core_session_start_ack_to_host();
 }
 
@@ -462,7 +457,7 @@ void core_session_parse_start_message(const core_msg_t *core_msg) {
 
     default:
       // TODO: Error Handling
-      comm_reject_invalid_cmd();
+      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
       clear_message_received_data();
       break;
   }
@@ -474,6 +469,7 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
 
   uint16_t size = *len;
   uint8_t payload[size];
+  memzero(payload, size);
 
   memcpy(payload, InOut_data, size);
   memzero(InOut_data, size);

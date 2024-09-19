@@ -17,28 +17,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "application_startup.h"
-#include "atecc_utils.h"
-#include "base58.h"
-#include "bip32.h"
-#include "card_fetch_data.h"
-#include "core_api.h"
-#include "curves.h"
-#include "inheritance_main.h"
-#include "nfc.h"
-#include "rand.h"
+#include "core.pb.h"
+#include "device_authentication_api.h"
+#include "ecdsa.h"
+#include "wallet.h"
 
 #define SESSION_BUFFER_SIZE 1024
 #define SESSION_PUB_KEY_SIZE 33
 #define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 4
 
+#define SESSION_KEY_INDEX 0
+
 #define SESSION_SERVER_SIGNATURE_SIZE 64
 
 #define SESSION_IV_SIZE 16
 #define SESSION_KEY_SIZE 32
 
-extern const uint32_t session_key_rotation[2];
+extern const uint32_t session_key_rotation[1];
 
 typedef enum {
   SESSION_OK = 0,
@@ -63,11 +59,9 @@ typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
   uint8_t device_random[SESSION_PRIV_KEY_SIZE];
   uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
-  curve_point device_random_public_point;
 
   uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
   uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
-  curve_point server_random_public_point;
   uint8_t session_age[SESSION_AGE_SIZE];
   uint8_t server_signature[SESSION_SERVER_SIGNATURE_SIZE];
 
