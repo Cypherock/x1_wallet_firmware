@@ -171,10 +171,6 @@ TEST(inheritance_auth_wallet_tests, auth_wallet_valid_wallet_id_fail) {
                            64,
                            query.auth_wallet.initiate.challenge.bytes);
   query.auth_wallet.initiate.challenge.size = 32;
-#ifdef DEV_BUILD
-  ekp_enqueue(LV_KEY_DOWN, DEFAULT_DELAY);
-  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
-#endif
   auth_wallet_error_type_e status = inheritance_auth_wallet(&query);
   TEST_ASSERT_EQUAL(AUTH_WALLET_INVALID_WALLET_ID_ERROR, status);
 }

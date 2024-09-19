@@ -195,6 +195,7 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     if (memcmp(wallet_id, dev002_id, 32) != 0) {
       return CARD_OPERATION_VERIFICATION_FAILED;
     }
+    result = CARD_OPERATION_SUCCESS;
 #endif
 
     for (int i = 0; i < msg_count; i++) {
