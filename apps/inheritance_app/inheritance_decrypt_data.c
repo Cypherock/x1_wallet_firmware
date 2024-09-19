@@ -471,7 +471,9 @@ static bool deserialize_packet(void) {
   decryption_context->data_count =
       decryption_context->encrypted_data.data.bytes[packet_index++];
   for (uint8_t index = 0; index < decryption_context->data_count; index++) {
-    packet_index++;    ///< Skip tag
+    decryption_context->response_payload.decrypted_data[index].tag =
+        decryption_context->encrypted_data.data.bytes[packet_index];
+    packet_index++;    ///< Tag
 
     decryption_context->data[index].encrypted_data_size = U16_READ_BE_ARRAY(
         &decryption_context->encrypted_data.data.bytes[packet_index]);

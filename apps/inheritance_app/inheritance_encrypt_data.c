@@ -539,7 +539,7 @@ static bool serialize_packet(void) {
   for (index = 0; index < encryption_context->data_count - 1; index++) {
     inheritance_fill_tlv(encryption_context->payload.encrypted_data.bytes,
                          &encryption_context->payload.encrypted_data.size,
-                         0x00,    ///< TODO: take this from sdk
+                         encryption_context->plain_data.data[index].tag,
                          encryption_context->data[index].encrypted_data_size,
                          encryption_context->data[index].encrypted_data);
   }
