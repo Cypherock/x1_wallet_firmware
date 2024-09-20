@@ -334,7 +334,7 @@ STATIC inheritance_encryption_context_t *encryption_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void encryption_set_default() {
+static void encryption_set_defaults() {
   SET_FLOW_TAG(ENCRYPTION_DEFAULT_START_FLOW);
   SET_ERROR_TYPE(ENCRYPTION_ERROR_DEFAULT);
 }
