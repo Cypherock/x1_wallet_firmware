@@ -111,14 +111,15 @@ typedef enum {
 } encryption_error_type_e;
 
 typedef enum {
-  ENCRYPTION_INIT_FLOW = 0,
-  ENCRYPTION_VERIFY_PIN_FLOW,
-  ENCRYPTION_GET_PLAIN_DATA_FLOW,
-  ENCRYPTION_USER_VERIFICATION_FLOW,
-  ENCRYPTION_SERIALIZE_MESSAGE_FLOW,
-  ENCRYPTION_ENCRYPT_MESSAGE_FLOW,
-  ENCRYPTION_SERIALIZE_PACKET_FLOW,
-  ENCRYPTION_ENCRYPT_PACKET_FLOW,
+  ENCRYPTION_DEFAULT_START_FLOW = 0,
+  ENCRYPTION_QUERY_HANDLE_FLOW,
+  ENCRYPTION_PLAIN_DATA_GET_FLOW,
+  ENCRYPTION_PIN_VERIFY_FLOW,
+  ENCRYPTION_USER_VERIFY_FLOW,
+  ENCRYPTION_MESSAGE_SERIALIZE_FLOW,
+  ENCRYPTION_MESSAGE_ENCRYPT_FLOW,
+  ENCRYPTION_PACKET_SERIALIZE_FLOW,
+  ENCRYPTION_PACKET_ENCRYPT_FLOW,
   ENCRYPTION_SEND_RESULT_FLOW,
 } encryption_flow_t;
 
@@ -134,7 +135,7 @@ static encryption_error_info_t encryption_error;
  *****************************************************************************/
 #define ENCRYPTED_CHUNK_SIZE (2048)
 #define SET_ERROR_TYPE(x) encryption_error.type = x
-#define SET_ERROR_FLOW_TAG(x) encryption_error.flow = x
+#define SET_FLOW_TAG(x) encryption_error.flow = x
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -333,9 +334,9 @@ STATIC inheritance_encryption_context_t *encryption_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void encryption_set_defaults() {
-  encryption_error.type = ENCRYPTION_ERROR_DEFAULT;
-  encryption_error.flow = ENCRYPTION_INIT_FLOW;
+static void encryption_set_default() {
+  SET_FLOW_TAG(ENCRYPTION_DEFAULT_START_FLOW);
+  SET_ERROR_TYPE(ENCRYPTION_ERROR_DEFAULT);
 }
 
 static void encryption_handle_errors() {
@@ -420,6 +421,7 @@ static bool validate_request_data(
 
 STATIC bool inheritance_encryption_handle_inititate_query(
     inheritance_query_t *query) {
+  SET_FLOW_TAG(ENCRYPTION_QUERY_HANDLE_FLOW);
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -429,7 +431,6 @@ STATIC bool inheritance_encryption_handle_inititate_query(
       !get_wallet_name_by_id(query->encrypt.initiate.wallet_id,
                              (uint8_t *)wallet_name,
                              inheritance_send_error)) {
-    SET_ERROR_FLOW_TAG(ENCRYPTION_INIT_FLOW);
     return false;
   }
 
@@ -440,7 +441,6 @@ STATIC bool inheritance_encryption_handle_inititate_query(
 
   if (!core_confirmation(msg, inheritance_send_error)) {
     SET_ERROR_TYPE(ENCRYPTION_USER_ABORT_FAILURE);
-    SET_ERROR_FLOW_TAG(ENCRYPTION_INIT_FLOW);
     return false;
   }
 
@@ -487,6 +487,7 @@ static bool decode_inheritance_plain_data(
 
 // TODO: Make chunking logic generic to be used by any flow
 static bool inheritance_get_plain_data(inheritance_query_t *query) {
+  SET_FLOW_TAG(ENCRYPTION_PLAIN_DATA_GET_FLOW);
   uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
   inheritance_result_t response =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
@@ -501,7 +502,6 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
     if (!inheritance_get_query(query, INHERITANCE_QUERY_ENCRYPT_TAG) ||
         !check_which_request(
             query, INHERITANCE_ENCRYPT_DATA_WITH_PIN_REQUEST_PLAIN_DATA_TAG)) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
       return false;
     }
     if (size == 0) {
@@ -512,7 +512,6 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
         payload->chunk_index >= payload->total_chunks ||
         size + chunk->size > total_size) {
       SET_ERROR_TYPE(ENCRYPTION_CHUNK_DATA_INVALID_ERROR);
-      SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
       return false;
     }
 
@@ -534,7 +533,6 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
   }
   if (!decode_inheritance_plain_data(
           encoded_data, total_size, &encryption_context->plain_data)) {
-    SET_ERROR_FLOW_TAG(ENCRYPTION_GET_PLAIN_DATA_FLOW);
     return false;
   }
 
@@ -542,6 +540,7 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
 }
 
 STATIC bool inheritance_encryption_get_user_verification(void) {
+  SET_FLOW_TAG(ENCRYPTION_USER_VERIFY_FLOW);
   for (int i = 0; i < encryption_context->plain_data.data_count; i++) {
     const inheritance_plain_data_t *data =
         &encryption_context->plain_data.data[i];
@@ -552,7 +551,6 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
               (const char *)&data->message.bytes,
               inheritance_send_error)) {
         SET_ERROR_TYPE(ENCRYPTION_VERIFICATION_FAIL_ERROR);
-        SET_ERROR_FLOW_TAG(ENCRYPTION_USER_VERIFICATION_FLOW);
         return false;
       }
     }
@@ -563,6 +561,7 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
 }
 
 static bool inheritance_verify_pin(void) {
+  SET_FLOW_TAG(ENCRYPTION_PIN_VERIFY_FLOW);
   if (!verify_pin(encryption_context->wallet_id,
                   encryption_context->pin_value,
                   inheritance_send_error)) {
@@ -586,6 +585,7 @@ static void inheritance_fill_tlv(uint8_t *destination,
 }
 
 static bool serialize_message_data(void) {
+  SET_FLOW_TAG(ENCRYPTION_MESSAGE_SERIALIZE_FLOW);
   if (encryption_context->plain_data.data_count >=
       INHERITANCE_MESSAGES_MAX_COUNT) {
     SET_ERROR_TYPE(ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR);
@@ -622,6 +622,7 @@ static bool serialize_message_data(void) {
 }
 
 static bool encrypt_message_data(void) {
+  SET_FLOW_TAG(ENCRYPTION_MESSAGE_ENCRYPT_FLOW);
   card_error_type_e status =
       card_fetch_encrypt_data(encryption_context->wallet_id,
                               encryption_context->data,
@@ -635,6 +636,7 @@ static bool encrypt_message_data(void) {
 }
 
 static bool serialize_packet(void) {
+  SET_FLOW_TAG(ENCRYPTION_PACKET_SERIALIZE_FLOW);
   encryption_context->payload.encrypted_data.size = 0;
   encryption_context->payload.encrypted_data
       .bytes[encryption_context->payload.encrypted_data.size++] =
@@ -660,6 +662,7 @@ static bool serialize_packet(void) {
 }
 
 static bool encrypt_packet(void) {
+  SET_FLOW_TAG(ENCRYPTION_PACKET_ENCRYPT_FLOW);
   if (SESSION_ENCRYPT_PACKET_SUCCESS !=
       session_aes_encrypt(encryption_context->payload.encrypted_data.bytes,
                           &encryption_context->payload.encrypted_data.size)) {
@@ -674,30 +677,25 @@ static bool encrypt_data(void) {
 
   do {
     if (!inheritance_verify_pin()) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_VERIFY_PIN_FLOW);
       status = false;
       break;
     }
     if (!serialize_message_data()) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_SERIALIZE_MESSAGE_FLOW);
       status = false;
       break;
     }
 
     if (!encrypt_message_data()) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_ENCRYPT_MESSAGE_FLOW);
       status = false;
       break;
     }
 
     if (!serialize_packet()) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_SERIALIZE_PACKET_FLOW);
       status = false;
       break;
     }
 
     if (!encrypt_packet()) {
-      SET_ERROR_FLOW_TAG(ENCRYPTION_ENCRYPT_PACKET_FLOW);
       status = false;
       break;
     }
@@ -784,6 +782,7 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
 }
 
 static bool send_encrypted_data(inheritance_query_t *query) {
+  SET_FLOW_TAG(ENCRYPTION_SEND_RESULT_FLOW);
   uint8_t
       buffer[INHERITANCE_ENCRYPT_DATA_WITH_PIN_ENCRYPTED_DATA_STRUCTURE_SIZE] =
           {0};
@@ -793,7 +792,6 @@ static bool send_encrypted_data(inheritance_query_t *query) {
                              sizeof(buffer),
                              &bytes_encoded) ||
       !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
-    SET_ERROR_FLOW_TAG(ENCRYPTION_SEND_RESULT_FLOW);
     return false;
   }
   return true;
