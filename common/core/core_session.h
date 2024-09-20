@@ -50,6 +50,12 @@ typedef enum {
   SESSION_DECRYPT_PACKET_ERR
 } session_error_type_e;
 
+typedef enum {
+  SESSION_TERMINATED = 0,
+  SESSION_IN_PROGRESS,
+  SESSION_ONGOING
+} session_state_type_e;
+
 #pragma pack(push, 1)
 typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
@@ -64,14 +70,14 @@ typedef struct {
 typedef struct {
   session_device_config_t device;
   session_server_config_t server;
-  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE];
 } session_ctx_t;
 
 typedef struct {
-  uint8_t age[SESSION_AGE_SIZE];
+  uint8_t device_id[DEVICE_SERIAL_SIZE];
+  uint8_t device_random_priv_key[SESSION_PRIV_KEY_SIZE];
   uint8_t session_iv[SESSION_IV_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
-  bool valid;    ///< True only if a valid session has been established.
+  session_state_type_e state;    ///< Indicates session current state.
 } session_private_t;
 #pragma pack(pop)
 

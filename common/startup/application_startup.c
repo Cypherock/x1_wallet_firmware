@@ -460,6 +460,7 @@ void device_hardware_check() {
 }
 
 uint32_t get_device_serial() {
+#if USE_SIMULATOR == 0
   atecc_data.retries = DEFAULT_ATECC_RETRIES;
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
 
@@ -484,6 +485,10 @@ uint32_t get_device_serial() {
     }
   }
   return atecc_data.status;
+#else
+  // TODO: standardize device_id for simulator
+  return ATCA_SUCCESS;
+#endif
 }
 
 provision_status_t check_provision_status() {
