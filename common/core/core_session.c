@@ -117,7 +117,7 @@ session_private_t CONFIDENTIAL session = {0};
  * @return true if the server's public key is successfully derived.
  * @return false otherwise.
  */
-static bool derive_server_public_key();
+static bool derive_server_public_key(uint8_t *server_verification_pub_key);
 
 /**
  * @brief Verifies the session signature, critical for proceeding.
@@ -158,10 +158,9 @@ static void start_request(const core_msg_t *core_msg);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool derive_server_public_key() {
+static bool derive_server_public_key(uint8_t *server_verification_pub_key) {
   HDNode node;
   char xpub[112] = {'\0'};
-
   base58_encode_check(get_card_root_xpub(),
                       FS_KEYSTORE_XPUB_LEN,
                       nist256p1_info.hasher_base58,
@@ -169,13 +168,8 @@ static bool derive_server_public_key() {
                       112);
   hdnode_deserialize_public(
       (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
-
   hdnode_public_ckd(&node, SESSION_KEY_INDEX);
-
-  memcpy(session_ctx->server_verification_pub_key,
-         node.public_key,
-         SESSION_PUB_KEY_SIZE);
-
+  memcpy(server_verification_pub_key, node.public_key, SESSION_PUB_KEY_SIZE);
   return true;
 }
 
@@ -190,7 +184,6 @@ static bool derive_session_iv_and_session_key() {
   sha256_Raw(buffer, sizeof(buffer), hash);
   memzero(session.session_iv, sizeof(session.session_iv));
   memcpy(session.session_iv, hash, sizeof(session.session_iv));
-
   // generate session key
   if (ecdh_multiply(&secp256k1,
                     session_ctx->device.random_priv_key,
@@ -201,24 +194,12 @@ static bool derive_session_iv_and_session_key() {
     LOG_ERROR("ERROR: Session key not generated");
     return false;
   }
-  // indicate valid session has been established
-  session.valid = true;
   return true;
 }
 
 static bool session_create_device_payload(uint8_t *payload) {
-#if USE_SIMULATOR == 0
   // randomly generate private key
   random_generate(session_ctx->device.random_priv_key, SESSION_PRIV_KEY_SIZE);
-#else
-  uint8_t get_ec_random[32] = {0x0b, 0x78, 0x9a, 0x1e, 0xb8, 0x0b, 0x7a, 0xac,
-                               0x97, 0xa1, 0x54, 0xd7, 0x0c, 0x5a, 0x53, 0x95,
-                               0x6f, 0x9c, 0xed, 0x97, 0x6f, 0xc7, 0xed, 0x7f,
-                               0xf9, 0x10, 0x01, 0xc1, 0xa8, 0x30, 0xde, 0xb1};
-  memcpy(session_ctx->device.random_priv_key,
-         get_ec_random,
-         SESSION_PRIV_KEY_SIZE);
-#endif
   ecdsa_get_public_key33(&secp256k1,
                          session_ctx->device.random_priv_key,
                          session_ctx->device.random_pub_key);
@@ -229,7 +210,6 @@ static bool session_create_device_payload(uint8_t *payload) {
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
   // TODO: standardize simulator handling for hardware specific functionality
-#if USE_SIMULATOR == 0
   if (get_device_serial() != 0) {
     LOG_ERROR("\nERROR: Device Serial fetch failed");
     return false;
@@ -237,16 +217,11 @@ static bool session_create_device_payload(uint8_t *payload) {
   memcpy(session_ctx->device.device_id,
          atecc_data.device_serial,
          DEVICE_SERIAL_SIZE);
-#else
-  memcpy(session_ctx->device.device_id,
-         session_ctx->device.random_priv_key,
-         DEVICE_SERIAL_SIZE);
-#endif
   // append device_id
   memcpy(payload + offset, session_ctx->device.device_id, DEVICE_SERIAL_SIZE);
   offset += DEVICE_SERIAL_SIZE;
   // sign payload
-  uint8_t hash[32] = {0};    // hash size reference taken from the atecc_sign
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(payload, offset, hash);
   auth_data_t signed_data = atecc_sign(hash);
   // append signature
@@ -261,6 +236,8 @@ static bool session_create_device_payload(uint8_t *payload) {
 }
 
 static void initiate_request(void) {
+  core_session_clear_metadata();
+  session.state = SESSION_IN_PROGRESS;
   uint8_t payload[SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
                   POSTFIX1_SIZE + POSTFIX2_SIZE] = {0};
   if (!session_create_device_payload(payload)) {
@@ -271,6 +248,11 @@ static void initiate_request(void) {
     return;
   }
   send_core_session_start_response_to_host(payload);
+  // populate private variables
+  memcpy(session.device_id, session_ctx->device.device_id, DEVICE_SERIAL_SIZE);
+  memcpy(session.device_random_priv_key,
+         session_ctx->device.random_priv_key,
+         SESSION_PRIV_KEY_SIZE);
 }
 
 static bool session_verify_server_signature() {
@@ -294,23 +276,23 @@ static bool session_verify_server_signature() {
          session_ctx->server.request_pointer->signature,
          SESSION_SERVER_SIGNATURE_SIZE);
   // Verify Device ID
-  if (memcmp(session_ctx->device.device_id,
+  if (memcmp(session.device_id,
              session_ctx->server.request_pointer->device_id,
              DEVICE_SERIAL_SIZE) != 0) {
     return false;
   }
   // derive verification pub key
-  if (!derive_server_public_key()) {
+  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE];
+  if (!derive_server_public_key(server_verification_pub_key)) {
     LOG_ERROR("\nERROR: Server Randoms not read");
     return false;
   }
-  uint8_t hash[32] = {0};
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(server_message_payload, offset, hash);
-  bool is_signature_valid =
-      ecdsa_verify_digest(&nist256p1,
-                          session_ctx->server_verification_pub_key,
-                          server_message_payload + offset,
-                          hash) == 0;
+  bool is_signature_valid = ecdsa_verify_digest(&nist256p1,
+                                                server_verification_pub_key,
+                                                server_message_payload + offset,
+                                                hash) == 0;
 
   return is_signature_valid;
 }
@@ -332,6 +314,8 @@ static void start_request(const core_msg_t *core_msg) {
     clear_message_received_data();
     return;
   }
+  // indicate valid session has been established
+  session.state = SESSION_ONGOING;
   send_core_session_start_ack_to_host();
 }
 
@@ -341,14 +325,13 @@ static void start_request(const core_msg_t *core_msg) {
 
 void core_session_clear_metadata() {
   memzero(&session, sizeof(session_private_t));
+  session.state = SESSION_TERMINATED;
 }
 
 void core_session_parse_start_message(const core_msg_t *core_msg) {
   size_t request_type = core_msg->session_start.request.which_request;
-  // used cy_malloc() due to branched flow
-  session_ctx = (session_ctx_t *)cy_malloc(sizeof(session_ctx_t));
+  session_ctx = (session_ctx_t *)malloc(sizeof(session_ctx_t));
   ASSERT(session_ctx != NULL);
-  session.valid = false;
   switch (request_type) {
     case CORE_SESSION_START_REQUEST_INITIATE_TAG: {
       initiate_request();
@@ -364,6 +347,7 @@ void core_session_parse_start_message(const core_msg_t *core_msg) {
       clear_message_received_data();
       break;
   }
+  free(session_ctx);
 }
 
 session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
