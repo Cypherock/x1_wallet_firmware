@@ -463,7 +463,7 @@ static bool send_decrypted_data(inheritance_query_t *query) {
 static bool decrypt_packet(void) {
   return session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
                              &decryption_context->encrypted_data.data.size) ==
-         SESSION_DECRYPT_PACKET_SUCCESS;
+         SESSION_DECRYPTION_OK;
 }
 
 static bool deserialize_packet(void) {
