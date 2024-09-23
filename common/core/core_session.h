@@ -38,14 +38,16 @@ extern const uint32_t session_key_rotation[1];
 typedef enum {
   SESSION_DEFAULT_ERROR = 0,
   SESSION_MEMORY_ALLOCATION_ERROR,
-  SESSION_INVALID_INPUT_ERROR,
+  SESSION_INPUT_INVALID_ERROR,
   SESSION_KEY_GENERATION_ERROR,
-  SESSION_DEVICE_ID_GENERATION_ERROR,
+  SESSION_GET_DEVICE_ID_ERROR,
   SESSION_DEVICE_ID_INVALID_ERROR,
   SESSION_SIGNATURE_VERIFICATION_ERROR,
+  SESSION_INVALID_STATE_ERROR,    ///< Indicates partial/corrupt session
+                                  ///< state
+  SESSION_UNKNOWN_ERROR,
   SESSION_ENCRYPTION_ERROR,
   SESSION_DECRYPTION_ERROR,
-  SESSION_UNKNOWN_ERROR,
   SESSION_ENCRYPTION_OK,
   SESSION_DECRYPTION_OK,
   SESSION_OK,
@@ -53,7 +55,8 @@ typedef enum {
 
 typedef enum {
   SESSION_TERMINATED = 0,
-  SESSION_INCOMPLETE,
+  SESSION_AWAIT,    ///< Session partial state, device keys generated,
+                    ///< waiting for server pub key
   SESSION_LIVE
 } session_state_type_e;
 

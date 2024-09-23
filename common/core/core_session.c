@@ -165,7 +165,6 @@ static void start_request(const core_msg_t *core_msg);
 static void session_set_defaults() {
   SET_ERROR_TYPE(SESSION_DEFAULT_ERROR);
   core_session_clear_metadata();
-  session.state = SESSION_INCOMPLETE;
 }
 
 static void session_handle_errors() {
@@ -173,21 +172,25 @@ static void session_handle_errors() {
     return;
   }
   session_error_type_e type = session_error.type;
-  LOG_ERROR("core_session_parse_start_message error_code:%d", type);
+  LOG_ERROR("core_session_parse_start_message error_code:%d\n", type);
   switch (type) {
     case SESSION_DEFAULT_ERROR:
     case SESSION_MEMORY_ALLOCATION_ERROR:
-    case SESSION_INVALID_INPUT_ERROR:
+    case SESSION_INPUT_INVALID_ERROR:
     case SESSION_KEY_GENERATION_ERROR:
-    case SESSION_DEVICE_ID_GENERATION_ERROR:
+    case SESSION_GET_DEVICE_ID_ERROR:
     case SESSION_DEVICE_ID_INVALID_ERROR:
+    case SESSION_INVALID_STATE_ERROR:
+    case SESSION_UNKNOWN_ERROR:
     case SESSION_SIGNATURE_VERIFICATION_ERROR: {
       // TODO: Update core error macros for session
       send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+      core_session_clear_metadata();
     } break;
 
     default: {
       send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+      core_session_clear_metadata();
     } break;
   }
 }
@@ -244,7 +247,7 @@ static bool session_create_device_payload(uint8_t *payload) {
   offset += SESSION_PUB_KEY_SIZE;
   // TODO: standardize simulator handling for hardware specific functionality
   if (get_device_serial() != 0) {
-    SET_ERROR_TYPE(SESSION_DEVICE_ID_GENERATION_ERROR);
+    SET_ERROR_TYPE(SESSION_GET_DEVICE_ID_ERROR);
     return false;
   }
   memcpy(session_ctx->device.device_id,
@@ -278,6 +281,8 @@ static void initiate_request(void) {
     memcpy(session.device_random_priv_key,
            session_ctx->device.random_priv_key,
            SESSION_PRIV_KEY_SIZE);
+    // indicate wait for server pub key
+    session.state = SESSION_AWAIT;
   }
 }
 
@@ -326,6 +331,12 @@ static bool session_verify_server_signature() {
 
 static void start_request(const core_msg_t *core_msg) {
   ASSERT(core_msg != NULL);
+  if (session.state !=
+      SESSION_AWAIT) {    ///< Device keys must have been generated to proceed
+                          ///< with session start request
+    SET_ERROR_TYPE(SESSION_INVALID_STATE_ERROR);
+    return;
+  }
   session_ctx->server.request_pointer = &core_msg->session_start.request.start;
   if (session_verify_server_signature() &&
       derive_session_iv_and_session_key()) {
@@ -367,6 +378,7 @@ session_error_type_e core_session_parse_start_message(
       SET_ERROR_TYPE(SESSION_UNKNOWN_ERROR);
       break;
   }
+  memzero(session_ctx, sizeof(session_ctx_t));
   free(session_ctx);
   session_handle_errors();
   return session_error.type;
@@ -375,11 +387,15 @@ session_error_type_e core_session_parse_start_message(
 session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
+  if (session.state != SESSION_LIVE) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n",
+              SESSION_INVALID_STATE_ERROR);
+    return SESSION_INVALID_STATE_ERROR;
+  }
 
   uint16_t size = *len;
   uint8_t payload[size];
   memzero(payload, size);
-
   memcpy(payload, InOut_data, size);
   memzero(InOut_data, size);
 
@@ -400,13 +416,14 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
   memcpy(initialization_vector, session.session_iv, AES_BLOCK_SIZE);
 
   aes_encrypt_ctx ctx = {0};
-
   if (aes_encrypt_key256(session.session_key, &ctx) != EXIT_SUCCESS) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
     return SESSION_ENCRYPTION_ERROR;
   }
 
   if (aes_cbc_encrypt(payload, InOut_data, size, initialization_vector, &ctx) !=
       EXIT_SUCCESS) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
     return SESSION_ENCRYPTION_ERROR;
   }
 
@@ -415,6 +432,7 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
                       sizeof(last_block),
                       initialization_vector,
                       &ctx) != EXIT_SUCCESS) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
     return SESSION_ENCRYPTION_ERROR;
   }
 
@@ -429,9 +447,13 @@ session_error_type_e session_aes_encrypt(uint8_t *InOut_data, uint16_t *len) {
 session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
+  if (session.state != SESSION_LIVE) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n",
+              SESSION_INVALID_STATE_ERROR);
+    return SESSION_INVALID_STATE_ERROR;
+  }
 
   size_t size = *len;
-
   uint8_t payload[size];
   memcpy(payload, InOut_data, size);
   memzero(InOut_data, size);
@@ -439,11 +461,13 @@ session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len) {
   aes_decrypt_ctx ctx = {0};
 
   if (EXIT_SUCCESS != aes_decrypt_key256(session.session_key, &ctx)) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
     return SESSION_DECRYPTION_ERROR;
   }
 
   if (aes_cbc_decrypt(payload, InOut_data, size, session.session_iv, &ctx) !=
       EXIT_SUCCESS) {
+    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
     return SESSION_DECRYPTION_ERROR;
   }
 
