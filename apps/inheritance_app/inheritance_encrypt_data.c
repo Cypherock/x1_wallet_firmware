@@ -364,7 +364,7 @@ static bool decode_inheritance_plain_data(
     const uint8_t *data,
     uint16_t data_size,
     inheritance_encrypt_data_with_pin_plain_data_structure_t *plain_data) {
-  if (NULL == data || NULL == plain_data || 0 == data_size) {
+  if (NULL == data || NULL == plain_data) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
