@@ -259,6 +259,13 @@ TEST_GROUP_RUNNER(inheritance_decryption_tests) {
   // RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_wallet_id);
 }
 
+TEST_GROUP_RUNNER(starknet_txn_test) {
+  RUN_TEST_CASE(starknet_txn_test, starknet_validate_req_action);
+  RUN_TEST_CASE(starknet_txn_test, starknet_get_public_key_action);
+  // RUN_TEST_CASE(starknet_txn_test, starknet_get_addr_action);
+  // RUN_TEST_CASE(starknet_txn_test, starknet_get_signature);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
