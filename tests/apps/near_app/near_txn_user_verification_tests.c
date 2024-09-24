@@ -65,7 +65,7 @@
 
 TEST_GROUP(near_txn_user_verification_test);
 
-TEST_SETUP(near_txn_user_verificnear_parse_transactionation_test) {
+TEST_SETUP(near_txn_user_verification_test) {
   return;
 }
 

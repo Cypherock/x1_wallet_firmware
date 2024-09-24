@@ -102,12 +102,12 @@ static bool grind_key(const uint8_t *grind_seed, uint8_t *out);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool temp_func(const uint32_t *path,
-                      const size_t path_length,
-                      const char *curve,
-                      const uint8_t *seed,
-                      const uint8_t seed_len,
-                      HDNode *hdnode) {
+static bool get_stark_child_node(const uint32_t *path,
+                                 const size_t path_length,
+                                 const char *curve,
+                                 const uint8_t *seed,
+                                 const uint8_t seed_len,
+                                 HDNode *hdnode) {
   hdnode_from_seed(seed, seed_len, curve, hdnode);
   for (size_t i = 0; i < path_length; i++) {
     if (0 == hdnode_private_ckd(hdnode, path[i])) {
@@ -194,23 +194,39 @@ bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
 
   memcpy(
       private_key, strkSeedNode.private_key, sizeof(strkSeedNode.private_key));
+
+  return true;
 }
 
 bool starknet_derive_key_from_seed(const uint8_t *seed_key,
                                    const uint32_t *path,
                                    uint32_t path_length,
-                                   uint8_t *private_key) {
-  HDNode node = {0};
+                                   uint8_t *stark_public_key) {
+  HDNode starkChildNode = {0};
 
   // derive node at m/44'/9004'/0'/0/i
-  if (!temp_func(path, path_length, SECP256K1_NAME, seed_key, 32, &node)) {
+  if (!get_stark_child_node(
+          path, path_length, SECP256K1_NAME, seed_key, 32, &starkChildNode)) {
     // send unknown error; unknown failure reason
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    memzero(&node, sizeof(HDNode));
+    memzero(&starkChildNode, sizeof(HDNode));
     return false;
   }
 
-  memzero(private_key, 32);
-  // TODO: Generate public key = G * private_key from private key after grind
-  return grind_key(node.private_key, private_key);
+  uint8_t stark_private_key[32];
+  if (!grind_key(starkChildNode.private_key, stark_private_key)) {
+    return false;
+  }
+
+  memzero(stark_public_key, 32);
+  ecdsa_get_public_key33(stark256, stark_private_key, stark_public_key);
+
+  char hex[100];
+  byte_array_to_hex_string(stark_private_key, 32, hex, 32 * 2 + 1);
+  print_hex_array("stark_private_key", stark_private_key);
+
+  byte_array_to_hex_string(stark_public_key, 33, hex, 33 * 2 + 1);
+  print_hex_array("stark_public_key", stark_public_key);
+
+  return true;
 }

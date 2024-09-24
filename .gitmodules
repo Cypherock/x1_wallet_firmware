@@ -7,6 +7,7 @@
 [submodule "nanopb"]
 	path = vendor/nanopb
 	url = ../nanopb
-[submodule "vendor/tinybn"]
+[submodule "tinybn"]
 	path = vendor/tinybn
-	url = https://github.com/kokke/tiny-bignum-c.git
+	url = ../tiny-bignum-c
+	branch = feat/starknet
