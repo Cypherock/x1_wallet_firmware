@@ -298,7 +298,7 @@ static bool decode_inheritance_encrypted_data(
     uint16_t data_size,
     inheritance_decrypt_data_with_pin_encrypted_data_structure_t
         *encrypted_data) {
-  if (NULL == data || NULL == encrypted_data || 0 == data_size) {
+  if (NULL == data || NULL == encrypted_data) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
@@ -335,6 +335,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
   uint32_t size = 0;
   while (1) {
     // req plain data chunk from host
+
     if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
         !check_which_request(
             query,
@@ -373,6 +374,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
           encoded_data, total_size, &decryption_context->encrypted_data)) {
     return false;
   }
+
   return true;
 }
 
@@ -413,7 +415,8 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
   uint32_t *index = &result.decrypt.decrypted_data.chunk_payload.chunk_index;
   result.decrypt.decrypted_data.chunk_payload.total_chunks = total_count;
 
-  for (*index = 0; *index < total_count; (*index)++) {
+  *index = 0;
+  do {
     if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
         !check_which_request(
             query,
@@ -440,7 +443,8 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     if (remaining_size == 0) {
       break;
     }
-  }
+    (*index)++;
+  } while (*index < total_count);
   return true;
 }
 
