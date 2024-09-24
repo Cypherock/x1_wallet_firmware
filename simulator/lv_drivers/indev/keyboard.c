@@ -40,7 +40,6 @@ static ekp_process_queue_fptr process_key_presses_queue = NULL;
  **********************/
 #ifdef DEV_BUILD
 void ekp_register_process_func(ekp_process_queue_fptr func) {
-  printf("initing process key press");
   process_key_presses_queue = func;
 }
 #endif

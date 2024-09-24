@@ -56,6 +56,13 @@
  ******************************************************************************
  */
 
+#include "base58.h"
+#include "bip32.h"
+#include "bip39.h"
+#include "curves.h"
+#include "nist256p1.h"
+#include "sec_flash_priv.h"
+#include "utils.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -87,6 +94,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(ui_events_test);
   RUN_TEST_GROUP(usb_evt_api_test);
   RUN_TEST_GROUP(nfc_events_test);
+  RUN_TEST_GROUP(core_session_test);
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
   RUN_TEST_GROUP(nfc_events_manual_test);
 #endif
@@ -113,7 +121,55 @@ void RunAllTests(void) {
  * This entry point is a parallel entry point to the int main(void) of the
  * actual firmware.
  */
+
+#if USE_SIMULATOR == 1
+void create_flash_keys() {
+  const uint32_t version = 0x0488b21e;
+  const char *curve = NIST256P1_NAME;
+  const char *mnemonic = "embody pepper stumble";
+  printf("%s\n\n", mnemonic);
+
+  uint8_t seed[64];
+  mnemonic_to_seed(mnemonic, "", seed, NULL);
+  printf("\n");
+
+  HDNode m;
+  hdnode_from_seed(seed, 64, curve, &m);
+  hdnode_fill_public_key(&m);
+
+  const uint32_t h = 0x80000000;
+  // m/1000'/0'/2'/0
+  uint32_t path[] = {1000 | h, 0 | h, 2 | h, 0};    // path to generate nodes
+
+  const size_t path_size = sizeof(path) / 4;
+  HDNode nodes[path_size];
+  HDNode last = m;
+  for (size_t i = 0; i < path_size; i++) {
+    nodes[i] = last;
+    hdnode_private_ckd(&nodes[i], path[i]);
+    hdnode_fill_public_key(&nodes[i]);
+    last = nodes[i];
+  }
+  uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN] = {0};
+  char xpub[XPUB_SIZE];
+  hdnode_serialize_public(&last,
+                          hdnode_fingerprint(&nodes[path_size - 2]),
+                          version,
+                          xpub,
+                          XPUB_SIZE);
+  base58_decode_check(
+      xpub, nist256p1_info.hasher_base58, card_root_xpub, XPUB_SIZE);
+  get_flash_perm_instance();
+  memcpy(flash_perm_instance.permKeyData.ext_keys.card_root_xpub,
+         card_root_xpub,
+         FS_KEYSTORE_XPUB_LEN);
+}
+#endif
+
 int main(void) {
+#if USE_SIMULATOR == 1
+  create_flash_keys();
+#endif
   application_init();
 #ifdef DEV_BUILD
   ekp_queue_init();

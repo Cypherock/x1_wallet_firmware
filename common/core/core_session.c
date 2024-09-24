@@ -164,7 +164,6 @@ static void start_request(const core_msg_t *core_msg);
  *****************************************************************************/
 static void session_set_defaults() {
   SET_ERROR_TYPE(SESSION_DEFAULT_ERROR);
-  core_session_clear_metadata();
 }
 
 static void session_handle_errors() {
@@ -197,15 +196,18 @@ static void session_handle_errors() {
 
 static void derive_server_public_key(uint8_t *server_verification_pub_key) {
   HDNode node;
-  char xpub[112] = {'\0'};
+  char xpub[XPUB_SIZE] = {'\0'};
+
   base58_encode_check(get_card_root_xpub(),
                       FS_KEYSTORE_XPUB_LEN,
                       nist256p1_info.hasher_base58,
                       xpub,
-                      112);
+                      XPUB_SIZE);
+
   hdnode_deserialize_public(
       (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
   hdnode_public_ckd(&node, SESSION_KEY_INDEX);
+
   memcpy(server_verification_pub_key, node.public_key, SESSION_PUB_KEY_SIZE);
 }
 
@@ -213,7 +215,7 @@ static bool derive_session_iv_and_session_key() {
   // generate session iv
   uint8_t buffer[SESSION_PUB_KEY_SIZE * 2] = {0};
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
-  memcpy(buffer, session_ctx->device.random_pub_key, SESSION_PUB_KEY_SIZE);
+  memcpy(buffer, session.device_random_pub_key, SESSION_PUB_KEY_SIZE);
   memcpy(buffer + SESSION_PUB_KEY_SIZE,
          session_ctx->server.request_pointer->session_random_public,
          SESSION_PUB_KEY_SIZE);
@@ -222,7 +224,7 @@ static bool derive_session_iv_and_session_key() {
   memcpy(session.session_iv, hash, sizeof(session.session_iv));
   // generate session key
   if (ecdh_multiply(&secp256k1,
-                    session_ctx->device.random_priv_key,
+                    session.device_random_priv_key,
                     session_ctx->server.request_pointer
                         ->session_random_public,    // TODO: Update proto name
                                                     // to server_random_pub_key
@@ -274,6 +276,7 @@ static void initiate_request(void) {
   uint8_t payload[SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
                   POSTFIX1_SIZE + POSTFIX2_SIZE] = {0};
   if (session_create_device_payload(payload)) {
+    SET_ERROR_TYPE(SESSION_OK);
     send_core_session_start_response_to_host(payload);
     // populate private variables
     memcpy(
@@ -281,6 +284,9 @@ static void initiate_request(void) {
     memcpy(session.device_random_priv_key,
            session_ctx->device.random_priv_key,
            SESSION_PRIV_KEY_SIZE);
+    memcpy(session.device_random_pub_key,
+           session_ctx->device.random_pub_key,
+           SESSION_PUB_KEY_SIZE);
     // indicate wait for server pub key
     session.state = SESSION_AWAIT;
   }
@@ -296,7 +302,7 @@ static bool session_verify_server_signature() {
          session_ctx->server.request_pointer->session_random_public,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  write_be(server_message_payload + offset,
+  write_le(server_message_payload + offset,
            session_ctx->server.request_pointer->session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(server_message_payload + offset,
@@ -340,7 +346,8 @@ static void start_request(const core_msg_t *core_msg) {
   session_ctx->server.request_pointer = &core_msg->session_start.request.start;
   if (session_verify_server_signature() &&
       derive_session_iv_and_session_key()) {
-    // indicate valid session has been established
+    SET_ERROR_TYPE(SESSION_OK);
+    // indicate session is live
     session.state = SESSION_LIVE;
     send_core_session_start_ack_to_host();
   }
