@@ -630,6 +630,10 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const size_t buffer_len) {
   size_t total_count =
       ((buffer_len + ENCRYPTED_CHUNK_SIZE - 1) / ENCRYPTED_CHUNK_SIZE);
+  // atleast one chunk is required
+  if (total_count == 0) {
+    total_count = 1;
+  }
   size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
