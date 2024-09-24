@@ -262,36 +262,37 @@ void stark_curve_init() {
 void print_stark_curve() {
   char str[STARK_BN_LEN];
 
-  bignum_to_string(&stark256.P, str, STARK_BN_LEN);
-  printf("Prime: %s\n", str);
+  bignum_to_string(&stark256.prime, str, STARK_BN_LEN);
+  print_hex_array("\nPrime", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.G.x, str, STARK_BN_LEN);
-  printf("G (Generator Point) x - %s\n", str);
+  print_hex_array("G (Generator Point) x", str, STARK_BN_LEN / 2);
   bignum_to_string(&stark256.G.y, str, STARK_BN_LEN);
-  printf("G (Generator Point) y - %s\n", str);
+  print_hex_array("G (Generator Point) y", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.order, str, STARK_BN_LEN);
-  printf("Order: %s\n", str);
+  print_hex_array("Order", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.order_half, str, STARK_BN_LEN);
-  printf("Order Half: %s\n", str);
+  print_hex_array("Order half", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.a, str, STARK_BN_LEN);
-  printf("alpha: %s\n", str);
+  print_hex_array("Alpha", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.b, str, STARK_BN_LEN);
-  printf("beta: %s\n", str);
+  print_hex_array("Beta", str, STARK_BN_LEN / 2);
 
   bignum_to_string(&stark256.S.x, str, STARK_BN_LEN);
-  printf("S (Shift Point) x - %s\n", str);
+  print_hex_array("S (Shift Point) x", str, STARK_BN_LEN / 2);
   bignum_to_string(&stark256.S.y, str, STARK_BN_LEN);
-  printf("S (Shift Point) y - %s\n", str);
+  print_hex_array("S (Shift Point) y", str, STARK_BN_LEN / 2);
 
   for (int i = 0; i < 3; i++) {
     bignum_to_string(&stark256.P[i].x, str, STARK_BN_LEN);
-    printf("P%d (Pedersen Point) x - %s\n", i, str);
+    print_hex_array("P (Pedersen Point) x", str, STARK_BN_LEN / 2);
+
     bignum_to_string(&stark256.P[i].y, str, STARK_BN_LEN);
-    printf("P%d (Pedersen Point) y - %s\n", i, str);
+    print_hex_array("P (Pedersen Point) y", str, STARK_BN_LEN / 2);
   }
 }
 
@@ -321,11 +322,11 @@ void stark_point_add(const stark_curve *curve,
   bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
   bn_inverse(&inv, &curve->prime);
   bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
-  bignum_mod_mul(&inv, &lambda, &curve->prime);
+  bignum_mul(&inv, &lambda, &curve->prime);
 
   // xr = lambda^2 - x1 - x2
   xr = lambda;
-  bignum_mod_mul(&xr, &xr, &curve->prime);
+  bignum_mul(&xr, &xr, &curve->prime);
   yr = cp1->x;
   bn_addmod(&yr, &(cp2->x), &curve->prime);
   bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
@@ -334,7 +335,7 @@ void stark_point_add(const stark_curve *curve,
 
   // yr = lambda (x1 - xr) - y1
   bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
-  bignum_mod_mul(&lambda, &yr, &curve->prime);
+  bignum_mul(&lambda, &yr, &curve->prime);
   bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
   bignum_mod(&yr, &curve->prime, &yr);
 
@@ -391,7 +392,7 @@ void private_to_public_key(const uint8_t *private, uint8_t *public_65) {
       // bit is set; do add current doubled value to result
       stark_point_add(curve, &temp, &R);
     }
-    stark_point_double(curve, &temp);
+    // stark_point_double(curve, &temp);
   }
 
   public_65[0] = 0x04;
