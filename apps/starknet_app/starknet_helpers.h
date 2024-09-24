@@ -22,6 +22,9 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+#define LOW_PART_BITS 248
+#define LOW_PART_BYTES (LOW_PART_BITS / 8)
+#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
 
 /*****************************************************************************
  * TYPEDEFS
@@ -64,5 +67,7 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
                                    const uint32_t *path,
                                    uint32_t path_length,
                                    uint8_t *private_key);
+
+bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t len, uint8_t *hash);
 
 #endif    // STARKNET_HELPERS_H
