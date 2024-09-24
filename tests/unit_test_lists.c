@@ -262,8 +262,6 @@ TEST_GROUP_RUNNER(inheritance_decryption_tests) {
 TEST_GROUP_RUNNER(starknet_txn_test) {
   RUN_TEST_CASE(starknet_txn_test, starknet_validate_req_action);
   RUN_TEST_CASE(starknet_txn_test, starknet_get_public_key_action);
-  // RUN_TEST_CASE(starknet_txn_test, starknet_get_addr_action);
-  // RUN_TEST_CASE(starknet_txn_test, starknet_get_signature);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {
