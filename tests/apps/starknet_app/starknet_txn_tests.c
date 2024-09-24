@@ -72,13 +72,6 @@ TEST_GROUP(starknet_txn_test);
 
 extern starknet_txn_context_t *txn_context;
 
-bool validate_request_data(starknet_get_public_keys_request_t *request,
-                           const pb_size_t which_request);
-bool fill_public_keys(const starknet_get_public_keys_derivation_path_t *path,
-                      const uint8_t *seed,
-                      uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
-                      pb_size_t count);
-
 /**
  * @brief Test setup for usb event consumer tests.
  * @details The function populates data in local buffer of USB communication
@@ -96,28 +89,6 @@ TEST_SETUP(starknet_txn_test) {
  */
 TEST_TEAR_DOWN(starknet_txn_test) {
   return;
-}
-
-TEST(starknet_txn_test, starknet_validate_req_action) {
-  starknet_query_t query = {
-      .which_request = 1,
-      .get_public_keys = {.which_request = 1,
-                          .initiate = {
-                              .derivation_paths_count = 1,
-                              .derivation_paths = {{
-                                  .path_count = 5,
-                                  .path = {STARKNET_PURPOSE_INDEX,
-                                           STARKNET_COIN_INDEX,
-                                           STARKNET_ACCOUNT_INDEX,
-                                           STARKNET_CHANGE_INDEX,
-                                           1},
-                              }},
-                              .wallet_id = {},
-                          }}};
-
-  const pb_size_t which_request = query.which_request;
-  TEST_ASSERT_TRUE(
-      validate_request_data(&query.get_public_keys, which_request));
 }
 
 TEST(starknet_txn_test, starknet_get_public_key_action) {
@@ -154,101 +125,7 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
       128,
       seed);
 
-  TEST_ASSERT_TRUE(
-      fill_public_keys(query.get_public_keys.initiate.derivation_paths,
-                       seed,
-                       public_keys,
-                       query.get_public_keys.initiate.derivation_paths_count));
+  starknet_get_pub_keys(&query);
 
   TEST_ASSERT_EQUAL_STRING(expected_public_key, (char *)(public_keys[0]));
-}
-
-TEST(starknet_txn_test, starknet_get_addr_action) {
-  //   starknet_query_t query = {
-  //       .which_request = 1,
-  //       .get_public_keys = {.which_request = 1,
-  //                           .initiate = {
-  //                               .derivation_paths_count = 1,
-  //                               .derivation_paths = {{
-  //                                   .path_count = 5,
-  //                                   .path = {STARKNET_PURPOSE_INDEX,
-  //                                            STARKNET_COIN_INDEX,
-  //                                            STARKNET_ACCOUNT_INDEX,
-  //                                            STARKNET_CHANGE_INDEX,
-  //                                            1},
-  //                               }},
-  //                               .wallet_id = {},
-  //                           }}};
-
-  //   uint8_t seed[512 / 8];
-
-  //   uint8_t
-  //   public_keys[sizeof(query.get_public_keys.initiate.derivation_paths) /
-  //                       sizeof(starknet_get_public_keys_derivation_path_t)]
-  //                      [STARKNET_PUB_KEY_SIZE] = {0};
-
-  //   const char expected_addr[] =
-  //   "AFnpWBz6yjbYnqUKjo5dSN2gDneo62TmeaFJUraLTP9V"; char address[100] = "";
-  //   size_t address_size = sizeof(address);
-
-  //   hex_string_to_byte_array(
-  //       "a185e44359c94014fa23b86741d089cdf7b75fa22a7b819e227a726d0cf19d29b19b16b4"
-  //       "e9bd9d6f7d52e67d46eb2faa7d7258b6886b75aeb5e7825e97f26ea3",
-  //       128,
-  //       seed);
-
-  //   TEST_ASSERT_TRUE(
-  //       fill_public_keys(query.get_public_keys.initiate.derivation_paths,
-  //                        seed,
-  //                        public_keys,
-  //                        query.get_public_keys.initiate.derivation_paths_count));
-
-  //   b58enc(address, &address_size, (char *)(public_keys[0]), 32);
-
-  //   TEST_ASSERT_EQUAL_STRING(expected_addr, address);
-}
-
-TEST(starknet_txn_test, starknet_get_signature) {
-  //   starknet_query_t query = {
-  //       .which_request = 2,
-  //       .sign_txn = {.which_request = 1,
-  //                    .initiate = {
-  //                        .derivation_path_count = 5,
-  //                        .derivation_path = {STARKNET_PURPOSE_INDEX,
-  //                                            STARKNET_COIN_INDEX,
-  //                                            STARKNET_ACCOUNT_INDEX,
-  //                                            STARKNET_CHANGE_INDEX,
-  //                                            1},
-  //                        .wallet_id = {},
-  //                    }}};
-  //   starknet_query_t query1 = {
-  //       .which_request = 2,
-  //       .sign_txn = {.which_request = 2,
-  //                    .txn_data = {.has_chunk_payload = true,
-  //                                 .chunk_payload = {
-  //                                     .chunk =
-  //                                         {
-  //                                             .size = 44,
-  //                                         },
-  //                                     .remaining_size = 0,
-  //                                     .chunk_index = 0,
-  //                                     .total_chunks = 1,
-  //                                 }}}};
-  //   // raw Txn:
-  //   //
-  //   https://etherscan.io/getRawTx?tx=0x729f88ee19917fe916c58a838b63713fe26729239bb380debabbe2ef0c64e8c1
-  //   hex_string_to_byte_array("eb1685050775d80082627094b3c152026d3722cb4acf2fb853f"
-  //                            "e107dd96bbb5e872386f26fc1000080018080",
-  //                            88,
-  //                            query1.sign_txn.txn_data.chunk_payload.chunk.bytes);
-  //   txn_context =
-  //       (starknet_txn_context_t *)malloc(sizeof(starknet_txn_context_t));
-  //   memzero(txn_context, sizeof(starknet_txn_context_t));
-  //   memcpy(&txn_context->init_info,
-  //          &query.sign_txn.initiate,
-  //          sizeof(starknet_sign_txn_initiate_request_t));
-  //   TEST_ASSERT_TRUE(pb_encode(&ostream, EVM_QUERY_FIELDS, &query1));
-  //   usb_set_event(sizeof(core_msg), core_msg, ostream.bytes_written, buffer);
-  //   TEST_ASSERT_TRUE(fetch_valid_transaction(&query));
-  //   TEST_ASSERT_TRUE(get_user_verification());
 }

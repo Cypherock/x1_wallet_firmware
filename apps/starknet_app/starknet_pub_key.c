@@ -104,6 +104,44 @@
  */
 static bool check_which_request(const starknet_query_t *query,
                                 pb_size_t which_request);
+/**
+ * @brief Validates all the derivation paths received in the request from host
+ * @details The function validates each path entry in the request. If any
+ * invalid path is detected, the function will send an error to the host and
+ * return false.
+ *
+ * @param request Reference to an instance of starknet_get_public_keys_request_t
+ * @return bool Indicating if the verification passed or failed
+ * @retval true If all the derivation path entries are valid
+ * @retval false If any of the derivation path entries are invalid
+ */
+static bool validate_request_data(starknet_get_public_keys_request_t *request,
+                                  const pb_size_t which_request);
+
+/**
+ * @brief Derives a list of public key corresponding to the provided list of
+ * derivation paths.
+ * @details The function expects the size of list for derivation paths and
+ * location for storing derived public keys to be a match with provided count.
+ *
+ * @param paths Reference to the list of
+ * starknet_get_public_keys_derivation_path_t
+ * @param count Number of derivation paths in the list and consequently,
+ * sufficient space in memory for storing derived public keys.
+ * @param seed Reference to a const array containing the seed
+ * @param public_keys Reference to the location to store all the public keys to
+ * be derived
+ *
+ * @return bool Indicating if the complete public keys list was derived
+ * @retval true If all the requested public keys were derived.
+ * @retval false If the public key derivation failed. This could be due to
+ * invalid derivation path.
+ */
+static bool fill_public_keys(
+    const starknet_get_public_keys_derivation_path_t *paths,
+    const uint8_t *seed,
+    uint8_t public_keys[][STARKNET_PUB_KEY_SIZE],
+    pb_size_t count);
 
 /**
  * @brief The function sends public keys for the requested batch
@@ -169,8 +207,8 @@ static bool check_which_request(const starknet_query_t *query,
   return true;
 }
 
-bool validate_request_data(starknet_get_public_keys_request_t *request,
-                           const pb_size_t which_request) {
+static bool validate_request_data(starknet_get_public_keys_request_t *request,
+                                  const pb_size_t which_request) {
   bool status = true;
 
   if (0 == request->initiate.derivation_paths_count) {
@@ -204,10 +242,11 @@ bool validate_request_data(starknet_get_public_keys_request_t *request,
   return status;
 }
 
-bool fill_public_keys(const starknet_get_public_keys_derivation_path_t *path,
-                      const uint8_t *seed,
-                      uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
-                      pb_size_t count) {
+static bool fill_public_keys(
+    const starknet_get_public_keys_derivation_path_t *path,
+    const uint8_t *seed,
+    uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
+    pb_size_t count) {
   uint8_t hdkey1[32] = {0};
 
   for (pb_size_t index = 0; index < count; index++) {
@@ -275,7 +314,6 @@ static bool get_user_consent(const pb_size_t which_request,
              starknet_app.name,
              wallet_name);
   } else {
-    // TODO: Fetch unit name from sdk also
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_RECEIVE_TOKEN_PROMPT,

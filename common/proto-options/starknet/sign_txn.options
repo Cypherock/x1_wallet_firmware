@@ -1,0 +1,5 @@
+# Options for file common/cypherock-common/proto/starknet/sign_txn.proto
+starknet.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+starknet.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_length:true
+starknet.SignTxnUnsignedTxn.txn type:FT_STATIC max_size:2048 fixed_length:false
+starknet.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true
