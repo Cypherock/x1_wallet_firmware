@@ -201,8 +201,9 @@ bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
 bool starknet_derive_key_from_seed(const uint8_t *seed_key,
                                    const uint32_t *path,
                                    uint32_t path_length,
-                                   uint8_t *stark_public_key) {
+                                   uint8_t *key) {
   HDNode starkChildNode = {0};
+  char hex[100];
 
   // derive node at m/44'/9004'/0'/0/i
   if (!get_stark_child_node(
@@ -214,11 +215,10 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   }
 
   uint8_t stark_private_key[32];
+  uint8_t stark_public_key[32];
   if (!grind_key(starkChildNode.private_key, stark_private_key)) {
     return false;
   }
-
-  memzero(stark_public_key, 32);
 
   // Implement: ecdsa_get_public_key33(stark256, stark_private_key,
   // stark_public_key);
@@ -232,12 +232,22 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   // memzero(&R, sizeof(R));
   // memzero(&k, sizeof(k));
 
-  char hex[100];
+  printf("\n");
+
+  byte_array_to_hex_string(seed_key, 32, hex, 32 * 2 + 1);
+  print_hex_array("seed_key", seed_key, 32);
+
+  byte_array_to_hex_string(starkChildNode.private_key, 32, hex, 32 * 2 + 1);
+  print_hex_array("starkChildNode.private_key", starkChildNode.private_key, 32);
+
   byte_array_to_hex_string(stark_private_key, 32, hex, 32 * 2 + 1);
   print_hex_array("stark_private_key", stark_private_key, 32);
 
   // byte_array_to_hex_string(stark_public_key, 33, hex, 33 * 2 + 1);
   // print_hex_array("stark_public_key", stark_public_key);
+
+  memzero(key, 33);
+  memcpy(key, stark_private_key, 32);
 
   return true;
 }

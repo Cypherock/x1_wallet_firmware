@@ -114,11 +114,12 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
                       sizeof(starknet_get_public_keys_derivation_path_t)]
                      [STARKNET_PUB_KEY_SIZE] = {0};
 
-  const char expected_public_key[] =
-      "4e7924acdb8f28d7997ac80c84891cd92599c1457510970e"
-      "c5c08d4252d479e";    // For now checking the
-                            // private key
-
+  const uint8_t expected_public_key[32];
+  hex_string_to_byte_array(
+      "4e7924acdb8f28d7997ac80c84891cd92599c1457510970e"    // stark private key
+      "c5c08d4252d4790e",
+      64,
+      expected_public_key);
   hex_string_to_byte_array(
       "a185e44359c94014fa23b86741d089cdf7b75fa22a7b819e227a726d0cf19d29b19b16b4"
       "e9bd9d6f7d52e67d46eb2faa7d7258b6886b75aeb5e7825e97f26ea3",
@@ -133,5 +134,5 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
       public_keys,
       query.get_public_keys.initiate.derivation_paths_count));
 
-  TEST_ASSERT_EQUAL_STRING(expected_public_key, (char *)(public_keys[0]));
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_public_key, public_keys[0], 32);
 }
