@@ -36,16 +36,18 @@ typedef struct {
   struct bn order_half;    // order of G divided by 2
   struct bn a;             // coefficient 'a' of the elliptic curve
   struct bn b;             // coefficient 'b' of the elliptic curve
-
-  stark_point S;
-  stark_point P[3];
 } stark_curve;
+
+typedef struct {
+  stark_point P[5];
+} stark_pedersen;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
 
 extern stark_curve stark256;
+extern stark_pedersen pedersen;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
@@ -53,7 +55,8 @@ extern stark_curve stark256;
 void stark_point_copy(const stark_point *cp1, stark_point *cp2);
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
-                     stark_point *cp2);
+                     stark_point *cp2,
+                     stark_point *res);
 void stark_point_double(const stark_curve *curve, stark_point *cp);
 void stark_point_multiply(const stark_curve *curve,
                           const struct bn *k,
@@ -62,5 +65,8 @@ void stark_point_multiply(const stark_curve *curve,
 void stark_point_set_infinity(stark_point *p);
 int stark_point_is_infinity(const stark_point *p);
 int stark_point_is_equal(const stark_point *p, const stark_point *q);
+
+void starknet_curve_init();
+void starknet_pedersen_init();
 
 #endif    // STARKNET_CRYPTO_H

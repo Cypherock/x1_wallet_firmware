@@ -126,7 +126,7 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
       128,
       seed);
 
-  stark_curve_init();
+  starknet_curve_init();
 
   TEST_ASSERT_TRUE(fill_starknet_public_keys(
       query.get_public_keys.initiate.derivation_paths,
