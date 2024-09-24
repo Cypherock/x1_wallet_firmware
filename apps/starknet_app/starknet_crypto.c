@@ -86,15 +86,15 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 stark_curve stark256 = {
-    .P = /* .prime */ {/*.val =*/{0x3ffffc2f,
-                                  0x3ffffffb,
-                                  0x3fffffff,
-                                  0x3fffffff,
-                                  0x3fffffff,
-                                  0x3fffffff,
-                                  0x3fffffff,
-                                  0x3fffffff,
-                                  0xffff}},
+    .prime = /* .prime */ {/*.val =*/{0x3ffffc2f,
+                                      0x3ffffffb,
+                                      0x3fffffff,
+                                      0x3fffffff,
+                                      0x3fffffff,
+                                      0x3fffffff,
+                                      0x3fffffff,
+                                      0x3fffffff,
+                                      0xffff}},
 
     // /* G */
     // {/*.x =*/{/*.val =*/{0x16f81798,
@@ -144,6 +144,8 @@ stark_curve stark256 = {
     // /* b */ {/*.val =*/{7}}
 };
 
+stark_pedersen pedersen;
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -151,7 +153,7 @@ stark_curve stark256 = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void stark_curve_init() {
+void starknet_curve_init() {
   char str[65] = "";
 
   /* stark_curve_params ref:
@@ -208,55 +210,74 @@ void stark_curve_init() {
       "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
       STARK_BN_LEN);
 
+  print_stark_curve();
+}
+
+void starknet_pedersen_init() {
+  // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
+  char str[65] = "";
+
   // Shift_point
   // x
   bignum_from_string(
-      &stark256.S.x,
-      "0234287dcbaffe7f969c748655fca9e58fa8120b6d56eb0c1080d17957ebe47b",
+      &pedersen.P[0].x,
+      "049ee3eba8c1600700ee1b87eb599f16716b0b1022947733551fde4050ca6804",
       STARK_BN_LEN);
   // y
   bignum_from_string(
-      &stark256.S.y,
-      "03b056f100f96fb21e889527d41f4e39940135dd7a6c94cc6ed0268ee89e5615",
+      &pedersen.P[0].y,
+      "3ca0cfe4b3bc6ddf346d49d06ea0ed34e621062c0e056c1d0405d266e10268a",
       STARK_BN_LEN);
 
   // Perderen_point_1
   // x
   bignum_from_string(
-      &stark256.P[0].x,
-      "04fa56f376c83db33f9dab2656558f3399099ec1de5e3018b7a6932dba8aa378",
+      &pedersen.P[1].x,
+      "0234287dcbaffe7f969c748655fca9e58fa8120b6d56eb0c1080d17957ebe47b",
       STARK_BN_LEN);
   // y
   bignum_from_string(
-      &stark256.P[0].y,
-      "03fa0984c931c9e38113e0c0e47e4401562761f92a7a23b45168f4e80ff5b54d",
+      &pedersen.P[1].y,
+      "03b056f100f96fb21e889527d41f4e39940135dd7a6c94cc6ed0268ee89e5615",
       STARK_BN_LEN);
 
   // Perderen_point_2
   // x
   bignum_from_string(
-      &stark256.P[1].x,
+      &pedersen.P[2].x,
       "04ba4cc166be8dec764910f75b45f74b40c690c74709e90f3aa372f0bd2d6997",
       STARK_BN_LEN);
   // y
   bignum_from_string(
-      &stark256.P[1].y,
+      &pedersen.P[2].y,
       "0040301cf5c1751f4b971e46c4ede85fcac5c59a5ce5ae7c48151f27b24b219c",
       STARK_BN_LEN);
 
   // Perderen_point_3
   // x
   bignum_from_string(
-      &stark256.P[2].x,
+      &pedersen.P[3].x,
       "054302dcb0e6cc1c6e44cca8f61a63bb2ca65048d53fb325d36ff12c49a58202",
       STARK_BN_LEN);
   // y
   bignum_from_string(
-      &stark256.P[2].y,
+      &pedersen.P[3].y,
       "01b77b3e37d13504b348046268d8ae25ce98ad783c25561a879dcc77e99c2426",
       STARK_BN_LEN);
 
-  print_stark_curve();
+  // Perderen_point_4
+  // x
+  bignum_from_string(
+      &pedersen.P[4].x,
+      "004FA56F376C83DB33F9DAB2656558F3399099EC1DE5E3018B7A6932DBA8AA378",
+      STARK_BN_LEN);
+  // y
+  bignum_from_string(
+      &pedersen.P[4].y,
+      "003FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D",
+      STARK_BN_LEN);
+
+  print_stark_perdersen();
 }
 
 void print_stark_curve() {
@@ -281,17 +302,16 @@ void print_stark_curve() {
 
   bignum_to_string(&stark256.b, str, STARK_BN_LEN);
   print_hex_array("Beta", str, STARK_BN_LEN / 2);
+}
 
-  bignum_to_string(&stark256.S.x, str, STARK_BN_LEN);
-  print_hex_array("S (Shift Point) x", str, STARK_BN_LEN / 2);
-  bignum_to_string(&stark256.S.y, str, STARK_BN_LEN);
-  print_hex_array("S (Shift Point) y", str, STARK_BN_LEN / 2);
+void print_stark_perdersen() {
+  char str[STARK_BN_LEN];
 
-  for (int i = 0; i < 3; i++) {
-    bignum_to_string(&stark256.P[i].x, str, STARK_BN_LEN);
+  for (int i = 0; i < 5; i++) {
+    bignum_to_string(&pedersen.P[i].x, str, STARK_BN_LEN);
     print_hex_array("P (Pedersen Point) x", str, STARK_BN_LEN / 2);
 
-    bignum_to_string(&stark256.P[i].y, str, STARK_BN_LEN);
+    bignum_to_string(&pedersen.P[i].y, str, STARK_BN_LEN);
     print_hex_array("P (Pedersen Point) y", str, STARK_BN_LEN / 2);
   }
 }
@@ -304,7 +324,8 @@ void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
 // cp2 = cp1 + cp2
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
-                     stark_point *cp2) {
+                     stark_point *cp2,
+                     stark_point *res) {
   struct bn lambda = {0}, inv = {0}, xr = {0}, yr = {0};
 
   if (stark_point_is_infinity(cp1)) {
@@ -341,6 +362,8 @@ void stark_point_add(const stark_curve *curve,
 
   cp2->x = xr;
   cp2->y = yr;
+
+  stark_point_copy(cp2, res);
 }
 
 // set point to internal representation of point at infinity
@@ -390,7 +413,7 @@ void private_to_public_key(const uint8_t *private, uint8_t *public_65) {
     int bit = 7 - (i % 8);
     if (private[offset] & (1 << bit)) {
       // bit is set; do add current doubled value to result
-      stark_point_add(curve, &temp, &R);
+      stark_point_add(curve, &temp, &R, &R);
     }
     // stark_point_double(curve, &temp);
   }
