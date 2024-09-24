@@ -357,10 +357,10 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  bool status = fill_public_keys(init_req->derivation_paths,
-                                 seed,
-                                 public_keys,
-                                 init_req->derivation_paths_count);
+  bool status = fill_starknet_public_keys(init_req->derivation_paths,
+                                          seed,
+                                          public_keys,
+                                          init_req->derivation_paths_count);
 
   // Clear seed as soon as it is not needed
   memzero(seed, sizeof(seed));
