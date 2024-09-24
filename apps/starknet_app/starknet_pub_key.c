@@ -119,31 +119,6 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
                                   const pb_size_t which_request);
 
 /**
- * @brief Derives a list of public key corresponding to the provided list of
- * derivation paths.
- * @details The function expects the size of list for derivation paths and
- * location for storing derived public keys to be a match with provided count.
- *
- * @param paths Reference to the list of
- * starknet_get_public_keys_derivation_path_t
- * @param count Number of derivation paths in the list and consequently,
- * sufficient space in memory for storing derived public keys.
- * @param seed Reference to a const array containing the seed
- * @param public_keys Reference to the location to store all the public keys to
- * be derived
- *
- * @return bool Indicating if the complete public keys list was derived
- * @retval true If all the requested public keys were derived.
- * @retval false If the public key derivation failed. This could be due to
- * invalid derivation path.
- */
-static bool fill_public_keys(
-    const starknet_get_public_keys_derivation_path_t *paths,
-    const uint8_t *seed,
-    uint8_t public_keys[][STARKNET_PUB_KEY_SIZE],
-    pb_size_t count);
-
-/**
  * @brief The function sends public keys for the requested batch
  * @details The function determines the batch size from the static struct
  * member declaration of nanopb options. The function batches the result based
@@ -242,7 +217,7 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
   return status;
 }
 
-static bool fill_public_keys(
+bool fill_starknet_public_keys(
     const starknet_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
