@@ -76,14 +76,6 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "base32.h"
-#include "base58.h"
-#include "bip32.h"
-#include "bip39.h"
-#include "curves.h"
-#include "nist256p1.h"
-#include "sec_flash_priv.h"
-#include "utils.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
