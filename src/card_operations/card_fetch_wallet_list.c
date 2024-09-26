@@ -201,9 +201,8 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
         break;
-      } else {
-        card_handle_errors(&card_data);
       }
+      card_handle_errors(&card_data);
     }
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
