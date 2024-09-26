@@ -74,6 +74,7 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -184,46 +185,51 @@ card_error_type_e card_fetch_wallet_list(
   return card_data.error_type;
 }
 
-bool card_fetch_wallet_name(card_operation_data_t card_data,
-                            const uint8_t *wallet_id,
-                            char *wallet_name) {
+bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   wallet_list_t wallets_in_card = {0};
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  card_operation_data_t card_data;
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.init_session_keys = true;
 
-  // P0 abort is the only condition we want to exit the flow
-  // Card abort error will be explicitly shown here as error codes
   while (1) {
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    result = card_initialize_applet(&card_data);
+
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       card_data.nfc_data.status = nfc_list_all_wallet(&wallets_in_card);
-
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
         break;
+      } else {
+        card_handle_errors(&card_data);
       }
-
-      card_handle_errors(&card_data);
     }
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
         CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
       const char *error_msg = card_data.error_message;
-      /**
-       * In case the same card as before is tapped, the user should be told to
-       * tap a different card instead of the default message "Wrong card
-       * sequence"
-       */
-      if (SW_CONDITIONS_NOT_SATISFIED == card_data.nfc_data.status) {
-        error_msg = ui_text_tap_another_card;
-      }
       if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
         // Re-render the instruction screen
         instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
         continue;
       }
     }
+
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
+      break;
+    }
+
     // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
     break;
   }
+  nfc_deselect_card();
 
+  // P0 abort is the only condition we want to exit the flow
+  // Card abort error will be explicitly shown here as error codes
   if (card_data.error_type == CARD_OPERATION_P0_OCCURED) {
     return false;
   }
