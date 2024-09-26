@@ -142,9 +142,8 @@ card_error_type_e card_fetch_wallet_list(
           wait_for_card_removal();
         }
         break;
-      } else {
-        card_handle_errors(&card_data);
       }
+      card_handle_errors(&card_data);
     }
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
@@ -188,7 +187,7 @@ card_error_type_e card_fetch_wallet_list(
 bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   wallet_list_t wallets_in_card = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
-  card_operation_data_t card_data;
+  card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
 
