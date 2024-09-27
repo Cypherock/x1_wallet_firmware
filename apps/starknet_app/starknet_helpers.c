@@ -67,7 +67,6 @@
 #include "coin_utils.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
-#include "starknet_crypto.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -215,22 +214,20 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   }
 
   uint8_t stark_private_key[32];
+  stark_point p;
   uint8_t stark_public_key[32];
   if (!grind_key(starkChildNode.private_key, stark_private_key)) {
     return false;
   }
 
-  // Implement: ecdsa_get_public_key33(stark256, stark_private_key,
-  // stark_public_key);
-  stark_point R = {0};    // curve_point R = {0};
-  struct bn k = {0};      // bignum256 k = {0};
-  // bn_read_be(priv_key, &k);
-  // //compute k*G
-  // scalar_multiply(curve, &k, &R); // convert for stark curve
-  // pub_key[0] = 0x02 | (R.y.val[0] & 0x01);
-  // bn_write_be(&R.x, pub_key + 1);
-  // memzero(&R, sizeof(R));
-  // memzero(&k, sizeof(k));
+  char str[100];
+  // stark_curve *starkCurve;
+  starknet_init();
+  stark_point_multiply(starkCurve, stark_public_key, &starkCurve->G, &p);
+  bignum_to_string(&p.x, str, STARK_BN_LEN);
+  printf("\nstarkPubKey x: %s\n", str);
+  bignum_to_string(&p.y, str, STARK_BN_LEN);
+  printf("\nstarkPubKey y: %s\n", str);
 
   printf("\n");
 
