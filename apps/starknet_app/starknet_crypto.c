@@ -161,9 +161,8 @@ static void stark_curve_init() {
       "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
       STARK_BN_LEN);
 
-  print_stark_curve();
-
   starkCurve = &stark256;
+  print_stark_curve();
 }
 
 static void stark_pedersen_init() {
@@ -232,9 +231,8 @@ static void stark_pedersen_init() {
       "003FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D",
       STARK_BN_LEN);
 
-  print_stark_perdersen();
-
   starkPts = &pedersen;
+  print_stark_perdersen();
 }
 
 static void print_stark_curve() {
@@ -244,22 +242,22 @@ static void print_stark_curve() {
   printf("\nPrime: %s", str);
 
   bignum_to_string(&starkCurve->G.x, str, STARK_BN_LEN);
-  printf("\nG x: %s", str);
+  printf("\nG x  : %s", str);
 
   bignum_to_string(&starkCurve->G.y, str, STARK_BN_LEN);
-  printf("\nG y: %s", str);
+  printf("\nG y  : %s", str);
 
   bignum_to_string(&starkCurve->order, str, STARK_BN_LEN);
   printf("\nOrder: %s", str);
 
   bignum_to_string(&starkCurve->order_half, str, STARK_BN_LEN);
-  printf("\nOrder half: %s", str);
+  printf("\nOhalf: %s", str);
 
   bignum_to_string(&starkCurve->a, str, STARK_BN_LEN);
   printf("\nAlpha: %s", str);
 
   bignum_to_string(&starkCurve->b, str, STARK_BN_LEN);
-  printf("\nBeta: %s", str);
+  printf("\nBeta : %s\n", str);
 }
 
 static void print_stark_perdersen() {
@@ -267,10 +265,10 @@ static void print_stark_perdersen() {
 
   for (int i = 0; i < 5; i++) {
     bignum_to_string(&starkPts->P[i].x, str, STARK_BN_LEN);
-    printf("P%d (Pedersen Point) x", i, str);
+    printf("P%d x: %s", i, str);
 
     bignum_to_string(&starkPts->P[i].y, str, STARK_BN_LEN);
-    printf("P%d (Pedersen Point) y", i, str);
+    printf(", y: %s\n", str);
   }
 }
 
@@ -379,4 +377,65 @@ void private_to_public_key(const uint8_t *private, uint8_t *public_65) {
   public_65[0] = 0x04;
   // bn_write_be(&R.x, public_65 + 1);
   // bn_write_be(&R.y, public_65 + 33);
+}
+
+void stark_point_multiply(const stark_curve *curve,
+                          const struct bn *k,
+                          const stark_point *p,
+                          stark_point *res) {
+  stark_point temp;
+  stark_point R;
+  stark_point_set_infinity(&R);    // Initialize R to the point at infinity
+  stark_point_copy(p, &temp);      // Copy the input point p to temp
+
+  // Iterate over each bit of k from the most significant to the least
+  // significant
+  for (int i = 256 - 1; i >= 0; i--) {
+    // Double the current point temp
+    stark_point_add(curve, &temp, &temp, &temp);
+
+    // If the i-th bit of k is set, add temp to the result R
+    if (bn_is_bit_set(k, i)) {
+      stark_point_add(curve, &temp, &R, &R);
+    }
+  }
+
+  // Copy the result R to the output parameter res
+  stark_point_copy(&R, res);
+}
+
+int bn_bit_length(const struct bn *k) {
+  int bit_length = 0;
+
+  // Start from the most significant element of the array
+  for (int i = BN_ARRAY_SIZE - 1; i >= 0; i--) {
+    if (k->array[i] != 0) {
+      DTYPE_TMP word = k->array[i];
+      // Calculate the bit length of this word
+      while (word) {
+        word >>= 1;
+        bit_length++;
+      }
+      // Add the offset of this word
+      bit_length += i * (WORD_SIZE * 8);
+      break;
+    }
+  }
+
+  return bit_length;
+}
+
+int bn_is_bit_set(const struct bn *k, int bit_idx) {
+  int word_idx =
+      bit_idx / (WORD_SIZE * 8);    // Determine which word contains the bit
+  int bit_in_word =
+      bit_idx % (WORD_SIZE * 8);    // Determine which bit in the word
+
+  // Ensure that word_idx is within bounds
+  if (word_idx >= BN_ARRAY_SIZE) {
+    return 0;    // Out of bounds, so the bit is not set
+  }
+
+  // Check if the specific bit is set in the corresponding word
+  return (k->array[word_idx] & ((DTYPE)1 << bit_in_word)) != 0;
 }

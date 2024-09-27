@@ -149,9 +149,10 @@ void process_single_element(struct bn *element,
   bignum_rshift(&high_nibble, element, LOW_PART_BITS);
 
   stark_point res1, res2;
-  point_multiply(starkCurve, p1, &low_part, &res1);       // low_part * p1
-  point_multiply(starkCurve, p2, &high_nibble, &res2);    // high_nibble * p2
-  stark_point_add(starkCurve, &res1, &res2, result);      // Combine results
+  stark_point_multiply(starkCurve, p1, &low_part, &res1);    // low_part * p1
+  stark_point_multiply(
+      starkCurve, p2, &high_nibble, &res2);             // high_nibble * p2
+  stark_point_add(starkCurve, &res1, &res2, result);    // Combine results
 
   stark_point_copy(&res2, result);
 }
