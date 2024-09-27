@@ -131,7 +131,7 @@ jobs:
         if [ ! "${PROTO_CACHED}" = "true" ]; then
           bash ./utilities/ci/setup-protoc.sh;
         fi
-        pip install -r utilities/script/requirements.txt
+        sudo apt install python3-venv && python3 -m venv myenv && source myenv/bin/activate && pip install -r utilities/script/requirements.txt
 
     - name: Install simulator dependencies
       if: matrix.platform == 'simulator'
@@ -144,7 +144,7 @@ jobs:
         if [ ! "${CACHED}" = "true" ]; then
           bash ./utilities/ci/setup-build-tools.sh;
         fi
-        pip install -r vendor/nanopb/extra/requirements.txt
+        sudo apt install python3-venv && python3 -m venv myenv && source myenv/bin/activate && pip install -r vendor/nanopb/extra/requirements.txt
         PATH="$PATH:$(pwd)/build-tools:$(pwd)/arm-gcc/bin:$(pwd)/proto-tools/bin"
         ./utilities/build.sh -u -f ${{ matrix.firmware }} -t ${{ matrix.target }} -p ${{ matrix.platform }}
 
@@ -182,7 +182,7 @@ jobs:
           bash ./utilities/ci/setup-build-tools.sh;
         fi
         PATH="$PATH:$(pwd)/build-tools"
-        pip install -r vendor/nanopb/extra/requirements.txt
+        sudo apt install python3-venv && python3 -m venv myenv && source myenv/bin/activate && pip install -r vendor/nanopb/extra/requirements.txt
         # Ignore any non-zero exits from simulator run using '|| true'
         bash ./utilities/run_unit_tests.sh -f ${{ matrix.firmware }} -p ${{ matrix.platform }} > test_results.txt || true
         cat test_results.txt
