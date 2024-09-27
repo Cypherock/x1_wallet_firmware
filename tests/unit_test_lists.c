@@ -226,6 +226,15 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
   RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
 }
 
+TEST_GROUP_RUNNER(inheritance_encryption_tests) {
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
+  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);

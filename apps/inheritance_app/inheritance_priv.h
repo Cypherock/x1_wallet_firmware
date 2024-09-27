@@ -104,7 +104,7 @@ void inheritance_auth_wallet(inheritance_query_t *query);
  *
  * @param query Reference to the decoded query struct from the host app
  */
-void inheritance_encrypt_data(inheritance_query_t *query);
+encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query);
 
 /**
  * @brief Handler for inheritance message decryption
