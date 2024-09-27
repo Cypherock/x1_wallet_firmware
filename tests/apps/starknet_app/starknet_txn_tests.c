@@ -62,6 +62,7 @@
 #include "pb_encode.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
+#include "starknet_crypto.h"
 #include "starknet_main.h"
 #include "starknet_priv.h"
 #include "unity_fixture.h"
@@ -79,6 +80,7 @@ extern starknet_txn_context_t *txn_context;
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(starknet_txn_test) {
+  starknet_init();
 }
 
 /**
@@ -125,8 +127,6 @@ TEST(starknet_txn_test, starknet_get_public_key_action) {
       "e9bd9d6f7d52e67d46eb2faa7d7258b6886b75aeb5e7825e97f26ea3",
       128,
       seed);
-
-  starknet_curve_init();
 
   TEST_ASSERT_TRUE(fill_starknet_public_keys(
       query.get_public_keys.initiate.derivation_paths,
