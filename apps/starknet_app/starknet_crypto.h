@@ -45,9 +45,8 @@ typedef struct {
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
-
-extern stark_curve stark256;
-extern stark_pedersen pedersen;
+extern const stark_curve *starkCurve;
+extern const stark_pedersen *starkPts;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
@@ -66,7 +65,6 @@ void stark_point_set_infinity(stark_point *p);
 int stark_point_is_infinity(const stark_point *p);
 int stark_point_is_equal(const stark_point *p, const stark_point *q);
 
-void starknet_curve_init();
-void starknet_pedersen_init();
+void starknet_init();
 
 #endif    // STARKNET_CRYPTO_H

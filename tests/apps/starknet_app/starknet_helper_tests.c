@@ -72,8 +72,6 @@
 
 TEST_GROUP(starknet_helper_test);
 
-extern starknet_txn_context_t *txn_context;
-
 /**
  * @brief Test setup for usb event consumer tests.
  * @details The function populates data in local buffer of USB communication
@@ -81,6 +79,7 @@ extern starknet_txn_context_t *txn_context;
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(starknet_helper_test) {
+  starknet_init();
 }
 
 /**
@@ -115,9 +114,6 @@ TEST(starknet_helper_test, starknet_pedersen_hash) {
       "030e480bed5fe53fa909cc0f8c4d99b8f9f2c016be4c41e13a4848797979c662",
       64,
       expected_hash);
-
-  starknet_curve_init();
-  starknet_pedersen_init();
 
   TEST_ASSERT_TRUE(pederson_hash(x, y, 32, hash));
 

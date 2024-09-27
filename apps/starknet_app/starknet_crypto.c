@@ -85,76 +85,29 @@
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
-stark_curve stark256 = {
-    .prime = /* .prime */ {/*.val =*/{0x3ffffc2f,
-                                      0x3ffffffb,
-                                      0x3fffffff,
-                                      0x3fffffff,
-                                      0x3fffffff,
-                                      0x3fffffff,
-                                      0x3fffffff,
-                                      0x3fffffff,
-                                      0xffff}},
-
-    // /* G */
-    // {/*.x =*/{/*.val =*/{0x16f81798,
-    //                      0x27ca056c,
-    //                      0x1ce28d95,
-    //                      0x26ff36cb,
-    //                      0x70b0702,
-    //                      0x18a573a,
-    //                      0xbbac55a,
-    //                      0x199fbe77,
-    //                      0x79be}},
-    //  /*.y =*/{/*.val =*/{0x3b10d4b8,
-    //                      0x311f423f,
-    //                      0x28554199,
-    //                      0x5ed1229,
-    //                      0x1108a8fd,
-    //                      0x13eff038,
-    //                      0x3c4655da,
-    //                      0x369dc9a8,
-    //                      0x483a}}},
-
-    // /* order */
-    // {/*.val =*/{0x10364141,
-    //             0x3f497a33,
-    //             0x348a03bb,
-    //             0x2bb739ab,
-    //             0x3ffffeba,
-    //             0x3fffffff,
-    //             0x3fffffff,
-    //             0x3fffffff,
-    //             0xffff}},
-
-    /* order_half */
-    .order_half = {/*.val =*/{0x281b20a0,
-                              0x3fa4bd19,
-                              0x3a4501dd,
-                              0x15db9cd5,
-                              0x3fffff5d,
-                              0x3fffffff,
-                              0x3fffffff,
-                              0x3fffffff,
-                              0x7fff}},
-
-    // /* a */
-    // {},
-
-    // /* b */ {/*.val =*/{7}}
-};
-
-stark_pedersen pedersen;
+const stark_curve *starkCurve;
+const stark_pedersen *starkPts;
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void stark_curve_init();
+static void stark_pedersen_init();
+static void print_stark_curve();
+static void print_stark_perdersen();
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void starknet_curve_init() {
-  char str[65] = "";
+
+void starknet_init() {
+  stark_curve_init();
+  stark_pedersen_init();
+}
+
+static void stark_curve_init() {
+  stark_curve stark256;
+  char str[STARK_BN_LEN] = {0};
 
   /* stark_curve_params ref:
   https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
@@ -167,23 +120,21 @@ void starknet_curve_init() {
   */
 
   // Prime
-  // bignum_from_int(
-  //     &stark256.prime,
-  //     "",
-  //     STARK_BN_LEN);
-
-  // bignum_to_string()
+  bignum_from_string(
+      &stark256.prime,
+      "0800000000000011000000000000000000000000000000000000000000000001",
+      STARK_BN_LEN);
 
   // Generator_point x
   bignum_from_string(
       &stark256.G.x,
-      "01ef15c18599971b7beced415a40f0c7deacfd9b0d1819e03d723d8bc943cfca",
+      "01EF15C18599971B7BECED415A40F0C7DEACFD9B0D1819E03D723D8BC943CFCA",
       STARK_BN_LEN);
 
   // Generator_point y
   bignum_from_string(
       &stark256.G.y,
-      "005668060aa49730b7be4801df46ec62de53ecd11abe43a32873000c36e8dc1f",
+      "005668060AA49730B7BE4801DF46EC62DE53ECD11ABE43A32873000C36E8DC1F",
       STARK_BN_LEN);
 
   // Order
@@ -193,10 +144,10 @@ void starknet_curve_init() {
       STARK_BN_LEN);
 
   // Order half
-  // bignum_from_string(
-  //     &stark256.order_half,
-  //     "",
-  //     STARK_BN_LEN);
+  bignum_from_string(
+      &stark256.order_half,
+      "06F21413EFBE40DE150E596D72F7A8C5609AD26C15C915C1F4CDFCB99CEE9E89",
+      STARK_BN_LEN);
 
   // Alpha
   bignum_from_string(
@@ -211,11 +162,15 @@ void starknet_curve_init() {
       STARK_BN_LEN);
 
   print_stark_curve();
+
+  starkCurve = &stark256;
 }
 
-void starknet_pedersen_init() {
+static void stark_pedersen_init() {
   // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
-  char str[65] = "";
+
+  stark_pedersen pedersen;
+  char str[STARK_BN_LEN] = {0};
 
   // Shift_point
   // x
@@ -278,41 +233,44 @@ void starknet_pedersen_init() {
       STARK_BN_LEN);
 
   print_stark_perdersen();
+
+  starkPts = &pedersen;
 }
 
-void print_stark_curve() {
+static void print_stark_curve() {
   char str[STARK_BN_LEN];
 
-  bignum_to_string(&stark256.prime, str, STARK_BN_LEN);
-  print_hex_array("\nPrime", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->prime, str, STARK_BN_LEN);
+  printf("\nPrime: %s", str);
 
-  bignum_to_string(&stark256.G.x, str, STARK_BN_LEN);
-  print_hex_array("G (Generator Point) x", str, STARK_BN_LEN / 2);
-  bignum_to_string(&stark256.G.y, str, STARK_BN_LEN);
-  print_hex_array("G (Generator Point) y", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->G.x, str, STARK_BN_LEN);
+  printf("\nG x: %s", str);
 
-  bignum_to_string(&stark256.order, str, STARK_BN_LEN);
-  print_hex_array("Order", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->G.y, str, STARK_BN_LEN);
+  printf("\nG y: %s", str);
 
-  bignum_to_string(&stark256.order_half, str, STARK_BN_LEN);
-  print_hex_array("Order half", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->order, str, STARK_BN_LEN);
+  printf("\nOrder: %s", str);
 
-  bignum_to_string(&stark256.a, str, STARK_BN_LEN);
-  print_hex_array("Alpha", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->order_half, str, STARK_BN_LEN);
+  printf("\nOrder half: %s", str);
 
-  bignum_to_string(&stark256.b, str, STARK_BN_LEN);
-  print_hex_array("Beta", str, STARK_BN_LEN / 2);
+  bignum_to_string(&starkCurve->a, str, STARK_BN_LEN);
+  printf("\nAlpha: %s", str);
+
+  bignum_to_string(&starkCurve->b, str, STARK_BN_LEN);
+  printf("\nBeta: %s", str);
 }
 
-void print_stark_perdersen() {
+static void print_stark_perdersen() {
   char str[STARK_BN_LEN];
 
   for (int i = 0; i < 5; i++) {
-    bignum_to_string(&pedersen.P[i].x, str, STARK_BN_LEN);
-    print_hex_array("P (Pedersen Point) x", str, STARK_BN_LEN / 2);
+    bignum_to_string(&starkPts->P[i].x, str, STARK_BN_LEN);
+    printf("P%d (Pedersen Point) x", i, str);
 
-    bignum_to_string(&pedersen.P[i].y, str, STARK_BN_LEN);
-    print_hex_array("P (Pedersen Point) y", str, STARK_BN_LEN / 2);
+    bignum_to_string(&starkPts->P[i].y, str, STARK_BN_LEN);
+    printf("P%d (Pedersen Point) y", i, str);
   }
 }
 
@@ -404,7 +362,7 @@ int stark_point_is_negative_of(const stark_point *p, const stark_point *q) {
 void private_to_public_key(const uint8_t *private, uint8_t *public_65) {
   stark_point R = {0}, temp = {0};
 
-  const stark_curve *curve = &stark256;
+  const stark_curve *curve = starkCurve;
   stark_point_set_infinity(&R);
   stark_point_copy(&curve->G, &temp);
 
