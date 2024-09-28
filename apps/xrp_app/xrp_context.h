@@ -18,6 +18,11 @@
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
+#define XRP_NAME "XRP"
+#define XRP_LUNIT "XRP"
+#define XRP_PUB_KEY_SIZE 33
+#define XRP_PREFIXED_ACCOUNT_ID_LENGTH 21
+#define XRP_ACCOUNT_ADDRESS_LENGTH 34
 
 /*****************************************************************************
  * TYPEDEFS

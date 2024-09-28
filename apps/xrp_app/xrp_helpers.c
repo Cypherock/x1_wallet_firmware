@@ -1,7 +1,7 @@
 /**
- * @file    xrp_main.c
+ * @file    xrp_helpers.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various XRP coin actions supported.
+ * @brief   Utilities specific to Xrp chains
  * @copyright Copyright (c) 2024 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,11 +60,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "xrp_main.h"
-
-#include "xrp_api.h"
-#include "xrp_priv.h"
-#include "status_api.h"
+#include "xrp_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -79,73 +75,97 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Entry point for the XRP application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * Xrp app.
- *
- * @param usb_evt The USB event which triggered invocation of the xrp app
- */
-void xrp_main(usb_event_t usb_evt, const void *xrp_app_config);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
-static const cy_app_desc_t xrp_app_desc = {.id = 20,
-                                            .version =
-                                                {
-                                                    .major = 1,
-                                                    .minor = 0,
-                                                    .patch = 0,
-                                                },
-                                            .app = xrp_main,
-                                            .app_config = NULL};
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+const char xrp_b58digits_ordered[] =
+    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void xrp_main(usb_event_t usb_evt, const void *xrp_app_config) {
-  xrp_query_t query = XRP_QUERY_INIT_DEFAULT;
-
-  if (false == decode_xrp_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case XRP_QUERY_GET_PUBLIC_KEYS_TAG:
-    case XRP_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      xrp_get_pub_keys(&query);
-      break;
-    }
-    case XRP_QUERY_SIGN_TXN_TAG: {
-      // TODO: Add sign txn functionality
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
-      break;
-    }
-  }
-
-  return;
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const cy_app_desc_t *get_xrp_app_desc() {
-  return &xrp_app_desc;
+
+bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels != XRP_IMPLICIT_ACCOUNT_DEPTH) {
+    return status;
+  }
+
+  uint32_t purpose = path[0], coin = path[1], account = path[2],
+            change = path[3], address = path[4];
+
+  // m/44'/144'/0'/0/i
+  status = (XRP_PURPOSE_INDEX == purpose && XRP_COIN_INDEX == coin &&
+            XRP_ACCOUNT_INDEX == account && XRP_CHANGE_INDEX == change &&
+            is_non_hardened(address));
+
+  return status;
+}
+
+bool xrp_b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
+  const uint8_t *bin = data;
+  int carry = 0;
+  size_t i = 0, j = 0, high = 0, zcount = 0;
+  size_t size = 0;
+
+  while (zcount < binsz && !bin[zcount]) ++zcount;
+
+  size = (binsz - zcount) * 138 / 100 + 1;
+  uint8_t buf[size];
+  memzero(buf, size);
+
+  for (i = zcount, high = size - 1; i < binsz; ++i, high = j) {
+    for (carry = bin[i], j = size - 1; (j > high) || carry; --j) {
+      carry += 256 * buf[j];
+      buf[j] = carry % 58;
+      carry /= 58;
+      if (!j) {
+        // Otherwise j wraps to maxint which is > high
+        break;
+      }
+    }
+  }
+
+  for (j = 0; j < size && !buf[j]; ++j)
+    ;
+
+  if (*b58sz <= zcount + size - j) {
+    *b58sz = zcount + size - j + 1;
+    return false;
+  }
+
+  if (zcount) memset(b58, 'r', zcount);
+  for (i = zcount; j < size; ++i, ++j) b58[i] = xrp_b58digits_ordered[buf[j]];
+  b58[i] = '\0';
+  *b58sz = i + 1;
+
+  return true;
+}
+
+int xrp_base58_encode_check(const uint8_t *data, int datalen,
+                        HasherType hasher_type, char *str, int strsize) {
+  if (datalen > 128) {
+    return 0;
+  }
+  uint8_t buf[datalen + 32];
+  memset(buf, 0, sizeof(buf));
+  uint8_t *hash = buf + datalen;
+  memcpy(buf, data, datalen);
+  hasher_Raw(hasher_type, data, datalen, hash);
+  size_t res = strsize;
+  bool success = xrp_b58enc(str, &res, buf, datalen + 4);
+  memzero(buf, sizeof(buf));
+  return success ? res : 0;
 }
