@@ -59,8 +59,9 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
 #include "starknet_crypto.h"
+
+#include "bignum_internal.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,8 +86,8 @@
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
-const stark_curve *starkCurve;
-const stark_pedersen *starkPts;
+stark_curve *starkCurve;
+stark_pedersen *starkPts;
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -106,11 +107,12 @@ void starknet_init() {
 }
 
 static void stark_curve_init() {
-  stark_curve stark256;
+  static stark_curve stark256;
   char str[STARK_BN_LEN] = {0};
 
   /* stark_curve_params ref:
   https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
+
   struct bn prime;         // prime order of the finite field
   stark_point G;           // initial curve point
   struct bn order;         // order of G
@@ -146,13 +148,13 @@ static void stark_curve_init() {
   // Order half
   bignum_from_string(
       &stark256.order_half,
-      "06F21413EFBE40DE150E596D72F7A8C5609AD26C15C915C1F4CDFCB99CEE9E89",
+      "04000000000000087fffffffffffffffdbc08936e573d9190f335120d6e32697",
       STARK_BN_LEN);
 
   // Alpha
   bignum_from_string(
       &stark256.a,
-      "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
+      "0000000000000000000000000000000000000000000000000000000000000001",
       STARK_BN_LEN);
 
   // Beta
@@ -168,7 +170,7 @@ static void stark_curve_init() {
 static void stark_pedersen_init() {
   // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
 
-  stark_pedersen pedersen;
+  static stark_pedersen pedersen;
   char str[STARK_BN_LEN] = {0};
 
   // Shift_point
@@ -277,13 +279,16 @@ void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
   *cp2 = *cp1;
 }
 
-// TODO: Optimmise sub and mul
-// cp2 = cp1 + cp2
+// internal-bignum
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
                      stark_point *cp2,
                      stark_point *res) {
-  struct bn lambda = {0}, inv = {0}, xr = {0}, yr = {0};
+  struct bn inv = {0}, xr = {0}, yr = {0};
+  BigInt1024 prime = {0}, x1 = {0}, x2 = {0}, y1 = {0}, y2 = {0}, res_i = {0},
+             lambda_i = {0}, inv_i = {0}, xr_i = {0}, yr_i = {0};
+
+  char str[100] = {0};
 
   if (stark_point_is_infinity(cp1)) {
     return;
@@ -297,31 +302,140 @@ void stark_point_add(const stark_curve *curve,
     return;
   }
 
-  bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
-  bn_inverse(&inv, &curve->prime);
-  bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
-  bignum_mul(&inv, &lambda, &curve->prime);
+  /// convert to internal-bignum struct
+  bignum_to_string(&curve->prime, str, STARK_BN_LEN);
+  bignumFromHexString(&prime, str, STARK_BN_LEN);
 
-  // xr = lambda^2 - x1 - x2
-  xr = lambda;
-  bignum_mul(&xr, &xr, &curve->prime);
-  yr = cp1->x;
-  bn_addmod(&yr, &(cp2->x), &curve->prime);
-  bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
-  bn_fast_mod(&xr, &curve->prime);
-  bn_mod(&xr, &curve->prime);
+  bignum_to_string(&(cp2->x), str, STARK_BN_LEN);
+  bignumFromHexString(&x1, str, STARK_BN_LEN);
+  bignum_to_string(&(cp1->x), str, STARK_BN_LEN);
+  bignumFromHexString(&x2, str, STARK_BN_LEN);
 
-  // yr = lambda (x1 - xr) - y1
-  bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
-  bignum_mul(&lambda, &yr, &curve->prime);
-  bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
-  bignum_mod(&yr, &curve->prime, &yr);
+  bignum_to_string(&(cp2->y), str, STARK_BN_LEN);
+  bignumFromHexString(&y1, str, STARK_BN_LEN);
+  bignum_to_string(&(cp1->y), str, STARK_BN_LEN);
+  bignumFromHexString(&y2, str, STARK_BN_LEN);
+
+  // bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
+  inv_i = subtractBigInt(&x1, &x2);
+  bn_mod_internal(&inv_i, &prime);
+
+  /// convert to tiny-bignum struct
+  bignumToHexString(&inv_i, str, STARK_BN_LEN);
+  bignum_from_string(&inv, str, STARK_BN_LEN);
+
+  bn_inverse(&inv, &curve->prime);    // TODO: In internal bignum lib
+
+  // convert to internal-bignum struct
+  bignum_to_string(&inv_i, str, STARK_BN_LEN);
+  bignumFromHexString(&inv, str, STARK_BN_LEN);
+
+  // bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
+  lambda_i = subtractBigInt(&y1, &y2);
+  bn_mod_internal(&lambda_i, &prime);
+
+  // bignum_mul(&inv, &lambda, &curve->prime);
+  res_i = multiplyFFT(&inv_i, &lambda_i);
+  bn_mod_internal(&res, &prime);
+
+  // [xr = lambda^2 - x1 - x2]
+  xr_i = lambda_i;
+  // bignum_mul(&xr_i, &xr_i, &curve->prime);
+  res_i = multiplyFFT(&inv_i, &lambda_i);
+  bn_mod_internal(&res, &prime);
+
+  yr_i = x1;
+
+  // bn_addmod(&yr, &(cp2->x), &curve->prime);
+  res_i = addBigInt(&yr_i, &x2);
+  bn_mod_internal(&lambda_i, &prime);
+
+  // bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
+  xr_i = subtractBigInt(&xr_i, &y2);
+  bn_mod_internal(&xr_i, &prime);
+
+  /// convert to tiny-bignum struct
+  bignumToHexString(&xr_i, str, STARK_BN_LEN);
+  bignum_from_string(&xr, str, STARK_BN_LEN);
+
+  bn_fast_mod(&xr, &curve->prime);    // TODO: In internal bignum lib
+
+  /// convert to internal-bignum struct
+  bignum_to_string(&inv, str, STARK_BN_LEN);
+  bignumFromHexString(&xr_i, str, STARK_BN_LEN);
+
+  bn_mod_internal(&xr_i, &prime);
+
+  // [yr = lambda (x1 - xr) - y1]
+  // bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
+  yr_i = subtractBigInt(&x1, &xr_i);
+  bn_mod_internal(&yr_i, &prime);
+
+  // bignum_mul(&lambda, &yr, &curve->prime);
+  res_i = multiplyFFT(&lambda_i, &yr_i);
+  bn_mod_internal(&res, &prime);
+
+  // bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
+  yr_i = subtractBigInt(&xr_i, &y1);
+  bn_mod_internal(&yr_i, &prime);
+
+  /// convert to tiny-bignum struct
+  bignumToHexString(&yr_i, str, STARK_BN_LEN);
+  bignum_from_string(&yr, str, STARK_BN_LEN);
+
+  bignum_mod(&yr, &curve->prime, &yr);    // TODO: In internal bignum lib
 
   cp2->x = xr;
   cp2->y = yr;
 
   stark_point_copy(cp2, res);
 }
+
+// tiny-bignum
+// cp2 = cp1 + cp2
+// void stark_point_add(const stark_curve *curve,
+//                      const stark_point *cp1,
+//                      stark_point *cp2,
+//                      stark_point *res) {
+//   struct bn lambda = {0}, inv = {0}, xr = {0}, yr = {0};
+
+//   if (stark_point_is_infinity(cp1)) {
+//     return;
+//   }
+//   if (stark_point_is_infinity(cp2)) {
+//     stark_point_copy(cp1, cp2);
+//     return;
+//   }
+//   if (stark_point_is_negative_of(cp1, cp2)) {
+//     stark_point_set_infinity(cp2);
+//     return;
+//   }
+
+//   bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
+//   bn_inverse(&inv, &curve->prime);
+//   bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
+//   bignum_mul(&inv, &lambda, &curve->prime);
+
+//   // xr = lambda^2 - x1 - x2
+//   xr = lambda;
+//   bignum_mul(&xr, &xr, &curve->prime);
+//   yr = cp1->x;
+//   bn_addmod(&yr, &(cp2->x), &curve->prime);
+//   bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
+//   bn_fast_mod(&xr, &curve->prime);
+//   bn_mod(&xr, &curve->prime);
+
+//   // yr = lambda (x1 - xr) - y1
+//   bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
+//   bignum_mul(&lambda, &yr, &curve->prime);
+//   bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
+//   bignum_mod(&yr, &curve->prime, &yr);
+
+//   cp2->x = xr;
+//   cp2->y = yr;
+
+//   stark_point_copy(cp2, res);
+// }
 
 // set point to internal representation of point at infinity
 void stark_point_set_infinity(stark_point *p) {
