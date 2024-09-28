@@ -62,9 +62,9 @@
 
 #include "xrp_main.h"
 
+#include "status_api.h"
 #include "xrp_api.h"
 #include "xrp_priv.h"
-#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -99,14 +99,14 @@ void xrp_main(usb_event_t usb_evt, const void *xrp_app_config);
  *****************************************************************************/
 
 static const cy_app_desc_t xrp_app_desc = {.id = 20,
-                                            .version =
-                                                {
-                                                    .major = 1,
-                                                    .minor = 0,
-                                                    .patch = 0,
-                                                },
-                                            .app = xrp_main,
-                                            .app_config = NULL};
+                                           .version =
+                                               {
+                                                   .major = 1,
+                                                   .minor = 0,
+                                                   .patch = 0,
+                                               },
+                                           .app = xrp_main,
+                                           .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
@@ -135,7 +135,7 @@ void xrp_main(usb_event_t usb_evt, const void *xrp_app_config) {
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_QUERY);
+                     ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }

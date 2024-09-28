@@ -60,18 +60,18 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "xrp_api.h"
-#include "xrp_context.h"
-#include "xrp_helpers.h"
-#include "xrp_priv.h"
+#include "bip32.h"
+#include "curves.h"
+#include "hasher.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
-#include "bip32.h"
-#include "curves.h"
-#include "hasher.h"
+#include "xrp_api.h"
+#include "xrp_context.h"
+#include "xrp_helpers.h"
+#include "xrp_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -214,7 +214,7 @@ static bool check_which_request(const xrp_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                    ERROR_DATA_FLOW_INVALID_REQUEST);
+                   ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
@@ -229,7 +229,7 @@ static bool validate_request(const xrp_get_public_keys_intiate_request_t *req,
   if (0 == count) {
     // request does not have any derivation paths, invalid request
     xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                    ERROR_DATA_FLOW_INVALID_DATA);
+                   ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -238,7 +238,7 @@ static bool validate_request(const xrp_get_public_keys_intiate_request_t *req,
     // `XRP_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
     // one derivation path which is not expected
     xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                    ERROR_DATA_FLOW_INVALID_DATA);
+                   ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -248,7 +248,7 @@ static bool validate_request(const xrp_get_public_keys_intiate_request_t *req,
     path = &req->derivation_paths[index];
     if (!xrp_derivation_path_guard(path->path, path->path_count)) {
       xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                      ERROR_DATA_FLOW_INVALID_DATA);
+                     ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
       break;
     }
@@ -263,7 +263,8 @@ static bool get_public_key(const uint8_t *seed,
                            uint8_t *public_key) {
   HDNode node = {0};
 
-  if (!derive_hdnode_from_path(path, path_length, SECP256K1_NAME, seed, &node)) {
+  if (!derive_hdnode_from_path(
+          path, path_length, SECP256K1_NAME, seed, &node)) {
     // send unknown error; unknown failure reason
     xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
@@ -272,7 +273,8 @@ static bool get_public_key(const uint8_t *seed,
 
   if (NULL != public_key) {
     // ecdsa_uncompress_pubkey(
-    //     get_curve_by_name(SECP256K1_NAME)->params, node.public_key, public_key);
+    //     get_curve_by_name(SECP256K1_NAME)->params, node.public_key,
+    //     public_key);
     memcpy(public_key, node.public_key, XRP_PUB_KEY_SIZE);
   }
 
@@ -338,11 +340,8 @@ static bool get_user_consent(const pb_size_t which_request,
   char msg[100] = "";
 
   if (XRP_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    snprintf(msg,
-             sizeof(msg),
-             UI_TEXT_ADD_ACCOUNT_PROMPT,
-             XRP_NAME,
-             wallet_name);
+    snprintf(
+        msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, XRP_NAME, wallet_name);
   } else {
     snprintf(msg,
              sizeof(msg),
@@ -390,9 +389,8 @@ void xrp_get_pub_keys(xrp_query_t *query) {
 
   if (!check_which_request(query, XRP_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request(init_req, which_request) ||
-      !get_wallet_name_by_id(init_req->wallet_id, 
-                            (uint8_t *)wallet_name, 
-                            xrp_send_error)) {
+      !get_wallet_name_by_id(
+          init_req->wallet_id, (uint8_t *)wallet_name, xrp_send_error)) {
     return;
   }
 
@@ -435,7 +433,10 @@ void xrp_get_pub_keys(xrp_query_t *query) {
     char address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
 
     uint8_t public_key_digest[32];
-    hasher_Raw(HASHER_SHA2_RIPEMD, pubkey_list[0], XRP_PUB_KEY_SIZE, public_key_digest);
+    hasher_Raw(HASHER_SHA2_RIPEMD,
+               pubkey_list[0],
+               XRP_PUB_KEY_SIZE,
+               public_key_digest);
 
     uint8_t prefixed_account_id[XRP_PREFIXED_ACCOUNT_ID_LENGTH];
     prefixed_account_id[0] = 0x00;
@@ -443,10 +444,10 @@ void xrp_get_pub_keys(xrp_query_t *query) {
 
     // xrp uses different base58 dictionary, that's why a custom function
     if (!xrp_base58_encode_check(prefixed_account_id,
-                             XRP_PREFIXED_ACCOUNT_ID_LENGTH,
-                             HASHER_SHA2D,
-                             address,
-                             XRP_ACCOUNT_ADDRESS_LENGTH + 1)) {
+                                 XRP_PREFIXED_ACCOUNT_ID_LENGTH,
+                                 HASHER_SHA2D,
+                                 address,
+                                 XRP_ACCOUNT_ADDRESS_LENGTH + 1)) {
       xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
     }

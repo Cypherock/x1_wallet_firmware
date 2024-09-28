@@ -45,11 +45,10 @@
 
 /**
  * @brief Verifies the derivation path.
- * @details The derivation depth is fixed at level 5. So if the depth level != 5, then
- * this function return false indicating invalid derivation path. 
- * The function supports checking derivation paths for HD wallets
- * Types of derivations:
- * address: m/44'/144'/0'/0/i
+ * @details The derivation depth is fixed at level 5. So if the depth level !=
+ * 5, then this function return false indicating invalid derivation path. The
+ * function supports checking derivation paths for HD wallets Types of
+ * derivations: address: m/44'/144'/0'/0/i
  *
  * @param[in] path      The derivation path as an uint32 array
  * @param[in] levels     The number of levels in the derivation path
@@ -65,7 +64,8 @@ bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels);
  * @details The given data is hashed as per the given hasher_type.
  * Then the checksum (first 4 bytes of hash digest) is taken and concatenated
  * with the data. The concatenated data is then encoded using base58
- * with the dictionary rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz
+ * with the dictionary
+ * rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz
  *
  * @param[in] data        The data to encode
  * @param[in] data_len    The length of the given data
@@ -76,7 +76,10 @@ bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels);
  * @retval                Same as provided if successful
  * @retval                0 otherwise
  */
-int xrp_base58_encode_check(const uint8_t *data, int datalen,
-                        HasherType hasher_type, char *str, int strsize);
+int xrp_base58_encode_check(const uint8_t *data,
+                            int datalen,
+                            HasherType hasher_type,
+                            char *str,
+                            int strsize);
 
 #endif    // XRP_HELPERS_H
