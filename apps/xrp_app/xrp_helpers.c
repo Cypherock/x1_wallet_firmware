@@ -104,7 +104,7 @@ bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels) {
   }
 
   uint32_t purpose = path[0], coin = path[1], account = path[2],
-            change = path[3], address = path[4];
+           change = path[3], address = path[4];
 
   // m/44'/144'/0'/0/i
   status = (XRP_PURPOSE_INDEX == purpose && XRP_COIN_INDEX == coin &&
@@ -120,7 +120,8 @@ bool xrp_b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
   size_t i = 0, j = 0, high = 0, zcount = 0;
   size_t size = 0;
 
-  while (zcount < binsz && !bin[zcount]) ++zcount;
+  while (zcount < binsz && !bin[zcount])
+    ++zcount;
 
   size = (binsz - zcount) * 138 / 100 + 1;
   uint8_t buf[size];
@@ -146,16 +147,21 @@ bool xrp_b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
     return false;
   }
 
-  if (zcount) memset(b58, 'r', zcount);
-  for (i = zcount; j < size; ++i, ++j) b58[i] = xrp_b58digits_ordered[buf[j]];
+  if (zcount)
+    memset(b58, 'r', zcount);
+  for (i = zcount; j < size; ++i, ++j)
+    b58[i] = xrp_b58digits_ordered[buf[j]];
   b58[i] = '\0';
   *b58sz = i + 1;
 
   return true;
 }
 
-int xrp_base58_encode_check(const uint8_t *data, int datalen,
-                        HasherType hasher_type, char *str, int strsize) {
+int xrp_base58_encode_check(const uint8_t *data,
+                            int datalen,
+                            HasherType hasher_type,
+                            char *str,
+                            int strsize) {
   if (datalen > 128) {
     return 0;
   }
