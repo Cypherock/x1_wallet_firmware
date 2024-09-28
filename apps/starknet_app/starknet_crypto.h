@@ -45,8 +45,8 @@ typedef struct {
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
-extern const stark_curve *starkCurve;
-extern const stark_pedersen *starkPts;
+extern stark_curve *starkCurve;
+extern stark_pedersen *starkPts;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
