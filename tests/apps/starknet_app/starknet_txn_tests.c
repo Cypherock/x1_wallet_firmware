@@ -80,7 +80,6 @@ extern starknet_txn_context_t *txn_context;
  * performing tests. buffer of packet(s) of data.
  */
 TEST_SETUP(starknet_txn_test) {
-  starknet_init();
 }
 
 /**

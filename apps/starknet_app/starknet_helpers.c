@@ -118,19 +118,23 @@ static bool get_stark_child_node(const uint32_t *path,
   return true;
 }
 
-static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
+#include "bignum_internal.h"
+// internal-bignum
+bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
   uint8_t key[32] = {0};
-  struct bn a;
-  struct bn strk_limit;
-  struct bn strk_key;
-  struct bn stark_order;
+  BigInt1024 strk_limit;
+  BigInt1024 strk_key;
+  BigInt1024 stark_order;
   char str[65] = "";
 
-  bignum_from_string(
+  // Initialize stark_order
+  bignumFromHexString(
       &stark_order,
       "0800000000000010FFFFFFFFFFFFFFFFB781126DCAE7B2321E66A241ADC64D2F",
       64);
-  bignum_from_string(
+
+  // Initialize strk_limit
+  bignumFromHexString(
       &strk_limit,
       "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1",
       64);
@@ -139,25 +143,70 @@ static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
   for (uint8_t itr = 0; itr < 200; itr++) {
     sha256_Init(&ctx);
     sha256_Update(&ctx, grind_seed, 32);
-
-    // copy iteration
     sha256_Update(&ctx, &itr, 1);
     sha256_Final(&ctx, key);
 
     byte_array_to_hex_string(key, 32, str, 65);
-    bignum_from_string(&strk_key, str, 64);
-    if (bignum_cmp(&strk_key, &strk_limit) == SMALLER) {
-      struct bn f_key = {0};
-      bignum_mod(&strk_key, &stark_order, &f_key);
-      bignum_to_string(&f_key, str, 64);
+    bignumFromHexString(&strk_key, str, 64);
+
+    if (bignum_cmp_internal(&strk_key, &strk_limit) == LESS) {
+      BigInt1024 f_key;
+      initBigInt(&f_key);
+      memcpy(&f_key, &strk_key, sizeof(f_key));
+      bn_mod_internal(&f_key, &stark_order);
+      bignumToHexString(&f_key, str, 64);
       hex_string_to_byte_array(str, 64, out);
       return true;
     }
   }
+
   starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
+  printf("ERROR: grind 200 iterations failed\n");
   LOG_CRITICAL("grind 200 failed");
   return false;
 }
+
+// tiny-bignum
+// static bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
+//   uint8_t key[32] = {0};
+//   struct bn a;
+//   struct bn strk_limit;
+//   struct bn strk_key;
+//   struct bn stark_order;
+//   char str[65] = "";
+
+//   bignum_from_string(
+//       &stark_order,
+//       "0800000000000010FFFFFFFFFFFFFFFFB781126DCAE7B2321E66A241ADC64D2F",
+//       64);
+//   bignum_from_string(
+//       &strk_limit,
+//       "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1",
+//       64);
+
+//   SHA256_CTX ctx = {0};
+//   for (uint8_t itr = 0; itr < 200; itr++) {
+//     sha256_Init(&ctx);
+//     sha256_Update(&ctx, grind_seed, 32);
+
+//     // copy iteration
+//     sha256_Update(&ctx, &itr, 1);
+//     sha256_Final(&ctx, key);
+
+//     byte_array_to_hex_string(key, 32, str, 65);
+//     bignum_from_string(&strk_key, str, 64);
+//     if (bignum_cmp(&strk_key, &strk_limit) == SMALLER) {
+//       struct bn f_key = {0};
+//       bignum_mod(&strk_key, &stark_order, &f_key);
+//       bignum_to_string(&f_key, str, 64);
+//       hex_string_to_byte_array(str, 64, out);
+//       return true;
+//     }
+//   }
+//   starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
+//   LOG_CRITICAL("grind 200 failed");
+//   return false;
+// }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -221,7 +270,6 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   }
 
   char str[100];
-  // stark_curve *starkCurve;
   starknet_init();
   stark_point_multiply(starkCurve, stark_public_key, &starkCurve->G, &p);
   bignum_to_string(&p.x, str, STARK_BN_LEN);
