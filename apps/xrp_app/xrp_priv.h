@@ -22,4 +22,21 @@
  * TYPEDEFS
  *****************************************************************************/
 
+/*****************************************************************************
+ * EXPORTED VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Handler for XRP public key derivation.
+ * @details This flow expects XRP_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
+ * query, otherwise the flow is aborted
+ *
+ * @param query object for address public key query
+ */
+void xrp_get_pub_keys(xrp_query_t *query);
+
 #endif /* XRP_PRIV_H */
