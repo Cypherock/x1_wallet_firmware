@@ -234,7 +234,6 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
 
   // If the tapped card is not paired, it is a terminal case in the flow
   if (card_data.nfc_data.pairing_error) {
-    delay_scr_init(ui_text_device_and_card_not_paired, DELAY_TIME);
     return false;
   }
 
@@ -247,7 +246,6 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   }
 
   if (0 == strlen(wallet_name)) {
-    delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
     return false;
   }
 
