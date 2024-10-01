@@ -18,7 +18,6 @@
 #include <stdint.h>
 
 #include "coin_utils.h"
-#include "hasher.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -58,28 +57,5 @@
  * @retval false otherwise
  */
 bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels);
-
-/**
- * @brief Generates the base58 encoded string from the data.
- * @details The given data is hashed as per the given hasher_type.
- * Then the checksum (first 4 bytes of hash digest) is taken and concatenated
- * with the data. The concatenated data is then encoded using base58
- * with the dictionary
- * rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz
- *
- * @param[in] data        The data to encode
- * @param[in] data_len    The length of the given data
- * @param[in] hasher_type The type of hash to generate checksum
- * @param[out] str        The string to store the encoded data in
- * @param[in] strsize     The size of str to generate
- * @return int            The size of str generated
- * @retval                Same as provided if successful
- * @retval                0 otherwise
- */
-int xrp_base58_encode_check(const uint8_t *data,
-                            int datalen,
-                            HasherType hasher_type,
-                            char *str,
-                            int strsize);
 
 #endif    // XRP_HELPERS_H

@@ -86,9 +86,6 @@
  * GLOBAL VARIABLES
  *****************************************************************************/
 
-const char xrp_b58digits_ordered[] =
-    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
@@ -112,66 +109,4 @@ bool xrp_derivation_path_guard(const uint32_t *path, uint8_t levels) {
             is_non_hardened(address));
 
   return status;
-}
-
-bool xrp_b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
-  const uint8_t *bin = data;
-  int carry = 0;
-  size_t i = 0, j = 0, high = 0, zcount = 0;
-  size_t size = 0;
-
-  while (zcount < binsz && !bin[zcount])
-    ++zcount;
-
-  size = (binsz - zcount) * 138 / 100 + 1;
-  uint8_t buf[size];
-  memzero(buf, size);
-
-  for (i = zcount, high = size - 1; i < binsz; ++i, high = j) {
-    for (carry = bin[i], j = size - 1; (j > high) || carry; --j) {
-      carry += 256 * buf[j];
-      buf[j] = carry % 58;
-      carry /= 58;
-      if (!j) {
-        // Otherwise j wraps to maxint which is > high
-        break;
-      }
-    }
-  }
-
-  for (j = 0; j < size && !buf[j]; ++j)
-    ;
-
-  if (*b58sz <= zcount + size - j) {
-    *b58sz = zcount + size - j + 1;
-    return false;
-  }
-
-  if (zcount)
-    memset(b58, 'r', zcount);
-  for (i = zcount; j < size; ++i, ++j)
-    b58[i] = xrp_b58digits_ordered[buf[j]];
-  b58[i] = '\0';
-  *b58sz = i + 1;
-
-  return true;
-}
-
-int xrp_base58_encode_check(const uint8_t *data,
-                            int datalen,
-                            HasherType hasher_type,
-                            char *str,
-                            int strsize) {
-  if (datalen > 128) {
-    return 0;
-  }
-  uint8_t buf[datalen + 32];
-  memset(buf, 0, sizeof(buf));
-  uint8_t *hash = buf + datalen;
-  memcpy(buf, data, datalen);
-  hasher_Raw(hasher_type, data, datalen, hash);
-  size_t res = strsize;
-  bool success = xrp_b58enc(str, &res, buf, datalen + 4);
-  memzero(buf, sizeof(buf));
-  return success ? res : 0;
 }
