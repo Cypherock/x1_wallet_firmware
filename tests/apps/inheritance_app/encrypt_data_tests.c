@@ -56,17 +56,9 @@
  ******************************************************************************
  */
 #include <stdint.h>
-#include <string.h>
 
-#include "base58.h"
-#include "core_session.h"
-#include "curves.h"
-#include "device_authentication_api.h"
-#include "events.h"
 #include "inheritance/core.pb.h"
 #include "inheritance_priv.h"
-#include "nist256p1.h"
-#include "sha2.h"
 #include "unity.h"
 #include "unity_fixture.h"
 #include "utils.h"
@@ -78,16 +70,6 @@ TEST_SETUP(inheritance_encryption_tests) {
 
 TEST_TEAR_DOWN(inheritance_encryption_tests) {
 }
-//   ENCRYPTION_INVALID_REQUEST_ERROR,
-//   ENCRYPTION_INVALID_WALLET_ID_ERROR,
-//   ENCRYPTION_PIN_NOT_SET_ERROR
-//   ENCRYPTION_PB_DECODE_FAIL_ERROR,
-// ENCRYPTION_INVALID_DATA_ERROR
-// ENCRYPTION_VERIFICATION_FAIL_ERROR ??
-// ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR
-// ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR
-// ENCRYPTION_PB_ENCODE_FAIL_ERROR
-// ENCRYPTION_CHUNK_DATA_INVALID_ERROR
 
 // Wallet details used for testing:
 // wallet_name="DEV002" - pin set

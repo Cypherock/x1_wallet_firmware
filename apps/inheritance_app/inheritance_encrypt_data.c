@@ -785,13 +785,13 @@ encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
       inheritance_get_plain_data(query) &&
       inheritance_encryption_get_user_verification() && encrypt_data() &&
       send_encrypted_data(query)) {
-    // delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
+    delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
     SET_ERROR_TYPE(ENCRYPTION_OK);
   } else {
-    // delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
+    delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
   encryption_handle_errors();
-  // delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+  delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
   free(encryption_context);
