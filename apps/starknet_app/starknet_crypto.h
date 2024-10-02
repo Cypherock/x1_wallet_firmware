@@ -14,6 +14,7 @@
  *****************************************************************************/
 
 #include "bn.h"
+#include "mini-gmp.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -26,16 +27,16 @@
 
 // curve point x and y
 typedef struct {
-  struct bn x, y;
+  mpz_t x, y;
 } stark_point;
 
 typedef struct {
-  struct bn prime;         // prime order of the finite field
+  mpz_t prime;         // prime order of the finite field
   stark_point G;           // initial curve point
-  struct bn order;         // order of G
-  struct bn order_half;    // order of G divided by 2
-  struct bn a;             // coefficient 'a' of the elliptic curve
-  struct bn b;             // coefficient 'b' of the elliptic curve
+  mpz_t order;         // order of G
+  mpz_t order_half;    // order of G divided by 2
+  mpz_t a;             // coefficient 'a' of the elliptic curve
+  mpz_t b;             // coefficient 'b' of the elliptic curve
 } stark_curve;
 
 typedef struct {
