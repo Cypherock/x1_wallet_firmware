@@ -512,29 +512,29 @@ void stark_point_set_infinity(stark_point *p) {
 // return true iff p represent point at infinity
 // both coords are zero in internal representation
 int stark_point_is_infinity(const stark_point *p) {
-  return bignum_is_zero(&(p->x)) && bignum_is_zero(&(p->y));
+  return mpz_cmp_ui(p->x, 0) == 0 && mpz_cmp_ui(p->y, 0) == 0;
 }
 
 // return true iff both points are equal
 int stark_point_is_equal(const stark_point *p, const stark_point *q) {
-  return (bignum_cmp(&(p->x), &(q->x)) == 0) &&
-         (bignum_cmp(&(p->y), &(q->y)) == 0);
+    return (mpz_cmp(p->x, q->x) == 0) &&
+           (mpz_cmp(p->y, q->y) == 0);
 }
 
 // returns true iff p == -q
 // expects p and q be valid points on curve other than point at infinity
 int stark_point_is_negative_of(const stark_point *p, const stark_point *q) {
-  // if P == (x, y), then -P would be (x, -y) on this curve
-  if (bignum_cmp(&(p->x), &(q->x)) != 0) {
-    return 0;
-  }
+    // if P == (x, y), then -P would be (x, -y) on this curve
+    if (mpz_cmp(p->x, q->x) != 0) {
+        return 0;
+    }
 
-  // we shouldn't hit this for a valid point
-  if (bignum_is_zero(&(p->y))) {
-    return 0;
-  }
+    // we shouldn't hit this for a valid point
+    if (mpz_cmp_ui(p->y, 0) == 0) {
+        return 0;
+    }
 
-  return (bignum_cmp(&(p->y), &(q->y)) != 0);
+    return mpz_cmp(p->y, q->y) != 0;
 }
 
 void stark_point_multiply(const stark_curve *curve,
@@ -553,8 +553,8 @@ void stark_point_multiply(const stark_curve *curve,
     stark_point_add(curve, &temp, &temp, &temp);
 
     // If the i-th bit of k is set, add temp to the result R
-    if (bn_is_bit_set(k, i)) {
-      stark_point_add(curve, &temp, &R, &R);
+    if (mpz_tstbit(k, i)) {
+      stark_point_add(curve, &R, &temp, &R);
     }
   }
 
@@ -562,38 +562,49 @@ void stark_point_multiply(const stark_curve *curve,
   stark_point_copy(&R, res);
 }
 
-int bn_bit_length(const struct bn *k) {
-  int bit_length = 0;
+// int bn_bit_length(const struct bn *k) {
+//   int bit_length = 0;
 
-  // Start from the most significant element of the array
-  for (int i = BN_ARRAY_SIZE - 1; i >= 0; i--) {
-    if (k->array[i] != 0) {
-      DTYPE_TMP word = k->array[i];
-      // Calculate the bit length of this word
-      while (word) {
-        word >>= 1;
-        bit_length++;
-      }
-      // Add the offset of this word
-      bit_length += i * (WORD_SIZE * 8);
-      break;
+//   // Start from the most significant element of the array
+//   for (int i = BN_ARRAY_SIZE - 1; i >= 0; i--) {
+//     if (k->array[i] != 0) {
+//       DTYPE_TMP word = k->array[i];
+//       // Calculate the bit length of this word
+//       while (word) {
+//         word >>= 1;
+//         bit_length++;
+//       }
+//       // Add the offset of this word
+//       bit_length += i * (WORD_SIZE * 8);
+//       break;
+//     }
+//   }
+
+//   return bit_length;
+// }
+
+int bn_bit_length(const mpz_t k) {
+    if (mpz_cmp_ui(k, 0) == 0) {
+        return 0;
     }
-  }
-
-  return bit_length;
+    return mpz_sizeinbase(k, 2);
 }
 
-int bn_is_bit_set(const struct bn *k, int bit_idx) {
-  int word_idx =
-      bit_idx / (WORD_SIZE * 8);    // Determine which word contains the bit
-  int bit_in_word =
-      bit_idx % (WORD_SIZE * 8);    // Determine which bit in the word
+// int bn_is_bit_set(const struct bn *k, int bit_idx) {
+//   int word_idx =
+//       bit_idx / (WORD_SIZE * 8);    // Determine which word contains the bit
+//   int bit_in_word =
+//       bit_idx % (WORD_SIZE * 8);    // Determine which bit in the word
 
-  // Ensure that word_idx is within bounds
-  if (word_idx >= BN_ARRAY_SIZE) {
-    return 0;    // Out of bounds, so the bit is not set
-  }
+//   // Ensure that word_idx is within bounds
+//   if (word_idx >= BN_ARRAY_SIZE) {
+//     return 0;    // Out of bounds, so the bit is not set
+//   }
 
-  // Check if the specific bit is set in the corresponding word
-  return (k->array[word_idx] & ((DTYPE)1 << bit_in_word)) != 0;
+//   // Check if the specific bit is set in the corresponding word
+//   return (k->array[word_idx] & ((DTYPE)1 << bit_in_word)) != 0;
+// }
+
+int bn_is_bit_set(const mpz_t k, int bit_idx) {
+    return mpz_tstbit(k, bit_idx);
 }
