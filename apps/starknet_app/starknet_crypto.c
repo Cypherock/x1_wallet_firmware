@@ -283,116 +283,116 @@ void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
 }
 
 // internal-bignum
-void stark_point_add(const stark_curve *curve,
-                     const stark_point *cp1,
-                     stark_point *cp2,
-                     stark_point *res) {
-  struct bn inv = {0}, xr = {0}, yr = {0};
-  BigInt1024 prime = {0}, x1 = {0}, x2 = {0}, y1 = {0}, y2 = {0}, res_i = {0},
-             lambda_i = {0}, inv_i = {0}, xr_i = {0}, yr_i = {0};
+// void stark_point_add(const stark_curve *curve,
+//                      const stark_point *cp1,
+//                      stark_point *cp2,
+//                      stark_point *res) {
+//   struct bn inv = {0}, xr = {0}, yr = {0};
+//   BigInt1024 prime = {0}, x1 = {0}, x2 = {0}, y1 = {0}, y2 = {0}, res_i = {0},
+//              lambda_i = {0}, inv_i = {0}, xr_i = {0}, yr_i = {0};
 
-  char str[100] = {0};
+//   char str[100] = {0};
 
-  if (stark_point_is_infinity(cp1)) {
-    return;
-  }
-  if (stark_point_is_infinity(cp2)) {
-    stark_point_copy(cp1, cp2);
-    return;
-  }
-  if (stark_point_is_negative_of(cp1, cp2)) {
-    stark_point_set_infinity(cp2);
-    return;
-  }
+//   if (stark_point_is_infinity(cp1)) {
+//     return;
+//   }
+//   if (stark_point_is_infinity(cp2)) {
+//     stark_point_copy(cp1, cp2);
+//     return;
+//   }
+//   if (stark_point_is_negative_of(cp1, cp2)) {
+//     stark_point_set_infinity(cp2);
+//     return;
+//   }
 
-  /// convert to internal-bignum struct
-  bignum_to_string(&curve->prime, str, STARK_BN_LEN);
-  bignumFromHexString(&prime, str, STARK_BN_LEN);
+//   //  convert to internal-bignum struct
+//   bignum_to_string(&curve->prime, str, STARK_BN_LEN);
+//   bignumFromHexString(&prime, str, STARK_BN_LEN);
 
-  bignum_to_string(&(cp2->x), str, STARK_BN_LEN);
-  bignumFromHexString(&x1, str, STARK_BN_LEN);
-  bignum_to_string(&(cp1->x), str, STARK_BN_LEN);
-  bignumFromHexString(&x2, str, STARK_BN_LEN);
+//   bignum_to_string(&(cp2->x), str, STARK_BN_LEN);
+//   bignumFromHexString(&x1, str, STARK_BN_LEN);
+//   bignum_to_string(&(cp1->x), str, STARK_BN_LEN);
+//   bignumFromHexString(&x2, str, STARK_BN_LEN);
 
-  bignum_to_string(&(cp2->y), str, STARK_BN_LEN);
-  bignumFromHexString(&y1, str, STARK_BN_LEN);
-  bignum_to_string(&(cp1->y), str, STARK_BN_LEN);
-  bignumFromHexString(&y2, str, STARK_BN_LEN);
+//   bignum_to_string(&(cp2->y), str, STARK_BN_LEN);
+//   bignumFromHexString(&y1, str, STARK_BN_LEN);
+//   bignum_to_string(&(cp1->y), str, STARK_BN_LEN);
+//   bignumFromHexString(&y2, str, STARK_BN_LEN);
 
-  // bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
-  inv_i = subtractBigInt(&x1, &x2);
-  bn_mod_internal(&inv_i, &prime);
+//   // bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
+//   inv_i = subtractBigInt(&x1, &x2);
+//   bn_mod_internal(&inv_i, &prime);
 
-  /// convert to tiny-bignum struct
-  bignumToHexString(&inv_i, str, STARK_BN_LEN);
-  bignum_from_string(&inv, str, STARK_BN_LEN);
+//   /// convert to tiny-bignum struct
+//   bignumToHexString(&inv_i, str, STARK_BN_LEN);
+//   bignum_from_string(&inv, str, STARK_BN_LEN);
 
-  bn_inverse(&inv, &curve->prime);    // TODO: In internal bignum lib
+//   bn_inverse(&inv, &curve->prime);    // TODO: In internal bignum lib
 
-  // convert to internal-bignum struct
-  bignum_to_string(&inv_i, str, STARK_BN_LEN);
-  bignumFromHexString(&inv, str, STARK_BN_LEN);
+//   // convert to internal-bignum struct
+//   bignum_to_string(&inv_i, str, STARK_BN_LEN);
+//   bignumFromHexString(&inv, str, STARK_BN_LEN);
 
-  // bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
-  lambda_i = subtractBigInt(&y1, &y2);
-  bn_mod_internal(&lambda_i, &prime);
+//   // bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
+//   lambda_i = subtractBigInt(&y1, &y2);
+//   bn_mod_internal(&lambda_i, &prime);
 
-  // bignum_mul(&inv, &lambda, &curve->prime);
-  res_i = multiplyFFT(&inv_i, &lambda_i);
-  bn_mod_internal(&res, &prime);
+//   // bignum_mul(&inv, &lambda, &curve->prime);
+//   res_i = multiplyFFT(&inv_i, &lambda_i);
+//   bn_mod_internal(&res, &prime);
 
-  // [xr = lambda^2 - x1 - x2]
-  xr_i = lambda_i;
-  // bignum_mul(&xr_i, &xr_i, &curve->prime);
-  res_i = multiplyFFT(&inv_i, &lambda_i);
-  bn_mod_internal(&res, &prime);
+//   // [xr = lambda^2 - x1 - x2]
+//   xr_i = lambda_i;
+//   // bignum_mul(&xr_i, &xr_i, &curve->prime);
+//   res_i = multiplyFFT(&inv_i, &lambda_i);
+//   bn_mod_internal(&res, &prime);
 
-  yr_i = x1;
+//   yr_i = x1;
 
-  // bn_addmod(&yr, &(cp2->x), &curve->prime);
-  res_i = addBigInt(&yr_i, &x2);
-  bn_mod_internal(&lambda_i, &prime);
+//   // bn_addmod(&yr, &(cp2->x), &curve->prime);
+//   res_i = addBigInt(&yr_i, &x2);
+//   bn_mod_internal(&lambda_i, &prime);
 
-  // bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
-  xr_i = subtractBigInt(&xr_i, &y2);
-  bn_mod_internal(&xr_i, &prime);
+//   // bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
+//   xr_i = subtractBigInt(&xr_i, &y2);
+//   bn_mod_internal(&xr_i, &prime);
 
-  /// convert to tiny-bignum struct
-  bignumToHexString(&xr_i, str, STARK_BN_LEN);
-  bignum_from_string(&xr, str, STARK_BN_LEN);
+//   /// convert to tiny-bignum struct
+//   bignumToHexString(&xr_i, str, STARK_BN_LEN);
+//   bignum_from_string(&xr, str, STARK_BN_LEN);
 
-  bn_fast_mod(&xr, &curve->prime);    // TODO: In internal bignum lib
+//   bn_fast_mod(&xr, &curve->prime);    // TODO: In internal bignum lib
 
-  /// convert to internal-bignum struct
-  bignum_to_string(&inv, str, STARK_BN_LEN);
-  bignumFromHexString(&xr_i, str, STARK_BN_LEN);
+//   /// convert to internal-bignum struct
+//   bignum_to_string(&inv, str, STARK_BN_LEN);
+//   bignumFromHexString(&xr_i, str, STARK_BN_LEN);
 
-  bn_mod_internal(&xr_i, &prime);
+//   bn_mod_internal(&xr_i, &prime);
 
-  // [yr = lambda (x1 - xr) - y1]
-  // bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
-  yr_i = subtractBigInt(&x1, &xr_i);
-  bn_mod_internal(&yr_i, &prime);
+//   // [yr = lambda (x1 - xr) - y1]
+//   // bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
+//   yr_i = subtractBigInt(&x1, &xr_i);
+//   bn_mod_internal(&yr_i, &prime);
 
-  // bignum_mul(&lambda, &yr, &curve->prime);
-  res_i = multiplyFFT(&lambda_i, &yr_i);
-  bn_mod_internal(&res, &prime);
+//   // bignum_mul(&lambda, &yr, &curve->prime);
+//   res_i = multiplyFFT(&lambda_i, &yr_i);
+//   bn_mod_internal(&res, &prime);
 
-  // bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
-  yr_i = subtractBigInt(&xr_i, &y1);
-  bn_mod_internal(&yr_i, &prime);
+//   // bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
+//   yr_i = subtractBigInt(&xr_i, &y1);
+//   bn_mod_internal(&yr_i, &prime);
 
-  /// convert to tiny-bignum struct
-  bignumToHexString(&yr_i, str, STARK_BN_LEN);
-  bignum_from_string(&yr, str, STARK_BN_LEN);
+//   /// convert to tiny-bignum struct
+//   bignumToHexString(&yr_i, str, STARK_BN_LEN);
+//   bignum_from_string(&yr, str, STARK_BN_LEN);
 
-  bignum_mod(&yr, &curve->prime, &yr);    // TODO: In internal bignum lib
+//   bignum_mod(&yr, &curve->prime, &yr);    // TODO: In internal bignum lib
 
-  cp2->x = xr;
-  cp2->y = yr;
+//   cp2->x = xr;
+//   cp2->y = yr;
 
-  stark_point_copy(cp2, res);
-}
+//   stark_point_copy(cp2, res);
+// }
 
 // tiny-bignum
 // cp2 = cp1 + cp2
