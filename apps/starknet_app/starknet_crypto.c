@@ -62,6 +62,7 @@
 #include "starknet_crypto.h"
 
 #include "bignum_internal.h"
+#include "mini-gmp.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -121,47 +122,48 @@ static void stark_curve_init() {
   struct bn b;             // coefficient 'b' of the elliptic curve OR beta
   */
 
+
   // Prime
-  bignum_from_string(
-      &stark256.prime,
-      "0800000000000011000000000000000000000000000000000000000000000001",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.prime, 
+    "0800000000000011000000000000000000000000000000000000000000000001", 
+    16);
 
   // Generator_point x
-  bignum_from_string(
-      &stark256.G.x,
-      "01EF15C18599971B7BECED415A40F0C7DEACFD9B0D1819E03D723D8BC943CFCA",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.G.x, 
+    "01EF15C18599971B7BECED415A40F0C7DEACFD9B0D1819E03D723D8BC943CFCA", 
+    16);
 
   // Generator_point y
-  bignum_from_string(
-      &stark256.G.y,
-      "005668060AA49730B7BE4801DF46EC62DE53ECD11ABE43A32873000C36E8DC1F",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.G.y, 
+    "005668060AA49730B7BE4801DF46EC62DE53ECD11ABE43A32873000C36E8DC1F", 
+    16);
 
   // Order
-  bignum_from_string(
-      &stark256.order,
-      "0800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.order, 
+    "0800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f", 
+    16);
 
   // Order half
-  bignum_from_string(
-      &stark256.order_half,
-      "04000000000000087fffffffffffffffdbc08936e573d9190f335120d6e32697",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.order_half, 
+    "04000000000000087fffffffffffffffdbc08936e573d9190f335120d6e32697", 
+    16);
 
   // Alpha
-  bignum_from_string(
-      &stark256.a,
-      "0000000000000000000000000000000000000000000000000000000000000001",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.a, 
+    "0000000000000000000000000000000000000000000000000000000000000001", 
+    16);
 
   // Beta
-  bignum_from_string(
-      &stark256.b,
-      "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
-      STARK_BN_LEN);
+  mpz_set_str(
+    stark256.b, 
+    "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89", 
+    16);
 
   starkCurve = &stark256;
   print_stark_curve();
@@ -173,65 +175,65 @@ static void stark_pedersen_init() {
   static stark_pedersen pedersen;
   char str[STARK_BN_LEN] = {0};
 
-  // Shift_point
-  // x
-  bignum_from_string(
-      &pedersen.P[0].x,
-      "049ee3eba8c1600700ee1b87eb599f16716b0b1022947733551fde4050ca6804",
-      STARK_BN_LEN);
-  // y
-  bignum_from_string(
-      &pedersen.P[0].y,
-      "3ca0cfe4b3bc6ddf346d49d06ea0ed34e621062c0e056c1d0405d266e10268a",
-      STARK_BN_LEN);
+  // Shift_point x
+  mpz_set_str(
+  pedersen.P[0].x, 
+  "049EE3EBA8C1600700EE1B87EB599F16716B0B1022947733551FDE4050CA6804", 
+  16);
 
-  // Perderen_point_1
-  // x
-  bignum_from_string(
-      &pedersen.P[1].x,
-      "0234287dcbaffe7f969c748655fca9e58fa8120b6d56eb0c1080d17957ebe47b",
-      STARK_BN_LEN);
-  // y
-  bignum_from_string(
-      &pedersen.P[1].y,
-      "03b056f100f96fb21e889527d41f4e39940135dd7a6c94cc6ed0268ee89e5615",
-      STARK_BN_LEN);
+  // Shift_point y
+  mpz_set_str(
+  pedersen.P[0].y, 
+  "03CA0CFE4B3BC6DDF346D49D06EA0ED34E621062C0E056C1D0405D266E10268A", 
+  16);
 
-  // Perderen_point_2
-  // x
-  bignum_from_string(
-      &pedersen.P[2].x,
-      "04ba4cc166be8dec764910f75b45f74b40c690c74709e90f3aa372f0bd2d6997",
-      STARK_BN_LEN);
-  // y
-  bignum_from_string(
-      &pedersen.P[2].y,
-      "0040301cf5c1751f4b971e46c4ede85fcac5c59a5ce5ae7c48151f27b24b219c",
-      STARK_BN_LEN);
+  // Pedersen_point_1 x
+  mpz_set_str(
+    pedersen.P[1].x, 
+  "0234287DCBAFFE7F969C748655FCA9E58FA8120B6D56EB0C1080D17957EBE47B", 
+  16);
 
-  // Perderen_point_3
-  // x
-  bignum_from_string(
-      &pedersen.P[3].x,
-      "054302dcb0e6cc1c6e44cca8f61a63bb2ca65048d53fb325d36ff12c49a58202",
-      STARK_BN_LEN);
-  // y
-  bignum_from_string(
-      &pedersen.P[3].y,
-      "01b77b3e37d13504b348046268d8ae25ce98ad783c25561a879dcc77e99c2426",
-      STARK_BN_LEN);
+  // Pedersen_point_1 y
+  mpz_set_str(
+  pedersen.P[1].y, 
+  "03B056F100F96FB21E889527D41F4E39940135DD7A6C94CC6ED0268EE89E5615", 
+  16);
 
-  // Perderen_point_4
-  // x
-  bignum_from_string(
-      &pedersen.P[4].x,
-      "004FA56F376C83DB33F9DAB2656558F3399099EC1DE5E3018B7A6932DBA8AA378",
-      STARK_BN_LEN);
-  // y
-  bignum_from_string(
-      &pedersen.P[4].y,
-      "003FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D",
-      STARK_BN_LEN);
+  // Pedersen_point_2 x
+  mpz_set_str(
+  pedersen.P[2].x, 
+  "04BA4CC166BE8DEC764910F75B45F74B40C690C74709E90F3AA372F0BD2D6997", 
+  16);
+
+  // Pedersen_point_2 y
+  mpz_set_str(
+  pedersen.P[2].y, 
+  "0040301CF5C1751F4B971E46C4EDE85FCAC5C59A5CE5AE7C48151F27B24B219C", 
+  16);
+
+  // Pedersen_point_3 x
+  mpz_set_str(
+  pedersen.P[3].x, 
+  "054302DCB0E6CC1C6E44CCA8F61A63BB2CA65048D53FB325D36FF12C49A58202", 
+  16);
+
+  // Pedersen_point_3 y
+  mpz_set_str(
+  pedersen.P[3].y, 
+  "01B77B3E37D13504B348046268D8AE25CE98AD783C25561A879DCC77E99C2426", 
+  16);
+
+  // Pedersen_point_4 x
+  mpz_set_str(
+  pedersen.P[4].x, 
+  "004FA56F376C83DB33F9DAB2656558F3399099EC1DE5E3018B7A6932DBA8AA378", 
+  16);
+
+  // Pedersen_point_4 y
+  mpz_set_str(
+  pedersen.P[4].y, 
+  "003FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D", 
+  16);
 
   starkPts = &pedersen;
   print_stark_perdersen();
@@ -240,43 +242,44 @@ static void stark_pedersen_init() {
 static void print_stark_curve() {
   char str[STARK_BN_LEN];
 
-  bignum_to_string(&starkCurve->prime, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->prime);
   printf("\nPrime: %s", str);
 
-  bignum_to_string(&starkCurve->G.x, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->G.x);
   printf("\nG x  : %s", str);
 
-  bignum_to_string(&starkCurve->G.y, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->G.y);
   printf("\nG y  : %s", str);
 
-  bignum_to_string(&starkCurve->order, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->order);
   printf("\nOrder: %s", str);
 
-  bignum_to_string(&starkCurve->order_half, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->order_half);
   printf("\nOhalf: %s", str);
 
-  bignum_to_string(&starkCurve->a, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->a);
   printf("\nAlpha: %s", str);
 
-  bignum_to_string(&starkCurve->b, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, starkCurve->b);
   printf("\nBeta : %s\n", str);
 }
 
-static void print_stark_perdersen() {
-  char str[STARK_BN_LEN];
+static void print_stark_pedersen() {
+    char str[STARK_BN_LEN];
 
-  for (int i = 0; i < 5; i++) {
-    bignum_to_string(&starkPts->P[i].x, str, STARK_BN_LEN);
-    printf("P%d x: %s", i, str);
+    for (int i = 0; i < 5; i++) {
+        mpz_get_str(str, 16, starkPts->P[i].x);
+        printf("P%d x: %s", i, str);
 
-    bignum_to_string(&starkPts->P[i].y, str, STARK_BN_LEN);
-    printf(", y: %s\n", str);
-  }
+        mpz_get_str(str, 16, starkPts->P[i].y);
+        printf(", y: %s\n", str);
+    }
 }
 
 // Set cp2 = cp1
 void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
-  *cp2 = *cp1;
+    mpz_set(cp2->x, cp1->x);  // Copy x coordinate
+    mpz_set(cp2->y, cp1->y);  // Copy y coordinate
 }
 
 // internal-bignum
@@ -437,10 +440,73 @@ void stark_point_add(const stark_curve *curve,
 //   stark_point_copy(cp2, res);
 // }
 
+// Using mini-gmp library
+void stark_point_add(const stark_curve *curve,
+                     const stark_point *cp1,
+                     stark_point *cp2,
+                     stark_point *res) {
+    mpz_t lambda, inv, xr, yr;
+
+    mpz_init(lambda);
+    mpz_init(inv);
+    mpz_init(xr);
+    mpz_init(yr);
+
+    if (stark_point_is_infinity(cp1)) {
+        return;
+    }
+    if (stark_point_is_infinity(cp2)) {
+        stark_point_copy(cp1, cp2);
+        return;
+    }
+    if (stark_point_is_negative_of(cp1, cp2)) {
+        stark_point_set_infinity(cp2);
+        return;
+    }
+
+    // inv = (cp2->x - cp1->x) mod prime
+    mpz_sub(inv, cp2->x, cp1->x);
+    mpz_mod(inv, inv, curve->prime);
+
+    // inv = inv^-1 mod prime
+    mpz_invert(inv, inv, curve->prime);
+
+    // lambda = (cp2->y - cp1->y) mod prime
+    mpz_sub(lambda, cp2->y, cp1->y);
+    mpz_mod(lambda, lambda, curve->prime);
+
+    // lambda = lambda * inv mod prime
+    mpz_mul(lambda, lambda, inv);
+    mpz_mod(lambda, lambda, curve->prime);
+
+    // xr = lambda^2 - cp1->x - cp2->x mod prime
+    mpz_mul(xr, lambda, lambda);
+    mpz_sub(xr, xr, cp1->x);
+    mpz_sub(xr, xr, cp2->x);
+    mpz_mod(xr, xr, curve->prime);
+
+    // yr = lambda * (cp1->x - xr) - cp1->y mod prime
+    mpz_sub(yr, cp1->x, xr);
+    mpz_mul(yr, yr, lambda);
+    mpz_sub(yr, yr, cp1->y);
+    mpz_mod(yr, yr, curve->prime);
+
+    // Set cp2 to the result
+    mpz_set(cp2->x, xr);
+    mpz_set(cp2->y, yr);
+
+    stark_point_copy(cp2, res);
+
+    mpz_clear(lambda);
+    mpz_clear(inv);
+    mpz_clear(xr);
+    mpz_clear(yr);
+}
+
 // set point to internal representation of point at infinity
 void stark_point_set_infinity(stark_point *p) {
-  bignum_from_int(&(p->x), 0);
-  bignum_from_int(&(p->y), 0);
+  mpz_set_ui(p->x, 0);  
+  mpz_set_ui(p->y, 0);
 }
 
 // return true iff p represent point at infinity
