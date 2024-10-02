@@ -19,7 +19,7 @@ ELSE()
         file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
-add_executable(${EXECUTABLE} ${SOURCES} vendor/cypherock-bignum/FFT.c vendor/cypherock-bignum/bignum_internal.c vendor/tinybn/bn.c ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
+add_executable(${EXECUTABLE} ${SOURCES} vendor/cypherock-bignum/bignum_internal.c vendor/cypherock-bignum/mini-gmp.c vendor/tinybn/bn.c ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1)
 IF (DEV_SWITCH)
