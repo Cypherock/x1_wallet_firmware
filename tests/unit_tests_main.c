@@ -100,10 +100,13 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(evm_sign_msg_test);
   RUN_TEST_GROUP(near_helper_test);
   RUN_TEST_GROUP(solana_add_account_test);
+  RUN_TEST_GROUP(inheritance_wallet_auth_tests);
+  RUN_TEST_GROUP(inheritance_session_data_test);
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
   RUN_TEST_GROUP(utils_tests);
+  RUN_TEST_GROUP(session_tests);
 }
 
 /**

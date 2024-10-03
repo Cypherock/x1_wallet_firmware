@@ -26,6 +26,9 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define DEFAULT_ATECC_RETRIES 5
+#define SIGNATURE_SIZE 64
+#define POSTFIX1_SIZE 7
+#define POSTFIX2_SIZE 23
 #define DEVICE_SERIAL_SIZE 32
 
 /*****************************************************************************
@@ -56,7 +59,7 @@ typedef struct {
 } atecc_data_t;
 
 extern atecc_data_t atecc_data;
-
+// extern uint8_t challenge_no[32];
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
