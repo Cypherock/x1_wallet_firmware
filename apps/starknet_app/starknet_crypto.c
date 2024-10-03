@@ -96,7 +96,7 @@ stark_pedersen *starkPts;
 static void stark_curve_init();
 static void stark_pedersen_init();
 static void print_stark_curve();
-static void print_stark_perdersen();
+static void print_stark_pedersen();
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -109,7 +109,7 @@ void starknet_init() {
 
 static void stark_curve_init() {
   static stark_curve stark256;
-  char str[STARK_BN_LEN] = {0};
+  // char str[STARK_BN_LEN] = {0};
 
   /* stark_curve_params ref:
   https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
@@ -122,6 +122,14 @@ static void stark_curve_init() {
   struct bn b;             // coefficient 'b' of the elliptic curve OR beta
   */
 
+  // Initialize mpz_t variables in stark256
+  mpz_init(stark256.prime);
+  mpz_init(stark256.G.x);
+  mpz_init(stark256.G.y);
+  mpz_init(stark256.order);
+  mpz_init(stark256.order_half);
+  mpz_init(stark256.a);
+  mpz_init(stark256.b);
 
   // Prime
   mpz_set_str(
@@ -173,7 +181,12 @@ static void stark_pedersen_init() {
   // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
 
   static stark_pedersen pedersen;
-  char str[STARK_BN_LEN] = {0};
+  // char str[STARK_BN_LEN] = {0};
+  // Initialize all mpz_t variables in the pedersen structure
+  for (int i = 0; i < 5; i++) {
+    mpz_init(pedersen.P[i].x);
+    mpz_init(pedersen.P[i].y);
+  }
 
   // Shift_point x
   mpz_set_str(
@@ -236,7 +249,7 @@ static void stark_pedersen_init() {
   16);
 
   starkPts = &pedersen;
-  print_stark_perdersen();
+  print_stark_pedersen();
 }
 
 static void print_stark_curve() {
