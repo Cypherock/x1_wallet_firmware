@@ -241,7 +241,7 @@ void print_hex_array(const char text[],
   printf("%s %d\n", text, length);
 
   for (uint8_t i = 0U; i < length; i++) {
-    printf("%02X ", arr[i]);
+    printf("%02X", arr[i]);
   }
   printf("\n");
 }
