@@ -61,8 +61,9 @@
  *****************************************************************************/
 #include "starknet_crypto.h"
 
-#include "bignum_internal.h"
+// #include "bignum_internal.h"
 #include "mini-gmp.h"
+#include <stdio.h>
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -551,7 +552,7 @@ int stark_point_is_negative_of(const stark_point *p, const stark_point *q) {
 }
 
 void stark_point_multiply(const stark_curve *curve,
-                          const struct bn *k,
+                          const mpz_t k,
                           const stark_point *p,
                           stark_point *res) {
   stark_point temp;
