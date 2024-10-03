@@ -70,7 +70,5 @@ card_error_type_e card_fetch_wallet_list(
  * copied.
  * @return true if the wallet name is successfully fetched, false otherwise.
  */
-bool card_fetch_wallet_name(card_operation_data_t card_data,
-                            const uint8_t *wallet_id,
-                            char *wallet_name);
+bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name);
 #endif /* CARD_FETCH_WALLET_LIST_H */

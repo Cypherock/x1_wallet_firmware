@@ -364,7 +364,7 @@ static bool decode_inheritance_plain_data(
     const uint8_t *data,
     uint16_t data_size,
     inheritance_encrypt_data_with_pin_plain_data_structure_t *plain_data) {
-  if (NULL == data || NULL == plain_data || 0 == data_size) {
+  if (NULL == data || NULL == plain_data) {
     inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                            ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
@@ -539,7 +539,7 @@ static bool serialize_packet(void) {
   for (index = 0; index < encryption_context->data_count - 1; index++) {
     inheritance_fill_tlv(encryption_context->payload.encrypted_data.bytes,
                          &encryption_context->payload.encrypted_data.size,
-                         0x00,    ///< TODO: take this from sdk
+                         encryption_context->plain_data.data[index].tag,
                          encryption_context->data[index].encrypted_data_size,
                          encryption_context->data[index].encrypted_data);
   }
@@ -630,6 +630,10 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
                                        const size_t buffer_len) {
   size_t total_count =
       ((buffer_len + ENCRYPTED_CHUNK_SIZE - 1) / ENCRYPTED_CHUNK_SIZE);
+  // atleast one chunk is required
+  if (total_count == 0) {
+    total_count = 1;
+  }
   size_t remaining_size = (size_t)buffer_len;
   size_t offset = 0;
   inheritance_result_t result =
