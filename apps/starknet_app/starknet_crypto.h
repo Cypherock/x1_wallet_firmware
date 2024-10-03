@@ -59,7 +59,7 @@ void stark_point_add(const stark_curve *curve,
                      stark_point *res);
 void stark_point_double(const stark_curve *curve, stark_point *cp);
 void stark_point_multiply(const stark_curve *curve,
-                          const struct bn *k,
+                          const mpz_t k,
                           const stark_point *p,
                           stark_point *res);
 void stark_point_set_infinity(stark_point *p);
