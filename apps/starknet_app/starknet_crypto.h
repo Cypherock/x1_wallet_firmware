@@ -65,6 +65,7 @@ void stark_point_multiply(const stark_curve *curve,
 void stark_point_set_infinity(stark_point *p);
 int stark_point_is_infinity(const stark_point *p);
 int stark_point_is_equal(const stark_point *p, const stark_point *q);
+int stark_point_is_negative_of(const stark_point *p, const stark_point *q);
 
 void starknet_init();
 
