@@ -264,9 +264,9 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
   char str[100];
   starknet_init();
   stark_point_multiply(starkCurve, stark_public_key, &starkCurve->G, &p);
-  bignum_to_string(&p.x, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, p.x);
   printf("\nstarkPubKey x: %s\n", str);
-  bignum_to_string(&p.y, str, STARK_BN_LEN);
+  mpz_get_str(str, 16, p.y);
   printf("\nstarkPubKey y: %s\n", str);
 
   printf("\n");

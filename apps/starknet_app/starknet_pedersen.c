@@ -134,24 +134,27 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   return true;
 }
 
-void process_single_element(struct bn *element,
+void process_single_element(mpz_t element,
                             stark_point *p1,
                             stark_point *p2,
                             stark_point *result) {
-  ASSERT(bignum_cmp(element, &starkCurve->prime) == SMALLER);
+  ASSERT(mpz_cmp(element, starkCurve->prime) < 0);
 
-  struct bn low_part, high_nibble;
-  bignum_init(&low_part);
-  bignum_init(&high_nibble);
+  mpz_t low_part, high_nibble;
+  mpz_init(low_part);
+  mpz_init(high_nibble);
 
   // Extract the low 248 bits and high bits from the element
-  bignum_and(&low_part, element, element);
-  bignum_rshift(&high_nibble, element, LOW_PART_BITS);
+  // bignum_and(&low_part, element, element);
+  // bignum_rshift(&high_nibble, element, LOW_PART_BITS);
+
+  // Extract the low 248 bits and high bits from the element
+  mpz_and(element, element, low_part);
+  mpz_fdiv_q_2exp(element, high_nibble,  LOW_PART_BITS);
 
   stark_point res1, res2;
-  stark_point_multiply(starkCurve, p1, &low_part, &res1);    // low_part * p1
-  stark_point_multiply(
-      starkCurve, p2, &high_nibble, &res2);             // high_nibble * p2
+  stark_point_multiply(starkCurve, low_part, p1, &res1);          // low_part * p1
+  stark_point_multiply(starkCurve, high_nibble, p2, &res2);             // high_nibble * p2
   stark_point_add(starkCurve, &res1, &res2, result);    // Combine results
 
   stark_point_copy(&res2, result);
