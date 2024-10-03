@@ -100,6 +100,8 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(evm_sign_msg_test);
   RUN_TEST_GROUP(near_helper_test);
   RUN_TEST_GROUP(solana_add_account_test);
+  RUN_TEST_GROUP(starknet_txn_test);
+  RUN_TEST_GROUP(starknet_helper_test);
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif

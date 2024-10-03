@@ -7,3 +7,9 @@
 [submodule "nanopb"]
 	path = vendor/nanopb
 	url = ../nanopb
+[submodule "tinybn"]
+	path = vendor/tinybn
+	url = ../tiny-bignum-c
+[submodule "vendor/cypherock-bignum"]
+	path = vendor/cypherock-bignum
+	url = https://github.com/ayush-1510/starknet-functions.git

@@ -226,6 +226,13 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
   RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
 }
 
+TEST_GROUP_RUNNER(starknet_txn_test) {
+  RUN_TEST_CASE(starknet_txn_test, starknet_get_public_key_action);
+}
+TEST_GROUP_RUNNER(starknet_helper_test) {
+  RUN_TEST_CASE(starknet_helper_test, starknet_pedersen_hash);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
