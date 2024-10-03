@@ -263,7 +263,10 @@ bool starknet_derive_key_from_seed(const uint8_t *seed_key,
 
   char str[100];
   starknet_init();
-  stark_point_multiply(starkCurve, stark_public_key, &starkCurve->G, &p);
+  mpz_t priv_key;
+  mpz_init(priv_key);
+  byte_array_to_mpz(priv_key, stark_private_key, 32);
+  stark_point_multiply(starkCurve, priv_key, &starkCurve->G, &p);
   mpz_get_str(str, 16, p.x);
   printf("\nstarkPubKey x: %s\n", str);
   mpz_get_str(str, 16, p.y);
