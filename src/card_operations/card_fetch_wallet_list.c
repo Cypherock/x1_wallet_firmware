@@ -246,6 +246,7 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   }
 
   if (0 == strlen(wallet_name)) {
+    delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
     return false;
   }
 
