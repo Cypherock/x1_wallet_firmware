@@ -182,7 +182,6 @@ bool get_wallet_name_by_id(const uint8_t *wallet_id,
                            uint8_t *wallet_name,
                            rejection_cb *reject_cb) {
   Wallet wallet = {0};
-#if USE_SIMULATOR == 0
   if (!get_wallet_data_by_id(wallet_id, &wallet, reject_cb)) {
     return false;
   }
@@ -190,6 +189,6 @@ bool get_wallet_name_by_id(const uint8_t *wallet_id,
   if (wallet_name) {
     memcpy(wallet_name, wallet.wallet_name, NAME_SIZE);
   }
-#endif
+
   return true;
 }
