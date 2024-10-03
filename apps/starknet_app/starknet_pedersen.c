@@ -67,7 +67,12 @@
 #include "starknet_context.h"
 #include "starknet_crypto.h"
 #include "starknet_helpers.h"
+#include "mini-gmp-helpers.h"
 
+void process_single_element(mpz_t element,
+                            stark_point *p1,
+                            stark_point *p2,
+                            stark_point *result);
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -96,19 +101,40 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+// void mpz_to_byte_array(mpz_t num, uint8_t *out, size_t out_size) {
+//     size_t countp;
+
+//     // Export the mpz_t value to the byte array
+//     mpz_export(out, &countp, 1, 1, 1, 0, num);
+
+//     // Ensure that the output is padded with leading zeros if necessary
+//     // If the exported size is smaller than the desired output size, fill in leading zeros
+//     if (countp < out_size) {
+//         size_t diff = out_size - countp;
+//         memmove(out + diff, out, countp);
+//         memset(out, 0, diff);
+//     }
+// }
+
 bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   ASSERT(NULL != x);
   ASSERT(NULL != y);
   ASSERT(0 < size);
 
   // Convert to bn
-  char hex[100] = {0};
-  struct bn a, b, result;
+  // char hex[100] = {0};
+  mpz_t a, b, result;
+  mpz_init(a);
+  mpz_init(b);
+  mpz_init(result);
 
-  byte_array_to_hex_string(x, size, hex, size * 2 + 1);
-  bignum_from_string(&a, hex, size);
-  byte_array_to_hex_string(x, size, hex, size * 2 + 1);
-  bignum_from_string(&b, hex, size);
+  // byte_array_to_hex_string(x, size, hex, size * 2 + 1);
+  // bignum_from_string(&a, hex, size);
+  // byte_array_to_hex_string(x, size, hex, size * 2 + 1);
+  // bignum_from_string(&b, hex, size);
+
+  mpz_import(a, size, 1, 1, 1, 0, x);  // Convert x to mpz_t a
+  mpz_import(b, size, 1, 1, 1, 0, y);  // Convert y to mpz_t b
 
   // Get shift point
   stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
@@ -120,16 +146,20 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
 
   // Compute the hash using the Starkware Pedersen hash definition
   stark_point x_part, y_part, hash_point;
-  process_single_element(x, &P_1, &P_2, &x_part);
-  process_single_element(y, &P_3, &P_4, &y_part);
+  // process_single_element(x, &P_1, &P_2, &x_part);
+  // process_single_element(y, &P_3, &P_4, &y_part);
+
+  process_single_element(a, &P_1, &P_2, &x_part);
+  process_single_element(b, &P_3, &P_4, &y_part);
 
   stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part, &hash_point);
   stark_point_add(starkCurve, &hash_point, &y_part, &hash_point);
 
   memzero(hash, 32);
-  memzero(hex, 100);
-  bignum_to_string(&hash_point.x, hex, size * 2 + 1);
-  hex_string_to_byte_array(hex, size * 2 + 1, hash);
+  // memzero(hex, 100);
+  // bignum_to_string(&hash_point.x, hex, size * 2 + 1);
+  // hex_string_to_byte_array(hex, size * 2 + 1, hash);
+  mpz_to_byte_array(hash_point.x, hash, 32);
 
   return true;
 }
