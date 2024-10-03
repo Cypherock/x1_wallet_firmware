@@ -172,7 +172,7 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
   // TODO: seperate UI flow and operations flow entirely
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
   if (!card_fetch_wallet_name(wallet_id, wallet_name)) {
-    return CARD_OPERATION_DEFAULT_INVALID;
+    return CARD_OPERATION_VERIFICATION_FAILED;
   }
 
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;

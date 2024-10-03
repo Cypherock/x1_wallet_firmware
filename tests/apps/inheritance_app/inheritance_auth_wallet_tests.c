@@ -162,7 +162,7 @@ TEST(inheritance_auth_wallet_tests, auth_wallet_valid_wallet_id_fail) {
                           }},
   };
   hex_string_to_byte_array("aff4423b5b3061beb079941bfc4cc8d039083721575d3859748"
-                           "fa4781c6d6c57",    //  wallet not simulated
+                           "fa4781c6d6c57",    //  invalid wallet id
                            64,
                            query.auth_wallet.initiate.wallet_id);
 
