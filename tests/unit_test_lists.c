@@ -230,9 +230,6 @@ TEST_GROUP_RUNNER(inheritance_encryption_tests) {
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
-  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
-  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
-  // RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {
