@@ -232,6 +232,11 @@ TEST_GROUP_RUNNER(inheritance_encryption_tests) {
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
 }
 
+TEST_GROUP_RUNNER(inheritance_decryption_tests) {
+  RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_request);
+  // RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_wallet_id);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
