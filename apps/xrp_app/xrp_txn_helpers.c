@@ -114,13 +114,13 @@ uint16_t decode_length(const uint8_t *byte_data, uint32_t *length) {
     len = byte1;
     bytes_read = 1;
   } else if (byte1 <= 240) {
-    uint8_t byte2 = byte_data[1];
-    len = 193 + ((byte1 - 193) * 256) + byte2;
+    uint16_t byte2 = byte_data[1];
+    len = 193 + (((uint16_t)byte1 - 193) * 256) + byte2;
     bytes_read = 2;
   } else if (byte1 <= 254) {
-    uint8_t byte2 = byte_data[1];
-    uint8_t byte3 = byte_data[2];
-    len = 12481 + ((byte1 - 241) * 65536) + (byte2 * 256) + byte3;
+    uint32_t byte2 = byte_data[1];
+    uint32_t byte3 = byte_data[2];
+    len = 12481 + (((uint32_t)byte1 - 241) * 65536) + (byte2 * 256) + byte3;
     bytes_read = 3;
   }
   *length = len;
@@ -255,7 +255,7 @@ uint16_t fill_BLOB_type(const uint8_t *byte_data,
 
   switch (field_code) {
     case SigningPubKey: {
-      memcpy(txn->SigningPubKey, byte_data, length);
+      memcpy(txn->SigningPubKey, byte_data + bytes_read, length);
       break;
     }
     default: {
@@ -281,11 +281,11 @@ uint16_t fill_ACCOUNT_type(const uint8_t *byte_data,
 
   switch (field_code) {
     case Account: {
-      memcpy(txn->Account, byte_data, length);
+      memcpy(txn->Account, byte_data + bytes_read, length);
       break;
     }
     case Destination: {
-      memcpy(txn->Destination, byte_data, length);
+      memcpy(txn->Destination, byte_data + bytes_read, length);
       break;
     }
     default: {
