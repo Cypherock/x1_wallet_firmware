@@ -89,12 +89,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-const char xrp_b58digits_ordered[B58DIGITS_ORDERED_SIZE] =
-    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
-
 /**
  * @brief Checks if the provided query contains expected request.
  * @details The function performs the check on the request type and if the check
@@ -278,9 +272,6 @@ static bool get_public_key(const uint8_t *seed,
   }
 
   if (NULL != public_key) {
-    // ecdsa_uncompress_pubkey(
-    //     get_curve_by_name(SECP256K1_NAME)->params, node.public_key,
-    //     public_key);
     memcpy(public_key, node.public_key, XRP_PUB_KEY_SIZE);
   }
 
@@ -449,12 +440,13 @@ void xrp_get_pub_keys(xrp_query_t *query) {
     memcpy(prefixed_account_id + 1, public_key_digest, 20);
 
     // xrp uses different base58 dictionary, that's why a custom function
-    if (!custom_base58_encode_check(prefixed_account_id,
-                                    XRP_PREFIXED_ACCOUNT_ID_LENGTH,
-                                    HASHER_SHA2D,
-                                    address,
-                                    XRP_ACCOUNT_ADDRESS_LENGTH + 1,
-                                    xrp_b58digits_ordered)) {
+    if (!base58_encode_check_with_custom_digits_order(
+            prefixed_account_id,
+            XRP_PREFIXED_ACCOUNT_ID_LENGTH,
+            HASHER_SHA2D,
+            address,
+            XRP_ACCOUNT_ADDRESS_LENGTH + 1,
+            XRP_BASE58_DIGITS_ORDERED)) {
       xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
     }
