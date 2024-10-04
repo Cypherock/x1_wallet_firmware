@@ -311,7 +311,7 @@ static void decryption_handle_errors() {
                              ERROR_DATA_FLOW_INVALID_DATA);
     } break;
     case DECRYPTION_CARD_DECRYPTION_FAIL_ERROR:
-    case DECRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
+    // case DECRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
     case DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR:
     case DECRYPTION_ASSERT_MALLOC_ERROR:
     default: {
