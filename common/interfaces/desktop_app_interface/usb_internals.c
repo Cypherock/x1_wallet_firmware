@@ -210,6 +210,12 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
     // Duplicate packets are ignored; Only packets in expected sequence are
     // appended to buffer
     comm_status.curr_cmd_chunk_no = rx_packet->header.chunk_number;
+
+    if ((COMM_BUFFER_SIZE - comm_status.curr_cmd_received_length) <
+        rx_packet->header.payload_length) {
+      return INVALID_PAYLOAD_LENGTH;
+    }
+
     memcpy(comm_io_buffer + comm_status.curr_cmd_received_length,
            rx_packet->payload,
            rx_packet->header.payload_length);
