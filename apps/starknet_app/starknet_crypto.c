@@ -108,6 +108,22 @@ void starknet_init() {
   stark_pedersen_init();
 }
 
+void stark_point_init(stark_point *p) {
+    mpz_init(p->x);
+    mpz_init(p->y);
+}
+
+void stark_point_clear(stark_point *p) {
+    mpz_clear(p->x);
+    mpz_clear(p->y);
+}
+
+void stark_pedersen_clear(stark_pedersen *pedersen) {
+    for (int i = 0; i < 5; i++) {
+        stark_point_clear(&pedersen->P[i]);
+    }
+}
+
 static void stark_curve_init() {
   static stark_curve stark256;
   // char str[STARK_BN_LEN] = {0};
@@ -517,6 +533,46 @@ void stark_point_add(const stark_curve *curve,
     mpz_clear(yr);
 }
 
+void stark_point_double(const stark_curve *curve, stark_point *cp) {
+    if (mpz_cmp_ui(cp->y, 0) == 0) {
+      return;
+    }
+
+    mpz_t lambda, xr, yr, inv;
+    mpz_init(lambda);
+    mpz_init(xr);
+    mpz_init(yr);
+    mpz_init(inv);
+
+    // lambda = (3 * cp->x^2 + curve->a) * (2 * cp->y)^-1 mod prime
+    mpz_mul(lambda, cp->x, cp->x);
+    mpz_mul_ui(lambda, lambda, 3);
+    mpz_add(lambda, lambda, curve->a);
+    mpz_mul_ui(inv, cp->y, 2);  // using inv to store 2 * y
+    mpz_invert(inv, inv, curve->prime);
+    mpz_mul(lambda, lambda, inv);
+    mpz_mod(lambda, lambda, curve->prime);
+
+    // xr = lambda^2 - 2 * cp->x mod prime
+    mpz_mul(xr, lambda, lambda);
+    mpz_submul_ui(xr, cp->x, 2);
+    mpz_mod(xr, xr, curve->prime);
+
+    // yr = lambda * (cp->x - xr) - cp->y mod prime
+    mpz_sub(yr, cp->x, xr);
+    mpz_mul(yr, yr, lambda);
+    mpz_sub(yr, yr, cp->y);
+    mpz_mod(yr, yr, curve->prime);
+
+    mpz_set(cp->x, xr);
+    mpz_set(cp->y, yr);
+
+    mpz_clear(lambda);
+    mpz_clear(xr);
+    mpz_clear(yr);
+    mpz_clear(inv);
+}
+
 // set point to internal representation of point at infinity
 void stark_point_set_infinity(stark_point *p) {
   mpz_set_ui(p->x, 0);  
@@ -557,6 +613,8 @@ void stark_point_multiply(const stark_curve *curve,
                           stark_point *res) {
   stark_point temp;
   stark_point R;
+  stark_point_init(&temp);
+  stark_point_init(&R);
   stark_point_set_infinity(&R);    // Initialize R to the point at infinity
   stark_point_copy(p, &temp);      // Copy the input point p to temp
 
@@ -564,7 +622,7 @@ void stark_point_multiply(const stark_curve *curve,
   // significant
   for (int i = 256 - 1; i >= 0; i--) {
     // Double the current point temp
-    stark_point_add(curve, &temp, &temp, &temp);
+    stark_point_double(curve, &temp);
 
     // If the i-th bit of k is set, add temp to the result R
     if (mpz_tstbit(k, i)) {
@@ -574,6 +632,8 @@ void stark_point_multiply(const stark_curve *curve,
 
   // Copy the result R to the output parameter res
   stark_point_copy(&R, res);
+  stark_point_clear(&temp);
+  stark_point_clear(&R);
 }
 
 // int bn_bit_length(const struct bn *k) {

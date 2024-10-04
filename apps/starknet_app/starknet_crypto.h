@@ -52,6 +52,8 @@ extern stark_pedersen *starkPts;
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+void stark_point_init(stark_point *p);
+void stark_point_clear(stark_point *p);
 void stark_point_copy(const stark_point *cp1, stark_point *cp2);
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
@@ -68,5 +70,6 @@ int stark_point_is_equal(const stark_point *p, const stark_point *q);
 int stark_point_is_negative_of(const stark_point *p, const stark_point *q);
 
 void starknet_init();
+void stark_pedersen_clear(stark_pedersen *pedersen);
 
 #endif    // STARKNET_CRYPTO_H
