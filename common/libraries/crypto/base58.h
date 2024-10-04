@@ -33,10 +33,10 @@
 #define B58DIGITS_ORDERED_SIZE 61
 #define B58DIGITS_MAP_SIZE 128
 
-extern char b58digits_ordered[B58DIGITS_ORDERED_SIZE];
-extern int8_t b58digits_map[B58DIGITS_MAP_SIZE];
+extern const char b58digits_ordered[B58DIGITS_ORDERED_SIZE];
+extern const int8_t b58digits_map[B58DIGITS_MAP_SIZE];
 
-int custom_base58_encode_check(
+int base58_encode_check_with_custom_digits_order(
     const uint8_t *data,
     int len,
     HasherType hasher_type,

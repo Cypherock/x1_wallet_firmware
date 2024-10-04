@@ -23,6 +23,8 @@
 #define XRP_PUB_KEY_SIZE 33
 #define XRP_PREFIXED_ACCOUNT_ID_LENGTH 21
 #define XRP_ACCOUNT_ADDRESS_LENGTH 34
+#define XRP_BASE58_DIGITS_ORDERED                                              \
+  "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
 
 /*****************************************************************************
  * TYPEDEFS

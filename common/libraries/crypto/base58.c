@@ -30,9 +30,9 @@
 #include "ripemd160.h"
 #include "sha2.h"
 
-char b58digits_ordered[B58DIGITS_ORDERED_SIZE] =
+const char b58digits_ordered[B58DIGITS_ORDERED_SIZE] =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-int8_t b58digits_map[B58DIGITS_MAP_SIZE] = {
+const int8_t b58digits_map[B58DIGITS_MAP_SIZE] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,
@@ -152,7 +152,12 @@ int b58check(const void *bin,
   return binc[0];
 }
 
-bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
+bool b58enc_with_custom_digits_order(
+    char *b58,
+    size_t *b58sz,
+    const void *data,
+    size_t binsz,
+    const char input_b58digits_ordered[B58DIGITS_ORDERED_SIZE]) {
   const uint8_t *bin = data;
   int carry = 0;
   size_t i = 0, j = 0, high = 0, zcount = 0;
@@ -186,20 +191,22 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
   }
 
   if (zcount)
-    memset(b58, b58digits_ordered[0], zcount);
+    memset(b58, input_b58digits_ordered[0], zcount);
   for (i = zcount; j < size; ++i, ++j)
-    b58[i] = b58digits_ordered[buf[j]];
+    b58[i] = input_b58digits_ordered[buf[j]];
   b58[i] = '\0';
   *b58sz = i + 1;
 
   return true;
 }
 
-int base58_encode_check(const uint8_t *data,
-                        int datalen,
-                        HasherType hasher_type,
-                        char *str,
-                        int strsize) {
+int base58_encode_check_with_custom_digits_order(
+    const uint8_t *data,
+    int datalen,
+    HasherType hasher_type,
+    char *str,
+    int strsize,
+    const char input_b58digits_ordered[B58DIGITS_ORDERED_SIZE]) {
   if (datalen > 128) {
     return 0;
   }
@@ -209,26 +216,24 @@ int base58_encode_check(const uint8_t *data,
   memcpy(buf, data, datalen);
   hasher_Raw(hasher_type, data, datalen, hash);
   size_t res = strsize;
-  bool success = b58enc(str, &res, buf, datalen + 4);
+  bool success = b58enc_with_custom_digits_order(
+      str, &res, buf, datalen + 4, input_b58digits_ordered);
   memzero(buf, sizeof(buf));
   return success ? res : 0;
 }
 
-int custom_base58_encode_check(
-    const uint8_t *data,
-    int datalen,
-    HasherType hasher_type,
-    char *str,
-    int strsize,
-    const char input_b58digits_ordered[B58DIGITS_ORDERED_SIZE]) {
-  char temp[B58DIGITS_ORDERED_SIZE];
-  memcpy(temp, b58digits_ordered, B58DIGITS_ORDERED_SIZE);
-  memcpy(b58digits_ordered, input_b58digits_ordered, B58DIGITS_ORDERED_SIZE);
+bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
+  return b58enc_with_custom_digits_order(
+      b58, b58sz, data, binsz, b58digits_ordered);
+}
 
-  int res = base58_encode_check(data, datalen, hasher_type, str, strsize);
-
-  memcpy(b58digits_ordered, temp, B58DIGITS_ORDERED_SIZE);
-  return res;
+int base58_encode_check(const uint8_t *data,
+                        int datalen,
+                        HasherType hasher_type,
+                        char *str,
+                        int strsize) {
+  return base58_encode_check_with_custom_digits_order(
+      data, datalen, hasher_type, str, strsize, b58digits_ordered);
 }
 
 int base58_decode_check(const char *str,
