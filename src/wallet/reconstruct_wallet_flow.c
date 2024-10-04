@@ -385,7 +385,7 @@ bool reconstruct_seed_without_passphrase(const uint8_t *wallet_id,
   if ((NULL == wallet_id) || (NULL == seed_out)) {
     return false;
   }
-
+#if USE_SIMULATOR == 0
   uint8_t result = false;
 
   clear_wallet_data();
@@ -402,6 +402,9 @@ bool reconstruct_seed_without_passphrase(const uint8_t *wallet_id,
   mnemonic_clear();
   clear_wallet_data();
   return result;
+#else
+  return true;
+#endif
 }
 
 bool reconstruct_seed(const uint8_t *wallet_id,

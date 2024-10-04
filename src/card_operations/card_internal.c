@@ -257,7 +257,7 @@ static bool load_card_session_key(uint8_t *card_key_id) {
 
 card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
   ASSERT(NULL != card_data);
-
+#if USE_SIMULATOR == 0
   card_data->error_type = CARD_OPERATION_DEFAULT_INVALID;
   card_data->error_message = NULL;
   card_data->nfc_data.recovery_mode = 0;
@@ -325,6 +325,9 @@ card_error_type_e card_initialize_applet(card_operation_data_t *card_data) {
 
   // Shouldn't reach here
   NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_DEFAULT_INVALID);
+#else
+  return CARD_OPERATION_SUCCESS;
+#endif
 }
 
 card_error_type_e card_handle_errors(card_operation_data_t *card_data) {

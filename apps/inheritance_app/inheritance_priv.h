@@ -82,6 +82,18 @@ typedef struct {
   inheritance_decrypt_data_with_pin_decrypted_data_structure_t response_payload;
 } inheritance_decryption_context_t;
 
+typedef enum {
+  AUTH_WALLET_DEFAULT_ERROR = 0,
+  AUTH_WALLET_MALLOC_ERROR,
+  AUTH_WALLET_INVALID_INPUT_ERROR,
+  AUTH_WALLET_USER_ABORT_ERROR,
+  AUTH_WALLET_SEED_GENERATION_ERROR,
+  AUTH_WALLET_PAIRING_ERROR,
+  AUTH_WALLET_INVALID_WALLET_ID_ERROR,
+  AUTH_WALLET_CARD_ENCRYPTION_ERROR,
+  AUTH_WALLET_SIGNATURE_VERIFICATION_ERROR,
+  AUTH_WALLET_OK,
+} auth_wallet_error_type_e;
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
@@ -94,7 +106,7 @@ typedef struct {
  * @brief Entry point to auth wallet flow
  *
  */
-void inheritance_auth_wallet(inheritance_query_t *query);
+auth_wallet_error_type_e inheritance_auth_wallet(inheritance_query_t *query);
 
 /**
  * @brief Handler for inheritance messages encrytion flow.

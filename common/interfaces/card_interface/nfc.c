@@ -59,6 +59,8 @@
 #include "nfc.h"
 
 #include <math.h>
+#include <stdint.h>
+#include <string.h>
 
 #include "app_error.h"
 #include "application_startup.h"
@@ -66,6 +68,10 @@
 #include "sys_state.h"
 #include "utils.h"
 #include "wallet_utilities.h"
+#if USE_SIMULATOR == 1
+#include "flash_struct_priv.h"
+#include "wallet.h"
+#endif
 
 #define SEND_PACKET_MAX_LEN 236
 #define RECV_PACKET_MAX_ENC_LEN 242
@@ -304,6 +310,7 @@ ISO7816 nfc_unpair() {
 }
 
 ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
+#if USE_SIMULATOR == 0
   // Select card before.
   ISO7816 status_word;
   uint8_t send_apdu[300], send_len;
@@ -335,6 +342,22 @@ ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
     return status_word;
   }
   return 0;
+#else
+  wallet_list->count = 2;
+  char *wallet_name[] = {"DEV001", "DEV002"};
+  for (uint8_t index = 0; index < 2;
+       index++) {    // TODO: Use macros for simulator wallet count
+    memcpy(wallet_list->wallet[index].id,
+           flash_ram_instance.wallets[index].wallet_id,
+           WALLET_ID_SIZE);
+    memcpy(wallet_list->wallet[index].name,
+           flash_ram_instance.wallets[index].wallet_name,
+           strlen(wallet_name[index]));
+    wallet_list->wallet[index].locked =
+        flash_ram_instance.wallets[index].is_wallet_locked;
+  }
+  return SW_NO_ERROR;
+#endif
 }
 
 ISO7816 nfc_add_wallet(const struct Wallet *wallet) {
@@ -584,10 +607,11 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   return status_word;
 #else
   // TODO: Standardize simulator/test wallet info
-  memcpy(name, "FIRST", 5);
+  memcpy(name, "DEV002", 6);
   memcpy(encrypted_data, name, 1);
   memcpy(encrypted_data + 1, plain_data, plain_data_size);
   *encrypted_data_size = 1 + plain_data_size;
+  return SW_NO_ERROR;
 #endif
 }
 
