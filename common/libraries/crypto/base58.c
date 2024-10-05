@@ -22,15 +22,17 @@
  */
 
 #include "base58.h"
+
 #include <stdbool.h>
 #include <string.h>
+
 #include "memzero.h"
 #include "ripemd160.h"
 #include "sha2.h"
 
-const char b58digits_ordered[] =
+const char b58digits_ordered[B58DIGITS_ORDERED_SIZE] =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const int8_t b58digits_map[] = {
+const int8_t b58digits_map[B58DIGITS_MAP_SIZE] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,
@@ -71,7 +73,8 @@ bool b58tobin(void *bin, size_t *binszp, const char *b58) {
   memzero(outi, sizeof(outi));
 
   // Leading zeros, just count
-  for (i = 0; i < b58sz && b58u[i] == '1'; ++i) ++zerocount;
+  for (i = 0; i < b58sz && b58u[i] == '1'; ++i)
+    ++zerocount;
 
   for (; i < b58sz; ++i) {
     if (b58u[i] & 0x80)
@@ -126,31 +129,42 @@ bool b58tobin(void *bin, size_t *binszp, const char *b58) {
   return true;
 }
 
-int b58check(const void *bin, size_t binsz, HasherType hasher_type,
+int b58check(const void *bin,
+             size_t binsz,
+             HasherType hasher_type,
              const char *base58str) {
   unsigned char buf[32] = {0};
   const uint8_t *binc = bin;
   unsigned i = 0;
-  if (binsz < 4) return -4;
+  if (binsz < 4)
+    return -4;
   hasher_Raw(hasher_type, bin, binsz - 4, buf);
-  if (memcmp(&binc[binsz - 4], buf, 4)) return -1;
+  if (memcmp(&binc[binsz - 4], buf, 4))
+    return -1;
 
   // Check number of zeros is correct AFTER verifying checksum (to avoid
   // possibility of accessing base58str beyond the end)
   for (i = 0; binc[i] == '\0' && base58str[i] == '1'; ++i) {
-  }  // Just finding the end of zeros, nothing to do in loop
-  if (binc[i] == '\0' || base58str[i] == '1') return -3;
+  }    // Just finding the end of zeros, nothing to do in loop
+  if (binc[i] == '\0' || base58str[i] == '1')
+    return -3;
 
   return binc[0];
 }
 
-bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
+bool b58enc_with_custom_digits_order(
+    char *b58,
+    size_t *b58sz,
+    const void *data,
+    size_t binsz,
+    const char input_b58digits_ordered[B58DIGITS_ORDERED_SIZE]) {
   const uint8_t *bin = data;
   int carry = 0;
   size_t i = 0, j = 0, high = 0, zcount = 0;
   size_t size = 0;
 
-  while (zcount < binsz && !bin[zcount]) ++zcount;
+  while (zcount < binsz && !bin[zcount])
+    ++zcount;
 
   size = (binsz - zcount) * 138 / 100 + 1;
   uint8_t buf[size];
@@ -176,16 +190,23 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
     return false;
   }
 
-  if (zcount) memset(b58, '1', zcount);
-  for (i = zcount; j < size; ++i, ++j) b58[i] = b58digits_ordered[buf[j]];
+  if (zcount)
+    memset(b58, input_b58digits_ordered[0], zcount);
+  for (i = zcount; j < size; ++i, ++j)
+    b58[i] = input_b58digits_ordered[buf[j]];
   b58[i] = '\0';
   *b58sz = i + 1;
 
   return true;
 }
 
-int base58_encode_check(const uint8_t *data, int datalen,
-                        HasherType hasher_type, char *str, int strsize) {
+int base58_encode_check_with_custom_digits_order(
+    const uint8_t *data,
+    int datalen,
+    HasherType hasher_type,
+    char *str,
+    int strsize,
+    const char input_b58digits_ordered[B58DIGITS_ORDERED_SIZE]) {
   if (datalen > 128) {
     return 0;
   }
@@ -195,12 +216,29 @@ int base58_encode_check(const uint8_t *data, int datalen,
   memcpy(buf, data, datalen);
   hasher_Raw(hasher_type, data, datalen, hash);
   size_t res = strsize;
-  bool success = b58enc(str, &res, buf, datalen + 4);
+  bool success = b58enc_with_custom_digits_order(
+      str, &res, buf, datalen + 4, input_b58digits_ordered);
   memzero(buf, sizeof(buf));
   return success ? res : 0;
 }
 
-int base58_decode_check(const char *str, HasherType hasher_type, uint8_t *data,
+bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz) {
+  return b58enc_with_custom_digits_order(
+      b58, b58sz, data, binsz, b58digits_ordered);
+}
+
+int base58_encode_check(const uint8_t *data,
+                        int datalen,
+                        HasherType hasher_type,
+                        char *str,
+                        int strsize) {
+  return base58_encode_check_with_custom_digits_order(
+      data, datalen, hasher_type, str, strsize, b58digits_ordered);
+}
+
+int base58_decode_check(const char *str,
+                        HasherType hasher_type,
+                        uint8_t *data,
                         int datalen) {
   if (datalen > 128) {
     return 0;
@@ -224,20 +262,25 @@ int b58gphcheck(const void *bin, size_t binsz, const char *base58str) {
   unsigned char buf[32] = {0};
   const uint8_t *binc = bin;
   unsigned i = 0;
-  if (binsz < 4) return -4;
-  ripemd160(bin, binsz - 4, buf);  // No double SHA256, but a single RIPEMD160
-  if (memcmp(&binc[binsz - 4], buf, 4)) return -1;
+  if (binsz < 4)
+    return -4;
+  ripemd160(bin, binsz - 4, buf);    // No double SHA256, but a single RIPEMD160
+  if (memcmp(&binc[binsz - 4], buf, 4))
+    return -1;
 
   // Check number of zeros is correct AFTER verifying checksum (to avoid
   // possibility of accessing base58str beyond the end)
   for (i = 0; binc[i] == '\0' && base58str[i] == '1'; ++i) {
-  }  // Just finding the end of zeros, nothing to do in loop
-  if (binc[i] == '\0' || base58str[i] == '1') return -3;
+  }    // Just finding the end of zeros, nothing to do in loop
+  if (binc[i] == '\0' || base58str[i] == '1')
+    return -3;
 
   return binc[0];
 }
 
-int base58gph_encode_check(const uint8_t *data, int datalen, char *str,
+int base58gph_encode_check(const uint8_t *data,
+                           int datalen,
+                           char *str,
                            int strsize) {
   if (datalen > 128) {
     return 0;
@@ -246,7 +289,7 @@ int base58gph_encode_check(const uint8_t *data, int datalen, char *str,
   memset(buf, 0, sizeof(buf));
   uint8_t *hash = buf + datalen;
   memcpy(buf, data, datalen);
-  ripemd160(data, datalen, hash);  // No double SHA256, but a single RIPEMD160
+  ripemd160(data, datalen, hash);    // No double SHA256, but a single RIPEMD160
   size_t res = strsize;
   bool success = b58enc(str, &res, buf, datalen + 4);
   memzero(buf, sizeof(buf));
