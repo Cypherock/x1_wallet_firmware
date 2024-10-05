@@ -13,8 +13,8 @@
  * INCLUDES
  *****************************************************************************/
 
-#include <xrp/core.pb.h>
 #include <stdint.h>
+#include <xrp/core.pb.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -41,8 +41,8 @@
  * @return bool True if decoding was successful, else false
  */
 bool decode_xrp_query(const uint8_t *data,
-                       uint16_t data_size,
-                       xrp_query_t *query_out);
+                      uint16_t data_size,
+                      xrp_query_t *query_out);
 
 /**
  * @brief Encodes the XRP result with `XRP_RESULT_FIELDS` to byte-stream
@@ -55,9 +55,9 @@ bool decode_xrp_query(const uint8_t *data,
  * @return bool True if decoding was successful, else false
  */
 bool encode_xrp_result(const xrp_result_t *result,
-                        uint8_t *buffer,
-                        uint16_t max_buffer_len,
-                        size_t *bytes_written_out);
+                       uint8_t *buffer,
+                       uint16_t max_buffer_len,
+                       size_t *bytes_written_out);
 
 /**
  * @brief This API checks if the `which_request` field of the query of type
