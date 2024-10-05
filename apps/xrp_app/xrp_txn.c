@@ -338,11 +338,13 @@ static bool get_user_verification(void) {
   memcpy(prefixed_account_id + 1, decoded_utxn->Destination, 20);
 
   // xrp uses different base58 dictionary, that's why a custom function
-  if (!xrp_base58_encode_check(prefixed_account_id,
-                               XRP_PREFIXED_ACCOUNT_ID_LENGTH,
-                               HASHER_SHA2D,
-                               to_address,
-                               XRP_ACCOUNT_ADDRESS_LENGTH + 1)) {
+  if (!base58_encode_check_with_custom_digits_order(
+          prefixed_account_id,
+          XRP_PREFIXED_ACCOUNT_ID_LENGTH,
+          HASHER_SHA2D,
+          to_address,
+          XRP_ACCOUNT_ADDRESS_LENGTH + 1,
+          XRP_BASE58_DIGITS_ORDERED)) {
     xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
   }
