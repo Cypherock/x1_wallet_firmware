@@ -57,8 +57,7 @@ void stark_point_clear(stark_point *p);
 void stark_point_copy(const stark_point *cp1, stark_point *cp2);
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
-                     stark_point *cp2,
-                     stark_point *res);
+                     stark_point *cp2);
 void stark_point_double(const stark_curve *curve, stark_point *cp);
 void stark_point_multiply(const stark_curve *curve,
                           const mpz_t k,
