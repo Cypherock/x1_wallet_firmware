@@ -308,173 +308,13 @@ static void print_stark_pedersen() {
 
 // Set cp2 = cp1
 void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
-    mpz_set(cp2->x, cp1->x);  // Copy x coordinate
-    mpz_set(cp2->y, cp1->y);  // Copy y coordinate
+    mpz_set(cp2->x, cp1->x);  
+    mpz_set(cp2->y, cp1->y);  
 }
 
-// internal-bignum
-// void stark_point_add(const stark_curve *curve,
-//                      const stark_point *cp1,
-//                      stark_point *cp2,
-//                      stark_point *res) {
-//   struct bn inv = {0}, xr = {0}, yr = {0};
-//   BigInt1024 prime = {0}, x1 = {0}, x2 = {0}, y1 = {0}, y2 = {0}, res_i = {0},
-//              lambda_i = {0}, inv_i = {0}, xr_i = {0}, yr_i = {0};
-
-//   char str[100] = {0};
-
-//   if (stark_point_is_infinity(cp1)) {
-//     return;
-//   }
-//   if (stark_point_is_infinity(cp2)) {
-//     stark_point_copy(cp1, cp2);
-//     return;
-//   }
-//   if (stark_point_is_negative_of(cp1, cp2)) {
-//     stark_point_set_infinity(cp2);
-//     return;
-//   }
-
-//   //  convert to internal-bignum struct
-//   bignum_to_string(&curve->prime, str, STARK_BN_LEN);
-//   bignumFromHexString(&prime, str, STARK_BN_LEN);
-
-//   bignum_to_string(&(cp2->x), str, STARK_BN_LEN);
-//   bignumFromHexString(&x1, str, STARK_BN_LEN);
-//   bignum_to_string(&(cp1->x), str, STARK_BN_LEN);
-//   bignumFromHexString(&x2, str, STARK_BN_LEN);
-
-//   bignum_to_string(&(cp2->y), str, STARK_BN_LEN);
-//   bignumFromHexString(&y1, str, STARK_BN_LEN);
-//   bignum_to_string(&(cp1->y), str, STARK_BN_LEN);
-//   bignumFromHexString(&y2, str, STARK_BN_LEN);
-
-//   // bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
-//   inv_i = subtractBigInt(&x1, &x2);
-//   bn_mod_internal(&inv_i, &prime);
-
-//   /// convert to tiny-bignum struct
-//   bignumToHexString(&inv_i, str, STARK_BN_LEN);
-//   bignum_from_string(&inv, str, STARK_BN_LEN);
-
-//   bn_inverse(&inv, &curve->prime);    // TODO: In internal bignum lib
-
-//   // convert to internal-bignum struct
-//   bignum_to_string(&inv_i, str, STARK_BN_LEN);
-//   bignumFromHexString(&inv, str, STARK_BN_LEN);
-
-//   // bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
-//   lambda_i = subtractBigInt(&y1, &y2);
-//   bn_mod_internal(&lambda_i, &prime);
-
-//   // bignum_mul(&inv, &lambda, &curve->prime);
-//   res_i = multiplyFFT(&inv_i, &lambda_i);
-//   bn_mod_internal(&res, &prime);
-
-//   // [xr = lambda^2 - x1 - x2]
-//   xr_i = lambda_i;
-//   // bignum_mul(&xr_i, &xr_i, &curve->prime);
-//   res_i = multiplyFFT(&inv_i, &lambda_i);
-//   bn_mod_internal(&res, &prime);
-
-//   yr_i = x1;
-
-//   // bn_addmod(&yr, &(cp2->x), &curve->prime);
-//   res_i = addBigInt(&yr_i, &x2);
-//   bn_mod_internal(&lambda_i, &prime);
-
-//   // bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
-//   xr_i = subtractBigInt(&xr_i, &y2);
-//   bn_mod_internal(&xr_i, &prime);
-
-//   /// convert to tiny-bignum struct
-//   bignumToHexString(&xr_i, str, STARK_BN_LEN);
-//   bignum_from_string(&xr, str, STARK_BN_LEN);
-
-//   bn_fast_mod(&xr, &curve->prime);    // TODO: In internal bignum lib
-
-//   /// convert to internal-bignum struct
-//   bignum_to_string(&inv, str, STARK_BN_LEN);
-//   bignumFromHexString(&xr_i, str, STARK_BN_LEN);
-
-//   bn_mod_internal(&xr_i, &prime);
-
-//   // [yr = lambda (x1 - xr) - y1]
-//   // bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
-//   yr_i = subtractBigInt(&x1, &xr_i);
-//   bn_mod_internal(&yr_i, &prime);
-
-//   // bignum_mul(&lambda, &yr, &curve->prime);
-//   res_i = multiplyFFT(&lambda_i, &yr_i);
-//   bn_mod_internal(&res, &prime);
-
-//   // bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
-//   yr_i = subtractBigInt(&xr_i, &y1);
-//   bn_mod_internal(&yr_i, &prime);
-
-//   /// convert to tiny-bignum struct
-//   bignumToHexString(&yr_i, str, STARK_BN_LEN);
-//   bignum_from_string(&yr, str, STARK_BN_LEN);
-
-//   bignum_mod(&yr, &curve->prime, &yr);    // TODO: In internal bignum lib
-
-//   cp2->x = xr;
-//   cp2->y = yr;
-
-//   stark_point_copy(cp2, res);
-// }
-
-// tiny-bignum
-// cp2 = cp1 + cp2
-// void stark_point_add(const stark_curve *curve,
-//                      const stark_point *cp1,
-//                      stark_point *cp2,
-//                      stark_point *res) {
-//   struct bn lambda = {0}, inv = {0}, xr = {0}, yr = {0};
-
-//   if (stark_point_is_infinity(cp1)) {
-//     return;
-//   }
-//   if (stark_point_is_infinity(cp2)) {
-//     stark_point_copy(cp1, cp2);
-//     return;
-//   }
-//   if (stark_point_is_negative_of(cp1, cp2)) {
-//     stark_point_set_infinity(cp2);
-//     return;
-//   }
-
-//   bignum_subtractmod(&(cp2->x), &(cp1->x), &inv, &curve->prime);
-//   bn_inverse(&inv, &curve->prime);
-//   bignum_subtractmod(&(cp2->y), &(cp1->y), &lambda, &curve->prime);
-//   bignum_mul(&inv, &lambda, &curve->prime);
-
-//   // xr = lambda^2 - x1 - x2
-//   xr = lambda;
-//   bignum_mul(&xr, &xr, &curve->prime);
-//   yr = cp1->x;
-//   bn_addmod(&yr, &(cp2->x), &curve->prime);
-//   bignum_subtractmod(&xr, &yr, &xr, &curve->prime);
-//   bn_fast_mod(&xr, &curve->prime);
-//   bn_mod(&xr, &curve->prime);
-
-//   // yr = lambda (x1 - xr) - y1
-//   bignum_subtractmod(&(cp1->x), &xr, &yr, &curve->prime);
-//   bignum_mul(&lambda, &yr, &curve->prime);
-//   bignum_subtractmod(&yr, &(cp1->y), &yr, &curve->prime);
-//   bignum_mod(&yr, &curve->prime, &yr);
-
-//   cp2->x = xr;
-//   cp2->y = yr;
-
-//   stark_point_copy(cp2, res);
-// }
-
-// Using mini-gmp library
 void stark_point_add(const stark_curve *curve,
                      const stark_point *cp1,
-                     stark_point *cp2,
-                     stark_point *res) {
+                     stark_point *cp2) {
     mpz_t lambda, inv, xr, yr;
 
     mpz_init(lambda);
@@ -525,8 +365,6 @@ void stark_point_add(const stark_curve *curve,
     mpz_set(cp2->x, xr);
     mpz_set(cp2->y, yr);
 
-    stark_point_copy(cp2, res);
-
     mpz_clear(lambda);
     mpz_clear(inv);
     mpz_clear(xr);
@@ -534,6 +372,8 @@ void stark_point_add(const stark_curve *curve,
 }
 
 void stark_point_double(const stark_curve *curve, stark_point *cp) {
+  
+    // Ref: https://github.com/starkware-libs/starkex-for-spot-trading/blob/607f0b4ce507e1d95cd018d206a2797f6ba4aab4/src/starkware/crypto/starkware/crypto/signature/math_utils.py
     if (mpz_cmp_ui(cp->y, 0) == 0) {
       return;
     }
@@ -611,51 +451,32 @@ void stark_point_multiply(const stark_curve *curve,
                           const mpz_t k,
                           const stark_point *p,
                           stark_point *res) {
-  stark_point temp;
-  stark_point R;
-  stark_point_init(&temp);
-  stark_point_init(&R);
-  stark_point_set_infinity(&R);    // Initialize R to the point at infinity
-  stark_point_copy(p, &temp);      // Copy the input point p to temp
+    // Ref: https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication
 
-  // Iterate over each bit of k from the most significant to the least
-  // significant
-  for (int i = 256 - 1; i >= 0; i--) {
-    // Double the current point temp
-    stark_point_double(curve, &temp);
+    stark_point temp;
+    stark_point R;
+    stark_point_init(&temp);
+    stark_point_init(&R);
+    stark_point_set_infinity(&R);    // Initialize R to the point at infinity
+    stark_point_copy(p, &temp);      // Copy the input point p to temp
 
-    // If the i-th bit of k is set, add temp to the result R
-    if (mpz_tstbit(k, i)) {
-      stark_point_add(curve, &R, &temp, &R);
+    // Iterate over each bit of k from the least significant to the most significant
+    for (int i = 0; i < 256; i++) {
+        // If the i-th bit of k is set, add temp to the result R
+        if (mpz_tstbit(k, i)) {
+            stark_point_add(curve, &temp, &R);
+        }
+
+        // Double the current point temp
+        stark_point_double(curve, &temp);
     }
-  }
 
-  // Copy the result R to the output parameter res
-  stark_point_copy(&R, res);
-  stark_point_clear(&temp);
-  stark_point_clear(&R);
+    // Copy the result R to the output parameter res
+    stark_point_copy(&R, res);
+
+    stark_point_clear(&temp);
+    stark_point_clear(&R);
 }
-
-// int bn_bit_length(const struct bn *k) {
-//   int bit_length = 0;
-
-//   // Start from the most significant element of the array
-//   for (int i = BN_ARRAY_SIZE - 1; i >= 0; i--) {
-//     if (k->array[i] != 0) {
-//       DTYPE_TMP word = k->array[i];
-//       // Calculate the bit length of this word
-//       while (word) {
-//         word >>= 1;
-//         bit_length++;
-//       }
-//       // Add the offset of this word
-//       bit_length += i * (WORD_SIZE * 8);
-//       break;
-//     }
-//   }
-
-//   return bit_length;
-// }
 
 int bn_bit_length(const mpz_t k) {
     if (mpz_cmp_ui(k, 0) == 0) {
@@ -663,21 +484,6 @@ int bn_bit_length(const mpz_t k) {
     }
     return mpz_sizeinbase(k, 2);
 }
-
-// int bn_is_bit_set(const struct bn *k, int bit_idx) {
-//   int word_idx =
-//       bit_idx / (WORD_SIZE * 8);    // Determine which word contains the bit
-//   int bit_in_word =
-//       bit_idx % (WORD_SIZE * 8);    // Determine which bit in the word
-
-//   // Ensure that word_idx is within bounds
-//   if (word_idx >= BN_ARRAY_SIZE) {
-//     return 0;    // Out of bounds, so the bit is not set
-//   }
-
-//   // Check if the specific bit is set in the corresponding word
-//   return (k->array[word_idx] & ((DTYPE)1 << bit_in_word)) != 0;
-// }
 
 int bn_is_bit_set(const mpz_t k, int bit_idx) {
     return mpz_tstbit(k, bit_idx);
