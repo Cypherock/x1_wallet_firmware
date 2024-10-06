@@ -152,8 +152,9 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   process_single_element(a, &P_1, &P_2, &x_part);
   process_single_element(b, &P_3, &P_4, &y_part);
 
-  stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part, &hash_point);
-  stark_point_add(starkCurve, &hash_point, &y_part, &hash_point);
+  stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part);
+  stark_point_add(starkCurve, &x_part, &y_part);
+  stark_point_copy(&y_part, &hash_point);
 
   memzero(hash, 32);
   // memzero(hex, 100);
@@ -185,7 +186,7 @@ void process_single_element(mpz_t element,
   stark_point res1, res2;
   stark_point_multiply(starkCurve, low_part, p1, &res1);          // low_part * p1
   stark_point_multiply(starkCurve, high_nibble, p2, &res2);             // high_nibble * p2
-  stark_point_add(starkCurve, &res1, &res2, result);    // Combine results
+  stark_point_add(starkCurve, &res1, &res2);    // Combine results
 
   stark_point_copy(&res2, result);
 }
