@@ -309,7 +309,7 @@ void get_firmaware_version(uint16_t pid,
 // TODO: Update len return size to 16 bit
 void random_generate(uint8_t *arr, int len) {
   ASSERT(len <= 32);
-
+#if USE_SIMULATOR == 0
   ASSERT(crypto_random_generate(arr, len) == true);
 
   // using atecc
@@ -330,6 +330,13 @@ void random_generate(uint8_t *arr, int len) {
   for (int i = 0; i < len; ++i) {
     arr[i] ^= temp[i];
   }
+#else
+  uint8_t get_ec_random[32] = {0x0b, 0x78, 0x9a, 0x1e, 0xb8, 0x0b, 0x7a, 0xac,
+                               0x97, 0xa1, 0x54, 0xd7, 0x0c, 0x5a, 0x53, 0x95,
+                               0x6f, 0x9c, 0xed, 0x97, 0x6f, 0xc7, 0xed, 0x7f,
+                               0xf9, 0x10, 0x01, 0xc1, 0xa8, 0x30, 0xde, 0xb1};
+  memcpy(arr, get_ec_random, len);
+#endif
 }
 
 uint8_t get_floating_precision(uint64_t num, uint64_t den) {

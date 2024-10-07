@@ -22,7 +22,6 @@
 #include "ecdsa.h"
 #include "wallet.h"
 
-#define SESSION_BUFFER_SIZE 1024
 #define SESSION_PUB_KEY_SIZE 33
 #define SESSION_PRIV_KEY_SIZE 32
 #define SESSION_AGE_SIZE 4
@@ -51,29 +50,39 @@ typedef enum {
   SESSION_DECRYPT_PACKET_ERR
 } session_error_type_e;
 
-/**
- * @brief Stores the session information
- */
+typedef enum {
+  SESSION_VIRGIN = 0,
+  SESSION_AWAIT,    ///< Session partial state; device keys generated,
+                    ///< await server pub key
+  SESSION_LIVE
+} session_state_type_e;
+
 #pragma pack(push, 1)
 typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
-  uint8_t device_random[SESSION_PRIV_KEY_SIZE];
-  uint8_t device_random_public[SESSION_PUB_KEY_SIZE];
+  uint8_t random_priv_key[SESSION_PRIV_KEY_SIZE];
+  uint8_t random_pub_key[SESSION_PUB_KEY_SIZE];
+} session_device_config_t;
 
-  uint8_t derived_server_public_key[SESSION_PUB_KEY_SIZE];
-  uint8_t server_random_public[SESSION_PUB_KEY_SIZE];
-  uint8_t session_age[SESSION_AGE_SIZE];
-  uint8_t server_signature[SESSION_SERVER_SIGNATURE_SIZE];
+typedef struct {
+  const core_session_start_begin_request_t *request_pointer;
+} session_server_config_t;
 
-  const char wallet_name[NAME_SIZE];
+typedef struct {
+  session_device_config_t device;
+  session_server_config_t server;
+} session_ctx_t;
 
+typedef struct {
+  uint8_t device_id[DEVICE_SERIAL_SIZE];
+  uint8_t device_random_priv_key[SESSION_PRIV_KEY_SIZE];
   uint8_t session_iv[SESSION_IV_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
-
-} session_config_t;
+  session_state_type_e state;    ///< Indicates session current state.
+} session_private_t;
 #pragma pack(pop)
 
-extern session_config_t session;
+extern session_private_t session;
 
 /**
  * @brief Clears the metadata related to the session configuration.
