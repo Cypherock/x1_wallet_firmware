@@ -287,7 +287,7 @@ static bool auth_wallet_get_seed_entropy() {
 
 static bool auth_wallet_pair_card() {
   card_error_type_e status = single_card_pair_operation(
-      (char *)ui_text_tap_the_card, ui_text_place_card_below);
+      (char *)ui_text_tap_a_card, ui_text_place_card_below);
   if (status != CARD_OPERATION_SUCCESS) {
     SET_ERROR_TYPE(AUTH_WALLET_PAIRING_ERROR);
     return false;

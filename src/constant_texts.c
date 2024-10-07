@@ -540,7 +540,6 @@ const char *ui_text_inheritance_wallet_auth_success =
     "Wallet\nauthenticated\nsuccessfully";
 const char *ui_text_inheritance_wallet_auth_fail =
     "Wallet\nauthentication\nfailed";
-const char *ui_text_tap_the_card = "Tap the card";
 
 const char *ui_text_inheritance_encryption_flow_confirmation =
     "Proceed to encrypt data for %s?";
