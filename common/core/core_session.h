@@ -36,24 +36,27 @@
 extern const uint32_t session_key_rotation[1];
 
 typedef enum {
-  SESSION_OK = 0,
-  SESSION_ERR_INVALID,
-  SESSION_ERR_DEVICE_KEY,
-  SESSION_ERR_SERVER_KEY,
-  SESSION_ERR_ENCRYPT,
-  SESSION_ERR_DECRYPT,
-  SESSION_ENCRYPT_PACKET_SUCCESS,
-  SESSION_DECRYPT_PACKET_SUCCESS,
-  SESSION_ENCRYPT_PACKET_KEY_ERR,
-  SESSION_ENCRYPT_PACKET_ERR,
-  SESSION_DECRYPT_PACKET_KEY_ERR,
-  SESSION_DECRYPT_PACKET_ERR
+  SESSION_DEFAULT_ERROR = 0,
+  SESSION_MEMORY_ALLOCATION_ERROR,
+  SESSION_INPUT_INVALID_ERROR,
+  SESSION_KEY_GENERATION_ERROR,
+  SESSION_GET_DEVICE_ID_ERROR,
+  SESSION_DEVICE_ID_INVALID_ERROR,
+  SESSION_SIGNATURE_VERIFICATION_ERROR,
+  SESSION_INVALID_STATE_ERROR,    ///< Indicates partial/corrupt session
+                                  ///< state
+  SESSION_UNKNOWN_ERROR,
+  SESSION_ENCRYPTION_ERROR,
+  SESSION_DECRYPTION_ERROR,
+  SESSION_ENCRYPTION_OK,
+  SESSION_DECRYPTION_OK,
+  SESSION_OK,
 } session_error_type_e;
 
 typedef enum {
   SESSION_VIRGIN = 0,
-  SESSION_AWAIT,    ///< Session partial state; device keys generated,
-                    ///< await server pub key
+  SESSION_AWAIT,    ///< Session partial state, device keys generated,
+                    ///< waiting for server pub key
   SESSION_LIVE
 } session_state_type_e;
 
@@ -103,7 +106,8 @@ void core_session_clear_metadata();
  * @param core_msg Pointer to the core message containing the session start
  * data.
  */
-void core_session_parse_start_message(const core_msg_t *core_msg);
+session_error_type_e core_session_parse_start_message(
+    const core_msg_t *core_msg);
 
 /**
  * @brief Encrypts data using AES-CBC mode.

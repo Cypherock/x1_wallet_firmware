@@ -555,12 +555,11 @@ static bool serialize_packet(void) {
 }
 
 static bool encrypt_packet(void) {
-  if (SESSION_ENCRYPT_PACKET_SUCCESS !=
+  if (SESSION_ENCRYPTION_OK !=
       session_aes_encrypt(encryption_context->payload.encrypted_data.bytes,
                           &encryption_context->payload.encrypted_data.size)) {
     return false;
   }
-
   return true;
 }
 
