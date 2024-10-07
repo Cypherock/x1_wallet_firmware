@@ -209,7 +209,7 @@ static bool session_create_device_payload(uint8_t *payload) {
          session_ctx->device.random_pub_key,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  // TODO: standardize simulator handling for hardware specific functionality
+
   if (get_device_serial() != 0) {
     LOG_ERROR("\nERROR: Device Serial fetch failed");
     return false;
@@ -237,7 +237,7 @@ static bool session_create_device_payload(uint8_t *payload) {
 
 static void initiate_request(void) {
   core_session_clear_metadata();
-  session.state = SESSION_IN_PROGRESS;
+  session.state = SESSION_AWAIT;
   uint8_t payload[SESSION_PUB_KEY_SIZE + DEVICE_SERIAL_SIZE + SIGNATURE_SIZE +
                   POSTFIX1_SIZE + POSTFIX2_SIZE] = {0};
   if (!session_create_device_payload(payload)) {
@@ -315,7 +315,7 @@ static void start_request(const core_msg_t *core_msg) {
     return;
   }
   // indicate valid session has been established
-  session.state = SESSION_ONGOING;
+  session.state = SESSION_LIVE;
   send_core_session_start_ack_to_host();
 }
 
@@ -325,7 +325,7 @@ static void start_request(const core_msg_t *core_msg) {
 
 void core_session_clear_metadata() {
   memzero(&session, sizeof(session_private_t));
-  session.state = SESSION_TERMINATED;
+  session.state = SESSION_VIRGIN;
 }
 
 void core_session_parse_start_message(const core_msg_t *core_msg) {
