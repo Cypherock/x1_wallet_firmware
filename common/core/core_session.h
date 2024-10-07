@@ -51,9 +51,10 @@ typedef enum {
 } session_error_type_e;
 
 typedef enum {
-  SESSION_TERMINATED = 0,
-  SESSION_IN_PROGRESS,
-  SESSION_ONGOING
+  SESSION_VIRGIN = 0,
+  SESSION_AWAIT,    ///< Session partial state; device keys generated,
+                    ///< await server pub key
+  SESSION_LIVE
 } session_state_type_e;
 
 #pragma pack(push, 1)
