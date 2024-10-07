@@ -244,7 +244,7 @@ static bool session_create_device_payload(uint8_t *payload) {
          session_ctx->device.random_pub_key,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  // TODO: standardize simulator handling for hardware specific functionality
+
   if (get_device_serial() != 0) {
     SET_ERROR_TYPE(SESSION_GET_DEVICE_ID_ERROR);
     return false;
@@ -267,6 +267,8 @@ static bool session_create_device_payload(uint8_t *payload) {
   offset += POSTFIX1_SIZE;
   // append posfix2
   memcpy(payload + offset, signed_data.postfix2, POSTFIX2_SIZE);
+
+  return true;
 }
 
 static void initiate_request(void) {
@@ -351,7 +353,7 @@ static void start_request(const core_msg_t *core_msg) {
 
 void core_session_clear_metadata() {
   memzero(&session, sizeof(session_private_t));
-  session.state = SESSION_TERMINATED;
+  session.state = SESSION_VIRGIN;
 }
 
 session_error_type_e core_session_parse_start_message(

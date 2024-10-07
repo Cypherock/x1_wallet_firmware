@@ -493,10 +493,14 @@ static bool deserialize_packet(void) {
 }
 
 static bool decrypt_message_data(void) {
-  return card_fetch_decrypt_data(decryption_context->wallet_id,
-                                 decryption_context->data,
-                                 decryption_context->data_count) ==
-         CARD_OPERATION_SUCCESS;
+  if (card_fetch_decrypt_data(decryption_context->wallet_id,
+                              decryption_context->data,
+                              decryption_context->data_count) !=
+      CARD_OPERATION_SUCCESS) {
+    return false;
+  }
+  set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
+  return true;
 }
 
 static bool decrypt_data(void) {
@@ -521,7 +525,6 @@ static bool decrypt_data(void) {
     }
 
   } while (0);
-  set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
   delay_scr_init(ui_text_processing, DELAY_TIME);
   return status;
 }
