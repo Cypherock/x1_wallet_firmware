@@ -26,6 +26,9 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define DEFAULT_ATECC_RETRIES 5
+#define SIGNATURE_SIZE 64
+#define POSTFIX1_SIZE 7
+#define POSTFIX2_SIZE 23
 #define DEVICE_SERIAL_SIZE 32
 
 /*****************************************************************************

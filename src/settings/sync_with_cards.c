@@ -140,6 +140,7 @@ static bool get_wallets_from_card(wallet_list_t *wallet_list,
   configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
   configuration.operation.skip_card_removal = false;
   configuration.operation.expected_family_id = get_family_id();
+  configuration.operation.buzzer_on_success = true;
 
   configuration.frontend.heading = ui_text_tap_1_2_cards;
   configuration.frontend.msg = ui_text_place_card_below;

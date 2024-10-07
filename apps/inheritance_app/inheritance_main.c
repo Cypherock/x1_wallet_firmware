@@ -1,7 +1,7 @@
 /**
- * @file    ui_core_confirm.c
+ * @file    inheritance_main.c
  * @author  Cypherock X1 Team
- * @brief   A ready-made confirmation UI that accepts rejection callback.
+ * @brief   A common entry point to various Inheritance actions supported.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,12 +60,12 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "ui_core_confirm.h"
+#include "inheritance_main.h"
 
-#include "error.pb.h"
-#include "events.h"
-#include "ui_screens.h"
-#include "ui_scroll_page.h"
+#include "inheritance/core.pb.h"
+#include "inheritance_api.h"
+#include "inheritance_priv.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -80,71 +80,75 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/**
- * @brief
- *
- * @param reject_cb
- * @return
- */
-static bool wait_for_event(ui_core_rejection_cb *reject_cb);
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Entry point for the INHERITANCE application of the X1 vault. It is
+ * invoked by the X1 vault firmware, as soon as there is a USB request raised
+ * for the Inheritance app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the inheritance
+ * app
+ */
+void inheritance_main(usb_event_t usb_evt, const void *app_config);
+
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+static const cy_app_desc_t inheritance_app_desc = {.id = 19,
+                                                   .version =
+                                                       {
+                                                           .major = 1,
+                                                           .minor = 0,
+                                                           .patch = 0,
+                                                       },
+                                                   .app = inheritance_main,
+                                                   .app_config = NULL};
+
+/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void inheritance_main(usb_event_t usb_evt, const void *app_config) {
+  inheritance_query_t query = INHERITANCE_QUERY_INIT_DEFAULT;
 
-static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
-  evt_status_t events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-  if (true == events.p0_event.flag) {
-    // core will handle p0 events, exit now
-    return false;
+  if (false ==
+      decode_inheritance_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
   }
-  if (UI_EVENT_REJECT == events.ui_event.event_type) {
-    // user rejected, send error and return false
-    if (NULL != reject_cb) {
-      reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                ERROR_USER_REJECTION_CONFIRMATION);
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case INHERITANCE_QUERY_AUTH_WALLET_TAG: {
+      inheritance_auth_wallet(&query);
+      break;
     }
-    return false;
-  }
+    case INHERITANCE_QUERY_ENCRYPT_TAG: {
+      inheritance_encrypt_data(&query);
+      break;
+    }
+    case INHERITANCE_QUERY_DECRYPT_TAG: {
+      inheritance_decrypt_data(&query);
+      break;
+    }
 
-  return true;
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_QUERY);
+    } break;
+  }
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-bool core_confirmation(const char *body, ui_core_rejection_cb *reject_cb) {
-  confirm_scr_init(body);
-  return wait_for_event(reject_cb);
-}
-
-bool core_scroll_page(const char *title,
-                      const char *body,
-                      ui_core_rejection_cb *reject_cb) {
-  ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
-  return wait_for_event(reject_cb);
-}
-
-// TODO: merge with above function
-bool core_scroll_non_sticky_heading_page(const char *title,
-                                         const char *body,
-                                         ui_core_rejection_cb *reject_cb) {
-  scrollable_page_options_t options = {
-      .is_heading_sticky = false,
-      .are_cancel_accept_btn_visible = false,
-      .page_orientation = MENU_SCROLL_HORIZONTAL};
-  ui_scrollable_page_with_options(title, body, options);
-  return wait_for_event(reject_cb);
+const cy_app_desc_t *get_inheritance_app_desc() {
+  return &inheritance_app_desc;
 }

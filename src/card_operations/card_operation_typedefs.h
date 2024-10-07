@@ -46,7 +46,6 @@ typedef enum card_errors_type {
                                      can be associated to @ref
                                      card_error_status_word_e errors or PN532
                                      errors */
-
   CARD_OPERATION_DEFAULT_INVALID = 0xFF, /** Default invalid value */
 } card_error_type_e;
 

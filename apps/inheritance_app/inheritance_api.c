@@ -1,8 +1,7 @@
 /**
- * @file    card_health_check.c
+ * @file    inheritance_api.c
  * @author  Cypherock X1 Team
- * @brief   Logic to check card health and view wallet list in X1 card
- *
+ * @brief   Defines helpers apis for Inheritance app.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,14 +59,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "card_operations.h"
-#include "constant_texts.h"
-#include "core_error.h"
-#include "flash_api.h"
-#include "settings_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
-#include "ui_state_machine.h"
+
+#include "inheritance_api.h"
+
+#include <pb_decode.h>
+#include <pb_encode.h>
+
+#include "common_error.h"
+#include "core_api.h"
+#include "events.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,15 +82,15 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -100,106 +100,101 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void card_health_check(void) {
-  wallet_list_t wallets_in_card = {0};
-
-  card_fetch_wallet_list_config_t configuration = {0};
-  configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
-  configuration.operation.skip_card_removal = true;
-  configuration.operation.expected_family_id = get_family_id();
-  configuration.operation.buzzer_on_success = true;
-  configuration.frontend.heading = NULL;
-  configuration.frontend.msg = ui_text_card_health_check_start;
-
-  card_fetch_wallet_list_response_t response = {0};
-  response.wallet_list = &wallets_in_card;
-  response.card_info.tapped_card = 0;
-  response.card_info.recovery_mode = 0;
-  response.card_info.status = 0;
-  response.card_info.tapped_family_id = NULL;
-
-  // P0 abort is the only condition we want to exit the flow
-  // Card abort error will be explicitly shown here as error codes
-  card_error_type_e status = card_fetch_wallet_list(&configuration, &response);
-  if (CARD_OPERATION_P0_OCCURED == status) {
-    return;
+bool decode_inheritance_query(const uint8_t *data,
+                              uint16_t data_size,
+                              inheritance_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
 
-  // If the tapped card is not paired, it is a terminal case in the flow
-  if (true == response.card_info.pairing_error) {
-    return;
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(inheritance_query_t));
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, INHERITANCE_QUERY_FIELDS, query_out);
+
+  /* Send error to host if status is false*/
+  if (false == status) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
-  // At this stage, either there is no core error message set, or it is set but
-  // we want to overwrite the error message using user facing messages in this
-  // flow
-  clear_core_error_screen();
+  return status;
+}
 
-  uint32_t card_fault_status = 0;
-  if (1 == response.card_info.recovery_mode) {
-    card_fault_status = NFC_NULL_PTR_ERROR;
-  } else if (CARD_OPERATION_SUCCESS != status) {
-    card_fault_status = response.card_info.status;
+bool encode_inheritance_result(const inheritance_result_t *result,
+                               uint8_t *buffer,
+                               uint16_t max_buffer_len,
+                               size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, INHERITANCE_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
   }
 
-  uint8_t screens = 3;
-  char display_msg[100] = "";
-  const char *msg[3];
+  return status;
+}
 
-  if (0 == card_fault_status) {
-    screens = 2;
-    msg[0] = ui_text_card_seems_healthy;
-    if (0 < wallets_in_card.count) {
-      msg[1] = ui_text_click_to_view_wallets;
-    } else {
-      msg[1] = ui_text_no_wallets_fetched;
-    }
-  } else {
-    snprintf(display_msg,
-             sizeof(display_msg),
-             "%s: C%04lX",
-             ui_text_card_health_check_error[0],
-             card_fault_status);
-    msg[0] = (const char *)display_msg;
-    msg[1] = ui_text_card_health_check_error[1];
-    if (0 < wallets_in_card.count) {
-      msg[2] = ui_text_click_to_view_wallets;
-    } else {
-      msg[2] = ui_text_no_wallets_fetched;
-    }
+bool check_inheritance_query(const inheritance_query_t *query,
+                             pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+inheritance_result_t init_inheritance_result(pb_size_t result_tag) {
+  inheritance_result_t result = INHERITANCE_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void inheritance_send_error(pb_size_t which_error, uint32_t error_code) {
+  inheritance_result_t result =
+      init_inheritance_result(INHERITANCE_RESULT_COMMON_ERROR_TAG);
+  result.common_error = init_common_error(which_error, error_code);
+  inheritance_send_result(&result);
+}
+
+void inheritance_send_result(const inheritance_result_t *result) {
+  // TODO: Set the options file for all
+  uint8_t buffer[INHERITANCE_RESULT_SIZE] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_inheritance_result(
+      result, buffer, sizeof(buffer), &bytes_encoded));
+  send_response_to_host(&buffer[0], bytes_encoded);
+}
+
+bool inheritance_get_query(inheritance_query_t *query,
+                           pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
   }
 
-  typedef enum {
-    CARD_HC_SHOW_WALLETS,
-    CARD_HC_EXIT_FLOW,
-  } card_health_check_states_e;
-
-  card_health_check_states_e state_on_confirm = CARD_HC_EXIT_FLOW;
-  if (0 < wallets_in_card.count) {
-    state_on_confirm = CARD_HC_SHOW_WALLETS;
+  if (!decode_inheritance_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
   }
 
-  multi_instruction_init(msg, screens, DELAY_TIME, true);
-
-  if (CARD_HC_SHOW_WALLETS == get_state_on_confirm_scr(state_on_confirm,
-                                                       CARD_HC_EXIT_FLOW,
-                                                       CARD_HC_EXIT_FLOW)) {
-    memzero(display_msg, sizeof(display_msg));
-    snprintf(display_msg,
-             sizeof(display_msg),
-             UI_TEXT_CARD_HEALTH_CHECK_ERROR,
-             decode_card_number(response.card_info.tapped_card));
-
-    char wallet_list[MAX_WALLETS_ALLOWED][NAME_SIZE] = {"", "", "", ""};
-    for (uint8_t i = 0; i < wallets_in_card.count; i++) {
-      snprintf(
-          wallet_list[i], NAME_SIZE, (char *)wallets_in_card.wallet[i].name);
-    }
-    list_init(wallet_list, wallets_in_card.count, display_msg, false);
-
-    // Do not care about the return value from confirmation screen
-    (void)get_state_on_confirm_scr(0, 0, 0);
+  if (!check_inheritance_query(query, exp_query_tag)) {
+    return false;
   }
 
-  return;
+  return true;
 }
