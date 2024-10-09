@@ -97,7 +97,7 @@
 #include "eth.h"
 #include "fantom.h"
 #include "harmony.h"
-#include "near.h"
+// #include "near.h"
 #include "optimism.h"
 #include "pb_decode.h"
 #include "polygon.h"

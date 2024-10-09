@@ -56,7 +56,7 @@
  ******************************************************************************
  */
 
-#include "near.h"
+// #include "near.h"
 #include "near_context.h"
 #include "near_helpers.h"
 #include "near_txn_user_verification.h"

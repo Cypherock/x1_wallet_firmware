@@ -64,7 +64,7 @@
 #include "etc.h"
 #include "fantom.h"
 #include "harmony.h"
-#include "near.h"
+// #include "near.h"
 #include "optimism.h"
 #include "polygon.h"
 #include "segwit_addr.h"
