@@ -303,7 +303,7 @@ static wallet_unlock_state_e wallet_unlock_handler(
  *****************************************************************************/
 void wallet_unlock_flow(const Flash_Wallet *flash_wallet) {
   if ((NULL == flash_wallet) || (false == flash_wallet->is_wallet_locked)) {
-    return 0;
+    return;
   }
 
   wallet_unlock_state_e state = WALLET_UNLOCK_FETCH_CHALLENGE;

@@ -20,7 +20,7 @@ set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(${EXECUTABLE} ${SOURCES} vendor/cypherock-bignum/helpers.c vendor/cypherock-bignum/FFT.c vendor/cypherock-bignum/bignum_internal.c vendor/tinybn/bn.c ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
+add_executable(${EXECUTABLE} ${SOURCES} vendor/cypherock-bignum/mini-gmp-helpers.c vendor/cypherock-bignum/mini-gmp.c vendor/tinybn/bn.c ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
@@ -51,7 +51,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
-        apps/near_app
+        # apps/near_app
         apps/solana_app
         apps/tron_app
         apps/starknet_app
@@ -158,7 +158,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/manager_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/btc_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
-        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
+        # $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
         )
 

@@ -101,7 +101,7 @@ static bool grind_key(const uint8_t *grind_seed, uint8_t *out);
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool get_stark_child_node(const uint32_t *path,
+bool get_stark_child_node(const uint32_t *path,
                                  const size_t path_length,
                                  const char *curve,
                                  const uint8_t *seed,

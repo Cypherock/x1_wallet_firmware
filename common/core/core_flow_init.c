@@ -76,7 +76,7 @@
 #include "ltc_app.h"
 #include "main_menu.h"
 #include "manager_app.h"
-#include "near_main.h"
+// #include "near_main.h"
 #include "onboarding.h"
 #include "optimism_app.h"
 #include "polygon_app.h"
@@ -170,7 +170,7 @@ void core_init_app_registry() {
   registry_add_app(get_doge_app_desc());
   registry_add_app(get_dash_app_desc());
   registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
+  // registry_add_app(get_near_app_desc());
   registry_add_app(get_polygon_app_desc());
   registry_add_app(get_solana_app_desc());
   registry_add_app(get_bsc_app_desc());
