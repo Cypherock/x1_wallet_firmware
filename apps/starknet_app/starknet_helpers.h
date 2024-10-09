@@ -70,5 +70,11 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
                                    uint8_t *private_key);
 
 bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t len, uint8_t *hash);
+bool get_stark_child_node(const uint32_t *path,
+                                 const size_t path_length,
+                                 const char *curve,
+                                 const uint8_t *seed,
+                                 const uint8_t seed_len,
+                                 HDNode *hdnode);
 
 #endif    // STARKNET_HELPERS_H
