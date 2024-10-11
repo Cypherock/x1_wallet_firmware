@@ -73,6 +73,7 @@
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
+error_screen_t error_screen;
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -81,12 +82,6 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef struct {
-  char core_error_msg[60]; /**< Buffer to store the error message that needs to
-                              be displayed */
-  bool ring_buzzer; /**< Configuration parameter to record if buzzer is required
-                       while the error is being displayed */
-} error_screen_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -107,7 +102,6 @@ static void display_core_error();
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static error_screen_t error_screen = {0};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -182,6 +176,8 @@ void handle_core_errors() {
   }
 
   display_core_error();
+  // clear error_screen after display
+  clear_core_error_screen();
   return;
 }
 
