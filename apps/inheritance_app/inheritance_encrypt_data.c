@@ -60,10 +60,12 @@
  *****************************************************************************/
 
 #include <stdint.h>
+#include <string.h>
 
 #include "bignum.h"
 #include "card_fetch_data.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_session.h"
 #include "inheritance/common.pb.h"
 #include "inheritance/core.pb.h"
@@ -80,6 +82,7 @@
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
+#include "ui_message.h"
 #include "utils.h"
 #include "verify_pin_flow.h"
 #include "wallet.h"
@@ -654,24 +657,26 @@ static bool encrypt_data(void) {
       status = false;
       break;
     }
-
     if (!encrypt_message_data()) {
       status = false;
       break;
     }
-
     if (!serialize_packet()) {
       status = false;
       break;
     }
-
     if (!encrypt_packet()) {
       status = false;
       break;
     }
   } while (0);
 
-  delay_scr_init(ui_text_processing, DELAY_TIME);
+  if (status) {
+    delay_scr_init(ui_text_processing, DELAY_TIME);
+  } else {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_REQUEST);
+  }
   return status;
 }
 
@@ -789,6 +794,14 @@ encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
     SET_ERROR_TYPE(ENCRYPTION_OK);
   } else {
+    // TODO: Add this in error handling
+    if (0 != strlen(error_screen.core_error_msg)) {
+      if (error_screen.ring_buzzer) {
+        buzzer_start(BUZZER_DURATION);
+      }
+      delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
+      clear_core_error_screen();
+    }
     delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
   encryption_handle_errors();

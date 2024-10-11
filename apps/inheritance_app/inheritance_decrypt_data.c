@@ -66,6 +66,7 @@
 #include "card_fetch_data.h"
 #include "card_operation_typedefs.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_session.h"
 #include "inheritance/core.pb.h"
 #include "inheritance/decrypt_data_with_pin.pb.h"
@@ -608,7 +609,12 @@ static bool decrypt_data(void) {
     }
 
   } while (0);
-  delay_scr_init(ui_text_processing, DELAY_TIME);
+  if (status) {
+    delay_scr_init(ui_text_processing, DELAY_TIME);
+  } else {
+    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                           ERROR_DATA_FLOW_INVALID_REQUEST);
+  }
   return status;
 }
 
@@ -664,6 +670,14 @@ decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_TIME);
     SET_ERROR_TYPE(DECRYPTION_OK);
   } else {
+    // TODO: Add this in error handling
+    if (0 != strlen(error_screen.core_error_msg)) {
+      if (error_screen.ring_buzzer) {
+        buzzer_start(BUZZER_DURATION);
+      }
+      delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
+      clear_core_error_screen();
+    }
     delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_TIME);
   }
   decryption_handle_errors();
