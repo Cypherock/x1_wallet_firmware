@@ -69,6 +69,7 @@
 #include "core_error.h"
 #include "curves.h"
 #include "nist256p1.h"
+#include "ui_delay.h"
 #include "ui_instruction.h"
 #include "utils.h"
 #if USE_SIMULATOR == 0
@@ -512,7 +513,8 @@ card_error_type_e single_card_pair_operation(char *heading,
         card_data.error_type = CARD_OPERATION_ABORT_OPERATION;
         break;
       }
-
+      // short delay for better UX
+      BSP_DelayMs(DELAY_SHORT);
       buzzer_start(BUZZER_DURATION);
 
       break;
