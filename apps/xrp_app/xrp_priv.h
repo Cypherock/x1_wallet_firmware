@@ -21,6 +21,20 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by xrp_handle_initiate_query()
+   */
+  xrp_sign_txn_initiate_request_t init_info;
+
+  // remembers the allocated buffer for holding complete unsigned transaction
+  uint8_t *transaction;
+
+  // decoded raw txn
+  xrp_unsigned_txn *raw_txn;
+
+} xrp_txn_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -38,5 +52,15 @@
  * @param query object for address public key query
  */
 void xrp_get_pub_keys(xrp_query_t *query);
+
+/**
+ * @brief Handler for signing a transaction on xrp.
+ * @details The expected request type is XRP_SIGN_TXN_REQUEST_INITIATE_TAG. The
+ * function controls the complete data exchange with host, user prompts and
+ * confirmations for signing an XRP based transaction.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void xrp_sign_transaction(xrp_query_t *query);
 
 #endif /* XRP_PRIV_H */

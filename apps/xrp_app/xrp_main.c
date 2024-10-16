@@ -129,7 +129,7 @@ void xrp_main(usb_event_t usb_evt, const void *xrp_app_config) {
       break;
     }
     case XRP_QUERY_SIGN_TXN_TAG: {
-      // TODO: Add sign txn functionality
+      xrp_sign_transaction(&query);
       break;
     }
     default: {
