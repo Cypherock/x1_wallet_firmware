@@ -301,7 +301,7 @@ static bool session_verify_server_signature() {
          session_ctx->server.request_pointer->session_random_public,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  write_le(server_message_payload + offset,
+  write_be(server_message_payload + offset,
            session_ctx->server.request_pointer->session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(server_message_payload + offset,

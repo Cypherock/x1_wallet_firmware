@@ -159,9 +159,7 @@ TEST(core_session_test, core_session_wallet_id_check_fail) {
       "03149c51bc8ddd582e447408bfc6b1fa96ac92a0059428c2884c29898b325dcc9f",
       66,
       test_bytes);
-  memcpy(&core_msg.session_start.request.start.session_age,
-         test_bytes,
-         SESSION_AGE_SIZE);
+  core_msg.session_start.request.start.session_age = read_be(test_bytes);
   memcpy(
       core_msg.session_start.request.start.device_id,    ///< Invalid device_id
       test_bytes,
@@ -173,9 +171,7 @@ TEST(core_session_test, core_session_wallet_id_check_fail) {
          core_msg.session_start.request.start.session_random_public,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  memcpy(payload + offset,
-         &core_msg.session_start.request.start.session_age,
-         SESSION_AGE_SIZE);
+  write_be(payload + offset, core_msg.session_start.request.start.session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(payload + offset,
          core_msg.session_start.request.start.device_id,
@@ -218,9 +214,7 @@ TEST(core_session_test, core_session_all_ok) {
                            "6d23562707ed5",    ///< SHA256("device_id")
                            DEVICE_SERIAL_SIZE * 2,
                            test_bytes);
-  memcpy(&core_msg.session_start.request.start.session_age,
-         test_bytes,
-         SESSION_AGE_SIZE);
+  core_msg.session_start.request.start.session_age = read_be(test_bytes);
   memcpy(core_msg.session_start.request.start.device_id,
          test_bytes,
          DEVICE_SERIAL_SIZE);
@@ -231,9 +225,7 @@ TEST(core_session_test, core_session_all_ok) {
          &core_msg.session_start.request.start.session_random_public,
          SESSION_PUB_KEY_SIZE);
   offset += SESSION_PUB_KEY_SIZE;
-  memcpy(payload + offset,
-         &core_msg.session_start.request.start.session_age,
-         SESSION_AGE_SIZE);
+  write_be(payload + offset, core_msg.session_start.request.start.session_age);
   offset += SESSION_AGE_SIZE;
   memcpy(payload + offset,
          &core_msg.session_start.request.start.device_id,
