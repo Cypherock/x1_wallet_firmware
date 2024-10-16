@@ -377,10 +377,8 @@ static bool get_user_verification(void) {
     memcpy(&tag, &decoded_utxn->DestinationTag, sizeof(uint32_t));
 
     char display_tag[50] = {'\0'};
-    snprintf(display_tag,
-            sizeof(display_tag),
-            UI_TEXT_VERIFY_DESTINATION_TAG,
-            tag);
+    snprintf(
+        display_tag, sizeof(display_tag), UI_TEXT_VERIFY_DESTINATION_TAG, tag);
 
     if (!core_confirmation(display_tag, xrp_send_error)) {
       return false;
