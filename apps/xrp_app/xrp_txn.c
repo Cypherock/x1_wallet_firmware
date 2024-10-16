@@ -329,7 +329,6 @@ static bool fetch_valid_input(xrp_query_t *query) {
 
 static bool get_user_verification(void) {
   const xrp_unsigned_txn *decoded_utxn = xrp_txn_context->raw_txn;
-  bool user_verified = false;
 
   char to_address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
 
@@ -372,13 +371,25 @@ static bool get_user_verification(void) {
     return false;
   }
 
-  user_verified = true;
+  if (decoded_utxn->hasDestinationTag) {
+    // verify destination tag
+    uint32_t tag = 0;
+    memcpy(&tag, &decoded_utxn->DestinationTag, sizeof(uint32_t));
 
-  if (user_verified) {
-    set_app_flow_status(XRP_SIGN_TXN_STATUS_VERIFY);
+    char display_tag[50] = {'\0'};
+    snprintf(display_tag,
+            sizeof(display_tag),
+            UI_TEXT_VERIFY_DESTINATION_TAG,
+            tag);
+
+    if (!core_confirmation(display_tag, xrp_send_error)) {
+      return false;
+    }
   }
 
-  return user_verified;
+  set_app_flow_status(XRP_SIGN_TXN_STATUS_VERIFY);
+
+  return true;
 }
 
 static bool sign_txn(der_sig_t *der_signature) {
