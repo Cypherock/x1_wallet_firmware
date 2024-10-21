@@ -63,16 +63,16 @@
 
 #include <stdint.h>
 
-#include "xrp_api.h"
-#include "xrp_context.h"
-#include "xrp_helpers.h"
-#include "xrp_priv.h"
-#include "xrp_txn_helpers.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
+#include "xrp_api.h"
+#include "xrp_context.h"
+#include "xrp_helpers.h"
+#include "xrp_priv.h"
+#include "xrp_txn_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
