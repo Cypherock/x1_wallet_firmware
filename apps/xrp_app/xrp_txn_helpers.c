@@ -62,7 +62,6 @@
 
 #include "xrp_txn_helpers.h"
 
-#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -297,6 +296,7 @@ uint16_t fill_ACCOUNT_type(const uint8_t *byte_data,
   return bytes_read;
 }
 
+// @TODO: add unit tests for parser
 bool xrp_parse_transaction(const uint8_t *byte_array,
                            uint16_t byte_array_size,
                            xrp_unsigned_txn *txn) {

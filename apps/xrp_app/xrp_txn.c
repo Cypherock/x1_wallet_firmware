@@ -68,7 +68,6 @@
 #include "xrp_helpers.h"
 #include "xrp_priv.h"
 #include "xrp_txn_helpers.h"
-// #include "xrp_txn_user_verification.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
