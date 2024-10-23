@@ -62,4 +62,10 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 card_error_type_e card_pair_operation(uint8_t card_number,
                                       char *heading,
                                       const char *message);
+// To Improvise:
+// Single card pairing operation,
+// Should allow single or extra card to be paired if not already,
+// for any required flow
+card_error_type_e single_card_pair_operation(char *heading,
+                                             const char *message);
 #endif

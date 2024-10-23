@@ -295,6 +295,9 @@ void application_init() {
   srand(time(0));
   /*Initialize LittlevGL*/
   lv_init();
+#ifdef DEV_BUILD
+  ekp_register_process_func(ekp_process_queue);
+#endif
   sim_hal_init();
   lv_port_disp_init();
   ui_init(indev_keypad);

@@ -58,6 +58,8 @@
  */
 #include "ui_scroll_page.h"
 
+#include <stdint.h>
+
 #include "stdlib.h"
 #include "ui_events_priv.h"
 #ifdef DEV_BUILD
@@ -238,6 +240,31 @@ static void page_update_buttons(void) {
   return;
 }
 
+static void page_update_header(void) {
+  if (!gp_scrollabe_page_data->bool_only_first_page_header_visible) {
+    return;
+  }
+
+  ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl));
+
+  bool is_heading_hidden = gp_scrollabe_page_data->curr_page_num != 1;
+
+  lv_coord_t scroll_page_height = 48;
+  lv_align_t scroll_page_aligment = LV_ALIGN_IN_TOP_MID;
+
+  if (!is_heading_hidden) {
+    scroll_page_height = 32;
+    scroll_page_aligment = LV_ALIGN_CENTER;
+  }
+
+  lv_obj_set_size(
+      gp_scrollabe_page_lvgl->p_ui_page_lvgl, 128, scroll_page_height);
+  lv_obj_align(
+      gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL, scroll_page_aligment, 0, 0);
+  lv_obj_set_hidden(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
+                    is_heading_hidden);
+}
+
 static void page_update_footnote(void) {
   ASSERT((NULL != gp_scrollabe_page_data) && (NULL != gp_scrollabe_page_lvgl));
 
@@ -264,7 +291,6 @@ static void page_update_icons(void) {
   page_update_arrows();
   page_update_buttons();
   page_update_footnote();
-
   return;
 }
 
@@ -400,10 +426,17 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
                        LV_ALIGN_IN_TOP_MID,
                        0,
                        0);
+          page_update_header();
           page_update_icons();
         }
       } else if (LV_KEY_LEFT == keyPressed) {
         if (true == page_decrement()) {
+          /***
+           * We have to update header before calculating scroll distance
+           * other wise the current page height is decrease instead of previous
+           * page height
+           */
+          page_update_header();
           lv_label_set_style(gp_scrollabe_page_lvgl->p_ui_left_arrow_lvgl,
                              LV_LABEL_STYLE_MAIN,
                              &(gp_scrollabe_page_lvgl->ui_arrow_pressed_style));
@@ -443,8 +476,8 @@ static void page_arrow_handler(lv_obj_t *pLvglArrowObject,
     }
 
     case LV_EVENT_DELETE: {
-      /* Destruct object and data variables in case the object is being deleted
-       * directly using lv_obj_clean() */
+      /* Destruct object and data variables in case the object is being
+       * deleted directly using lv_obj_clean() */
       ui_scrollable_destructor();
       break;
     }
@@ -514,9 +547,10 @@ static void ui_scrollable_page_create(void) {
    * Create a label on page gp_scrollabe_page_lvgl->p_ui_page_lvgl which
    * contains the body holding the actual text Size of the label is
    * lv_page_get_fit_width(gp_scrollabe_page_lvgl->p_ui_page_lvgl) - 16,
-   * lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) Text will be
-   * broken into multiple lines, but only 2 or 3 lines (32 pixels/ 48 pixels)
-   * are available on the page. So this creates a scrollable label on the page.
+   * lv_page_get_fit_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl) Text will
+   * be broken into multiple lines, but only 2 or 3 lines (32 pixels/ 48
+   * pixels) are available on the page. So this creates a scrollable label on
+   * the page.
    */
   gp_scrollabe_page_lvgl->p_ui_body_lvgl =
       lv_label_create(gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL);
@@ -557,7 +591,8 @@ static void ui_scrollable_page_create(void) {
 
   // Pad with \n if there are 2 rows of text and pad with \n\n if there are 3
   // rows of text
-  if (32 == scroll_page_height) {
+  if (32 == scroll_page_height &&
+      !gp_scrollabe_page_data->bool_only_first_page_header_visible) {
     lv_label_set_text(paddingLabel, "\n");
   } else {
     lv_label_set_text(paddingLabel, "\n\n");
@@ -581,9 +616,10 @@ static void ui_scrollable_page_create(void) {
   lv_group_focus_obj(gp_scrollabe_page_lvgl->p_ui_body_lvgl);
 
   /**
-   * Create a labels on current screen to hold the left and right arrows icons.
-   * These icons will be placed on the left and right side of the screen.
-   * These icons will be visible conditionally (if there is anything to scroll)
+   * Create a labels on current screen to hold the left and right arrows
+   * icons. These icons will be placed on the left and right side of the
+   * screen. These icons will be visible conditionally (if there is anything
+   * to scroll)
    */
   /* TODO: Handle vertical scrolling input by processing page_orientation
    * argument */
@@ -612,8 +648,8 @@ static void ui_scrollable_page_create(void) {
   lv_style_copy(&(gp_scrollabe_page_lvgl->ui_arrow_released_style),
                 &lv_style_plain);
 
-  /* gp_scrollabe_page_lvgl->ui_arrow_pressed_style: This style will be drawn on
-   * the arrow if scrolling icon is pressed */
+  /* gp_scrollabe_page_lvgl->ui_arrow_pressed_style: This style will be drawn
+   * on the arrow if scrolling icon is pressed */
   lv_style_copy(&(gp_scrollabe_page_lvgl->ui_arrow_pressed_style),
                 &lv_style_plain);
   (gp_scrollabe_page_lvgl->ui_arrow_pressed_style).body.main_color =
@@ -627,9 +663,9 @@ static void ui_scrollable_page_create(void) {
 
   /**
    * Calculate the number of pages/max number of times full scrolling can take
-   * place Total number of scrolls = Total height of content on page / Height of
-   * page We have already padded the content on page with label paddingLabel and
-   * therefore we do not need to consider padding here
+   * place Total number of scrolls = Total height of content on page / Height
+   * of page We have already padded the content on page with label
+   * paddingLabel and therefore we do not need to consider padding here
    */
   int16_t totalPageHeight =
       (int16_t)lv_page_get_scrl_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl);
@@ -638,6 +674,25 @@ static void ui_scrollable_page_create(void) {
   ASSERT(0 != currPageHeight);
   gp_scrollabe_page_data->curr_page_num = 1;
   gp_scrollabe_page_data->total_page_num = totalPageHeight / currPageHeight;
+
+  /**
+   * Recalculate the total pages if heading is only visible on the first page
+   */
+  if (gp_scrollabe_page_data->bool_only_first_page_header_visible) {
+    gp_scrollabe_page_data->total_page_num = 1;
+    int16_t first_page_height = currPageHeight;
+
+    gp_scrollabe_page_data->curr_page_num = 2;
+    page_update_header();
+
+    int16_t curr_page_height =
+        (int16_t)lv_obj_get_height(gp_scrollabe_page_lvgl->p_ui_page_lvgl);
+    gp_scrollabe_page_data->total_page_num +=
+        (totalPageHeight - first_page_height) / curr_page_height;
+
+    gp_scrollabe_page_data->curr_page_num = 1;
+    page_update_header();
+  }
 
   /**
    * Create buttons on the screen for cancellation and confirmation.
@@ -669,7 +724,8 @@ static void ui_scrollable_page_create(void) {
         lv_label_create(lv_scr_act(), NULL);
   }
 
-  /* Update all icons: Left/right arrows, Accept/Cancel buttons and Footnote */
+  /* Update all icons: Left/right arrows, Accept/Cancel buttons and Footnote
+   */
   page_update_icons();
 
   return;
@@ -693,6 +749,47 @@ void ui_scrollable_page(const char *p_page_ui_heading,
   gp_scrollabe_page_data->p_ui_body = p_page_ui_body;
   gp_scrollabe_page_data->bool_accept_cancel_visible =
       bool_cancel_accept_btn_visible;
+
+  /* Below fields will be overwritten below, when page settings are being
+   * applied */
+  gp_scrollabe_page_data->total_page_num = 1;
+  gp_scrollabe_page_data->curr_page_num = 1;
+  gp_scrollabe_page_data->bool_left_arrow_hidden = true;
+  gp_scrollabe_page_data->bool_right_arrow_hidden = true;
+  gp_scrollabe_page_data->bool_accept_cancel_hidden = false;
+
+  ui_scrollable_page_create();
+
+#ifdef DEV_BUILD
+  ekp_enqueue(LV_KEY_UP, DEFAULT_DELAY);
+  for (int i = 0; i < gp_scrollabe_page_data->total_page_num; i++)
+    ekp_enqueue(LV_KEY_RIGHT, DEFAULT_DELAY);
+  // ekp_enqueue(LV_KEY_DOWN,DEFAULT_DELAY);
+  ekp_enqueue(LV_KEY_ENTER, DEFAULT_DELAY);
+#endif
+
+  return;
+}
+
+void ui_scrollable_page_with_options(const char *p_page_ui_heading,
+                                     const char *p_page_ui_body,
+                                     scrollable_page_options_t options) {
+  if (NULL == p_page_ui_body) {
+    return;
+  }
+
+  lv_obj_clean(lv_scr_act());
+
+  gp_scrollabe_page_data =
+      (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));
+  ASSERT(NULL != gp_scrollabe_page_data);
+
+  gp_scrollabe_page_data->p_ui_heading = p_page_ui_heading;
+  gp_scrollabe_page_data->p_ui_body = p_page_ui_body;
+  gp_scrollabe_page_data->bool_accept_cancel_visible =
+      options.are_cancel_accept_btn_visible;
+  gp_scrollabe_page_data->bool_only_first_page_header_visible =
+      !options.is_heading_sticky;
 
   /* Below fields will be overwritten below, when page settings are being
    * applied */

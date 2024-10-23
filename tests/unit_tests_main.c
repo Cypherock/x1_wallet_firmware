@@ -78,7 +78,9 @@ extern lv_indev_t *indev_keypad;
 #endif
 #endif
 #endif /* USE_SIMULATOR == 1 */
-
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 void RunAllTests(void) {
   RUN_TEST_GROUP(event_getter_test);
   RUN_TEST_GROUP(p0_events_test);
@@ -113,7 +115,9 @@ void RunAllTests(void) {
  */
 int main(void) {
   application_init();
-
+#ifdef DEV_BUILD
+  ekp_queue_init();
+#endif
   UnityBegin("unit_tests_main.c");
   RunAllTests();
   UnityEnd();

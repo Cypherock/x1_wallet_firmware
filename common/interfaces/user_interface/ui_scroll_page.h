@@ -26,6 +26,7 @@ typedef struct {
   bool bool_right_arrow_hidden;
   bool bool_accept_cancel_visible;
   bool bool_accept_cancel_hidden;
+  bool bool_only_first_page_header_visible;
 } scrolling_page_data_t;
 
 typedef struct {
@@ -40,12 +41,19 @@ typedef struct {
   lv_obj_t *p_ui_cancel_btn_lvgl;
   lv_obj_t *p_ui_accept_btn_lvgl;
   lv_obj_t *p_ui_footnote_lvgl;
+  lv_obj_t *p_ui_padding_label;
 } scrolling_page_lvgl_t;
 
 typedef enum {
   MENU_SCROLL_HORIZONTAL = 0,
   MENU_SCROLL_UNDEFINED,
 } e_scrollable_page_orientation_t;
+
+typedef struct {
+  e_scrollable_page_orientation_t page_orientation;
+  bool are_cancel_accept_btn_visible;
+  bool is_heading_sticky;
+} scrollable_page_options_t;
 
 /**
  * @brief This API renders a scrollable UI page with a optional heading, 2-3
@@ -76,6 +84,15 @@ void ui_scrollable_page(const char *p_page_ui_heading,
                         const char *p_page_ui_body,
                         e_scrollable_page_orientation_t page_orientation,
                         bool bool_cancel_accept_btn_visible);
+
+/**
+ * @brief A copy of above function but with more options, designed to be replace
+ * it entirely and provide more options
+ *
+ */
+void ui_scrollable_page_with_options(const char *p_page_ui_heading,
+                                     const char *p_page_ui_body,
+                                     scrollable_page_options_t options);
 
 #ifdef UI_HOR_SCROLL_PAGE_UNIT_TESTS
 /**

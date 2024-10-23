@@ -68,4 +68,8 @@ bool reconstruct_seed(const uint8_t *wallet_id,
 uint8_t reconstruct_mnemonics(
     const uint8_t *wallet_id,
     char mnemonic_list[MAX_NUMBER_OF_MNEMONIC_WORDS][MAX_MNEMONIC_WORD_LENGTH]);
+
+bool reconstruct_seed_without_passphrase(const uint8_t *wallet_id,
+                                         uint8_t *seed_out,
+                                         rejection_cb *reject_cb);
 #endif /* RECONSTRUCT_SEED_FLOW_H */

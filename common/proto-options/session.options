@@ -1,0 +1,9 @@
+# Options for file common/cypherock-common/proto/session.proto
+core.SessionStartInitiateResultResponse.device_random_public type:FT_STATIC max_size:33 fixed_length:true
+core.SessionStartInitiateResultResponse.device_id type:FT_STATIC max_size:32 fixed_length:true
+core.SessionStartInitiateResultResponse.signature type:FT_STATIC max_size:64 fixed_length:true
+core.SessionStartInitiateResultResponse.postfix1 type:FT_STATIC max_size:7 fixed_length:true
+core.SessionStartInitiateResultResponse.postfix2 type:FT_STATIC max_size:23 fixed_length:true
+core.SessionStartBeginRequest.session_random_public type:FT_STATIC max_size:33 fixed_length:true
+core.SessionStartBeginRequest.signature type:FT_STATIC max_size:64 fixed_length:true
+core.SessionStartBeginRequest.device_id type:FT_STATIC max_size:32 fixed_length:true
