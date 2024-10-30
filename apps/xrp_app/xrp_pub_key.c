@@ -342,8 +342,7 @@ static bool get_user_consent(const pb_size_t which_request,
   } else {
     snprintf(msg,
              sizeof(msg),
-             UI_TEXT_RECEIVE_TOKEN_PROMPT,
-             XRP_LUNIT,
+             UI_TEXT_RECEIVE_PROMPT,
              XRP_NAME,
              wallet_name);
   }
