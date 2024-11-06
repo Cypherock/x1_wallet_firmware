@@ -340,12 +340,7 @@ static bool get_user_consent(const pb_size_t which_request,
     snprintf(
         msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, XRP_NAME, wallet_name);
   } else {
-    snprintf(msg,
-             sizeof(msg),
-             UI_TEXT_RECEIVE_TOKEN_PROMPT,
-             XRP_LUNIT,
-             XRP_NAME,
-             wallet_name);
+    snprintf(msg, sizeof(msg), UI_TEXT_RECEIVE_PROMPT, XRP_NAME, wallet_name);
   }
 
   return core_scroll_page(NULL, msg, xrp_send_error);
