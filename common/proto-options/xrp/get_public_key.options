@@ -1,5 +1,0 @@
-# Options for file common/cypherock-common/proto/xrp/get_public_key.proto
-xrp.GetPublicKeysDerivationPath.path type:FT_STATIC max_count:5 fixed_length:true
-xrp.GetPublicKeysIntiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
-xrp.GetPublicKeysIntiateRequest.derivation_paths type:FT_STATIC max_count:100 fixed_length:true
-xrp.GetPublicKeysResultResponse.public_keys type:FT_STATIC max_size:33 max_count:10 fixed_length:true
