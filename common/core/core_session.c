@@ -183,12 +183,12 @@ static void session_handle_errors() {
     case SESSION_UNKNOWN_ERROR:
     case SESSION_SIGNATURE_VERIFICATION_ERROR: {
       // TODO: Update core error macros for session
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+      send_core_error_msg_to_host(CORE_DEVICE_SESSION_INVALID);
       core_session_clear_metadata();
     } break;
 
     default: {
-      send_core_error_msg_to_host(CORE_UNKNOWN_APP);
+      send_core_error_msg_to_host(CORE_DEVICE_SESSION_INVALID);
       core_session_clear_metadata();
     } break;
   }
