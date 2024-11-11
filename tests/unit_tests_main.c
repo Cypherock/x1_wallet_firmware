@@ -111,6 +111,7 @@ void RunAllTests(void) {
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
+  RUN_TEST_GROUP(inheritance_auth_wallet_tests);
   RUN_TEST_GROUP(utils_tests);
   RUN_TEST_GROUP(inheritance_encryption_tests);
 }
@@ -126,6 +127,7 @@ void fill_flash_wallets() {
   // get_flash_ram_instance();
   is_flash_ram_instance_loaded = true;
   uint8_t wallet_id[WALLET_ID_SIZE] = {0};
+  char *wallet_name[] = {"DEV001", "DEV002"};
   int wallet_index = 0;
   //"DEV001" - without pin, and passphrase
   hex_string_to_byte_array(
@@ -135,6 +137,9 @@ void fill_flash_wallets() {
   memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
          wallet_id,
          WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
   flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
   flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
   flash_ram_instance.wallets[wallet_index].cards_states = 15;
@@ -148,6 +153,9 @@ void fill_flash_wallets() {
   memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
          wallet_id,
          WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
   flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
   flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
   flash_ram_instance.wallets[wallet_index].cards_states = 15;
