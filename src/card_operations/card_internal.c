@@ -228,7 +228,7 @@ static card_error_type_e handle_wait_for_card_selection(
   evt_status = get_events(EVENT_CONFIG_NFC, MAX_INACTIVITY_TIMEOUT);
 
   if (true == evt_status.p0_event.flag) {
-    return CARD_OPERATION_P0_OCCURED;
+    NFC_RETURN_ERROR_TYPE(card_data, CARD_OPERATION_P0_OCCURED);
   }
 
   /* This API call is required to select the detected card as `get_events` calls
