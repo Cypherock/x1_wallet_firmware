@@ -114,6 +114,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(inheritance_auth_wallet_tests);
   RUN_TEST_GROUP(utils_tests);
   RUN_TEST_GROUP(inheritance_encryption_tests);
+  RUN_TEST_GROUP(inheritance_decryption_tests);
 }
 
 /**

@@ -91,46 +91,20 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  DECRYPTION_ERROR_DEFAULT = 0,
-  DECRYPTION_INVALID_REQUEST_ERROR,
-  DECRYPTION_QUERY_FETCH_FAIL_ERROR,
-  DECRYPTION_INVALID_WALLET_ID_ERROR,
-  DECRYPTION_USER_ABORT_FAILURE,
-  DECRYPTION_PB_DECODE_FAIL_ERROR,
-  DECRYPTION_INVALID_DATA_ERROR,
-  // DECRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR,
-  DECRYPTION_CARD_DECRYPTION_FAIL_ERROR,
-  DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR,
-  DECRYPTION_PB_ENCODE_FAIL_ERROR,
-  DECRYPTION_CHUNK_DATA_INVALID_ERROR,
-  DECRYPTION_ASSERT_MALLOC_ERROR,
-  DECRYPTION_OK,
-} decryption_error_type_e;
-
-typedef enum {
-  DECRYPTION_DEFAULT_START_FLOW = 0,
-  DECRYPTION_QUERY_HANDLE_FLOW,
-  DECRYPTION_ENCRYPTED_DATA_GET_FLOW,
-  DECRYPTION_USER_VERIFY_FLOW,
-  DECRYPTION_MESSAGE_DECRYPT_FLOW,
-  DECRYPTION_PACKET_DESERIALIZE_FLOW,
-  DECRYPTION_PACKET_DECRYPT_FLOW,
-  DECRYPTION_SEND_RESULT_FLOW,
-} decryption_flow_t;
-
 typedef struct {
   decryption_error_type_e type;
   decryption_flow_t flow;
 } decryption_error_info_t;
 
 static decryption_error_info_t decryption_error;
+
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 #define DECRYPTED_CHUNK_SIZE (2048)
 #define SET_ERROR_TYPE(x) decryption_error.type = x
 #define SET_FLOW_TAG(x) decryption_error.flow = x
+
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
@@ -669,7 +643,7 @@ static bool show_data(void) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_decrypt_data(inheritance_query_t *query) {
+decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query) {
   decryption_set_defaults();
   decryption_context = (inheritance_decryption_context_t *)malloc(
       sizeof(inheritance_decryption_context_t));
@@ -695,4 +669,5 @@ void inheritance_decrypt_data(inheritance_query_t *query) {
   memzero(decryption_context, sizeof(inheritance_decryption_context_t));
   free(decryption_context);
   decryption_context = NULL;
+  return decryption_error.type;
 }
