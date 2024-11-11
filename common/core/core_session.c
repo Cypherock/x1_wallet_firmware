@@ -358,7 +358,7 @@ static void start_request(const core_msg_t *core_msg) {
 
 void core_session_clear_metadata() {
   memzero(&session, sizeof(session_private_t));
-  session.state = SESSION_VIRGIN;
+  session.state = SESSION_INIT;
 }
 
 session_error_type_e core_session_parse_start_message(
