@@ -494,7 +494,7 @@ card_error_type_e single_card_pair_operation(char *heading,
   // Need to handle how assign new card its number
   card_operation_data_t card_data = {0};
   card_pairing_data_t pair_data = {0};
-
+#if USE_SIMULATOR == 0
   if (SUCCESS != pair_card_preprocess(&pair_data)) {
     return CARD_OPERATION_ABORT_OPERATION;
   }
@@ -535,4 +535,7 @@ card_error_type_e single_card_pair_operation(char *heading,
 
   nfc_deselect_card();
   return card_data.error_type;
+#else
+  return CARD_OPERATION_SUCCESS;
+#endif
 }

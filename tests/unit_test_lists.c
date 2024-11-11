@@ -231,6 +231,17 @@ TEST_GROUP_RUNNER(inheritance_encryption_tests) {
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
 }
+TEST_GROUP_RUNNER(inheritance_auth_wallet_tests) {
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_valid_input_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_which_request_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_valid_wallet_id_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_min_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_max_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_ok);
+}
 
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
