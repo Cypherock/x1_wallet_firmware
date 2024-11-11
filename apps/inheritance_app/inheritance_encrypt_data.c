@@ -769,7 +769,6 @@ static bool send_encrypted_data(inheritance_query_t *query) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
 encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
   encryption_set_defaults();
   encryption_context = (inheritance_encryption_context_t *)malloc(
