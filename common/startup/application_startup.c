@@ -69,6 +69,8 @@
  */
 #include "application_startup.h"
 
+#include <string.h>
+
 #include "core_error.h"
 #include "core_flow_init.h"
 #include "cryptoauthlib.h"
@@ -487,6 +489,12 @@ uint32_t get_device_serial() {
   return atecc_data.status;
 #else
   // TODO: standardize device_id for simulator
+  uint8_t device_id[32] = {0};
+  hex_string_to_byte_array("8485011716705c7dbe8fdf69291fa3fc11f6bc30b55262e3819"
+                           "6d23562707ed5",    ///< SHA256("device_id");
+                           64,
+                           device_id);
+  memcpy(atecc_data.device_serial, device_id, DEVICE_SERIAL_SIZE);
   return ATCA_SUCCESS;
 #endif
 }

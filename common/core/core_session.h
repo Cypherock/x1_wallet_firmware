@@ -79,6 +79,7 @@ typedef struct {
 typedef struct {
   uint8_t device_id[DEVICE_SERIAL_SIZE];
   uint8_t device_random_priv_key[SESSION_PRIV_KEY_SIZE];
+  uint8_t device_random_pub_key[SESSION_PUB_KEY_SIZE];
   uint8_t session_iv[SESSION_IV_SIZE];
   uint8_t session_key[SESSION_PRIV_KEY_SIZE];
   session_state_type_e state;    ///< Indicates session current state.

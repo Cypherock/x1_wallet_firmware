@@ -56,12 +56,13 @@
  ******************************************************************************
  */
 
-#include <stdint.h>
-
-#include "flash_struct.h"
-#include "flash_struct_priv.h"
+#include "base58.h"
+#include "bip32.h"
+#include "bip39.h"
+#include "curves.h"
+#include "nist256p1.h"
+#include "sec_flash_priv.h"
 #include "utils.h"
-#include "wallet.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -93,6 +94,7 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(ui_events_test);
   RUN_TEST_GROUP(usb_evt_api_test);
   RUN_TEST_GROUP(nfc_events_test);
+  RUN_TEST_GROUP(core_session_test);
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
   RUN_TEST_GROUP(nfc_events_manual_test);
 #endif
@@ -124,49 +126,52 @@ void RunAllTests(void) {
  */
 
 #if USE_SIMULATOR == 1
-void fill_flash_wallets() {
-  // get_flash_ram_instance();
-  is_flash_ram_instance_loaded = true;
-  uint8_t wallet_id[WALLET_ID_SIZE] = {0};
-  char *wallet_name[] = {"DEV001", "DEV002"};
-  int wallet_index = 0;
-  //"DEV001" - without pin, and passphrase
-  hex_string_to_byte_array(
-      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2bff",
-      64,
-      wallet_id);
-  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
-         wallet_id,
-         WALLET_ID_SIZE);
-  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
-         wallet_name[wallet_index],
-         strlen(wallet_name[wallet_index]));
-  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
-  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
-  flash_ram_instance.wallets[wallet_index].cards_states = 15;
+void create_flash_keys() {
+  const uint32_t version = 0x0488b21e;
+  const char *curve = NIST256P1_NAME;
+  const char *mnemonic = "embody pepper stumble";
+  printf("%s\n\n", mnemonic);
 
-  // "DEV002" - has pin
-  wallet_index += 1;
-  hex_string_to_byte_array(
-      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2b88",
-      64,
-      wallet_id);
-  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
-         wallet_id,
-         WALLET_ID_SIZE);
-  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
-         wallet_name[wallet_index],
-         strlen(wallet_name[wallet_index]));
-  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
-  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
-  flash_ram_instance.wallets[wallet_index].cards_states = 15;
-  WALLET_SET_PIN(flash_ram_instance.wallets[wallet_index].wallet_info);
+  uint8_t seed[64];
+  mnemonic_to_seed(mnemonic, "", seed, NULL);
+  printf("\n");
+
+  HDNode m;
+  hdnode_from_seed(seed, 64, curve, &m);
+  hdnode_fill_public_key(&m);
+
+  const uint32_t h = 0x80000000;
+  // m/1000'/0'/2'/0
+  uint32_t path[] = {1000 | h, 0 | h, 2 | h, 0};    // path to generate nodes
+
+  const size_t path_size = sizeof(path) / 4;
+  HDNode nodes[path_size];
+  HDNode last = m;
+  for (size_t i = 0; i < path_size; i++) {
+    nodes[i] = last;
+    hdnode_private_ckd(&nodes[i], path[i]);
+    hdnode_fill_public_key(&nodes[i]);
+    last = nodes[i];
+  }
+  uint8_t card_root_xpub[FS_KEYSTORE_XPUB_LEN] = {0};
+  char xpub[XPUB_SIZE];
+  hdnode_serialize_public(&last,
+                          hdnode_fingerprint(&nodes[path_size - 2]),
+                          version,
+                          xpub,
+                          XPUB_SIZE);
+  base58_decode_check(
+      xpub, nist256p1_info.hasher_base58, card_root_xpub, XPUB_SIZE);
+  get_flash_perm_instance();
+  memcpy(flash_perm_instance.permKeyData.ext_keys.card_root_xpub,
+         card_root_xpub,
+         FS_KEYSTORE_XPUB_LEN);
 }
 #endif
 
 int main(void) {
 #if USE_SIMULATOR == 1
-  fill_flash_wallets();
+  create_flash_keys();
 #endif
   application_init();
 #ifdef DEV_BUILD
