@@ -29,9 +29,7 @@
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
-#ifdef DEV_BUILD
-#include "dev_utils.h"
-#endif
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
