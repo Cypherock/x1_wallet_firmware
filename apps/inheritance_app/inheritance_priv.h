@@ -126,5 +126,5 @@ encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query);
  *
  * @param query Reference to the decoded query struct from the host app
  */
-void inheritance_decrypt_data(inheritance_query_t *query);
+decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query);
 #endif /* INHERITANCE_PRIV_H */

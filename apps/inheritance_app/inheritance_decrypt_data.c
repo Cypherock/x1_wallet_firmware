@@ -89,17 +89,34 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * PRIVATE TYPEDEFS
+ *****************************************************************************/
+typedef struct {
+  decryption_error_type_e type;
+  decryption_flow_t flow;
+} decryption_error_info_t;
+
+static decryption_error_info_t decryption_error;
+
+/*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 #define DECRYPTED_CHUNK_SIZE (2048)
-/*****************************************************************************
- * PRIVATE TYPEDEFS
- *****************************************************************************/
+#define SET_ERROR_TYPE(x) decryption_error.type = x
+#define SET_FLOW_TAG(x) decryption_error.flow = x
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Sets error @ref DECRYPTION_error to defaults.
+ */
+static void decryption_set_defaults();
 
+/**
+ * @brief Error handler for inheritance DECRYPTION flow
+ */
+static void decryption_handle_errors();
 /**
  * @brief Checks if the given request matches the expected request type.
  *
@@ -125,7 +142,8 @@ static bool validate_request_data(
  * @param query Pointer to the inheritance query.
  * @return true if the initiation is successful, false otherwise.
  */
-STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query);
+STATIC bool inheritance_decryption_handle_initiate_query(
+    inheritance_query_t *query);
 
 /**
  * @brief Function responsible for decoding pb_encoded buffer to @ref
@@ -231,11 +249,56 @@ STATIC inheritance_decryption_context_t *decryption_context = NULL;
  * STATIC FUNCTIONS
  *****************************************************************************/
 
+static void decryption_set_defaults() {
+  SET_FLOW_TAG(DECRYPTION_DEFAULT_START_FLOW);
+  SET_ERROR_TYPE(DECRYPTION_ERROR_DEFAULT);
+}
+
+static void decryption_handle_errors() {
+  if (decryption_error.type == DECRYPTION_OK) {
+    return;
+  }
+  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
+            decryption_error.type,
+            decryption_error.flow);
+  decryption_error_type_e type = decryption_error.type;
+  switch (type) {
+    case DECRYPTION_ERROR_DEFAULT:
+    case DECRYPTION_INVALID_REQUEST_ERROR:
+    case DECRYPTION_INVALID_DATA_ERROR:
+    case DECRYPTION_PB_ENCODE_FAIL_ERROR:
+    case DECRYPTION_CHUNK_DATA_INVALID_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    } break;
+    case DECRYPTION_PB_DECODE_FAIL_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_DECODING_FAILED);
+    } break;
+
+    case DECRYPTION_INVALID_WALLET_ID_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    } break;
+    case DECRYPTION_USER_ABORT_FAILURE: {
+      inheritance_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    } break;
+    case DECRYPTION_CARD_DECRYPTION_FAIL_ERROR:
+    // case DECRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
+    case DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR:
+    case DECRYPTION_ASSERT_MALLOC_ERROR:
+    default: {
+      inheritance_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    } break;
+  }
+}
+
 static bool check_which_request(const inheritance_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->decrypt.which_request) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_INVALID_REQUEST);
+    SET_ERROR_TYPE(DECRYPTION_INVALID_REQUEST_ERROR);
     return false;
   }
 
@@ -251,7 +314,9 @@ static bool validate_request_data(
   return status;
 }
 
-STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
+STATIC bool inheritance_decryption_handle_initiate_query(
+    inheritance_query_t *query) {
+  SET_FLOW_TAG(DECRYPTION_QUERY_HANDLE_FLOW);
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
@@ -276,6 +341,7 @@ STATIC bool inheritance_handle_initiate_query(inheritance_query_t *query) {
   }
 
   if (!core_confirmation(msg, inheritance_send_error)) {
+    SET_ERROR_TYPE(DECRYPTION_USER_ABORT_FAILURE);
     return false;
   }
 
@@ -299,8 +365,7 @@ static bool decode_inheritance_encrypted_data(
     inheritance_decrypt_data_with_pin_encrypted_data_structure_t
         *encrypted_data) {
   if (NULL == data || NULL == encrypted_data) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_DECODING_FAILED);
+    SET_ERROR_TYPE(DECRYPTION_PB_DECODE_FAIL_ERROR);
     return false;
   }
 
@@ -315,8 +380,7 @@ static bool decode_inheritance_encrypted_data(
       encrypted_data);
 
   if (false == status) {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_DECODING_FAILED);
+    SET_ERROR_TYPE(DECRYPTION_PB_DECODE_FAIL_ERROR);
   }
 
   return status;
@@ -324,6 +388,7 @@ static bool decode_inheritance_encrypted_data(
 
 // TODO: Make chunking logic generic to be used by any flow
 static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
+  SET_FLOW_TAG(DECRYPTION_ENCRYPTED_DATA_GET_FLOW);
   uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
   inheritance_result_t response =
       init_inheritance_result(INHERITANCE_RESULT_DECRYPT_TAG);
@@ -335,9 +400,11 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
   uint32_t size = 0;
   while (1) {
     // req plain data chunk from host
-
-    if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
-        !check_which_request(
+    if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG)) {
+      SET_ERROR_TYPE(DECRYPTION_QUERY_FETCH_FAIL_ERROR);
+      return false;
+    }
+    if (!check_which_request(
             query,
             INHERITANCE_DECRYPT_DATA_WITH_PIN_REQUEST_ENCRYPTED_DATA_TAG)) {
       return false;
@@ -349,8 +416,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
     if (false == query->decrypt.encrypted_data.has_chunk_payload ||
         payload->chunk_index >= payload->total_chunks ||
         size + chunk->size > total_size) {
-      inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
+      SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
       return false;
     }
 
@@ -384,6 +450,7 @@ static bool get_pb_encoded_buffer(
     uint16_t max_buffer_len,
     size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
+    SET_ERROR_TYPE(DECRYPTION_PB_ENCODE_FAIL_ERROR);
     return false;
   }
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
@@ -395,6 +462,8 @@ static bool get_pb_encoded_buffer(
 
   if (true == status) {
     *bytes_written_out = stream.bytes_written;
+  } else {
+    SET_ERROR_TYPE(DECRYPTION_PB_ENCODE_FAIL_ERROR);
   }
 
   return status;
@@ -417,8 +486,11 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
 
   *index = 0;
   do {
-    if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG) ||
-        !check_which_request(
+    if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG)) {
+      SET_ERROR_TYPE(DECRYPTION_QUERY_FETCH_FAIL_ERROR);
+      return false;
+    }
+    if (!check_which_request(
             query,
             INHERITANCE_DECRYPT_DATA_WITH_PIN_REQUEST_DECRYPTED_DATA_REQUEST_TAG)) {
       return false;
@@ -426,6 +498,7 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
     // chunk_payload validation checks
     if (query->decrypt.decrypted_data_request.has_chunk_ack == false ||
         query->decrypt.decrypted_data_request.chunk_ack.chunk_index != *index) {
+      SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
       return false;
     }
     size_t chunk_size = (remaining_size > DECRYPTED_CHUNK_SIZE)
@@ -449,6 +522,7 @@ static bool inheritance_send_in_chunks(inheritance_query_t *query,
 }
 
 static bool send_decrypted_data(inheritance_query_t *query) {
+  SET_FLOW_TAG(DECRYPTION_SEND_RESULT_FLOW);
   uint8_t
       buffer[INHERITANCE_DECRYPT_DATA_WITH_PIN_DECRYPTED_DATA_STRUCTURE_SIZE] =
           {0};
@@ -458,19 +532,22 @@ static bool send_decrypted_data(inheritance_query_t *query) {
                              sizeof(buffer),
                              &bytes_encoded) ||
       !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
-    // TODO: throw decryption failed error
     return false;
   }
   return true;
 }
 
 static bool decrypt_packet(void) {
-  return session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
-                             &decryption_context->encrypted_data.data.size) ==
-         SESSION_DECRYPT_PACKET_SUCCESS;
+  SET_FLOW_TAG(DECRYPTION_PACKET_DECRYPT_FLOW);
+  if (session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
+                          &decryption_context->encrypted_data.data.size) !=
+      SESSION_DECRYPT_PACKET_SUCCESS) {
+    SET_ERROR_TYPE(DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR);
+  }
 }
 
 static bool deserialize_packet(void) {
+  SET_FLOW_TAG(DECRYPTION_PACKET_DESERIALIZE_FLOW);
   uint16_t packet_index = 0;
   decryption_context->data_count =
       decryption_context->encrypted_data.data.bytes[packet_index++];
@@ -488,15 +565,20 @@ static bool deserialize_packet(void) {
            decryption_context->data[index].encrypted_data_size);
     packet_index += decryption_context->data[index].encrypted_data_size;
   }
-
-  return packet_index <= decryption_context->encrypted_data.data.size;
+  bool status = packet_index <= decryption_context->encrypted_data.data.size;
+  if (!status) {
+    SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+  }
+  return status;
 }
 
 static bool decrypt_message_data(void) {
+  SET_FLOW_TAG(DECRYPTION_MESSAGE_DECRYPT_FLOW);
   if (card_fetch_decrypt_data(decryption_context->wallet_id,
                               decryption_context->data,
                               decryption_context->data_count) !=
       CARD_OPERATION_SUCCESS) {
+    SET_ERROR_TYPE(DECRYPTION_CARD_DECRYPTION_FAIL_ERROR);
     return false;
   }
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
@@ -508,18 +590,15 @@ static bool decrypt_data(void) {
 
   do {
     if (!decrypt_packet()) {
-      // TODO: Throw packet decryption error
       status = false;
       break;
     }
 
     if (!deserialize_packet()) {
-      // TODO: Throw packet serialization error
       status = false;
       break;
     }
     if (!decrypt_message_data()) {
-      // TODO: Throw decryption failed
       status = false;
       break;
     }
@@ -530,19 +609,16 @@ static bool decrypt_data(void) {
 }
 
 static bool show_data(void) {
+  SET_FLOW_TAG(DECRYPTION_USER_VERIFY_FLOW);
   pb_size_t response_count = 0;
 
   for (uint8_t i = 0; i < decryption_context->data_count; i++) {
     uint8_t tag = decryption_context->data[i].plain_data[0];
 
     if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
-      if (!core_scroll_page(
-              UI_TEXT_PIN,    ///< TODO: Figure out a way to make this generic
-              (const char *)&decryption_context->data[i]
-                  .plain_data[3],    ///< sizeof (tag) + sizeof (length) = 3
-              inheritance_send_error)) {
-        return false;
-      }
+      message_scr_init(
+          (const char *)&decryption_context->data[i]
+              .plain_data[3]);    ///< sizeof (tag) + sizeof (length) = 3
     } else {
       uint16_t offset = 1;    // Skip tag
       decryption_context->response_payload.decrypted_data[response_count]
@@ -567,21 +643,31 @@ static bool show_data(void) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_decrypt_data(inheritance_query_t *query) {
+decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query) {
+  decryption_set_defaults();
   decryption_context = (inheritance_decryption_context_t *)malloc(
       sizeof(inheritance_decryption_context_t));
+  if (decryption_context == NULL) {
+    SET_ERROR_TYPE(DECRYPTION_ASSERT_MALLOC_ERROR);
+    decryption_handle_errors();
+    ASSERT(decryption_context != NULL);
+  }
   memzero(decryption_context, sizeof(inheritance_decryption_context_t));
 
-  if (inheritance_handle_initiate_query(query) &&
+  if (inheritance_decryption_handle_initiate_query(query) &&
       inheritance_get_encrypted_data(query) && decrypt_data() && show_data() &&
       send_decrypted_data(query)) {
     delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_TIME);
+    SET_ERROR_TYPE(DECRYPTION_OK);
   } else {
     delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_TIME);
   }
+  decryption_handle_errors();
+
   delay_scr_init(ui_text_check_cysync, DELAY_TIME);
 
   memzero(decryption_context, sizeof(inheritance_decryption_context_t));
   free(decryption_context);
   decryption_context = NULL;
+  return decryption_error.type;
 }
