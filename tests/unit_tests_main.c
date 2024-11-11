@@ -56,6 +56,12 @@
  ******************************************************************************
  */
 
+#include <stdint.h>
+
+#include "flash_struct.h"
+#include "flash_struct_priv.h"
+#include "utils.h"
+#include "wallet.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -105,7 +111,9 @@ void RunAllTests(void) {
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
+  RUN_TEST_GROUP(inheritance_auth_wallet_tests);
   RUN_TEST_GROUP(utils_tests);
+  RUN_TEST_GROUP(inheritance_encryption_tests);
 }
 
 /**
@@ -113,7 +121,52 @@ void RunAllTests(void) {
  * This entry point is a parallel entry point to the int main(void) of the
  * actual firmware.
  */
+
+#if USE_SIMULATOR == 1
+void fill_flash_wallets() {
+  // get_flash_ram_instance();
+  is_flash_ram_instance_loaded = true;
+  uint8_t wallet_id[WALLET_ID_SIZE] = {0};
+  char *wallet_name[] = {"DEV001", "DEV002"};
+  int wallet_index = 0;
+  //"DEV001" - without pin, and passphrase
+  hex_string_to_byte_array(
+      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2bff",
+      64,
+      wallet_id);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
+         wallet_id,
+         WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
+  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
+  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
+  flash_ram_instance.wallets[wallet_index].cards_states = 15;
+
+  // "DEV002" - has pin
+  wallet_index += 1;
+  hex_string_to_byte_array(
+      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2b88",
+      64,
+      wallet_id);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
+         wallet_id,
+         WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
+  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
+  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
+  flash_ram_instance.wallets[wallet_index].cards_states = 15;
+  WALLET_SET_PIN(flash_ram_instance.wallets[wallet_index].wallet_info);
+}
+#endif
+
 int main(void) {
+#if USE_SIMULATOR == 1
+  fill_flash_wallets();
+#endif
   application_init();
 #ifdef DEV_BUILD
   ekp_queue_init();

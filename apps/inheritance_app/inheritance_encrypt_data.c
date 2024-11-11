@@ -92,37 +92,6 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef enum {
-  ENCRYPTION_ERROR_DEFAULT = 0,
-  ENCRYPTION_INVALID_REQUEST_ERROR,
-  ENCRYPTION_INVALID_WALLET_ID_ERROR,
-  ENCRYPTION_PIN_NOT_SET_ERROR,
-  ENCRYPTION_USER_ABORT_FAILURE,
-  ENCRYPTION_PB_DECODE_FAIL_ERROR,
-  ENCRYPTION_INVALID_DATA_ERROR,
-  ENCRYPTION_VERIFICATION_FAIL_ERROR,
-  ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR,
-  ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR,
-  ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR,
-  ENCRYPTION_PB_ENCODE_FAIL_ERROR,
-  ENCRYPTION_CHUNK_DATA_INVALID_ERROR,
-  ENCRYPTION_ASSERT_MALLOC_ERROR,
-  ENCRYPTION_OK,
-} encryption_error_type_e;
-
-typedef enum {
-  ENCRYPTION_DEFAULT_START_FLOW = 0,
-  ENCRYPTION_QUERY_HANDLE_FLOW,
-  ENCRYPTION_PLAIN_DATA_GET_FLOW,
-  ENCRYPTION_PIN_VERIFY_FLOW,
-  ENCRYPTION_USER_VERIFY_FLOW,
-  ENCRYPTION_MESSAGE_SERIALIZE_FLOW,
-  ENCRYPTION_MESSAGE_ENCRYPT_FLOW,
-  ENCRYPTION_PACKET_SERIALIZE_FLOW,
-  ENCRYPTION_PACKET_ENCRYPT_FLOW,
-  ENCRYPTION_SEND_RESULT_FLOW,
-} encryption_flow_t;
-
 typedef struct {
   encryption_error_type_e type;
   encryption_flow_t flow;
@@ -800,8 +769,7 @@ static bool send_encrypted_data(inheritance_query_t *query) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void inheritance_encrypt_data(inheritance_query_t *query) {
+encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
   encryption_set_defaults();
   encryption_context = (inheritance_encryption_context_t *)malloc(
       sizeof(inheritance_encryption_context_t));
@@ -827,4 +795,5 @@ void inheritance_encrypt_data(inheritance_query_t *query) {
   memzero(encryption_context, sizeof(inheritance_encryption_context_t));
   free(encryption_context);
   encryption_context = NULL;
+  return encryption_error.type;
 }

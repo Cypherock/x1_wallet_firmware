@@ -29,6 +29,7 @@
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -37,17 +38,6 @@
  * STATIC VARIABLES
  *****************************************************************************/
 static auth_wallet_config_t *auth = NULL;
-typedef enum {
-  AUTH_WALLET_DEFAULT_ERROR = 0,
-  AUTH_WALLET_MALLOC_ERROR,
-  AUTH_WALLET_INVALID_INPUT_ERROR,
-  AUTH_WALLET_USER_ABORT_ERROR,
-  AUTH_WALLET_SEED_GENERATION_ERROR,
-  AUTH_WALLET_PAIRING_ERROR,
-  AUTH_WALLET_CARD_ENCRYPTION_ERROR,
-  AUTH_WALLET_SIGNATURE_VERIFICATION_ERROR,
-  AUTH_WALLET_OK,
-} auth_wallet_error_type_e;
 
 typedef struct {
   auth_wallet_error_type_e type;
@@ -190,13 +180,14 @@ static void auth_wallet_handle_errors() {
 
   switch (type) {
     case AUTH_WALLET_USER_ABORT_ERROR: {
-      // Error already sent to host
+      // Error already sent to host, nothing to do here
       break;
     }
     case AUTH_WALLET_INVALID_INPUT_ERROR:
     case AUTH_WALLET_SEED_GENERATION_ERROR:
     case AUTH_WALLET_PAIRING_ERROR:
     case AUTH_WALLET_CARD_ENCRYPTION_ERROR:
+    case AUTH_WALLET_INVALID_WALLET_ID_ERROR:
     case AUTH_WALLET_SIGNATURE_VERIFICATION_ERROR: {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                              ERROR_DATA_FLOW_INVALID_REQUEST);
@@ -310,7 +301,11 @@ static bool auth_wallet_get_wallet_entropy() {
         card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
     if (status != CARD_OPERATION_SUCCESS ||
         msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
-      SET_ERROR_TYPE(AUTH_WALLET_CARD_ENCRYPTION_ERROR);
+      if (status == CARD_OPERATION_VERIFICATION_FAILED) {
+        SET_ERROR_TYPE(AUTH_WALLET_INVALID_WALLET_ID_ERROR);
+      } else {
+        SET_ERROR_TYPE(AUTH_WALLET_CARD_ENCRYPTION_ERROR);
+      }
       return false;
     }
     memcpy((void *)auth->wallet_based_data.entropy,
@@ -438,7 +433,7 @@ static bool send_result() {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void inheritance_auth_wallet(inheritance_query_t *query) {
+auth_wallet_error_type_e inheritance_auth_wallet(inheritance_query_t *query) {
   auth_wallet_error_default();
   auth = (auth_wallet_config_t *)malloc(sizeof(auth_wallet_config_t));
   if (auth == NULL) {
@@ -466,9 +461,9 @@ void inheritance_auth_wallet(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
     SET_ERROR_TYPE(AUTH_WALLET_OK);
   }
-
   auth_wallet_handle_errors();
   memzero(auth, sizeof(auth_wallet_config_t));
   free(auth);
   auth = NULL;
+  return auth_wallet_error.type;
 }
