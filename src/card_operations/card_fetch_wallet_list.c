@@ -226,15 +226,7 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   }
   nfc_deselect_card();
 
-  // P0 abort is the only condition we want to exit the flow
-  // Card abort error will be explicitly shown here as error codes
-  if (card_data.error_type == CARD_OPERATION_P0_OCCURED) {
-    return false;
-  }
-
-  // If the tapped card is not paired, it is a terminal case in the flow
-  if (card_data.nfc_data.pairing_error) {
-    delay_scr_init(ui_text_device_and_card_not_paired, DELAY_TIME);
+  if (result != CARD_OPERATION_SUCCESS) {
     return false;
   }
 

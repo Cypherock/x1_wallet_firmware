@@ -56,6 +56,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/solana_app
         apps/tron_app
         apps/inheritance_app
+        apps/xrp_app
 
         src/
         src/menu
@@ -159,6 +160,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/inheritance_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/xrp_app>
         )
 
 IF(UNIT_TESTS_SWITCH)
