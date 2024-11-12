@@ -269,6 +269,7 @@ static bool session_create_device_payload(uint8_t *payload) {
   offset += POSTFIX1_SIZE;
   // append posfix2
   memcpy(payload + offset, signed_data.postfix2, POSTFIX2_SIZE);
+  return true;
 }
 
 static void initiate_request(void) {
