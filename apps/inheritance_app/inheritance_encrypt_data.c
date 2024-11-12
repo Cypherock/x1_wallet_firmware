@@ -631,13 +631,15 @@ static bool serialize_packet(void) {
 }
 
 static bool encrypt_packet(void) {
-  if (SESSION_ENCRYPTION_OK !=
+  SET_FLOW_TAG(ENCRYPTION_PACKET_ENCRYPT_FLOW);
+  bool was_encryption_successful =
       session_aes_encrypt(encryption_context->payload.encrypted_data.bytes,
-                          &encryption_context->payload.encrypted_data.size)) {
+                          &encryption_context->payload.encrypted_data.size) ==
+      SESSION_ENCRYPTION_OK;
+  if (!was_encryption_successful) {
     SET_ERROR_TYPE(ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR);
-    return false;
   }
-  return true;
+  return was_encryption_successful;
 }
 
 static bool encrypt_data(void) {

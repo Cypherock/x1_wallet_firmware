@@ -538,9 +538,16 @@ static bool send_decrypted_data(inheritance_query_t *query) {
 }
 
 static bool decrypt_packet(void) {
-  return session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
-                             &decryption_context->encrypted_data.data.size) ==
-         SESSION_DECRYPTION_OK;
+  SET_FLOW_TAG(DECRYPTION_PACKET_DECRYPT_FLOW);
+  bool was_decryption_successful =
+      (session_aes_decrypt(decryption_context->encrypted_data.data.bytes,
+                           &decryption_context->encrypted_data.data.size) ==
+       SESSION_DECRYPTION_OK);
+  if (!was_decryption_successful) {
+    SET_ERROR_TYPE(DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR);
+  }
+
+  return was_decryption_successful;
 }
 
 static bool deserialize_packet(void) {
