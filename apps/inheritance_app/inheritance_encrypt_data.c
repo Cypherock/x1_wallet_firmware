@@ -663,6 +663,7 @@ static bool encrypt_data(void) {
       status = false;
       break;
     }
+    set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_PIN_ENTERED);
 
     if (!serialize_message_data()) {
       status = false;
@@ -673,6 +674,7 @@ static bool encrypt_data(void) {
       status = false;
       break;
     }
+    set_app_flow_status(INHERITANCE_ENCRYPT_DATA_STATUS_MESSAGE_ENCRYPTED);
 
     if (!serialize_packet()) {
       status = false;
