@@ -318,6 +318,16 @@ static void encryption_handle_errors() {
   LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
             encryption_error.type,
             encryption_error.flow);
+
+  // Display any error msg if exists
+  if (0 != strlen(error_screen.core_error_msg)) {
+    if (error_screen.ring_buzzer) {
+      buzzer_start(BUZZER_DURATION);
+    }
+    delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
+    clear_core_error_screen();
+  }
+
   encryption_error_type_e type = encryption_error.type;
   switch (type) {
     case ENCRYPTION_ERROR_DEFAULT:
@@ -653,29 +663,31 @@ static bool encrypt_data(void) {
       status = false;
       break;
     }
+
     if (!serialize_message_data()) {
       status = false;
       break;
     }
+
     if (!encrypt_message_data()) {
       status = false;
       break;
     }
+
     if (!serialize_packet()) {
       status = false;
       break;
     }
+
     if (!encrypt_packet()) {
       status = false;
       break;
     }
   } while (0);
 
+  // Display Processing only if proceeding with flow
   if (status) {
-    delay_scr_init(ui_text_processing, DELAY_TIME);
-  } else {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_INVALID_REQUEST);
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
   }
   return status;
 }
@@ -794,14 +806,6 @@ encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
     SET_ERROR_TYPE(ENCRYPTION_OK);
   } else {
-    // TODO: Add this in error handling
-    if (0 != strlen(error_screen.core_error_msg)) {
-      if (error_screen.ring_buzzer) {
-        buzzer_start(BUZZER_DURATION);
-      }
-      delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
-      clear_core_error_screen();
-    }
     delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
   encryption_handle_errors();
