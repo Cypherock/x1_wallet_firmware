@@ -66,6 +66,7 @@
 #include "card_fetch_data.h"
 #include "card_operation_typedefs.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_session.h"
 #include "inheritance/core.pb.h"
 #include "inheritance/decrypt_data_with_pin.pb.h"
@@ -80,6 +81,7 @@
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "ui_state_machine.h"
 #include "utils.h"
 #include "wallet.h"
 #include "wallet_list.h"
@@ -258,7 +260,7 @@ static void decryption_handle_errors() {
   if (decryption_error.type == DECRYPTION_OK) {
     return;
   }
-  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
+  LOG_ERROR("inheritance_decrypt_data Error Code:%d Flow Tag:%d ",
             decryption_error.type,
             decryption_error.flow);
   decryption_error_type_e type = decryption_error.type;
@@ -355,7 +357,7 @@ STATIC bool inheritance_decryption_handle_initiate_query(
   result.decrypt.which_response =
       INHERITANCE_DECRYPT_DATA_WITH_PIN_RESPONSE_CONFIRMATION_TAG;
   inheritance_send_result(&result);
-  delay_scr_init(ui_text_processing, DELAY_TIME);
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
   return true;
 }
 
@@ -602,13 +604,18 @@ static bool decrypt_data(void) {
       status = false;
       break;
     }
+
     if (!decrypt_message_data()) {
       status = false;
       break;
     }
 
   } while (0);
-  delay_scr_init(ui_text_processing, DELAY_TIME);
+
+  // Display Processing only if proceeding with flow
+  if (status) {
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+  }
   return status;
 }
 
@@ -620,9 +627,14 @@ static bool show_data(void) {
     uint8_t tag = decryption_context->data[i].plain_data[0];
 
     if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
-      message_scr_init(
-          (const char *)&decryption_context->data[i]
-              .plain_data[3]);    ///< sizeof (tag) + sizeof (length) = 3
+      char msg[100] = {0};
+      snprintf(msg,
+               sizeof(msg),
+               UI_TEXT_PIN,    ///< TODO: Make this generic
+               &decryption_context->data[i].plain_data[3]);
+      message_scr_init(msg);    ///< sizeof (tag) + sizeof (length) = 3
+      // Do not care about the return value from confirmation screen
+      (void)get_state_on_confirm_scr(0, 0, 0);
     } else {
       uint16_t offset = 1;    // Skip tag
       decryption_context->response_payload.decrypted_data[response_count]
@@ -661,10 +673,10 @@ decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query) {
   if (inheritance_decryption_handle_initiate_query(query) &&
       inheritance_get_encrypted_data(query) && decrypt_data() && show_data() &&
       send_decrypted_data(query)) {
-    delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_TIME);
+    delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_SHORT);
     SET_ERROR_TYPE(DECRYPTION_OK);
   } else {
-    delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_TIME);
+    delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_SHORT);
   }
   decryption_handle_errors();
 
