@@ -604,13 +604,14 @@ static bool decrypt_data(void) {
       status = false;
       break;
     }
+
     if (!decrypt_message_data()) {
       status = false;
       break;
     }
 
   } while (0);
-  
+
   // Display Processing only if proceeding with flow
   if (status) {
     delay_scr_init(ui_text_processing, DELAY_SHORT);
