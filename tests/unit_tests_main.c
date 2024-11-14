@@ -69,14 +69,12 @@
                             issue*/
 #include "application_startup.h"
 #include "unity_fixture.h"
-
 #if USE_SIMULATOR == 1
 #ifdef _WIN32
 #define main SDL_main
 #endif
 #include "sim_usb.h"
 extern lv_indev_t *indev_keypad;
-
 /*On OSX SDL needs different handling*/
 #if defined(__APPLE__) && defined(TARGET_OS_MAC)
 #if __APPLE__ && TARGET_OS_MAC
@@ -116,7 +114,6 @@ void RunAllTests(void) {
   RUN_TEST_GROUP(inheritance_encryption_tests);
   RUN_TEST_GROUP(inheritance_decryption_tests);
 }
-
 /**
  * @brief  The entry point to the unit test framework
  * This entry point is a parallel entry point to the int main(void) of the
@@ -176,7 +173,6 @@ int main(void) {
   RunAllTests();
   UnityEnd();
 }
-
 #if USE_SIMULATOR == 0
 /**
  * @brief  This function is executed in case of error occurrence.
@@ -190,7 +186,6 @@ void Error_Handler(void) {
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
 /**
  * @brief Function to transmit data in real-time over SWV channel
  * @param file unused
@@ -208,5 +203,4 @@ int _write(int file, char *ptr, int len) {
   return len;
 #endif
 }
-
 #endif /* USE_SIMULATOR == 0 */

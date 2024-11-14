@@ -105,6 +105,17 @@ TEST_GROUP_RUNNER(nfc_events_test) {
   RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
 }
 
+TEST_GROUP_RUNNER(core_session_test) {
+  RUN_TEST_CASE(core_session_test, core_session_initate_ok);
+  RUN_TEST_CASE(core_session_test, core_session_start_fail);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_encrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_decrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test, core_session_wallet_id_check_fail);
+  RUN_TEST_CASE(core_session_test, core_session_all_ok);
+}
+
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
 TEST_GROUP_RUNNER(nfc_events_manual_test) {
   RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
