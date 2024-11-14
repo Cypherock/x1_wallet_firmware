@@ -260,7 +260,7 @@ static void decryption_handle_errors() {
   if (decryption_error.type == DECRYPTION_OK) {
     return;
   }
-  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
+  LOG_ERROR("inheritance_decrypt_data Error Code:%d Flow Tag:%d ",
             decryption_error.type,
             decryption_error.flow);
   decryption_error_type_e type = decryption_error.type;
