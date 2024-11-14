@@ -66,6 +66,7 @@
 #include "card_fetch_data.h"
 #include "card_operation_typedefs.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_session.h"
 #include "inheritance/core.pb.h"
 #include "inheritance/decrypt_data_with_pin.pb.h"
@@ -603,13 +604,18 @@ static bool decrypt_data(void) {
       status = false;
       break;
     }
+
     if (!decrypt_message_data()) {
       status = false;
       break;
     }
 
   } while (0);
-  delay_scr_init(ui_text_processing, DELAY_SHORT);
+
+  // Display Processing only if proceeding with flow
+  if (status) {
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+  }
   return status;
 }
 

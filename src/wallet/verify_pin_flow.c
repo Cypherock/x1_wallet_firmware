@@ -254,13 +254,13 @@ static bool get_verified_pin(const uint8_t *wallet_id,
   }
 
   if (COMPLETED == current_state) {
+    return true;
   } else if (reject_cb && EARLY_EXIT == current_state) {
     // Inform the host of any rejection
     reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
               ERROR_USER_REJECTION_CONFIRMATION);
-    return false;
   }
-  return true;
+  return false;
 }
 
 /*****************************************************************************
@@ -272,15 +272,15 @@ bool verify_pin(const uint8_t *wallet_id,
   if ((NULL == wallet_id) || (NULL == pin_out)) {
     return false;
   }
-
+  bool status = false;
   clear_wallet_data();
   mnemonic_clear();
 
-  if (!get_verified_pin(wallet_id, PIN_INPUT, pin_out, reject_cb)) {
-    return false;
+  if (get_verified_pin(wallet_id, PIN_INPUT, pin_out, reject_cb)) {
+    status = true;
   }
 
   mnemonic_clear();
   clear_wallet_data();
-  return true;
+  return status;
 }

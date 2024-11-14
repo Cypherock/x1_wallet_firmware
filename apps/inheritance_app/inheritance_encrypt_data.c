@@ -60,10 +60,12 @@
  *****************************************************************************/
 
 #include <stdint.h>
+#include <string.h>
 
 #include "bignum.h"
 #include "card_fetch_data.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "core_session.h"
 #include "inheritance/common.pb.h"
 #include "inheritance/core.pb.h"
@@ -80,6 +82,7 @@
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
 #include "ui_input_text.h"
+#include "ui_message.h"
 #include "utils.h"
 #include "verify_pin_flow.h"
 #include "wallet.h"
@@ -315,6 +318,16 @@ static void encryption_handle_errors() {
   LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
             encryption_error.type,
             encryption_error.flow);
+
+  // Display any error msg if exists
+  if (0 != strlen(error_screen.core_error_msg)) {
+    if (error_screen.ring_buzzer) {
+      buzzer_start(BUZZER_DURATION);
+    }
+    delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
+    clear_core_error_screen();
+  }
+
   encryption_error_type_e type = encryption_error.type;
   switch (type) {
     case ENCRYPTION_ERROR_DEFAULT:
@@ -650,6 +663,7 @@ static bool encrypt_data(void) {
       status = false;
       break;
     }
+
     if (!serialize_message_data()) {
       status = false;
       break;
@@ -671,7 +685,10 @@ static bool encrypt_data(void) {
     }
   } while (0);
 
-  delay_scr_init(ui_text_processing, DELAY_TIME);
+  // Display Processing only if proceeding with flow
+  if (status) {
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+  }
   return status;
 }
 

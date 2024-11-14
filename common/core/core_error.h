@@ -21,10 +21,17 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  char core_error_msg[60]; /**< Buffer to store the error message that needs to
+                              be displayed */
+  bool ring_buzzer; /**< Configuration parameter to record if buzzer is required
+                       while the error is being displayed */
+} error_screen_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
  *****************************************************************************/
+extern error_screen_t error_screen;
 
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
