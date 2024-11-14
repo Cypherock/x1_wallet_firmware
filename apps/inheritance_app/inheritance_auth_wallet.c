@@ -179,6 +179,15 @@ static void auth_wallet_handle_errors() {
   }
   LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
 
+  // Display any error msg if exists
+  if (0 != strlen(error_screen.core_error_msg)) {
+    if (error_screen.ring_buzzer) {
+      buzzer_start(BUZZER_DURATION);
+    }
+    delay_scr_init(error_screen.core_error_msg, DELAY_SHORT);
+    clear_core_error_screen();
+  }
+
   switch (type) {
     case AUTH_WALLET_USER_ABORT_ERROR: {
       // Error already sent to host, nothing to do here
@@ -462,14 +471,6 @@ auth_wallet_error_type_e inheritance_auth_wallet(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
     SET_ERROR_TYPE(AUTH_WALLET_OK);
   } else {
-    // TODO: Add this in error handling
-    if (0 != strlen(error_screen.core_error_msg)) {
-      if (error_screen.ring_buzzer) {
-        buzzer_start(BUZZER_DURATION);
-      }
-      delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
-      clear_core_error_screen();
-    }
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
   }
   auth_wallet_handle_errors();

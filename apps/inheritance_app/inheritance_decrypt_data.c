@@ -609,11 +609,9 @@ static bool decrypt_data(void) {
     }
 
   } while (0);
+  // Display Processing only if proceeding with flow
   if (status) {
     delay_scr_init(ui_text_processing, DELAY_TIME);
-  } else {
-    inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                           ERROR_DATA_FLOW_INVALID_REQUEST);
   }
   return status;
 }
