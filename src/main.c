@@ -76,6 +76,7 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -85,12 +86,12 @@
 #include "board.h"
 #include "logger.h"
 #include "onboarding.h"
+#include "starknet_helpers.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "sys_state.h"
 #include "time.h"
 #include "ui_logo.h"
-#include "starknet_helpers.h"
 
 #define RUN_ENGINE
 #ifdef RUN_ENGINE
@@ -150,70 +151,125 @@ int main(void) {
     device_provision_check();
   }
 
-  uint8_t seed_key[64] = {
-    0xa1, 0x85, 0xe4, 0x43, 0x59, 0xc9, 0x40, 0x14, 0xfa, 0x23, 0xb8, 0x67,
-    0x41, 0xd0, 0x89, 0xcd, 0xf7, 0xb7, 0x5f, 0xa2, 0x2a, 0x7b, 0x81, 0x9e,
-    0x22, 0x7a, 0x72, 0x6d, 0x0c, 0xf1, 0x9d, 0x29, 0xb1, 0x9b, 0x16, 0xb4,
-    0xe9, 0xbd, 0x9d, 0x6f, 0x7d, 0x52, 0xe6, 0x7d, 0x46, 0xeb, 0x2f, 0xaa,
-    0x7d, 0x72, 0x58, 0xb6, 0x88, 0x6b, 0x75, 0xae, 0xb5, 0xe7, 0x82, 0x5e,
-    0x97, 0xf2, 0x6e, 0xa3
-};
+  //   uint8_t seed_key[64] = {
+  //     0xa1, 0x85, 0xe4, 0x43, 0x59, 0xc9, 0x40, 0x14, 0xfa, 0x23, 0xb8, 0x67,
+  //     0x41, 0xd0, 0x89, 0xcd, 0xf7, 0xb7, 0x5f, 0xa2, 0x2a, 0x7b, 0x81, 0x9e,
+  //     0x22, 0x7a, 0x72, 0x6d, 0x0c, 0xf1, 0x9d, 0x29, 0xb1, 0x9b, 0x16, 0xb4,
+  //     0xe9, 0xbd, 0x9d, 0x6f, 0x7d, 0x52, 0xe6, 0x7d, 0x46, 0xeb, 0x2f, 0xaa,
+  //     0x7d, 0x72, 0x58, 0xb6, 0x88, 0x6b, 0x75, 0xae, 0xb5, 0xe7, 0x82, 0x5e,
+  //     0x97, 0xf2, 0x6e, 0xa3
+  // };
+  // {
+  //   char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
+  //                    "nature ready fabric inspire lift language kangaroo
+  //                    leave" " carry plug wild network hollow awake slab";
+  //   uint8_t seed[64];
+  //   mnemonic_to_seed(mnemonic, NULL, seed, NULL);
 
-// m/44'/60'/0'/0/0
-uint32_t path[] = { 0x8000002C, 0x8000003C, 0x80000000, 0x00000000, 0x00000000 };
-uint32_t path_length = 5;
+  //   uint32_t path[] = {0x80000000 + 0xA55,
+  //                      0x80000000 + 0x4741E9C9,
+  //                      0x80000000 + 0x447A6028,
+  //                      0x80000000,
+  //                      0x80000000,
+  //                      0xC};
+  //   uint32_t path_length = 6;
 
-uint8_t key[33];
+  //   uint8_t key[33];
 
-// VERIFICATIONS
-  HDNode hdKey1 = {0};
+  //   // VERIFICATIONS
+  //     bool result = starknet_derive_key_from_seed(seed, path, path_length,
+  //     key);
 
-  // derive node at m/44'/60'/0'/0/0
-  if (!get_stark_child_node(
-          path, path_length, SECP256K1_NAME, seed_key, 64, &hdKey1)) {
-    // send unknown error; unknown failure reason
-    // starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    // memzero(&starkChildNode, sizeof(HDNode));
-    // return false;
-  }
-
-  printf("\nhdKey1: ");
-  for (size_t i = 0; i < 32; i++) {
-  printf("%02x", hdKey1.private_key[i]);
-  }
-  printf("\n");
-
-  HDNode hdKey2 = {0};
-  hdnode_from_seed(hdKey1.private_key, 32, SECP256K1_NAME, &hdKey2);
-
-  printf("hdKey2: ");
-  for (size_t i = 0; i < 32; i++) {
-  printf("%02x", hdKey2.private_key[i]);
-  }
-  printf("\n");
-
-// m/44'/9004'/0'/0/1
-path[0] = 0x8000002C;
-path[1] = 0x8000232C;
-path[2] = 0x80000000;
-path[3] = 0x00000000;
-path[4] = 0x00000001;
-bool result = starknet_derive_key_from_seed(hdKey1.private_key, path, path_length, key);
-
-if (result) {
-    printf("Derived Starknet Key:\n");
-    for (int i = 0; i < 32; i++) {
-        printf("%02x", key[i]);
-    }
-    printf("\n");
-} else {
-    printf("Failed to derive key.\n");
-}
-
-  // while (1) {
-  //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
-  //   engine_run(main_engine_ctx);
+  //     if (result) {
+  //       printf("Derived Starknet Key:\n");
+  //       for (int i = 0; i < 33; i++) {
+  //         printf("%02x", key[i]);
+  //       }
+  //       printf("\n");
+  //     } else {
+  //       printf("Failed to derive key.\n");
+  //     }
   // }
+  uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
+  starknet_init();
+
+  hex_string_to_byte_array(
+      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+      64,
+      pubkey);
+  hex_string_to_byte_array(
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      64,
+      deployer);
+  // hex_string_to_byte_array(
+  //     "0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a",
+  //     64,
+  //     salt);
+  hex_string_to_byte_array(
+      "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f",
+      64,
+      classhash);
+
+  calculate_contract_address_from_hash(
+      pubkey, deployer, pubkey, classhash, addr);
+  printf("\n");
+
+  printf("ADDRESS\n");
+  for (int i = 0; i < 32; i++) {
+    printf("%02x", addr[i]);
+  }
+  printf("\n");
+  printf("PDERSEN HASH.\n");
+  uint8_t x[32] = {0}, y[32] = {0}, hash[32] = {0};
+
+  hex_string_to_byte_array(
+      "03d937c035c878245caf64531a5756109c53068da139362728feb561405371cb",
+      64,
+      x);
+  hex_string_to_byte_array(
+      "0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a",
+      64,
+      y);
+  // pederson_hash(x, y, 32, hash);
+  printf("ped hash\n");
+  for (int i = 0; i < 32; i++) {
+    printf("%02x", hash[i]);
+  }
+  printf("\n");
+  printf("\nPDERSEN HASH 2\n");
+
+  uint8_t num_elem = 2;
+  uint8_t data[num_elem][STARKNET_BIGNUM_SIZE];
+  memzero(data[0], 32);
+  memzero(data[1], 32);
+  hex_string_to_byte_array("1", 1, &data[0][31]);
+  hex_string_to_byte_array("1", 1, &data[1][31]);
+  printf("bytearry\n");
+  for (int i = 0; i < 32; i++) {
+    // printf("%02x", data[0][i]);
+  }
+  printf("\n");
+  uint8_t hash2[32];
+  // compute_hash_on_elements(data, num_elem, hash2);
+  printf("function exited");
+  for (int i = 0; i < 33; i++) {
+    // printf("%02x", hash2[i]);
+  }
+  fflush(stdout);
+
+  // compute_hash_on_elements(data, num_elem, hash2);
+  // printf("\n");
+
+  // printf("function exited");
+  // for (int i = 0; i < 33; i++) {
+  //   printf("%02x", hash2[i]);
+  // }
+  // printf("\n");
+
+  while (1) {
+    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+    engine_run(main_engine_ctx);
+  }
 #else /* RUN_ENGINE */
   while (true) {
     proof_of_work_task();

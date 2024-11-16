@@ -26,6 +26,11 @@
 #define LOW_PART_BITS 248
 #define LOW_PART_BYTES (LOW_PART_BITS / 8)
 #define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
+#define STARKNET_BIGNUM_SIZE 32
+#define PEDERSEN_HASH_SIZE 32
+#define CALL_DATA_PARAMETER_SIZE 3
+#define STARKNET_SIZE_PUB_KEY (32)
+#define STARKNET_ADD_SIZE 32
 
 /*****************************************************************************
  * TYPEDEFS
@@ -71,10 +76,14 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
 
 bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t len, uint8_t *hash);
 bool get_stark_child_node(const uint32_t *path,
-                                 const size_t path_length,
-                                 const char *curve,
-                                 const uint8_t *seed,
-                                 const uint8_t seed_len,
-                                 HDNode *hdnode);
-
+                          const size_t path_length,
+                          const char *curve,
+                          const uint8_t *seed,
+                          const uint8_t seed_len,
+                          HDNode *hdnode);
+void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
+                              uint8_t num_elem,
+                              uint8_t *hash);
+void starknet_uli_to_bn_byte_array(const unsigned long int ui,
+                                   uint8_t *bn_array);
 #endif    // STARKNET_HELPERS_H
