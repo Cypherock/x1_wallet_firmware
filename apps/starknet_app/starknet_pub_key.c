@@ -63,6 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mini-gmp-helpers.h"
 #include "reconstruct_wallet_flow.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
@@ -299,7 +300,77 @@ static bool get_user_consent(const pb_size_t which_request,
 
   return core_scroll_page(NULL, msg, starknet_send_error);
 }
+static void compute_addr_bound(mpz_t addr_bound) {
+  // ADDR_BOUND = 2^251 - MAX_STORAGE_ITEM_SIZE
+  mpz_t max_storage_item_size, base, pow_251;
+  mpz_init_set_ui(max_storage_item_size, 256);
+  mpz_init_set_ui(base, 2);
+  mpz_init(pow_251);
+  mpz_pow_ui(pow_251, base, 251);
+  mpz_sub(addr_bound, pow_251, max_storage_item_size);
 
+  mpz_clear(base);
+  mpz_clear(max_storage_item_size);
+  mpz_clear(pow_251);
+}
+void calculate_contract_address_from_hash(const uint8_t *pub_key,
+                                          const uint8_t *deployer,
+                                          const uint8_t *salt,
+                                          const uint8_t *class_hash,
+                                          uint8_t *addr) {
+  // prepare array of elements for chain hashing
+  uint8_t call_data[CALL_DATA_PARAMETER_SIZE][STARKNET_BIGNUM_SIZE] = {0};
+  // TODO: Get proper name of parameters and update variables
+  // ['0x0', stark_key_pub, '0x1']
+  uint8_t zero_bn[STARKNET_BIGNUM_SIZE] = {0};
+  starknet_uli_to_bn_byte_array(0, zero_bn);
+  memcpy(call_data[0], zero_bn, STARKNET_BIGNUM_SIZE);
+  memcpy(call_data[1], pub_key, STARKNET_SIZE_PUB_KEY);
+  uint8_t one_bn[STARKNET_BIGNUM_SIZE] = {0};
+  starknet_uli_to_bn_byte_array(1, one_bn);
+  memcpy(call_data[2], one_bn, STARKNET_BIGNUM_SIZE);
+
+  // get call data hash
+  uint8_t call_data_hash[PEDERSEN_HASH_SIZE] = {0};
+  compute_hash_on_elements(call_data, CALL_DATA_PARAMETER_SIZE, call_data_hash);
+
+  uint8_t starknet_contract_address_bn[STARKNET_BIGNUM_SIZE] = {0};
+  hex_string_to_byte_array(
+      "00000000000000535441524b4e45545f434f4e54524143545"
+      "f41444452455353",    ///< bn
+                            ///< equivalnet
+                            ///< of
+                            ///< 'STARKNET_CONTRACT_ADDRESS'
+      STARKNET_BIGNUM_SIZE * 2,
+      starknet_contract_address_bn);
+
+  // prepare array of elements for chain hashing
+  uint8_t data[5][STARKNET_BIGNUM_SIZE] = {0};
+  memcpy(data[0], starknet_contract_address_bn, STARKNET_BIGNUM_SIZE);
+  memcpy(data[1], deployer, STARKNET_BIGNUM_SIZE);
+  memcpy(data[2], salt, STARKNET_BIGNUM_SIZE);
+  memcpy(data[3], class_hash, STARKNET_BIGNUM_SIZE);
+  memcpy(data[4], call_data_hash, STARKNET_BIGNUM_SIZE);
+
+  uint8_t final_hash[PEDERSEN_HASH_SIZE] = {0};
+  compute_hash_on_elements(data, 5, final_hash);
+
+  mpz_t addr_bound;
+  mpz_init(addr_bound);
+  compute_addr_bound(addr_bound);
+
+  mpz_t result_bn;
+  mpz_init(result_bn);
+  mpz_import(result_bn, STARKNET_BIGNUM_SIZE, 1, 1, 1, 0, final_hash);
+
+  mpz_mod(result_bn, result_bn, addr_bound);
+
+  mpz_to_byte_array(result_bn, addr, STARKNET_ADD_SIZE);
+
+  // clear mpz variables
+  mpz_clear(result_bn);
+  mpz_clear(addr_bound);
+}
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/

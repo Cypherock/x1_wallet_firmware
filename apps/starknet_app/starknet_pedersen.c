@@ -61,13 +61,14 @@
  *****************************************************************************/
 
 #include <error.pb.h>
+#include <stdint.h>
 
 #include "coin_utils.h"
+#include "mini-gmp-helpers.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
 #include "starknet_crypto.h"
 #include "starknet_helpers.h"
-#include "mini-gmp-helpers.h"
 
 void process_single_element(mpz_t element,
                             stark_point *p1,
@@ -108,7 +109,8 @@ void process_single_element(mpz_t element,
 //     mpz_export(out, &countp, 1, 1, 1, 0, num);
 
 //     // Ensure that the output is padded with leading zeros if necessary
-//     // If the exported size is smaller than the desired output size, fill in leading zeros
+//     // If the exported size is smaller than the desired output size, fill in
+//     leading zeros
 //     if (countp < out_size) {
 //         size_t diff = out_size - countp;
 //         memmove(out + diff, out, countp);
@@ -122,32 +124,27 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   ASSERT(0 < size);
 
   // Convert to bn
-  // char hex[100] = {0};
   mpz_t a, b, result;
   mpz_init(a);
   mpz_init(b);
   mpz_init(result);
 
-  // byte_array_to_hex_string(x, size, hex, size * 2 + 1);
-  // bignum_from_string(&a, hex, size);
-  // byte_array_to_hex_string(x, size, hex, size * 2 + 1);
-  // bignum_from_string(&b, hex, size);
-
-  mpz_import(a, size, 1, 1, 1, 0, x);  // Convert x to mpz_t a
-  mpz_import(b, size, 1, 1, 1, 0, y);  // Convert y to mpz_t b
+  mpz_import(a, size, 1, 1, 1, 0, x);    // Convert x to mpz_t a
+  mpz_import(b, size, 1, 1, 1, 0, y);    // Convert y to mpz_t b
 
   // Get shift point
   stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
-  stark_point_copy(&HASH_SHIFT_POINT, &starkPts->P[0]);
-  stark_point_copy(&P_1, &starkPts->P[1]);
-  stark_point_copy(&P_2, &starkPts->P[2]);
-  stark_point_copy(&P_3, &starkPts->P[3]);
-  stark_point_copy(&P_4, &starkPts->P[4]);
+  stark_point_copy(&starkPts->P[0], &HASH_SHIFT_POINT);
+  stark_point_copy(&starkPts->P[1], &P_1);
+  stark_point_copy(&starkPts->P[2], &P_2);
+  stark_point_copy(&starkPts->P[3], &P_3);
+  stark_point_copy(&starkPts->P[4], &P_4);
 
   // Compute the hash using the Starkware Pedersen hash definition
   stark_point x_part, y_part, hash_point;
-  // process_single_element(x, &P_1, &P_2, &x_part);
-  // process_single_element(y, &P_3, &P_4, &y_part);
+  stark_point_init(&x_part);
+  stark_point_init(&y_part);
+  stark_point_init(&hash_point);
 
   process_single_element(a, &P_1, &P_2, &x_part);
   process_single_element(b, &P_3, &P_4, &y_part);
@@ -157,12 +154,37 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   stark_point_copy(&y_part, &hash_point);
 
   memzero(hash, 32);
-  // memzero(hex, 100);
-  // bignum_to_string(&hash_point.x, hex, size * 2 + 1);
-  // hex_string_to_byte_array(hex, size * 2 + 1, hash);
   mpz_to_byte_array(hash_point.x, hash, 32);
 
   return true;
+}
+void starknet_uli_to_bn_byte_array(const unsigned long int ui,
+                                   uint8_t *bn_array) {
+  mpz_t bn;
+  mpz_init(bn);
+  mpz_set_ui(bn, ui);
+
+  memzero(bn_array, STARKNET_BIGNUM_SIZE);
+  mpz_to_byte_array(bn, bn_array, STARKNET_BIGNUM_SIZE);
+}
+
+void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
+                              uint8_t num_elem,
+                              uint8_t *hash) {
+  uint8_t result[STARKNET_BIGNUM_SIZE];
+  memzero(result, STARKNET_BIGNUM_SIZE);
+
+  for (uint8_t index = 0; index < num_elem; index++) {
+    pederson_hash(result, data[index], STARKNET_BIGNUM_SIZE, result);
+  }
+
+  uint8_t num_elem_bn[32];
+  starknet_uli_to_bn_byte_array(num_elem, num_elem_bn);
+
+  pederson_hash(result, num_elem_bn, STARKNET_BIGNUM_SIZE, result);
+
+  memcpy(hash, result, STARKNET_BIGNUM_SIZE);
+  return;
 }
 
 void process_single_element(mpz_t element,
@@ -176,17 +198,24 @@ void process_single_element(mpz_t element,
   mpz_init(high_nibble);
 
   // Extract the low 248 bits and high bits from the element
-  // bignum_and(&low_part, element, element);
-  // bignum_rshift(&high_nibble, element, LOW_PART_BITS);
-
+  mpz_t mask;
+  mpz_init(mask);
+  // Set mask to (1 << 248) - 1
+  mpz_ui_pow_ui(mask, 2, 248);    // mask = 2^248
+  mpz_sub_ui(mask, mask, 1);      // mask = 2^248 - 1
   // Extract the low 248 bits and high bits from the element
-  mpz_and(element, element, low_part);
-  mpz_fdiv_q_2exp(element, high_nibble,  LOW_PART_BITS);
+  mpz_and(low_part, element, mask);
+  mpz_fdiv_q_2exp(high_nibble, element, LOW_PART_BITS);
 
   stark_point res1, res2;
-  stark_point_multiply(starkCurve, low_part, p1, &res1);          // low_part * p1
-  stark_point_multiply(starkCurve, high_nibble, p2, &res2);             // high_nibble * p2
-  stark_point_add(starkCurve, &res1, &res2);    // Combine results
+  stark_point_init(&res1);
+  stark_point_init(&res2);
+
+  stark_point_multiply(starkCurve, low_part, p1, &res1);    // low_part * p1
+  stark_point_multiply(
+      starkCurve, high_nibble, p2, &res2);    // high_nibble * p2
+  stark_point_add(starkCurve, &res1, &res2);
 
   stark_point_copy(&res2, result);
+  // clear mpz vars
 }
