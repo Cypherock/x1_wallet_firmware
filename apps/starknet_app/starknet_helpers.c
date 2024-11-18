@@ -186,11 +186,11 @@ bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels) {
 
   return status;
 }
-
-// bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
-//   uint32_t eth_acc0_path[] = {
-//       STARKNET_PURPOSE_INDEX, ETHEREUM, 0x80000000, 0, 0};
-//   HDNode strkSeedNode = {0};
+// TODO: Delete if not required
+//  bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
+//    uint32_t eth_acc0_path[] = {
+//        STARKNET_PURPOSE_INDEX, ETHEREUM, 0x80000000, 0, 0};
+//    HDNode strkSeedNode = {0};
 
 //   // m/2645'/1195502025'/1148870696'/0'/0'/i
 //   if (!derive_hdnode_from_path(
