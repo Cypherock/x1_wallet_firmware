@@ -33,12 +33,13 @@
 // There are some wallets which even use m/44'/9000'/0'/0/0
 // https://support.atomicwallet.io/article/146-list-of-derivation-paths
 
-#define STARKNET_IMPLICIT_ACCOUNT_DEPTH 5
+#define STARKNET_IMPLICIT_ACCOUNT_DEPTH 6
 
-#define STARKNET_PURPOSE_INDEX (0x8000002C)    // 44'
-#define STARKNET_COIN_INDEX (0x8000232C)       // 9004'
-#define STARKNET_ACCOUNT_INDEX 0x80000000      // 0'
-#define STARKNET_CHANGE_INDEX 0x00000000       // 0
+#define STARKNET_PURPOSE_INDEX (0x80000000 + 0xA55)             // 2645'
+#define STARKNET_LAYER_INDEX (0x80000000 + 0x4741E9C9)          // 1195502025'
+#define STARKNET_APPLICATION_INDEX (0x80000000 + 0x447A6028)    // 1148870696'
+#define STARKNET_ETH_1_INDEX 0x80000000                         // 0'
+#define STARKNET_ETH_2_INDEX 0x80000000                         // 0'
 
 /// this makes length of 5 with a termination NULL byte
 #define STARKNET_SHORT_NAME_MAX_SIZE 6

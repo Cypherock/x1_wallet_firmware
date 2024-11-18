@@ -160,18 +160,18 @@ int main(void) {
   //     0x97, 0xf2, 0x6e, 0xa3
   // };
   // {
-  //   char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
-  //                    "nature ready fabric inspire lift language kangaroo
-  //                    leave" " carry plug wild network hollow awake slab";
-  //   uint8_t seed[64];
-  //   mnemonic_to_seed(mnemonic, NULL, seed, NULL);
+  char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
+                   "nature ready fabric inspire lift language kangaroo leave "
+                   "carry plug wild network hollow awake slab";
+  uint8_t seed[64];
+  mnemonic_to_seed(mnemonic, NULL, seed, NULL);
 
-  //   uint32_t path[] = {0x80000000 + 0xA55,
-  //                      0x80000000 + 0x4741E9C9,
-  //                      0x80000000 + 0x447A6028,
-  //                      0x80000000,
-  //                      0x80000000,
-  //                      0xC};
+  uint32_t path[] = {0x80000000 + 0xA55,
+                     0x80000000 + 0x4741E9C9,
+                     0x80000000 + 0x447A6028,
+                     0x80000000,
+                     0x80000000,
+                     0xC};
   //   uint32_t path_length = 6;
 
   //   uint8_t key[33];
@@ -192,6 +192,13 @@ int main(void) {
   // }
   uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
   starknet_init();
+  uint8_t stark_pub_key[32];
+  starknet_derive_key_from_seed(seed, path, 6, NULL, stark_pub_key);
+  printf("PUBLIC  KEY\n");
+  for (int i = 0; i < 32; i++) {
+    printf("%02x", stark_pub_key[i]);
+  }
+  printf('\n');
 
   hex_string_to_byte_array(
       "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
@@ -211,7 +218,7 @@ int main(void) {
       classhash);
 
   calculate_contract_address_from_hash(
-      pubkey, deployer, pubkey, classhash, addr);
+      stark_pub_key, deployer, stark_pub_key, classhash, addr);
   printf("\n");
 
   printf("ADDRESS\n");
