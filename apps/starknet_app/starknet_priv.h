@@ -81,5 +81,5 @@ void calculate_contract_address_from_hash(const uint8_t *pub_key,
                                           const uint8_t *deployer,
                                           const uint8_t *salt,
                                           const uint8_t *class_hash,
-                                          uint8_t *addr);
+                                          char *addr);
 #endif /* STARKNET_PRIV_H */

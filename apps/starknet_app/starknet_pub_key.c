@@ -63,6 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "assert_conf.h"
 #include "mini-gmp-helpers.h"
 #include "reconstruct_wallet_flow.h"
 #include "starknet_api.h"
@@ -308,6 +309,7 @@ static void compute_addr_bound(mpz_t addr_bound) {
   mpz_pow_ui(pow_251, base, 251);
   mpz_sub(addr_bound, pow_251, max_storage_item_size);
 
+  // clear mpz variables
   mpz_clear(base);
   mpz_clear(max_storage_item_size);
   mpz_clear(pow_251);
@@ -317,7 +319,10 @@ void calculate_contract_address_from_hash(const uint8_t *pub_key,
                                           const uint8_t *deployer,
                                           const uint8_t *salt,
                                           const uint8_t *class_hash,
-                                          uint8_t *addr) {
+                                          char *addr) {
+  ASSERT(pub_key != NULL && deployer != NULL && salt != NULL &&
+         class_hash != NULL && addr != NULL);
+
   // prepare array of elements for chain hashing
   uint8_t call_data[CALL_DATA_PARAMETER_SIZE][STARKNET_BIGNUM_SIZE] = {0};
   // TODO: Get proper name of parameters and update variables
@@ -365,11 +370,27 @@ void calculate_contract_address_from_hash(const uint8_t *pub_key,
 
   mpz_mod(result_bn, result_bn, addr_bound);
 
-  mpz_to_byte_array(result_bn, addr, STARKNET_ADD_SIZE);
+  mpz_to_byte_array(result_bn, (uint8_t *)addr, STARKNET_ADDR_SIZE);
 
   // clear mpz variables
   mpz_clear(result_bn);
   mpz_clear(addr_bound);
+}
+
+static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr) {
+  ASSERT(pub_key != NULL);
+  uint8_t deployer[32] = {0};
+  starknet_uli_to_bn_byte_array(STARKNET_DEPLOYER_VALUE, deployer);
+
+  uint8_t class_hash[32] = {0};
+  hex_string_to_byte_array(STARKNET_ARGENT_CLASS_HASH, 64, class_hash);
+
+  calculate_contract_address_from_hash(pub_key,
+                                       deployer,
+                                       pub_key,    ///< salt = public key
+                                       class_hash,
+                                       addr);
+  return;
 }
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -445,12 +466,8 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   if (STARKNET_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[100] = "";
 
-    // TODO: Derive address from public key
-    // size_t public_key_size = sizeof(address);
-    if (!true) {
-      starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 3);
-      return;
-    };
+    // Calculate to-be account address
+    starknet_derive_argent_address(&public_keys[0][1], address);
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
       return;

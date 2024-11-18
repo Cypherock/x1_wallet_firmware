@@ -30,7 +30,10 @@
 #define PEDERSEN_HASH_SIZE 32
 #define CALL_DATA_PARAMETER_SIZE 3
 #define STARKNET_SIZE_PUB_KEY (32)
-#define STARKNET_ADD_SIZE 32
+#define STARKNET_ADDR_SIZE 32
+#define STARKNET_ARGENT_CLASS_HASH                                             \
+  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
+#define STARKNET_DEPLOYER_VALUE 0
 
 /*****************************************************************************
  * TYPEDEFS
