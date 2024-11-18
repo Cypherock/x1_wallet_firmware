@@ -172,13 +172,7 @@ static void auth_wallet_error_default() {
   SET_ERROR_TYPE(AUTH_WALLET_DEFAULT_ERROR);
 }
 
-static void auth_wallet_handle_errors() {
-  auth_wallet_error_type_e type = auth_wallet_error.type;
-  if (type == AUTH_WALLET_OK) {
-    return;
-  }
-  LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
-
+static void auth_wallet_display_errors() {
   // Display any error msg if exists
   if (0 != strlen(error_screen.core_error_msg)) {
     if (error_screen.ring_buzzer) {
@@ -187,6 +181,14 @@ static void auth_wallet_handle_errors() {
     delay_scr_init(error_screen.core_error_msg, DELAY_SHORT);
     clear_core_error_screen();
   }
+}
+
+static void auth_wallet_handle_errors() {
+  auth_wallet_error_type_e type = auth_wallet_error.type;
+  if (type == AUTH_WALLET_OK) {
+    return;
+  }
+  LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
 
   switch (type) {
     case AUTH_WALLET_USER_ABORT_ERROR: {
@@ -471,6 +473,7 @@ auth_wallet_error_type_e inheritance_auth_wallet(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_wallet_auth_success, DELAY_TIME);
     SET_ERROR_TYPE(AUTH_WALLET_OK);
   } else {
+    auth_wallet_display_errors();
     delay_scr_init(ui_text_inheritance_wallet_auth_fail, DELAY_TIME);
   }
   auth_wallet_handle_errors();
