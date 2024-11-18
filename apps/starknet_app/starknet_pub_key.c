@@ -223,14 +223,12 @@ bool fill_starknet_public_keys(
     const uint8_t *seed,
     uint8_t public_key_list[][STARKNET_PUB_KEY_SIZE],
     pb_size_t count) {
-  uint8_t hdkey1[32] = {0};
-
   for (pb_size_t index = 0; index < count; index++) {
     const starknet_get_public_keys_derivation_path_t *current = &path[index];
-    if (!starknet_derive_bip32_node(seed, hdkey1) ||
-        !starknet_derive_key_from_seed(hdkey1,
+    if (!starknet_derive_key_from_seed(seed,
                                        current->path,
                                        current->path_count,
+                                       NULL,
                                        public_key_list[index])) {
       return false;
     }
@@ -300,6 +298,7 @@ static bool get_user_consent(const pb_size_t which_request,
 
   return core_scroll_page(NULL, msg, starknet_send_error);
 }
+
 static void compute_addr_bound(mpz_t addr_bound) {
   // ADDR_BOUND = 2^251 - MAX_STORAGE_ITEM_SIZE
   mpz_t max_storage_item_size, base, pow_251;
@@ -313,6 +312,7 @@ static void compute_addr_bound(mpz_t addr_bound) {
   mpz_clear(max_storage_item_size);
   mpz_clear(pow_251);
 }
+
 void calculate_contract_address_from_hash(const uint8_t *pub_key,
                                           const uint8_t *deployer,
                                           const uint8_t *salt,

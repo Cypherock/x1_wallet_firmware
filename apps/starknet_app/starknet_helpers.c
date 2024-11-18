@@ -69,6 +69,7 @@
 #include "mini-gmp.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
+#include "starknet_crypto.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -173,105 +174,90 @@ bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels) {
     return status;
   }
 
-  uint32_t purpose = path[0], coin = path[1], account = path[2],
-           change = path[3], address = path[4];
+  uint32_t purpose = path[0], layer = path[1], application = path[2],
+           eth_1 = path[3], eth_2 = path[4], address = path[5];
 
-  // m/44'/9004'/0'/0/i
-  status = (STARKNET_PURPOSE_INDEX == purpose && STARKNET_COIN_INDEX == coin &&
-            STARKNET_ACCOUNT_INDEX == account &&
-            STARKNET_CHANGE_INDEX == change && is_non_hardened(address));
+  // m/2645'/1195502025'/1148870696'/0'/0'/i
+  status =
+      (STARKNET_PURPOSE_INDEX == purpose && STARKNET_LAYER_INDEX == layer &&
+       STARKNET_APPLICATION_INDEX == application &&
+       STARKNET_ETH_1_INDEX == eth_1 && STARKNET_ETH_2_INDEX == eth_2 &&
+       is_non_hardened(address));
 
   return status;
 }
 
-bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
-  uint32_t eth_acc0_path[] = {
-      STARKNET_PURPOSE_INDEX, ETHEREUM, 0x80000000, 0, 0};
-  HDNode strkSeedNode = {0};
+// bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key) {
+//   uint32_t eth_acc0_path[] = {
+//       STARKNET_PURPOSE_INDEX, ETHEREUM, 0x80000000, 0, 0};
+//   HDNode strkSeedNode = {0};
 
-  // derive node at m/44'/60'/0'/0/0
-  if (!derive_hdnode_from_path(
-          eth_acc0_path, 5, SECP256K1_NAME, seed, &strkSeedNode)) {
-    return false;
-  }
+//   // m/2645'/1195502025'/1148870696'/0'/0'/i
+//   if (!derive_hdnode_from_path(
+//           eth_acc0_path, 5, SECP256K1_NAME, seed, &strkSeedNode)) {
+//     return false;
+//   }
 
-  memcpy(
-      private_key, strkSeedNode.private_key, sizeof(strkSeedNode.private_key));
+//   memcpy(
+//       private_key, strkSeedNode.private_key,
+//       sizeof(strkSeedNode.private_key));
 
-  return true;
-}
+//   return true;
+// }
 
-bool starknet_derive_key_from_seed(const uint8_t *seed_key,
+bool starknet_derive_key_from_seed(const uint8_t *seed,
                                    const uint32_t *path,
                                    uint32_t path_length,
-                                   uint8_t *key) {
-  HDNode starkChildNode = {0};
-  char hex[100];
+                                   uint8_t *key_priv,
+                                   uint8_t *key_pub) {
+  HDNode stark_child_node = {0};
 
-  // derive node at m/44'/9004'/0'/0/i
-  // send hdKey1.private_key as seed
+  // derive node at m/2645'/1195502025'/1148870696'/0'/0'/i
   if (!get_stark_child_node(path,
                             path_length,
                             SECP256K1_NAME,
-                            seed_key,
+                            seed,
                             512 / 8,
-                            &starkChildNode)) {
+                            &stark_child_node)) {
     // send unknown error; unknown failure reason
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-    memzero(&starkChildNode, sizeof(HDNode));
+    memzero(&stark_child_node, sizeof(HDNode));
     return false;
   }
 
-  printf("\necdsaPrivateKey: ");
-  for (size_t i = 0; i < 32; i++) {
-    printf("%02x", starkChildNode.private_key[i]);
-  }
-  printf("\n");
-  printf("\necdsaPublicKey: ");
-  for (size_t i = 0; i < 33; i++) {
-    printf("%02x", starkChildNode.public_key[i]);
-  }
-  printf("\n");
-
-  uint8_t stark_private_key[32];
+  uint8_t stark_private_key[32] = {0};
   stark_point p;
   stark_point_init(&p);
-  // uint8_t stark_public_key[32];
-  if (!grind_key(starkChildNode.private_key, stark_private_key)) {
+  if (!grind_key(stark_child_node.private_key, stark_private_key)) {
     return false;
   }
 
-  printf("starkPrivateKey: ");
-  for (size_t i = 0; i < 32; i++) {
-    printf("%02x", stark_private_key[i]);
+  // copy stark priv key if required
+  if (key_priv != NULL) {
+    memzero(key_priv, 32);
+    memcpy(key_priv, stark_private_key, 32);
   }
-  printf("\n");
 
-  char str[100];
   starknet_init();
+
+  // derive stark pub key from stark priv key
   mpz_t priv_key;
   mpz_init(priv_key);
   byte_array_to_mpz(priv_key, stark_private_key, 32);
   stark_point_multiply(starkCurve, priv_key, &starkCurve->G, &p);
-  mpz_get_str(str, 16, p.x);
-  printf("\nstarkPubKey x: %s\n", str);
-  mpz_get_str(str, 16, p.y);
-  printf("\nstarkPubKey y: %s\n", str);
+  mpz_clear(priv_key);    // clear priv key when no longer required
 
-  printf("\n");
+  uint8_t stark_public_key[32] = {0};
+  mpz_to_byte_array(p.x, stark_public_key, STARKNET_PUB_KEY_SIZE);
 
-  byte_array_to_hex_string(seed_key, 512 / 8, hex, 64 * 2 + 1);
-  print_hex_array("seed_key", seed_key, 512 / 8);
+  // copy stark pub key if required
+  if (key_pub != NULL) {
+    memzero(key_pub, STARKNET_PUB_KEY_SIZE);
+    memcpy(key_pub, stark_public_key, STARKNET_PUB_KEY_SIZE);
+  }
 
-  byte_array_to_hex_string(starkChildNode.private_key, 32, hex, 32 * 2 + 1);
-  // print_hex_array("starkChildNode.private_key", starkChildNode.private_key,
-  // 32);
-
-  byte_array_to_hex_string(stark_private_key, 32, hex, 32 * 2 + 1);
-  // print_hex_array("stark_private_key", stark_private_key, 32);
-
-  memzero(key, 33);
-  memcpy(key, stark_private_key, 32);
+  // clear mpz variables
+  stark_point_clear(&p);
 
   return true;
 }

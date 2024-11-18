@@ -64,7 +64,7 @@ bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels);
 /**
  *
  */
-bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key);
+// bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key);
 
 /**
  *
@@ -72,7 +72,8 @@ bool starknet_derive_bip32_node(const uint8_t *seed, uint8_t *private_key);
 bool starknet_derive_key_from_seed(const uint8_t *seed,
                                    const uint32_t *path,
                                    uint32_t path_length,
-                                   uint8_t *private_key);
+                                   uint8_t *private_key,
+                                   uint8_t *public_key);
 
 bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t len, uint8_t *hash);
 bool get_stark_child_node(const uint32_t *path,

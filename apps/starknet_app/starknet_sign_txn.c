@@ -319,12 +319,13 @@ static bool sign_txn(uint8_t *signature_buffer) {
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
   uint8_t stark_key[32] = {0};
-  if (starknet_derive_bip32_node(seed, stark_key) &&
+  if (    // starknet_derive_bip32_node(seed, stark_key) &&
       starknet_derive_key_from_seed(
           stark_key,
           starknet_txn_context->init_info.derivation_path,
           starknet_txn_context->init_info.derivation_path_count,
-          stark_key)) {
+          stark_key,
+          NULL)) {
     // TODO: Generate signature using stark_key
     memcpy(signature_buffer, stark_key, sizeof(stark_key));
   } else {
