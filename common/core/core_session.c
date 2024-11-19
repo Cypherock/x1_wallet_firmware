@@ -455,7 +455,7 @@ session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
   if (session.state != SESSION_LIVE) {
-    LOG_ERROR("session_aes_encrypt error_code:%d\n",
+    LOG_ERROR("session_aes_decrypt error_code:%d\n",
               SESSION_INVALID_STATE_ERROR);
     return SESSION_INVALID_STATE_ERROR;
   }
@@ -468,13 +468,13 @@ session_error_type_e session_aes_decrypt(uint8_t *InOut_data, uint16_t *len) {
   aes_decrypt_ctx ctx = {0};
 
   if (EXIT_SUCCESS != aes_decrypt_key256(session.session_key, &ctx)) {
-    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
+    LOG_ERROR("aes_decrypt_key256 error_code:%d\n", SESSION_DECRYPTION_ERROR);
     return SESSION_DECRYPTION_ERROR;
   }
 
   if (aes_cbc_decrypt(payload, InOut_data, size, session.session_iv, &ctx) !=
       EXIT_SUCCESS) {
-    LOG_ERROR("session_aes_encrypt error_code:%d\n", SESSION_ENCRYPTION_ERROR);
+    LOG_ERROR("aes_cbc_decrypt error_code:%d\n", SESSION_DECRYPTION_ERROR);
     return SESSION_DECRYPTION_ERROR;
   }
 
