@@ -311,14 +311,7 @@ static void encryption_set_defaults() {
   SET_ERROR_TYPE(ENCRYPTION_ERROR_DEFAULT);
 }
 
-static void encryption_handle_errors() {
-  if (encryption_error.type == ENCRYPTION_OK) {
-    return;
-  }
-  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
-            encryption_error.type,
-            encryption_error.flow);
-
+static void encryption_display_errors() {
   // Display any error msg if exists
   if (0 != strlen(error_screen.core_error_msg)) {
     if (error_screen.ring_buzzer) {
@@ -327,6 +320,15 @@ static void encryption_handle_errors() {
     delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
     clear_core_error_screen();
   }
+}
+
+static void encryption_handle_errors() {
+  if (encryption_error.type == ENCRYPTION_OK) {
+    return;
+  }
+  LOG_ERROR("inheritance_encrypt_data Error Code:%d Flow Tag:%d ",
+            encryption_error.type,
+            encryption_error.flow);
 
   encryption_error_type_e type = encryption_error.type;
   switch (type) {
@@ -808,6 +810,7 @@ encryption_error_type_e inheritance_encrypt_data(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_encryption_flow_success, DELAY_TIME);
     SET_ERROR_TYPE(ENCRYPTION_OK);
   } else {
+    encryption_display_errors();
     delay_scr_init(ui_text_inheritance_encryption_flow_failure, DELAY_TIME);
   }
   encryption_handle_errors();

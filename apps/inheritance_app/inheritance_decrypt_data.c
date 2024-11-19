@@ -256,6 +256,17 @@ static void decryption_set_defaults() {
   SET_ERROR_TYPE(DECRYPTION_ERROR_DEFAULT);
 }
 
+static void decryption_display_errors() {
+  // Display any error msg if exists
+  if (0 != strlen(error_screen.core_error_msg)) {
+    if (error_screen.ring_buzzer) {
+      buzzer_start(BUZZER_DURATION);
+    }
+    delay_scr_init(error_screen.core_error_msg, DELAY_TIME);
+    clear_core_error_screen();
+  }
+}
+
 static void decryption_handle_errors() {
   if (decryption_error.type == DECRYPTION_OK) {
     return;
@@ -676,6 +687,7 @@ decryption_error_type_e inheritance_decrypt_data(inheritance_query_t *query) {
     delay_scr_init(ui_text_inheritance_decryption_flow_success, DELAY_SHORT);
     SET_ERROR_TYPE(DECRYPTION_OK);
   } else {
+    decryption_display_errors();
     delay_scr_init(ui_text_inheritance_decryption_flow_failure, DELAY_SHORT);
   }
   decryption_handle_errors();
