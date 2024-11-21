@@ -65,8 +65,10 @@
 #include "card_fetch_wallet_list.h"
 #include "card_internal.h"
 #include "card_utils.h"
+#include "common_error.h"
 #include "nfc.h"
 #include "ui_instruction.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -100,7 +102,8 @@
  *         - Other values: An error occurred during decryption.
  */
 static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
-                                                    const uint8_t *wallet_name);
+                                                    const uint8_t *wallet_name,
+                                                    rejection_cb *reject_cb);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -114,9 +117,9 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static card_error_status_word_e decrypt_secure_data(
-    secure_data_t *message,
-    const uint8_t *wallet_name) {
+static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
+                                                    const uint8_t *wallet_name,
+                                                    rejection_cb *reject_cb) {
   memzero(message->plain_data, sizeof(message->plain_data));
   message->plain_data_size = 0;
 
@@ -140,6 +143,10 @@ static card_error_status_word_e decrypt_secure_data(
                          encrypted_data_buffer_size);
 
     if (status != SW_NO_ERROR) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)get_card_error_from_nfc_status(status));
+      }
       return status;
     }
 
@@ -159,12 +166,13 @@ static card_error_status_word_e decrypt_secure_data(
 
 card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
-                                          size_t msg_count) {
+                                          size_t msg_count,
+                                          rejection_cb *reject_cb) {
   char wallet_name[NAME_SIZE] = "";
   // TODO: seperate UI flow and operations flow entirely
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
-  if (!card_fetch_wallet_name(wallet_id, wallet_name)) {
-    return CARD_OPERATION_DEFAULT_INVALID;
+  if (!card_fetch_wallet_name(wallet_id, wallet_name, reject_cb)) {
+    return CARD_OPERATION_VERIFICATION_FAILED;
   }
 
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
@@ -178,8 +186,8 @@ card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
     result = card_initialize_applet(&card_data);
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_count; i++) {
-        card_data.nfc_data.status =
-            decrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
+        card_data.nfc_data.status = decrypt_secure_data(
+            &msgs[i], (const uint8_t *)wallet_name, reject_cb);
         if (card_data.nfc_data.status != SW_NO_ERROR) {
           card_handle_errors(&card_data);
           break;

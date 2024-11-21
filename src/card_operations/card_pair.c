@@ -490,7 +490,8 @@ card_error_type_e card_pair_operation(uint8_t card_number,
 }
 
 card_error_type_e single_card_pair_operation(char *heading,
-                                             const char *message) {
+                                             const char *message,
+                                             rejection_cb *reject_cb) {
   // Need to handle how assign new card its number
   card_operation_data_t card_data = {0};
   card_pairing_data_t pair_data = {0};

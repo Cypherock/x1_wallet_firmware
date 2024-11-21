@@ -67,7 +67,8 @@ typedef struct {
  */
 card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
-                                          size_t msg_count);
+                                          size_t msg_count,
+                                          rejection_cb *reject_cb);
 
 /**
  * @brief Fetches and decrypts data from the card.
@@ -84,5 +85,6 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
  */
 card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
-                                          size_t msg_count);
+                                          size_t msg_count,
+                                          rejection_cb *reject_cb);
 #endif

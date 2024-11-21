@@ -290,15 +290,17 @@ static void decryption_handle_errors() {
     } break;
 
     case DECRYPTION_INVALID_WALLET_ID_ERROR: {
-      inheritance_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
+      // Error already sent to host, nothing to do here
     } break;
     case DECRYPTION_USER_ABORT_FAILURE: {
       inheritance_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
                              ERROR_DATA_FLOW_INVALID_DATA);
     } break;
-    case DECRYPTION_CARD_DECRYPTION_FAIL_ERROR:
-    // case DECRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
+      // Show card specific generic errors
+    case DECRYPTION_CARD_DECRYPTION_FAIL_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                             ERROR_CARD_ERROR_UNKNOWN);
+    } break;
     case DECRYPTION_SESSION_DECRYPTION_FAIL_ERROR:
     case DECRYPTION_ASSERT_MALLOC_ERROR:
     default: {
@@ -591,13 +593,20 @@ static bool deserialize_packet(void) {
 
 static bool decrypt_message_data(void) {
   SET_FLOW_TAG(DECRYPTION_MESSAGE_DECRYPT_FLOW);
-  if (card_fetch_decrypt_data(decryption_context->wallet_id,
+  card_error_type_e status =
+      card_fetch_decrypt_data(decryption_context->wallet_id,
                               decryption_context->data,
-                              decryption_context->data_count) !=
-      CARD_OPERATION_SUCCESS) {
-    SET_ERROR_TYPE(DECRYPTION_CARD_DECRYPTION_FAIL_ERROR);
+                              decryption_context->data_count,
+                              inheritance_send_error);
+  if (status != CARD_OPERATION_SUCCESS) {
+    if (status == CARD_OPERATION_VERIFICATION_FAILED) {
+      SET_ERROR_TYPE(DECRYPTION_INVALID_WALLET_ID_ERROR);
+    } else {
+      SET_ERROR_TYPE(DECRYPTION_CARD_DECRYPTION_FAIL_ERROR);
+    }
     return false;
   }
+
   set_app_flow_status(INHERITANCE_DECRYPT_DATA_STATUS_MESSAGE_DECRYPTED);
   return true;
 }
