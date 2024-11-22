@@ -96,6 +96,7 @@
  *                        plain data to be encrypted and where the encrypted
  *                        data will be stored.
  * @param[in] wallet_name Pointer to the wallet name used for encryption.
+ * @param reject_cb Callback to execute if card abort error occurs.
  *
  * @return card_error_status_word_e Status of the encryption operation.
  *         - SW_NO_ERROR: Encryption was successful.

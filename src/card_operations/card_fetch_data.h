@@ -63,6 +63,8 @@ typedef struct {
  * @param msgs Pointer to an array of secure_data_t structures to store the
  * encrypted data.
  * @param msg_count Number of secure_data_t structures in the array.
+ * @param reject_cb Callback to execute if wallet is not found or card abort
+ * error occurs.
  * @return The card error type indicating the result of the operation.
  */
 card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
@@ -81,6 +83,8 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
  * @param msgs Pointer to an array of secure_data_t structures to store the
  * decrypted data.
  * @param msg_count Number of secure_data_t structures in the array.
+ * @param reject_cb Callback to execute if wallet is not found or card abort
+ * error occurs.
  * @return The card error type indicating the result of the operation.
  */
 card_error_type_e card_fetch_decrypt_data(const uint8_t *wallet_id,

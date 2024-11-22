@@ -96,6 +96,7 @@
  *                        encrypted data to be decrypted and where the decrypted
  *                        data will be stored.
  * @param[in] wallet_name Pointer to the wallet name used for decryption.
+ * @param reject_cb Callback to execute if card abort error occurs.
  *
  * @return card_error_status_word_e Status of the decryption operation.
  *         - SW_NO_ERROR: Decryption was successful.
