@@ -66,6 +66,7 @@
 #include "card_internal.h"
 #include "card_utils.h"
 #include "coin_utils.h"
+#include "common_error.h"
 #include "nfc.h"
 #include "ui_instruction.h"
 
@@ -95,13 +96,15 @@
  *                        plain data to be encrypted and where the encrypted
  *                        data will be stored.
  * @param[in] wallet_name Pointer to the wallet name used for encryption.
+ * @param reject_cb Callback to execute if card abort error occurs.
  *
  * @return card_error_status_word_e Status of the encryption operation.
  *         - SW_NO_ERROR: Encryption was successful.
  *         - Other values: An error occurred during encryption.
  */
 static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
-                                                    const uint8_t *wallet_name);
+                                                    const uint8_t *wallet_name,
+                                                    rejection_cb *reject_cb);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -115,9 +118,9 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static card_error_status_word_e encrypt_secure_data(
-    secure_data_t *message,
-    const uint8_t *wallet_name) {
+static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
+                                                    const uint8_t *wallet_name,
+                                                    rejection_cb *reject_cb) {
   memzero(message->encrypted_data, sizeof(message->encrypted_data));
   message->encrypted_data_size = 0;
 
@@ -146,6 +149,10 @@ static card_error_status_word_e encrypt_secure_data(
                          &encrypted_data_buffer_size);
 
     if (status != SW_NO_ERROR) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)get_card_error_from_nfc_status(status));
+      }
       return status;
     }
 
@@ -167,11 +174,12 @@ static card_error_status_word_e encrypt_secure_data(
 
 card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
                                           secure_data_t *msgs,
-                                          size_t msg_count) {
+                                          size_t msg_count,
+                                          rejection_cb *reject_cb) {
   char wallet_name[NAME_SIZE] = "";
   // TODO: seperate UI flow and operations flow entirely
   instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
-  if (!card_fetch_wallet_name(wallet_id, wallet_name)) {
+  if (!card_fetch_wallet_name(wallet_id, wallet_name, reject_cb)) {
     return CARD_OPERATION_VERIFICATION_FAILED;
   }
 
@@ -186,8 +194,8 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     result = card_initialize_applet(&card_data);
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
       for (int i = 0; i < msg_count; i++) {
-        card_data.nfc_data.status =
-            encrypt_secure_data(&msgs[i], (const uint8_t *)wallet_name);
+        card_data.nfc_data.status = encrypt_secure_data(
+            &msgs[i], (const uint8_t *)wallet_name, reject_cb);
         if (card_data.nfc_data.status != SW_NO_ERROR) {
           card_handle_errors(&card_data);
           break;
@@ -214,7 +222,6 @@ card_error_type_e card_fetch_encrypt_data(const uint8_t *wallet_id,
     if (CARD_OPERATION_SUCCESS != result) {
       break;
     }
-
     // If control reached here, it is an unrecoverable error, so break
     result = card_data.error_type;
     break;
