@@ -59,6 +59,8 @@
 #include "nfc.h"
 
 #include <math.h>
+#include <stdint.h>
+#include <string.h>
 
 #include "app_error.h"
 #include "application_startup.h"
@@ -66,6 +68,10 @@
 #include "sys_state.h"
 #include "utils.h"
 #include "wallet_utilities.h"
+#if USE_SIMULATOR == 1
+#include "flash_struct_priv.h"
+#include "wallet.h"
+#endif
 
 #define SEND_PACKET_MAX_LEN 236
 #define RECV_PACKET_MAX_ENC_LEN 242
@@ -304,6 +310,7 @@ ISO7816 nfc_unpair() {
 }
 
 ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
+#if USE_SIMULATOR == 0
   // Select card before.
   ISO7816 status_word;
   uint8_t send_apdu[300], send_len;
@@ -335,6 +342,22 @@ ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
     return status_word;
   }
   return 0;
+#else
+  wallet_list->count = 2;
+  char *wallet_name[] = {"DEV001", "DEV002"};
+  for (uint8_t index = 0; index < 2;
+       index++) {    // TODO: Use macros for simulator wallet count
+    memcpy(wallet_list->wallet[index].id,
+           flash_ram_instance.wallets[index].wallet_id,
+           WALLET_ID_SIZE);
+    memcpy(wallet_list->wallet[index].name,
+           flash_ram_instance.wallets[index].wallet_name,
+           strlen(wallet_name[index]));
+    wallet_list->wallet[index].locked =
+        flash_ram_instance.wallets[index].is_wallet_locked;
+  }
+  return SW_NO_ERROR;
+#endif
 }
 
 ISO7816 nfc_add_wallet(const struct Wallet *wallet) {
@@ -545,9 +568,10 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
                          uint16_t *encrypted_data_size) {
   ASSERT(name != NULL);
   ASSERT(plain_data != NULL);
+  ASSERT(plain_data_size != 0);
   ASSERT(encrypted_data != NULL);
-  ASSERT(encrypted_data_size != NULL);
 
+#if USE_SIMULATOR == 0
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
   uint16_t send_len = 0, recv_len = 236;
@@ -562,6 +586,9 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   uint32_t system_clock = uwTick;
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+
+  uint8_t tmp[236];
+  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Encrypt data in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
@@ -572,13 +599,20 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
 
     if (status_word == SW_NO_ERROR) {
       // Extracting Data from APDU
-      *encrypted_data_size = recv_apdu[1];
-      memcpy(encrypted_data, recv_apdu + 2, recv_apdu[1]);
+      *encrypted_data_size = recv_len - 5;
+      memcpy(encrypted_data, recv_apdu + 3, recv_len - 5);
     }
   }
-
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;
+#else
+  // TODO: Standardize simulator/test wallet info
+  memcpy(name, "DEV002", 6);
+  memcpy(encrypted_data, name, 1);
+  memcpy(encrypted_data + 1, plain_data, plain_data_size);
+  *encrypted_data_size = 1 + plain_data_size;
+  return SW_NO_ERROR;
+#endif
 }
 
 ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
@@ -605,6 +639,9 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
   uint32_t system_clock = uwTick;
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
+
+  uint8_t tmp[236];
+  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Decrypt data in %lums\n", uwTick - system_clock);
   if (err_code != STM_SUCCESS) {
     return err_code;
@@ -614,8 +651,8 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
 
     if (status_word == SW_NO_ERROR) {
       // Extracting Data from APDU
-      *plain_data_size = recv_apdu[1];
-      memcpy(plain_data, recv_apdu + 2, recv_apdu[1]);
+      *plain_data_size = recv_len - 5;
+      memcpy(plain_data, recv_apdu + 3, recv_len - 5);
     }
   }
 

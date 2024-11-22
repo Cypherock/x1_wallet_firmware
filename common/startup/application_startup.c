@@ -69,6 +69,8 @@
  */
 #include "application_startup.h"
 
+#include <string.h>
+
 #include "core_error.h"
 #include "core_flow_init.h"
 #include "cryptoauthlib.h"
@@ -295,6 +297,9 @@ void application_init() {
   srand(time(0));
   /*Initialize LittlevGL*/
   lv_init();
+#ifdef DEV_BUILD
+  ekp_register_process_func(ekp_process_queue);
+#endif
   sim_hal_init();
   lv_port_disp_init();
   ui_init(indev_keypad);
@@ -457,6 +462,7 @@ void device_hardware_check() {
 }
 
 uint32_t get_device_serial() {
+#if USE_SIMULATOR == 0
   atecc_data.retries = DEFAULT_ATECC_RETRIES;
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
 
@@ -481,6 +487,16 @@ uint32_t get_device_serial() {
     }
   }
   return atecc_data.status;
+#else
+  // TODO: standardize device_id for simulator
+  uint8_t device_id[32] = {0};
+  hex_string_to_byte_array("8485011716705c7dbe8fdf69291fa3fc11f6bc30b55262e3819"
+                           "6d23562707ed5",    ///< SHA256("device_id");
+                           64,
+                           device_id);
+  memcpy(atecc_data.device_serial, device_id, DEVICE_SERIAL_SIZE);
+  return ATCA_SUCCESS;
+#endif
 }
 
 provision_status_t check_provision_status() {

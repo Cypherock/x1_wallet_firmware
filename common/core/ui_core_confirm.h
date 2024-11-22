@@ -74,4 +74,10 @@ bool core_scroll_page(const char *title,
                       const char *body,
                       ui_core_rejection_cb *reject_cb);
 
+/**
+ * @brief Copy of above function, to be merged eventually.
+ */
+bool core_scroll_non_sticky_heading_page(const char *title,
+                                         const char *body,
+                                         ui_core_rejection_cb *reject_cb);
 #endif

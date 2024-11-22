@@ -27,6 +27,9 @@ static uint32_t keycode_to_ascii(uint32_t sdl_key);
  **********************/
 static uint32_t last_key;
 static lv_indev_state_t state;
+#ifdef DEV_BUILD
+static ekp_process_queue_fptr process_key_presses_queue = NULL;
+#endif
 
 /**********************
  *      MACROS
@@ -35,7 +38,11 @@ static lv_indev_state_t state;
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-
+#ifdef DEV_BUILD
+void ekp_register_process_func(ekp_process_queue_fptr func) {
+  process_key_presses_queue = func;
+}
+#endif
 /**
  * Initialize the keyboard
  */
@@ -54,6 +61,10 @@ bool keyboard_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data) {
   (void)indev_drv; /*Unused*/
   data->state = state;
   data->key = keycode_to_ascii(last_key);
+#ifdef DEV_BUILD
+  if (process_key_presses_queue != NULL)
+    process_key_presses_queue(data);
+#endif
 
   return false;
 }

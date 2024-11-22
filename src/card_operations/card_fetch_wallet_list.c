@@ -61,12 +61,21 @@
  *****************************************************************************/
 #include "card_fetch_wallet_list.h"
 
+#include <stdint.h>
+
+#include "app_error.h"
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_utils.h"
+#include "common_error.h"
+#include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
+#include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "ui_state_machine.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -126,14 +135,16 @@ card_error_type_e card_fetch_wallet_list(
 
       if (card_data.nfc_data.status == SW_NO_ERROR ||
           card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
-        buzzer_start(BUZZER_DURATION);
+        if (card_data.nfc_data.status == SW_RECORD_NOT_FOUND ||
+            config->operation.buzzer_on_success) {
+          buzzer_start(BUZZER_DURATION);
+        }
         if (!config->operation.skip_card_removal) {
           wait_for_card_removal();
         }
         break;
-      } else {
-        card_handle_errors(&card_data);
       }
+      card_handle_errors(&card_data);
     }
 
     if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
@@ -172,4 +183,78 @@ card_error_type_e card_fetch_wallet_list(
 
   nfc_deselect_card();
   return card_data.error_type;
+}
+
+bool card_fetch_wallet_name(const uint8_t *wallet_id,
+                            char *wallet_name,
+                            rejection_cb *reject_cb) {
+  wallet_list_t wallets_in_card = {0};
+  card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
+  card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = 5;
+  card_data.nfc_data.init_session_keys = true;
+
+  while (1) {
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+    memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
+    result = card_initialize_applet(&card_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      card_data.nfc_data.status = nfc_list_all_wallet(&wallets_in_card);
+      if (card_data.nfc_data.status == SW_NO_ERROR ||
+          card_data.nfc_data.status == SW_RECORD_NOT_FOUND) {
+        break;
+      }
+      card_handle_errors(&card_data);
+    }
+
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(ui_text_place_card_below, ui_text_tap_1_2_cards);
+        continue;
+      }
+    }
+
+    result = handle_wallet_errors(&card_data, &wallet);
+    if (CARD_OPERATION_SUCCESS != result) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)get_card_error_from_nfc_status(
+                      card_data.nfc_data.status));
+      }
+      break;
+    }
+
+    // If control reached here, it is an unrecoverable error, so break
+    result = card_data.error_type;
+    break;
+  }
+  nfc_deselect_card();
+
+  if (result != CARD_OPERATION_SUCCESS) {
+    return false;
+  }
+
+  for (uint8_t i = 0; i < wallets_in_card.count; i++) {
+    if (memcmp(wallet_id, wallets_in_card.wallet[i].id, WALLET_ID_SIZE) == 0) {
+      memcpy(
+          wallet_name, (const char *)wallets_in_card.wallet[i].name, NAME_SIZE);
+      break;
+    }
+  }
+
+  if (0 == strlen(wallet_name)) {
+    buzzer_start(BUZZER_DURATION);
+    delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
+    if (reject_cb) {
+      reject_cb(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
+                ERROR_WALLET_NOT_FOUND_ON_CARD);
+    }
+    return false;
+  }
+
+  return true;
 }

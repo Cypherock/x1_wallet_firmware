@@ -69,6 +69,7 @@
 #include "core_error.h"
 #include "curves.h"
 #include "nist256p1.h"
+#include "ui_delay.h"
 #include "ui_instruction.h"
 #include "utils.h"
 #if USE_SIMULATOR == 0
@@ -486,4 +487,55 @@ card_error_type_e card_pair_operation(uint8_t card_number,
 
   nfc_deselect_card();
   return card_data.error_type;
+}
+
+card_error_type_e single_card_pair_operation(char *heading,
+                                             const char *message) {
+  // Need to handle how assign new card its number
+  card_operation_data_t card_data = {0};
+  card_pairing_data_t pair_data = {0};
+#if USE_SIMULATOR == 0
+  if (SUCCESS != pair_card_preprocess(&pair_data)) {
+    return CARD_OPERATION_ABORT_OPERATION;
+  }
+
+  instruction_scr_init(message, heading);
+  card_data.nfc_data.retries = 5;
+
+  while (1) {
+    // Initialize card tap config
+    card_data.nfc_data.acceptable_cards = ACCEPTABLE_CARDS_ALL;
+
+    init_and_pair_card(&card_data, &pair_data);
+
+    if (CARD_OPERATION_SUCCESS == card_data.error_type) {
+      if (SW_NO_ERROR != handle_pairing_success(&card_data, &pair_data)) {
+        card_data.error_type = CARD_OPERATION_ABORT_OPERATION;
+        break;
+      }
+      // short delay for better UX
+      BSP_DelayMs(DELAY_SHORT);
+      buzzer_start(BUZZER_DURATION);
+
+      break;
+    }
+
+    if (CARD_OPERATION_CARD_REMOVED == card_data.error_type ||
+        CARD_OPERATION_RETAP_BY_USER_REQUIRED == card_data.error_type) {
+      const char *error_msg = card_data.error_message;
+      if (CARD_OPERATION_SUCCESS == indicate_card_error(error_msg)) {
+        // Re-render the instruction screen
+        instruction_scr_init(message, heading);
+        continue;
+      }
+    }
+
+    break;
+  }
+
+  nfc_deselect_card();
+  return card_data.error_type;
+#else
+  return CARD_OPERATION_SUCCESS;
+#endif
 }
