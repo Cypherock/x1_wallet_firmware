@@ -191,15 +191,20 @@ static void auth_wallet_handle_errors() {
   LOG_ERROR("inheritance_auth_wallet error code:%d ", auth_wallet_error.type);
 
   switch (type) {
+    case AUTH_WALLET_INVALID_WALLET_ID_ERROR:
+    case AUTH_WALLET_SEED_GENERATION_ERROR:
     case AUTH_WALLET_USER_ABORT_ERROR: {
       // Error already sent to host, nothing to do here
       break;
     }
-    case AUTH_WALLET_INVALID_INPUT_ERROR:
-    case AUTH_WALLET_SEED_GENERATION_ERROR:
-    case AUTH_WALLET_PAIRING_ERROR:
+    // Show card specific generic errors
     case AUTH_WALLET_CARD_ENCRYPTION_ERROR:
-    case AUTH_WALLET_INVALID_WALLET_ID_ERROR:
+    case AUTH_WALLET_PAIRING_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                             ERROR_CARD_ERROR_UNKNOWN);
+      break;
+    }
+    case AUTH_WALLET_INVALID_INPUT_ERROR:
     case AUTH_WALLET_SIGNATURE_VERIFICATION_ERROR: {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                              ERROR_DATA_FLOW_INVALID_REQUEST);
@@ -309,8 +314,8 @@ static bool auth_wallet_get_wallet_entropy() {
     msgs[0].plain_data_size = WALLET_ID_SIZE;
     memcpy(msgs[0].plain_data, auth->data.wallet_id, WALLET_ID_SIZE);
     // fetch encrypted wallet_id
-    card_error_type_e status =
-        card_fetch_encrypt_data(auth->data.wallet_id, msgs, 1);
+    card_error_type_e status = card_fetch_encrypt_data(
+        auth->data.wallet_id, msgs, 1, inheritance_send_error);
     if (status != CARD_OPERATION_SUCCESS ||
         msgs[0].encrypted_data_size > ENTROPY_SIZE_LIMIT) {
       if (status == CARD_OPERATION_VERIFICATION_FAILED) {

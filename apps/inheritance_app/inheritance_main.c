@@ -124,6 +124,7 @@ void inheritance_main(usb_event_t usb_evt, const void *app_config) {
    * servicing a USB initiated command */
   core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
 
+  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case INHERITANCE_QUERY_AUTH_WALLET_TAG: {
       inheritance_auth_wallet(&query);

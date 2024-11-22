@@ -67,6 +67,7 @@
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_utils.h"
+#include "common_error.h"
 #include "constant_texts.h"
 #include "core_error.h"
 #include "flash_api.h"
@@ -184,7 +185,9 @@ card_error_type_e card_fetch_wallet_list(
   return card_data.error_type;
 }
 
-bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
+bool card_fetch_wallet_name(const uint8_t *wallet_id,
+                            char *wallet_name,
+                            rejection_cb *reject_cb) {
   wallet_list_t wallets_in_card = {0};
   card_error_type_e result = CARD_OPERATION_DEFAULT_INVALID;
   card_operation_data_t card_data = {0};
@@ -217,6 +220,11 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
 
     result = handle_wallet_errors(&card_data, &wallet);
     if (CARD_OPERATION_SUCCESS != result) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)get_card_error_from_nfc_status(
+                      card_data.nfc_data.status));
+      }
       break;
     }
 
@@ -241,6 +249,10 @@ bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name) {
   if (0 == strlen(wallet_name)) {
     buzzer_start(BUZZER_DURATION);
     delay_scr_init(ui_text_wallet_doesnt_exists_on_this_card, DELAY_TIME);
+    if (reject_cb) {
+      reject_cb(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
+                ERROR_WALLET_NOT_FOUND_ON_CARD);
+    }
     return false;
   }
 

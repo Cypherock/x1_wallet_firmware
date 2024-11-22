@@ -346,16 +346,19 @@ static void encryption_handle_errors() {
       inheritance_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                              ERROR_DATA_FLOW_DECODING_FAILED);
     } break;
-
     case ENCRYPTION_INVALID_WALLET_ID_ERROR: {
-      inheritance_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
+      // Error already sent to host, nothing to do here
     } break;
     case ENCRYPTION_USER_ABORT_FAILURE: {
       inheritance_send_error(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
-                             ERROR_DATA_FLOW_INVALID_DATA);
+                             ERROR_USER_REJECTION_UNKNOWN);
     } break;
-    case ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR:
+      // Show card specific generic errors
+    case ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR: {
+      inheritance_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                             ERROR_CARD_ERROR_UNKNOWN);
+      break;
+    }
     case ENCRYPTION_MESSAGE_MAX_COUNT_EXCEED_ERROR:
     case ENCRYPTION_SESSION_ENCRYPTION_FAIL_ERROR:
     case ENCRYPTION_ASSERT_MALLOC_ERROR:
@@ -610,7 +613,8 @@ static bool encrypt_message_data(void) {
   card_error_type_e status =
       card_fetch_encrypt_data(encryption_context->wallet_id,
                               encryption_context->data,
-                              encryption_context->data_count);
+                              encryption_context->data_count,
+                              inheritance_send_error);
 
   if (status != CARD_OPERATION_SUCCESS) {
     SET_ERROR_TYPE(ENCRYPTION_CARD_ENCRYPTION_FAIL_ERROR);

@@ -68,7 +68,11 @@ card_error_type_e card_fetch_wallet_list(
  * @param wallet_id Pointer to the wallet ID.
  * @param wallet_name Pointer to the buffer where the wallet name will be
  * copied.
+ * @param reject_cb Callback to execute if wallet is not found or card abort
+ * error occurs.
  * @return true if the wallet name is successfully fetched, false otherwise.
  */
-bool card_fetch_wallet_name(const uint8_t *wallet_id, char *wallet_name);
+bool card_fetch_wallet_name(const uint8_t *wallet_id,
+                            char *wallet_name,
+                            rejection_cb *reject_cb);
 #endif /* CARD_FETCH_WALLET_LIST_H */
