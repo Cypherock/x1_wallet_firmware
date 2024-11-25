@@ -70,11 +70,7 @@ static ekp_process_queue_fptr process_key_presses_queue = NULL;
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
-#ifdef DEV_BUILD
-void ekp_register_process_func(ekp_process_queue_fptr func) {
-  process_key_presses_queue = func;
-}
-#endif
+
 void lv_port_indev_init(void) {
   /* Here you will find example implementation of input devices supported by
    * LittelvGL:

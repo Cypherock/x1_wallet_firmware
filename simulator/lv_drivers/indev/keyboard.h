@@ -46,6 +46,9 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+#if DEV_BUILD
+void ekp_register_process_func(ekp_process_queue_fptr func);
+#endif
 /**
  * Initialize the keyboard
  */

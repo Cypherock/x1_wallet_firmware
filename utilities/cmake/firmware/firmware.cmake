@@ -58,6 +58,9 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/near_app
         apps/solana_app
         apps/tron_app
+        apps/inheritance_app
+
+        
         apps/xrp_app
         
         src/
@@ -182,6 +185,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/inheritance_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/xrp_app>
         )
 

@@ -53,6 +53,7 @@
 #define UI_TEXT_BLIND_SIGNING_WARNING                                          \
   LV_SYMBOL_WARNING " Blind Signing\nProceed at your own risk!"
 #define UI_TEXT_VERIFY_HD_PATH "Verify Derivation Path"
+#define UI_TEXT_PIN "PIN\n %s"
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
 
 // product hash
@@ -370,6 +371,24 @@ extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
+
+// App specific
+
+// Inheritance
+extern const char *ui_text_inheritance_wallet_auth_flow_confirmation;
+extern const char *ui_text_inheritance_wallet_auth_flow_confirmation_generic;
+extern const char *ui_text_inheritance_wallet_authenticating;
+extern const char *ui_text_inheritance_wallet_auth_success;
+extern const char *ui_text_inheritance_wallet_auth_fail;
+
+extern const char *ui_text_inheritance_encryption_flow_confirmation;
+extern const char *ui_text_inheritance_encryption_flow_success;
+extern const char *ui_text_inheritance_encryption_flow_failure;
+
+extern const char *ui_text_inheritance_decryption_flow_confirmation;
+extern const char *ui_text_inheritance_decryption_flow_confirmation_generic;
+extern const char *ui_text_inheritance_decryption_flow_success;
+extern const char *ui_text_inheritance_decryption_flow_failure;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

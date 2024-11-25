@@ -65,6 +65,7 @@
 #include "error.pb.h"
 #include "events.h"
 #include "ui_screens.h"
+#include "ui_scroll_page.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -133,5 +134,17 @@ bool core_scroll_page(const char *title,
                       const char *body,
                       ui_core_rejection_cb *reject_cb) {
   ui_scrollable_page(title, body, MENU_SCROLL_HORIZONTAL, false);
+  return wait_for_event(reject_cb);
+}
+
+// TODO: merge with above function
+bool core_scroll_non_sticky_heading_page(const char *title,
+                                         const char *body,
+                                         ui_core_rejection_cb *reject_cb) {
+  scrollable_page_options_t options = {
+      .is_heading_sticky = false,
+      .are_cancel_accept_btn_visible = false,
+      .page_orientation = MENU_SCROLL_HORIZONTAL};
+  ui_scrollable_page_with_options(title, body, options);
   return wait_for_event(reject_cb);
 }

@@ -105,6 +105,17 @@ TEST_GROUP_RUNNER(nfc_events_test) {
   RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
 }
 
+TEST_GROUP_RUNNER(core_session_test) {
+  RUN_TEST_CASE(core_session_test, core_session_initate_ok);
+  RUN_TEST_CASE(core_session_test, core_session_start_fail);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_encrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_decrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test, core_session_wallet_id_check_fail);
+  RUN_TEST_CASE(core_session_test, core_session_all_ok);
+}
+
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
 TEST_GROUP_RUNNER(nfc_events_manual_test) {
   RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
@@ -224,6 +235,28 @@ TEST_GROUP_RUNNER(near_txn_user_verification_test) {
 TEST_GROUP_RUNNER(solana_add_account_test) {
   RUN_TEST_CASE(solana_add_account_test, solana_validate_req_action);
   RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
+}
+
+TEST_GROUP_RUNNER(inheritance_encryption_tests) {
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
+}
+TEST_GROUP_RUNNER(inheritance_auth_wallet_tests) {
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_valid_input_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_which_request_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_valid_wallet_id_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_min_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_max_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_ok);
+}
+
+TEST_GROUP_RUNNER(inheritance_decryption_tests) {
+  RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_request);
+  // RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_wallet_id);
 }
 
 TEST_GROUP_RUNNER(utils_tests) {
