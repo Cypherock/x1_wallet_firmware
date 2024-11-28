@@ -192,8 +192,10 @@ void card_health_check(void) {
 
     char wallet_list[MAX_WALLETS_ALLOWED][NAME_SIZE] = {"", "", "", ""};
     for (uint8_t i = 0; i < wallets_in_card.count; i++) {
-      snprintf(
-          wallet_list[i], NAME_SIZE, (char *)wallets_in_card.wallet[i].name);
+      snprintf(wallet_list[i],
+               NAME_SIZE,
+               "%s",
+               (char *)wallets_in_card.wallet[i].name);
     }
     list_init(wallet_list, wallets_in_card.count, display_msg, false);
 
