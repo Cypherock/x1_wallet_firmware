@@ -133,6 +133,25 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
+#include "f251.h"
+void hex_to_felt_t(const uint8_t hex[32], felt_t felt) {
+  for (int i = 0; i < 4; i++) {
+    felt[i] = 0;    // Initialize the current felt[i] to 0
+    for (int j = 0; j < 8; j++) {
+      felt[i] |= ((uint64_t)hex[i * 8 + j])
+                 << (56 - j * 8);    // Pack bytes into a uint64_t
+    }
+  }
+}
+
+void felt_t_to_hex(const felt_t felt, uint8_t hex[32]) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 8; j++) {
+      hex[i * 8 + j] = (felt[i] >> (56 - j * 8)) &
+                       0xFF;    // Extract each byte from uint64_t
+    }
+  }
+}
 
 int main(void) {
 #ifdef DEV_BUILD
@@ -172,111 +191,95 @@ int main(void) {
                      0x80000000,
                      0x80000000,
                      0xC};
-  //   uint32_t path_length = 6;
 
-  //   uint8_t key[33];
-
-  //   // VERIFICATIONS
-  //     bool result = starknet_derive_key_from_seed(seed, path, path_length,
-  //     key);
-
-  //     if (result) {
-  //       printf("Derived Starknet Key:\n");
-  //       for (int i = 0; i < 33; i++) {
-  //         printf("%02x", key[i]);
-  //       }
-  //       printf("\n");
-  //     } else {
-  //       printf("Failed to derive key.\n");
-  //     }
-  // }
   uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
-  starknet_init();
-  uint8_t stark_pub_key[32];
-  starknet_derive_key_from_seed(seed, path, 6, NULL, stark_pub_key);
-  printf("PUBLIC  KEY\n");
-  for (int i = 0; i < 32; i++) {
-    printf("%02x", stark_pub_key[i]);
-  }
-  printf('\n');
+  // starknet_init();
+  // uint8_t stark_pub_key[32];
+  // starknet_derive_key_from_seed(seed, path, 6, NULL, stark_pub_key);
+  // printf("PUBLIC  KEY\n");
+  // for (int i = 0; i < 32; i++) {
+  //   printf("%02x", stark_pub_key[i]);
+  // }
+  // printf('\n');
 
   hex_string_to_byte_array(
       "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
       64,
       pubkey);
-  hex_string_to_byte_array(
-      "0000000000000000000000000000000000000000000000000000000000000000",
-      64,
-      deployer);
-  // hex_string_to_byte_array(
-  //     "0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a",
-  //     64,
-  //     salt);
-  hex_string_to_byte_array(
-      "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f",
-      64,
-      classhash);
 
-  calculate_contract_address_from_hash(
-      stark_pub_key, deployer, stark_pub_key, classhash, addr);
-  printf("\n");
+// printf("\n");
+// uint8_t hash2[32];
+// // compute_hash_on_elements(data, num_elem, hash2);
+// printf("function exited");
+// for (int i = 0; i < 33; i++) {
+//   // printf("%02x", hash2[i]);
+// }
+// fflush(stdout);
+#include "poseidon.h"
+  uint8_t hex[32] = {0};
+  felt_t felt = {0};
+  hex_to_felt_t(pubkey, felt);
 
-  printf("ADDRESS\n");
+  felt_t zero = {0};
+  felt_t one = {0, 0, 0, 1};
+  printf("\nzero\n");
+  felt_t_to_hex(zero, hex);
   for (int i = 0; i < 32; i++) {
-    printf("%02x", addr[i]);
+    printf("%02x", hex[i]);
   }
-  printf("\n");
-  printf("PDERSEN HASH.\n");
-  uint8_t x[32] = {0}, y[32] = {0}, hash[32] = {0};
+  printf("\none\n");
 
-  hex_string_to_byte_array(
-      "03d937c035c878245caf64531a5756109c53068da139362728feb561405371cb",
-      64,
-      x);
-  hex_string_to_byte_array(
-      "0208a0a10250e382e1e4bbe2880906c2791bf6275695e02fbbc6aeff9cd8b31a",
-      64,
-      y);
-  // pederson_hash(x, y, 32, hash);
-  printf("ped hash\n");
+  felt_t_to_hex(one, hex);
   for (int i = 0; i < 32; i++) {
-    printf("%02x", hash[i]);
+    printf("%02x", hex[i]);
+  }
+  felt_t array[3] = {0};
+  f251_copy(array[0], one);
+  f251_copy(array[1], zero);
+  f251_copy(array[2], one);
+
+  for (int i = 0; i < 4; i++) {
+    printf("%llu.", array[0][i]);
   }
   printf("\n");
-  printf("\nPDERSEN HASH 2\n");
-
-  uint8_t num_elem = 2;
-  uint8_t data[num_elem][STARKNET_BIGNUM_SIZE];
-  memzero(data[0], 32);
-  memzero(data[1], 32);
-  hex_string_to_byte_array("1", 1, &data[0][31]);
-  hex_string_to_byte_array("1", 1, &data[1][31]);
-  printf("bytearry\n");
-  for (int i = 0; i < 32; i++) {
-    // printf("%02x", data[0][i]);
+  for (int i = 0; i < 4; i++) {
+    printf("%llu.", array[1][i]);
   }
   printf("\n");
-  uint8_t hash2[32];
-  // compute_hash_on_elements(data, num_elem, hash2);
-  printf("function exited");
-  for (int i = 0; i < 33; i++) {
-    // printf("%02x", hash2[i]);
+  for (int i = 0; i < 4; i++) {
+    printf("%llu.", array[2][i]);
   }
-  fflush(stdout);
-
-  // compute_hash_on_elements(data, num_elem, hash2);
-  // printf("\n");
-
-  // printf("function exited");
-  // for (int i = 0; i < 33; i++) {
-  //   printf("%02x", hash2[i]);
+  printf("\n");
+  printf("\nPermut3 val:\n");
+  permutation_3(array);
+  // for (int i = 0; i < 4; i++) {
+  //   printf("%llu.", array[0][i]);
   // }
   // printf("\n");
+
+  felt_t_to_hex(array[0], hex);
+  for (int i = 0; i < 32; i++) {
+    printf("%02x", hex[i]);
+  }
+  printf("\n");
+  f251_copy(array[0], felt);
+  f251_copy(array[1], zero);
+  f251_copy(array[2], one);
+  printf("\nPermut3 val:\n");
+  permutation_3(array);
+  printf("\n");
+  felt_t_to_hex(array[0], hex);
+  for (int i = 0; i < 32; i++) {
+    printf("%02x", hex[i]);
+  }
+  printf("..\n");
+  fflush(stdout);
 
   while (1) {
     engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
     engine_run(main_engine_ctx);
   }
+
 #else /* RUN_ENGINE */
   while (true) {
     proof_of_work_task();
