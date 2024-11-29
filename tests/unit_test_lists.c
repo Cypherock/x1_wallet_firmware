@@ -269,3 +269,21 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
 }
+
+TEST_GROUP_RUNNER(byte_stream_tests) {
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_stream);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_destination);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_stream_pointer);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_writer_callback);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_negative_offset);
+  RUN_TEST_CASE(byte_stream_tests,
+                returns_error_for_offset_greater_than_capacity);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_when_writer_fails);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_zero_capacity);
+  RUN_TEST_CASE(byte_stream_tests,
+                can_handle_large_reads_with_multiple_writer_calls);
+  RUN_TEST_CASE(byte_stream_tests, can_handle_small_chunk_reads);
+  RUN_TEST_CASE(byte_stream_tests, skip_handles_large_offsets);
+  RUN_TEST_CASE(byte_stream_tests, handles_writer_changing_stream_parameters);
+  RUN_TEST_CASE(byte_stream_tests, read_exactly_capacity_size);
+}
