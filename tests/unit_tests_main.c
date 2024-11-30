@@ -86,6 +86,7 @@ extern lv_indev_t *indev_keypad;
 #include "dev_utils.h"
 #endif
 void RunAllTests(void) {
+  RUN_TEST_GROUP(btc_inputs_validator_tests);
   RUN_TEST_GROUP(byte_stream_tests);
   RUN_TEST_GROUP(event_getter_test);
   RUN_TEST_GROUP(p0_events_test);

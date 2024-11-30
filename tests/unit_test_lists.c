@@ -287,3 +287,17 @@ TEST_GROUP_RUNNER(byte_stream_tests) {
   RUN_TEST_CASE(byte_stream_tests, handles_writer_changing_stream_parameters);
   RUN_TEST_CASE(byte_stream_tests, read_exactly_capacity_size);
 }
+
+TEST_GROUP_RUNNER(btc_inputs_validator_tests) {
+  RUN_TEST_CASE(btc_inputs_validator_tests, test_null_stream);
+  RUN_TEST_CASE(btc_inputs_validator_tests, test_null_input);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pk);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2pk_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2pkh_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2wpkh_fail);
+}
