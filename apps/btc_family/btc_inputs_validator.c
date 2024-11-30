@@ -90,7 +90,26 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-// https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+
+/**
+ * @brief Decodes a variable-length integer (VarInt) from the byte stream.
+ *
+ * This function reads the first byte from the stream to determine how many more
+ * bytes are needed to decode the full integer. The number of bytes varies based
+ * on the value of the first byte (0xfd, 0xfe, or 0xff for extended length
+ * encoding).
+ *
+ * @param stream Pointer to the byte stream from which the VarInt is decoded.
+ * @param hash_ctx Pointer to an SHA256 context for updating the hash
+ * (optional).
+ *
+ * ref:
+ * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+ *
+ * @return The decoded 64-bit integer value.
+ * @note If the stream is invalid, or if there's an error reading from the
+ * stream, 0 is returned.
+ */
 static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
   uint8_t buffer[MAX_VARINT_SIZE] = {0};
   if (stream == NULL) {
