@@ -70,7 +70,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define SLICE_SIZE 256
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -93,7 +92,7 @@
  *****************************************************************************/
 // https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
 static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
-  uint8_t buffer[9] = {0};
+  uint8_t buffer[MAX_VARINT_SIZE] = {0};
   if (stream == NULL) {
     return 0;
   }
@@ -116,7 +115,8 @@ static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
   }
 
   if (first_byte == 0xfd) {
-    byte_stream_status_e status = read_byte_stream(stream, buffer + 1, 2);
+    byte_stream_status_e status =
+        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 2);
     if (status != BYTE_STREAM_SUCCESS) {
       return 0;
     }
@@ -124,11 +124,12 @@ static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
     if (hash_ctx != NULL) {
       sha256_Update(hash_ctx, buffer, 3);
     }
-    return U32_READ_LE_ARRAY(&buffer[1]);
+    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
   }
 
   if (first_byte == 0xfe) {
-    byte_stream_status_e status = read_byte_stream(stream, buffer + 1, 4);
+    byte_stream_status_e status =
+        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 4);
     if (status != BYTE_STREAM_SUCCESS) {
       return 0;
     }
@@ -136,11 +137,12 @@ static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
     if (hash_ctx != NULL) {
       sha256_Update(hash_ctx, buffer, 5);
     }
-    return U32_READ_LE_ARRAY(&buffer[1]);
+    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
   }
 
   if (first_byte == 0xff) {
-    byte_stream_status_e status = read_byte_stream(stream, buffer + 1, 8);
+    byte_stream_status_e status =
+        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 8);
     if (status != BYTE_STREAM_SUCCESS) {
       return 0;
     }
@@ -148,16 +150,10 @@ static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
     if (hash_ctx != NULL) {
       sha256_Update(hash_ctx, buffer, 9);
     }
-    return U32_READ_LE_ARRAY(&buffer[1]);
+    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
   }
   return 0;
 }
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-// https://en.bitcoin.it/wiki/Transaction
 
 btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
                                            const btc_sign_txn_input_t *input) {
@@ -170,7 +166,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   }
   byte_stream_status_e status = {0};
 
-  uint8_t version_no[4] = {0};
+  uint8_t version_no[VERSION_NO_SIZE] = {0};
   status = read_byte_stream(stream, version_no, sizeof(version_no));
   if (status != BYTE_STREAM_SUCCESS) {
     return BTC_VALIDATE_ERR_READ_STREAM;
@@ -188,8 +184,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
 
   uint64_t in_counter = decode_varint(stream, &hash_ctx);
   while (in_counter--) {
-    // https://en.bitcoin.it/wiki/Transaction#General_format_.28inside_a_block.29_of_each_input_of_a_transaction_-_Txin
-    uint8_t prev_transaction_hash[32] = {0};
+    uint8_t prev_transaction_hash[SHA256_DIGEST_LENGTH] = {0};
     status = read_byte_stream(
         stream, prev_transaction_hash, sizeof(prev_transaction_hash));
     if (status != BYTE_STREAM_SUCCESS) {
@@ -198,7 +193,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
     sha256_Update(
         &hash_ctx, prev_transaction_hash, sizeof(prev_transaction_hash));
 
-    uint8_t prev_tx_out_index[4] = {0};
+    uint8_t prev_tx_out_index[TX_IN_SEQ_NO_SIZE] = {0};
     status =
         read_byte_stream(stream, prev_tx_out_index, sizeof(prev_tx_out_index));
     if (status != BYTE_STREAM_SUCCESS) {
@@ -208,7 +203,6 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
 
     uint64_t tx_in_script_length = decode_varint(stream, &hash_ctx);
     while (tx_in_script_length > 0) {
-      // Slicing long data to reduce memory usage at a time
       uint64_t length_to_parse = SLICE_SIZE;
       if (tx_in_script_length < length_to_parse) {
         length_to_parse = tx_in_script_length;
@@ -225,7 +219,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
       tx_in_script_length -= length_to_parse;
     }
 
-    uint8_t sequence_no[4] = {0};
+    uint8_t sequence_no[TX_IN_SEQ_NO_SIZE] = {0};
     status = read_byte_stream(stream, sequence_no, sizeof(sequence_no));
     if (status != BYTE_STREAM_SUCCESS) {
       return BTC_VALIDATE_ERR_READ_STREAM;
@@ -237,7 +231,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   // https://en.bitcoin.it/wiki/Transaction#General_format_.28inside_a_block.29_of_each_output_of_a_transaction_-_Txout
   uint64_t out_index = 0;
   while (out_index < out_counter) {
-    uint8_t output_value_buffer[8] = {0};
+    uint8_t output_value_buffer[TX_OUT_VALUE_SIZE] = {0};
     status = read_byte_stream(
         stream, output_value_buffer, sizeof(output_value_buffer));
     if (status != BYTE_STREAM_SUCCESS) {
@@ -252,7 +246,6 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
 
     uint64_t tx_out_script_length = decode_varint(stream, &hash_ctx);
     while (tx_out_script_length > 0) {
-      // Slicing long data to reduce memory usage at a time
       uint64_t length_to_parse = SLICE_SIZE;
       if (tx_out_script_length < length_to_parse) {
         length_to_parse = tx_out_script_length;
@@ -272,7 +265,7 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
     out_index++;
   }
 
-  uint8_t lock_time[4] = {0};
+  uint8_t lock_time[TX_IN_SEQ_NO_SIZE] = {0};
   status = read_byte_stream(stream, lock_time, sizeof(lock_time));
   if (status != BYTE_STREAM_SUCCESS) {
     return BTC_VALIDATE_ERR_READ_STREAM;

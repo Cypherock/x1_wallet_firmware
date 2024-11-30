@@ -24,9 +24,15 @@ typedef enum {
   BTC_VALIDATE_SUCCESS,
 } btc_validation_error_e;
 
-/*****************************************************************************
- * GLOBAL FUNCTION PROTOTYPES
- *****************************************************************************/
+#define VERSION_NO_SIZE 4
+#define TX_OUT_VALUE_SIZE 8
+#define TX_IN_SEQ_NO_SIZE 4
+#define MAX_VARINT_SIZE 9
+#define SHA256_DIGEST_LENGTH 32
+#define SLICE_SIZE 1024    // Adjust as needed based on system requirements
+
+#define TX_IN_INDEX_OFFSET 1
+#define TX_OUT_INDEX_OFFSET 1
 
 btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
                                            const btc_sign_txn_input_t *input);
