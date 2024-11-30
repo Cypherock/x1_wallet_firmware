@@ -300,4 +300,6 @@ TEST_GROUP_RUNNER(btc_inputs_validator_tests) {
   RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh);
   RUN_TEST_CASE(btc_inputs_validator_tests,
                 btc_txn_helper_verify_input_p2wpkh_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_validate_inputs_for_a_transaction_with_witness_data);
 }

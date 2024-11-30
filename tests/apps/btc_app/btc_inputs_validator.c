@@ -160,7 +160,7 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pk) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_SUCCESS);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_SUCCESS, status);
 }
 
 TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pk_fail) {
@@ -210,7 +210,7 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pk_fail) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_ERR_INVALID_OUTPUT_VALUE);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_ERR_INVALID_OUTPUT_VALUE, status);
 }
 
 TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh) {
@@ -260,7 +260,7 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_SUCCESS);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_SUCCESS, status);
 }
 
 TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh_fail) {
@@ -311,7 +311,7 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh_fail) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_ERR_INVALID_OUTPUT_VALUE);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_ERR_INVALID_OUTPUT_VALUE, status);
 }
 
 TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh) {
@@ -380,7 +380,7 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_SUCCESS);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_SUCCESS, status);
 }
 
 TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh_fail) {
@@ -451,5 +451,52 @@ TEST(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh_fail) {
 
   btc_validation_error_e status = btc_validate_inputs(&stream, &input);
 
-  TEST_ASSERT_EQUAL(status, BTC_VALIDATE_ERR_INVALID_TX_HASH);
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_ERR_INVALID_TX_HASH, status);
+}
+
+TEST(btc_inputs_validator_tests,
+     btc_validate_inputs_for_a_transaction_with_witness_data) {
+  /* Test data source: rawTxn -
+   * https://bitcoin.stackexchange.com/questions/114547/how-to-calculate-a-bitcoin-transaction-hash-of-a-coinbase-transaction-in-2022
+   */
+  uint8_t raw_txn[1000] = {0};
+  hex_string_to_byte_array(
+      "010000000001010000000000000000000000000000000000000000000000000000000000"
+      "000000ffffffff640332610b2cfabe6d6ddcb8d8f2a2ddf5191d8191cfa7aa4fd9d85c52"
+      "9f2ce8ed4363c1a8942f14810b10000000f09f909f092f4632506f6f6c2f650000000000"
+      "000000000000000000000000000000000000000000000000000000000000050054000000"
+      "0000000004b1bbbb26000000001976a914c825a1ecf2a6830c4401620c3a16f1995057c2"
+      "ab88ac0000000000000000266a24aa21a9edd02fc86dcb2b66db1a5add17b3660e4046f5"
+      "0cde03199425f0944c7becb6546a0000000000000000266a2448617468e62698d5bdd575"
+      "72ff76305ed48933e8b787a67df4319ade7d798df03c706edf00000000000000002c6a4c"
+      "2952534b424c4f434b3a3c622bf845a23d0ee4927d14fe0455d8e30af6e68e7e3620aa1a"
+      "f6270044738b012000000000000000000000000000000000000000000000000000000000"
+      "00000000730b053f",
+      736,
+      raw_txn);
+  // only fill necessary values
+  btc_sign_txn_input_t input = {.prev_output_index = 0,
+                                .value = 649837489,
+                                .script_pub_key = {
+                                    .size = 25,
+                                }};
+  hex_string_to_byte_array(
+      "aa7f5b5f200feac9364ec40b4a5c0cb5c291f846422dec373a71cf30c55ce856",
+      64,
+      input.prev_txn_hash);
+  cy_reverse_byte_array(input.prev_txn_hash, sizeof(input.prev_txn_hash));
+
+  data_ptr = raw_txn;
+  data_total_size = 736 / 2;
+
+  byte_stream_t stream = {
+      .stream_pointer = raw_txn,
+      .writer = generic_writer,
+      .offset = 0,
+      .capacity = 128,
+  };
+
+  btc_validation_error_e status = btc_validate_inputs(&stream, &input);
+
+  TEST_ASSERT_EQUAL(BTC_VALIDATE_SUCCESS, status);
 }
