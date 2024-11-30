@@ -452,22 +452,14 @@ static bool fetch_valid_input(btc_query_t *query) {
     // req prev txn chunk from host
     if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
-      // Free txin after use
       free(txin);
-      // reset hoisted pointers after use
-      payload = NULL;
-      hoisted_query = NULL;
       return false;
     }
 
     if (false == query->sign_txn.prev_txn_chunk.has_chunk_payload) {
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
-      // Free txin after use
       free(txin);
-      // reset hoisted pointers after use
-      payload = NULL;
-      hoisted_query = NULL;
       return false;
     }
 
@@ -484,9 +476,17 @@ static bool fetch_valid_input(btc_query_t *query) {
     btc_validation_error_e validation_result =
         btc_validate_inputs(&stream, txin);
 
+    btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+    // Send last chunk ack to host
+    response.sign_txn.which_response =
+        BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
+    response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
+    response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
+        payload->chunk_index;
+    btc_send_result(&response);
+
     // Free txin after use
     free(txin);
-    // reset hoisted pointers after use
     payload = NULL;
     hoisted_query = NULL;
 
@@ -497,21 +497,6 @@ static bool fetch_valid_input(btc_query_t *query) {
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
-
-    btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
-    // Send current chunk ack to host
-    response.sign_txn.which_response =
-        BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
-    response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
-    response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
-        payload->chunk_index;
-    btc_send_result(&response);
-
-    // Free txin after use
-    free(txin);
-    // reset hoisted pointers after use
-    payload = NULL;
-    hoisted_query = NULL;
   }
   return true;
 }
