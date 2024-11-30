@@ -60,6 +60,7 @@
  *****************************************************************************/
 #include "btc_inputs_validator.h"
 
+#include "byte_stream.h"
 #include "sha2.h"
 #include "utils.h"
 
@@ -282,6 +283,28 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
     }
 
     out_index++;
+  }
+
+  // Optional witness data, not used in calculating hash
+  // https://bitcoin.stackexchange.com/questions/113697/what-are-the-parts-of-a-bitcoin-transaction-in-segwit-format
+  if (is_segwit) {
+    uint64_t witness_count = decode_varint(stream, NULL);
+    while (witness_count--) {
+      uint64_t witness_component_length = decode_varint(stream, NULL);
+      while (witness_component_length > 0) {
+        uint64_t length_to_parse = SLICE_SIZE;
+        if (witness_component_length < length_to_parse) {
+          length_to_parse = witness_component_length;
+        }
+
+        status = skip_byte_stream(stream, length_to_parse);
+        if (status != BYTE_STREAM_SUCCESS) {
+          return BTC_VALIDATE_ERR_READ_STREAM;
+        }
+
+        witness_component_length -= length_to_parse;
+      }
+    }
   }
 
   uint8_t lock_time[TX_IN_SEQ_NO_SIZE] = {0};
