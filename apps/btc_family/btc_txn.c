@@ -446,9 +446,6 @@ static bool fetch_valid_input(btc_query_t *query) {
     // verify transaction details and discard the raw-transaction (prev_txn)
     const btc_prev_txn_chunk_t *prev_txn = &(query->sign_txn.prev_txn_chunk);
 
-    btc_verify_input_t verify_input_data;
-    memzero(&(verify_input_data), sizeof(btc_verify_input_t));
-
     // req prev txn chunk from host
     if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
