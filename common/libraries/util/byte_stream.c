@@ -1,3 +1,12 @@
+/**
+ * @file byte_stream.c
+ * @brief Implementation of byte stream operations.
+ *
+ * This file provides the implementation of functions to read and skip bytes in
+ * a byte stream, managing the stream pointer and offset, and interacting with
+ * the byte stream writer.
+ */
+
 #include "byte_stream.h"
 
 #include <stdbool.h>
@@ -5,10 +14,35 @@
 #include <stdint.h>
 #include <string.h>
 
+/**
+ * @macro BS_THROW_IF
+ * @brief A macro to check a condition and return an error status if true.
+ *
+ * This macro is used to check conditions in the byte stream operations and
+ * returns the corresponding error status if the condition is met.
+ *
+ * @param x The condition to check.
+ * @param y The status to return if the condition is true.
+ */
 #define BS_THROW_IF(x, y)                                                      \
   if (x)                                                                       \
   return y
 
+/**
+ * @brief Processes the byte stream to either read or skip bytes.
+ *
+ * This function handles both reading data into a buffer and skipping bytes
+ * in the byte stream. It manages the stream's offset and interacts with the
+ * writer function to fetch more data if necessary.
+ *
+ * @param byte_stream Pointer to the byte stream object.
+ * @param destination Pointer to the destination buffer (or NULL if skipping).
+ * @param total_number_of_bytes_to_process Number of bytes to read or skip.
+ * @param is_copying_data Whether the data should be copied into the destination
+ * buffer.
+ *
+ * @return Status code indicating the result of the operation.
+ */
 static byte_stream_status_e process_byte_stream(
     byte_stream_t *byte_stream,
     uint8_t *destination,
@@ -19,8 +53,6 @@ static byte_stream_status_e process_byte_stream(
   BS_THROW_IF(byte_stream->writer == NULL, BYTE_STREAM_INVALID_STREAM);
   BS_THROW_IF(byte_stream->capacity == 0, BYTE_STREAM_INVALID_STREAM);
   BS_THROW_IF(byte_stream->offset > byte_stream->capacity,
-              BYTE_STREAM_INVALID_STREAM);
-  BS_THROW_IF(total_number_of_bytes_to_process == 0,
               BYTE_STREAM_INVALID_STREAM);
 
   if (is_copying_data) {
