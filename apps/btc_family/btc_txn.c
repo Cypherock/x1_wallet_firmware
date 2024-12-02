@@ -424,6 +424,7 @@ static bool fetch_valid_input(btc_query_t *query) {
     // for explanation. Currently, the device can spend P2PKH or P2WPKH inputs
     const btc_script_type_e type = btc_get_script_type(
         txin->script_pub_key.bytes, txin->script_pub_key.size);
+    LOG_ERROR("btc_get_script_type: %d", type);
 
     // clone the input details into btc_txn_context
     btc_txn_input_t *input = &btc_txn_context->inputs[idx];
@@ -475,7 +476,7 @@ static bool fetch_valid_input(btc_query_t *query) {
 
     btc_validation_error_e validation_result =
         btc_validate_inputs(&stream, txin);
-
+    LOG_ERROR("btc_validate_inputs validation_result: %d", validation_result);
     btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
     // Send last chunk ack to host
     response.sign_txn.which_response =
