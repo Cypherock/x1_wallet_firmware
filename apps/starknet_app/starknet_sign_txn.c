@@ -273,10 +273,7 @@ static bool fetch_valid_input(starknet_query_t *query) {
       !check_which_request(query, STARKNET_SIGN_TXN_REQUEST_TXN_TAG)) {
     return false;
   }
-
-  memcpy(starknet_txn_context->transaction,
-         query->sign_txn.txn.txn.bytes,
-         query->sign_txn.txn.txn.size);
+  starknet_txn_context->transaction = &query->sign_txn.txn;
 
   if (1) {
     send_response(STARKNET_SIGN_TXN_RESPONSE_UNSIGNED_TXN_ACCEPTED_TAG);
@@ -294,8 +291,9 @@ static bool get_user_verification(void) {
   bool user_verified = false;
   char msg[128] = "0x";
 
-  byte_array_to_hex_string(starknet_txn_context->transaction, 32, &msg[2], 126);
-  // TODO: Add blind signing warning
+  // TODO: Complete proper user verification and parsing
+  byte_array_to_hex_string(
+      starknet_txn_context->transaction->sender_address, 32, &msg[2], 126);
   user_verified =
       core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, starknet_send_error);
   user_verified &= core_scroll_page(NULL, msg, starknet_send_error);
@@ -327,7 +325,8 @@ static bool sign_txn(uint8_t *signature_buffer) {
           stark_key,
           NULL)) {
     // TODO: Generate signature using stark_key
-    memcpy(signature_buffer, stark_key, sizeof(stark_key));
+    uint8_t dummy[5] = {0x11, 0x22, 0x33, 0x44, 0x55};
+    memcpy(signature_buffer, dummy, sizeof(dummy));
   } else {
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }

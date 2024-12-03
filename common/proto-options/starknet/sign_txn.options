@@ -1,5 +1,20 @@
 # Options for file common/cypherock-common/proto/starknet/sign_txn.proto
 starknet.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
-starknet.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_length:true
-starknet.SignTxnUnsignedTxn.txn type:FT_STATIC max_size:2048 fixed_length:false
+starknet.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:6 fixed_length:true
+
+starknet.GasAmount.max_amount type:FT_STATIC max_size:5 fixed_length:true #TODO: Decide on max size
+starknet.GasAmount.max_price_per_unit type:FT_STATIC max_size:5 fixed_length:true
+
+starknet.CompiledCallData.value type:FT_STATIC max_size:32 max_count:6 fixed_length:false
+
+starknet.SignTxnUnsignedTxn.sender_address type:FT_STATIC max_size:32 fixed_length:true
+starknet.SignTxnUnsignedTxn.version type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.chain_id type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.nonce type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.account_deployment_data type:FT_STATIC max_size:1 fixed_length:true #empty
+starknet.SignTxnUnsignedTxn.nonce_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.fee_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.tip type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.paymaster_data type:FT_STATIC max_size:1 fixed_length:true #empty
+
 starknet.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true
