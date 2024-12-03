@@ -143,13 +143,37 @@ void hex_to_felt_t(const uint8_t hex[32], felt_t felt) {
     }
   }
 }
+void clear_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    state[i][0] = 0;
+    state[i][1] = 0;
+    state[i][2] = 0;
+    state[i][3] = 0;
+  }
+}
 
 void felt_t_to_hex(const felt_t felt, uint8_t hex[32]) {
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 8; j++) {
-      hex[i * 8 + j] = (felt[i] >> (56 - j * 8)) &
-                       0xFF;    // Extract each byte from uint64_t
+      hex[i * 8 + j] =
+          (uint8_t)((uint64_t)(felt[i] >> (56 - j * 8)) &
+                    (uint64_t)(0x00000000000000ff));    // Extract each byte
+                                                        // from uint64_t
     }
+  }
+}
+
+void print_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    printf("%016" PRIx64, state[i][3]);
+    printf("%016" PRIx64, state[i][2]);
+    printf("%016" PRIx64, state[i][1]);
+    printf("%016" PRIx64, state[i][0]);
+    printf("\n");
   }
 }
 
@@ -183,7 +207,7 @@ int main(void) {
                    "nature ready fabric inspire lift language kangaroo leave "
                    "carry plug wild network hollow awake slab";
   uint8_t seed[64];
-  mnemonic_to_seed(mnemonic, NULL, seed, NULL);
+  // mnemonic_to_seed(mnemonic, NULL, seed, NULL);
 
   uint32_t path[] = {0x80000000 + 0xA55,
                      0x80000000 + 0x4741E9C9,
@@ -221,7 +245,7 @@ int main(void) {
   hex_to_felt_t(pubkey, felt);
 
   felt_t zero = {0};
-  felt_t one = {0, 0, 0, 1};
+  felt_t one = {1, 0, 0, 0};
   printf("\nzero\n");
   felt_t_to_hex(zero, hex);
   for (int i = 0; i < 32; i++) {
@@ -234,6 +258,8 @@ int main(void) {
     printf("%02x", hex[i]);
   }
   felt_t array[3] = {0};
+  clear_state(array, 3);
+
   f251_copy(array[0], one);
   f251_copy(array[1], zero);
   f251_copy(array[2], one);
@@ -252,6 +278,7 @@ int main(void) {
   printf("\n");
   printf("\nPermut3 val:\n");
   permutation_3(array);
+  print_state(array, 1);
   // for (int i = 0; i < 4; i++) {
   //   printf("%llu.", array[0][i]);
   // }
@@ -265,8 +292,10 @@ int main(void) {
   f251_copy(array[0], felt);
   f251_copy(array[1], zero);
   f251_copy(array[2], one);
-  printf("\nPermut3 val:\n");
+  printf("\nPermut3 val2:\n");
   permutation_3(array);
+  print_state(array, 3);
+
   printf("\n");
   felt_t_to_hex(array[0], hex);
   for (int i = 0; i < 32; i++) {
@@ -274,11 +303,10 @@ int main(void) {
   }
   printf("..\n");
   fflush(stdout);
-
-  while (1) {
-    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
-    engine_run(main_engine_ctx);
-  }
+  // while (1) {
+  //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+  //   engine_run(main_engine_ctx);
+  // }
 
 #else /* RUN_ENGINE */
   while (true) {
