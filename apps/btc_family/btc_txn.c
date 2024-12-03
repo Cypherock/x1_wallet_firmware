@@ -60,19 +60,26 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "bip32.h"
 #include "btc_api.h"
 #include "btc_helpers.h"
+#include "btc_inputs_validator.h"
 #include "btc_priv.h"
 #include "btc_script.h"
 #include "btc_txn_helpers.h"
+#include "byte_stream.h"
 #include "coin_utils.h"
+#include "common.pb.h"
 #include "constant_texts.h"
 #include "curves.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
-#include "ui_screens.h"
+#include "ui_delay.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -371,6 +378,34 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   send_response(BTC_SIGN_TXN_RESPONSE_META_ACCEPTED_TAG);
   return true;
 }
+static const common_chunk_payload_t *payload = NULL;
+static btc_query_t *hoisted_query = NULL;
+
+static byte_stream_writer_status_e fetch_more_chunks(byte_stream_t *stream) {
+  btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+  // Send current chunk ack to host
+  response.sign_txn.which_response =
+      BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
+  response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
+  response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
+      payload->chunk_index;
+  btc_send_result(&response);
+
+  // Get new chunk
+  if (!btc_get_query(hoisted_query, BTC_QUERY_SIGN_TXN_TAG) ||
+      !check_which_request(hoisted_query,
+                           BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
+    return BYTE_STREAM_WRITER_UNKNOWN_ERROR;
+  }
+  stream->offset = 0;
+  stream->capacity = payload->chunk.size;
+
+  if (stream->capacity == 0) {
+    return BYTE_STREAM_WRITER_READING_OUT_OF_BOUNDS;
+  }
+
+  return BYTE_STREAM_WRITER_SUCCESS;
+};
 
 static bool fetch_valid_input(btc_query_t *query) {
   // Validate inputs for safety from attack. Ref:
@@ -389,6 +424,7 @@ static bool fetch_valid_input(btc_query_t *query) {
     // for explanation. Currently, the device can spend P2PKH or P2WPKH inputs
     const btc_script_type_e type = btc_get_script_type(
         txin->script_pub_key.bytes, txin->script_pub_key.size);
+    LOG_ERROR("btc_get_script_type: %d", type);
 
     // clone the input details into btc_txn_context
     btc_txn_input_t *input = &btc_txn_context->inputs[idx];
@@ -409,77 +445,54 @@ static bool fetch_valid_input(btc_query_t *query) {
     // TODO: ensure only valid input for the path are being provided. spending a
     // segwit input on the legacy derivation path does not make sense.
     // verify transaction details and discard the raw-transaction (prev_txn)
-    btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
     const btc_prev_txn_chunk_t *prev_txn = &(query->sign_txn.prev_txn_chunk);
-    const common_chunk_payload_t *payload = &(prev_txn->chunk_payload);
-    const common_chunk_payload_chunk_t *chunk = &(payload->chunk);
-
-    uint32_t total_size = 0;
-    uint32_t size = 0;
-    int status = 4;
 
     btc_verify_input_t verify_input_data;
     memzero(&(verify_input_data), sizeof(btc_verify_input_t));
 
-    while (1) {
-      // req prev txn chunk from host
-      if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
-          !check_which_request(query,
-                               BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
-        return false;
-      }
-      // init details from first chunk
-      if (0 == size) {
-        verify_input_data.chunk_total = payload->total_chunks;
-        total_size = chunk->size + payload->remaining_size;
-
-        verify_input_data.size_last_chunk = total_size % CHUNK_SIZE;
-        if (verify_input_data.size_last_chunk < 4) {
-          verify_input_data.is_locktime_split = true;
-        }
-      }
-
-      if (false == query->sign_txn.prev_txn_chunk.has_chunk_payload ||
-          payload->chunk_index >= payload->total_chunks ||
-          size + chunk->size > total_size) {
-        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
-        return false;
-      }
-      status = btc_verify_input(
-          chunk->bytes, payload->chunk_index, &verify_input_data, txin);
-      size += chunk->size;
-
-      // Send chunk ack to host
-      response.sign_txn.which_response =
-          BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
-      response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
-      response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
-          payload->chunk_index;
-      btc_send_result(&response);
-
-      // If no data remaining to be received from the host, then exit
-      if (0 == payload->remaining_size ||
-          payload->chunk_index + 1 == payload->total_chunks) {
-        break;
-      }
-
-      if (4 != status) {
-        btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_DATA);
-        break;
-      }
-    }
-    // Free txin after use
-    free(txin);
-    if (total_size != size) {
-      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_DATA);
+    // req prev txn chunk from host
+    if (!btc_get_query(query, BTC_QUERY_SIGN_TXN_TAG) ||
+        !check_which_request(query, BTC_SIGN_TXN_REQUEST_PREV_TXN_CHUNK_TAG)) {
+      free(txin);
       return false;
     }
 
+    if (false == query->sign_txn.prev_txn_chunk.has_chunk_payload) {
+      btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      free(txin);
+      return false;
+    }
+
+    payload = &(prev_txn->chunk_payload);
+    hoisted_query = query;
+
+    // Create byte stream
+    byte_stream_t stream = {
+        .offset = 0,
+        .capacity = payload->chunk.size,
+        .stream_pointer = (uint8_t *)&(payload->chunk.bytes),
+        .writer = fetch_more_chunks};
+
+    btc_validation_error_e validation_result =
+        btc_validate_inputs(&stream, txin);
+    LOG_ERROR("btc_validate_inputs validation_result: %d", validation_result);
+    btc_result_t response = init_btc_result(BTC_RESULT_SIGN_TXN_TAG);
+    // Send last chunk ack to host
+    response.sign_txn.which_response =
+        BTC_SIGN_TXN_RESPONSE_PREV_TXN_CHUNK_ACCEPTED_TAG;
+    response.sign_txn.prev_txn_chunk_accepted.has_chunk_ack = true;
+    response.sign_txn.prev_txn_chunk_accepted.chunk_ack.chunk_index =
+        payload->chunk_index;
+    btc_send_result(&response);
+
+    // Free txin after use
+    free(txin);
+    payload = NULL;
+    hoisted_query = NULL;
+
     if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type) ||
-        0 != status) {
+        validation_result != BTC_VALIDATE_SUCCESS) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
