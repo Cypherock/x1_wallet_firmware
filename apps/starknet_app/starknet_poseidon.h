@@ -1,5 +1,5 @@
 /**
- * @file    starknet_poseidon.c
+ * @file    starknet_poseidon.h
  * @author  Cypherock X1 Team
  * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -96,29 +96,7 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 // Function to convert Big-Endian hex to Little-Endian felt_t
-void hex_to_felt_t(const uint8_t hex[32], felt_t felt) {
-  int offset = 0;
-  for (int i = 0; i < 4; i++) {
-    felt[3 - i] = U64_READ_BE_ARRAY(hex + offset);
-    offset += 8;
-  }
-}
+void hex_to_felt_t(const uint8_t hex[32], felt_t felt);
 
 // Function to convert Little-Endian felt_t to Big-Endian hex
-void felt_t_to_hex(const felt_t felt, uint8_t hex[32]) {
-  int offset = 0;
-  for (int i = 0; i < 4; i++) {
-    uint64_t value = felt[3 - i];
-
-    // Break the uint64_t value into 8 bytes and store in hex array in
-    // Big-Endian order
-    for (int j = 0; j < 8; j++) {
-      hex[offset + j] = (uint8_t)((value >> (56 - j * 8)) & 0xFF);
-    }
-
-    offset += 8;
-  }
-}
-
-// m = 3 (rate + Capacity)
-// r = 2
+void felt_t_to_hex(const felt_t felt, uint8_t hex[32]);

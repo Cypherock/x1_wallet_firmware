@@ -87,6 +87,7 @@
 #include "logger.h"
 #include "onboarding.h"
 #include "starknet_helpers.h"
+#include "starknet_poseidon.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "sys_state.h"
@@ -133,16 +134,6 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
-#include "f251.h"
-void hex_to_felt_t(const uint8_t hex[32], felt_t felt) {
-  for (int i = 0; i < 4; i++) {
-    felt[i] = 0;    // Initialize the current felt[i] to 0
-    for (int j = 0; j < 8; j++) {
-      felt[i] |= ((uint64_t)hex[i * 8 + j])
-                 << (56 - j * 8);    // Pack bytes into a uint64_t
-    }
-  }
-}
 void clear_state(felt_t *state, int size) {
   int i;
 
@@ -151,17 +142,6 @@ void clear_state(felt_t *state, int size) {
     state[i][1] = 0;
     state[i][2] = 0;
     state[i][3] = 0;
-  }
-}
-
-void felt_t_to_hex(const felt_t felt, uint8_t hex[32]) {
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 8; j++) {
-      hex[i * 8 + j] =
-          (uint8_t)((uint64_t)(felt[i] >> (56 - j * 8)) &
-                    (uint64_t)(0x00000000000000ff));    // Extract each byte
-                                                        // from uint64_t
-    }
   }
 }
 
@@ -194,15 +174,6 @@ int main(void) {
     device_provision_check();
   }
 
-  //   uint8_t seed_key[64] = {
-  //     0xa1, 0x85, 0xe4, 0x43, 0x59, 0xc9, 0x40, 0x14, 0xfa, 0x23, 0xb8, 0x67,
-  //     0x41, 0xd0, 0x89, 0xcd, 0xf7, 0xb7, 0x5f, 0xa2, 0x2a, 0x7b, 0x81, 0x9e,
-  //     0x22, 0x7a, 0x72, 0x6d, 0x0c, 0xf1, 0x9d, 0x29, 0xb1, 0x9b, 0x16, 0xb4,
-  //     0xe9, 0xbd, 0x9d, 0x6f, 0x7d, 0x52, 0xe6, 0x7d, 0x46, 0xeb, 0x2f, 0xaa,
-  //     0x7d, 0x72, 0x58, 0xb6, 0x88, 0x6b, 0x75, 0xae, 0xb5, 0xe7, 0x82, 0x5e,
-  //     0x97, 0xf2, 0x6e, 0xa3
-  // };
-  // {
   char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
                    "nature ready fabric inspire lift language kangaroo leave "
                    "carry plug wild network hollow awake slab";
@@ -218,83 +189,35 @@ int main(void) {
 
   uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
   // starknet_init();
-  // uint8_t stark_pub_key[32];
-  // starknet_derive_key_from_seed(seed, path, 6, NULL, stark_pub_key);
-  // printf("PUBLIC  KEY\n");
-  // for (int i = 0; i < 32; i++) {
-  //   printf("%02x", stark_pub_key[i]);
-  // }
-  // printf('\n');
 
   hex_string_to_byte_array(
       "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
       64,
       pubkey);
+  hex_string_to_byte_array(
+      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbf9",
+      64,
+      deployer);
 
-// printf("\n");
-// uint8_t hash2[32];
-// // compute_hash_on_elements(data, num_elem, hash2);
-// printf("function exited");
-// for (int i = 0; i < 33; i++) {
-//   // printf("%02x", hash2[i]);
-// }
-// fflush(stdout);
-#include "poseidon.h"
   uint8_t hex[32] = {0};
   felt_t felt = {0};
+  felt_t dep = {0};
+  felt_t array[3];
+  clear_state(array, 3);
+  hex_to_felt_t(deployer, dep);
   hex_to_felt_t(pubkey, felt);
 
   felt_t zero = {0};
-  felt_t one = {1, 0, 0, 0};
-  printf("\nzero\n");
-  felt_t_to_hex(zero, hex);
-  for (int i = 0; i < 32; i++) {
-    printf("%02x", hex[i]);
-  }
-  printf("\none\n");
+  felt_t two = {2, 0, 0, 0};
 
-  felt_t_to_hex(one, hex);
-  for (int i = 0; i < 32; i++) {
-    printf("%02x", hex[i]);
-  }
-  felt_t array[3] = {0};
-  clear_state(array, 3);
-
-  f251_copy(array[0], one);
-  f251_copy(array[1], zero);
-  f251_copy(array[2], one);
-
-  for (int i = 0; i < 4; i++) {
-    printf("%llu.", array[0][i]);
-  }
-  printf("\n");
-  for (int i = 0; i < 4; i++) {
-    printf("%llu.", array[1][i]);
-  }
-  printf("\n");
-  for (int i = 0; i < 4; i++) {
-    printf("%llu.", array[2][i]);
-  }
-  printf("\n");
-  printf("\nPermut3 val:\n");
-  permutation_3(array);
-  print_state(array, 1);
-  // for (int i = 0; i < 4; i++) {
-  //   printf("%llu.", array[0][i]);
-  // }
-  // printf("\n");
-
-  felt_t_to_hex(array[0], hex);
-  for (int i = 0; i < 32; i++) {
-    printf("%02x", hex[i]);
-  }
   printf("\n");
   f251_copy(array[0], felt);
-  f251_copy(array[1], zero);
-  f251_copy(array[2], one);
+  f251_copy(array[1], dep);
+  f251_copy(array[2], two);
+  print_state(array, 1);
   printf("\nPermut3 val2:\n");
   permutation_3(array);
-  print_state(array, 3);
+  print_state(array, 1);
 
   printf("\n");
   felt_t_to_hex(array[0], hex);

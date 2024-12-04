@@ -10,6 +10,9 @@
 [submodule "tinybn"]
 	path = vendor/tinybn
 	url = ../tiny-bignum-c
+[submodule "vendor/poseidon"]
+	path = vendor/poseidon
+	url = ../poseidon
 [submodule "vendor/cypherock-bignum"]
 	path = vendor/cypherock-bignum
 	url = https://github.com/ayush-1510/starknet-functions.git
