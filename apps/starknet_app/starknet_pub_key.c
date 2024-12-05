@@ -438,16 +438,12 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   }
 
   set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_CONFIRM);
-  char *mnemonics = "second tone shoe employ unfold lock donor uncle twice "
-                    "nature ready fabric inspire lift language kangaroo leave "
-                    "carry plug wild network hollow awake slab";
-  mnemonic_to_seed(mnemonics, wallet_credential_data.passphrase, seed, NULL);
-  // if (!reconstruct_seed(query->get_public_keys.initiate.wallet_id,
-  //                       &seed[0],
-  //                       starknet_send_error)) {
-  //   memzero(seed, sizeof(seed));
-  //   return;
-  // }
+  if (!reconstruct_seed(query->get_public_keys.initiate.wallet_id,
+                        &seed[0],
+                        starknet_send_error)) {
+    memzero(seed, sizeof(seed));
+    return;
+  }
 
   set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
