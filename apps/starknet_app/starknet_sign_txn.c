@@ -62,7 +62,13 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "bignum.h"
+#include "ecdsa.h"
+#include "mini-gmp-helpers.h"
+#include "mini-gmp.h"
+#include "rand.h"
 #include "reconstruct_wallet_flow.h"
+#include "rfc6979.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
 #include "starknet_helpers.h"
@@ -204,6 +210,161 @@ static starknet_txn_context_t *starknet_txn_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void mpz_to_bn(bignum256 *bn, const mpz_t mpz) {
+  uint8_t out[32] = {0};
+  mpz_to_byte_array(mpz, out, 32);
+  bn_read_be(out, bn);
+}
+
+void bn_to_mpz(mpz_t mpz, const bignum256 *bn) {
+  uint8_t in[32] = {0};
+  bn_write_be(bn, in);
+  mpz_import(mpz, 32, 1, 1, 1, 0, in);
+}
+
+// generate K in a deterministic way, according to RFC6979
+// http://tools.ietf.org/html/rfc6979
+void generate_k_rfc6979_mpz(mpz_t k, rfc6979_state *state) {
+  uint8_t buf[32] = {0};
+  generate_rfc6979(buf, state);
+  mpz_import(k, 32, 1, 1, 1, 0, buf);
+  memzero(buf, sizeof(buf));
+}
+
+// generate random K for signing/side-channel noise
+static void generate_k_random(bignum256 *k, const bignum256 *prime) {
+  do {
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+      k->val[i] = random32() & 0x3FFFFFFF;
+    }
+    k->val[8] = random32() & 0xFFFF;
+    // check that k is in range and not zero.
+  } while (bn_is_zero(k) || !bn_is_less(k, prime));
+}
+
+void generate_k_random_mpz(mpz_t k, const mpz_t prime) {
+  bignum256 prime_bn, k_bn = {0};
+  mpz_to_bn(&prime_bn, prime);
+  mpz_to_bn(&k_bn, k);
+  generate_k_random(&k_bn, &prime_bn);
+  bn_to_mpz(k, &k_bn);
+}
+
+int starknet_sign_digest(const stark_curve *curve,
+                         const uint8_t *priv_key,
+                         const uint8_t *digest,
+                         uint8_t *sig,
+                         uint8_t *pby,
+                         int (*is_canonical)(uint8_t by, uint8_t sig[64])) {
+  int i = 0;
+  stark_point R = {0};
+  mpz_t k, z, randk;
+  stark_point_init(&R);
+  mpz_t *s = &R.y;
+  mpz_init(k);
+  mpz_init(z);
+  mpz_init(randk);
+
+#if USE_RFC6979
+  rfc6979_state rng = {0};
+  init_rfc6979(priv_key, digest, &rng);
+#endif
+  mpz_import(z, 32, 1, 1, 0, 0, digest);
+  for (i = 0; i < 10000; i++) {
+#if USE_RFC6979
+    // generate K deterministically
+    generate_k_rfc6979_mpz(k, &rng);
+
+    // uint8_t hex[32] = {0};
+    // mpz_to_byte_array(k, hex, 32);
+    // mpz_set_str(
+    //     k,
+    //     "0701e115880f00b2df0a1467beae79261ea24241e0bdcefa25cfd3b691b40aa7",
+    //     16);
+    // for (int i = 0; i < 32; i++) {
+    //   printf("%02x", hex[i]);
+    // }
+    // printf("\n");
+
+    // if k is too big or too small, we don't like it
+    if ((mpz_cmp_ui(k, 0) == 0) || !(mpz_cmp(k, curve->order) < 0)) {
+      continue;
+    }
+#else
+    // generate random number k
+    generate_k_random_mpz(k, curve->order);
+#endif
+    // compute k*G
+    stark_point_multiply(curve, k, &curve->G, &R);
+    mpz_mod(R.x, R.x, curve->order);
+    // r = (rx mod n)
+    if (!(mpz_cmp(R.x, curve->order) < 0)) {
+      mpz_sub(R.x, R.x, curve->order);
+    }
+    // if r is zero, we retry
+    if (mpz_cmp_ui(R.x, 0) == 0) {
+      continue;
+    }
+
+    // randomize operations to counter side-channel attacks
+    generate_k_random_mpz(randk, curve->order);
+
+    // k = k * rand mod n
+    mpz_mul(k, k, randk);
+    mpz_mod(k, k, curve->order);
+
+    // k = (k * rand)^-1
+    mpz_invert(k, k, curve->order);
+
+    mpz_import(*s, 32, 1, 1, 1, 0, priv_key);
+    // R.x*priv
+    mpz_mul(*s, *s, R.x);
+    mpz_mod(*s, *s, curve->order);
+    mpz_add(*s, *s, z);    // R.x*priv + z
+
+    // (k*rand)^-1 (R.x*priv + z)
+    mpz_mul(*s, *s, k);
+    mpz_mod(*s, *s, curve->order);
+
+    // k^-1 (R.x*priv + z)
+    mpz_mul(*s, *s, randk);
+    mpz_mod(*s, *s, curve->order);
+
+    // if s is zero, we retry
+    if ((mpz_cmp_ui(*s, 0) == 0)) {
+      continue;
+    }
+
+    // if S > order/2 => S = -S
+    if ((mpz_cmp(curve->order_half, *s) < 0)) {
+      mpz_sub(*s, *s, curve->order);
+    }
+    // we are done, R.x and s is the result signature
+    mpz_to_byte_array(R.x, sig, 32);
+    mpz_to_byte_array(*s, sig + 32, 32);
+
+    mpz_clear(k);
+    mpz_clear(randk);
+    mpz_clear(z);
+    mpz_clear(k);
+
+#if USE_RFC6979
+    memzero(&rng, sizeof(rng));
+#endif
+    return 0;
+  }
+
+  // Too many retries without a valid signature
+  // -> fail with an error
+  memzero(&k, sizeof(k));
+  memzero(&randk, sizeof(randk));
+#if USE_RFC6979
+  memzero(&rng, sizeof(rng));
+#endif
+  return -1;
+}
+
 static bool check_which_request(const starknet_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_txn.which_request) {

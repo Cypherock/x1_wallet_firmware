@@ -17,8 +17,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bignum.h"
 #include "coin_utils.h"
 #include "f251.h"
+#include "ecdsa.h"
 #include "starknet_crypto.h"
 
 /*****************************************************************************
@@ -93,4 +95,13 @@ void starknet_uli_to_bn_byte_array(const unsigned long int ui,
                                    uint8_t *bn_array);
 void poseidon_hash_many(felt_t state[], uint8_t state_size, felt_t res);
 
+
+void mpz_to_bn(bignum256 *bn, const mpz_t mpz);
+
+int starknet_sign_digest(const stark_curve *curve,
+                         const uint8_t *priv_key,
+                         const uint8_t *digest,
+                         uint8_t *sig,
+                         uint8_t *pby,
+                         int (*is_canonical)(uint8_t by, uint8_t sig[64]));
 #endif    // STARKNET_HELPERS_H

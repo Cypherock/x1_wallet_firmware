@@ -95,7 +95,7 @@ stark_pedersen *starkPts;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void stark_curve_init();
+// static void stark_curve_init();
 static void stark_pedersen_init();
 static void print_stark_curve();
 static void print_stark_pedersen();
@@ -125,7 +125,7 @@ void stark_pedersen_clear(stark_pedersen *pedersen) {
   }
 }
 
-static void stark_curve_init() {
+void stark_curve_init() {
   static stark_curve stark256;
   // char str[STARK_BN_LEN] = {0};
 

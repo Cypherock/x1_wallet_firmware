@@ -86,6 +86,7 @@
 #include "board.h"
 #include "logger.h"
 #include "onboarding.h"
+#include "starknet_crypto.h"
 #include "starknet_helpers.h"
 #include "starknet_poseidon.h"
 #include "stdio.h"
@@ -228,7 +229,6 @@ int main(void) {
   //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
   //   engine_run(main_engine_ctx);
   // }
-
 #else /* RUN_ENGINE */
   while (true) {
     proof_of_work_task();

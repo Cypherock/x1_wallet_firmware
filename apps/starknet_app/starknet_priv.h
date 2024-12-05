@@ -76,7 +76,6 @@ bool fill_starknet_public_keys(
     uint8_t public_keys[][STARKNET_PUB_KEY_SIZE],
     pb_size_t count);
 
-// TODO: delete after poc testing
 void calculate_contract_address_from_hash(const uint8_t *pub_key,
                                           const uint8_t *deployer,
                                           const uint8_t *salt,
