@@ -134,7 +134,7 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
-void clear_state(felt_t *state, int size) {
+static void clear_state(felt_t *state, int size) {
   int i;
 
   for (i = 0; i < size; i++) {
@@ -212,19 +212,17 @@ int main(void) {
 
   printf("\n");
   f251_copy(array[0], felt);
-  f251_copy(array[1], dep);
+  f251_copy(array[1], felt);
   f251_copy(array[2], two);
-  print_state(array, 1);
-  printf("\nPermut3 val2:\n");
-  permutation_3(array);
-  print_state(array, 1);
 
   printf("\n");
-  felt_t_to_hex(array[0], hex);
-  for (int i = 0; i < 32; i++) {
-    printf("%02x", hex[i]);
-  }
-  printf("..\n");
+  printf("hashmany:\n");
+  felt_t result = {0};
+  print_state(array, 3);
+  poseidon_hash_many(array, 3, result);
+  print_state(result, 1);
+  printf("\n");
+
   fflush(stdout);
   // while (1) {
   //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();

@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include "coin_utils.h"
+#include "f251.h"
 #include "starknet_crypto.h"
 
 /*****************************************************************************
@@ -90,4 +91,6 @@ void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
                               uint8_t *hash);
 void starknet_uli_to_bn_byte_array(const unsigned long int ui,
                                    uint8_t *bn_array);
+void poseidon_hash_many(felt_t state[], uint8_t state_size, felt_t res);
+
 #endif    // STARKNET_HELPERS_H

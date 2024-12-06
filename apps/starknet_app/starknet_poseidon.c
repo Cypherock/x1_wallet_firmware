@@ -120,5 +120,57 @@ void felt_t_to_hex(const felt_t felt, uint8_t hex[32]) {
   }
 }
 
-// m = 3 (rate + Capacity)
-// r = 2
+static void clear_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    state[i][0] = 0;
+    state[i][1] = 0;
+    state[i][2] = 0;
+    state[i][3] = 0;
+  }
+}
+static void print_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    printf("%016" PRIx64, state[i][3]);
+    printf("%016" PRIx64, state[i][2]);
+    printf("%016" PRIx64, state[i][1]);
+    printf("%016" PRIx64, state[i][0]);
+    printf("\n");
+  }
+}
+void poseidon_hash_many(felt_t state[], uint8_t state_size, felt_t res) {
+  ASSERT(state_size + 2 < 16);
+
+  const uint8_t m = 3, rate = 2;
+  felt_t padded[16];    ///< TODO: Update with macro
+  clear_state(padded, 16);
+
+  for (int i = 0; i < state_size; i++) {
+    f251_copy(padded[i], state[i]);
+  }
+  uint8_t padded_offset = state_size;
+
+  // padd one to mark end of ip
+  felt_t felt_one = {1, 0, 0, 0};
+  f251_copy(padded[padded_offset++], felt_one);
+  // padd with zeros to make multiple of rate
+  felt_t felt_zero = {0, 0, 0, 0};
+  while (padded_offset % rate != 0) {
+    f251_copy(padded[padded_offset++], felt_zero);
+  }
+
+  felt_t result[m];
+  clear_state(result, m);
+
+  for (int i = 0; i < padded_offset; i += rate) {
+    for (int j = 0; j < rate; j++) {
+      f251_add(result[j], result[j], padded[i + j]);
+    }
+    permutation_3(result);
+  }
+  // copt result
+  f251_copy(res, result[0]);
+}
