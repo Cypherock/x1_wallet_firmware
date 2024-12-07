@@ -83,6 +83,8 @@
   (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
 #define L1_GAS_NAME 0x4c315f474153    // The constant value for L1_GAS_NAME
 #define L2_GAS_NAME 0x4c325f474153
+#define INVOKE_TXN_PREFIX                                                      \
+  { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -124,4 +126,6 @@ void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
                                        starknet_sign_txn_unsigned_txn_t *txn,
                                        felt_t additional_data[],
                                        uint8_t additional_data_size,
+                                       felt_t hash);
+void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
                                        felt_t hash);

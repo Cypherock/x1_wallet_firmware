@@ -336,3 +336,37 @@ void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
 
   poseidon_hash_many(state, offset, hash);
 }
+
+void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
+                                       felt_t hash) {
+  uint8_t hex[6] = INVOKE_TXN_PREFIX;
+  felt_t transaction_hash_prefix = {0};
+  hex_to_felt_t(hex, 6, transaction_hash_prefix);
+
+  // prepare additional data array
+  const uint8_t data_max_count = 2;
+  felt_t additional_data[data_max_count];
+  clear_state(additional_data, data_max_count);
+
+  // Note: currently account_deployment_data is unused
+  felt_t account_deployment_data = {0};
+  poseidon_hash_many(NULL, 0, account_deployment_data);
+  f251_copy(additional_data[0], account_deployment_data);
+
+  // copy call data
+  const uint8_t call_data_max_count = 10;
+  felt_t call_data_felt[call_data_max_count];
+  clear_state(call_data_felt, call_data_max_count);
+
+  uint8_t count = txn->calldata.value_count;
+  uint8_t offset;
+  for (offset = 0; offset < count; offset++) {
+    hex_to_felt_t(txn->calldata.value[offset].bytes,
+                  txn->calldata.value[offset].size,
+                  call_data_felt[offset]);
+  }
+  poseidon_hash_many(call_data_felt, offset, additional_data[1]);
+
+  calculate_transaction_hash_common(
+      transaction_hash_prefix, txn, additional_data, 2, hash);
+}

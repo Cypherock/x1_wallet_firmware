@@ -217,10 +217,23 @@ int main(void) {
       64,
       txn.sender_address);
   memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
-  txn.version[0] = 0x3;
+  txn.version[0] = 0x03;
+  txn.calldata.value_count = 2;
+  txn.calldata.value[0].bytes[0] = 0;
+  txn.calldata.value[0].size = 1;
+  txn.calldata.value[1].bytes[0] = 0;
+  txn.calldata.value[1].bytes[1] = 1;
+  txn.calldata.value[1].bytes[2] = 2;
+  txn.calldata.value[1].bytes[3] = 3;
+  txn.calldata.value[1].bytes[4] = 4;
+  txn.calldata.value[1].bytes[5] = 5;
 
-  calculate_transaction_hash_common(
-      transaction_hash_prefix, &txn, NULL, 0, hash);
+  txn.calldata.value[1].size = 6;
+  //   txn.calldata.value->bytes[1] = 0;
+  // txn.calldata.value->size = 1;
+  // starknet_compiled_call_data_t call_data;
+  calculate_invoke_transaction_hash(&txn, hash);
+
   print_state(hash, 1);
   printf("\n");
 
