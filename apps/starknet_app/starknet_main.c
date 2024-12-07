@@ -97,7 +97,7 @@ void starknet_main(usb_event_t usb_evt, const void *app_config);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const cy_app_desc_t starknet_app_desc = {.id = 20,
+static const cy_app_desc_t starknet_app_desc = {.id = 21,
                                                 .version =
                                                     {
                                                         .major = 1,
