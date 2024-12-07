@@ -207,7 +207,7 @@ int main(void) {
   printf("\n");
 
   felt_t transaction_hash_prefix = {0}, hash = {0};
-  uint8_t hex[32] = {0};
+  uint8_t hex[32] = {0}, sig[32] = {0}, stark_key[32] = {0};
   hex_string_to_byte_array("696e766f6b65", 12, hex);
   hex_to_felt_t(hex, 6, transaction_hash_prefix);
 
@@ -216,6 +216,11 @@ int main(void) {
       "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
       64,
       txn.sender_address);
+
+  hex_string_to_byte_array(
+      "057260b0928dc7e15ada8911af893ca7e93b0ed14a3786288c73a6572f75214f",
+      64,
+      stark_key);
   memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
   txn.version[0] = 0x03;
   txn.calldata.value_count = 2;
@@ -232,9 +237,19 @@ int main(void) {
   //   txn.calldata.value->bytes[1] = 0;
   // txn.calldata.value->size = 1;
   // starknet_compiled_call_data_t call_data;
+  starknet_init();
   calculate_invoke_transaction_hash(&txn, hash);
+  uint8_t buf[32] = {0};
+  felt_t_to_hex(hash, buf);
+  starknet_sign_digest(starkCurve, stark_key, buf, sig, NULL, NULL);
 
   print_state(hash, 1);
+  printf("\n");
+  for (int i = 0; i < 64; i++) {
+    printf("%02x", sig[i]);
+    if (i == 31)
+      printf("\n");
+  }
   printf("\n");
 
   fflush(stdout);
