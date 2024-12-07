@@ -194,34 +194,34 @@ int main(void) {
   hex_string_to_byte_array(
       "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
       64,
-      pubkey);
-  hex_string_to_byte_array(
-      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbf9",
-      64,
       deployer);
 
-  uint8_t hex[32] = {0};
+  mpz_t result;
+  mpz_init(result);
+  starknet_resource_bounds_t bounds = {
+      .level_2.max_amount = {0x00, 0x00, 0x07},
+      .level_2.max_price_per_unit = {0x00, 0x00, 0x03},
+      .level_1.max_amount = {0x00, 0x00, 0x07},
+      .level_1.max_price_per_unit = {0x00, 0x00, 0x03}};
   felt_t felt = {0};
-  felt_t dep = {0};
-  felt_t array[3];
-  clear_state(array, 3);
-  hex_to_felt_t(deployer, dep);
-  hex_to_felt_t(pubkey, felt);
-
-  felt_t zero = {0};
-  felt_t two = {2, 0, 0, 0};
-
   printf("\n");
-  f251_copy(array[0], felt);
-  f251_copy(array[1], felt);
-  f251_copy(array[2], two);
 
-  printf("\n");
-  printf("hashmany:\n");
-  felt_t result = {0};
-  print_state(array, 3);
-  poseidon_hash_many(array, 3, result);
-  print_state(result, 1);
+  felt_t transaction_hash_prefix = {0}, hash = {0};
+  uint8_t hex[32] = {0};
+  hex_string_to_byte_array("696e766f6b65", 12, hex);
+  hex_to_felt_t(hex, 6, transaction_hash_prefix);
+
+  starknet_sign_txn_unsigned_txn_t txn = {0};
+  hex_string_to_byte_array(
+      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+      64,
+      txn.sender_address);
+  memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
+  txn.version[0] = 0x3;
+
+  calculate_transaction_hash_common(
+      transaction_hash_prefix, &txn, NULL, 0, hash);
+  print_state(hash, 1);
   printf("\n");
 
   fflush(stdout);
@@ -268,7 +268,8 @@ int main(void) {
  */
 void Error_Handler(void) {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
+  /* User can add his own implementation to report the HAL error return state
+   */
   __disable_irq();
   while (1) {
   }
@@ -304,8 +305,8 @@ int _write(int file, char *ptr, int len) {
 void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
-     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
-     line) */
+     number, ex: printf("Wrong parameters value: file %s on line %d\r\n",
+     file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

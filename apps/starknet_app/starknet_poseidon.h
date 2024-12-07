@@ -61,6 +61,7 @@
  *****************************************************************************/
 
 #include <error.pb.h>
+#include <starknet/sign_txn.pb.h>
 #include <stdint.h>
 
 #include "coin_utils.h"
@@ -75,6 +76,13 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define DATA_AVAILABILITY_MODE_BITS 32    // 32 bits for data availability mode
+#define MAX_AMOUNT_BITS 64                // 64 bits for max_amount
+#define MAX_PRICE_PER_UNIT_BITS 128       // 128 bits for max_price_per_unit
+#define RESOURCE_VALUE_OFFSET                                                  \
+  (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
+#define L1_GAS_NAME 0x4c315f474153    // The constant value for L1_GAS_NAME
+#define L2_GAS_NAME 0x4c325f474153
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -96,7 +104,24 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 // Function to convert Big-Endian hex to Little-Endian felt_t
-void hex_to_felt_t(const uint8_t hex[32], felt_t felt);
+void hex_to_felt_t(const uint8_t hex[], const uint8_t hex_size, felt_t felt);
 
 // Function to convert Little-Endian felt_t to Big-Endian hex
 void felt_t_to_hex(const felt_t felt, uint8_t hex[32]);
+
+void encode_resource_bounds_l1(const starknet_resource_bounds_t bounds,
+                               felt_t out);
+
+void encode_resource_bounds_l2(const starknet_resource_bounds_t bounds,
+                               felt_t out);
+void hash_fee_field(const pb_byte_t tip,
+                    const starknet_resource_bounds_t bounds,
+                    felt_t result);
+void hash_DAMode(const pb_byte_t nonce_DAMode,
+                 const pb_byte_t fee_DAMode,
+                 felt_t out);
+void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
+                                       starknet_sign_txn_unsigned_txn_t *txn,
+                                       felt_t additional_data[],
+                                       uint8_t additional_data_size,
+                                       felt_t hash);

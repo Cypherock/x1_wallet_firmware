@@ -217,5 +217,5 @@ void process_single_element(mpz_t element,
   stark_point_add(starkCurve, &res1, &res2);
 
   stark_point_copy(&res2, result);
-  // clear mpz vars
+  // TODO:clear mpz vars
 }
