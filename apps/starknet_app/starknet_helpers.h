@@ -17,7 +17,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bignum.h"
 #include "coin_utils.h"
+#include "ecdsa.h"
 #include "starknet_crypto.h"
 
 /*****************************************************************************
@@ -90,4 +92,13 @@ void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
                               uint8_t *hash);
 void starknet_uli_to_bn_byte_array(const unsigned long int ui,
                                    uint8_t *bn_array);
+
+void mpz_to_bn(bignum256 *bn, const mpz_t mpz);
+
+int starknet_sign_digest(const stark_curve *curve,
+                         const uint8_t *priv_key,
+                         const uint8_t *digest,
+                         uint8_t *sig,
+                         uint8_t *pby,
+                         int (*is_canonical)(uint8_t by, uint8_t sig[64]));
 #endif    // STARKNET_HELPERS_H
