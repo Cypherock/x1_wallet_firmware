@@ -1,5 +1,5 @@
 /**
- * @file    starknet_padersen.c
+ * @file    starknet_poseidon.h
  * @author  Cypherock X1 Team
  * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -61,19 +61,14 @@
  *****************************************************************************/
 
 #include <error.pb.h>
+#include <starknet/sign_txn.pb.h>
 #include <stdint.h>
 
 #include "coin_utils.h"
+#include "f251.h"
 #include "mini-gmp-helpers.h"
-#include "starknet_api.h"
-#include "starknet_context.h"
-#include "starknet_crypto.h"
-#include "starknet_helpers.h"
+#include "poseidon.h"
 
-void process_single_element(mpz_t element,
-                            stark_point *p1,
-                            stark_point *p2,
-                            stark_point *result);
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -81,6 +76,15 @@ void process_single_element(mpz_t element,
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define DATA_AVAILABILITY_MODE_BITS 32    // 32 bits for data availability mode
+#define MAX_AMOUNT_BITS 64                // 64 bits for max_amount
+#define MAX_PRICE_PER_UNIT_BITS 128       // 128 bits for max_price_per_unit
+#define RESOURCE_VALUE_OFFSET                                                  \
+  (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
+#define L1_GAS_NAME 0x4c315f474153    // The constant value for L1_GAS_NAME
+#define L2_GAS_NAME 0x4c325f474153
+#define INVOKE_TXN_PREFIX                                                      \
+  { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -101,121 +105,27 @@ void process_single_element(mpz_t element,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+// Function to convert Big-Endian hex to Little-Endian felt_t
+void hex_to_felt_t(const uint8_t hex[], const uint8_t hex_size, felt_t felt);
 
-// void mpz_to_byte_array(mpz_t num, uint8_t *out, size_t out_size) {
-//     size_t countp;
+// Function to convert Little-Endian felt_t to Big-Endian hex
+void felt_t_to_hex(const felt_t felt, uint8_t hex[32]);
 
-//     // Export the mpz_t value to the byte array
-//     mpz_export(out, &countp, 1, 1, 1, 0, num);
+void encode_resource_bounds_l1(const starknet_resource_bounds_t bounds,
+                               felt_t out);
 
-//     // Ensure that the output is padded with leading zeros if necessary
-//     // If the exported size is smaller than the desired output size, fill in
-//     leading zeros
-//     if (countp < out_size) {
-//         size_t diff = out_size - countp;
-//         memmove(out + diff, out, countp);
-//         memset(out, 0, diff);
-//     }
-// }
-
-bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
-  ASSERT(NULL != x);
-  ASSERT(NULL != y);
-  ASSERT(0 < size);
-
-  // Convert to bn
-  mpz_t a, b, result;
-  mpz_init(a);
-  mpz_init(b);
-  mpz_init(result);
-
-  mpz_import(a, size, 1, 1, 1, 0, x);    // Convert x to mpz_t a
-  mpz_import(b, size, 1, 1, 1, 0, y);    // Convert y to mpz_t b
-
-  // Get shift point
-  stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
-  stark_point_copy(&starkPts->P[0], &HASH_SHIFT_POINT);
-  stark_point_copy(&starkPts->P[1], &P_1);
-  stark_point_copy(&starkPts->P[2], &P_2);
-  stark_point_copy(&starkPts->P[3], &P_3);
-  stark_point_copy(&starkPts->P[4], &P_4);
-
-  // Compute the hash using the Starkware Pedersen hash definition
-  stark_point x_part, y_part, hash_point;
-  stark_point_init(&x_part);
-  stark_point_init(&y_part);
-  stark_point_init(&hash_point);
-
-  process_single_element(a, &P_1, &P_2, &x_part);
-  process_single_element(b, &P_3, &P_4, &y_part);
-
-  stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part);
-  stark_point_add(starkCurve, &x_part, &y_part);
-  stark_point_copy(&y_part, &hash_point);
-
-  memzero(hash, 32);
-  mpz_to_byte_array(hash_point.x, hash, 32);
-
-  return true;
-}
-void starknet_uli_to_bn_byte_array(const unsigned long int ui,
-                                   uint8_t *bn_array) {
-  mpz_t bn;
-  mpz_init(bn);
-  mpz_set_ui(bn, ui);
-
-  memzero(bn_array, STARKNET_BIGNUM_SIZE);
-  mpz_to_byte_array(bn, bn_array, STARKNET_BIGNUM_SIZE);
-}
-
-void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
-                              uint8_t num_elem,
-                              uint8_t *hash) {
-  uint8_t result[STARKNET_BIGNUM_SIZE];
-  memzero(result, STARKNET_BIGNUM_SIZE);
-
-  for (uint8_t index = 0; index < num_elem; index++) {
-    pederson_hash(result, data[index], STARKNET_BIGNUM_SIZE, result);
-  }
-
-  uint8_t num_elem_bn[32];
-  starknet_uli_to_bn_byte_array(num_elem, num_elem_bn);
-
-  pederson_hash(result, num_elem_bn, STARKNET_BIGNUM_SIZE, result);
-
-  memcpy(hash, result, STARKNET_BIGNUM_SIZE);
-  return;
-}
-
-void process_single_element(mpz_t element,
-                            stark_point *p1,
-                            stark_point *p2,
-                            stark_point *result) {
-  ASSERT(mpz_cmp(element, starkCurve->prime) < 0);
-
-  mpz_t low_part, high_nibble;
-  mpz_init(low_part);
-  mpz_init(high_nibble);
-
-  // Extract the low 248 bits and high bits from the element
-  mpz_t mask;
-  mpz_init(mask);
-  // Set mask to (1 << 248) - 1
-  mpz_ui_pow_ui(mask, 2, 248);    // mask = 2^248
-  mpz_sub_ui(mask, mask, 1);      // mask = 2^248 - 1
-  // Extract the low 248 bits and high bits from the element
-  mpz_and(low_part, element, mask);
-  mpz_fdiv_q_2exp(high_nibble, element, LOW_PART_BITS);
-
-  stark_point res1, res2;
-  stark_point_init(&res1);
-  stark_point_init(&res2);
-
-  stark_point_multiply(starkCurve, low_part, p1, &res1);    // low_part * p1
-  stark_point_multiply(
-      starkCurve, high_nibble, p2, &res2);    // high_nibble * p2
-  stark_point_add(starkCurve, &res1, &res2);
-
-  stark_point_copy(&res2, result);
-  // TODO:clear mpz vars
-}
+void encode_resource_bounds_l2(const starknet_resource_bounds_t bounds,
+                               felt_t out);
+void hash_fee_field(const pb_byte_t tip,
+                    const starknet_resource_bounds_t bounds,
+                    felt_t result);
+void hash_DAMode(const pb_byte_t nonce_DAMode,
+                 const pb_byte_t fee_DAMode,
+                 felt_t out);
+void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
+                                       starknet_sign_txn_unsigned_txn_t *txn,
+                                       felt_t additional_data[],
+                                       uint8_t additional_data_size,
+                                       felt_t hash);
+void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
+                                       felt_t hash);

@@ -10,7 +10,7 @@ starknet.CompiledCallData.value type:FT_STATIC max_size:32 max_count:6 fixed_len
 starknet.SignTxnUnsignedTxn.sender_address type:FT_STATIC max_size:32 fixed_length:true
 starknet.SignTxnUnsignedTxn.version type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnUnsignedTxn.chain_id type:FT_STATIC max_size:1 fixed_length:true
-starknet.SignTxnUnsignedTxn.nonce type:FT_STATIC max_size:1 fixed_length:true
+starknet.SignTxnUnsignedTxn.nonce type:FT_STATIC max_size:10 fixed_length:true
 starknet.SignTxnUnsignedTxn.account_deployment_data type:FT_STATIC max_size:1 fixed_length:true #empty
 starknet.SignTxnUnsignedTxn.nonce_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnUnsignedTxn.fee_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true

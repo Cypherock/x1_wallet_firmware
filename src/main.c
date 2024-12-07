@@ -86,7 +86,9 @@
 #include "board.h"
 #include "logger.h"
 #include "onboarding.h"
+#include "starknet_crypto.h"
 #include "starknet_helpers.h"
+#include "starknet_poseidon.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "sys_state.h"
@@ -133,6 +135,28 @@ static void memory_monitor(lv_task_t *param);
  * @brief  The entry point to the application.
  * @retval int
  */
+static void clear_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    state[i][0] = 0;
+    state[i][1] = 0;
+    state[i][2] = 0;
+    state[i][3] = 0;
+  }
+}
+
+void print_state(felt_t *state, int size) {
+  int i;
+
+  for (i = 0; i < size; i++) {
+    printf("%016" PRIx64, state[i][3]);
+    printf("%016" PRIx64, state[i][2]);
+    printf("%016" PRIx64, state[i][1]);
+    printf("%016" PRIx64, state[i][0]);
+    printf("\n");
+  }
+}
 
 int main(void) {
 #ifdef DEV_BUILD
@@ -151,39 +175,73 @@ int main(void) {
     device_provision_check();
   }
 
-  //   uint8_t seed_key[64] = {
-  //     0xa1, 0x85, 0xe4, 0x43, 0x59, 0xc9, 0x40, 0x14, 0xfa, 0x23, 0xb8, 0x67,
-  //     0x41, 0xd0, 0x89, 0xcd, 0xf7, 0xb7, 0x5f, 0xa2, 0x2a, 0x7b, 0x81, 0x9e,
-  //     0x22, 0x7a, 0x72, 0x6d, 0x0c, 0xf1, 0x9d, 0x29, 0xb1, 0x9b, 0x16, 0xb4,
-  //     0xe9, 0xbd, 0x9d, 0x6f, 0x7d, 0x52, 0xe6, 0x7d, 0x46, 0xeb, 0x2f, 0xaa,
-  //     0x7d, 0x72, 0x58, 0xb6, 0x88, 0x6b, 0x75, 0xae, 0xb5, 0xe7, 0x82, 0x5e,
-  //     0x97, 0xf2, 0x6e, 0xa3
-  // };
-  // {
-  // char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
-  //                  "nature ready fabric inspire lift language kangaroo leave
-  //                  " "carry plug wild network hollow awake slab";
-  // uint8_t seed[64];
+  char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
+                   "nature ready fabric inspire lift language kangaroo leave "
+                   "carry plug wild network hollow awake slab";
+  uint8_t seed[64];
   // mnemonic_to_seed(mnemonic, NULL, seed, NULL);
 
-  // uint32_t path[] = {0x80000000 + 0xA55,
-  //                    0x80000000 + 0x4741E9C9,
-  //                    0x80000000 + 0x447A6028,
-  //                    0x80000000,
-  //                    0x80000000,
-  //                    0xC};
-  // //   uint32_t path_length = 6;
+  uint32_t path[] = {0x80000000 + 0xA55,
+                     0x80000000 + 0x4741E9C9,
+                     0x80000000 + 0x447A6028,
+                     0x80000000,
+                     0x80000000,
+                     0xC};
 
-  //   uint8_t key[33];
+  uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
+  // starknet_init();
 
-  //   // VERIFICATIONS
-  //     bool result = starknet_derive_key_from_seed(seed, path, path_length,
-  //     key);
+  hex_string_to_byte_array(
+      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+      64,
+      deployer);
 
-  while (1) {
-    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
-    engine_run(main_engine_ctx);
-  }
+  mpz_t result;
+  mpz_init(result);
+  starknet_resource_bounds_t bounds = {
+      .level_2.max_amount = {0x00, 0x00, 0x07},
+      .level_2.max_price_per_unit = {0x00, 0x00, 0x03},
+      .level_1.max_amount = {0x00, 0x00, 0x07},
+      .level_1.max_price_per_unit = {0x00, 0x00, 0x03}};
+  felt_t felt = {0};
+  printf("\n");
+
+  felt_t transaction_hash_prefix = {0}, hash = {0};
+  uint8_t hex[32] = {0};
+  hex_string_to_byte_array("696e766f6b65", 12, hex);
+  hex_to_felt_t(hex, 6, transaction_hash_prefix);
+
+  starknet_sign_txn_unsigned_txn_t txn = {0};
+  hex_string_to_byte_array(
+      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+      64,
+      txn.sender_address);
+  memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
+  txn.version[0] = 0x03;
+  txn.calldata.value_count = 2;
+  txn.calldata.value[0].bytes[0] = 0;
+  txn.calldata.value[0].size = 1;
+  txn.calldata.value[1].bytes[0] = 0;
+  txn.calldata.value[1].bytes[1] = 1;
+  txn.calldata.value[1].bytes[2] = 2;
+  txn.calldata.value[1].bytes[3] = 3;
+  txn.calldata.value[1].bytes[4] = 4;
+  txn.calldata.value[1].bytes[5] = 5;
+
+  txn.calldata.value[1].size = 6;
+  //   txn.calldata.value->bytes[1] = 0;
+  // txn.calldata.value->size = 1;
+  // starknet_compiled_call_data_t call_data;
+  calculate_invoke_transaction_hash(&txn, hash);
+
+  print_state(hash, 1);
+  printf("\n");
+
+  fflush(stdout);
+  // while (1) {
+  //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+  //   engine_run(main_engine_ctx);
+  // }
 #else /* RUN_ENGINE */
   while (true) {
     proof_of_work_task();
@@ -223,7 +281,8 @@ int main(void) {
  */
 void Error_Handler(void) {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
+  /* User can add his own implementation to report the HAL error return state
+   */
   __disable_irq();
   while (1) {
   }
@@ -259,8 +318,8 @@ int _write(int file, char *ptr, int len) {
 void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
-     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
-     line) */
+     number, ex: printf("Wrong parameters value: file %s on line %d\r\n",
+     file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
