@@ -72,6 +72,7 @@
 #include "starknet_api.h"
 #include "starknet_context.h"
 #include "starknet_helpers.h"
+#include "starknet_poseidon.h"
 #include "starknet_priv.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -276,16 +277,11 @@ int starknet_sign_digest(const stark_curve *curve,
     // generate K deterministically
     generate_k_rfc6979_mpz(k, &rng);
 
-    // uint8_t hex[32] = {0};
-    // mpz_to_byte_array(k, hex, 32);
-    // mpz_set_str(
-    //     k,
-    //     "0701e115880f00b2df0a1467beae79261ea24241e0bdcefa25cfd3b691b40aa7",
-    //     16);
-    // for (int i = 0; i < 32; i++) {
-    //   printf("%02x", hex[i]);
-    // }
-    // printf("\n");
+    // k >> 4
+    mpz_fdiv_q_2exp(k,
+                    k,
+                    4);    ///< No idea yet why it works; but right shifting k
+                           ///< by 4 bits is required
 
     // if k is too big or too small, we don't like it
     if ((mpz_cmp_ui(k, 0) == 0) || !(mpz_cmp(k, curve->order) < 0)) {
@@ -478,19 +474,22 @@ static bool sign_txn(uint8_t *signature_buffer) {
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
   uint8_t stark_key[32] = {0};
-  if (    // starknet_derive_bip32_node(seed, stark_key) &&
-      starknet_derive_key_from_seed(
+  if (starknet_derive_key_from_seed(
           stark_key,
           starknet_txn_context->init_info.derivation_path,
           starknet_txn_context->init_info.derivation_path_count,
           stark_key,
           NULL)) {
-    // TODO: Generate signature using stark_key
-    uint8_t dummy[5] = {0x11, 0x22, 0x33, 0x44, 0x55};
-    memcpy(signature_buffer, dummy, sizeof(dummy));
   } else {
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
+  felt_t hash_felt = {0};
+  calculate_invoke_transaction_hash(starknet_txn_context->transaction,
+                                    hash_felt);
+  uint8_t hash[32] = {0};
+  felt_t_to_hex(hash_felt, hash);
+  starknet_sign_digest(
+      starkCurve, stark_key, hash, signature_buffer, NULL, NULL);
 
   memzero(seed, sizeof(seed));
   memzero(stark_key, sizeof(stark_key));
