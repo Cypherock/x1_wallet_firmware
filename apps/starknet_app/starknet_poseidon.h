@@ -85,6 +85,11 @@
 #define L2_GAS_NAME 0x4c325f474153
 #define INVOKE_TXN_PREFIX                                                      \
   { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
+#define DEPLOY_ACCOUNT_PREFIX                                                  \
+  {                                                                            \
+    0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75,    \
+        0x6e, 0x74                                                             \
+  }    // 0x6465706c6f795f6163636f756e74 'DEPLOY_ACCOUNT'
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -122,10 +127,23 @@ void hash_fee_field(const pb_byte_t tip,
 void hash_DAMode(const pb_byte_t nonce_DAMode,
                  const pb_byte_t fee_DAMode,
                  felt_t out);
-void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
-                                       starknet_sign_txn_unsigned_txn_t *txn,
-                                       felt_t additional_data[],
-                                       uint8_t additional_data_size,
+void calculate_transaction_hash_common(
+    felt_t transaction_hash_prefix,
+    pb_byte_t tip[],
+    starknet_resource_bounds_t resource_bound,
+    pb_byte_t nonce_data_availability_mode[],
+    pb_byte_t fee_data_availability_mode[],
+    pb_byte_t version[],
+    pb_byte_t sender_address[],
+    pb_byte_t chain_id[],
+    pb_byte_t nonce[],
+    felt_t additional_data[],
+    uint8_t additional_data_size,
+    felt_t hash);
+void calculate_txn_hash(void *txn, pb_size_t type, felt_t hash);
+void calculate_invoke_transaction_hash(starknet_sign_txn_invoke_txn_t *txn,
                                        felt_t hash);
-void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
-                                       felt_t hash);
+
+void calculate_deploy_transaction_hash(
+    starknet_sign_txn_deploy_account_txn_t *txn,
+    felt_t hash);

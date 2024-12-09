@@ -29,7 +29,10 @@ typedef struct {
 
   /// remembers the allocated buffer for holding complete unsigned transaction
   // TODO: malloc this for clear signing
-  starknet_sign_txn_unsigned_txn_t *transaction;
+  pb_size_t which_type;
+  starknet_sign_txn_invoke_txn_t *invoke_txn;
+  starknet_sign_txn_deploy_account_txn_t *deploy_txn;
+
 } starknet_txn_context_t;
 
 /**
