@@ -181,7 +181,7 @@ void core_init_app_registry() {
   registry_add_app(get_optimism_app_desc());
   registry_add_app(get_arbitrum_app_desc());
   registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  // registry_add_app(get_starknet_app_desc());
+  // registry_add_app(get_inheritance_app_desc());
+  // registry_add_app(get_xrp_app_desc());
+  registry_add_app(get_starknet_app_desc());
 }

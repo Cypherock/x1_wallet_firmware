@@ -370,7 +370,7 @@ void calculate_contract_address_from_hash(const uint8_t *pub_key,
 
   mpz_mod(result_bn, result_bn, addr_bound);
 
-  mpz_to_byte_array(result_bn, (uint8_t *)addr, STARKNET_ADDR_SIZE);
+  mpz_get_str(addr, 16, result_bn);
 
   // clear mpz variables
   mpz_clear(result_bn);
@@ -466,7 +466,7 @@ void starknet_get_pub_keys(starknet_query_t *query) {
     char address[100] = "";
 
     // Calculate to-be account address
-    starknet_derive_argent_address(&public_keys[0][1], address);
+    starknet_derive_argent_address(&public_keys[0][0], address);
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
       return;
