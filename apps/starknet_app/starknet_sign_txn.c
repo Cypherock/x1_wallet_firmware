@@ -430,7 +430,23 @@ static bool fetch_valid_input(starknet_query_t *query) {
       !check_which_request(query, STARKNET_SIGN_TXN_REQUEST_TXN_TAG)) {
     return false;
   }
-  starknet_txn_context->transaction = &query->sign_txn.txn;
+
+  // Get txn type
+  starknet_txn_context->which_type = query->sign_txn.txn.which_type;
+  switch (starknet_txn_context->which_type) {
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
+      starknet_txn_context->invoke_txn = &query->sign_txn.txn.invoke_txn;
+    } break;
+
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
+      starknet_txn_context->deploy_txn = &query->sign_txn.txn.deploy_txn;
+    } break;
+
+    default: {
+      // should not reach here;
+      return false;
+    }
+  }
 
   if (1) {
     send_response(STARKNET_SIGN_TXN_RESPONSE_UNSIGNED_TXN_ACCEPTED_TAG);
@@ -444,16 +460,42 @@ static bool fetch_valid_input(starknet_query_t *query) {
   return false;
 }
 
+static bool get_invoke_txn_user_verification() {
+  char address[100] = "0x";
+  byte_array_to_hex_string(
+      starknet_txn_context->invoke_txn->sender_address, 32, &address[2], 64);
+
+  if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
+    return false;
+  }
+  // TODO:Verify Call Data
+}
+
+static bool get_deploy_txn_user_verification() {
+  char address[100] = "0x";
+  byte_array_to_hex_string(
+      starknet_txn_context->deploy_txn->contract_address, 32, &address[2], 64);
+
+  if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
+    return false;
+  }
+  // TODO:Verify Constructor Call Data
+}
+
 static bool get_user_verification(void) {
   bool user_verified = false;
-  char msg[128] = "0x";
 
-  // TODO: Complete proper user verification and parsing
-  byte_array_to_hex_string(
-      starknet_txn_context->transaction->sender_address, 32, &msg[2], 126);
-  user_verified =
-      core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, starknet_send_error);
-  user_verified &= core_scroll_page(NULL, msg, starknet_send_error);
+  switch (starknet_txn_context->which_type) {
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
+      user_verified = get_invoke_txn_user_verification();
+
+    } break;
+
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
+      user_verified = get_deploy_txn_user_verification();
+
+    } break;
+  }
 
   if (user_verified) {
     set_app_flow_status(STARKNET_SIGN_TXN_STATUS_VERIFY);
@@ -483,11 +525,27 @@ static bool sign_txn(uint8_t *signature_buffer) {
   } else {
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
+
+  // calculate txn hash
   felt_t hash_felt = {0};
-  calculate_invoke_transaction_hash(starknet_txn_context->transaction,
-                                    hash_felt);
+  switch (starknet_txn_context->which_type) {
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
+      calculate_txn_hash((void *)starknet_txn_context->invoke_txn,
+                         STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG,
+                         hash_felt);
+    } break;
+
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
+      calculate_txn_hash((void *)starknet_txn_context->deploy_txn,
+                         STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG,
+                         hash_felt);
+
+    } break;
+  }
   uint8_t hash[32] = {0};
   felt_t_to_hex(hash_felt, hash);
+
+  // generate signature
   starknet_sign_digest(
       starkCurve, stark_key, hash, signature_buffer, NULL, NULL);
 

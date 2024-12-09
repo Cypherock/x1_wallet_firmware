@@ -295,15 +295,39 @@ void hash_DAMode(const pb_byte_t nonce_DAMode,
   mpz_clear(temp_fee);
 }
 
-void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
-                                       starknet_sign_txn_unsigned_txn_t *txn,
-                                       felt_t additional_data[],
-                                       uint8_t additional_data_size,
-                                       felt_t hash) {
+void calculate_txn_hash(void *txn, pb_size_t type, felt_t hash) {
+  ASSERT(txn != NULL);
+  switch (type) {
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
+      calculate_invoke_transaction_hash((starknet_sign_txn_invoke_txn_t *)txn,
+                                        hash);
+    } break;
+
+    case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
+      calculate_deploy_transaction_hash(
+          (starknet_sign_txn_deploy_account_txn_t *)txn, hash);
+
+    } break;
+  }
+}
+
+void calculate_transaction_hash_common(
+    felt_t transaction_hash_prefix,
+    pb_byte_t tip[],
+    starknet_resource_bounds_t resource_bound,
+    pb_byte_t nonce_data_availability_mode[],
+    pb_byte_t fee_data_availability_mode[],
+    pb_byte_t version[],
+    pb_byte_t sender_address[],
+    pb_byte_t chain_id[],
+    pb_byte_t nonce[],
+    felt_t additional_data[],
+    uint8_t additional_data_size,
+    felt_t hash) {
   felt_t fee_field_hash = {0}, DAMode_hash = {0};
-  hash_fee_field(txn->tip[0], txn->resource_bound, fee_field_hash);
-  hash_DAMode(txn->nonce_data_availability_mode[0],
-              txn->fee_data_availability_mode[0],
+  hash_fee_field(tip[0], resource_bound, fee_field_hash);
+  hash_DAMode(nonce_data_availability_mode[0],
+              fee_data_availability_mode[0],
               DAMode_hash);
 
   // prepare data to hash array
@@ -313,8 +337,8 @@ void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
   clear_state(state, state_max);
 
   f251_copy(state[offset++], transaction_hash_prefix);
-  hex_to_felt_t(txn->version, 1, state[offset++]);
-  hex_to_felt_t(txn->sender_address, 32, state[offset++]);
+  hex_to_felt_t(version, 1, state[offset++]);
+  hex_to_felt_t(sender_address, 32, state[offset++]);
   f251_copy(state[offset++], fee_field_hash);
   felt_t paymaster_data_res = {0};
   poseidon_hash_many(
@@ -324,8 +348,8 @@ void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
                               ///< refer:
                               ///< https://docs.starknet.io/architecture-and-concepts/network-architecture/transactions/#v3_transaction_fields
   f251_copy(state[offset++], paymaster_data_res);
-  hex_to_felt_t(txn->chain_id, 1, state[offset++]);
-  hex_to_felt_t(txn->nonce, 10, state[offset++]);
+  hex_to_felt_t(chain_id, 1, state[offset++]);
+  hex_to_felt_t(nonce, 10, state[offset++]);
   f251_copy(state[offset++], DAMode_hash);
   if (additional_data != NULL) {
     for (uint8_t i = 0; i < additional_data_size; i++) {
@@ -337,7 +361,50 @@ void calculate_transaction_hash_common(felt_t transaction_hash_prefix,
   poseidon_hash_many(state, offset, hash);
 }
 
-void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
+void calculate_deploy_transaction_hash(
+    starknet_sign_txn_deploy_account_txn_t *txn,
+    felt_t hash) {
+  uint8_t hex[14] = DEPLOY_ACCOUNT_PREFIX;
+  felt_t transaction_hash_prefix = {0};
+  hex_to_felt_t(hex, 12, transaction_hash_prefix);
+
+  // prepare additional data array
+  const uint8_t data_max_count = 3;
+  felt_t additional_data[data_max_count];
+  clear_state(additional_data, data_max_count);
+
+  // copy call data
+  const uint8_t call_data_max_count = 10;
+  felt_t call_data_felt[call_data_max_count];
+  clear_state(call_data_felt, call_data_max_count);
+
+  uint8_t count = txn->constructor_call_data.value_count;
+  uint8_t offset;
+  for (offset = 0; offset < count; offset++) {
+    hex_to_felt_t(txn->constructor_call_data.value[offset].bytes,
+                  txn->constructor_call_data.value[offset].size,
+                  call_data_felt[offset]);
+  }
+  poseidon_hash_many(call_data_felt, offset, additional_data[0]);
+
+  hex_to_felt_t(txn->class_hash, 32, additional_data[1]);
+  hex_to_felt_t(txn->salt, 32, additional_data[2]);
+
+  calculate_transaction_hash_common(transaction_hash_prefix,
+                                    txn->tip,
+                                    txn->resource_bounds,
+                                    txn->nonce_data_availability_mode,
+                                    txn->fee_data_availability_mode,
+                                    txn->version,
+                                    txn->contract_address,
+                                    txn->chain_id,
+                                    txn->nonce,
+                                    additional_data,
+                                    3,
+                                    hash);
+}
+
+void calculate_invoke_transaction_hash(starknet_sign_txn_invoke_txn_t *txn,
                                        felt_t hash) {
   uint8_t hex[6] = INVOKE_TXN_PREFIX;
   felt_t transaction_hash_prefix = {0};
@@ -367,6 +434,16 @@ void calculate_invoke_transaction_hash(starknet_sign_txn_unsigned_txn_t *txn,
   }
   poseidon_hash_many(call_data_felt, offset, additional_data[1]);
 
-  calculate_transaction_hash_common(
-      transaction_hash_prefix, txn, additional_data, 2, hash);
+  calculate_transaction_hash_common(transaction_hash_prefix,
+                                    txn->tip,
+                                    txn->resource_bound,
+                                    txn->nonce_data_availability_mode,
+                                    txn->fee_data_availability_mode,
+                                    txn->version,
+                                    txn->sender_address,
+                                    txn->chain_id,
+                                    txn->nonce,
+                                    additional_data,
+                                    2,
+                                    hash);
 }

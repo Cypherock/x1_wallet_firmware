@@ -463,10 +463,10 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   }
 
   if (STARKNET_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
-    char address[100] = "";
+    char address[100] = "0x";
 
     // Calculate to-be account address
-    starknet_derive_argent_address(&public_keys[0][0], address);
+    starknet_derive_argent_address(&public_keys[0][0], &address[2]);
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
       return;
