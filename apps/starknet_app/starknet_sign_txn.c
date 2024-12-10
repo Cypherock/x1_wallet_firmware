@@ -255,9 +255,7 @@ void generate_k_random_mpz(mpz_t k, const mpz_t prime) {
 int starknet_sign_digest(const stark_curve *curve,
                          const uint8_t *priv_key,
                          const uint8_t *digest,
-                         uint8_t *sig,
-                         uint8_t *pby,
-                         int (*is_canonical)(uint8_t by, uint8_t sig[64])) {
+                         uint8_t *sig) {
   int i = 0;
   stark_point R = {0};
   mpz_t k, z, randk;
@@ -278,10 +276,7 @@ int starknet_sign_digest(const stark_curve *curve,
     generate_k_rfc6979_mpz(k, &rng);
 
     // k >> 4
-    mpz_fdiv_q_2exp(k,
-                    k,
-                    4);    ///< No idea yet why it works; but right shifting k
-                           ///< by 4 bits is required
+    mpz_fdiv_q_2exp(k, k, 4);
 
     // if k is too big or too small, we don't like it
     if ((mpz_cmp_ui(k, 0) == 0) || !(mpz_cmp(k, curve->order) < 0)) {
@@ -334,7 +329,7 @@ int starknet_sign_digest(const stark_curve *curve,
 
     // if S > order/2 => S = -S
     if ((mpz_cmp(curve->order_half, *s) < 0)) {
-      mpz_sub(*s, *s, curve->order);
+      mpz_sub(*s, curve->order, *s);
     }
     // we are done, R.x and s is the result signature
     mpz_to_byte_array(R.x, sig, 32);
@@ -343,7 +338,6 @@ int starknet_sign_digest(const stark_curve *curve,
     mpz_clear(k);
     mpz_clear(randk);
     mpz_clear(z);
-    mpz_clear(k);
 
 #if USE_RFC6979
     memzero(&rng, sizeof(rng));
@@ -462,24 +456,30 @@ static bool fetch_valid_input(starknet_query_t *query) {
 
 static bool get_invoke_txn_user_verification() {
   char address[100] = "0x";
-  byte_array_to_hex_string(
-      starknet_txn_context->invoke_txn->sender_address, 32, &address[2], 64);
+  byte_array_to_hex_string(starknet_txn_context->invoke_txn->sender_address,
+                           32,
+                           &address[2],
+                           sizeof(address));
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
   }
   // TODO:Verify Call Data
+  return true;
 }
 
 static bool get_deploy_txn_user_verification() {
   char address[100] = "0x";
-  byte_array_to_hex_string(
-      starknet_txn_context->deploy_txn->contract_address, 32, &address[2], 64);
+  byte_array_to_hex_string(starknet_txn_context->deploy_txn->contract_address,
+                           32,
+                           &address[2],
+                           sizeof(address));
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
   }
   // TODO:Verify Constructor Call Data
+  return true;
 }
 
 static bool get_user_verification(void) {
@@ -546,8 +546,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
   felt_t_to_hex(hash_felt, hash);
 
   // generate signature
-  starknet_sign_digest(
-      starkCurve, stark_key, hash, signature_buffer, NULL, NULL);
+  starknet_sign_digest(starkCurve, stark_key, hash, signature_buffer);
 
   memzero(seed, sizeof(seed));
   memzero(stark_key, sizeof(stark_key));
@@ -576,6 +575,7 @@ static bool send_signature(starknet_query_t *query, const uint8_t *signature) {
  *****************************************************************************/
 
 void starknet_sign_transaction(starknet_query_t *query) {
+  starknet_init();
   starknet_txn_context =
       (starknet_txn_context_t *)malloc(sizeof(starknet_txn_context_t));
   memzero(starknet_txn_context, sizeof(starknet_txn_context_t));

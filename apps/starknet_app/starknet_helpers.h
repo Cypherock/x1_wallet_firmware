@@ -100,7 +100,5 @@ void mpz_to_bn(bignum256 *bn, const mpz_t mpz);
 int starknet_sign_digest(const stark_curve *curve,
                          const uint8_t *priv_key,
                          const uint8_t *digest,
-                         uint8_t *sig,
-                         uint8_t *pby,
-                         int (*is_canonical)(uint8_t by, uint8_t sig[64]));
+                         uint8_t *sig);
 #endif    // STARKNET_HELPERS_H

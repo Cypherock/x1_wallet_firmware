@@ -238,8 +238,6 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
     memcpy(key_priv, stark_private_key, 32);
   }
 
-  starknet_init();
-
   // derive stark pub key from stark priv key
   mpz_t priv_key;
   mpz_init(priv_key);

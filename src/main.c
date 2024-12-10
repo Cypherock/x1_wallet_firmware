@@ -157,7 +157,6 @@ void print_state(felt_t *state, int size) {
     printf("\n");
   }
 }
-
 int main(void) {
 #ifdef DEV_BUILD
   ekp_queue_init();
@@ -175,88 +174,89 @@ int main(void) {
     device_provision_check();
   }
 
-  char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
-                   "nature ready fabric inspire lift language kangaroo leave "
-                   "carry plug wild network hollow awake slab";
-  uint8_t seed[64];
-  // mnemonic_to_seed(mnemonic, NULL, seed, NULL);
+  // char *mnemonic = "second tone shoe employ unfold lock donor uncle twice "
+  //                  "nature ready fabric inspire lift language kangaroo leave
+  //                  " "carry plug wild network hollow awake slab";
+  // uint8_t seed[64];
+  // // mnemonic_to_seed(mnemonic, NULL, seed, NULL);
 
-  uint32_t path[] = {0x80000000 + 0xA55,
-                     0x80000000 + 0x4741E9C9,
-                     0x80000000 + 0x447A6028,
-                     0x80000000,
-                     0x80000000,
-                     0xC};
+  // uint32_t path[] = {0x80000000 + 0xA55,
+  //                    0x80000000 + 0x4741E9C9,
+  //                    0x80000000 + 0x447A6028,
+  //                    0x80000000,
+  //                    0x80000000,
+  //                    0xC};
 
-  uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
+  // uint8_t pubkey[32], deployer[32], classhash[32], addr[32];
   // starknet_init();
 
-  hex_string_to_byte_array(
-      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
-      64,
-      deployer);
+  // hex_string_to_byte_array(
+  //     "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+  //     64,
+  //     deployer);
 
-  mpz_t result;
-  mpz_init(result);
-  starknet_resource_bounds_t bounds = {
-      .level_2.max_amount = {0x00, 0x00, 0x07},
-      .level_2.max_price_per_unit = {0x00, 0x00, 0x03},
-      .level_1.max_amount = {0x00, 0x00, 0x07},
-      .level_1.max_price_per_unit = {0x00, 0x00, 0x03}};
-  felt_t felt = {0};
-  printf("\n");
+  // mpz_t result;
+  // mpz_init(result);
+  // starknet_resource_bounds_t bounds = {
+  //     .level_2.max_amount = {0x00, 0x00, 0x07},
+  //     .level_2.max_price_per_unit = {0x00, 0x00, 0x03},
+  //     .level_1.max_amount = {0x00, 0x00, 0x07},
+  //     .level_1.max_price_per_unit = {0x00, 0x00, 0x03}};
+  // felt_t felt = {0};
+  // printf("\n");
 
-  felt_t transaction_hash_prefix = {0}, hash = {0};
-  uint8_t hex[32] = {0}, sig[32] = {0}, stark_key[32] = {0};
-  hex_string_to_byte_array("696e766f6b65", 12, hex);
-  hex_to_felt_t(hex, 6, transaction_hash_prefix);
+  // felt_t transaction_hash_prefix = {0}, hash = {32123, 3213123, 321312,
+  // 32131}; uint8_t hex[32] = {0}, sig[32] = {0}, stark_key[32] = {0};
+  // hex_string_to_byte_array("696e766f6b65", 12, hex);
+  // hex_to_felt_t(hex, 6, transaction_hash_prefix);
 
   starknet_sign_txn_unsigned_txn_t txn = {0};
-  hex_string_to_byte_array(
-      "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
-      64,
-      txn.sender_address);
+  // hex_string_to_byte_array(
+  //     "0229e9b0a11e54e5779cb336c113bbaa7a8f8adda36fc45ddca0732ec478dbfd",
+  //     64,
+  //     txn.sender_address);
 
-  hex_string_to_byte_array(
-      "057260b0928dc7e15ada8911af893ca7e93b0ed14a3786288c73a6572f75214f",
-      64,
-      stark_key);
-  memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
-  txn.version[0] = 0x03;
-  txn.calldata.value_count = 2;
-  txn.calldata.value[0].bytes[0] = 0;
-  txn.calldata.value[0].size = 1;
-  txn.calldata.value[1].bytes[0] = 0;
-  txn.calldata.value[1].bytes[1] = 1;
-  txn.calldata.value[1].bytes[2] = 2;
-  txn.calldata.value[1].bytes[3] = 3;
-  txn.calldata.value[1].bytes[4] = 4;
-  txn.calldata.value[1].bytes[5] = 5;
+  // hex_string_to_byte_array(
+  //     "057260b0928dc7e15ada8911af893ca7e93b0ed14a3786288c73a6572f75214f",
+  //     64,
+  //     stark_key);
+  // memcpy(&txn.resource_bound, &bounds, sizeof(bounds));
+  // txn.version[0] = 0x03;
+  // txn.calldata.value_count = 2;
+  // txn.calldata.value[0].bytes[0] = 0;
+  // txn.calldata.value[0].size = 1;
+  // txn.calldata.value[1].bytes[0] = 0;
+  // txn.calldata.value[1].bytes[1] = 1;
+  // txn.calldata.value[1].bytes[2] = 2;
+  // txn.calldata.value[1].bytes[3] = 3;
+  // txn.calldata.value[1].bytes[4] = 4;
+  // txn.calldata.value[1].bytes[5] = 5;
 
-  txn.calldata.value[1].size = 6;
+  // txn.calldata.value[1].size = 6;
   //   txn.calldata.value->bytes[1] = 0;
   // txn.calldata.value->size = 1;
   // starknet_compiled_call_data_t call_data;
-  starknet_init();
-  calculate_invoke_transaction_hash(&txn, hash);
-  uint8_t buf[32] = {0};
-  felt_t_to_hex(hash, buf);
-  starknet_sign_digest(starkCurve, stark_key, buf, sig, NULL, NULL);
+  // starknet_init();
+  // // calculate_invoke_transaction_hash(&txn, hash);
+  // uint8_t buf[32] = {0};
+  // felt_t_to_hex(hash, buf);
+  // starknet_sign_digest(starkCurve, stark_key, buf, sig);
 
-  print_state(hash, 1);
-  printf("\n");
-  for (int i = 0; i < 64; i++) {
-    printf("%02x", sig[i]);
-    if (i == 31)
-      printf("\n");
-  }
-  printf("\n");
-
-  fflush(stdout);
-  // while (1) {
-  //   engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
-  //   engine_run(main_engine_ctx);
+  // print_state(hash, 1);
+  // printf("\n");
+  // for (int i = 0; i < 64; i++) {
+  //   printf("%02x", sig[i]);
+  //   if (i == 31)
+  //     printf("\n");
   // }
+  // printf("\n");
+
+  // fflush(stdout);
+
+  while (1) {
+    engine_ctx_t *main_engine_ctx = get_core_flow_ctx();
+    engine_run(main_engine_ctx);
+  }
 #else /* RUN_ENGINE */
   while (true) {
     proof_of_work_task();

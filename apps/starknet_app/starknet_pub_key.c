@@ -404,6 +404,8 @@ static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void starknet_get_pub_keys(starknet_query_t *query) {
+  starknet_init();
+
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};
 
