@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    starknet_padersen.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,33 +59,16 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "starknet_main.h"
-#include "tron_main.h"
-#include "xrp_main.h"
+#include <error.pb.h>
+#include <stdint.h>
+
+#include "coin_utils.h"
+#include "mini-gmp-helpers.h"
+#include "starknet_api.h"
+#include "starknet_context.h"
+#include "starknet_crypto.h"
+#include "starknet_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -94,95 +77,136 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+static void process_single_element(mpz_t element,
+                                   stark_point *p1,
+                                   stark_point *p2,
+                                   stark_point *result);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
+  ASSERT(NULL != x);
+  ASSERT(NULL != y);
+  ASSERT(0 < size);
+
+  // Convert to bn
+  mpz_t a, b, result;
+  mpz_init(a);
+  mpz_init(b);
+  mpz_init(result);
+
+  mpz_import(a, size, 1, 1, 1, 0, x);    // Convert x to mpz_t a
+  mpz_import(b, size, 1, 1, 1, 0, y);    // Convert y to mpz_t b
+
+  // Get shift point
+  stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
+  stark_point_copy(&starkPts->P[0], &HASH_SHIFT_POINT);
+  stark_point_copy(&starkPts->P[1], &P_1);
+  stark_point_copy(&starkPts->P[2], &P_2);
+  stark_point_copy(&starkPts->P[3], &P_3);
+  stark_point_copy(&starkPts->P[4], &P_4);
+
+  // Compute the hash using the Starkware Pedersen hash definition
+  stark_point x_part, y_part, hash_point;
+  stark_point_init(&x_part);
+  stark_point_init(&y_part);
+  stark_point_init(&hash_point);
+
+  process_single_element(a, &P_1, &P_2, &x_part);
+  process_single_element(b, &P_3, &P_4, &y_part);
+
+  stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part);
+  stark_point_add(starkCurve, &x_part, &y_part);
+  stark_point_copy(&y_part, &hash_point);
+
+  memzero(hash, 32);
+  mpz_to_byte_array(hash_point.x, hash, 32);
+
+  return true;
+}
+
+void process_single_element(mpz_t element,
+                            stark_point *p1,
+                            stark_point *p2,
+                            stark_point *result) {
+  ASSERT(mpz_cmp(element, starkCurve->prime) < 0);
+
+  mpz_t low_part, high_nibble;
+  mpz_init(low_part);
+  mpz_init(high_nibble);
+
+  // Extract the low 248 bits and high bits from the element
+  mpz_t mask;
+  mpz_init(mask);
+  // Set mask to (1 << 248) - 1
+  mpz_ui_pow_ui(mask, 2, 248);    // mask = 2^248
+  mpz_sub_ui(mask, mask, 1);      // mask = 2^248 - 1
+  // Extract the low 248 bits and high bits from the element
+  mpz_and(low_part, element, mask);
+  mpz_fdiv_q_2exp(high_nibble, element, LOW_PART_BITS);
+
+  stark_point res1, res2;
+  stark_point_init(&res1);
+  stark_point_init(&res2);
+
+  stark_point_multiply(starkCurve, low_part, p1, &res1);    // low_part * p1
+  stark_point_multiply(
+      starkCurve, high_nibble, p2, &res2);    // high_nibble * p2
+  stark_point_add(starkCurve, &res1, &res2);
+
+  stark_point_copy(&res2, result);
+
+  // clear mpz vars
+  mpz_clear(low_part);
+  mpz_clear(high_nibble);
+  mpz_clear(mask);
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
+void starknet_uli_to_bn_byte_array(const unsigned long int ui,
+                                   uint8_t *bn_array) {
+  mpz_t bn;
+  mpz_init(bn);
+  mpz_set_ui(bn, ui);
 
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
-  }
-
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
-
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
-
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+  memzero(bn_array, STARKNET_BIGNUM_SIZE);
+  mpz_to_byte_array(bn, bn_array, STARKNET_BIGNUM_SIZE);
 }
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  registry_add_app(get_starknet_app_desc());
+void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
+                              uint8_t num_elem,
+                              uint8_t *hash) {
+  uint8_t result[STARKNET_BIGNUM_SIZE];
+  memzero(result, STARKNET_BIGNUM_SIZE);
+
+  for (uint8_t index = 0; index < num_elem; index++) {
+    pederson_hash(result, data[index], STARKNET_BIGNUM_SIZE, result);
+  }
+
+  uint8_t num_elem_bn[32];
+  starknet_uli_to_bn_byte_array(num_elem, num_elem_bn);
+
+  pederson_hash(result, num_elem_bn, STARKNET_BIGNUM_SIZE, result);
+
+  memcpy(hash, result, STARKNET_BIGNUM_SIZE);
+  return;
 }
