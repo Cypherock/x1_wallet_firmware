@@ -20,7 +20,7 @@ set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c  vendor/mini-gmp/mini-gmp-helpers.c vendor/mini-gmp/mini-gmp.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
@@ -57,6 +57,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/tron_app
         apps/inheritance_app
         apps/xrp_app
+        apps/starknet_app
 
         src/
         src/menu
@@ -127,6 +128,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/lvgl/src/lv_misc
         common/lvgl/src/lv_objx
         common/lvgl/src/lv_themes
+
+        vendor/mini-gmp
 
         # Simulator
         simulator
