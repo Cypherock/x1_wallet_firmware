@@ -70,6 +70,7 @@
 #include "starknet_context.h"
 #include "starknet_crypto.h"
 #include "starknet_helpers.h"
+#include "starknet_pedersen.h"
 #include "starknet_priv.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -526,6 +527,7 @@ void starknet_get_pub_keys(starknet_query_t *query) {
     set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
+  stark_pedersen_clear();
   if (!send_public_keys(query,
                         public_keys,
                         init_req->derivation_paths_count,

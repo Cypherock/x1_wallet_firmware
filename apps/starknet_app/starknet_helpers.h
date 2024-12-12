@@ -17,20 +17,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "starknet_pedersen.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
-#define LOW_PART_BITS 248
-#define LOW_PART_BYTES (LOW_PART_BITS / 8)
-#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
-#define STARKNET_BIGNUM_SIZE 32
-#define PEDERSEN_HASH_SIZE 32
-#define CALL_DATA_PARAMETER_SIZE 3
-#define STARKNET_SIZE_PUB_KEY (32)
-#define STARKNET_ADDR_SIZE 32
-#define STARKNET_ARGENT_CLASS_HASH                                             \
-  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
-#define STARKNET_DEPLOYER_VALUE 0
 
 /*****************************************************************************
  * TYPEDEFS

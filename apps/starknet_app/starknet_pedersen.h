@@ -1,7 +1,7 @@
 /**
- * @file    starknet_main.c
+ * @file    starknet_pedersen.h
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Starknet actions supported.
+ * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,12 +60,15 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "starknet_main.h"
+#include <error.pb.h>
+#include <stdint.h>
 
+#include "coin_utils.h"
+#include "mini-gmp-helpers.h"
 #include "starknet_api.h"
-#include "starknet_priv.h"
-#include "status_api.h"
-#include "ui_core_confirm.h"
+#include "starknet_context.h"
+#include "starknet_crypto.h"
+#include "starknet_helpers.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -74,7 +77,20 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define LOW_PART_BITS 248
+#define LOW_PART_BYTES (LOW_PART_BITS / 8)
+#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
 
+#define STARKNET_BIGNUM_SIZE 32
+#define PEDERSEN_HASH_SIZE 32
+
+#define CALL_DATA_PARAMETER_SIZE 3
+#define STARKNET_SIZE_PUB_KEY (32)
+
+#define STARKNET_ADDR_SIZE 32
+#define STARKNET_ARGENT_CLASS_HASH                                             \
+  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
+#define STARKNET_DEPLOYER_VALUE 0
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -84,68 +100,5 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-/**
- * @brief Entry point for the STARKNET application of the X1 vault. It is
- * invoked by the X1 vault firmware, as soon as there is a USB request raised
- * for the Solana app.
- *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
- */
-void starknet_main(usb_event_t usb_evt, const void *app_config);
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-static const cy_app_desc_t starknet_app_desc = {.id = 21,
-                                                .version =
-                                                    {
-                                                        .major = 1,
-                                                        .minor = 0,
-                                                        .patch = 0,
-                                                    },
-                                                .app = starknet_main,
-                                                .app_config = NULL};
-
-/*****************************************************************************
- * STATIC FUNCTIONS
- *****************************************************************************/
-void starknet_main(usb_event_t usb_evt, const void *app_config) {
-  starknet_query_t query = STARKNET_QUERY_INIT_DEFAULT;
-
-  if (false == decode_starknet_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case STARKNET_QUERY_GET_PUBLIC_KEYS_TAG:
-    case STARKNET_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      starknet_get_pub_keys(&query);
-      break;
-    }
-    case STARKNET_QUERY_SIGN_TXN_TAG: {
-      // starknet_sign_transaction(&query);
-      break;
-    }
-
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                          ERROR_DATA_FLOW_INVALID_QUERY);
-    } break;
-  }
-
-  return;
-}
-
-/*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const cy_app_desc_t *get_starknet_app_desc() {
-  return &starknet_app_desc;
-}

@@ -51,6 +51,6 @@ void starknet_get_pub_keys(starknet_query_t *query);
  *
  * @param query Reference to the decoded query struct from the host app
  */
-void starknet_sign_transaction(starknet_query_t *query);
+// void starknet_sign_transaction(starknet_query_t *query);
 
 #endif /* STARKNET_PRIV_H */

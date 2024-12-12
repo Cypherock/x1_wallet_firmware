@@ -1,5 +1,5 @@
 /**
- * @file    starknet_padersen.c
+ * @file    starknet_pedersen.c
  * @author  Cypherock X1 Team
  * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
@@ -59,6 +59,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
+
+#include "starknet_pedersen.h"
 
 #include <error.pb.h>
 #include <stdint.h>
@@ -139,6 +141,15 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   memzero(hash, 32);
   mpz_to_byte_array(hash_point.x, hash, 32);
 
+  // clear stark points
+  stark_point_clear(&x_part);
+  stark_point_clear(&y_part);
+  stark_point_clear(&hash_point);
+
+  mpz_clear(a);
+  mpz_clear(b);
+  mpz_clear(result);
+
   return true;
 }
 
@@ -177,6 +188,9 @@ void process_single_element(mpz_t element,
   mpz_clear(low_part);
   mpz_clear(high_nibble);
   mpz_clear(mask);
+
+  stark_point_clear(&res1);
+  stark_point_clear(&res2);
 }
 
 /*****************************************************************************
@@ -190,6 +204,9 @@ void starknet_uli_to_bn_byte_array(const unsigned long int ui,
 
   memzero(bn_array, STARKNET_BIGNUM_SIZE);
   mpz_to_byte_array(bn, bn_array, STARKNET_BIGNUM_SIZE);
+
+  // clear mpz vars
+  mpz_clear(bn);
 }
 
 void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
