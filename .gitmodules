@@ -10,3 +10,6 @@
 [submodule "mini-gmp"]
 	path = vendor/mini-gmp
 	url = ../mini-gmp
+[submodule "vendor/poseidon"]
+	path = vendor/poseidon
+	url = https://github.com/Cypherock/poseidon
