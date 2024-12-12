@@ -61,7 +61,6 @@
  *****************************************************************************/
 #include "starknet_crypto.h"
 
-// #include "bignum_internal.h"
 #include <stdio.h>
 
 #include "mini-gmp.h"
@@ -117,9 +116,9 @@ void stark_point_clear(stark_point *p) {
   mpz_clear(p->y);
 }
 
-void stark_pedersen_clear(stark_pedersen *pedersen) {
+void stark_pedersen_clear() {
   for (int i = 0; i < 5; i++) {
-    stark_point_clear(&pedersen->P[i]);
+    stark_point_clear(&starkPts->P[i]);
   }
 }
 
