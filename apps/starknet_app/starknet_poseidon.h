@@ -1,7 +1,7 @@
 /**
- * @file    starknet_main.c
+ * @file    starknet_poseidon.h
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Starknet actions supported.
+ * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,12 +60,14 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "starknet_main.h"
+#include <error.pb.h>
+#include <starknet/sign_txn.pb.h>
+#include <stdint.h>
 
-#include "starknet_api.h"
-#include "starknet_priv.h"
-#include "status_api.h"
-#include "ui_core_confirm.h"
+#include "coin_utils.h"
+#include "f251.h"
+#include "mini-gmp-helpers.h"
+#include "poseidon.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -74,9 +76,32 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define DATA_AVAILABILITY_MODE_BITS 32    // 32 bits for data availability mode
+#define MAX_AMOUNT_BITS 64                // 64 bits for max_amount
+#define MAX_PRICE_PER_UNIT_BITS 128       // 128 bits for max_price_per_unit
+#define RESOURCE_VALUE_OFFSET                                                  \
+  (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
+#define L1_GAS_NAME                                                            \
+  (unsigned long)0x4c315f474153    // The constant value for L1_GAS_NAME
+#define L2_GAS_NAME (unsigned long)0x4c325f474153
+#define INVOKE_TXN_PREFIX                                                      \
+  { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
+#define DEPLOY_ACCOUNT_PREFIX                                                  \
+  {                                                                            \
+    0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75,    \
+        0x6e, 0x74                                                             \
+  }    // 0x6465706c6f795f6163636f756e74 'DEPLOY_ACCOUNT'
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -84,68 +109,21 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-/**
- * @brief Entry point for the STARKNET application of the X1 vault. It is
- * invoked by the X1 vault firmware, as soon as there is a USB request raised
- * for the Solana app.
- *
- * @param usb_evt The USB event which triggered invocation of the bitcoin app
- */
-void starknet_main(usb_event_t usb_evt, const void *app_config);
-
-/*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-static const cy_app_desc_t starknet_app_desc = {.id = 21,
-                                                .version =
-                                                    {
-                                                        .major = 1,
-                                                        .minor = 0,
-                                                        .patch = 0,
-                                                    },
-                                                .app = starknet_main,
-                                                .app_config = NULL};
-
-/*****************************************************************************
- * STATIC FUNCTIONS
- *****************************************************************************/
-void starknet_main(usb_event_t usb_evt, const void *app_config) {
-  starknet_query_t query = STARKNET_QUERY_INIT_DEFAULT;
-
-  if (false == decode_starknet_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
-  }
-
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
-
-  switch ((uint8_t)query.which_request) {
-    case STARKNET_QUERY_GET_PUBLIC_KEYS_TAG:
-    case STARKNET_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      starknet_get_pub_keys(&query);
-      break;
-    }
-    case STARKNET_QUERY_SIGN_TXN_TAG: {
-      starknet_sign_transaction(&query);
-      break;
-    }
-
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                          ERROR_DATA_FLOW_INVALID_QUERY);
-    } break;
-  }
-
-  return;
-}
-
-/*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const cy_app_desc_t *get_starknet_app_desc() {
-  return &starknet_app_desc;
-}
+
+/**
+ * @brief Function to convert Little-Endian felt_t to Big-Endian hex.
+ *
+ */
+void felt_t_to_hex(const felt_t felt, uint8_t hex[32]);
+
+/**
+ * @brief Calculates txn hash for sign based on txn type
+ *
+ * @param txn pointer to input txn
+ * @param type type of txn (INVOKE or DEPLOY)
+ * @param hash Calculated hash of txn
+ *
+ */
+void calculate_txn_hash(void *txn, pb_size_t type, felt_t hash);
