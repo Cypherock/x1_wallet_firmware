@@ -328,9 +328,9 @@ int starknet_sign_digest(const stark_curve *curve,
     }
 
     // if S > order/2 => S = -S
-    if ((mpz_cmp(curve->order_half, *s) < 0)) {
-      mpz_sub(*s, curve->order, *s);
-    }
+    // if ((mpz_cmp(curve->order_half, *s) < 0)) {
+    //   mpz_sub(*s, curve->order, *s);
+    // }
     // we are done, R.x and s is the result signature
     mpz_to_byte_array(R.x, sig, 32);
     mpz_to_byte_array(*s, sig + 32, 32);
@@ -529,6 +529,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
   // calculate txn hash
   felt_t hash_felt = {0};
   switch (starknet_txn_context->which_type) {
+    // TODO: Remove switch case and pass starknet_txn_context itself
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
       calculate_txn_hash((void *)starknet_txn_context->invoke_txn,
                          STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG,
