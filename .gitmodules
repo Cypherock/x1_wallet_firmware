@@ -7,6 +7,6 @@
 [submodule "nanopb"]
 	path = vendor/nanopb
 	url = ../nanopb
-[submodule "vendor/mini-gmp"]
+[submodule "mini-gmp"]
 	path = vendor/mini-gmp
-	url = https://github.com/Cypherock/mini-gmp
+	url = ../mini-gmp
