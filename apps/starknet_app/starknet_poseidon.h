@@ -81,9 +81,8 @@
 #define MAX_PRICE_PER_UNIT_BITS 128       // 128 bits for max_price_per_unit
 #define RESOURCE_VALUE_OFFSET                                                  \
   (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
-#define L1_GAS_NAME                                                            \
-  (unsigned long)0x4c315f474153    // The constant value for L1_GAS_NAME
-#define L2_GAS_NAME (unsigned long)0x4c325f474153
+#define L1_GAS_NAME "4c315f474153"    // The constant value for L1_GAS_NAME
+#define L2_GAS_NAME "4c325f474153"
 #define INVOKE_TXN_PREFIX                                                      \
   { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
 #define DEPLOY_ACCOUNT_PREFIX                                                  \

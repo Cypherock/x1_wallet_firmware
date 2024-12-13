@@ -72,6 +72,7 @@
 #include "mini-gmp-helpers.h"
 #include "mini-gmp.h"
 #include "poseidon.h"
+#include "ui_core_confirm.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -173,7 +174,9 @@ static void calculate_transaction_hash_common(
     const pb_byte_t version[],
     const pb_byte_t sender_address[],
     const pb_byte_t chain_id[],
+    const pb_size_t chain_id_size,
     const pb_byte_t nonce[],
+    const pb_size_t nonce_size,
     const felt_t additional_data[],
     const uint8_t additional_data_size,
     felt_t hash);
@@ -288,23 +291,35 @@ static void encode_resource_bounds_l1(const starknet_resource_bounds_t bounds,
   // MAX_PRICE_PER_UNIT_BITS) + bounds.level_1.max_price_per_unit
 
   // L1_GAS_NAME << RESOURCE_VALUE_OFFSET
-  mpz_set_ui(result, L1_GAS_NAME);
+  mpz_set_str(result, L1_GAS_NAME, 16);
   mpz_mul_2exp(result, result, RESOURCE_VALUE_OFFSET);
 
   // bounds.level_1.max_amount << MAX_PRICE_PER_UNIT_BITS
-  mpz_import(temp1, 5, 1, sizeof(pb_byte_t), 0, 0, bounds.level_1.max_amount);
+  mpz_import(temp1,
+             bounds.level_1.max_amount.size,
+             1,
+             1,
+             1,
+             0,
+             bounds.level_1.max_amount.bytes);
   mpz_mul_2exp(temp1, temp1, MAX_PRICE_PER_UNIT_BITS);
 
   // result += temp1
   mpz_add(result, result, temp1);
 
-  mpz_import(
-      temp2, 5, 1, sizeof(pb_byte_t), 0, 0, bounds.level_1.max_price_per_unit);
+  mpz_import(temp2,
+             bounds.level_1.max_price_per_unit.size,
+             1,
+             1,
+             1,
+             0,
+             bounds.level_1.max_price_per_unit.bytes);
   mpz_add(result, result, temp2);    // result += temp2
 
   mpz_to_felt(out, result);
   mpz_clear(temp1);
   mpz_clear(temp2);
+  mpz_clear(result);
 }
 
 static void encode_resource_bounds_l2(const starknet_resource_bounds_t bounds,
@@ -320,24 +335,36 @@ static void encode_resource_bounds_l2(const starknet_resource_bounds_t bounds,
   // MAX_PRICE_PER_UNIT_BITS) + bounds.level_2.max_price_per_unit
 
   // L1_GAS_NAME << RESOURCE_VALUE_OFFSET
-  mpz_set_ui(result, L2_GAS_NAME);
+  mpz_set_str(result, L2_GAS_NAME, 16);
   mpz_mul_2exp(result, result, RESOURCE_VALUE_OFFSET);
 
   // bounds.level_1.max_amount << MAX_PRICE_PER_UNIT_BITS
-  mpz_import(temp1, 5, 1, sizeof(pb_byte_t), 0, 0, bounds.level_2.max_amount);
+  mpz_import(temp1,
+             bounds.level_2.max_amount.size,
+             1,
+             1,
+             1,
+             0,
+             bounds.level_2.max_amount.bytes);
   mpz_mul_2exp(temp1, temp1, MAX_PRICE_PER_UNIT_BITS);
 
   // result += temp1
   mpz_add(result, result, temp1);
 
-  mpz_import(
-      temp2, 5, 1, sizeof(pb_byte_t), 0, 0, bounds.level_2.max_price_per_unit);
+  mpz_import(temp2,
+             bounds.level_2.max_price_per_unit.size,
+             1,
+             1,
+             1,
+             0,
+             bounds.level_2.max_price_per_unit.bytes);
   mpz_add(result, result, temp2);    // result += temp2
 
   mpz_to_felt(out, result);
 
   mpz_clear(temp1);
   mpz_clear(temp2);
+  mpz_clear(result);
 }
 
 static void hash_fee_field(const pb_byte_t tip,
@@ -390,7 +417,9 @@ static void calculate_transaction_hash_common(
     const pb_byte_t version[],
     const pb_byte_t sender_address[],
     const pb_byte_t chain_id[],
+    const pb_size_t chain_id_size,
     const pb_byte_t nonce[],
+    const pb_size_t nonce_size,
     const felt_t additional_data[],
     const uint8_t additional_data_size,
     felt_t hash) {
@@ -418,8 +447,8 @@ static void calculate_transaction_hash_common(
                               ///< refer:
                               ///< https://docs.starknet.io/architecture-and-concepts/network-architecture/transactions/#v3_transaction_fields
   f251_copy(state[offset++], paymaster_data_res);
-  hex_to_felt_t(chain_id, 1, state[offset++]);
-  hex_to_felt_t(nonce, 10, state[offset++]);
+  hex_to_felt_t(chain_id, chain_id_size, state[offset++]);
+  hex_to_felt_t(nonce, nonce_size, state[offset++]);
   f251_copy(state[offset++], DAMode_hash);
   if (additional_data != NULL) {
     for (uint8_t i = 0; i < additional_data_size; i++) {
@@ -427,7 +456,7 @@ static void calculate_transaction_hash_common(
       ASSERT(offset < state_max);
     }
   }
-
+  print_state(state, offset);
   poseidon_hash_many(state, offset, hash);
 }
 
@@ -467,8 +496,10 @@ static void calculate_deploy_transaction_hash(
                                     txn->fee_data_availability_mode,
                                     txn->version,
                                     txn->contract_address,
-                                    txn->chain_id,
-                                    txn->nonce,
+                                    txn->chain_id.bytes,
+                                    txn->chain_id.size,
+                                    txn->nonce.bytes,
+                                    txn->nonce.size,
                                     additional_data,
                                     3,
                                     hash);
@@ -512,8 +543,10 @@ static void calculate_invoke_transaction_hash(
                                     txn->fee_data_availability_mode,
                                     txn->version,
                                     txn->sender_address,
-                                    txn->chain_id,
-                                    txn->nonce,
+                                    txn->chain_id.bytes,
+                                    txn->chain_id.size,
+                                    txn->nonce.bytes,
+                                    txn->nonce.size,
                                     additional_data,
                                     2,
                                     hash);
