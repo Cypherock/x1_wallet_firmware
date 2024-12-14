@@ -456,7 +456,7 @@ static void calculate_transaction_hash_common(
       ASSERT(offset < state_max);
     }
   }
-  print_state(state, offset);
+
   poseidon_hash_many(state, offset, hash);
 }
 

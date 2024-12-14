@@ -228,7 +228,7 @@ void bn_to_mpz(mpz_t mpz, const bignum256 *bn) {
 void generate_k_rfc6979_mpz(mpz_t k, rfc6979_state *state) {
   uint8_t buf[32] = {0};
   generate_rfc6979(buf, state);
-  mpz_import(k, 32, 1, 1, 1, 0, buf);
+  mpz_import(k, sizeof(buf), 1, 1, 1, 0, buf);
   memzero(buf, sizeof(buf));
 }
 
@@ -517,7 +517,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
 
   uint8_t stark_key[32] = {0};
   if (starknet_derive_key_from_seed(
-          stark_key,
+          seed,
           starknet_txn_context->init_info.derivation_path,
           starknet_txn_context->init_info.derivation_path_count,
           stark_key,
