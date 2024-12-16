@@ -11,11 +11,11 @@ starknet.SignTxnInvokeTxn.sender_address type:FT_STATIC max_size:32 fixed_length
 starknet.SignTxnInvokeTxn.version type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnInvokeTxn.chain_id type:FT_STATIC max_size:10 fixed_length:false
 starknet.SignTxnInvokeTxn.nonce type:FT_STATIC max_size:10 fixed_length:false
-starknet.SignTxnInvokeTxn.account_deployment_data type:FT_STATIC max_size:1 fixed_length:true #empty
+starknet.SignTxnInvokeTxn.account_deployment_data type:FT_STATIC max_size:1 max_count:1 fixed_length:false #empty
 starknet.SignTxnInvokeTxn.nonce_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnInvokeTxn.fee_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnInvokeTxn.tip type:FT_STATIC max_size:1 fixed_length:true
-starknet.SignTxnInvokeTxn.paymaster_data type:FT_STATIC max_size:1 fixed_length:true #empty
+starknet.SignTxnInvokeTxn.paymaster_data type:FT_STATIC max_size:1 max_count:1 fixed_length:false #empty
 
 
 starknet.SignTxnDeployAccountTxn.contract_address type:FT_STATIC max_size:32 fixed_length:true
@@ -28,6 +28,6 @@ starknet.SignTxnDeployAccountTxn.account_deployment_data type:FT_STATIC max_size
 starknet.SignTxnDeployAccountTxn.nonce_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnDeployAccountTxn.fee_data_availability_mode type:FT_STATIC max_size:1 fixed_length:true
 starknet.SignTxnDeployAccountTxn.tip type:FT_STATIC max_size:1 fixed_length:true
-starknet.SignTxnDeployAccountTxn.paymaster_data type:FT_STATIC max_size:1 fixed_length:true #empty
+starknet.SignTxnDeployAccountTxn.paymaster_data type:FT_STATIC max_size:1 max_count:1 fixed_length:false #empty
 
 starknet.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true
