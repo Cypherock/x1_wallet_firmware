@@ -199,6 +199,20 @@ static bool sign_txn(uint8_t *signature_buffer);
  */
 static bool send_signature(starknet_query_t *query, const uint8_t *signature);
 
+/**
+ * @brief Represents starknet u256 amount in string upto 6 decimal places
+ *
+ * @param byte_array Input byte array
+ * @param size Size of byte array
+ * @param amount_str String representation of amount
+ * @param amount_size Size of amount_str
+ */
+
+static void stark_amount_get_decimal_str(const uint8_t *byte_array,
+                                         const uint8_t size,
+                                         char *amount_str,
+                                         uint8_t amount_size);
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -454,6 +468,57 @@ static bool fetch_valid_input(starknet_query_t *query) {
   return false;
 }
 
+static void stark_amount_get_decimal_str(const uint8_t *byte_array,
+                                         const uint8_t size,
+                                         char *amount_str,
+                                         uint8_t amount_size) {
+  mpz_t num;
+  mpz_init(num);
+  byte_array_to_mpz(num, byte_array, size);
+
+  char str[100] = "";
+  mpz_get_str(str, 10, num);
+  uint8_t len = strlen(str);
+
+  if (len < 18) {
+    // prepend 0 and decimal point
+    snprintf(amount_str, amount_size, "0.");
+
+    // prepend 0s after decimal if required
+    uint8_t i = 2;
+    for (; i < (18 - len + 2); i++) {
+      snprintf(amount_str + i, amount_size - i, "0");
+    }
+    uint8_t offset = 0;
+    for (; i < 6 + 2; i++) {
+      snprintf(amount_str + i, amount_size - i, "%c", str[offset++]);
+    }
+    return;
+  } else {
+    uint8_t i = 0;
+    for (; i < (len - 18); i++) {
+      snprintf(amount_str + i, amount_size - i, "%c", str[i]);
+    }
+    // prepend 0 before decimal if required
+    uint8_t k = 0;
+    if (i == 0) {
+      snprintf(amount_str, amount_size, "0");
+      i++;
+      // set k to 1 incase prepending required
+      k = 1;
+    }
+    snprintf(amount_str + i, amount_size - i, ".");
+    i++;
+    // add upto 6 decimal characters
+    for (uint8_t j = 0; j < 6; j++) {
+      snprintf((amount_str + i) + j,
+               (amount_size - i) + j,
+               "%c",
+               str[(i - k - 1) + j]);
+    }
+  }
+}
+
 static bool get_invoke_txn_user_verification() {
   char address[100] = "0x";
   byte_array_to_hex_string(starknet_txn_context->invoke_txn->sender_address,
@@ -464,7 +529,27 @@ static bool get_invoke_txn_user_verification() {
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
   }
-  // TODO:Verify Call Data
+
+  // Verify Amount
+  char amount_str[200] = "";
+  stark_amount_get_decimal_str(
+      starknet_txn_context->invoke_txn->calldata.value[5]
+          .bytes,    ///< index for amount is 5th
+      starknet_txn_context->invoke_txn->calldata.value[5].size,
+      amount_str,
+      sizeof(amount_str));
+
+  char display[200] = {'\0'};
+  snprintf(display,
+           sizeof(display),
+           UI_TEXT_VERIFY_AMOUNT,
+           amount_str,
+           starknet_app.lunit1_name);
+
+  if (!core_confirmation(display, starknet_send_error)) {
+    return false;
+  }
+
   return true;
 }
 
