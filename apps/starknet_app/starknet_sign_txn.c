@@ -591,6 +591,7 @@ void starknet_sign_transaction(starknet_query_t *query) {
   }
 
   memzero(signature, sizeof(signature));
+  stark_pedersen_clear();
 
   if (starknet_txn_context) {
     free(starknet_txn_context);
