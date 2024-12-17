@@ -26,6 +26,8 @@ include(utilities/cmake/version.cmake)
 file(GLOB_RECURSE PROTO_SRCS "generated/proto/*.*")
 list(APPEND PROTO_SRCS "vendor/nanopb/pb_common.c" "vendor/nanopb/pb_decode.c" "vendor/nanopb/pb_encode.c" "vendor/nanopb/pb_common.h" "vendor/nanopb/pb_decode.h" "vendor/nanopb/pb_encode.h" "vendor/nanopb/pb.h")
 
+list (APPEND MINI_GMP_SRCS "vendor/mini-gmp/mini-gmp-helpers.c" "vendor/mini-gmp/mini-gmp.c")
+
 OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
 
@@ -49,7 +51,7 @@ else()
 endif()
 
 # Include nanopb source headers
-target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto )
+target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto vendor/mini-gmp)
 
 # Enable support for dynamically allocated fields in nanopb
 # Ref: vendor/nanopb/pb.h
