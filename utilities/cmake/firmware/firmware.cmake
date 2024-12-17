@@ -103,6 +103,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/libraries/atecc/host
         common/libraries/atecc/jwt
         common/libraries/crypto
+        common/libraries/crypto/mpz_operations
         common/libraries/crypto/aes
         common/libraries/crypto/chacha20poly1305
         common/libraries/crypto/ed25519-donna

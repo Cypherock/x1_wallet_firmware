@@ -1,7 +1,6 @@
-/**
- * @file    starknet_pedersen.h
+/*
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Starknet pedersen hashing
+ * @brief   pedersen hashing alogrithms
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -55,6 +54,8 @@
  *
  ******************************************************************************
  */
+#ifndef MPZ_PEDERSEN_H
+#define MPZ_PEDERSEN_H
 
 /*****************************************************************************
  * INCLUDES
@@ -63,7 +64,7 @@
 #include <error.pb.h>
 #include <stdint.h>
 
-#include "mpz_pedersen.h"
+#include "mpz_ecdsa.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -72,22 +73,17 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define LOW_PART_BITS 248
-#define LOW_PART_BYTES (LOW_PART_BITS / 8)
-#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
 
-#define STARKNET_BIGNUM_SIZE 32
-#define PEDERSEN_HASH_SIZE 32
-
-#define CALL_DATA_PARAMETER_SIZE 3
-#define STARKNET_SIZE_PUB_KEY (32)
-
-#define STARKNET_ADDR_SIZE 32
-#define STARKNET_ARGENT_CLASS_HASH                                             \
-  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
-#define STARKNET_DEPLOYER_VALUE 0
 /*****************************************************************************
  * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -95,21 +91,29 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * GLOBAL FUNCTIONS PROTOTYPES
+ * GLOBAL FUNCTIONS
  *****************************************************************************/
-/**
- * @brief Converts unsigned long int to byte array of size STARKNET_BIGNUM_SIZE
- */
-void starknet_uli_to_bn_byte_array(const unsigned long int ui,
-                                   uint8_t *bn_array);
 
 /**
- * Computes Pedersen hash from data of size STARKNET_BIGNUM_SIZE
- *
- * @param data 2D Array of data to compute Pedersen hash on
- * @param num_elem len of data
- * @param hash Pedersen hash of elements
+ * @brief processes' single element required by @ref pederson_hash
+ * @details result = element_{low}⋅P1 + element_{high}⋅P2
  */
-void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
-                              uint8_t num_elem,
-                              uint8_t *hash);
+void process_single_element(mpz_t element,
+                            mpz_curve_point *p1,
+                            mpz_curve_point *p2,
+                            mpz_curve_point *result);
+
+/**
+ * @brief Computes the Pederson hash of input.
+ * defined as:
+   H(a,b)= [P0 + x_{low}⋅P1 + x_{high}⋅P2 + y_{low}⋅P3 + y_{high}⋅P4]x
+   xlow is the 248 low bits of x.
+   xhigh is the 4 high bits of x(and similarly for y).
+   P0,P1,P2,P3,P4 are constant points on the elliptic curve, derived from the
+ decimal digits of π.
+  ref:
+    https://rya-sge.github.io/access-denied/2024/05/07/pedersen-hash-function/
+ */
+bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash);
+
+#endif    // MPZ_PEDERSEN_H

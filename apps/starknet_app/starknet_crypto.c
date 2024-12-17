@@ -64,6 +64,7 @@
 #include <stdio.h>
 
 #include "mini-gmp.h"
+#include "mpz_ecdsa.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -80,7 +81,18 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Initializes @ref stark_curve instance based on star curve params
+ ref:
+  https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
 
+ */
+static void stark_curve_init();
+
+/**
+ * @brief Initializes starknet pedersen points
+ */
+static void stark_pedersen_init();
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -88,54 +100,14 @@
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
-stark_curve *starkCurve;
-stark_pedersen *starkPts;
+mpz_curve *stark_curve;
+mpz_pedersen *starknet_pedersen_points;
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void stark_curve_init();
-static void stark_pedersen_init();
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
-
-void starknet_init() {
-  stark_curve_init();
-  stark_pedersen_init();
-}
-
-void stark_point_init(stark_point *p) {
-  mpz_init(p->x);
-  mpz_init(p->y);
-}
-
-void stark_point_clear(stark_point *p) {
-  mpz_clear(p->x);
-  mpz_clear(p->y);
-}
-
-void stark_pedersen_clear() {
-  for (int i = 0; i < 5; i++) {
-    stark_point_clear(&starkPts->P[i]);
-  }
-}
-
-void stark_curve_init() {
-  static stark_curve stark256;
-  // char str[STARK_BN_LEN] = {0};
-
-  /* stark_curve_params ref:
-  https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
-
-  struct bn prime;         // prime order of the finite field
-  stark_point G;           // initial curve point
-  struct bn order;         // order of G
-  struct bn order_half;    // order of G divided by 2
-  struct bn a;             // coefficient 'a' of the elliptic curve OR alpha
-  struct bn b;             // coefficient 'b' of the elliptic curve OR beta
-  */
+static void stark_curve_init() {
+  static mpz_curve stark256;
 
   // Initialize mpz_t variables in stark256
   mpz_init(stark256.prime);
@@ -188,14 +160,13 @@ void stark_curve_init() {
       "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
       16);
 
-  starkCurve = &stark256;
-  // print_stark_curve();
+  stark_curve = &stark256;
 }
 
 static void stark_pedersen_init() {
   // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
 
-  static stark_pedersen pedersen;
+  static mpz_pedersen pedersen;
   // Initialize all mpz_t variables in the pedersen structure
   for (int i = 0; i < 5; i++) {
     mpz_init(pedersen.P[i].x);
@@ -261,194 +232,28 @@ static void stark_pedersen_init() {
       "01B77B3E37D13504B348046268D8AE25CE98AD783C25561A879DCC77E99C2426",
       16);
 
-  starkPts = &pedersen;
+  starknet_pedersen_points = &pedersen;
 }
 
-// Set cp2 = cp1
-void stark_point_copy(const stark_point *cp1, stark_point *cp2) {
-  stark_point_init(cp2);
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
 
-  mpz_set(cp2->x, cp1->x);
-  mpz_set(cp2->y, cp1->y);
+void starknet_init() {
+  stark_curve_init();
+  stark_pedersen_init();
 }
 
-void stark_point_add(const stark_curve *curve,
-                     const stark_point *cp1,
-                     stark_point *cp2) {
-  mpz_t lambda, inv, xr, yr;
-
-  mpz_init(lambda);
-  mpz_init(inv);
-  mpz_init(xr);
-  mpz_init(yr);
-
-  if (stark_point_is_infinity(cp1)) {
-    return;
+void stark_clear() {
+  // clear pedersen points
+  for (int i = 0; i < 5; i++) {
+    mpz_curve_point_clear(&starknet_pedersen_points->P[i]);
   }
-  if (stark_point_is_infinity(cp2)) {
-    stark_point_copy(cp1, cp2);
-    return;
-  }
-  if (stark_point_is_equal(cp1, cp2)) {
-    stark_point_double(curve, cp2);
-    return;
-  }
-  if (stark_point_is_negative_of(cp1, cp2)) {
-    stark_point_set_infinity(cp2);
-    return;
-  }
-
-  // inv = (cp2->x - cp1->x) mod prime
-  mpz_sub(inv, cp2->x, cp1->x);
-  mpz_mod(inv, inv, curve->prime);
-
-  // inv = inv^-1 mod prime
-  mpz_invert(inv, inv, curve->prime);
-
-  // lambda = (cp2->y - cp1->y) mod prime
-  mpz_sub(lambda, cp2->y, cp1->y);
-  mpz_mod(lambda, lambda, curve->prime);
-
-  // lambda = lambda * inv mod prime
-  mpz_mul(lambda, lambda, inv);
-  mpz_mod(lambda, lambda, curve->prime);
-
-  // xr = lambda^2 - cp1->x - cp2->x mod prime
-  mpz_mul(xr, lambda, lambda);
-  mpz_sub(xr, xr, cp1->x);
-  mpz_sub(xr, xr, cp2->x);
-  mpz_mod(xr, xr, curve->prime);
-
-  // yr = lambda * (cp1->x - xr) - cp1->y mod prime
-  mpz_sub(yr, cp1->x, xr);
-  mpz_mul(yr, yr, lambda);
-  mpz_sub(yr, yr, cp1->y);
-  mpz_mod(yr, yr, curve->prime);
-
-  // Set cp2 to the result
-  mpz_set(cp2->x, xr);
-  mpz_set(cp2->y, yr);
-
-  mpz_clear(lambda);
-  mpz_clear(inv);
-  mpz_clear(xr);
-  mpz_clear(yr);
-}
-
-void stark_point_double(const stark_curve *curve, stark_point *cp) {
-  // Ref:
-  // https://github.com/starkware-libs/starkex-for-spot-trading/blob/607f0b4ce507e1d95cd018d206a2797f6ba4aab4/src/starkware/crypto/starkware/crypto/signature/math_utils.py
-  if (mpz_cmp_ui(cp->y, 0) == 0) {
-    return;
-  }
-
-  mpz_t lambda, xr, yr, inv;
-  mpz_init(lambda);
-  mpz_init(xr);
-  mpz_init(yr);
-  mpz_init(inv);
-
-  // lambda = (3 * cp->x^2 + curve->a) * (2 * cp->y)^-1 mod prime
-  mpz_mul(lambda, cp->x, cp->x);
-  mpz_mul_ui(lambda, lambda, 3);
-  mpz_add(lambda, lambda, curve->a);
-  mpz_mul_ui(inv, cp->y, 2);    // using inv to store 2 * y
-  mpz_invert(inv, inv, curve->prime);
-  mpz_mul(lambda, lambda, inv);
-  mpz_mod(lambda, lambda, curve->prime);
-
-  // xr = lambda^2 - 2 * cp->x mod prime
-  mpz_mul(xr, lambda, lambda);
-  mpz_submul_ui(xr, cp->x, 2);
-  mpz_mod(xr, xr, curve->prime);
-
-  // yr = lambda * (cp->x - xr) - cp->y mod prime
-  mpz_sub(yr, cp->x, xr);
-  mpz_mul(yr, yr, lambda);
-  mpz_sub(yr, yr, cp->y);
-  mpz_mod(yr, yr, curve->prime);
-
-  mpz_set(cp->x, xr);
-  mpz_set(cp->y, yr);
-
-  mpz_clear(lambda);
-  mpz_clear(xr);
-  mpz_clear(yr);
-  mpz_clear(inv);
-}
-
-// set point to internal representation of point at infinity
-void stark_point_set_infinity(stark_point *p) {
-  mpz_set_ui(p->x, 0);
-  mpz_set_ui(p->y, 0);
-}
-
-// return true iff p represent point at infinity
-// both coords are zero in internal representation
-int stark_point_is_infinity(const stark_point *p) {
-  return mpz_cmp_ui(p->x, 0) == 0 && mpz_cmp_ui(p->y, 0) == 0;
-}
-
-// return true iff both points are equal
-int stark_point_is_equal(const stark_point *p, const stark_point *q) {
-  return (mpz_cmp(p->x, q->x) == 0) && (mpz_cmp(p->y, q->y) == 0);
-}
-
-// returns true iff p == -q
-// expects p and q be valid points on curve other than point at infinity
-int stark_point_is_negative_of(const stark_point *p, const stark_point *q) {
-  // if P == (x, y), then -P would be (x, -y) on this curve
-  if (mpz_cmp(p->x, q->x) != 0) {
-    return 0;
-  }
-
-  // we shouldn't hit this for a valid point
-  if (mpz_cmp_ui(p->y, 0) == 0) {
-    return 0;
-  }
-
-  return mpz_cmp(p->y, q->y) != 0;
-}
-
-void stark_point_multiply(const stark_curve *curve,
-                          const mpz_t k,
-                          const stark_point *p,
-                          stark_point *res) {
-  // Ref: https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication
-
-  stark_point temp;
-  stark_point R;
-  stark_point_init(&temp);
-  stark_point_init(&R);
-  stark_point_set_infinity(&R);    // Initialize R to the point at infinity
-  stark_point_copy(p, &temp);      // Copy the input point p to temp
-
-  // Iterate over each bit of k from the least significant to the most
-  // significant
-  for (int i = 0; i < 256; i++) {
-    // If the i-th bit of k is set, add temp to the result R
-    if (mpz_tstbit(k, i)) {
-      stark_point_add(curve, &temp, &R);
-    }
-
-    // Double the current point temp
-    stark_point_double(curve, &temp);
-  }
-
-  // Copy the result R to the output parameter res
-  stark_point_copy(&R, res);
-
-  stark_point_clear(&temp);
-  stark_point_clear(&R);
-}
-
-int bn_bit_length(const mpz_t k) {
-  if (mpz_cmp_ui(k, 0) == 0) {
-    return 0;
-  }
-  return mpz_sizeinbase(k, 2);
-}
-
-int bn_is_bit_set(const mpz_t k, int bit_idx) {
-  return mpz_tstbit(k, bit_idx);
+  // clear stark curve points
+  mpz_clear(stark_curve->a);
+  mpz_clear(stark_curve->b);
+  mpz_curve_point_clear(&stark_curve->G);
+  mpz_clear(stark_curve->order);
+  mpz_clear(stark_curve->order_half);
+  mpz_clear(stark_curve->prime);
 }

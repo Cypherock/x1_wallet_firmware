@@ -454,8 +454,6 @@ static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void starknet_get_pub_keys(starknet_query_t *query) {
-  starknet_init();
-
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};
 
@@ -500,6 +498,8 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
+  // initialize starknet context
+  starknet_init();
   bool status = fill_starknet_public_keys(init_req->derivation_paths,
                                           seed,
                                           public_keys,
@@ -526,8 +526,8 @@ void starknet_get_pub_keys(starknet_query_t *query) {
 
     set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
+  stark_clear();
 
-  stark_pedersen_clear();
   if (!send_public_keys(query,
                         public_keys,
                         init_req->derivation_paths_count,

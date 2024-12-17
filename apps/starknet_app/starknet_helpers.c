@@ -185,8 +185,8 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   }
 
   uint8_t stark_private_key[32] = {0};
-  stark_point p;
-  stark_point_init(&p);
+  mpz_curve_point p;
+  mpz_curve_point_init(&p);
   if (!grind_key(stark_child_node.private_key, stark_private_key)) {
     return false;
   }
@@ -201,7 +201,7 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   mpz_t priv_key;
   mpz_init(priv_key);
   byte_array_to_mpz(priv_key, stark_private_key, 32);
-  stark_point_multiply(starkCurve, priv_key, &starkCurve->G, &p);
+  mpz_curve_point_multiply(stark_curve, priv_key, &stark_curve->G, &p);
   mpz_clear(priv_key);    // clear priv key when no longer required
 
   uint8_t stark_public_key[32] = {0};
@@ -214,7 +214,7 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   }
 
   // clear mpz variables
-  stark_point_clear(&p);
+  mpz_curve_point_clear(&p);
 
   return true;
 }

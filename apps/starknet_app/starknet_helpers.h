@@ -62,21 +62,4 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
                                    uint8_t *private_key,
                                    uint8_t *public_key);
 
-/**
- * @brief Converts unsigned long int to byte array
- */
-void starknet_uli_to_bn_byte_array(const unsigned long int ui,
-                                   uint8_t *bn_array);
-
-/**
- * Compute Pedersen hash from data
- *
- * @param data Array of data to compute Pedersen hash on
- * @param num_elem len of data
- * @param hash Pedersen hash of elements
- */
-void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
-                              uint8_t num_elem,
-                              uint8_t *hash);
-
 #endif    // STARKNET_HELPERS_H

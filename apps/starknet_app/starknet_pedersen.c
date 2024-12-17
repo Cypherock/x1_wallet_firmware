@@ -1,7 +1,7 @@
 /**
  * @file    starknet_pedersen.c
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Starknet chains
+ * @brief   Utilities specific to Starknet pedersen hashing
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -67,9 +67,6 @@
 
 #include "coin_utils.h"
 #include "mini-gmp-helpers.h"
-#include "starknet_api.h"
-#include "starknet_context.h"
-#include "starknet_crypto.h"
 #include "starknet_helpers.h"
 
 /*****************************************************************************
@@ -87,10 +84,6 @@
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-static void process_single_element(mpz_t element,
-                                   stark_point *p1,
-                                   stark_point *p2,
-                                   stark_point *result);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -103,95 +96,6 @@ static void process_single_element(mpz_t element,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
-  ASSERT(NULL != x);
-  ASSERT(NULL != y);
-  ASSERT(0 < size);
-
-  // Convert to bn
-  mpz_t a, b, result;
-  mpz_init(a);
-  mpz_init(b);
-  mpz_init(result);
-
-  mpz_import(a, size, 1, 1, 1, 0, x);    // Convert x to mpz_t a
-  mpz_import(b, size, 1, 1, 1, 0, y);    // Convert y to mpz_t b
-
-  // Get shift point
-  stark_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
-  stark_point_copy(&starkPts->P[0], &HASH_SHIFT_POINT);
-  stark_point_copy(&starkPts->P[1], &P_1);
-  stark_point_copy(&starkPts->P[2], &P_2);
-  stark_point_copy(&starkPts->P[3], &P_3);
-  stark_point_copy(&starkPts->P[4], &P_4);
-
-  // Compute the hash using the Starkware Pedersen hash definition
-  stark_point x_part, y_part, hash_point;
-  stark_point_init(&x_part);
-  stark_point_init(&y_part);
-  stark_point_init(&hash_point);
-
-  process_single_element(a, &P_1, &P_2, &x_part);
-  process_single_element(b, &P_3, &P_4, &y_part);
-
-  stark_point_add(starkCurve, &HASH_SHIFT_POINT, &x_part);
-  stark_point_add(starkCurve, &x_part, &y_part);
-  stark_point_copy(&y_part, &hash_point);
-
-  memzero(hash, 32);
-  mpz_to_byte_array(hash_point.x, hash, 32);
-
-  // clear stark points
-  stark_point_clear(&x_part);
-  stark_point_clear(&y_part);
-  stark_point_clear(&hash_point);
-
-  mpz_clear(a);
-  mpz_clear(b);
-  mpz_clear(result);
-
-  return true;
-}
-
-void process_single_element(mpz_t element,
-                            stark_point *p1,
-                            stark_point *p2,
-                            stark_point *result) {
-  ASSERT(mpz_cmp(element, starkCurve->prime) < 0);
-
-  mpz_t low_part, high_nibble;
-  mpz_init(low_part);
-  mpz_init(high_nibble);
-
-  // Extract the low 248 bits and high bits from the element
-  mpz_t mask;
-  mpz_init(mask);
-  // Set mask to (1 << 248) - 1
-  mpz_ui_pow_ui(mask, 2, 248);    // mask = 2^248
-  mpz_sub_ui(mask, mask, 1);      // mask = 2^248 - 1
-  // Extract the low 248 bits and high bits from the element
-  mpz_and(low_part, element, mask);
-  mpz_fdiv_q_2exp(high_nibble, element, LOW_PART_BITS);
-
-  stark_point res1, res2;
-  stark_point_init(&res1);
-  stark_point_init(&res2);
-
-  stark_point_multiply(starkCurve, low_part, p1, &res1);    // low_part * p1
-  stark_point_multiply(
-      starkCurve, high_nibble, p2, &res2);    // high_nibble * p2
-  stark_point_add(starkCurve, &res1, &res2);
-
-  stark_point_copy(&res2, result);
-
-  // clear mpz vars
-  mpz_clear(low_part);
-  mpz_clear(high_nibble);
-  mpz_clear(mask);
-
-  stark_point_clear(&res1);
-  stark_point_clear(&res2);
-}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -225,5 +129,6 @@ void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
   pederson_hash(result, num_elem_bn, STARKNET_BIGNUM_SIZE, result);
 
   memcpy(hash, result, STARKNET_BIGNUM_SIZE);
+
   return;
 }
