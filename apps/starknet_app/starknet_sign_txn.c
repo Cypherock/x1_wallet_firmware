@@ -521,10 +521,14 @@ static void stark_amount_get_decimal_str(const uint8_t *byte_array,
 
 static bool get_invoke_txn_user_verification() {
   char address[100] = "0x";
-  byte_array_to_hex_string(starknet_txn_context->invoke_txn->sender_address,
-                           32,
-                           &address[2],
-                           sizeof(address));
+  if (starknet_txn_context->invoke_txn->calldata.value[4].size != 32) {
+    return false;
+  }
+  byte_array_to_hex_string(
+      starknet_txn_context->invoke_txn->calldata.value[4].bytes,
+      32,
+      &address[2],
+      sizeof(address));
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
@@ -555,10 +559,14 @@ static bool get_invoke_txn_user_verification() {
 
 static bool get_deploy_txn_user_verification() {
   char address[100] = "0x";
-  byte_array_to_hex_string(starknet_txn_context->deploy_txn->contract_address,
-                           32,
-                           &address[2],
-                           sizeof(address));
+  if (starknet_txn_context->invoke_txn->calldata.value[4].size != 32) {
+    return false;
+  }
+  byte_array_to_hex_string(
+      starknet_txn_context->invoke_txn->calldata.value[4].bytes,
+      32,
+      &address[2],
+      sizeof(address));
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
