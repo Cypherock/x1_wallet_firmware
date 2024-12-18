@@ -465,7 +465,7 @@ static void calculate_deploy_transaction_hash(
     felt_t hash) {
   uint8_t hex[14] = DEPLOY_ACCOUNT_PREFIX;
   felt_t transaction_hash_prefix = {0};
-  hex_to_felt_t(hex, 12, transaction_hash_prefix);
+  hex_to_felt_t(hex, 14, transaction_hash_prefix);
 
   // prepare additional data array
   const uint8_t data_max_count = 3;

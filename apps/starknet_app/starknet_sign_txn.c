@@ -489,9 +489,13 @@ static void stark_amount_get_decimal_str(const uint8_t *byte_array,
     uint8_t i = 2;
     for (; i < (18 - len + 2); i++) {
       snprintf(amount_str + i, amount_size - i, "0");
+      // stop if more than 6 zeros (value too low)
+      if (i == (2 + 6)) {
+        break;
+      }
     }
     uint8_t offset = 0;
-    for (; i < 6 + 2; i++) {
+    for (; i < 6 + 2; i++) {    ///< append till reach 6th char
       snprintf(amount_str + i, amount_size - i, "%c", str[offset++]);
     }
     return;
@@ -520,7 +524,27 @@ static void stark_amount_get_decimal_str(const uint8_t *byte_array,
   }
 }
 
+static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
+                                 const uint8_t max_amount_size,
+                                 const uint8_t *unit_price_bytes,
+                                 const uint8_t unit_price_size,
+                                 uint8_t max_fee[32]) {
+  // get max fee = max_amount * unit_price
+  mpz_t max_amount, unit_price;
+  mpz_init(max_amount);
+  mpz_init(unit_price);
+
+  byte_array_to_mpz(max_amount, max_amount_bytes, max_amount_size);
+  byte_array_to_mpz(unit_price, unit_price_bytes, unit_price_size);
+  mpz_mul(max_amount, max_amount, unit_price);
+
+  mpz_to_byte_array(max_amount, max_fee, 32);
+  mpz_clear(max_amount);
+  mpz_clear(unit_price);
+}
+
 static bool get_invoke_txn_user_verification() {
+  // verify address
   char address[100] = "0x";
   if (starknet_txn_context->invoke_txn->calldata.value[4].size != 32) {
     return false;
@@ -555,24 +579,75 @@ static bool get_invoke_txn_user_verification() {
     return false;
   }
 
+  // Verify gas fee
+  memzero(amount_str, sizeof(amount_str));
+
+  // calculate l1 max fee
+  uint8_t max_fee[32] = {0};
+  starknet_get_max_fee(
+      starknet_txn_context->invoke_txn->resource_bound.level_1.max_amount.bytes,
+      starknet_txn_context->invoke_txn->resource_bound.level_1.max_amount.size,
+      starknet_txn_context->invoke_txn->resource_bound.level_1
+          .max_price_per_unit.bytes,
+      starknet_txn_context->invoke_txn->resource_bound.level_1
+          .max_price_per_unit.size,
+      max_fee);
+  stark_amount_get_decimal_str(max_fee, 32, amount_str, sizeof(amount_str));
+
+  memzero(display, sizeof(display));
+  snprintf(display,
+           sizeof(display),
+           "Verify Max Fee\n%s\n%s",
+           amount_str,
+           starknet_app.lunit1_name);
+
+  if (!core_confirmation(display, starknet_send_error)) {
+    return false;
+  }
+
   return true;
 }
 
 static bool get_deploy_txn_user_verification() {
+  // verify address
   char address[100] = "0x";
-  if (starknet_txn_context->invoke_txn->calldata.value[4].size != 32) {
-    return false;
-  }
-  byte_array_to_hex_string(
-      starknet_txn_context->invoke_txn->calldata.value[4].bytes,
-      32,
-      &address[2],
-      sizeof(address));
+
+  byte_array_to_hex_string(starknet_txn_context->deploy_txn->contract_address,
+                           32,
+                           &address[2],
+                           sizeof(address));
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
   }
-  // TODO:Verify Constructor Call Data
+
+  // Verify gas fee
+  char amount_str[100] = "";
+
+  // calculate l1 max fee
+  uint8_t max_fee[32] = {0};
+  starknet_get_max_fee(
+      starknet_txn_context->deploy_txn->resource_bounds.level_1.max_amount
+          .bytes,
+      starknet_txn_context->deploy_txn->resource_bounds.level_1.max_amount.size,
+      starknet_txn_context->deploy_txn->resource_bounds.level_1
+          .max_price_per_unit.bytes,
+      starknet_txn_context->deploy_txn->resource_bounds.level_1
+          .max_price_per_unit.size,
+      max_fee);
+  stark_amount_get_decimal_str(max_fee, 32, amount_str, sizeof(amount_str));
+
+  char display[200] = {'\0'};
+  snprintf(display,
+           sizeof(display),
+           "Verify Max Fee\n%s\n%s",
+           amount_str,
+           starknet_app.lunit1_name);
+
+  if (!core_confirmation(display, starknet_send_error)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -623,7 +698,6 @@ static bool sign_txn(uint8_t *signature_buffer) {
   // calculate txn hash
   felt_t hash_felt = {0};
   switch (starknet_txn_context->which_type) {
-    // TODO: Remove switch case and pass starknet_txn_context itself
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
       calculate_txn_hash((void *)starknet_txn_context->invoke_txn,
                          STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG,
