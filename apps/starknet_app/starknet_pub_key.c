@@ -498,7 +498,7 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   set_app_flow_status(STARKNET_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
-  // initialize starknet context
+  // Initialize starknet context
   starknet_init();
   bool status = fill_starknet_public_keys(init_req->derivation_paths,
                                           seed,

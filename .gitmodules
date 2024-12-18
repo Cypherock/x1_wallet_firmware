@@ -10,3 +10,6 @@
 [submodule "mini-gmp"]
 	path = vendor/mini-gmp
 	url = ../mini-gmp
+[submodule "poseidon"]
+	path = vendor/poseidon
+	url = ../poseidon

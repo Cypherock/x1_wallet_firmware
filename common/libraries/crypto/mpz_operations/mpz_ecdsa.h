@@ -12,6 +12,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <stdint.h>
+
 #include "mini-gmp.h"
 
 /*****************************************************************************
@@ -146,5 +148,14 @@ int mpz_curve_point_is_equal(const mpz_curve_point *p,
  */
 int mpz_curve_point_is_negative_of(const mpz_curve_point *p,
                                    const mpz_curve_point *q);
+
+/**
+ * @brief Generates ecdsa signature on mpz curve; currently configured for stark
+ * curves(f251)
+ */
+int starknet_sign_digest(const mpz_curve *curve,
+                         const uint8_t *priv_key,
+                         const uint8_t *digest,
+                         uint8_t *sig);
 
 #endif    // MPZ_ECDSA_H
