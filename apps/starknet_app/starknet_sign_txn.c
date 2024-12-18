@@ -71,6 +71,7 @@
 #include "rfc6979.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
+#include "starknet_crypto.h"
 #include "starknet_helpers.h"
 #include "starknet_poseidon.h"
 #include "starknet_priv.h"
@@ -266,14 +267,14 @@ void generate_k_random_mpz(mpz_t k, const mpz_t prime) {
   bn_to_mpz(k, &k_bn);
 }
 
-int starknet_sign_digest(const stark_curve *curve,
+int starknet_sign_digest(const mpz_curve *curve,
                          const uint8_t *priv_key,
                          const uint8_t *digest,
                          uint8_t *sig) {
   int i = 0;
-  stark_point R = {0};
+  mpz_curve_point R = {0};
   mpz_t k, z, randk;
-  stark_point_init(&R);
+  mpz_curve_point_init(&R);
   mpz_t *s = &R.y;
   mpz_init(k);
   mpz_init(z);
@@ -301,7 +302,7 @@ int starknet_sign_digest(const stark_curve *curve,
     generate_k_random_mpz(k, curve->order);
 #endif
     // compute k*G
-    stark_point_multiply(curve, k, &curve->G, &R);
+    mpz_curve_point_multiply(curve, k, &curve->G, &R);
     mpz_mod(R.x, R.x, curve->order);
     // r = (rx mod n)
     if (!(mpz_cmp(R.x, curve->order) < 0)) {
@@ -640,7 +641,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
   felt_t_to_hex(hash_felt, hash);
 
   // generate signature
-  starknet_sign_digest(starkCurve, stark_key, hash, signature_buffer);
+  starknet_sign_digest(stark_curve, stark_key, hash, signature_buffer);
 
   memzero(seed, sizeof(seed));
   memzero(stark_key, sizeof(stark_key));
@@ -684,7 +685,7 @@ void starknet_sign_transaction(starknet_query_t *query) {
   }
 
   memzero(signature, sizeof(signature));
-  stark_pedersen_clear();
+  stark_clear();
 
   if (starknet_txn_context) {
     free(starknet_txn_context);
