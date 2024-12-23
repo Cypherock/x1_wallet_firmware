@@ -64,6 +64,7 @@
 #include <stdint.h>
 
 #include "mpz_pedersen.h"
+#include "starknet_context.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -76,7 +77,6 @@
 #define LOW_PART_BYTES (LOW_PART_BITS / 8)
 #define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
 
-#define STARKNET_BIGNUM_SIZE 32
 #define PEDERSEN_HASH_SIZE 32
 
 #define CALL_DATA_PARAMETER_SIZE 3

@@ -67,6 +67,7 @@
 
 #include "coin_utils.h"
 #include "mini-gmp-helpers.h"
+#include "starknet_context.h"
 #include "starknet_helpers.h"
 
 /*****************************************************************************

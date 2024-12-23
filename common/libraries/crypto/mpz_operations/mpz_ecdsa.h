@@ -151,7 +151,7 @@ int mpz_curve_point_is_negative_of(const mpz_curve_point *p,
 
 /**
  * @brief Generates ecdsa signature on mpz curve; currently configured for stark
- * curves(f251)
+ * curves(f252)
  */
 int starknet_sign_digest(const mpz_curve *curve,
                          const uint8_t *priv_key,

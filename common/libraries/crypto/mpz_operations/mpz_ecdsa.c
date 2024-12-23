@@ -61,6 +61,7 @@
 #include "mpz_ecdsa.h"
 
 #include <bignum.h>
+#include <starknet_context.h>
 
 #include "mini-gmp-helpers.h"
 #include "mini-gmp.h"
@@ -86,21 +87,21 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 static void mpz_to_bn(bignum256 *bn, const mpz_t mpz) {
-  uint8_t out[32] = {0};
-  mpz_to_byte_array(mpz, out, 32);
+  uint8_t out[STARKNET_BIGNUM_SIZE] = {0};
+  mpz_to_byte_array(mpz, out, STARKNET_BIGNUM_SIZE);
   bn_read_be(out, bn);
 }
 
 static void bn_to_mpz(mpz_t mpz, const bignum256 *bn) {
-  uint8_t in[32] = {0};
+  uint8_t in[STARKNET_BIGNUM_SIZE] = {0};
   bn_write_be(bn, in);
-  mpz_import(mpz, 32, 1, 1, 1, 0, in);
+  mpz_import(mpz, STARKNET_BIGNUM_SIZE, 1, 1, 1, 0, in);
 }
 
 // generate K in a deterministic way, according to RFC6979
 // http://tools.ietf.org/html/rfc6979
 static void generate_k_rfc6979_mpz(mpz_t k, rfc6979_state *state) {
-  uint8_t buf[32] = {0};
+  uint8_t buf[STARKNET_BIGNUM_SIZE] = {0};
   generate_rfc6979(buf, state);
   mpz_import(k, sizeof(buf), 1, 1, 1, 0, buf);
   memzero(buf, sizeof(buf));
@@ -348,7 +349,7 @@ int starknet_sign_digest(const mpz_curve *curve,
   rfc6979_state rng = {0};
   init_rfc6979(priv_key, digest, &rng);
 #endif
-  mpz_import(z, 32, 1, 1, 0, 0, digest);
+  mpz_import(z, STARKNET_BIGNUM_SIZE, 1, 1, 0, 0, digest);
   for (i = 0; i < 10000; i++) {
 #if USE_RFC6979
     // generate K deterministically
@@ -387,7 +388,7 @@ int starknet_sign_digest(const mpz_curve *curve,
     // k = (k * rand)^-1
     mpz_invert(k, k, curve->order);
 
-    mpz_import(*s, 32, 1, 1, 1, 0, priv_key);
+    mpz_import(*s, STARKNET_BIGNUM_SIZE, 1, 1, 1, 0, priv_key);
     // R.x*priv
     mpz_mul(*s, *s, R.x);
     mpz_mod(*s, *s, curve->order);
@@ -414,9 +415,14 @@ int starknet_sign_digest(const mpz_curve *curve,
     mpz_to_byte_array(R.x, sig, 32);
     mpz_to_byte_array(*s, sig + 32, 32);
 
+    // clear all the temporary variables
+    memzero(&k, sizeof(k));
+    memzero(&randk, sizeof(randk));
+
     mpz_clear(k);
     mpz_clear(randk);
     mpz_clear(z);
+    mpz_curve_point_clear(&R);
 
 #if USE_RFC6979
     memzero(&rng, sizeof(rng));
@@ -428,6 +434,12 @@ int starknet_sign_digest(const mpz_curve *curve,
   // -> fail with an error
   memzero(&k, sizeof(k));
   memzero(&randk, sizeof(randk));
+
+  mpz_clear(k);
+  mpz_clear(randk);
+  mpz_clear(z);
+  mpz_curve_point_clear(&R);
+
 #if USE_RFC6979
   memzero(&rng, sizeof(rng));
 #endif

@@ -310,20 +310,15 @@ static bool fetch_valid_input(starknet_query_t *query) {
 
     default: {
       // should not reach here;
+      starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+
       return false;
     }
   }
 
-  if (1) {
-    send_response(STARKNET_SIGN_TXN_RESPONSE_UNSIGNED_TXN_ACCEPTED_TAG);
-    return true;
-  } else {
-    starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                        ERROR_DATA_FLOW_INVALID_DATA);
-    return false;
-  }
-
-  return false;
+  send_response(STARKNET_SIGN_TXN_RESPONSE_UNSIGNED_TXN_ACCEPTED_TAG);
+  return true;
 }
 
 static void stark_amount_get_decimal_str(const uint8_t *byte_array,
@@ -385,7 +380,7 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
                                  const uint8_t max_amount_size,
                                  const uint8_t *unit_price_bytes,
                                  const uint8_t unit_price_size,
-                                 uint8_t max_fee[32]) {
+                                 uint8_t max_fee[STARKNET_BIGNUM_SIZE]) {
   // get max fee = max_amount * unit_price
   mpz_t max_amount, unit_price;
   mpz_init(max_amount);
@@ -395,7 +390,7 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
   byte_array_to_mpz(unit_price, unit_price_bytes, unit_price_size);
   mpz_mul(max_amount, max_amount, unit_price);
 
-  mpz_to_byte_array(max_amount, max_fee, 32);
+  mpz_to_byte_array(max_amount, max_fee, STARKNET_BIGNUM_SIZE);
   mpz_clear(max_amount);
   mpz_clear(unit_price);
 }
@@ -403,12 +398,13 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
 static bool get_invoke_txn_user_verification() {
   // verify address
   char address[100] = "0x";
-  if (starknet_txn_context->invoke_txn->calldata.value[4].size != 32) {
+  if (starknet_txn_context->invoke_txn->calldata.value[4].size !=
+      STARKNET_BIGNUM_SIZE) {
     return false;
   }
   byte_array_to_hex_string(
       starknet_txn_context->invoke_txn->calldata.value[4].bytes,
-      32,
+      STARKNET_BIGNUM_SIZE,
       &address[2],
       sizeof(address));
 
@@ -440,7 +436,7 @@ static bool get_invoke_txn_user_verification() {
   memzero(amount_str, sizeof(amount_str));
 
   // calculate l1 max fee
-  uint8_t max_fee[32] = {0};
+  uint8_t max_fee[STARKNET_BIGNUM_SIZE] = {0};
   starknet_get_max_fee(
       starknet_txn_context->invoke_txn->resource_bound.level_1.max_amount.bytes,
       starknet_txn_context->invoke_txn->resource_bound.level_1.max_amount.size,
@@ -449,7 +445,8 @@ static bool get_invoke_txn_user_verification() {
       starknet_txn_context->invoke_txn->resource_bound.level_1
           .max_price_per_unit.size,
       max_fee);
-  stark_amount_get_decimal_str(max_fee, 32, amount_str, sizeof(amount_str));
+  stark_amount_get_decimal_str(
+      max_fee, STARKNET_BIGNUM_SIZE, amount_str, sizeof(amount_str));
 
   memzero(display, sizeof(display));
   snprintf(display,
@@ -470,7 +467,7 @@ static bool get_deploy_txn_user_verification() {
   char address[100] = "0x";
 
   byte_array_to_hex_string(starknet_txn_context->deploy_txn->contract_address,
-                           32,
+                           STARKNET_BIGNUM_SIZE,
                            &address[2],
                            sizeof(address));
 
@@ -482,7 +479,7 @@ static bool get_deploy_txn_user_verification() {
   char amount_str[100] = "";
 
   // calculate l1 max fee
-  uint8_t max_fee[32] = {0};
+  uint8_t max_fee[STARKNET_BIGNUM_SIZE] = {0};
   starknet_get_max_fee(
       starknet_txn_context->deploy_txn->resource_bounds.level_1.max_amount
           .bytes,
@@ -492,7 +489,8 @@ static bool get_deploy_txn_user_verification() {
       starknet_txn_context->deploy_txn->resource_bounds.level_1
           .max_price_per_unit.size,
       max_fee);
-  stark_amount_get_decimal_str(max_fee, 32, amount_str, sizeof(amount_str));
+  stark_amount_get_decimal_str(
+      max_fee, STARKNET_BIGNUM_SIZE, amount_str, sizeof(amount_str));
 
   char display[200] = {'\0'};
   snprintf(display,
@@ -541,7 +539,7 @@ static bool sign_txn(uint8_t *signature_buffer) {
 
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  uint8_t stark_key[32] = {0};
+  uint8_t stark_key[STARKNET_BIGNUM_SIZE] = {0};
   if (starknet_derive_key_from_seed(
           seed,
           starknet_txn_context->init_info.derivation_path,
@@ -568,11 +566,15 @@ static bool sign_txn(uint8_t *signature_buffer) {
 
     } break;
   }
-  uint8_t hash[32] = {0};
+  uint8_t hash[STARKNET_BIGNUM_SIZE] = {0};
   felt_t_to_hex(hash_felt, hash);
 
   // generate signature
-  starknet_sign_digest(stark_curve, stark_key, hash, signature_buffer);
+  if (starknet_sign_digest(stark_curve, stark_key, hash, signature_buffer) !=
+      0) {
+    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
 
   memzero(seed, sizeof(seed));
   memzero(stark_key, sizeof(stark_key));
