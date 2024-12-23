@@ -63,6 +63,7 @@
 #include "starknet_helpers.h"
 
 #include <error.pb.h>
+#include <starkcurve.h>
 
 #include "coin_utils.h"
 #include "mini-gmp-helpers.h"
@@ -105,43 +106,41 @@ static bool grind_key(const uint8_t *grind_seed, uint8_t *out);
  *****************************************************************************/
 
 bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
-  uint8_t key[32] = {0};
+  uint8_t key[STARKNET_BIGNUM_SIZE] = {0};
   mpz_t strk_limit;
   mpz_t strk_key;
-  mpz_t stark_order;
 
-  // Initialize stark_order
-  mpz_init_set_str(
-      stark_order,
-      "0800000000000010FFFFFFFFFFFFFFFFB781126DCAE7B2321E66A241ADC64D2F",
-      16);
-
-  // Initialize strk_limit
-  mpz_init_set_str(
-      strk_limit,
-      "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1",
-      16);
+  mpz_init_set_str(strk_limit, STARKNET_LIMIT, SIZE_HEX);
 
   SHA256_CTX ctx = {0};
   mpz_init(strk_key);
   for (uint8_t itr = 0; itr < 200; itr++) {
     sha256_Init(&ctx);
-    sha256_Update(&ctx, grind_seed, 32);
+    sha256_Update(&ctx, grind_seed, STARKNET_BIGNUM_SIZE);
     sha256_Update(&ctx, &itr, 1);
     sha256_Final(&ctx, key);
 
-    byte_array_to_mpz(strk_key, key, 32);
+    byte_array_to_mpz(strk_key, key, STARKNET_BIGNUM_SIZE);
     if (mpz_cmp(strk_key, strk_limit) == -1) {
       mpz_t f_key;
       mpz_init(f_key);
-      mpz_mod(f_key, strk_key, stark_order);
-      mpz_to_byte_array(f_key, out, 32);
+      mpz_mod(f_key, strk_key, stark_curve->order);
+      mpz_to_byte_array(f_key, out, STARKNET_BIGNUM_SIZE);
+
+      // clear mpz variables
+      mpz_clear(f_key);
+      mpz_clear(strk_key);
+      mpz_clear(strk_limit);
       return true;
     }
   }
 
   starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
   LOG_CRITICAL("ERROR: grind 200 iterations failed\n");
+
+  // clear mpz variables
+  mpz_clear(strk_key);
+  mpz_clear(strk_limit);
   return false;
 }
 
@@ -184,27 +183,28 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
     return false;
   }
 
-  uint8_t stark_private_key[32] = {0};
+  uint8_t stark_private_key[STARKNET_BIGNUM_SIZE] = {0};
   mpz_curve_point p;
   mpz_curve_point_init(&p);
   if (!grind_key(stark_child_node.private_key, stark_private_key)) {
+    mpz_curve_point_clear(&p);
     return false;
   }
 
   // copy stark priv key if required
   if (key_priv != NULL) {
-    memzero(key_priv, 32);
-    memcpy(key_priv, stark_private_key, 32);
+    memzero(key_priv, STARKNET_BIGNUM_SIZE);
+    memcpy(key_priv, stark_private_key, STARKNET_BIGNUM_SIZE);
   }
 
   // derive stark pub key from stark priv key
   mpz_t priv_key;
   mpz_init(priv_key);
-  byte_array_to_mpz(priv_key, stark_private_key, 32);
+  byte_array_to_mpz(priv_key, stark_private_key, STARKNET_BIGNUM_SIZE);
   mpz_curve_point_multiply(stark_curve, priv_key, &stark_curve->G, &p);
   mpz_clear(priv_key);    // clear priv key when no longer required
 
-  uint8_t stark_public_key[32] = {0};
+  uint8_t stark_public_key[STARKNET_BIGNUM_SIZE] = {0};
   mpz_to_byte_array(p.x, stark_public_key, STARKNET_PUB_KEY_SIZE);
 
   // copy stark pub key if required

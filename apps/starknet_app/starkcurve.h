@@ -1,7 +1,7 @@
 /**
- * @file    starknet_pedersen.h
+ * @file    starkcurve.h
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Starknet pedersen hashing
+ * @brief   Constants for Starknet curve.
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,57 +60,54 @@
  * INCLUDES
  *****************************************************************************/
 
-#include <error.pb.h>
-#include <stdint.h>
-
-#include "mpz_pedersen.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * PRIVATE MACROS AND DEFINES
+ * MACROS AND DEFINES
  *****************************************************************************/
-#define LOW_PART_BITS 248
-#define LOW_PART_BYTES (LOW_PART_BITS / 8)
-#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
+#define SIZE_HEX 16
 
-#define STARKNET_BIGNUM_SIZE                                                   \
-  32    ///< Max byte size of a bignum in starknet context
-#define PEDERSEN_HASH_SIZE 32
+// Starknet curve constants
+#define STARKNET_CURVE_PRIME                                                   \
+  "0800000000000011000000000000000000000000000000000000000000000001"
+#define STARKNET_CURVE_GX                                                      \
+  "01EF15C18599971B7BECED415A40F0C7DEACFD9B0D1819E03D723D8BC943CFCA"
+#define STARKNET_CURVE_GY                                                      \
+  "005668060AA49730B7BE4801DF46EC62DE53ECD11ABE43A32873000C36E8DC1F"
+#define STARKNET_CURVE_ORDER                                                   \
+  "0800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f"
+#define STARKNET_CURVE_ORDER_HALF                                              \
+  "04000000000000087fffffffffffffffdbc08936e573d9190f335120d6e32697"
+#define STARKNET_CURVE_A                                                       \
+  "0000000000000000000000000000000000000000000000000000000000000001"
+#define STARKNET_CURVE_B                                                       \
+  "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89"
 
-#define CALL_DATA_PARAMETER_SIZE 3
-#define STARKNET_SIZE_PUB_KEY (32)
+// starknet pedersen points
+// Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
+#define STARKNET_PEDERSEN_POINT_0_X                                            \
+  "049EE3EBA8C1600700EE1B87EB599F16716B0B1022947733551FDE4050CA6804"
+#define STARKNET_PEDERSEN_POINT_0_Y                                            \
+  "03CA0CFE4B3BC6DDF346D49D06EA0ED34E621062C0E056C1D0405D266E10268A"
+#define STARKNET_PEDERSEN_POINT_1_X                                            \
+  "0234287DCBAFFE7F969C748655FCA9E58FA8120B6D56EB0C1080D17957EBE47B"
+#define STARKNET_PEDERSEN_POINT_1_Y                                            \
+  "03B056F100F96FB21E889527D41F4E39940135DD7A6C94CC6ED0268EE89E5615"
+#define STARKNET_PEDERSEN_POINT_2_X                                            \
+  "04FA56F376C83DB33F9DAB2656558F3399099EC1DE5E3018B7A6932DBA8AA378"
+#define STARKNET_PEDERSEN_POINT_2_Y                                            \
+  "03FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D"
+#define STARKNET_PEDERSEN_POINT_3_X                                            \
+  "04BA4CC166BE8DEC764910F75B45F74B40C690C74709E90F3AA372F0BD2D6997"
+#define STARKNET_PEDERSEN_POINT_3_Y                                            \
+  "040301CF5C1751F4B971E46C4EDE85FCAC5C59A5CE5AE7C48151F27B24B219C"
+#define STARKNET_PEDERSEN_POINT_4_X                                            \
+  "054302DCB0E6CC1C6E44CCA8F61A63BB2CA65048D53FB325D36FF12C49A58202"
+#define STARKNET_PEDERSEN_POINT_4_Y                                            \
+  "01B77B3E37D13504B348046268D8AE25CE98AD783C25561A879DCC77E99C2426"
 
-#define STARKNET_ADDR_SIZE 32
-#define STARKNET_ARGENT_CLASS_HASH                                             \
-  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
-#define STARKNET_DEPLOYER_VALUE 0
-/*****************************************************************************
- * PRIVATE TYPEDEFS
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS PROTOTYPES
- *****************************************************************************/
-/**
- * @brief Converts unsigned long int to byte array of size STARKNET_BIGNUM_SIZE
- */
-void starknet_uli_to_bn_byte_array(const unsigned long int ui,
-                                   uint8_t *bn_array);
-
-/**
- * Computes Pedersen hash from data of size STARKNET_BIGNUM_SIZE
- *
- * @param data 2D Array of data to compute Pedersen hash on
- * @param num_elem len of data
- * @param hash Pedersen hash of elements
- */
-void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
-                              uint8_t num_elem,
-                              uint8_t *hash);
+// starknet limit
+#define STARKNET_LIMIT                                                         \
+  "F80000000000020EFFFFFFFFFFFFFFF738A13B4B920E9411AE6DA5F40B0358B1"

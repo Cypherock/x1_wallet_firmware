@@ -61,6 +61,7 @@
  *****************************************************************************/
 #include "starknet_crypto.h"
 
+#include <starkcurve.h>
 #include <stdio.h>
 
 #include "mini-gmp.h"
@@ -118,54 +119,18 @@ static void stark_curve_init() {
   mpz_init(stark256.a);
   mpz_init(stark256.b);
 
-  // Prime
-  mpz_set_str(
-      stark256.prime,
-      "0800000000000011000000000000000000000000000000000000000000000001",
-      16);
-
-  // Generator_point x
-  mpz_set_str(
-      stark256.G.x,
-      "01EF15C18599971B7BECED415A40F0C7DEACFD9B0D1819E03D723D8BC943CFCA",
-      16);
-
-  // Generator_point y
-  mpz_set_str(
-      stark256.G.y,
-      "005668060AA49730B7BE4801DF46EC62DE53ECD11ABE43A32873000C36E8DC1F",
-      16);
-
-  // Order
-  mpz_set_str(
-      stark256.order,
-      "0800000000000010ffffffffffffffffb781126dcae7b2321e66a241adc64d2f",
-      16);
-
-  // Order half
-  mpz_set_str(
-      stark256.order_half,
-      "04000000000000087fffffffffffffffdbc08936e573d9190f335120d6e32697",
-      16);
-
-  // Alpha
-  mpz_set_str(
-      stark256.a,
-      "0000000000000000000000000000000000000000000000000000000000000001",
-      16);
-
-  // Beta
-  mpz_set_str(
-      stark256.b,
-      "06f21413efbe40de150e596d72f7a8c5609ad26c15c915c1f4cdfcb99cee9e89",
-      16);
+  mpz_set_str(stark256.prime, STARKNET_CURVE_PRIME, SIZE_HEX);
+  mpz_set_str(stark256.G.x, STARKNET_CURVE_GX, SIZE_HEX);
+  mpz_set_str(stark256.G.y, STARKNET_CURVE_GY, SIZE_HEX);
+  mpz_set_str(stark256.order, STARKNET_CURVE_ORDER, SIZE_HEX);
+  mpz_set_str(stark256.order_half, STARKNET_CURVE_ORDER_HALF, SIZE_HEX);
+  mpz_set_str(stark256.a, STARKNET_CURVE_A, SIZE_HEX);
+  mpz_set_str(stark256.b, STARKNET_CURVE_B, SIZE_HEX);
 
   stark_curve = &stark256;
 }
 
 static void stark_pedersen_init() {
-  // Ref: https://docs.starkware.co/starkex/crypto/pedersen-hash-function.html
-
   static mpz_pedersen pedersen;
   // Initialize all mpz_t variables in the pedersen structure
   for (int i = 0; i < 5; i++) {
@@ -173,64 +138,16 @@ static void stark_pedersen_init() {
     mpz_init(pedersen.P[i].y);
   }
 
-  // Shift_point x
-  mpz_set_str(
-      pedersen.P[0].x,
-      "049EE3EBA8C1600700EE1B87EB599F16716B0B1022947733551FDE4050CA6804",
-      16);
-
-  // Shift_point y
-  mpz_set_str(
-      pedersen.P[0].y,
-      "03CA0CFE4B3BC6DDF346D49D06EA0ED34E621062C0E056C1D0405D266E10268A",
-      16);
-
-  // Pedersen_point_1 x
-  mpz_set_str(
-      pedersen.P[1].x,
-      "0234287DCBAFFE7F969C748655FCA9E58FA8120B6D56EB0C1080D17957EBE47B",
-      16);
-
-  // Pedersen_point_1 y
-  mpz_set_str(
-      pedersen.P[1].y,
-      "03B056F100F96FB21E889527D41F4E39940135DD7A6C94CC6ED0268EE89E5615",
-      16);
-
-  // Pedersen_point_2 x
-  mpz_set_str(
-      pedersen.P[2].x,
-      "04FA56F376C83DB33F9DAB2656558F3399099EC1DE5E3018B7A6932DBA8AA378",
-      16);
-
-  // Pedersen_point_2 y
-  mpz_set_str(
-      pedersen.P[2].y,
-      "03FA0984C931C9E38113E0C0E47E4401562761F92A7A23B45168F4E80FF5B54D",
-      16);
-
-  // Pedersen_point_3 x
-  mpz_set_str(
-      pedersen.P[3].x,
-      "04BA4CC166BE8DEC764910F75B45F74B40C690C74709E90F3AA372F0BD2D6997",
-      16);
-
-  // Pedersen_point_3 y
-  mpz_set_str(pedersen.P[3].y,
-              "040301CF5C1751F4B971E46C4EDE85FCAC5C59A5CE5AE7C48151F27B24B219C",
-              16);
-
-  // Pedersen_point_4 x
-  mpz_set_str(
-      pedersen.P[4].x,
-      "054302DCB0E6CC1C6E44CCA8F61A63BB2CA65048D53FB325D36FF12C49A58202",
-      16);
-
-  // Pedersen_point_4 y
-  mpz_set_str(
-      pedersen.P[4].y,
-      "01B77B3E37D13504B348046268D8AE25CE98AD783C25561A879DCC77E99C2426",
-      16);
+  mpz_set_str(pedersen.P[0].x, STARKNET_PEDERSEN_POINT_0_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[0].y, STARKNET_PEDERSEN_POINT_0_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[1].x, STARKNET_PEDERSEN_POINT_1_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[1].y, STARKNET_PEDERSEN_POINT_1_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[2].x, STARKNET_PEDERSEN_POINT_2_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[2].y, STARKNET_PEDERSEN_POINT_2_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[3].x, STARKNET_PEDERSEN_POINT_3_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[3].y, STARKNET_PEDERSEN_POINT_3_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[4].x, STARKNET_PEDERSEN_POINT_4_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[4].y, STARKNET_PEDERSEN_POINT_4_Y, SIZE_HEX);
 
   starknet_pedersen_points = &pedersen;
 }

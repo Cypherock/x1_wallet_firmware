@@ -123,7 +123,7 @@ void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
     pederson_hash(result, data[index], STARKNET_BIGNUM_SIZE, result);
   }
 
-  uint8_t num_elem_bn[32];
+  uint8_t num_elem_bn[STARKNET_BIGNUM_SIZE];
   starknet_uli_to_bn_byte_array(num_elem, num_elem_bn);
 
   pederson_hash(result, num_elem_bn, STARKNET_BIGNUM_SIZE, result);

@@ -140,7 +140,7 @@ void process_single_element(mpz_t element,
   mpz_curve_point_clear(&res2);
 }
 
-bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
+void pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   ASSERT(NULL != x);
   ASSERT(NULL != y);
   ASSERT(0 < size);
@@ -156,6 +156,12 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
 
   // Get shift point
   mpz_curve_point HASH_SHIFT_POINT, P_1, P_2, P_3, P_4;
+  mpz_curve_point_init(&HASH_SHIFT_POINT);
+  mpz_curve_point_init(&P_1);
+  mpz_curve_point_init(&P_2);
+  mpz_curve_point_init(&P_3);
+  mpz_curve_point_init(&P_4);
+
   mpz_curve_point_copy(&starknet_pedersen_points->P[0], &HASH_SHIFT_POINT);
   mpz_curve_point_copy(&starknet_pedersen_points->P[1], &P_1);
   mpz_curve_point_copy(&starknet_pedersen_points->P[2], &P_2);
@@ -187,5 +193,9 @@ bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   mpz_clear(b);
   mpz_clear(result);
 
-  return true;
+  mpz_curve_point_clear(&HASH_SHIFT_POINT);
+  mpz_curve_point_clear(&P_1);
+  mpz_curve_point_clear(&P_2);
+  mpz_curve_point_clear(&P_3);
+  mpz_curve_point_clear(&P_4);
 }

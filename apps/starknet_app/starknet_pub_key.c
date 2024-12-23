@@ -66,6 +66,7 @@
 #include "assert_conf.h"
 #include "mini-gmp-helpers.h"
 #include "reconstruct_wallet_flow.h"
+#include "starkcurve.h"
 #include "starknet_api.h"
 #include "starknet_context.h"
 #include "starknet_crypto.h"
@@ -76,7 +77,6 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -84,6 +84,11 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+#define STARKNET_CONTRACT_ADDRESS                                              \
+  "00000000000000535441524b4e45545f434f4e54524143545f41444452455353"    ///< bn
+                                                                        ///< equivalnet
+                                                                        ///< of
+                                                                        ///< 'STARKNET_CONTRACT_ADDRESS'
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -397,14 +402,9 @@ static void calculate_contract_address_from_hash(const uint8_t *pub_key,
   compute_hash_on_elements(call_data, CALL_DATA_PARAMETER_SIZE, call_data_hash);
 
   uint8_t starknet_contract_address_bn[STARKNET_BIGNUM_SIZE] = {0};
-  hex_string_to_byte_array(
-      "00000000000000535441524b4e45545f434f4e54524143545"
-      "f41444452455353",    ///< bn
-                            ///< equivalnet
-                            ///< of
-                            ///< 'STARKNET_CONTRACT_ADDRESS'
-      STARKNET_BIGNUM_SIZE * 2,
-      starknet_contract_address_bn);
+  hex_string_to_byte_array(STARKNET_CONTRACT_ADDRESS,
+                           STARKNET_BIGNUM_SIZE * 2,
+                           starknet_contract_address_bn);
 
   // prepare array of elements for chain hashing
   uint8_t data[5][STARKNET_BIGNUM_SIZE] = {0};
@@ -427,7 +427,7 @@ static void calculate_contract_address_from_hash(const uint8_t *pub_key,
 
   mpz_mod(result_bn, result_bn, addr_bound);
 
-  mpz_get_str(addr, 16, result_bn);
+  mpz_get_str(addr, SIZE_HEX, result_bn);
 
   // clear mpz variables
   mpz_clear(result_bn);
@@ -436,10 +436,10 @@ static void calculate_contract_address_from_hash(const uint8_t *pub_key,
 
 static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr) {
   ASSERT(pub_key != NULL);
-  uint8_t deployer[32] = {0};
+  uint8_t deployer[STARKNET_BIGNUM_SIZE] = {0};
   starknet_uli_to_bn_byte_array(STARKNET_DEPLOYER_VALUE, deployer);
 
-  uint8_t class_hash[32] = {0};
+  uint8_t class_hash[STARKNET_BIGNUM_SIZE] = {0};
   hex_string_to_byte_array(STARKNET_ARGENT_CLASS_HASH, 64, class_hash);
 
   calculate_contract_address_from_hash(pub_key,

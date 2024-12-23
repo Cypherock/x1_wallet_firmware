@@ -114,6 +114,6 @@ void process_single_element(mpz_t element,
   ref:
     https://rya-sge.github.io/access-denied/2024/05/07/pedersen-hash-function/
  */
-bool pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash);
+void pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash);
 
 #endif    // MPZ_PEDERSEN_H
