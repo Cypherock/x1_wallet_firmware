@@ -64,6 +64,9 @@
 #include <starknet_context.h>
 
 #include "mini-gmp-helpers.h"
+#include <stdbool.h>
+
+#include "assert_conf.h"
 #include "mini-gmp.h"
 #include "rfc6979.h"
 
@@ -143,8 +146,6 @@ void mpz_curve_point_clear(mpz_curve_point *p) {
 
 // Set cp2 = cp1
 void mpz_curve_point_copy(const mpz_curve_point *cp1, mpz_curve_point *cp2) {
-  mpz_curve_point_init(cp2);
-
   mpz_set(cp2->x, cp1->x);
   mpz_set(cp2->y, cp1->y);
 }
@@ -160,18 +161,37 @@ void mpz_curve_point_add(const mpz_curve *curve,
   mpz_init(yr);
 
   if (mpz_curve_point_is_infinity(cp1)) {
+    mpz_clear(lambda);
+    mpz_clear(inv);
+    mpz_clear(xr);
+    mpz_clear(yr);
     return;
   }
   if (mpz_curve_point_is_infinity(cp2)) {
     mpz_curve_point_copy(cp1, cp2);
+    // clear mpz vars
+    mpz_clear(lambda);
+    mpz_clear(inv);
+    mpz_clear(xr);
+    mpz_clear(yr);
     return;
   }
   if (mpz_curve_point_is_equal(cp1, cp2)) {
     mpz_curve_point_double(curve, cp2);
+    // clear mpz vars
+    mpz_clear(lambda);
+    mpz_clear(inv);
+    mpz_clear(xr);
+    mpz_clear(yr);
     return;
   }
   if (mpz_curve_point_is_negative_of(cp1, cp2)) {
     mpz_curve_point_set_infinity(cp2);
+    // clear mpz vars
+    mpz_clear(lambda);
+    mpz_clear(inv);
+    mpz_clear(xr);
+    mpz_clear(yr);
     return;
   }
 
@@ -215,9 +235,7 @@ void mpz_curve_point_add(const mpz_curve *curve,
 void mpz_curve_point_double(const mpz_curve *curve, mpz_curve_point *cp) {
   // Ref:
   // https://github.com/starkware-libs/starkex-for-spot-trading/blob/607f0b4ce507e1d95cd018d206a2797f6ba4aab4/src/starkware/crypto/starkware/crypto/signature/math_utils.py
-  if (mpz_cmp_ui(cp->y, 0) == 0) {
-    return;
-  }
+  ASSERT(mpz_cmp_ui(cp->y, 0) != 0);
 
   mpz_t lambda, xr, yr, inv;
   mpz_init(lambda);
