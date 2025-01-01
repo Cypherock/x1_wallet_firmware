@@ -390,6 +390,9 @@ extern const char *ui_text_inheritance_decryption_flow_confirmation_generic;
 extern const char *ui_text_inheritance_decryption_flow_success;
 extern const char *ui_text_inheritance_decryption_flow_failure;
 
+// Solana
+extern const char *ui_text_solana_verify_mint_authority;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
