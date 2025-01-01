@@ -62,17 +62,26 @@
 
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
+#include "solana_contracts.h"
 #include "solana_helpers.h"
 #include "solana_priv.h"
+#include "solana_txn_helpers.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
-
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-
+/**
+ * @brief Whitelisted contracts with respective token symbol
+ * @details A map of Solana Token addresses with their token symbols. These
+ * will enable the device to verify the token transaction in a
+ * user-friendly manner.
+ *
+ * @see solana_token_program_t
+ */
+extern const solana_token_program_t solana_token_program[];
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -270,6 +279,16 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
   memcpy(&solana_txn_context->init_info,
          &query->sign_txn.initiate,
          sizeof(solana_sign_txn_initiate_request_t));
+
+  solana_txn_context->is_token_transfer_transaction =
+      query->sign_txn.initiate.has_token_data;
+
+  // if it is a token transfer transaction, store the token data
+  if (solana_txn_context->is_token_transfer_transaction) {
+    memcpy(&solana_txn_context->token_data,
+           &query->sign_txn.initiate.token_data,
+           sizeof(solana_sign_txn_initiate_token_data_t));
+  }
   send_response(SOLANA_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
   // show processing screen for a minimum duration (additional time will add due
   // to actual processing)
@@ -337,7 +356,7 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   return true;
 }
 
-STATIC bool solana_get_user_verification() {
+static bool solana_transfer_sol_transaction() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
@@ -363,7 +382,7 @@ STATIC bool solana_get_user_verification() {
   int i = 8;
   while (i--)
     be_lamports[i] = solana_txn_context->transaction_info.instruction.program
-                         .transfer.lamports >>
+                         .transfer.amount >>
                      8 * (7 - i);
 
   byte_array_to_hex_string(
@@ -388,6 +407,120 @@ STATIC bool solana_get_user_verification() {
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
   return true;
+}
+
+static bool is_token_whitelisted(const uint8_t *address,
+                                 const solana_token_program_t **contract) {
+  const solana_token_program_t *match = NULL;
+  bool status = false;
+  for (int16_t i = 0; i < SOLANA_WHITELISTED_TOKEN_PROGRAM_COUNT; i++) {
+    if (memcmp(address,
+               solana_token_program[i].address,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      match = &solana_token_program[i];
+      status = true;
+      break;
+    }
+  }
+
+  if (NULL != contract) {
+    *contract = match;
+  }
+
+  // return empty contract if not found in the whitelist
+  if (!status) {
+    static solana_token_program_t empty_contract = {
+        .symbol = "",
+        .decimal = 0,
+    };
+    *contract = &empty_contract;
+  }
+
+  return status;
+}
+
+static bool solana_transfer_token_transaction() {
+  char address[45] = {0};
+  size_t address_size = sizeof(address);
+
+  const solana_token_program_t *contract;
+  if (!is_token_whitelisted(solana_txn_context->token_data.mint_address,
+                            &contract)) {
+    // Contract Unverifed, Display warning
+    delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
+
+    char mint_address[45] = {0};
+    size_t mint_address_size = sizeof(mint_address);
+    // verify mint address
+    if (!b58enc(mint_address,
+                &mint_address_size,
+                solana_txn_context->token_data.mint_address,
+                SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+      return false;
+    }
+
+    if (!core_scroll_page(ui_text_solana_verify_mint_authority,
+                          mint_address,
+                          solana_send_error)) {
+      return false;
+    }
+  }
+
+  // verify recipient address;
+  if (!b58enc(address,
+              &address_size,
+              solana_txn_context->token_data.recipient_address,
+              SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return false;
+  }
+
+  if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
+    return false;
+  }
+
+  // TODO: Calculate Assc.TA and compare utxn's value
+
+  // verify recipient amount
+  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+  char display[100] = "";
+
+  uint8_t be_units[8] = {0};
+  int i = 8;
+  while (i--)
+    be_units[i] = solana_txn_context->transaction_info.instruction.program
+                      .transfer.amount >>
+                  8 * (7 - i);
+
+  byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));
+  if (!convert_byte_array_to_decimal_string(16,
+                                            contract->decimal,
+                                            amount_string,
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+
+  snprintf(display,
+           sizeof(display),
+           UI_TEXT_VERIFY_AMOUNT,
+           amount_decimal_string,
+           contract->symbol);
+  if (!core_confirmation(display, solana_send_error)) {
+    return false;
+  }
+
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
+STATIC bool solana_get_user_verification() {
+  if (solana_txn_context->is_token_transfer_transaction == true) {
+    return solana_transfer_token_transaction();
+  } else
+    return solana_transfer_sol_transaction();
 }
 
 STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
