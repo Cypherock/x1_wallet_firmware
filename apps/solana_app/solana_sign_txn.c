@@ -60,6 +60,9 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <ed25519-donna.h>
+#include <string.h>
+
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
 #include "solana_contracts.h"
@@ -409,6 +412,97 @@ static bool solana_transfer_sol_transaction() {
   return true;
 }
 
+static bool create_program_address(
+    const uint8_t seed[][SOLANA_ACCOUNT_ADDRESS_LENGTH],
+    const uint8_t seeds_size[],
+    const uint8_t count,
+    const uint8_t *program_address,
+    uint8_t *pub_key) {
+  uint8_t buffer[300] = {0};
+  uint8_t buffer_size = 0;
+  for (uint8_t i = 0; i < count; i++) {
+    memcpy(buffer + buffer_size, seed[i], seeds_size[i]);
+    buffer_size += seeds_size[i];
+  }
+
+  // Append program id and pda_string
+  memcpy(buffer + buffer_size, program_address, SOLANA_ACCOUNT_ADDRESS_LENGTH);
+  buffer_size += SOLANA_ACCOUNT_ADDRESS_LENGTH;
+
+  const char *pda_string = "ProgramDerivedAddress";
+  memcpy(buffer + buffer_size, pda_string, strlen(pda_string));
+  buffer_size += strlen(pda_string);
+
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Raw(buffer, buffer_size, hash);
+
+  // check if point on curve
+  ge25519 r;
+  if (!ge25519_unpack_vartime(&r, hash)) {
+    // point is off curve; return hash as public key
+    memcpy(pub_key, hash, SOLANA_ACCOUNT_ADDRESS_LENGTH);
+    return true;
+  }
+
+  if (!ge25519_check(&r)) {
+    // point is off curve; return hash as public key
+    memcpy(pub_key, hash, SOLANA_ACCOUNT_ADDRESS_LENGTH);
+    return true;
+  }
+
+  return false;
+}
+
+static bool find_program_address(
+    const uint8_t seed[][SOLANA_ACCOUNT_ADDRESS_LENGTH],
+    const uint8_t count,
+    const uint8_t *program_address,
+    uint8_t *address) {
+  uint8_t nonce = 255;
+
+  // append nonce to seed
+  uint8_t seed_with_nonce[count + 1][SOLANA_ACCOUNT_ADDRESS_LENGTH];
+  uint8_t seeds_size[count + 1];
+  // copy initial seeds
+  for (int i = 0; i < count; i++) {
+    memcpy(seed_with_nonce[i], seed[i], SOLANA_ACCOUNT_ADDRESS_LENGTH);
+    seeds_size[i] = SOLANA_ACCOUNT_ADDRESS_LENGTH;
+  }
+  seeds_size[count] = 1;    // nonce size
+
+  while (nonce != 0) {
+    seed_with_nonce[count][0] = nonce;
+    if (create_program_address(
+            seed_with_nonce, seeds_size, count + 1, program_address, address)) {
+      return true;
+      break;
+    }
+    nonce -= 1;
+  }
+  return false;
+}
+
+static bool get_associated_token_address(const uint8_t *mint,
+                                         const uint8_t *owner,
+                                         uint8_t *address) {
+  const uint8_t count = 3;    ///< owner + token_program_id + mint
+  uint8_t seed[count][SOLANA_ACCOUNT_ADDRESS_LENGTH];
+
+  memcpy(seed[0], owner, SOLANA_ACCOUNT_ADDRESS_LENGTH);
+  hex_string_to_byte_array(
+      SOLANA_TOKEN_PROGRAM_ADDRESS, SOLANA_ACCOUNT_ADDRESS_LENGTH * 2, seed[1]);
+  memcpy(seed[2], mint, SOLANA_ACCOUNT_ADDRESS_LENGTH);
+
+  uint8_t prog_addr[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};
+  hex_string_to_byte_array(
+      SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS, 64, prog_addr);
+  if (!find_program_address(seed, count, prog_addr, address)) {
+    return false;
+  }
+
+  return true;
+}
+
 static bool is_token_whitelisted(const uint8_t *address,
                                  const solana_token_program_t **contract) {
   const solana_token_program_t *match = NULL;
@@ -480,7 +574,24 @@ static bool solana_transfer_token_transaction() {
     return false;
   }
 
-  // TODO: Calculate Assc.TA and compare utxn's value
+  // Upon recipient address confirmwation, calculate associated token address
+  // and compare with utxn's value
+  uint8_t associated_token_address[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};
+  if (!get_associated_token_address(
+          solana_txn_context->token_data.mint_address,
+          solana_txn_context->token_data.recipient_address,
+          associated_token_address)) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return false;
+  }
+
+  if (memcmp(associated_token_address,
+             solana_txn_context->transaction_info.instruction.program.transfer
+                 .recipient_account,
+             SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 2);
+    return false;
+  }
 
   // verify recipient amount
   char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
