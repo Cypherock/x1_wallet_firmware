@@ -28,9 +28,12 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH 32
 
+#define SOLANA_PROGRAM_ID_COUNT 2    ///< Number of supported program ids
+#define SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX 0
+#define SOLANA_TOKEN_PROGRAM_ID_INDEX 1
+
 #define SOLANA_TOKEN_PROGRAM_ADDRESS                                           \
   "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9"    ///< "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-
 #define SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS                                \
   "8c97258f4e2489f1bb3d1029148e0d830b5a1399daff1084048e7bd8dbe9f859"    ///< "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 /*****************************************************************************
