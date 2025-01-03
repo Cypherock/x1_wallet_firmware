@@ -430,8 +430,8 @@ int starknet_sign_digest(const mpz_curve *curve,
     //   mpz_sub(*s, curve->order, *s);
     // }
     // we are done, R.x and s is the result signature
-    mpz_to_byte_array(R.x, sig, 32);
-    mpz_to_byte_array(*s, sig + 32, 32);
+    mpz_to_byte_array(R.x, sig, STARKNET_BIGNUM_SIZE);
+    mpz_to_byte_array(*s, sig + STARKNET_BIGNUM_SIZE, STARKNET_BIGNUM_SIZE);
 
     // clear all the temporary variables
     memzero(&k, sizeof(k));

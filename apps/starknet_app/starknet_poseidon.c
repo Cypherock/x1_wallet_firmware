@@ -72,6 +72,8 @@
 #include "mini-gmp-helpers.h"
 #include "mini-gmp.h"
 #include "poseidon.h"
+#include "starkcurve.h"
+#include "starknet_context.h"
 #include "ui_core_confirm.h"
 
 /*****************************************************************************
@@ -86,10 +88,15 @@
 #define MAX_PRICE_PER_UNIT_BITS 128       // 128 bits for max_price_per_unit
 #define RESOURCE_VALUE_OFFSET                                                  \
   (MAX_AMOUNT_BITS + MAX_PRICE_PER_UNIT_BITS)    // Combined offset
+
 #define L1_GAS_NAME "4c315f474153"    // The constant value for L1_GAS_NAME
 #define L2_GAS_NAME "4c325f474153"
+
+#define INVOKE_TXN_PREFIX_BYTES_SIZE 6
 #define INVOKE_TXN_PREFIX                                                      \
   { 0x69, 0x6e, 0x76, 0x6f, 0x6b, 0x65 }    // 0x696e766f6b65; 'INKVOKE'
+
+#define DEPLOY_ACCOUNT_PREFIX_BYTES_SIZE 14
 #define DEPLOY_ACCOUNT_PREFIX                                                  \
   {                                                                            \
     0x64, 0x65, 0x70, 0x6c, 0x6f, 0x79, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75,    \
@@ -229,8 +236,8 @@ static void calculate_invoke_transaction_hash(
 static void hex_to_felt_t(const uint8_t hex[],
                           const uint8_t hex_size,
                           felt_t felt) {
-  uint8_t buf[32] = {0};
-  memcpy(buf + (32 - hex_size), hex, hex_size);
+  uint8_t buf[STARKNET_BIGNUM_SIZE] = {0};
+  memcpy(buf + (STARKNET_BIGNUM_SIZE - hex_size), hex, hex_size);
   int offset = 0;
   for (int i = 0; i < 4; i++) {
     felt[3 - i] = U64_READ_BE_ARRAY(buf + offset);
@@ -239,9 +246,9 @@ static void hex_to_felt_t(const uint8_t hex[],
 }
 
 static void mpz_to_felt(felt_t felt, const mpz_t mpz) {
-  uint8_t buf[32] = {0};
-  mpz_to_byte_array(mpz, buf, 32);
-  hex_to_felt_t(buf, 32, felt);
+  uint8_t buf[STARKNET_BIGNUM_SIZE] = {0};
+  mpz_to_byte_array(mpz, buf, STARKNET_BIGNUM_SIZE);
+  hex_to_felt_t(buf, STARKNET_BIGNUM_SIZE, felt);
 }
 
 static void clear_state(felt_t *state, int size) {
@@ -258,11 +265,12 @@ static void clear_state(felt_t *state, int size) {
 static void poseidon_hash_many(const felt_t state[],
                                const uint8_t state_size,
                                felt_t res) {
-  ASSERT(state_size + 2 < 16);
+  const uint8_t padded_max_size = 16;    ///< max size of buffer to hold states
+  ASSERT(state_size + 2 < padded_max_size);
 
   const uint8_t m = 3, rate = 2;
-  felt_t padded[16];    ///< TODO: Update with macro
-  clear_state(padded, 16);
+  felt_t padded[padded_max_size];
+  clear_state(padded, padded_max_size);
 
   if (state != NULL) {
     for (int i = 0; i < state_size; i++) {
@@ -305,7 +313,7 @@ static void encode_resource_bounds_l1(const starknet_resource_bounds_t bounds,
   // MAX_PRICE_PER_UNIT_BITS) + bounds.level_1.max_price_per_unit
 
   // L1_GAS_NAME << RESOURCE_VALUE_OFFSET
-  mpz_set_str(result, L1_GAS_NAME, 16);
+  mpz_set_str(result, L1_GAS_NAME, SIZE_HEX);
   mpz_mul_2exp(result, result, RESOURCE_VALUE_OFFSET);
 
   // bounds.level_1.max_amount << MAX_PRICE_PER_UNIT_BITS
@@ -349,7 +357,7 @@ static void encode_resource_bounds_l2(const starknet_resource_bounds_t bounds,
   // MAX_PRICE_PER_UNIT_BITS) + bounds.level_2.max_price_per_unit
 
   // L1_GAS_NAME << RESOURCE_VALUE_OFFSET
-  mpz_set_str(result, L2_GAS_NAME, 16);
+  mpz_set_str(result, L2_GAS_NAME, SIZE_HEX);
   mpz_mul_2exp(result, result, RESOURCE_VALUE_OFFSET);
 
   // bounds.level_1.max_amount << MAX_PRICE_PER_UNIT_BITS
@@ -388,14 +396,14 @@ static void hash_fee_field(const pb_byte_t tip,
   encode_resource_bounds_l1(bounds, res_l1);
   encode_resource_bounds_l2(bounds, res_l2);
   felt_t tip_felt = {tip, 0, 0, 0};
-
-  felt_t state[3];
-  clear_state(state, 3);
+  const uint8_t state_size = 3;
+  felt_t state[state_size];
+  clear_state(state, state_size);
   f251_copy(state[0], tip_felt);
   f251_copy(state[1], res_l1);
   f251_copy(state[2], res_l2);
 
-  poseidon_hash_many(state, 3, result);
+  poseidon_hash_many(state, state_size, result);
 }
 
 static void hash_DAMode(const pb_byte_t nonce_DAMode,
@@ -451,7 +459,7 @@ static void calculate_transaction_hash_common(
 
   f251_copy(state[offset++], transaction_hash_prefix);
   hex_to_felt_t(version, 1, state[offset++]);
-  hex_to_felt_t(sender_address, 32, state[offset++]);
+  hex_to_felt_t(sender_address, STARKNET_BIGNUM_SIZE, state[offset++]);
   f251_copy(state[offset++], fee_field_hash);
   felt_t paymaster_data_res = {0};
   poseidon_hash_many(
@@ -477,9 +485,9 @@ static void calculate_transaction_hash_common(
 static void calculate_deploy_transaction_hash(
     const starknet_sign_txn_deploy_account_txn_t *txn,
     felt_t hash) {
-  uint8_t hex[14] = DEPLOY_ACCOUNT_PREFIX;
+  uint8_t hex[DEPLOY_ACCOUNT_PREFIX_BYTES_SIZE] = DEPLOY_ACCOUNT_PREFIX;
   felt_t transaction_hash_prefix = {0};
-  hex_to_felt_t(hex, 14, transaction_hash_prefix);
+  hex_to_felt_t(hex, DEPLOY_ACCOUNT_PREFIX_BYTES_SIZE, transaction_hash_prefix);
 
   // prepare additional data array
   const uint8_t data_max_count = 3;
@@ -500,8 +508,8 @@ static void calculate_deploy_transaction_hash(
   }
   poseidon_hash_many(call_data_felt, offset, additional_data[0]);
 
-  hex_to_felt_t(txn->class_hash, 32, additional_data[1]);
-  hex_to_felt_t(txn->salt, 32, additional_data[2]);
+  hex_to_felt_t(txn->class_hash, STARKNET_BIGNUM_SIZE, additional_data[1]);
+  hex_to_felt_t(txn->salt, STARKNET_BIGNUM_SIZE, additional_data[2]);
 
   calculate_transaction_hash_common(transaction_hash_prefix,
                                     txn->tip,
@@ -522,9 +530,9 @@ static void calculate_deploy_transaction_hash(
 static void calculate_invoke_transaction_hash(
     const starknet_sign_txn_invoke_txn_t *txn,
     felt_t hash) {
-  uint8_t hex[6] = INVOKE_TXN_PREFIX;
+  uint8_t hex[INVOKE_TXN_PREFIX_BYTES_SIZE] = INVOKE_TXN_PREFIX;
   felt_t transaction_hash_prefix = {0};
-  hex_to_felt_t(hex, 6, transaction_hash_prefix);
+  hex_to_felt_t(hex, INVOKE_TXN_PREFIX_BYTES_SIZE, transaction_hash_prefix);
 
   // prepare additional data array
   const uint8_t data_max_count = 2;
