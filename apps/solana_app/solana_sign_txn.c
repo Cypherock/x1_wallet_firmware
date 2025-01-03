@@ -267,15 +267,33 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
     return false;
   }
 
-  snprintf(msg,
-           sizeof(msg),
-           UI_TEXT_SEND_TOKEN_PROMPT,
-           SOLANA_LUNIT,
-           SOLANA_NAME,
-           wallet_name);
-  // Take user consent to sign the transaction for the wallet
-  if (!core_confirmation(msg, solana_send_error)) {
-    return false;
+  solana_txn_context->is_token_transfer_transaction =
+      query->sign_txn.initiate.has_token_data;
+
+  if (solana_txn_context->is_token_transfer_transaction) {
+    snprintf(
+        msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, SOLANA_NAME, wallet_name);
+    // Take user consent to sign the transaction for the wallet
+    if (!core_confirmation(msg, solana_send_error)) {
+      return false;
+    }
+
+    // if it is a token transfer transaction, store the token data
+    memcpy(&solana_txn_context->token_data,
+           &query->sign_txn.initiate.token_data,
+           sizeof(solana_sign_txn_initiate_token_data_t));
+
+  } else {
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_SEND_TOKEN_PROMPT,
+             SOLANA_LUNIT,
+             SOLANA_NAME,
+             wallet_name);
+    // Take user consent to sign the transaction for the wallet
+    if (!core_confirmation(msg, solana_send_error)) {
+      return false;
+    }
   }
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_CONFIRM);
@@ -283,15 +301,6 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
          &query->sign_txn.initiate,
          sizeof(solana_sign_txn_initiate_request_t));
 
-  solana_txn_context->is_token_transfer_transaction =
-      query->sign_txn.initiate.has_token_data;
-
-  // if it is a token transfer transaction, store the token data
-  if (solana_txn_context->is_token_transfer_transaction) {
-    memcpy(&solana_txn_context->token_data,
-           &query->sign_txn.initiate.token_data,
-           sizeof(solana_sign_txn_initiate_token_data_t));
-  }
   send_response(SOLANA_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
   // show processing screen for a minimum duration (additional time will add due
   // to actual processing)

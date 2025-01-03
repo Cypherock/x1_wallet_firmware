@@ -181,11 +181,20 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   utxn->instruction.opaque_data = byte_array + offset;
   offset += utxn->instruction.opaque_data_length;
 
-  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {
-      0};    // System instruction address for SOL transfer is 0s
+  // prepare list of supported program ids
+  uint8_t system_program_id[SOLANA_PROGRAM_ID_COUNT]
+                           [SOLANA_ACCOUNT_ADDRESS_LENGTH];
+  // Set System instruction address for SOL transfer
+  memzero(system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
+          SOLANA_ACCOUNT_ADDRESS_LENGTH);
+  // Set System instruction address for Token Program
+  hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+                           system_program_id[1]);
+
   if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
                                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
-             system_program_id,
+             system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
              SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
     uint32_t instruction_enum =
         U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
@@ -207,35 +216,29 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       default:
         break;
     }
-  } else {
-    //   Set System instruction address for Token Program
-    hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
-                             SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                             system_program_id);
+  } else if (memcmp(
+                 utxn->account_addresses + utxn->instruction.program_id_index *
+                                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                 system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
+                 SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint8_t instruction_enum = *(utxn->instruction.opaque_data);
 
-    if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
-                                             SOLANA_ACCOUNT_ADDRESS_LENGTH,
-               system_program_id,
-               SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      uint8_t instruction_enum = *(utxn->instruction.opaque_data);
+    switch (instruction_enum) {
+      case STPI_TRANSFER:    // transfer instruction
+        utxn->instruction.program.transfer.funding_account =
+            utxn->account_addresses +
+            (*(utxn->instruction.account_addresses_index + 0) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction.program.transfer.recipient_account =
+            utxn->account_addresses +
+            (*(utxn->instruction.account_addresses_index + 1) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction.program.transfer.amount =
+            U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 1);
+        break;
 
-      switch (instruction_enum) {
-        case STPI_TRANSFER:    // transfer instruction
-          utxn->instruction.program.transfer.funding_account =
-              utxn->account_addresses +
-              (*(utxn->instruction.account_addresses_index + 0) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction.program.transfer.recipient_account =
-              utxn->account_addresses +
-              (*(utxn->instruction.account_addresses_index + 1) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction.program.transfer.amount =
-              U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 1);
-          break;
-
-        default:
-          break;
-      }
+      default:
+        break;
     }
   }
 
@@ -252,11 +255,20 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
         utxn->instruction.program_id_index < utxn->account_addresses_count))
     return SOL_V_INDEX_OUT_OF_RANGE;
 
-  uint8_t system_program_id[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {
-      0};    // System instruction address for SOL transfer is 0s
+  // prepare list of supported program ids
+  uint8_t system_program_id[SOLANA_PROGRAM_ID_COUNT]
+                           [SOLANA_ACCOUNT_ADDRESS_LENGTH];
+  // Set System instruction address for SOL transfer
+  memzero(system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
+          SOLANA_ACCOUNT_ADDRESS_LENGTH);
+  // Set System instruction address for Token Program
+  hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+                           system_program_id[1]);
+
   if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
                                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
-             system_program_id,
+             system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
              SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
     uint32_t instruction_enum =
         U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
@@ -268,28 +280,22 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
         return SOL_V_UNSUPPORTED_INSTRUCTION;
         break;
     }
-  } else {
-    //   Set System instruction address for Token Program
-    hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
-                             SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                             system_program_id);
+  } else if (memcmp(
+                 utxn->account_addresses + utxn->instruction.program_id_index *
+                                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                 system_program_id,
+                 SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint8_t instruction_enum = *(utxn->instruction.opaque_data);
 
-    if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
-                                             SOLANA_ACCOUNT_ADDRESS_LENGTH,
-               system_program_id,
-               SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      uint8_t instruction_enum = *(utxn->instruction.opaque_data);
-
-      switch (instruction_enum) {
-        case STPI_TRANSFER:    // transfer instruction
-          break;
-        default:
-          return SOL_V_UNSUPPORTED_INSTRUCTION;
-          break;
-      }
-    } else {
-      return SOL_V_UNSUPPORTED_PROGRAM;
+    switch (instruction_enum) {
+      case STPI_TRANSFER:    // transfer instruction
+        break;
+      default:
+        return SOL_V_UNSUPPORTED_INSTRUCTION;
+        break;
     }
+  } else {
+    return SOL_V_UNSUPPORTED_PROGRAM;
   }
   return SOL_OK;
 }
