@@ -190,7 +190,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // Set System instruction address for Token Program
   hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                           system_program_id[1]);
+                           system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
 
   if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
                                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
@@ -264,7 +264,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   // Set System instruction address for Token Program
   hex_string_to_byte_array(SOLANA_TOKEN_PROGRAM_ADDRESS,
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                           system_program_id[1]);
+                           system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
 
   if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
                                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
@@ -283,7 +283,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   } else if (memcmp(
                  utxn->account_addresses + utxn->instruction.program_id_index *
                                                SOLANA_ACCOUNT_ADDRESS_LENGTH,
-                 system_program_id,
+                 system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
                  SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
     uint8_t instruction_enum = *(utxn->instruction.opaque_data);
 
