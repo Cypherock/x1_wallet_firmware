@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 // Number of entries in whitelisted contracts list
-#define SOLANA_WHITELISTED_TOKEN_PROGRAM_COUNT 1
+#define SOLANA_WHITELISTED_TOKEN_PROGRAM_COUNT 55
 
 /*****************************************************************************
  * TYPEDEFS
