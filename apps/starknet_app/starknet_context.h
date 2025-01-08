@@ -32,6 +32,8 @@
 /// this makes length of 5 with a termination NULL byte
 #define STARKNET_LONG_NAME_MAX_SIZE 9
 
+#define STARKNET_BIGNUM_SIZE 32
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/

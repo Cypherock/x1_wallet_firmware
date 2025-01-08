@@ -1,7 +1,7 @@
 /**
- * @file    starknet_pedersen.h
+ * @file    starknet_poseidon.h
  * @author  Cypherock X1 Team
- * @brief   Utilities specific to Starknet pedersen hashing
+ * @brief   Utilities specific to Starknet POSEIDON
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -61,33 +61,32 @@
  *****************************************************************************/
 
 #include <error.pb.h>
+#include <starknet/sign_txn.pb.h>
 #include <stdint.h>
 
-#include "mpz_pedersen.h"
-#include "starknet_context.h"
+#include "coin_utils.h"
+#include "f251.h"
+#include "mini-gmp-helpers.h"
+#include "poseidon.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * PRIVATE MACROS AND DEFINES
+ * MACROS AND DEFINES
  *****************************************************************************/
-#define LOW_PART_BITS 248
-#define LOW_PART_BYTES (LOW_PART_BITS / 8)
-#define LOW_PART_MASK ((1ULL << LOW_PART_BITS) - 1)
 
-#define PEDERSEN_HASH_SIZE 32
-
-#define CALL_DATA_PARAMETER_SIZE 3
-#define STARKNET_SIZE_PUB_KEY (32)
-
-#define STARKNET_ADDR_SIZE 32
-#define STARKNET_ARGENT_CLASS_HASH                                             \
-  "036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"
-#define STARKNET_DEPLOYER_VALUE 0
 /*****************************************************************************
  * PRIVATE TYPEDEFS
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/*****************************************************************************
+ * STATIC VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
@@ -95,21 +94,21 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * GLOBAL FUNCTIONS PROTOTYPES
+ * GLOBAL FUNCTIONS
  *****************************************************************************/
-/**
- * @brief Converts unsigned long int to byte array of size STARKNET_BIGNUM_SIZE
- */
-void starknet_uli_to_bn_byte_array(const unsigned long int ui,
-                                   uint8_t *bn_array);
 
 /**
- * Computes Pedersen hash from data of size STARKNET_BIGNUM_SIZE
+ * @brief Function to convert Little-Endian felt_t to Big-Endian hex.
  *
- * @param data 2D Array of data to compute Pedersen hash on
- * @param num_elem len of data
- * @param hash Pedersen hash of elements
  */
-void compute_hash_on_elements(uint8_t data[][STARKNET_BIGNUM_SIZE],
-                              uint8_t num_elem,
-                              uint8_t *hash);
+void felt_t_to_hex(const felt_t felt, uint8_t hex[32]);
+
+/**
+ * @brief Calculates txn hash for sign based on txn type
+ *
+ * @param txn pointer to input txn
+ * @param type type of txn (INVOKE or DEPLOY)
+ * @param hash Calculated hash of txn
+ *
+ */
+void calculate_txn_hash(void *txn, pb_size_t type, felt_t hash);

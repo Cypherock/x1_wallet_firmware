@@ -129,7 +129,7 @@ void starknet_main(usb_event_t usb_evt, const void *app_config) {
       break;
     }
     case STARKNET_QUERY_SIGN_TXN_TAG: {
-      // starknet_sign_transaction(&query);
+      starknet_sign_transaction(&query);
       break;
     }
 

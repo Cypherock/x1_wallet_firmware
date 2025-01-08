@@ -88,7 +88,7 @@ jobs:
       fail-fast: false
       matrix:
         firmware: [main]
-        target: [release, dev]
+        target: [release]
         platform: [device, simulator]
     runs-on: ubuntu-latest
 
