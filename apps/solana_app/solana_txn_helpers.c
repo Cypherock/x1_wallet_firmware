@@ -66,6 +66,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_core_confirm.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -158,29 +160,33 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   if (utxn->instructions_count == 0)
     return SOL_D_MIN_LENGTH;
 
-  utxn->instruction.program_id_index = *(byte_array + offset++);
+  utxn->transfer_instruction_index = ((utxn->instructions_count == 2) ? 1 : 0);
 
-  offset +=
-      get_compact_array_size(byte_array + offset,
-                             &(utxn->instruction.account_addresses_index_count),
-                             &error);
-  if (error != SOL_OK)
-    return error;
-  if (utxn->instruction.account_addresses_index_count == 0)
-    return SOL_D_MIN_LENGTH;
+  for (int i = 0; i < utxn->instructions_count; i++) {
+    utxn->instruction[i].program_id_index = *(byte_array + offset++);
 
-  utxn->instruction.account_addresses_index = byte_array + offset;
-  offset += utxn->instruction.account_addresses_index_count;
-  offset += get_compact_array_size(
-      byte_array + offset, &(utxn->instruction.opaque_data_length), &error);
-  if (error != SOL_OK)
-    return error;
-  if (utxn->instruction.opaque_data_length == 0)
-    return SOL_D_MIN_LENGTH;
+    offset += get_compact_array_size(
+        byte_array + offset,
+        &(utxn->instruction[i].account_addresses_index_count),
+        &error);
+    if (error != SOL_OK)
+      return error;
+    if (utxn->instruction[i].account_addresses_index_count == 0)
+      return SOL_D_MIN_LENGTH;
 
-  utxn->instruction.opaque_data = byte_array + offset;
-  offset += utxn->instruction.opaque_data_length;
+    utxn->instruction[i].account_addresses_index = byte_array + offset;
+    offset += utxn->instruction[i].account_addresses_index_count;
+    offset += get_compact_array_size(byte_array + offset,
+                                     &(utxn->instruction[i].opaque_data_length),
+                                     &error);
+    if (error != SOL_OK)
+      return error;
+    // if (utxn->instruction[i].opaque_data_length == 0)
+    //   return SOL_D_MIN_LENGTH;
 
+    utxn->instruction[i].opaque_data = byte_array + offset;
+    offset += utxn->instruction[i].opaque_data_length;
+  }
   // prepare list of supported program ids
   uint8_t system_program_id[SOLANA_PROGRAM_ID_COUNT]
                            [SOLANA_ACCOUNT_ADDRESS_LENGTH];
@@ -192,49 +198,68 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
                            system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
 
-  if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
-                                           SOLANA_ACCOUNT_ADDRESS_LENGTH,
-             system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
-             SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-    uint32_t instruction_enum =
-        U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
+  const uint8_t transfer_instruction_index = utxn->transfer_instruction_index;
+  if (memcmp(
+          utxn->account_addresses +
+              utxn->instruction[transfer_instruction_index].program_id_index *
+                  SOLANA_ACCOUNT_ADDRESS_LENGTH,
+          system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
+          SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint32_t instruction_enum = U32_READ_LE_ARRAY(
+        utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
       case SSI_TRANSFER:    // transfer instruction
-        utxn->instruction.program.transfer.funding_account =
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer.funding_account =
             utxn->account_addresses +
-            (*(utxn->instruction.account_addresses_index + 0) *
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               0) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction.program.transfer.recipient_account =
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer.recipient_account =
             utxn->account_addresses +
-            (*(utxn->instruction.account_addresses_index + 1) *
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               1) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction.program.transfer.amount =
-            U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 4);
+        utxn->instruction[transfer_instruction_index].program.transfer.amount =
+            U64_READ_LE_ARRAY(
+                utxn->instruction[transfer_instruction_index].opaque_data + 4);
         break;
 
       default:
         break;
     }
-  } else if (memcmp(
-                 utxn->account_addresses + utxn->instruction.program_id_index *
-                                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
-                 system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
-                 SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-    uint8_t instruction_enum = *(utxn->instruction.opaque_data);
+  } else if (memcmp(utxn->account_addresses +
+                        utxn->instruction[transfer_instruction_index]
+                                .program_id_index *
+                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                    system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
+                    SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint8_t instruction_enum =
+        *(utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
       case STPI_TRANSFER:    // transfer instruction
-        utxn->instruction.program.transfer.funding_account =
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer.funding_account =
             utxn->account_addresses +
-            (*(utxn->instruction.account_addresses_index + 0) *
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               0) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction.program.transfer.recipient_account =
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer.recipient_account =
             utxn->account_addresses +
-            (*(utxn->instruction.account_addresses_index + 1) *
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               1) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction.program.transfer.amount =
-            U64_READ_LE_ARRAY(utxn->instruction.opaque_data + 1);
+        utxn->instruction[transfer_instruction_index].program.transfer.amount =
+            U64_READ_LE_ARRAY(
+                utxn->instruction[transfer_instruction_index].opaque_data + 1);
         break;
 
       default:
@@ -248,11 +273,13 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 }
 
 int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
-  if (utxn->instructions_count != 1)
+  if (utxn->instructions_count > 2)
     return SOL_V_UNSUPPORTED_INSTRUCTION_COUNT;
 
-  if (!(0 < utxn->instruction.program_id_index &&
-        utxn->instruction.program_id_index < utxn->account_addresses_count))
+  const uint8_t transfer_instruction_index = utxn->transfer_instruction_index;
+  if (!(0 < utxn->instruction[transfer_instruction_index].program_id_index &&
+        utxn->instruction[transfer_instruction_index].program_id_index <
+            utxn->account_addresses_count))
     return SOL_V_INDEX_OUT_OF_RANGE;
 
   // prepare list of supported program ids
@@ -266,12 +293,14 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
                            system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
 
-  if (memcmp(utxn->account_addresses + utxn->instruction.program_id_index *
-                                           SOLANA_ACCOUNT_ADDRESS_LENGTH,
-             system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
-             SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-    uint32_t instruction_enum =
-        U32_READ_LE_ARRAY(utxn->instruction.opaque_data);
+  if (memcmp(
+          utxn->account_addresses +
+              utxn->instruction[transfer_instruction_index].program_id_index *
+                  SOLANA_ACCOUNT_ADDRESS_LENGTH,
+          system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
+          SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint32_t instruction_enum = U32_READ_LE_ARRAY(
+        utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
       case SSI_TRANSFER:    // transfer instruction
@@ -280,12 +309,14 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
         return SOL_V_UNSUPPORTED_INSTRUCTION;
         break;
     }
-  } else if (memcmp(
-                 utxn->account_addresses + utxn->instruction.program_id_index *
-                                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
-                 system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
-                 SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-    uint8_t instruction_enum = *(utxn->instruction.opaque_data);
+  } else if (memcmp(utxn->account_addresses +
+                        utxn->instruction[transfer_instruction_index]
+                                .program_id_index *
+                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                    system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
+                    SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    uint8_t instruction_enum =
+        *(utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
       case STPI_TRANSFER:    // transfer instruction
