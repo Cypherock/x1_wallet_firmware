@@ -517,8 +517,21 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   if (STARKNET_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[100] = "0x";
 
-    // Calculate to-be account address
-    starknet_derive_argent_address(&public_keys[0][0], &address[2]);
+    {
+      char raw_address[100] = {0};
+      // Calculate to-be account address
+      starknet_derive_argent_address(&public_keys[0][0], raw_address);
+
+      size_t len = 64 - strnlen(raw_address, sizeof(raw_address));
+      if (len < 0) {
+        len = 0;
+      }
+      uint8_t index = 2;
+      while (len--) {
+        sprintf(address + index++, "0");
+      }
+      snprintf(address + index, sizeof(address) - index, raw_address);
+    }
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
       return;
