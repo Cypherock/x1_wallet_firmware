@@ -372,11 +372,14 @@ static bool solana_transfer_sol_transaction() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
+  const uint8_t transfer_instruction_index =
+      solana_txn_context->transaction_info.transfer_instruction_index;
   // verify recipient address;
   if (!b58enc(address,
               &address_size,
-              solana_txn_context->transaction_info.instruction.program.transfer
-                  .recipient_account,
+              solana_txn_context->transaction_info
+                  .instruction[transfer_instruction_index]
+                  .program.transfer.recipient_account,
               SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
     solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
@@ -393,8 +396,9 @@ static bool solana_transfer_sol_transaction() {
   uint8_t be_lamports[8] = {0};
   int i = 8;
   while (i--)
-    be_lamports[i] = solana_txn_context->transaction_info.instruction.program
-                         .transfer.amount >>
+    be_lamports[i] = solana_txn_context->transaction_info
+                         .instruction[transfer_instruction_index]
+                         .program.transfer.amount >>
                      8 * (7 - i);
 
   byte_array_to_hex_string(
@@ -594,9 +598,12 @@ static bool solana_transfer_token_transaction() {
     return false;
   }
 
+  const uint8_t transfer_instruction_index =
+      solana_txn_context->transaction_info.transfer_instruction_index;
   if (memcmp(associated_token_address,
-             solana_txn_context->transaction_info.instruction.program.transfer
-                 .recipient_account,
+             solana_txn_context->transaction_info
+                 .instruction[transfer_instruction_index]
+                 .program.transfer.recipient_account,
              SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 2);
     return false;
@@ -609,8 +616,9 @@ static bool solana_transfer_token_transaction() {
   uint8_t be_units[8] = {0};
   int i = 8;
   while (i--)
-    be_units[i] = solana_txn_context->transaction_info.instruction.program
-                      .transfer.amount >>
+    be_units[i] = solana_txn_context->transaction_info
+                      .instruction[transfer_instruction_index]
+                      .program.transfer.amount >>
                   8 * (7 - i);
 
   byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));

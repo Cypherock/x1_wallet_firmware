@@ -136,7 +136,8 @@ typedef struct solana_unsigned_txn {
 
   uint16_t
       instructions_count;    // deserialization only supports single instruction
-  solana_instruction instruction;
+  solana_instruction instruction[2];    ///< Expects max 2 instructions
+  uint8_t transfer_instruction_index;
 
 } solana_unsigned_txn;
 
