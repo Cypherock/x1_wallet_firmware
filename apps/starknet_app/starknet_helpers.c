@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    starknet_helpers.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Utilities specific to Starknet chains
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,33 +59,18 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "starknet_main.h"
-#include "tron_main.h"
-#include "xrp_main.h"
+#include "starknet_helpers.h"
+
+#include <error.pb.h>
+#include <starkcurve.h>
+
+#include "coin_utils.h"
+#include "mini-gmp-helpers.h"
+#include "mini-gmp.h"
+#include "starknet_api.h"
+#include "starknet_context.h"
+#include "starknet_crypto.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -94,95 +79,142 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Grind starknet private from provided 32-byte seed
+ */
+static bool grind_key(const uint8_t *grind_seed, uint8_t *out);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
+  uint8_t key[STARKNET_BIGNUM_SIZE] = {0};
+  mpz_t strk_limit;
+  mpz_t strk_key;
+
+  mpz_init_set_str(strk_limit, STARKNET_LIMIT, SIZE_HEX);
+
+  SHA256_CTX ctx = {0};
+  mpz_init(strk_key);
+  for (uint8_t itr = 0; itr < 200; itr++) {
+    sha256_Init(&ctx);
+    sha256_Update(&ctx, grind_seed, STARKNET_BIGNUM_SIZE);
+    sha256_Update(&ctx, &itr, 1);
+    sha256_Final(&ctx, key);
+
+    byte_array_to_mpz(strk_key, key, STARKNET_BIGNUM_SIZE);
+    if (mpz_cmp(strk_key, strk_limit) == -1) {
+      mpz_t f_key;
+      mpz_init(f_key);
+      mpz_mod(f_key, strk_key, stark_curve->order);
+      mpz_to_byte_array(f_key, out, STARKNET_BIGNUM_SIZE);
+
+      // clear mpz variables
+      mpz_clear(f_key);
+      mpz_clear(strk_key);
+      mpz_clear(strk_limit);
+      return true;
+    }
+  }
+
+  starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 0);
+  LOG_CRITICAL("ERROR: grind 200 iterations failed\n");
+
+  // clear mpz variables
+  mpz_clear(strk_key);
+  mpz_clear(strk_limit);
+  return false;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
+bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (STARKNET_IMPLICIT_ACCOUNT_DEPTH != levels) {
+    return status;
   }
 
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
+  uint32_t purpose = path[0], layer = path[1], application = path[2],
+           eth_1 = path[3], eth_2 = path[4], address = path[5];
 
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
+  // m/2645'/1195502025'/1148870696'/0'/0'/i
+  status =
+      (STARKNET_PURPOSE_INDEX == purpose && STARKNET_LAYER_INDEX == layer &&
+       STARKNET_APPLICATION_INDEX == application &&
+       STARKNET_ETH_1_INDEX == eth_1 && STARKNET_ETH_2_INDEX == eth_2 &&
+       is_non_hardened(address));
 
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+  return status;
 }
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  registry_add_app(get_starknet_app_desc());
+bool starknet_derive_key_from_seed(const uint8_t *seed,
+                                   const uint32_t *path,
+                                   uint32_t path_length,
+                                   uint8_t *key_priv,
+                                   uint8_t *key_pub) {
+  HDNode stark_child_node = {0};
+
+  // derive node at m/2645'/1195502025'/1148870696'/0'/0'/i
+  if (!derive_hdnode_from_path(
+          path, path_length, SECP256K1_NAME, seed, &stark_child_node)) {
+    // send unknown error; unknown failure reason
+    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    memzero(&stark_child_node, sizeof(HDNode));
+    return false;
+  }
+
+  uint8_t stark_private_key[STARKNET_BIGNUM_SIZE] = {0};
+  mpz_curve_point p;
+  mpz_curve_point_init(&p);
+  if (!grind_key(stark_child_node.private_key, stark_private_key)) {
+    mpz_curve_point_clear(&p);
+    return false;
+  }
+
+  // copy stark priv key if required
+  if (key_priv != NULL) {
+    memzero(key_priv, STARKNET_BIGNUM_SIZE);
+    memcpy(key_priv, stark_private_key, STARKNET_BIGNUM_SIZE);
+  }
+
+  // derive stark pub key from stark priv key
+  mpz_t priv_key;
+  mpz_init(priv_key);
+  byte_array_to_mpz(priv_key, stark_private_key, STARKNET_BIGNUM_SIZE);
+  mpz_curve_point_multiply(stark_curve, priv_key, &stark_curve->G, &p);
+  mpz_clear(priv_key);    // clear priv key when no longer required
+
+  uint8_t stark_public_key[STARKNET_BIGNUM_SIZE] = {0};
+  mpz_to_byte_array(p.x, stark_public_key, STARKNET_PUB_KEY_SIZE);
+
+  // copy stark pub key if required
+  if (key_pub != NULL) {
+    memzero(key_pub, STARKNET_PUB_KEY_SIZE);
+    memcpy(key_pub, stark_public_key, STARKNET_PUB_KEY_SIZE);
+  }
+
+  // clear mpz variables
+  mpz_curve_point_clear(&p);
+
+  return true;
 }
