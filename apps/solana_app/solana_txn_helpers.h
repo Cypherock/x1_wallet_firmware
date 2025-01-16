@@ -135,7 +135,7 @@ typedef struct solana_unsigned_txn {
   uint8_t *blockhash;
 
   uint16_t
-      instructions_count;    // deserialization only supports single instruction
+      instructions_count;    // deserialization only supports max 2 instructions: create account and transfer
   solana_instruction instruction[2];    ///< Expects max 2 instructions
   uint8_t transfer_instruction_index;
 
