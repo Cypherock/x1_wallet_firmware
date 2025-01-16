@@ -61,7 +61,6 @@
  *****************************************************************************/
 
 #include <ed25519-donna.h>
-#include <string.h>
 
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"

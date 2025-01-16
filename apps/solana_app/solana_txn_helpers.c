@@ -63,10 +63,7 @@
 
 #include "solana_txn_helpers.h"
 
-#include <stdio.h>
 #include <string.h>
-
-#include "ui_core_confirm.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -151,7 +148,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
 
-  // Instructions: Currently expecting count to be only 1. TODO: Handle batch
+  // Instructions: Currently expecting count to be 1 or 2. TODO: Handle batch
   // instructions
   offset += get_compact_array_size(
       byte_array + offset, &(utxn->instructions_count), &error);
