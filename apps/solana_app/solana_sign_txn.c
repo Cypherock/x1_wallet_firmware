@@ -584,6 +584,12 @@ static bool verify_solana_transfer_token_transaction() {
     };
 
     contract = &empty_contract;
+  } else {
+    char msg[100] = "";
+    snprintf(msg, sizeof(msg), "Send \n%s on \n%s", contract->symbol, SOLANA_NAME);
+    if (!core_confirmation(msg, solana_send_error)) {
+      return false;
+    }
   }
 
   // verify recipient address;
