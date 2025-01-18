@@ -258,6 +258,9 @@ extern const char *ui_text_verify_address;
 extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
+extern const char *ui_text_verify_token_address;
+extern const char *ui_text_verify_token_decimals;
+extern const char *ui_text_unverified_token;
 extern const char *ui_text_confirm_wallet_name;
 extern const char *ui_text_enter_data;
 extern const char *ui_text_confirm_data;
@@ -389,9 +392,6 @@ extern const char *ui_text_inheritance_decryption_flow_confirmation;
 extern const char *ui_text_inheritance_decryption_flow_confirmation_generic;
 extern const char *ui_text_inheritance_decryption_flow_success;
 extern const char *ui_text_inheritance_decryption_flow_failure;
-
-// Solana
-extern const char *ui_text_solana_verify_mint_authority;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

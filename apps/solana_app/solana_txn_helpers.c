@@ -178,8 +178,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                      &error);
     if (error != SOL_OK)
       return error;
-    // if (utxn->instruction[i].opaque_data_length == 0)
-    //   return SOL_D_MIN_LENGTH;
+    if (i == utxn->transfer_instruction_index && utxn->instruction[i].opaque_data_length == 0)
+      return SOL_D_MIN_LENGTH;
 
     utxn->instruction[i].opaque_data = byte_array + offset;
     offset += utxn->instruction[i].opaque_data_length;
@@ -221,7 +221,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                    .account_addresses_index +
                1) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction[transfer_instruction_index].program.transfer.amount =
+        utxn->instruction[transfer_instruction_index].program.transfer.lamports =
             U64_READ_LE_ARRAY(
                 utxn->instruction[transfer_instruction_index].opaque_data + 4);
         break;
@@ -239,25 +239,41 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         *(utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
-      case STPI_TRANSFER:    // transfer instruction
+      case STPI_TRANSFER_CHECKED: // transfer checked instruction
         utxn->instruction[transfer_instruction_index]
-            .program.transfer.funding_account =
+          .program.transferChecked.source =
+          utxn->account_addresses +
+          (*(utxn->instruction[transfer_instruction_index]
+                  .account_addresses_index +
+              0) *
+            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction[transfer_instruction_index]
+          .program.transferChecked.token_mint =
+          utxn->account_addresses +
+          (*(utxn->instruction[transfer_instruction_index]
+                  .account_addresses_index +
+              1) *
+            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction[transfer_instruction_index]
+            .program.transferChecked.destination =
             utxn->account_addresses +
             (*(utxn->instruction[transfer_instruction_index]
-                   .account_addresses_index +
-               0) *
-             SOLANA_ACCOUNT_ADDRESS_LENGTH);
+                  .account_addresses_index +
+              2) *
+            SOLANA_ACCOUNT_ADDRESS_LENGTH);
         utxn->instruction[transfer_instruction_index]
-            .program.transfer.recipient_account =
-            utxn->account_addresses +
-            (*(utxn->instruction[transfer_instruction_index]
-                   .account_addresses_index +
-               1) *
-             SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction[transfer_instruction_index].program.transfer.amount =
+          .program.transferChecked.owner =
+          utxn->account_addresses +
+          (*(utxn->instruction[transfer_instruction_index]
+                  .account_addresses_index +
+              3) *
+            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction[transfer_instruction_index].program.transferChecked.amount =
             U64_READ_LE_ARRAY(
                 utxn->instruction[transfer_instruction_index].opaque_data + 1);
-        break;
+        utxn->instruction[transfer_instruction_index].program.transferChecked.decimals =
+            *(utxn->instruction[transfer_instruction_index].opaque_data + 9);
+      break;
 
       default:
         break;
@@ -316,7 +332,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
         *(utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
-      case STPI_TRANSFER:    // transfer instruction
+      case STPI_TRANSFER_CHECKED:    // transfer checked instruction
         break;
       default:
         return SOL_V_UNSUPPORTED_INSTRUCTION;
