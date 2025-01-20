@@ -115,7 +115,7 @@ typedef struct solana_token_transfer_checked_data {
   uint8_t *source;
   uint8_t *token_mint;
   uint8_t *destination;
-  uint8_t *owner; // signer/owner of the source account
+  uint8_t *owner;    // signer/owner of the source account
   uint64_t amount;
   uint8_t decimals;
 } solana_token_transfer_checked_data;
@@ -146,8 +146,8 @@ typedef struct solana_unsigned_txn {
 
   uint8_t *blockhash;
 
-  uint16_t
-      instructions_count;    // deserialization only supports max 2 instructions: create account and transfer
+  uint16_t instructions_count;    // deserialization only supports max 2
+                                  // instructions: create account and transfer
   solana_instruction instruction[2];    ///< Expects max 2 instructions
   uint8_t transfer_instruction_index;
 
