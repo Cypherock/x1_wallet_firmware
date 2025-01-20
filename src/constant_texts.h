@@ -259,7 +259,6 @@ extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_verify_token_address;
-extern const char *ui_text_verify_token_decimals;
 extern const char *ui_text_unverified_token;
 extern const char *ui_text_confirm_wallet_name;
 extern const char *ui_text_enter_data;
