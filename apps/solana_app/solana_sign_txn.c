@@ -541,7 +541,7 @@ static bool verify_solana_transfer_token_transaction() {
 
   const uint8_t* token_mint = solana_txn_context->transaction_info
                                 .instruction[transfer_instruction_index]
-                                .program.transferChecked.token_mint;
+                                .program.transfer_checked.token_mint;
   const solana_token_program_t *contract = NULL;
   if (!is_token_whitelisted(token_mint, &contract)) {
     // Contract Unverifed, Display warning
@@ -566,7 +566,7 @@ static bool verify_solana_transfer_token_transaction() {
 
     const uint8_t token_decimals = solana_txn_context->transaction_info
                                     .instruction[transfer_instruction_index]
-                                    .program.transferChecked.decimals;
+                                    .program.transfer_checked.decimals;
 
     char display[50] = {'\0'};
     snprintf(display,
@@ -586,7 +586,7 @@ static bool verify_solana_transfer_token_transaction() {
     contract = &empty_contract;
   } else {
     char msg[100] = "";
-    snprintf(msg, sizeof(msg), "Send \n%s on \n%s", contract->symbol, SOLANA_NAME);
+    snprintf(msg, sizeof(msg), UI_TEXT_SEND_TOKEN_PROMPT, contract->symbol, SOLANA_NAME);
     if (!core_confirmation(msg, solana_send_error)) {
       return false;
     }
@@ -616,7 +616,7 @@ static bool verify_solana_transfer_token_transaction() {
   if (memcmp(associated_token_address,
              solana_txn_context->transaction_info
                  .instruction[transfer_instruction_index]
-                 .program.transferChecked.destination,
+                 .program.transfer_checked.destination,
              SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 2);
     return false;
@@ -636,7 +636,7 @@ static bool verify_solana_transfer_token_transaction() {
   while (i--)
     be_units[i] = solana_txn_context->transaction_info
                       .instruction[transfer_instruction_index]
-                      .program.transferChecked.amount >>
+                      .program.transfer_checked.amount >>
                   8 * (7 - i);
 
   byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));

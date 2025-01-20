@@ -130,7 +130,7 @@ typedef struct solana_instruction {
   uint8_t *opaque_data;
   union {
     solana_transfer_data transfer;
-    solana_token_transfer_checked_data transferChecked;
+    solana_token_transfer_checked_data transfer_checked;
   } program;
 } solana_instruction;
 
