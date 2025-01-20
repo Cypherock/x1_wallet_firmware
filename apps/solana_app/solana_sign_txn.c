@@ -266,9 +266,7 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
     return false;
   }
 
-  snprintf(
-    msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, SOLANA_NAME, wallet_name
-  );
+  snprintf(msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, SOLANA_NAME, wallet_name);
 
   // Take user consent to sign the transaction for the wallet
   if (!core_confirmation(msg, solana_send_error)) {
@@ -357,7 +355,7 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   return true;
 }
 
-static bool solana_transfer_sol_transaction() {
+static bool verify_solana_transfer_sol_transaction() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
@@ -387,7 +385,7 @@ static bool solana_transfer_sol_transaction() {
   while (i--)
     be_lamports[i] = solana_txn_context->transaction_info
                          .instruction[transfer_instruction_index]
-                         .program.transfer.amount >>
+                         .program.transfer.lamports >>
                      8 * (7 - i);
 
   byte_array_to_hex_string(
@@ -535,35 +533,59 @@ static bool is_token_whitelisted(const uint8_t *address,
   return status;
 }
 
-static bool solana_transfer_token_transaction() {
-  char address[45] = {0};
-  size_t address_size = sizeof(address);
+static bool verify_solana_transfer_token_transaction() {
+  const uint8_t transfer_instruction_index =
+      solana_txn_context->transaction_info.transfer_instruction_index;
 
-  const solana_token_program_t *contract;
-  if (!is_token_whitelisted(solana_txn_context->token_data.mint_address,
-                            &contract)) {
+  const uint8_t *token_mint = solana_txn_context->transaction_info
+                                  .instruction[transfer_instruction_index]
+                                  .program.transfer_checked.token_mint;
+  const solana_token_program_t *contract = NULL;
+  if (!is_token_whitelisted(token_mint, &contract)) {
     // Contract Unverifed, Display warning
-    delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
+    delay_scr_init(ui_text_unverified_token, DELAY_TIME);
 
     char mint_address[45] = {0};
     size_t mint_address_size = sizeof(mint_address);
     // verify mint address
     if (!b58enc(mint_address,
                 &mint_address_size,
-                solana_txn_context->token_data.mint_address,
+                token_mint,
                 SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
       solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return false;
     }
 
-    if (!core_scroll_page(ui_text_solana_verify_mint_authority,
-                          mint_address,
-                          solana_send_error)) {
+    if (!core_scroll_page(
+            ui_text_verify_token_address, mint_address, solana_send_error)) {
+      return false;
+    }
+
+    const uint8_t token_decimals = solana_txn_context->transaction_info
+                                       .instruction[transfer_instruction_index]
+                                       .program.transfer_checked.decimals;
+
+    solana_token_program_t empty_contract = {
+        .symbol = "",
+        .decimal = token_decimals,
+    };
+
+    contract = &empty_contract;
+  } else {
+    char msg[100] = "";
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_SEND_TOKEN_PROMPT,
+             contract->symbol,
+             SOLANA_NAME);
+    if (!core_confirmation(msg, solana_send_error)) {
       return false;
     }
   }
 
   // verify recipient address;
+  char address[45] = {0};
+  size_t address_size = sizeof(address);
   if (!b58enc(address,
               &address_size,
               solana_txn_context->token_data.recipient_address,
@@ -572,29 +594,27 @@ static bool solana_transfer_token_transaction() {
     return false;
   }
 
-  if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
-    return false;
-  }
-
-  // Upon recipient address confirmwation, calculate associated token address
-  // and compare with utxn's value
+  // Calculate associated token address and compare with utxn's value
   uint8_t associated_token_address[SOLANA_ACCOUNT_ADDRESS_LENGTH] = {0};
   if (!get_associated_token_address(
-          solana_txn_context->token_data.mint_address,
+          token_mint,
           solana_txn_context->token_data.recipient_address,
           associated_token_address)) {
     solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
   }
 
-  const uint8_t transfer_instruction_index =
-      solana_txn_context->transaction_info.transfer_instruction_index;
   if (memcmp(associated_token_address,
              solana_txn_context->transaction_info
                  .instruction[transfer_instruction_index]
-                 .program.transfer.recipient_account,
+                 .program.transfer_checked.destination,
              SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 2);
+    return false;
+  }
+
+  // Now take user verification
+  if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
     return false;
   }
 
@@ -607,7 +627,7 @@ static bool solana_transfer_token_transaction() {
   while (i--)
     be_units[i] = solana_txn_context->transaction_info
                       .instruction[transfer_instruction_index]
-                      .program.transfer.amount >>
+                      .program.transfer_checked.amount >>
                   8 * (7 - i);
 
   byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));
@@ -635,9 +655,9 @@ static bool solana_transfer_token_transaction() {
 
 STATIC bool solana_get_user_verification() {
   if (solana_txn_context->is_token_transfer_transaction == true) {
-    return solana_transfer_token_transaction();
+    return verify_solana_transfer_token_transaction();
   } else
-    return solana_transfer_sol_transaction();
+    return verify_solana_transfer_sol_transaction();
 }
 
 STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
