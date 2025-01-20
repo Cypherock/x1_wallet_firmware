@@ -565,16 +565,6 @@ static bool verify_solana_transfer_token_transaction() {
                                        .instruction[transfer_instruction_index]
                                        .program.transfer_checked.decimals;
 
-    char display[50] = {'\0'};
-    snprintf(display,
-             sizeof(display),
-             ui_text_verify_token_decimals,
-             token_decimals);
-
-    if (!core_confirmation(display, solana_send_error)) {
-      return false;
-    }
-
     solana_token_program_t empty_contract = {
         .symbol = "",
         .decimal = token_decimals,
