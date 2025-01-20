@@ -34,6 +34,9 @@ typedef struct {
   uint8_t *transaction;
   /// store for decoded unsigned transaction info
   solana_unsigned_txn transaction_info;
+
+  bool is_token_transfer_transaction;
+  solana_sign_txn_initiate_token_data_t token_data;
 } solana_txn_context_t;
 
 /**
