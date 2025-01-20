@@ -178,7 +178,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                      &error);
     if (error != SOL_OK)
       return error;
-    if (i == utxn->transfer_instruction_index && utxn->instruction[i].opaque_data_length == 0)
+    if (i == utxn->transfer_instruction_index &&
+        utxn->instruction[i].opaque_data_length == 0)
       return SOL_D_MIN_LENGTH;
 
     utxn->instruction[i].opaque_data = byte_array + offset;
@@ -221,9 +222,9 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                    .account_addresses_index +
                1) *
              SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction[transfer_instruction_index].program.transfer.lamports =
-            U64_READ_LE_ARRAY(
-                utxn->instruction[transfer_instruction_index].opaque_data + 4);
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer.lamports = U64_READ_LE_ARRAY(
+            utxn->instruction[transfer_instruction_index].opaque_data + 4);
         break;
 
       default:
@@ -239,41 +240,44 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         *(utxn->instruction[transfer_instruction_index].opaque_data);
 
     switch (instruction_enum) {
-      case STPI_TRANSFER_CHECKED: // transfer checked instruction
+      case STPI_TRANSFER_CHECKED:    // transfer checked instruction
         utxn->instruction[transfer_instruction_index]
-          .program.transfer_checked.source =
-          utxn->account_addresses +
-          (*(utxn->instruction[transfer_instruction_index]
-                  .account_addresses_index +
-              0) *
-            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+            .program.transfer_checked.source =
+            utxn->account_addresses +
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               0) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
         utxn->instruction[transfer_instruction_index]
-          .program.transfer_checked.token_mint =
-          utxn->account_addresses +
-          (*(utxn->instruction[transfer_instruction_index]
-                  .account_addresses_index +
-              1) *
-            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+            .program.transfer_checked.token_mint =
+            utxn->account_addresses +
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               1) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
         utxn->instruction[transfer_instruction_index]
             .program.transfer_checked.destination =
             utxn->account_addresses +
             (*(utxn->instruction[transfer_instruction_index]
-                  .account_addresses_index +
-              2) *
-            SOLANA_ACCOUNT_ADDRESS_LENGTH);
+                   .account_addresses_index +
+               2) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
         utxn->instruction[transfer_instruction_index]
-          .program.transfer_checked.owner =
-          utxn->account_addresses +
-          (*(utxn->instruction[transfer_instruction_index]
-                  .account_addresses_index +
-              3) *
-            SOLANA_ACCOUNT_ADDRESS_LENGTH);
-        utxn->instruction[transfer_instruction_index].program.transfer_checked.amount =
-            U64_READ_LE_ARRAY(
-                utxn->instruction[transfer_instruction_index].opaque_data + 1);
-        utxn->instruction[transfer_instruction_index].program.transfer_checked.decimals =
-            *(utxn->instruction[transfer_instruction_index].opaque_data + sizeof(uint64_t) + 1);  // decimal value comes after amount(which is a u64)
-      break;
+            .program.transfer_checked.owner =
+            utxn->account_addresses +
+            (*(utxn->instruction[transfer_instruction_index]
+                   .account_addresses_index +
+               3) *
+             SOLANA_ACCOUNT_ADDRESS_LENGTH);
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer_checked.amount = U64_READ_LE_ARRAY(
+            utxn->instruction[transfer_instruction_index].opaque_data + 1);
+        utxn->instruction[transfer_instruction_index]
+            .program.transfer_checked.decimals =
+            *(utxn->instruction[transfer_instruction_index].opaque_data +
+              sizeof(uint64_t) +
+              1);    // decimal value comes after amount(which is a u64)
+        break;
 
       default:
         break;

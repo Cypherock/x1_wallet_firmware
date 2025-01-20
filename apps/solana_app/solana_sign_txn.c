@@ -266,9 +266,7 @@ STATIC bool solana_handle_initiate_query(const solana_query_t *query) {
     return false;
   }
 
-  snprintf(
-    msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, SOLANA_NAME, wallet_name
-  );
+  snprintf(msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, SOLANA_NAME, wallet_name);
 
   // Take user consent to sign the transaction for the wallet
   if (!core_confirmation(msg, solana_send_error)) {
@@ -539,9 +537,9 @@ static bool verify_solana_transfer_token_transaction() {
   const uint8_t transfer_instruction_index =
       solana_txn_context->transaction_info.transfer_instruction_index;
 
-  const uint8_t* token_mint = solana_txn_context->transaction_info
-                                .instruction[transfer_instruction_index]
-                                .program.transfer_checked.token_mint;
+  const uint8_t *token_mint = solana_txn_context->transaction_info
+                                  .instruction[transfer_instruction_index]
+                                  .program.transfer_checked.token_mint;
   const solana_token_program_t *contract = NULL;
   if (!is_token_whitelisted(token_mint, &contract)) {
     // Contract Unverifed, Display warning
@@ -558,21 +556,20 @@ static bool verify_solana_transfer_token_transaction() {
       return false;
     }
 
-    if (!core_scroll_page(ui_text_verify_token_address,
-                          mint_address,
-                          solana_send_error)) {
+    if (!core_scroll_page(
+            ui_text_verify_token_address, mint_address, solana_send_error)) {
       return false;
     }
 
     const uint8_t token_decimals = solana_txn_context->transaction_info
-                                    .instruction[transfer_instruction_index]
-                                    .program.transfer_checked.decimals;
+                                       .instruction[transfer_instruction_index]
+                                       .program.transfer_checked.decimals;
 
     char display[50] = {'\0'};
     snprintf(display,
-            sizeof(display),
-            ui_text_verify_token_decimals,
-            token_decimals);
+             sizeof(display),
+             ui_text_verify_token_decimals,
+             token_decimals);
 
     if (!core_confirmation(display, solana_send_error)) {
       return false;
@@ -586,7 +583,11 @@ static bool verify_solana_transfer_token_transaction() {
     contract = &empty_contract;
   } else {
     char msg[100] = "";
-    snprintf(msg, sizeof(msg), UI_TEXT_SEND_TOKEN_PROMPT, contract->symbol, SOLANA_NAME);
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_SEND_TOKEN_PROMPT,
+             contract->symbol,
+             SOLANA_NAME);
     if (!core_confirmation(msg, solana_send_error)) {
       return false;
     }
