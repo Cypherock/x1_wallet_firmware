@@ -1,7 +1,7 @@
 /**
- * @file    core_flow_init.c
+ * @file    starknet_crypto.c
  * @author  Cypherock X1 Team
- * @brief
+ * @brief   Crypto specific to Starknet chain
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,33 +59,13 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
+#include "starknet_crypto.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "fantom_app.h"
-#include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "starknet_main.h"
-#include "tron_main.h"
-#include "xrp_main.h"
+#include <starkcurve.h>
+#include <stdio.h>
+
+#include "mini-gmp.h"
+#include "mpz_ecdsa.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -94,95 +74,103 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+/**
+ * @brief Initializes @ref stark_curve instance based on star curve params
+ ref:
+  https://github.com/xJonathanLEI/starknet-rs/blob/f31e426a65225b9830bbf3c148f7ea05bf9dc257/starknet-curve/src/curve_params.rs
+
+ */
+static void stark_curve_init();
+
+/**
+ * @brief Initializes starknet pedersen points
+ */
+static void stark_pedersen_init();
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
-
-/*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
+mpz_curve *stark_curve;
+mpz_pedersen *starknet_pedersen_points;
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void stark_curve_init() {
+  static mpz_curve stark256;
+
+  // Initialize mpz_t variables in stark256
+  mpz_init(stark256.prime);
+  mpz_init(stark256.G.x);
+  mpz_init(stark256.G.y);
+  mpz_init(stark256.order);
+  mpz_init(stark256.order_half);
+  mpz_init(stark256.a);
+  mpz_init(stark256.b);
+
+  mpz_set_str(stark256.prime, STARKNET_CURVE_PRIME, SIZE_HEX);
+  mpz_set_str(stark256.G.x, STARKNET_CURVE_GX, SIZE_HEX);
+  mpz_set_str(stark256.G.y, STARKNET_CURVE_GY, SIZE_HEX);
+  mpz_set_str(stark256.order, STARKNET_CURVE_ORDER, SIZE_HEX);
+  mpz_set_str(stark256.order_half, STARKNET_CURVE_ORDER_HALF, SIZE_HEX);
+  mpz_set_str(stark256.a, STARKNET_CURVE_A, SIZE_HEX);
+  mpz_set_str(stark256.b, STARKNET_CURVE_B, SIZE_HEX);
+
+  stark_curve = &stark256;
+}
+
+static void stark_pedersen_init() {
+  static mpz_pedersen pedersen;
+  // Initialize all mpz_t variables in the pedersen structure
+  for (int i = 0; i < 5; i++) {
+    mpz_init(pedersen.P[i].x);
+    mpz_init(pedersen.P[i].y);
+  }
+
+  mpz_set_str(pedersen.P[0].x, STARKNET_PEDERSEN_POINT_0_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[0].y, STARKNET_PEDERSEN_POINT_0_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[1].x, STARKNET_PEDERSEN_POINT_1_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[1].y, STARKNET_PEDERSEN_POINT_1_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[2].x, STARKNET_PEDERSEN_POINT_2_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[2].y, STARKNET_PEDERSEN_POINT_2_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[3].x, STARKNET_PEDERSEN_POINT_3_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[3].y, STARKNET_PEDERSEN_POINT_3_Y, SIZE_HEX);
+  mpz_set_str(pedersen.P[4].x, STARKNET_PEDERSEN_POINT_4_X, SIZE_HEX);
+  mpz_set_str(pedersen.P[4].y, STARKNET_PEDERSEN_POINT_4_Y, SIZE_HEX);
+
+  starknet_pedersen_points = &pedersen;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
-  }
-
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
-
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
-
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+void starknet_init() {
+  stark_curve_init();
+  stark_pedersen_init();
 }
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  registry_add_app(get_starknet_app_desc());
+void stark_clear() {
+  // clear pedersen points
+  for (int i = 0; i < 5; i++) {
+    mpz_curve_point_clear(&starknet_pedersen_points->P[i]);
+  }
+  // clear stark curve points
+  mpz_clear(stark_curve->a);
+  mpz_clear(stark_curve->b);
+  mpz_curve_point_clear(&stark_curve->G);
+  mpz_clear(stark_curve->order);
+  mpz_clear(stark_curve->order_half);
+  mpz_clear(stark_curve->prime);
 }
