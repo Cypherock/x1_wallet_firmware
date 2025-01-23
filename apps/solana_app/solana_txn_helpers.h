@@ -28,14 +28,17 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH 32
 
-#define SOLANA_PROGRAM_ID_COUNT 2    ///< Number of supported program ids
+#define SOLANA_PROGRAM_ID_COUNT 3    ///< Number of supported program ids
 #define SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX 0
 #define SOLANA_TOKEN_PROGRAM_ID_INDEX 1
+#define SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX 2
 
 #define SOLANA_TOKEN_PROGRAM_ADDRESS                                           \
   "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9"    ///< "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 #define SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS                                \
   "8c97258f4e2489f1bb3d1029148e0d830b5a1399daff1084048e7bd8dbe9f859"    ///< "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+#define SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS                                  \
+  "0306466fe5211732ffecadba72c39be7bc8ce5bbc5f7126b2c439b3a40000000"    ///< "ComputeBudget111111111111111111111111111111"
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -88,6 +91,14 @@ enum SOLANA_TOKEN_PROGRAM_INSTRUCTION {
   STPI_UI_AMOUNT_TO_AMOUNT
 };
 
+enum SOLANA_COMPUTE_BUDGET_INSTRUCTION {
+  SCBI_UNUSED = 0,
+  SCBI_REQUEST_HEAP_FRAME,
+  SCBI_SET_COMPUTE_UNIT_LIMIT,
+  SCBI_SET_COMPUTE_UNIT_PRICE,
+  SCBI_SET_LOADED_ACCOUNT_DATA_SIZE_LIMIT
+};
+
 enum SOLANA_ERROR_CODES {
   SOL_OK = 0,
   SOL_ERROR,
@@ -121,6 +132,18 @@ typedef struct solana_token_transfer_checked_data {
 } solana_token_transfer_checked_data;
 
 // Reference :
+// https://docs.rs/solana-sdk/latest/solana_sdk/compute_budget/enum.ComputeBudgetInstruction.html#method.set_compute_unit_limit
+typedef struct {
+  uint32_t units;
+} solana_compute_unit_limit_data;
+
+// Reference :
+// https://docs.rs/solana-sdk/latest/solana_sdk/compute_budget/enum.ComputeBudgetInstruction.html#method.set_compute_unit_price
+typedef struct {
+  uint64_t micro_lamports;
+} solana_compute_unit_price_data;
+
+// Reference :
 // https://docs.solana.com/developing/programming-model/transactions#instruction-format
 typedef struct solana_instruction {
   uint8_t program_id_index;
@@ -131,6 +154,8 @@ typedef struct solana_instruction {
   union {
     solana_transfer_data transfer;
     solana_token_transfer_checked_data transfer_checked;
+    solana_compute_unit_limit_data compute_unit_limit_data;
+    solana_compute_unit_price_data compute_unit_price_data;
   } program;
 } solana_instruction;
 
@@ -146,10 +171,12 @@ typedef struct solana_unsigned_txn {
 
   uint8_t *blockhash;
 
-  uint16_t instructions_count;    // deserialization only supports max 2
+  uint16_t instructions_count;    // deserialization only supports max 4
                                   // instructions: create account and transfer
-  solana_instruction instruction[2];    ///< Expects max 2 instructions
-  uint8_t transfer_instruction_index;
+  solana_instruction instruction[4];     ///< Expects max 4 instructions
+  uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
+  uint32_t compute_unit_limit;           // To calculate priority fee
+  uint64_t compute_unit_price_micro_lamports;
 
 } solana_unsigned_txn;
 

@@ -62,6 +62,7 @@
 
 #include <ed25519-donna.h>
 
+#include "int-util.h"
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
 #include "solana_contracts.h"
@@ -355,6 +356,57 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   return true;
 }
 
+static bool verify_priority_fee() {
+  if (solana_txn_context->transaction_info.compute_unit_price_micro_lamports >
+      0) {
+    // verify priority fee
+    uint64_t priority_fee, carry;
+
+    // Capacity to multiply 2 numbers upto 8-byte value and store the result in
+    // 2 separate 8-byte variables
+    priority_fee = mul128(
+        solana_txn_context->transaction_info.compute_unit_price_micro_lamports,
+        solana_txn_context->transaction_info.compute_unit_limit,
+        &carry);
+
+    // prepare the whole 128-bit little-endian representation of priority fee
+    uint8_t be_micro_lamports[16] = {0};
+    memcpy(be_micro_lamports, &priority_fee, sizeof(priority_fee));
+    memcpy(be_micro_lamports + sizeof(priority_fee), &carry, sizeof(carry));
+
+    // outputs 128-bit (16-byte) big-endian representation of priority fee
+    cy_reverse_byte_array(be_micro_lamports, sizeof(be_micro_lamports));
+
+    char priority_fee_string[33] = {'\0'},
+         priority_fee_decimal_string[34] = {'\0'};
+
+    byte_array_to_hex_string(be_micro_lamports,
+                             sizeof(be_micro_lamports),
+                             priority_fee_string,
+                             sizeof(priority_fee_string));
+    if (!convert_byte_array_to_decimal_string(
+            sizeof(priority_fee_string) - 1,
+            solana_get_decimal() + 6,    // +6 for micro
+            priority_fee_string,
+            priority_fee_decimal_string,
+            sizeof(priority_fee_decimal_string))) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    char display[100] = "";
+    snprintf(display,
+             sizeof(display),
+             UI_TEXT_VERIFY_PRIORITY_FEE,
+             priority_fee_decimal_string,
+             SOLANA_LUNIT);
+    if (!core_confirmation(display, solana_send_error)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool verify_solana_transfer_sol_transaction() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
@@ -407,6 +459,9 @@ static bool verify_solana_transfer_sol_transaction() {
   if (!core_confirmation(display, solana_send_error)) {
     return false;
   }
+
+  if (!verify_priority_fee())
+    return false;
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
   return true;
@@ -648,6 +703,9 @@ static bool verify_solana_transfer_token_transaction() {
   if (!core_confirmation(display, solana_send_error)) {
     return false;
   }
+
+  if (!verify_priority_fee())
+    return false;
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
   return true;
