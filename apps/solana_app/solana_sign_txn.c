@@ -62,6 +62,7 @@
 
 #include <ed25519-donna.h>
 
+#include "int-util.h"
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
 #include "solana_contracts.h"
@@ -346,7 +347,8 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   if (SOL_OK != solana_byte_array_to_unsigned_txn(
                     solana_txn_context->transaction,
                     total_size,
-                    &solana_txn_context->transaction_info) ||
+                    &solana_txn_context->transaction_info,
+                    &solana_txn_context->extra_data) ||
       SOL_OK !=
           solana_validate_unsigned_txn(&solana_txn_context->transaction_info)) {
     return false;
@@ -355,12 +357,62 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   return true;
 }
 
+static bool verify_priority_fee() {
+  if (solana_txn_context->extra_data.compute_unit_price_micro_lamports > 0) {
+    // verify priority fee
+    uint64_t priority_fee, carry;
+
+    // Capacity to multiply 2 numbers upto 8-byte value and store the result in
+    // 2 separate 8-byte variables
+    priority_fee =
+        mul128(solana_txn_context->extra_data.compute_unit_price_micro_lamports,
+               solana_txn_context->extra_data.compute_unit_limit,
+               &carry);
+
+    // prepare the whole 128-bit little-endian representation of priority fee
+    uint8_t be_micro_lamports[16] = {0};
+    memcpy(be_micro_lamports, &priority_fee, sizeof(priority_fee));
+    memcpy(be_micro_lamports + sizeof(priority_fee), &carry, sizeof(carry));
+
+    // outputs 128-bit (16-byte) big-endian representation of priority fee
+    cy_reverse_byte_array(be_micro_lamports, sizeof(be_micro_lamports));
+
+    char priority_fee_string[33] = {'\0'},
+         priority_fee_decimal_string[34] = {'\0'};
+
+    byte_array_to_hex_string(be_micro_lamports,
+                             sizeof(be_micro_lamports),
+                             priority_fee_string,
+                             sizeof(priority_fee_string));
+    if (!convert_byte_array_to_decimal_string(
+            sizeof(priority_fee_string) - 1,
+            solana_get_decimal() + 6,    // +6 for micro
+            priority_fee_string,
+            priority_fee_decimal_string,
+            sizeof(priority_fee_decimal_string))) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    char display[100] = "";
+    snprintf(display,
+             sizeof(display),
+             UI_TEXT_VERIFY_PRIORITY_FEE,
+             priority_fee_decimal_string,
+             SOLANA_LUNIT);
+    if (!core_confirmation(display, solana_send_error)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool verify_solana_transfer_sol_transaction() {
   char address[45] = {0};
   size_t address_size = sizeof(address);
 
   const uint8_t transfer_instruction_index =
-      solana_txn_context->transaction_info.transfer_instruction_index;
+      solana_txn_context->extra_data.transfer_instruction_index;
   // verify recipient address;
   if (!b58enc(address,
               &address_size,
@@ -407,6 +459,9 @@ static bool verify_solana_transfer_sol_transaction() {
   if (!core_confirmation(display, solana_send_error)) {
     return false;
   }
+
+  if (!verify_priority_fee())
+    return false;
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
   return true;
@@ -535,13 +590,14 @@ static bool is_token_whitelisted(const uint8_t *address,
 
 static bool verify_solana_transfer_token_transaction() {
   const uint8_t transfer_instruction_index =
-      solana_txn_context->transaction_info.transfer_instruction_index;
+      solana_txn_context->extra_data.transfer_instruction_index;
 
   const uint8_t *token_mint = solana_txn_context->transaction_info
                                   .instruction[transfer_instruction_index]
                                   .program.transfer_checked.token_mint;
-  const solana_token_program_t *contract = NULL;
-  if (!is_token_whitelisted(token_mint, &contract)) {
+  solana_token_program_t contract = {0};
+  const solana_token_program_t *contract_pointer = &contract;
+  if (!is_token_whitelisted(token_mint, &contract_pointer)) {
     // Contract Unverifed, Display warning
     delay_scr_init(ui_text_unverified_token, DELAY_TIME);
 
@@ -570,13 +626,16 @@ static bool verify_solana_transfer_token_transaction() {
         .decimal = token_decimals,
     };
 
-    contract = &empty_contract;
+    memcpy(&contract, &empty_contract, sizeof(empty_contract));
+
   } else {
+    memcpy(&contract, contract_pointer, sizeof(contract));
+
     char msg[100] = "";
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_SEND_TOKEN_PROMPT,
-             contract->symbol,
+             contract.symbol,
              SOLANA_NAME);
     if (!core_confirmation(msg, solana_send_error)) {
       return false;
@@ -632,7 +691,7 @@ static bool verify_solana_transfer_token_transaction() {
 
   byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));
   if (!convert_byte_array_to_decimal_string(16,
-                                            contract->decimal,
+                                            contract.decimal,
                                             amount_string,
                                             amount_decimal_string,
                                             sizeof(amount_decimal_string))) {
@@ -644,10 +703,13 @@ static bool verify_solana_transfer_token_transaction() {
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
-           contract->symbol);
+           contract.symbol);
   if (!core_confirmation(display, solana_send_error)) {
     return false;
   }
+
+  if (!verify_priority_fee())
+    return false;
 
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
   return true;
