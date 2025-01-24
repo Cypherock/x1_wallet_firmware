@@ -28,10 +28,11 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH 32
 
-#define SOLANA_PROGRAM_ID_COUNT 3    ///< Number of supported program ids
+#define SOLANA_PROGRAM_ID_COUNT 4    ///< Number of supported program ids
 #define SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX 0
 #define SOLANA_TOKEN_PROGRAM_ID_INDEX 1
-#define SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX 2
+#define SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX 2
+#define SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX 3
 
 #define SOLANA_TOKEN_PROGRAM_ADDRESS                                           \
   "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9"    ///< "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
@@ -91,6 +92,8 @@ enum SOLANA_TOKEN_PROGRAM_INSTRUCTION {
   STPI_UI_AMOUNT_TO_AMOUNT
 };
 
+/// Ref :
+/// https://docs.rs/solana-sdk/latest/solana_sdk/compute_budget/enum.ComputeBudgetInstruction.html
 enum SOLANA_COMPUTE_BUDGET_INSTRUCTION {
   SCBI_UNUSED = 0,
   SCBI_REQUEST_HEAP_FRAME,
@@ -172,8 +175,8 @@ typedef struct solana_unsigned_txn {
   uint8_t *blockhash;
 
   uint16_t instructions_count;    // deserialization only supports max 4
-                                  // instructions: create account and transfer
-  solana_instruction instruction[4];     ///< Expects max 4 instructions
+                                  // instructions: compute unit limit, compute unit price, create account and transfer
+  solana_instruction instruction[4];     ///< Expects max 4 instructions: TODO: HANDLE ANY NUMBER/TYPE OF INSTRUCTIONS
   uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
   uint32_t compute_unit_limit;           // To calculate priority fee
   uint64_t compute_unit_price_micro_lamports;

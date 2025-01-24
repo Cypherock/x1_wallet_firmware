@@ -595,8 +595,9 @@ static bool verify_solana_transfer_token_transaction() {
   const uint8_t *token_mint = solana_txn_context->transaction_info
                                   .instruction[transfer_instruction_index]
                                   .program.transfer_checked.token_mint;
-  const solana_token_program_t *contract = NULL;
-  if (!is_token_whitelisted(token_mint, &contract)) {
+  solana_token_program_t contract = {0};
+  const solana_token_program_t* contract_pointer = &contract;
+  if (!is_token_whitelisted(token_mint, &contract_pointer)) {
     // Contract Unverifed, Display warning
     delay_scr_init(ui_text_unverified_token, DELAY_TIME);
 
@@ -625,13 +626,16 @@ static bool verify_solana_transfer_token_transaction() {
         .decimal = token_decimals,
     };
 
-    contract = &empty_contract;
+    memcpy(&contract, &empty_contract, sizeof(empty_contract));
+    
   } else {
+    memcpy(&contract, contract_pointer, sizeof(contract));
+
     char msg[100] = "";
     snprintf(msg,
              sizeof(msg),
              UI_TEXT_SEND_TOKEN_PROMPT,
-             contract->symbol,
+             contract.symbol,
              SOLANA_NAME);
     if (!core_confirmation(msg, solana_send_error)) {
       return false;
@@ -687,7 +691,7 @@ static bool verify_solana_transfer_token_transaction() {
 
   byte_array_to_hex_string(be_units, 8, amount_string, sizeof(amount_string));
   if (!convert_byte_array_to_decimal_string(16,
-                                            contract->decimal,
+                                            contract.decimal,
                                             amount_string,
                                             amount_decimal_string,
                                             sizeof(amount_decimal_string))) {
@@ -699,7 +703,7 @@ static bool verify_solana_transfer_token_transaction() {
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
-           contract->symbol);
+           contract.symbol);
   if (!core_confirmation(display, solana_send_error)) {
     return false;
   }
