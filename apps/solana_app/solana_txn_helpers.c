@@ -119,7 +119,8 @@ uint16_t get_compact_array_size(const uint8_t *data,
 
 int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                       uint16_t byte_array_size,
-                                      solana_unsigned_txn *utxn) {
+                                      solana_unsigned_txn *utxn,
+                                      solana_txn_extra_data *extra_data) {
   if (byte_array == NULL || utxn == NULL)
     return SOL_ERROR;
   memzero(utxn, sizeof(solana_unsigned_txn));
@@ -179,7 +180,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
       system_program_id[SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX]);
 
-  utxn->compute_unit_limit = utxn->compute_unit_price_micro_lamports = 0;
+  extra_data->compute_unit_limit =
+      extra_data->compute_unit_price_micro_lamports = 0;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
     utxn->instruction[i].program_id_index = *(byte_array + offset++);
@@ -210,7 +212,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
-      utxn->transfer_instruction_index = i;
+      extra_data->transfer_instruction_index = i;
 
       uint32_t instruction_enum =
           U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
@@ -241,7 +243,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
-      utxn->transfer_instruction_index = i;
+      extra_data->transfer_instruction_index = i;
 
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
 
@@ -293,13 +295,13 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
       switch (instruction_enum) {
         case SCBI_SET_COMPUTE_UNIT_LIMIT:
-          utxn->compute_unit_limit =
+          extra_data->compute_unit_limit =
               utxn->instruction[i].program.compute_unit_limit_data.units =
                   U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 1);
           break;
 
         case SCBI_SET_COMPUTE_UNIT_PRICE:
-          utxn->compute_unit_price_micro_lamports =
+          extra_data->compute_unit_price_micro_lamports =
               utxn->instruction[i]
                   .program.compute_unit_price_data.micro_lamports =
                   U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 1);

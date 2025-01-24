@@ -180,11 +180,13 @@ typedef struct solana_unsigned_txn {
   solana_instruction
       instruction[4];    ///< Expects max 4 instructions: TODO: HANDLE ANY
                          ///< NUMBER/TYPE OF INSTRUCTIONS
+} solana_unsigned_txn;
+
+typedef struct {
   uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
   uint32_t compute_unit_limit;           // To calculate priority fee
   uint64_t compute_unit_price_micro_lamports;
-
-} solana_unsigned_txn;
+} solana_txn_extra_data;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -227,7 +229,8 @@ uint16_t get_compact_array_size(const uint8_t *data,
  */
 int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                       uint16_t byte_array_size,
-                                      solana_unsigned_txn *utxn);
+                                      solana_unsigned_txn *utxn,
+                                      solana_txn_extra_data *extra_data);
 
 /**
  * @brief Validate the deserialized unsigned transaction

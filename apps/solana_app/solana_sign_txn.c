@@ -347,7 +347,8 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   if (SOL_OK != solana_byte_array_to_unsigned_txn(
                     solana_txn_context->transaction,
                     total_size,
-                    &solana_txn_context->transaction_info) ||
+                    &solana_txn_context->transaction_info,
+                    &solana_txn_context->extra_data) ||
       SOL_OK !=
           solana_validate_unsigned_txn(&solana_txn_context->transaction_info)) {
     return false;
@@ -357,17 +358,16 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
 }
 
 static bool verify_priority_fee() {
-  if (solana_txn_context->transaction_info.compute_unit_price_micro_lamports >
-      0) {
+  if (solana_txn_context->extra_data.compute_unit_price_micro_lamports > 0) {
     // verify priority fee
     uint64_t priority_fee, carry;
 
     // Capacity to multiply 2 numbers upto 8-byte value and store the result in
     // 2 separate 8-byte variables
-    priority_fee = mul128(
-        solana_txn_context->transaction_info.compute_unit_price_micro_lamports,
-        solana_txn_context->transaction_info.compute_unit_limit,
-        &carry);
+    priority_fee =
+        mul128(solana_txn_context->extra_data.compute_unit_price_micro_lamports,
+               solana_txn_context->extra_data.compute_unit_limit,
+               &carry);
 
     // prepare the whole 128-bit little-endian representation of priority fee
     uint8_t be_micro_lamports[16] = {0};
@@ -412,7 +412,7 @@ static bool verify_solana_transfer_sol_transaction() {
   size_t address_size = sizeof(address);
 
   const uint8_t transfer_instruction_index =
-      solana_txn_context->transaction_info.transfer_instruction_index;
+      solana_txn_context->extra_data.transfer_instruction_index;
   // verify recipient address;
   if (!b58enc(address,
               &address_size,
@@ -590,7 +590,7 @@ static bool is_token_whitelisted(const uint8_t *address,
 
 static bool verify_solana_transfer_token_transaction() {
   const uint8_t transfer_instruction_index =
-      solana_txn_context->transaction_info.transfer_instruction_index;
+      solana_txn_context->extra_data.transfer_instruction_index;
 
   const uint8_t *token_mint = solana_txn_context->transaction_info
                                   .instruction[transfer_instruction_index]
