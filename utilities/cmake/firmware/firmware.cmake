@@ -19,7 +19,7 @@ ELSE()
         file(GLOB_RECURSE SOURCES "stm32-hal/*.*" "common/*.*" "src/*.*" "apps/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${MINI_GMP_SRCS} ${POSEIDON_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES} ${LINKER_SCRIPT} ${STARTUP_FILE})
 target_compile_definitions(${EXECUTABLE} PRIVATE -DUSE_HAL_DRIVER -DSTM32L486xx )
 add_compile_definitions(USE_SIMULATOR=0 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 STM32L4 USBD_SOF_DISABLED ENABLE_HID_WEBUSB_COMM=1)
 IF (DEV_SWITCH)
@@ -59,7 +59,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/solana_app
         apps/tron_app
         apps/inheritance_app
-
+        apps/starknet_app
         
         apps/xrp_app
         
@@ -103,6 +103,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         common/libraries/atecc/host
         common/libraries/atecc/jwt
         common/libraries/crypto
+        common/libraries/crypto/mpz_operations
         common/libraries/crypto/aes
         common/libraries/crypto/chacha20poly1305
         common/libraries/crypto/ed25519-donna
