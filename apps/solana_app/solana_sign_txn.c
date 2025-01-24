@@ -596,7 +596,7 @@ static bool verify_solana_transfer_token_transaction() {
                                   .instruction[transfer_instruction_index]
                                   .program.transfer_checked.token_mint;
   solana_token_program_t contract = {0};
-  const solana_token_program_t* contract_pointer = &contract;
+  const solana_token_program_t *contract_pointer = &contract;
   if (!is_token_whitelisted(token_mint, &contract_pointer)) {
     // Contract Unverifed, Display warning
     delay_scr_init(ui_text_unverified_token, DELAY_TIME);
@@ -627,7 +627,7 @@ static bool verify_solana_transfer_token_transaction() {
     };
 
     memcpy(&contract, &empty_contract, sizeof(empty_contract));
-    
+
   } else {
     memcpy(&contract, contract_pointer, sizeof(contract));
 

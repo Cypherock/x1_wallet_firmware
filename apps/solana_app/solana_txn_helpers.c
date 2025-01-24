@@ -148,7 +148,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
 
-  // Instructions: Currently expecting count to be 1 to 4, with only 1 transfer instruction. 
+  // Instructions: Currently expecting count to be 1 to 4, with only 1 transfer
+  // instruction.
   // TODO: Handle batch instructions
   offset += get_compact_array_size(
       byte_array + offset, &(utxn->instructions_count), &error);
@@ -168,9 +169,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
                            system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
   // Set Associated Token Program address
-  hex_string_to_byte_array(SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                           system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX]);
+  hex_string_to_byte_array(
+      SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX]);
   // Set Compute Budget Program address
   hex_string_to_byte_array(
       SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS,
@@ -204,8 +206,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
                system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
                SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      if (utxn->instruction[i].account_addresses_index_count == 0
-          || utxn->instruction[i].opaque_data_length == 0)
+      if (utxn->instruction[i].account_addresses_index_count == 0 ||
+          utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
       utxn->transfer_instruction_index = i;
@@ -235,8 +237,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
                       system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX],
                       SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      if (utxn->instruction[i].account_addresses_index_count == 0
-          || utxn->instruction[i].opaque_data_length == 0)
+      if (utxn->instruction[i].account_addresses_index_count == 0 ||
+          utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
       utxn->transfer_instruction_index = i;
@@ -271,11 +273,12 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         default:
           break;
       }
-    } else if (memcmp(utxn->account_addresses +
-                          utxn->instruction[i].program_id_index *
-                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
-                      system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX],
-                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    } else if (memcmp(
+                   utxn->account_addresses +
+                       utxn->instruction[i].program_id_index *
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                   system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX],
+                   SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
       if (utxn->instruction[i].account_addresses_index_count == 0)
         return SOL_D_MIN_LENGTH;
 
@@ -328,9 +331,10 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
                            SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
                            system_program_id[SOLANA_TOKEN_PROGRAM_ID_INDEX]);
   // Set Associated Token Program address
-  hex_string_to_byte_array(SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
-                           system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX]);
+  hex_string_to_byte_array(
+      SOLANA_ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX]);
   // Set Compute Budget Program address
   hex_string_to_byte_array(
       SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS,
@@ -379,11 +383,12 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           return SOL_V_UNSUPPORTED_INSTRUCTION;
           break;
       }
-    } else if (memcmp(utxn->account_addresses +
-                          utxn->instruction[i].program_id_index *
-                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
-                      system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX],
-                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+    } else if (memcmp(
+                   utxn->account_addresses +
+                       utxn->instruction[i].program_id_index *
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                   system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX],
+                   SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
       // no opaque data or instruction enum to validate
       // do nothing
 
