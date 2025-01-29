@@ -31,7 +31,7 @@
 #define UI_TEXT_SEND_PROMPT "Send %s on %s"
 #define UI_TEXT_SIGN_TXN_PROMPT "Sign transaction on %s from %s"
 #define UI_TEXT_REVIEW_TXN_PROMPT "Review transaction to %s"
-#define UI_TEXT_SEND_TOKEN_PROMPT "Send %s on %s from %s"
+#define UI_TEXT_SEND_TOKEN_PROMPT "Send \n%s on \n%s"
 #define UI_TEXT_BTC_RECEIVER "Receiver #%d"
 #define UI_TEXT_BTC_FEE "Transaction fee"
 #define UI_TEXT_SIGN_PROMPT "Sign %s message on %s from %s"
@@ -55,6 +55,7 @@
 #define UI_TEXT_VERIFY_HD_PATH "Verify Derivation Path"
 #define UI_TEXT_PIN "PIN\n %s"
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
+#define UI_TEXT_VERIFY_PRIORITY_FEE "Verify Priority Fee\n%s\n%s"
 
 // product hash
 extern const char *product_hash;
@@ -258,6 +259,8 @@ extern const char *ui_text_verify_address;
 extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
+extern const char *ui_text_verify_token_address;
+extern const char *ui_text_unverified_token;
 extern const char *ui_text_confirm_wallet_name;
 extern const char *ui_text_enter_data;
 extern const char *ui_text_confirm_data;
