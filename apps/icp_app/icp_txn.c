@@ -409,10 +409,39 @@ static bool sign_txn(sig_t *signature) {
                           seed,
                           &hdnode);
 
-  ecdsa_sign_digest(
-      &secp256k1, hdnode.private_key, digest, signature->signature, NULL, NULL);
+  ecdsa_sign_digest(&secp256k1,
+                    hdnode.private_key,
+                    digest,
+                    signature->transfer_req_signature,
+                    NULL,
+                    NULL);
 
+  uint8_t read_state_request_id[32];
+  get_icp_read_state_request_id(read_state_request_id,
+                                request_id,
+                                sizeof(request_id),
+                                icp_txn_context->icp_transfer_req);
+
+  uint8_t read_state_request_result[43] = {0};
+  memcpy(read_state_request_result, domain_separator, 11);
+  memcpy(read_state_request_result + 11, read_state_request_id, 32);
+
+  uint8_t read_state_request_digest[32] = {0};
+  sha256_Raw(read_state_request_result, 43, read_state_request_digest);
+
+  ecdsa_sign_digest(&secp256k1,
+                    hdnode.private_key,
+                    read_state_request_digest,
+                    signature->read_state_req_signature,
+                    NULL,
+                    NULL);
+
+  memzero(request_id, sizeof(request_id));
+  memzero(read_state_request_id, sizeof(read_state_request_id));
+  memzero(result, sizeof(result));
+  memzero(read_state_request_result, sizeof(read_state_request_result));
   memzero(digest, sizeof(digest));
+  memzero(read_state_request_digest, sizeof(read_state_request_digest));
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
 
@@ -454,6 +483,4 @@ void icp_sign_transaction(icp_query_t *query) {
     free(icp_txn_context);
     icp_txn_context = NULL;
   }
-
-  return;
 }

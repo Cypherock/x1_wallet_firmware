@@ -105,4 +105,38 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 void hash_icp_transfer_request(const icp_transfer_request_t *request,
                                uint8_t *hash);
 
+/**
+ * @brief Hash icp_read_state_request_t structure using SHA-256.
+ *
+ * @param[in] request icp_read_state_request_t to hash
+ * @param [out] hash The buffer to store the result hash
+ *
+ * @note The caller must ensure that `hash` has sufficient space to store the
+ * hash digest
+ *
+ * @return None.
+ */
+void hash_icp_read_state_request(const icp_read_state_request_t *request,
+                                 uint8_t *hash);
+
+/**
+ * @brief Generate icp_read_state_request_id by constructing
+ * and hashing icp_read_state_request_t structure using SHA-256.
+ *
+ * @param[out] read_state_request_id The buffer to store the result
+ * icp_read_state_request_id
+ * @param [in] transfer_request_id Used in constructing icp_read_state_request_t
+ * @param [in] transfer_request Used in constructing icp_read_state_request_t
+ *
+ * @note The caller must ensure that `read_state_request_id` has sufficient
+ * space to store the request_id
+ *
+ * @return None.
+ */
+void get_icp_read_state_request_id(
+    uint8_t *read_state_request_id,
+    const uint8_t *transfer_request_id,
+    size_t transfer_request_id_len,
+    const icp_transfer_request_t *transfer_request);
+
 #endif /* ICP_TXN_HELPERS_H */

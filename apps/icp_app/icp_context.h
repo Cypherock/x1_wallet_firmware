@@ -13,8 +13,12 @@
  * INCLUDES
  *****************************************************************************/
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "pb.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -28,6 +32,15 @@
 #define SECP256K1_UNCOMPRESSED_PK_LEN 65
 
 #define ICP_SUBACCOUNT_ID_LEN 32
+
+// macros for read_state_request
+#define MAX_PATHS 1    // Max number of paths (only 1 needed)
+#define MAX_SEGMENTS                                                           \
+  2    // Maximum segments per path (only 2 needed: "request_status" and
+       // requestId)
+#define MAX_SEGMENT_SIZE 32    // Maximum byte length of a segment
+
+#define MAX_INGRESS_EXPIRY_SIZE 10
 
 /*****************************************************************************
  * TYPEDEFS
@@ -86,6 +99,25 @@ typedef struct {
   token_t *fee;
   uint64_t memo;
 } icp_transfer_t;
+
+typedef PB_BYTES_ARRAY_T(MAX_SEGMENT_SIZE) icp_path_segment_t;
+typedef PB_BYTES_ARRAY_T(MAX_INGRESS_EXPIRY_SIZE)
+    icp_read_state_request_ingress_expiry_t;
+
+// Represents a path, which is an array of icp_path_segment_t
+typedef struct {
+  icp_path_segment_t segments[MAX_SEGMENTS];    // Path consists of segments
+  size_t segment_count;    // Number of segments in this path
+} icp_read_state_request_path_t;
+
+// ReadStateRequest struct
+typedef struct {
+  char *request_type;
+  icp_read_state_request_path_t paths[MAX_PATHS];
+  size_t path_count;    // Number of paths
+  icp_read_state_request_ingress_expiry_t ingress_expiry;
+  uint8_t sender[ICP_PRINCIPAL_LENGTH];
+} icp_read_state_request_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

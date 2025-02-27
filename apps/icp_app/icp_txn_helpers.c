@@ -383,3 +383,102 @@ void hash_icp_transfer_request(const icp_transfer_request_t *request,
 
   sha256_Raw(concatenated, offset, hash);
 }
+
+/**
+ * Hash icp_transfer_request_t structure using SHA-256, sorting key-value pairs
+ * first.
+ */
+void hash_icp_read_state_request(const icp_read_state_request_t *request,
+                                 uint8_t *hash) {
+  HashPair pairs[4];
+  size_t pair_count = 0;
+
+  hash_string("request_type", pairs[pair_count].key_hash);
+  sha256_Raw((const uint8_t *)request->request_type,
+             strlen(request->request_type),
+             pairs[pair_count].value_hash);
+  pair_count++;
+
+  hash_string("sender", pairs[pair_count].key_hash);
+  sha256_Raw(
+      request->sender, sizeof(request->sender), pairs[pair_count].value_hash);
+  pair_count++;
+
+  hash_string("ingress_expiry", pairs[pair_count].key_hash);
+  sha256_Raw(request->ingress_expiry.bytes,
+             request->ingress_expiry.size,
+             pairs[pair_count].value_hash);
+  pair_count++;
+
+  hash_string("paths", pairs[pair_count].key_hash);
+  uint8_t path_hashes[32 * request->path_count];
+  for (size_t path_index = 0; path_index < request->path_count; path_index++) {
+    size_t segment_count = request->paths[path_index].segment_count;
+    uint8_t segment_hashes[32 * segment_count];
+    for (size_t segment_index = 0; segment_index < segment_count;
+         segment_index++) {
+      sha256_Raw(request->paths[path_index].segments[segment_index].bytes,
+                 request->paths[path_index].segments[segment_index].size,
+                 segment_hashes + 32 * segment_index);
+    }
+
+    sha256_Raw(
+        segment_hashes, sizeof(segment_hashes), path_hashes + 32 * path_index);
+  }
+  sha256_Raw(path_hashes, sizeof(path_hashes), pairs[pair_count].value_hash);
+  pair_count++;
+
+  // Sort key-value pairs by key hash
+  qsort(pairs, pair_count, sizeof(HashPair), compare_hashes);
+
+  uint8_t concatenated[512];
+  size_t offset = 0;
+  for (size_t i = 0; i < pair_count; i++) {
+    memcpy(&concatenated[offset], pairs[i].key_hash, 32);
+    offset += 32;
+    memcpy(&concatenated[offset], pairs[i].value_hash, 32);
+    offset += 32;
+  }
+
+  sha256_Raw(concatenated, offset, hash);
+}
+
+void get_icp_read_state_request_id(
+    uint8_t *read_state_request_id,
+    const uint8_t *transfer_request_id,
+    size_t transfer_request_id_len,
+    const icp_transfer_request_t *transfer_request) {
+  icp_read_state_request_t read_state_req;
+
+  // request_type
+  read_state_req.request_type = "read_state";
+
+  // path = ["request_status", requestId]
+  // paths = [path]
+  read_state_req.path_count = 1;
+
+  read_state_req.paths[0].segment_count = 2;
+
+  const char *status_str = "request_status";
+  size_t status_len = strlen(status_str);
+  memcpy(read_state_req.paths[0].segments[0].bytes, status_str, status_len);
+  read_state_req.paths[0].segments[0].size = status_len;
+
+  memcpy(read_state_req.paths[0].segments[1].bytes,
+         transfer_request_id,
+         transfer_request_id_len);
+  read_state_req.paths[0].segments[1].size = transfer_request_id_len;
+
+  // sender
+  memcpy(read_state_req.sender,
+         transfer_request->sender,
+         sizeof(transfer_request->sender));
+
+  // ingress_expiry
+  memcpy(read_state_req.ingress_expiry.bytes,
+         transfer_request->ingress_expiry.bytes,
+         transfer_request->ingress_expiry.size);
+  read_state_req.ingress_expiry.size = transfer_request->ingress_expiry.size;
+
+  hash_icp_read_state_request(&read_state_req, read_state_request_id);
+}
