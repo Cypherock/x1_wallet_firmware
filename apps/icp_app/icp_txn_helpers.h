@@ -23,30 +23,37 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 #define MAGIC_NUMBER "DIDL"
-
+#define MAX_CONCATENATED_ICP_REQUEST_HASHES_SIZE 512
+#define NUM_FIELDS_IN_ICP_TRANSFER_REQUEST 7
+#define NUM_FIELDS_IN_ICP_READ_STATE_REQUEST 4
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+
+// To hold the hash of a record field key and its type
 typedef struct {
-  uint64_t key_hash;
-  int64_t type;
-} RecordField;
+  uint64_t key_hash;    // Hash of the record field key
+  int64_t type;         // Type ID of the field
+} record_field_t;
 
+// To hold a complex IDL type
 typedef struct {
-  int64_t type_id;
+  int64_t type_id;    // Type identifier (e.g., Nat8, Vector, Record etc.)
+  union {
+    int64_t child_type;    // Used if it's a compound type (e.g., Vector)
+    struct {
+      uint64_t num_fields;       // Number of fields if it's a record
+      record_field_t *fields;    // Pointer to field array
+    };
+  };
+} IDL_complex_type_t;
 
-  // if it's a compound type example Vector(Nat8)
-  int64_t child_type;
-
-  // if it's a record type
-  uint64_t num_fields;
-  RecordField *fields;
-} IDLComplexType;
-
+// To hold the hashes of a struct field, its key hash and the corresponding
+// value hash
 typedef struct {
-  uint8_t key_hash[32];
-  uint8_t value_hash[32];
-} HashPair;
+  uint8_t key_hash[SHA256_DIGEST_LENGTH];
+  uint8_t value_hash[SHA256_DIGEST_LENGTH];
+} hash_pair_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

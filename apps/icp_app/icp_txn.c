@@ -81,9 +81,12 @@
 #include "wallet_list.h"
 
 /*****************************************************************************
- * EXTERN VARIABLES
+ * EXTERN AND GLOBAL VARIABLES
  *****************************************************************************/
-
+#define ICP_DOMAIN_SEPARATOR_LEN 11
+// "\x0Aic-request"
+uint8_t domain_separator[ICP_DOMAIN_SEPARATOR_LEN] =
+    {10, 105, 99, 45, 114, 101, 113, 117, 101, 115, 116};
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -330,7 +333,7 @@ static bool get_user_verification(void) {
 
   // verify recipient amount
   uint64_t amount = 0;
-  memcpy(&amount, &decoded_utxn->amount->e8s, sizeof(uint64_t));
+  memcpy(&amount, &decoded_utxn->amount.e8s, sizeof(uint64_t));
   char amount_string[30] = {'\0'};
   double decimal_amount = (double)amount;
   decimal_amount *= 1e-8;
@@ -349,7 +352,7 @@ static bool get_user_verification(void) {
 
   // verify transaction fee
   uint64_t fee = 0;
-  memcpy(&fee, &decoded_utxn->fee->e8s, sizeof(uint64_t));
+  memcpy(&fee, &decoded_utxn->fee.e8s, sizeof(uint64_t));
   char fee_string[30] = {'\0'};
   double decimal_fee = (double)fee;
   decimal_fee *= 1e-8;
@@ -388,19 +391,15 @@ static bool sign_txn(sig_t *signature) {
 
   set_app_flow_status(ICP_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  uint8_t request_id[32];
+  uint8_t request_id[SHA256_DIGEST_LENGTH];
   hash_icp_transfer_request(icp_txn_context->icp_transfer_req, request_id);
 
-  // "\x0Aic-request"
-  uint8_t domain_separator[11] = {
-      10, 105, 99, 45, 114, 101, 113, 117, 101, 115, 116};
+  uint8_t result[SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN] = {0};
+  memcpy(result, domain_separator, ICP_DOMAIN_SEPARATOR_LEN);
+  memcpy(result + ICP_DOMAIN_SEPARATOR_LEN, request_id, SHA256_DIGEST_LENGTH);
 
-  uint8_t result[43] = {0};
-  memcpy(result, domain_separator, 11);
-  memcpy(result + 11, request_id, 32);
-
-  uint8_t digest[32] = {0};
-  sha256_Raw(result, 43, digest);
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Raw(result, SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN, digest);
 
   HDNode hdnode = {0};
   derive_hdnode_from_path(icp_txn_context->init_info.derivation_path,
@@ -416,18 +415,23 @@ static bool sign_txn(sig_t *signature) {
                     NULL,
                     NULL);
 
-  uint8_t read_state_request_id[32];
+  uint8_t read_state_request_id[SHA256_DIGEST_LENGTH];
   get_icp_read_state_request_id(read_state_request_id,
                                 request_id,
                                 sizeof(request_id),
                                 icp_txn_context->icp_transfer_req);
 
-  uint8_t read_state_request_result[43] = {0};
-  memcpy(read_state_request_result, domain_separator, 11);
-  memcpy(read_state_request_result + 11, read_state_request_id, 32);
+  uint8_t read_state_request_result[SHA256_DIGEST_LENGTH +
+                                    ICP_DOMAIN_SEPARATOR_LEN] = {0};
+  memcpy(read_state_request_result, domain_separator, ICP_DOMAIN_SEPARATOR_LEN);
+  memcpy(read_state_request_result + ICP_DOMAIN_SEPARATOR_LEN,
+         read_state_request_id,
+         SHA256_DIGEST_LENGTH);
 
-  uint8_t read_state_request_digest[32] = {0};
-  sha256_Raw(read_state_request_result, 43, read_state_request_digest);
+  uint8_t read_state_request_digest[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Raw(read_state_request_result,
+             SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN,
+             read_state_request_digest);
 
   ecdsa_sign_digest(&secp256k1,
                     hdnode.private_key,
@@ -480,6 +484,10 @@ void icp_sign_transaction(icp_query_t *query) {
   }
 
   if (icp_txn_context) {
+    if (icp_txn_context->raw_icp_transfer_txn) {
+      free(icp_txn_context->raw_icp_transfer_txn);
+      icp_txn_context->raw_icp_transfer_txn = NULL;
+    }
     free(icp_txn_context);
     icp_txn_context = NULL;
   }

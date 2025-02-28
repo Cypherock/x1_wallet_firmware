@@ -42,6 +42,8 @@
 
 #define MAX_INGRESS_EXPIRY_SIZE 10
 
+#define SHA256_DIGEST_LENGTH 32
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -50,6 +52,9 @@
 typedef struct {
 } icp_config_t;
 
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/idl.ts#L27
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/idl.ts#L1703
 typedef enum {
   Null = -1,
   Bool = -2,
@@ -80,24 +85,44 @@ typedef enum {
   Principal = -24,
 } IDLTypes_e;
 
+// Calculated hashes of transfer method fields for easy comparison and avoiding
+// re-computing again and again
+/// Reference:
+// https://github.com/Zondax/ledger-icp/blob/main/app/src/candid/candid_types.h#L104
 typedef enum {
   transfer_hash_to = 25979,
   transfer_hash_fee = 5094982,
   transfer_hash_memo = 1213809850,
   transfer_hash_from_subaccount = 1835347746,    // optional
-  transfer_hash_timestamp = 3258775938,          // optional
+  transfer_hash_created_at_time = 3258775938,    // optional
   transfer_hash_amount = 3573748184,
 } transfer_hash_fields;
 
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L13
 typedef struct {
   uint64_t e8s;
 } token_t;
 
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L198
+typedef struct {
+  uint64_t timestamp_nanos;
+} timestamp_t;
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L291
 typedef struct {
   uint8_t to[ICP_ACCOUNT_ID_LENGTH];
-  token_t *amount;
-  token_t *fee;
+  token_t amount;
+  token_t fee;
   uint64_t memo;
+
+  // optional fields
+  bool has_from_subaccount;
+  uint8_t from_subaccount[ICP_SUBACCOUNT_ID_LEN];
+  bool has_created_at_time;
+  timestamp_t created_at_time;
 } icp_transfer_t;
 
 typedef PB_BYTES_ARRAY_T(MAX_SEGMENT_SIZE) icp_path_segment_t;
@@ -110,7 +135,8 @@ typedef struct {
   size_t segment_count;    // Number of segments in this path
 } icp_read_state_request_path_t;
 
-// ReadStateRequest struct
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/agent/src/agent/http/types.ts#L93
 typedef struct {
   char *request_type;
   icp_read_state_request_path_t paths[MAX_PATHS];

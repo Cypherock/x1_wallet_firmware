@@ -128,7 +128,9 @@ void hash_leb128(uint64_t value, uint8_t *hash) {
  * Comparison function for sorting hash pairs.
  */
 int compare_hashes(const void *a, const void *b) {
-  return memcmp(((HashPair *)a)->key_hash, ((HashPair *)b)->key_hash, 32);
+  return memcmp(((hash_pair_t *)a)->key_hash,
+                ((hash_pair_t *)b)->key_hash,
+                SHA256_DIGEST_LENGTH);
 }
 
 bool decode_vec(int64_t type,
@@ -157,15 +159,13 @@ bool read_recipient_account_id(const uint8_t *data,
 bool read_amount_value(const uint8_t *data,
                        size_t *offset,
                        icp_transfer_t *txn) {
-  txn->amount = (token_t *)malloc(sizeof(token_t));
-  txn->amount->e8s = U64_READ_LE_ARRAY(data + *offset);
+  txn->amount.e8s = U64_READ_LE_ARRAY(data + *offset);
   (*offset) += 8;
   return true;
 }
 
 bool read_fee_value(const uint8_t *data, size_t *offset, icp_transfer_t *txn) {
-  txn->fee = (token_t *)malloc(sizeof(token_t));
-  txn->fee->e8s = U64_READ_LE_ARRAY(data + *offset);
+  txn->fee.e8s = U64_READ_LE_ARRAY(data + *offset);
   (*offset) += 8;
   return true;
 }
@@ -176,6 +176,34 @@ bool read_memo_value(const uint8_t *data, size_t *offset, icp_transfer_t *txn) {
   return true;
 }
 
+bool read_from_subaccount_value(const uint8_t *data,
+                                size_t *offset,
+                                icp_transfer_t *txn) {
+  txn->has_from_subaccount = *(data + *offset);
+  (*offset)++;
+
+  if (txn->has_from_subaccount) {
+    return decode_vec(Nat8, data, offset, txn->from_subaccount);
+  }
+  return true;
+}
+
+bool read_created_at_time_value(const uint8_t *data,
+                                size_t *offset,
+                                icp_transfer_t *txn) {
+  txn->has_created_at_time = *(data + *offset);
+  (*offset)++;
+
+  if (txn->has_created_at_time) {
+    txn->created_at_time.timestamp_nanos = U64_READ_LE_ARRAY(data + *offset);
+    (*offset) += 8;
+  }
+
+  return true;
+}
+
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/utils/leb128.ts#L74
 uint64_t leb_decode(const uint8_t *buffer, size_t *offset) {
   uint64_t result = 0;
   int shift = 0;
@@ -189,6 +217,8 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset) {
   return result;
 }
 
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/utils/leb128.ts#L135
 int64_t sleb_decode(const uint8_t *buffer, size_t *offset) {
   int64_t result = 0;
   int shift = 0;
@@ -212,6 +242,8 @@ int64_t sleb_decode(const uint8_t *buffer, size_t *offset) {
   return result;
 }
 
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/idl.ts#L1588
 // @TODO: add unit tests for parser
 bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             uint16_t byte_array_size,
@@ -226,7 +258,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   // Decode Type Table
   size_t num_types = leb_decode(byte_array, &offset);
-  IDLComplexType type_table[num_types];
+  IDL_complex_type_t type_table[num_types];
 
   for (size_t i = 0; i < num_types; i++) {
     int64_t type = sleb_decode(byte_array, &offset);
@@ -235,22 +267,22 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case Opt:
       case Vector: {
         int64_t child_type = sleb_decode(byte_array, &offset);
-        IDLComplexType c_ty;
+        IDL_complex_type_t c_ty;
         c_ty.type_id = type;
         c_ty.child_type = child_type;
         type_table[i] = c_ty;
         break;
       }
       case Record: {
-        IDLComplexType c_ty;
+        IDL_complex_type_t c_ty;
         c_ty.type_id = type;
         c_ty.num_fields = leb_decode(byte_array, &offset);
         c_ty.fields =
-            (RecordField *)malloc(sizeof(RecordField) * c_ty.num_fields);
+            (record_field_t *)malloc(sizeof(record_field_t) * c_ty.num_fields);
         for (int j = 0; j < c_ty.num_fields; j++) {
           uint64_t hash = leb_decode(byte_array, &offset);
           int64_t field_type = sleb_decode(byte_array, &offset);
-          RecordField field;
+          record_field_t field;
           field.key_hash = hash;
           field.type = field_type;
           c_ty.fields[j] = field;
@@ -276,16 +308,18 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
     return false;
   }
 
-  IDLComplexType arg_type = type_table[arg_type_index];
+  IDL_complex_type_t arg_type = type_table[arg_type_index];
 
-  // we expect a single record of 4 fields (to, amount, fee, memo)
-  if (arg_type.type_id != Record || arg_type.num_fields != 4) {
+  // we expect a single record of 4-6 fields (to, amount, fee, memo,
+  // from_subaccount, created_at_time)
+  if (arg_type.type_id != Record || arg_type.num_fields < 4 ||
+      arg_type.num_fields > 6) {
     return false;
   }
 
   // Decode Transfer Args
   for (int i = 0; i < arg_type.num_fields; i++) {
-    RecordField field = arg_type.fields[i];
+    record_field_t field = arg_type.fields[i];
     switch (field.key_hash) {
       case transfer_hash_to:
         // we can also verify the type
@@ -309,6 +343,16 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
           return false;
         }
         break;
+      case transfer_hash_from_subaccount:
+        if (!read_from_subaccount_value(byte_array, &offset, txn)) {
+          return false;
+        }
+        break;
+      case transfer_hash_created_at_time:
+        if (!read_created_at_time_value(byte_array, &offset, txn)) {
+          return false;
+        }
+        break;
       default:
         return false;
     }
@@ -318,16 +362,22 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
     return false;
   }
 
+  // free memory
+  for (size_t i = 0; i < num_types; i++) {
+    if (type_table[i].fields) {
+      free(type_table[i].fields);
+      type_table[i].fields = NULL;
+    }
+  }
+
   return true;
 }
 
-/**
- * Hash icp_transfer_request_t structure using SHA-256, sorting key-value pairs
- * first.
- */
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/agent/src/request_id.ts#L87
 void hash_icp_transfer_request(const icp_transfer_request_t *request,
                                uint8_t *hash) {
-  HashPair pairs[7];
+  hash_pair_t pairs[NUM_FIELDS_IN_ICP_TRANSFER_REQUEST] = {0};
   size_t pair_count = 0;
 
   hash_string("request_type", pairs[pair_count].key_hash);
@@ -370,27 +420,25 @@ void hash_icp_transfer_request(const icp_transfer_request_t *request,
   pair_count++;
 
   // Sort key-value pairs by key hash
-  qsort(pairs, pair_count, sizeof(HashPair), compare_hashes);
+  qsort(pairs, pair_count, sizeof(hash_pair_t), compare_hashes);
 
-  uint8_t concatenated[512];
+  uint8_t concatenated[MAX_CONCATENATED_ICP_REQUEST_HASHES_SIZE] = {0};
   size_t offset = 0;
   for (size_t i = 0; i < pair_count; i++) {
-    memcpy(&concatenated[offset], pairs[i].key_hash, 32);
-    offset += 32;
-    memcpy(&concatenated[offset], pairs[i].value_hash, 32);
-    offset += 32;
+    memcpy(&concatenated[offset], pairs[i].key_hash, SHA256_DIGEST_LENGTH);
+    offset += SHA256_DIGEST_LENGTH;
+    memcpy(&concatenated[offset], pairs[i].value_hash, SHA256_DIGEST_LENGTH);
+    offset += SHA256_DIGEST_LENGTH;
   }
 
   sha256_Raw(concatenated, offset, hash);
 }
 
-/**
- * Hash icp_transfer_request_t structure using SHA-256, sorting key-value pairs
- * first.
- */
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/agent/src/request_id.ts#L87
 void hash_icp_read_state_request(const icp_read_state_request_t *request,
                                  uint8_t *hash) {
-  HashPair pairs[4];
+  hash_pair_t pairs[NUM_FIELDS_IN_ICP_READ_STATE_REQUEST] = {0};
   size_t pair_count = 0;
 
   hash_string("request_type", pairs[pair_count].key_hash);
@@ -411,38 +459,44 @@ void hash_icp_read_state_request(const icp_read_state_request_t *request,
   pair_count++;
 
   hash_string("paths", pairs[pair_count].key_hash);
-  uint8_t path_hashes[32 * request->path_count];
+  uint8_t path_hashes[SHA256_DIGEST_LENGTH * request->path_count];
+
   for (size_t path_index = 0; path_index < request->path_count; path_index++) {
     size_t segment_count = request->paths[path_index].segment_count;
-    uint8_t segment_hashes[32 * segment_count];
+    uint8_t segment_hashes[SHA256_DIGEST_LENGTH * segment_count];
+
     for (size_t segment_index = 0; segment_index < segment_count;
          segment_index++) {
       sha256_Raw(request->paths[path_index].segments[segment_index].bytes,
                  request->paths[path_index].segments[segment_index].size,
-                 segment_hashes + 32 * segment_index);
+                 segment_hashes + SHA256_DIGEST_LENGTH * segment_index);
     }
 
-    sha256_Raw(
-        segment_hashes, sizeof(segment_hashes), path_hashes + 32 * path_index);
+    sha256_Raw(segment_hashes,
+               sizeof(segment_hashes),
+               path_hashes + SHA256_DIGEST_LENGTH * path_index);
   }
+
   sha256_Raw(path_hashes, sizeof(path_hashes), pairs[pair_count].value_hash);
   pair_count++;
 
   // Sort key-value pairs by key hash
-  qsort(pairs, pair_count, sizeof(HashPair), compare_hashes);
+  qsort(pairs, pair_count, sizeof(hash_pair_t), compare_hashes);
 
-  uint8_t concatenated[512];
+  uint8_t concatenated[MAX_CONCATENATED_ICP_REQUEST_HASHES_SIZE] = {0};
   size_t offset = 0;
   for (size_t i = 0; i < pair_count; i++) {
-    memcpy(&concatenated[offset], pairs[i].key_hash, 32);
-    offset += 32;
-    memcpy(&concatenated[offset], pairs[i].value_hash, 32);
-    offset += 32;
+    memcpy(&concatenated[offset], pairs[i].key_hash, SHA256_DIGEST_LENGTH);
+    offset += SHA256_DIGEST_LENGTH;
+    memcpy(&concatenated[offset], pairs[i].value_hash, SHA256_DIGEST_LENGTH);
+    offset += SHA256_DIGEST_LENGTH;
   }
 
   sha256_Raw(concatenated, offset, hash);
 }
 
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/agent/src/agent/http/index.ts#L1030
 void get_icp_read_state_request_id(
     uint8_t *read_state_request_id,
     const uint8_t *transfer_request_id,
@@ -455,6 +509,8 @@ void get_icp_read_state_request_id(
 
   // path = ["request_status", requestId]
   // paths = [path]
+  // see
+  // https://github.com/dfinity/agent-js/blob/main/packages/agent/src/polling/index.ts#L86
   read_state_req.path_count = 1;
 
   read_state_req.paths[0].segment_count = 2;
