@@ -56,6 +56,7 @@
 #define UI_TEXT_PIN "PIN\n %s"
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
 #define UI_TEXT_VERIFY_PRIORITY_FEE "Verify Priority Fee\n%s\n%s"
+#define UI_TEXT_VERIFY_MEMO "Verify Memo\n%llu"
 
 // product hash
 extern const char *product_hash;
@@ -392,6 +393,11 @@ extern const char *ui_text_inheritance_decryption_flow_confirmation;
 extern const char *ui_text_inheritance_decryption_flow_confirmation_generic;
 extern const char *ui_text_inheritance_decryption_flow_success;
 extern const char *ui_text_inheritance_decryption_flow_failure;
+
+// ICP
+
+extern const char *ui_text_principal_id;
+extern const char *ui_text_account_id;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

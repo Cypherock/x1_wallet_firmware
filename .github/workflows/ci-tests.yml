@@ -77,7 +77,7 @@ jobs:
             bash ./utilities/ci/static-analyzer.sh ${SHA_BASE}
           fi
       - name: Upload result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: clang-tidy-result
           path: anaylysis.results
