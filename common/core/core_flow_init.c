@@ -73,6 +73,7 @@
 #include "eth_app.h"
 #include "evm_main.h"
 #include "fantom_app.h"
+#include "icp_main.h"
 #include "inheritance_main.h"
 #include "ltc_app.h"
 #include "main_menu.h"
@@ -86,7 +87,6 @@
 #include "starknet_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
-#include "icp_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
