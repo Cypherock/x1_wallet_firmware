@@ -28,11 +28,10 @@ typedef struct {
    */
   icp_sign_txn_initiate_request_t init_info;
 
-  // remembers the allocated buffer for holding complete unsigned transaction
-  uint8_t *transaction;
+  const icp_transfer_request_t *icp_transfer_req;
 
   // decoded raw txn
-  icp_unsigned_txn *raw_txn;
+  icp_transfer_t *raw_icp_transfer_txn;
 
 } icp_txn_context_t;
 

@@ -13,8 +13,12 @@
  * INCLUDES
  *****************************************************************************/
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "pb.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -29,6 +33,17 @@
 
 #define ICP_SUBACCOUNT_ID_LEN 32
 
+// macros for read_state_request
+#define MAX_PATHS 1    // Max number of paths (only 1 needed)
+#define MAX_SEGMENTS                                                           \
+  2    // Maximum segments per path (only 2 needed: "request_status" and
+       // requestId)
+#define MAX_SEGMENT_SIZE 32    // Maximum byte length of a segment
+
+#define MAX_INGRESS_EXPIRY_SIZE 10
+
+#define SHA256_DIGEST_LENGTH 32
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -37,75 +52,98 @@
 typedef struct {
 } icp_config_t;
 
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/idl.ts#L27
+// https://github.com/dfinity/agent-js/blob/main/packages/candid/src/idl.ts#L1703
 typedef enum {
-  INT16 = 1,
-  INT32 = 2,
-  HASH256 = 5,
-  AMOUNT = 6,
-  BLOB = 7,
-  ACCOUNT = 8,
-  VECTOR256 = 19
-} TYPECODE;
+  Null = -1,
+  Bool = -2,
+  Nat = -3,
+  Int = -4,
 
-typedef enum { TransactionType = 2 } INT16FIELDCODE;
+  Nat8 = -5,
+  Nat16 = -6,
+  Nat32 = -7,
+  Nat64 = -8,
 
+  Int8 = -9,
+  Int16 = -10,
+  Int32 = -11,
+  Int64 = -12,
+
+  Float32 = -13,
+  Float64 = -14,
+  Text = -15,
+  Reserved = -16,
+  Empty = -17,
+  Opt = -18,
+  Vector = -19,
+  Record = -20,
+  Variant = -21,
+  Func = -22,
+  Service = -23,
+  Principal = -24,
+} IDLTypes_e;
+
+// Calculated hashes of transfer method fields for easy comparison and avoiding
+// re-computing again and again
+/// Reference:
+// https://github.com/Zondax/ledger-icp/blob/main/app/src/candid/candid_types.h#L104
 typedef enum {
-  Flags = 2,
-  Sequence = 4,
-  DestinationTag = 14,
-  OfferSequence = 25,
-  LastLedgerSequence = 27,
-  CancelAfter = 36,
-  FinishAfter = 37
-} INT132FIELDCODE;
+  transfer_hash_to = 25979,
+  transfer_hash_fee = 5094982,
+  transfer_hash_memo = 1213809850,
+  transfer_hash_from_subaccount = 1835347746,    // optional
+  transfer_hash_created_at_time = 3258775938,    // optional
+  transfer_hash_amount = 3573748184,
+} transfer_hash_fields;
 
-typedef enum {
-  NFTokenId = 10,
-} HASH256FIELDCODE;
-
-typedef enum {
-  Amount = 1,
-  LimitAmount = 3,
-  Fee = 8,
-} AMOUNTFIELDCODE;
-
-typedef enum {
-  SigningPubKey = 3,
-  TxnSignature = 4,
-  Fulfillment = 16,
-  Condition = 17
-} BLOBFIELDCODE;
-
-typedef enum { Account = 1, Owner = 2, Destination = 3 } ACCOUNTFIELDCODE;
-
-typedef enum { NFTokenOffers = 4 } VECTOR256FILEDCODE;
-
-typedef enum {
-  no_type = -1,
-  payment = 0,
-  EscrowCreate = 1,
-  EscrowFinish = 2,
-  EscrowCancel = 4,
-  TrustSet = 20,
-  NFTokenBurn = 26,
-  NFTokenCreateOffer = 27,
-  NFTokenCancelOffer = 28,
-  NFTokenAcceptOffer = 29
-} TRANSACTIONTYPE;
-
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L13
 typedef struct {
-  uint16_t TransactionType;
-  uint32_t Flags;
-  uint32_t Sequence;
-  bool hasDestinationTag;
-  uint32_t DestinationTag;    // optional
-  uint32_t LastLedgerSequence;
-  uint64_t Amount;
-  uint64_t Fee;
-  uint8_t SigningPubKey[33];
-  uint8_t Account[20];
-  uint8_t Destination[20];
-} icp_unsigned_txn;
+  uint64_t e8s;
+} token_t;
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L198
+typedef struct {
+  uint64_t timestamp_nanos;
+} timestamp_t;
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L291
+typedef struct {
+  uint8_t to[ICP_ACCOUNT_ID_LENGTH];
+  token_t amount;
+  token_t fee;
+  uint64_t memo;
+
+  // optional fields
+  bool has_from_subaccount;
+  uint8_t from_subaccount[ICP_SUBACCOUNT_ID_LEN];
+  bool has_created_at_time;
+  timestamp_t created_at_time;
+} icp_transfer_t;
+
+typedef PB_BYTES_ARRAY_T(MAX_SEGMENT_SIZE) icp_path_segment_t;
+typedef PB_BYTES_ARRAY_T(MAX_INGRESS_EXPIRY_SIZE)
+    icp_read_state_request_ingress_expiry_t;
+
+// Represents a path, which is an array of icp_path_segment_t
+typedef struct {
+  icp_path_segment_t segments[MAX_SEGMENTS];    // Path consists of segments
+  size_t segment_count;    // Number of segments in this path
+} icp_read_state_request_path_t;
+
+/// Reference:
+// https://github.com/dfinity/agent-js/blob/main/packages/agent/src/agent/http/types.ts#L93
+typedef struct {
+  char *request_type;
+  icp_read_state_request_path_t paths[MAX_PATHS];
+  size_t path_count;    // Number of paths
+  icp_read_state_request_ingress_expiry_t ingress_expiry;
+  uint8_t sender[ICP_PRINCIPAL_LENGTH];
+} icp_read_state_request_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

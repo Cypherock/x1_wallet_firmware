@@ -560,6 +560,7 @@ const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
 
 // ICP
+
 const char *ui_text_principal_id = "Principal Id";
 const char *ui_text_account_id = "Account Id";
 
