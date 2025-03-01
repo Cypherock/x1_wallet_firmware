@@ -112,7 +112,7 @@ void hash_string(const char *value, uint8_t *hash) {
  * Hash a given LEB128-encoded integer.
  */
 void hash_leb128(uint64_t value, uint8_t *hash) {
-  uint8_t buffer[10];
+  uint8_t buffer[10] = {0};
   size_t offset = 0;
 
   do {

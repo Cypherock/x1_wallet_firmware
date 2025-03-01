@@ -238,6 +238,7 @@ static bool validate_request_data(const icp_sign_txn_request_t *request) {
 
   if (!icp_derivation_path_guard(request->initiate.derivation_path,
                                  request->initiate.derivation_path_count)) {
+    // TODO: add proper specific errors
     icp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -391,7 +392,7 @@ static bool sign_txn(sig_t *signature) {
 
   set_app_flow_status(ICP_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  uint8_t request_id[SHA256_DIGEST_LENGTH];
+  uint8_t request_id[SHA256_DIGEST_LENGTH] = {0};
   hash_icp_transfer_request(icp_txn_context->icp_transfer_req, request_id);
 
   uint8_t result[SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN] = {0};
@@ -415,7 +416,7 @@ static bool sign_txn(sig_t *signature) {
                     NULL,
                     NULL);
 
-  uint8_t read_state_request_id[SHA256_DIGEST_LENGTH];
+  uint8_t read_state_request_id[SHA256_DIGEST_LENGTH] = {0};
   get_icp_read_state_request_id(read_state_request_id,
                                 request_id,
                                 sizeof(request_id),
