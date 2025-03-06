@@ -292,7 +292,7 @@ static bool get_public_key(const uint8_t *seed,
   }
 
   if (NULL != public_key) {
-    memcpy(public_key, node.public_key, CONSTELLATION_PUB_KEY_SIZE);
+    ecdsa_uncompress_pubkey(&secp256k1, node.public_key, public_key);
   }
 
   memzero(&node, sizeof(HDNode));
@@ -395,18 +395,15 @@ bool generate_dag_address(char *address, const uint8_t *pubkey) {
   // see
   // https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L230
 
-  uint8_t uncompressed_pubkey[CONSTELLATION_UNCOMPRESSED_PUBKEY_SIZE] = {0};
   uint8_t pkcs_prefixed_pubkey[PKCS_PREFIXED_PUBKEY_SIZE] = {0};
   uint8_t key_digest[SHA256_DIGEST_SIZE] = {0};
   char bs58_encoded_key[BS58_ENCODED_SIZE] = "\0";
   size_t res_size = BS58_ENCODED_SIZE;
 
-  ecdsa_uncompress_pubkey(&secp256k1, pubkey, uncompressed_pubkey);
-
   memcpy(pkcs_prefixed_pubkey, PKCS_PREFIX, PKCS_PREFIX_SIZE);
   memcpy(pkcs_prefixed_pubkey + PKCS_PREFIX_SIZE,
-         uncompressed_pubkey,
-         CONSTELLATION_UNCOMPRESSED_PUBKEY_SIZE);
+         pubkey,
+         CONSTELLATION_PUB_KEY_SIZE);
 
   sha256_Raw(pkcs_prefixed_pubkey, sizeof(pkcs_prefixed_pubkey), key_digest);
 
@@ -516,5 +513,4 @@ void constellation_get_pub_keys(constellation_query_t *query) {
   }
 
   delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
-  return;
 }
