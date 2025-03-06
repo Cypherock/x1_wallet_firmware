@@ -125,11 +125,11 @@ void constellation_main(usb_event_t usb_evt, const void *constellation_app_confi
   switch ((uint8_t)query.which_request) {
     case CONSTELLATION_QUERY_GET_PUBLIC_KEYS_TAG:
     case CONSTELLATION_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      constellation_get_pub_keys(&query);
+      // constellation_get_pub_keys(&query);
       break;
     }
     case CONSTELLATION_QUERY_SIGN_TXN_TAG: {
-      constellation_sign_transaction(&query);
+      // constellation_sign_transaction(&query);
       break;
     }
     default: {
