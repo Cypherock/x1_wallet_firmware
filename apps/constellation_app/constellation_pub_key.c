@@ -388,10 +388,10 @@ static bool get_user_consent(const pb_size_t which_request,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool generate_dag_address(char *address, const uint8_t *pubkey) {
-  // address = 'DAG' + par + bs58_last36
-  // bs58_last36 = last 36 chars of bs58enc(prefixed_uncompressed_pubkey)
-  // par = sum(numeric chars in bs58_last36) % 9
-  // prefixed_uncompressed_pubkey = pkcs_prefix + uncompressed_pubkey
+  // address = 'DAG' + parity + bs58_last36
+  // bs58_last36 = last 36 chars of bs58enc(sha256(pkcs_prefixed_pubkey))
+  // parity = sum(numeric chars in bs58_last36) % 9
+  // pkcs_prefixed_pubkey = pkcs_prefix + uncompressed_pubkey
   // see
   // https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L230
 
