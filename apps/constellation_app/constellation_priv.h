@@ -13,8 +13,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdint.h>
 #include <constellation/core.pb.h>
+#include <stdint.h>
 
 #include "constellation_context.h"
 
@@ -32,8 +32,8 @@
 
 /**
  * @brief Handler for CONSTELLATION public key derivation.
- * @details This flow expects CONSTELLATION_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
- * query, otherwise the flow is aborted
+ * @details This flow expects CONSTELLATION_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG
+ * as initial query, otherwise the flow is aborted
  *
  * @param query object for address public key query
  */
@@ -41,9 +41,10 @@ void constellation_get_pub_keys(constellation_query_t *query);
 
 /**
  * @brief Handler for signing a transaction on constellation.
- * @details The expected request type is CONSTELLATION_SIGN_TXN_REQUEST_INITIATE_TAG. The
- * function controls the complete data exchange with host, user prompts and
- * confirmations for signing an CONSTELLATION based transaction.
+ * @details The expected request type is
+ * CONSTELLATION_SIGN_TXN_REQUEST_INITIATE_TAG. The function controls the
+ * complete data exchange with host, user prompts and confirmations for signing
+ * an CONSTELLATION based transaction.
  *
  * @param query Reference to the decoded query struct from the host app
  */

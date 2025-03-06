@@ -1,7 +1,8 @@
 /**
  * @file    constellation_api.h
  * @author  Cypherock X1 Team
- * @brief   Header file to export some helper functions for the CONSTELLATION app
+ * @brief   Header file to export some helper functions for the CONSTELLATION
+ * app
  * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  * target=_blank>https://mitcc.org/</a>
@@ -13,8 +14,8 @@
  * INCLUDES
  *****************************************************************************/
 
-#include <stdint.h>
 #include <constellation/core.pb.h>
+#include <stdint.h>
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -37,17 +38,20 @@
  *
  * @param[in] data: PB encoded bytestream received from host
  * @param[in] data_size: size of pb encoded bytestream
- * @param[out] query_out: @ref constellation_query_t obj to copy the decoded result to
+ * @param[out] query_out: @ref constellation_query_t obj to copy the decoded
+ * result to
  * @return bool True if decoding was successful, else false
  */
 bool decode_constellation_query(const uint8_t *data,
-                      uint16_t data_size,
-                      constellation_query_t *query_out);
+                                uint16_t data_size,
+                                constellation_query_t *query_out);
 
 /**
- * @brief Encodes the CONSTELLATION result with `CONSTELLATION_RESULT_FIELDS` to byte-stream
+ * @brief Encodes the CONSTELLATION result with `CONSTELLATION_RESULT_FIELDS` to
+ * byte-stream
  *
- * @param[in] result: object of populated @ref constellation_result_t to be encoded
+ * @param[in] result: object of populated @ref constellation_result_t to be
+ * encoded
  * @param[out] buffer: buffer to fill byte-stream into
  * @param[in] max_buffer_len: Max length allowed for writing bytestream to
  * buffer
@@ -55,9 +59,9 @@ bool decode_constellation_query(const uint8_t *data,
  * @return bool True if decoding was successful, else false
  */
 bool encode_constellation_result(const constellation_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out);
+                                 uint8_t *buffer,
+                                 uint16_t max_buffer_len,
+                                 size_t *bytes_written_out);
 
 /**
  * @brief This API checks if the `which_request` field of the query of type
@@ -68,7 +72,8 @@ bool encode_constellation_result(const constellation_result_t *result,
  * @return true If the query tag matches the expected tag
  * @return false If the query tag does not match the expected tag
  */
-bool check_constellation_query(const constellation_query_t *query, pb_size_t exp_query_tag);
+bool check_constellation_query(const constellation_query_t *query,
+                               pb_size_t exp_query_tag);
 
 /**
  * @brief Returns zero initialized object of type
@@ -108,6 +113,7 @@ void constellation_send_result(const constellation_result_t *result);
  * @return false If the request timed out or the recieved request did not match
  * the tag
  */
-bool constellation_get_query(constellation_query_t *query, pb_size_t exp_query_tag);
+bool constellation_get_query(constellation_query_t *query,
+                             pb_size_t exp_query_tag);
 
 #endif

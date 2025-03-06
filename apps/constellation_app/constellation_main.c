@@ -1,7 +1,8 @@
 /**
  * @file    constellation_main.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various CONSTELLATION coin actions supported.
+ * @brief   A common entry point to various CONSTELLATION coin actions
+ *supported.
  * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -62,9 +63,9 @@
 
 #include "constellation_main.h"
 
-#include "status_api.h"
 #include "constellation_api.h"
 #include "constellation_priv.h"
+#include "status_api.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -86,35 +87,39 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief Entry point for the CONSTELLATION application of the X1 vault. It is invoked
- * by the X1 vault firmware, as soon as there is a USB request raised for the
- * Constellation app.
+ * @brief Entry point for the CONSTELLATION application of the X1 vault. It is
+ * invoked by the X1 vault firmware, as soon as there is a USB request raised
+ * for the Constellation app.
  *
- * @param usb_evt The USB event which triggered invocation of the constellation app
+ * @param usb_evt The USB event which triggered invocation of the constellation
+ * app
  */
-void constellation_main(usb_event_t usb_evt, const void *constellation_app_config);
+void constellation_main(usb_event_t usb_evt,
+                        const void *constellation_app_config);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 static const cy_app_desc_t constellation_app_desc = {.id = 23,
-                                           .version =
-                                               {
-                                                   .major = 1,
-                                                   .minor = 0,
-                                                   .patch = 0,
-                                               },
-                                           .app = constellation_main,
-                                           .app_config = NULL};
+                                                     .version =
+                                                         {
+                                                             .major = 1,
+                                                             .minor = 0,
+                                                             .patch = 0,
+                                                         },
+                                                     .app = constellation_main,
+                                                     .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void constellation_main(usb_event_t usb_evt, const void *constellation_app_config) {
+void constellation_main(usb_event_t usb_evt,
+                        const void *constellation_app_config) {
   constellation_query_t query = CONSTELLATION_QUERY_INIT_DEFAULT;
 
-  if (false == decode_constellation_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+  if (false ==
+      decode_constellation_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
     return;
   }
 
@@ -135,7 +140,7 @@ void constellation_main(usb_event_t usb_evt, const void *constellation_app_confi
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_QUERY);
+                               ERROR_DATA_FLOW_INVALID_QUERY);
       break;
     }
   }

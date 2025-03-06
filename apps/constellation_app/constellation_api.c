@@ -101,11 +101,11 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool decode_constellation_query(const uint8_t *data,
-                      uint16_t data_size,
-                      constellation_query_t *query_out) {
+                                uint16_t data_size,
+                                constellation_query_t *query_out) {
   if (NULL == data || NULL == query_out || 0 == data_size) {
     constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
+                             ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
@@ -121,16 +121,16 @@ bool decode_constellation_query(const uint8_t *data,
   /* Send error to host if status is false*/
   if (false == status) {
     constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
+                             ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
   return status;
 }
 
 bool encode_constellation_result(const constellation_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out) {
+                                 uint8_t *buffer,
+                                 uint16_t max_buffer_len,
+                                 size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out)
     return false;
 
@@ -147,10 +147,11 @@ bool encode_constellation_result(const constellation_result_t *result,
   return status;
 }
 
-bool check_constellation_query(const constellation_query_t *query, pb_size_t exp_query_tag) {
+bool check_constellation_query(const constellation_query_t *query,
+                               pb_size_t exp_query_tag) {
   if ((NULL == query) || (exp_query_tag != query->which_request)) {
     constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_QUERY);
+                             ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
   }
   return true;
@@ -163,7 +164,8 @@ constellation_result_t init_constellation_result(pb_size_t result_tag) {
 }
 
 void constellation_send_error(pb_size_t which_error, uint32_t error_code) {
-  constellation_result_t result = init_constellation_result(CONSTELLATION_RESULT_COMMON_ERROR_TAG);
+  constellation_result_t result =
+      init_constellation_result(CONSTELLATION_RESULT_COMMON_ERROR_TAG);
   result.common_error = init_common_error(which_error, error_code);
   constellation_send_result(&result);
 }
@@ -172,11 +174,13 @@ void constellation_send_result(const constellation_result_t *result) {
   // TODO: Set all option files
   uint8_t buffer[1700] = {0};
   size_t bytes_encoded = 0;
-  ASSERT(encode_constellation_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  ASSERT(encode_constellation_result(
+      result, buffer, sizeof(buffer), &bytes_encoded));
   send_response_to_host(&buffer[0], bytes_encoded);
 }
 
-bool constellation_get_query(constellation_query_t *query, pb_size_t exp_query_tag) {
+bool constellation_get_query(constellation_query_t *query,
+                             pb_size_t exp_query_tag) {
   evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
 
   if (true == event.p0_event.flag) {

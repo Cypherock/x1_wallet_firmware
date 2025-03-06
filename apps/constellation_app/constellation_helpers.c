@@ -61,8 +61,9 @@
  *****************************************************************************/
 
 #include "constellation_helpers.h"
-#include "constellation_context.h"
+
 #include "coin_utils.h"
+#include "constellation_context.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -106,9 +107,10 @@ bool constellation_derivation_path_guard(const uint32_t *path, uint8_t levels) {
            change = path[3], address = path[4];
 
   // m/44'/144'/0'/0/i
-  status = (CONSTELLATION_PURPOSE_INDEX == purpose && CONSTELLATION_COIN_INDEX == coin &&
-            CONSTELLATION_ACCOUNT_INDEX == account && CONSTELLATION_CHANGE_INDEX == change &&
-            is_non_hardened(address));
+  status = (CONSTELLATION_PURPOSE_INDEX == purpose &&
+            CONSTELLATION_COIN_INDEX == coin &&
+            CONSTELLATION_ACCOUNT_INDEX == account &&
+            CONSTELLATION_CHANGE_INDEX == change && is_non_hardened(address));
 
   return status;
 }
