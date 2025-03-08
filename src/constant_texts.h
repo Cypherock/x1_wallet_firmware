@@ -56,6 +56,7 @@
 #define UI_TEXT_PIN "PIN\n %s"
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
 #define UI_TEXT_VERIFY_PRIORITY_FEE "Verify Priority Fee\n%s\n%s"
+#define UI_TEXT_VERIFY_FEE "Verify Fee\n%s\n%s"
 
 // product hash
 extern const char *product_hash;

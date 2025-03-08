@@ -59,8 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
 #include "constellation_helpers.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "coin_utils.h"
 #include "constellation_context.h"
@@ -113,4 +116,122 @@ bool constellation_derivation_path_guard(const uint32_t *path, uint8_t levels) {
             CONSTELLATION_CHANGE_INDEX == change && is_non_hardened(address));
 
   return status;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/transaction-v2.ts#L113
+void encode_txn(const constellation_transaction_t *txn, char *output) {
+  char temp[1024] = "";
+  char buffer[32] = "";
+
+  // Parent count (always "2")
+  strcat(temp, "2");
+
+  // Source address length and value
+  snprintf(buffer, sizeof(buffer), "%u", strlen(txn->source));
+  strcat(temp, buffer);
+  strcat(temp, txn->source);
+
+  // Destination address length and value
+  snprintf(buffer, sizeof(buffer), "%u", strlen(txn->destination));
+  strcat(temp, buffer);
+  strcat(temp, txn->destination);
+
+  // Amount length and value (hex string)
+  char hex_str_amount[16] = "";
+  snprintf(hex_str_amount, sizeof(hex_str_amount), "%llx", txn->amount);
+  snprintf(buffer, sizeof(buffer), "%u", strlen(hex_str_amount));
+  strcat(temp, buffer);
+  strcat(temp, hex_str_amount);
+
+  // Parent hash length and value
+  snprintf(buffer, sizeof(buffer), "%u", strlen(txn->parent.hash));
+  strcat(temp, buffer);
+  strcat(temp, txn->parent.hash);
+
+  // Ordinal length and value
+  char str_ordinal[32] = "";
+  snprintf(str_ordinal, sizeof(str_ordinal), "%lu", txn->parent.ordinal);
+  snprintf(buffer, sizeof(buffer), "%u", strlen(str_ordinal));
+  strcat(temp, buffer);
+  strcat(temp, str_ordinal);
+
+  // Fee length and value
+  char str_fee[32] = "";
+  snprintf(str_fee, sizeof(str_fee), "%lu", txn->fee);
+  snprintf(buffer, sizeof(buffer), "%u", strlen(str_fee));
+  strcat(temp, buffer);
+  strcat(temp, str_fee);
+
+  // Salt length and value
+  snprintf(buffer, sizeof(buffer), "%u", strlen(txn->salt));
+  strcat(temp, buffer);
+  strcat(temp, txn->salt);
+
+  strcpy(output, temp);
+}
+
+// Encode a variable-length integer (similar to utf8Length in JS)
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/tx-encode.ts#L81
+void encode_var_length(uint32_t value, uint8_t *output, size_t *out_len) {
+  size_t position = 0;
+
+  if (value < (1 << 6)) {
+    output[position++] = (value | 0x80);
+  } else if (value < (1 << 13)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = (value >> 6);
+  } else if (value < (1 << 20)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = (value >> 13);
+  } else if (value < (1 << 27)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = ((value >> 13) | 0x80);
+    output[position++] = (value >> 20);
+  } else {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = ((value >> 13) | 0x80);
+    output[position++] = ((value >> 20) | 0x80);
+    output[position++] = (value >> 27);
+  }
+  *out_len = position;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/tx-encode.ts#L71
+void kryo_serialize(const char *msg, uint8_t *output, size_t *out_len) {
+  uint8_t length_encoded[5] = {0};
+  size_t len = 0;
+
+  // Prefix is "03" + utf8Length(msg length + 1)
+  encode_var_length(strlen(msg) + 1, length_encoded, &len);
+
+  size_t index = 0;
+  output[index++] = 0x03;    // Prefix "03"
+
+  // Append length encoding
+  memcpy(&output[index], length_encoded, len);
+  index += len;
+
+  // Append msg as raw bytes
+  size_t msg_len = strlen(msg);
+  memcpy(&output[index], msg, msg_len);
+  index += msg_len;
+
+  *out_len = index;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L337
+void serialize_txn(const constellation_transaction_t *txn,
+                   uint8_t *output,
+                   size_t *output_len) {
+  char encoded_txn[1024] = "";
+  encode_txn(txn, encoded_txn);
+
+  kryo_serialize(encoded_txn, output, output_len);
 }

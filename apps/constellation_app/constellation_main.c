@@ -134,7 +134,7 @@ void constellation_main(usb_event_t usb_evt,
       break;
     }
     case CONSTELLATION_QUERY_SIGN_TXN_TAG: {
-      // constellation_sign_transaction(&query);
+      constellation_sign_transaction(&query);
       break;
     }
     default: {
