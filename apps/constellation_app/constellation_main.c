@@ -130,7 +130,7 @@ void constellation_main(usb_event_t usb_evt,
   switch ((uint8_t)query.which_request) {
     case CONSTELLATION_QUERY_GET_PUBLIC_KEYS_TAG:
     case CONSTELLATION_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
-      // constellation_get_pub_keys(&query);
+      constellation_get_pub_keys(&query);
       break;
     }
     case CONSTELLATION_QUERY_SIGN_TXN_TAG: {
