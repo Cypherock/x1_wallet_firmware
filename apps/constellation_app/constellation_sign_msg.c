@@ -523,7 +523,7 @@ static bool get_msg_data_signature(
     }
     sig->signature.size = ecdsa_sig_to_der(signature, sig->signature.bytes);
   }
-
+  
   memzero(&node, sizeof(HDNode));
   return status;
 }
