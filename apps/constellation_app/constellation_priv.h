@@ -16,6 +16,7 @@
 #include <constellation/core.pb.h>
 #include <stdint.h>
 
+#include "constellation/sign_msg.pb.h"
 #include "constellation_context.h"
 
 /*****************************************************************************
@@ -31,6 +32,17 @@ typedef struct {
   const constellation_transaction_t *txn;
 
 } constellation_txn_context_t;
+
+typedef struct {
+  /// @brief  Contains initialization data for constellation sign msg received
+  /// from host
+  constellation_sign_msg_initiate_request_t init;
+
+  /// @brief  Pointer to msg data in raw format, size from init member is
+  /// allocated dynamically with a max size cap of @ref MAX_MSG_DATA_SIZE
+  uint8_t *msg_data;
+
+} constellation_sign_msg_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -59,5 +71,13 @@ void constellation_get_pub_keys(constellation_query_t *query);
  * @param query Reference to the decoded query struct from the host app
  */
 void constellation_sign_transaction(constellation_query_t *query);
+
+/**
+ * @brief This function signs a message with or without(blind sign)
+ * user verification and sends the signature as a response.
+ *
+ * @param query Reference to the decoded query struct from the host app
+ */
+void constellation_sign_msg(constellation_query_t *query);
 
 #endif /* CONSTELLATION_PRIV_H */
