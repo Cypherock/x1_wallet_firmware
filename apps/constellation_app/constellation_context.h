@@ -36,8 +36,10 @@
 #define BS58_ENCODED_SIZE 45
 #define CONSTELLATION_TXN_HASH_LENGTH 64
 
+#define MAX_ALLOWED_SIZE 20480
+
 /**
- * TODO: update the size of msg data same as EVM_TRANSACTION_SIZE_CAP.
+ * TODO: update the size of msg data same as MAX_ALLOWED_SIZE.
  * Constraints : The LVGL buffer cannot handle more than 3Kb data size which
  * puts a limit on how much data can be displayed on the device. Possible fix is
  * to show the long messages in chunks in line with max LVGL buffer size.

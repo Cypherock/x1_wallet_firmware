@@ -87,6 +87,21 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static const unsigned char base64_table[256] = {
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 62, 64, 64, 64, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+    61, 64, 64, 64, 64, 64, 64, 64, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64,
+    64, 64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
+    43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -262,4 +277,47 @@ void serialize_txn(const constellation_transaction_t *txn,
   size_t encoded_txn_len = encode_txn(txn, encoded_txn);
 
   kryo_serialize(encoded_txn, encoded_txn_len, output, output_len);
+}
+
+char *base64_decode(const char *input, size_t input_len) {
+  if (input_len % 4 != 0) {
+    return NULL;
+  }
+
+  size_t output_len = (input_len / 4) * 3;
+  if (input[input_len - 1] == '=') {
+    output_len--;
+  }
+  if (input[input_len - 2] == '=') {
+    output_len--;
+  }
+
+  char *decoded = malloc(output_len + 1);
+  if (!decoded) {
+    return NULL;
+  }
+
+  size_t i = 0;
+  size_t j = 0;
+  uint32_t buffer = 0;
+  int bits_collected = 0;
+
+  for (i = 0; i < input_len; i++) {
+    if (input[i] == '=') {
+      break;
+    }
+    uint8_t value = base64_table[(unsigned char)input[i]];
+    if (value == 64) {
+      continue;
+    }
+
+    buffer = (buffer << 6) | value;
+    bits_collected += 6;
+    if (bits_collected >= 8) {
+      bits_collected -= 8;
+      decoded[j++] = (char)((buffer >> bits_collected) & 0xFF);
+    }
+  }
+  decoded[j] = '\0';
+  return decoded;
 }
