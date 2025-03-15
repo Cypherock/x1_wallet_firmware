@@ -40,6 +40,8 @@
 
 #define MAX_ALLOWED_SIZE 20480
 
+#define MAX_ALLOWED_SIZE 20480
+
 /**
  * TODO: update the size of msg data same as MAX_ALLOWED_SIZE.
  * Constraints : The LVGL buffer cannot handle more than 3Kb data size which
