@@ -291,11 +291,11 @@ static bool fetch_valid_input(constellation_query_t *query) {
 
   const constellation_sign_txn_data_t *sign_txn_data =
       &query->sign_txn.txn_data;
-  if (sign_txn_data->has_dag_txn == false) {
+  if (sign_txn_data->has_txn == false) {
     return false;
   }
 
-  constellation_txn_context->dag_txn = &sign_txn_data->dag_txn;
+  constellation_txn_context->txn = &sign_txn_data->txn;
 
   send_response(CONSTELLATION_SIGN_TXN_RESPONSE_UNSIGNED_TXN_ACCEPTED_TAG);
 
@@ -303,19 +303,17 @@ static bool fetch_valid_input(constellation_query_t *query) {
 }
 
 static bool get_user_verification(void) {
-  const constellation_transaction_t *dag_txn =
-      constellation_txn_context->dag_txn;
+  const constellation_transaction_t *txn = constellation_txn_context->txn;
 
   // verify recipient address
-  if (!core_scroll_page(ui_text_verify_address,
-                        dag_txn->destination,
-                        constellation_send_error)) {
+  if (!core_scroll_page(
+          ui_text_verify_address, txn->destination, constellation_send_error)) {
     return false;
   }
 
   // verify recipient amount
   char amount_string[30] = {'\0'};
-  double decimal_amount = (double)dag_txn->amount;
+  double decimal_amount = (double)txn->amount;
   decimal_amount *= 1e-8;
   snprintf(amount_string, sizeof(amount_string), "%.*g", 8, decimal_amount);
 
@@ -332,7 +330,7 @@ static bool get_user_verification(void) {
 
   // verify fee
   char fee_string[30] = {'\0'};
-  double decimal_fee = (double)dag_txn->fee;
+  double decimal_fee = (double)txn->fee;
   decimal_fee *= 1e-8;
   snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
 
@@ -367,7 +365,7 @@ static bool sign_txn(der_sig_t *der_signature) {
   uint8_t serialized_txn[1024] = {0};
   size_t serialized_txn_len = 0;
   serialize_txn(
-      constellation_txn_context->dag_txn, serialized_txn, &serialized_txn_len);
+      constellation_txn_context->txn, serialized_txn, &serialized_txn_len);
 
   uint8_t sha256_digest[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(serialized_txn, serialized_txn_len, sha256_digest);

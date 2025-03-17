@@ -28,7 +28,7 @@ typedef struct {
    */
   constellation_sign_txn_initiate_request_t init_info;
 
-  const constellation_transaction_t *dag_txn;
+  const constellation_transaction_t *txn;
 
 } constellation_txn_context_t;
 
