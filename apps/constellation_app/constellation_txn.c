@@ -322,7 +322,7 @@ static bool get_user_verification(void) {
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_string,
-           CONSTELLATION_LUNIT);
+           "");   // We don't know the which transaction(coin or token and/or which token) is it, hence we don't know unit
 
   if (!core_confirmation(display, constellation_send_error)) {
     return false;
@@ -339,7 +339,7 @@ static bool get_user_verification(void) {
            sizeof(fee_display),
            UI_TEXT_VERIFY_FEE,
            fee_string,
-           CONSTELLATION_LUNIT);
+           "");
 
   if (!core_confirmation(fee_display, constellation_send_error)) {
     return false;
