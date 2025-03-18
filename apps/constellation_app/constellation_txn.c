@@ -322,7 +322,8 @@ static bool get_user_verification(void) {
            sizeof(display),
            UI_TEXT_VERIFY_AMOUNT,
            amount_string,
-           "");   // We don't know the which transaction(coin or token and/or which token) is it, hence we don't know unit
+           "");    // We don't know the which transaction(coin or token and/or
+                   // which token) is it, hence we don't know unit
 
   if (!core_confirmation(display, constellation_send_error)) {
     return false;
@@ -335,11 +336,8 @@ static bool get_user_verification(void) {
   snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
 
   char fee_display[100] = {'\0'};
-  snprintf(fee_display,
-           sizeof(fee_display),
-           UI_TEXT_VERIFY_FEE,
-           fee_string,
-           "");
+  snprintf(
+      fee_display, sizeof(fee_display), UI_TEXT_VERIFY_FEE, fee_string, "");
 
   if (!core_confirmation(fee_display, constellation_send_error)) {
     return false;
