@@ -559,7 +559,7 @@ void constellation_sign_msg(constellation_query_t *query) {
   if (handle_initiate_query(query) && get_msg_data(query) &&
       get_user_verification() && get_msg_data_signature(&sig_resp) &&
       send_signature(query, &(sig_resp))) {
-    delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+    delay_scr_init(ui_text_check_software_wallet_app, DELAY_TIME);
   }
 
   if (NULL != sign_msg_ctx.msg_data) {

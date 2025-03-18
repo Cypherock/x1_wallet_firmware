@@ -378,6 +378,7 @@ extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
+extern const char *ui_text_check_software_wallet_app;
 
 // App specific
 
