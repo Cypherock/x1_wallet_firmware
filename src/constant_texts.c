@@ -529,8 +529,7 @@ const char *ui_text_unreliable_cards =
     "Warning, your cards are unreliable! Contact support";
 const char *ui_critical_card_health_migrate_data =
     "Card health is critical! Migrate to new set of cards";
-const char *ui_text_check_software_wallet_app = 
-    "Check the Software Wallet App";
+const char *ui_text_check_software_wallet_app = "Check the Software Wallet App";
 
 // App specific
 
