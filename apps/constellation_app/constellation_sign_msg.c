@@ -65,6 +65,7 @@
 #include <stdint.h>
 
 #include "atca_helpers.h"
+#include "atca_status.h"
 #include "coin_utils.h"
 #include "constant_texts.h"
 #include "constellation/sign_msg.pb.h"
@@ -202,6 +203,7 @@ static bool send_signature(constellation_query_t *query,
 static size_t constellation_get_prefixed_msg_data(
     const constellation_sign_msg_context_t *ctx,
     const char *prefix,
+    size_t prefix_len,
     char *prefixed_msg_data);
 
 /**
@@ -226,6 +228,9 @@ static constellation_sign_msg_context_t sign_msg_ctx;
 
 static const char *sign_message_prefix = "\031Constellation Signed Message:\n";
 static const char *sign_data_prefix = "\031Constellation Signed Data:\n";
+
+// for atcab_base64decode defined in atca_helpers.c
+uint8_t atcab_b64rules_default[4] = {'+', '/', '=', 64};
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -384,16 +389,19 @@ static bool get_user_verification() {
       ui_text_title = UI_TEXT_VERIFY_MESSAGE;
     }
     case CONSTELLATION_SIGN_MSG_TYPE_SIGN_ARBITRARY_DATA: {
-      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
-      // and split message into multiple confirmations accordingly
-      char *decoded_json = base64_decode((const char *)sign_msg_ctx.msg_data,
-                                         sign_msg_ctx.init.message_size);
-      if (decoded_json) {
-        result = core_scroll_page(
-            ui_text_title, decoded_json, constellation_send_error);
+      uint8_t decoded_json[sign_msg_ctx.init.message_size];
+      size_t decoded_json_len = sign_msg_ctx.init.message_size;
+      ATCA_STATUS decoding_status =
+          atcab_base64decode((const char *)sign_msg_ctx.msg_data,
+                             sign_msg_ctx.init.message_size,
+                             decoded_json,
+                             &decoded_json_len);
 
-        free(decoded_json);
-        decoded_json = NULL;
+      if (decoding_status == ATCA_SUCCESS) {
+        // TODO: Add a limit on size of data per confirmation based on LVGL
+        // buffer and split message into multiple confirmations accordingly
+        result = core_scroll_page(
+            ui_text_title, (char *)decoded_json, constellation_send_error);
       }
     } break;
 
@@ -413,9 +421,9 @@ static bool get_user_verification() {
 static size_t constellation_get_prefixed_msg_data(
     const constellation_sign_msg_context_t *ctx,
     const char *prefix,
+    size_t prefix_len,
     char *prefixed_msg_data) {
   size_t msg_len = ctx->init.message_size;
-  size_t prefix_len = strlen(prefix);
 
   char length_string[20] = "";
   size_t length_string_len =
@@ -423,9 +431,9 @@ static size_t constellation_get_prefixed_msg_data(
 
   size_t total_len = prefix_len + length_string_len + msg_len;
 
-  strcpy(prefixed_msg_data, prefix);
-  strcat(prefixed_msg_data, length_string);
-  strcat(prefixed_msg_data, (const char *)ctx->msg_data);
+  strncpy(prefixed_msg_data, prefix, prefix_len);
+  strncat(prefixed_msg_data, length_string, length_string_len);
+  strncat(prefixed_msg_data, (const char *)ctx->msg_data, msg_len);
 
   return total_len;
 }
@@ -437,7 +445,10 @@ static bool constellation_get_msg_data_digest(
     case CONSTELLATION_SIGN_MSG_TYPE_SIGN_TYPED_MSG: {
       char prefixed_message[ctx->init.message_size + 100];
       size_t prefixed_message_len = constellation_get_prefixed_msg_data(
-          ctx, sign_message_prefix, prefixed_message);
+          ctx,
+          sign_message_prefix,
+          strnlen(sign_message_prefix, CONSTELLATION_SIGN_MSG_PREFIX_LENGTH),
+          prefixed_message);
 
       sha512_Raw(
           (const uint8_t *)prefixed_message, prefixed_message_len, digest);
@@ -446,7 +457,10 @@ static bool constellation_get_msg_data_digest(
     case CONSTELLATION_SIGN_MSG_TYPE_SIGN_ARBITRARY_DATA: {
       char prefixed_data[ctx->init.message_size + 100];
       size_t prefixed_data_len = constellation_get_prefixed_msg_data(
-          ctx, sign_data_prefix, prefixed_data);
+          ctx,
+          sign_data_prefix,
+          strnlen(sign_data_prefix, CONSTELLATION_SIGN_DATA_PREFIX_LENGTH),
+          prefixed_data);
 
       uint8_t sha256_digest[SHA256_DIGEST_LENGTH] = {0};
       sha256_Raw(

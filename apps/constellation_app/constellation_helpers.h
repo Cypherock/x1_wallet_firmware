@@ -66,15 +66,4 @@ void serialize_txn(const constellation_transaction_t *txn,
                    uint8_t *output,
                    size_t *output_len);
 
-/**
- * @brief Decodes a base64 encoded string.
- *
- * @param[in] input       Base64 encoded string
- * @param[in] input_len   Length of the base64 encoded input string
- *
- * @return Decoded string if successful
- * @return NULL otherwise
- */
-char *base64_decode(const char *input, size_t input_len);
-
 #endif    // CONSTELLATION_HELPERS_H
