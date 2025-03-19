@@ -229,7 +229,8 @@ static constellation_sign_msg_context_t sign_msg_ctx;
 static const char *sign_message_prefix = "\031Constellation Signed Message:\n";
 static const char *sign_data_prefix = "\031Constellation Signed Data:\n";
 
-// for atcab_base64decode_ defined in atca_helpers.c as the original default is conditionally defined
+// for atcab_base64decode_ defined in atca_helpers.c as the original default is
+// conditionally defined
 uint8_t atcab_b64rules[4] = {'+', '/', '=', 64};
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -393,10 +394,10 @@ static bool get_user_verification() {
       size_t decoded_json_len = sign_msg_ctx.init.message_size;
       ATCA_STATUS decoding_status =
           atcab_base64decode_((const char *)sign_msg_ctx.msg_data,
-                             sign_msg_ctx.init.message_size,
-                             decoded_json,
-                             &decoded_json_len,
-                             atcab_b64rules);
+                              sign_msg_ctx.init.message_size,
+                              decoded_json,
+                              &decoded_json_len,
+                              atcab_b64rules);
 
       if (decoding_status == ATCA_SUCCESS) {
         // TODO: Add a limit on size of data per confirmation based on LVGL
