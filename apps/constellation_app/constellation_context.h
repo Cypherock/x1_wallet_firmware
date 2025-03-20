@@ -34,6 +34,7 @@
 #define PKCS_PREFIXED_PUBKEY_SIZE PKCS_PREFIX_SIZE + CONSTELLATION_PUB_KEY_SIZE
 #define SHA256_DIGEST_SIZE 32
 #define BS58_ENCODED_SIZE 45
+#define CONSTELLATION_TXN_HASH_LENGTH 64
 
 /*****************************************************************************
  * TYPEDEFS

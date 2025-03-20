@@ -59,8 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-
 #include "constellation_helpers.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "coin_utils.h"
 #include "constellation_context.h"
@@ -113,4 +116,150 @@ bool constellation_derivation_path_guard(const uint32_t *path, uint8_t levels) {
             CONSTELLATION_CHANGE_INDEX == change && is_non_hardened(address));
 
   return status;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/transaction-v2.ts#L113
+size_t encode_txn(const constellation_transaction_t *txn, char *output) {
+  char temp[1024] = "";
+  char buffer[32] = "";
+  size_t output_len = 0;
+
+  // Parent count (always "2")
+  strcat(temp, "2");
+  output_len++;
+
+  // Source address length and value
+  size_t src_length = strnlen(txn->source, CONSTELLATION_ACCOUNT_ADDRESS_SIZE);
+  size_t src_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", src_length);
+  strncat(temp, buffer, src_length_string_len);
+  strncat(temp, txn->source, src_length);
+  output_len += src_length_string_len + src_length;
+
+  // Destination address length and value
+  size_t dest_length =
+      strnlen(txn->destination, CONSTELLATION_ACCOUNT_ADDRESS_SIZE);
+  size_t dest_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", dest_length);
+  strncat(temp, buffer, dest_length_string_len);
+  strncat(temp, txn->destination, dest_length);
+  output_len += dest_length_string_len + dest_length;
+
+  // Amount length and value (hex string)
+  char hex_str_amount[16] = "";
+  size_t hex_str_amount_length =
+      snprintf(hex_str_amount, sizeof(hex_str_amount), "%llx", txn->amount);
+  size_t hex_str_amount_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", hex_str_amount_length);
+  strncat(temp, buffer, hex_str_amount_length_string_len);
+  strncat(temp, hex_str_amount, hex_str_amount_length);
+  output_len += hex_str_amount_length_string_len + hex_str_amount_length;
+
+  // Parent hash length and value
+  size_t parent_hash_length =
+      strnlen(txn->parent.hash, CONSTELLATION_TXN_HASH_LENGTH);
+  size_t parent_hash_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", parent_hash_length);
+  strncat(temp, buffer, parent_hash_length_string_len);
+  strncat(temp, txn->parent.hash, parent_hash_length);
+  output_len += parent_hash_length_string_len + parent_hash_length;
+
+  // Ordinal length and value
+  char str_ordinal[32] = "";
+  size_t str_ordinal_length =
+      snprintf(str_ordinal, sizeof(str_ordinal), "%lu", txn->parent.ordinal);
+  size_t str_ordinal_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", str_ordinal_length);
+  strncat(temp, buffer, str_ordinal_length_string_len);
+  strncat(temp, str_ordinal, str_ordinal_length);
+  output_len += str_ordinal_length_string_len + str_ordinal_length;
+
+  // Fee length and value
+  char str_fee[32] = "";
+  size_t str_fee_length = snprintf(str_fee, sizeof(str_fee), "%lu", txn->fee);
+  size_t str_fee_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", str_fee_length);
+  strncat(temp, buffer, str_fee_length_string_len);
+  strncat(temp, str_fee, str_fee_length);
+  output_len += str_fee_length_string_len + str_fee_length;
+
+  // Salt length and value
+  size_t salt_length = strnlen(txn->salt, 16);
+  size_t salt_length_string_len =
+      snprintf(buffer, sizeof(buffer), "%u", salt_length);
+  strncat(temp, buffer, salt_length_string_len);
+  strncat(temp, txn->salt, salt_length);
+  output_len += salt_length_string_len + salt_length;
+
+  strncpy(output, temp, output_len);
+
+  return output_len;
+}
+
+// Encode a variable-length integer (similar to utf8Length in JS)
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/tx-encode.ts#L81
+void encode_var_length(uint32_t value, uint8_t *output, size_t *out_len) {
+  size_t position = 0;
+
+  if (value < (1 << 6)) {
+    output[position++] = (value | 0x80);
+  } else if (value < (1 << 13)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = (value >> 6);
+  } else if (value < (1 << 20)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = (value >> 13);
+  } else if (value < (1 << 27)) {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = ((value >> 13) | 0x80);
+    output[position++] = (value >> 20);
+  } else {
+    output[position++] = ((value & 0x3F) | 0xC0);
+    output[position++] = ((value >> 6) | 0x80);
+    output[position++] = ((value >> 13) | 0x80);
+    output[position++] = ((value >> 20) | 0x80);
+    output[position++] = (value >> 27);
+  }
+  *out_len = position;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/tx-encode.ts#L71
+void kryo_serialize(const char *msg,
+                    size_t msg_len,
+                    uint8_t *output,
+                    size_t *out_len) {
+  uint8_t length_encoded[5] = {0};
+  size_t len = 0;
+
+  // Prefix is "03" + utf8Length(msg length + 1)
+  encode_var_length(msg_len + 1, length_encoded, &len);
+
+  size_t index = 0;
+  output[index++] = 0x03;    // Prefix "03"
+
+  // Append length encoding
+  memcpy(&output[index], length_encoded, len);
+  index += len;
+
+  // Append msg as raw bytes
+  memcpy(&output[index], msg, msg_len);
+  index += msg_len;
+
+  *out_len = index;
+}
+
+/// Ref:
+// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L337
+void serialize_txn(const constellation_transaction_t *txn,
+                   uint8_t *output,
+                   size_t *output_len) {
+  char encoded_txn[1024] = "";
+  size_t encoded_txn_len = encode_txn(txn, encoded_txn);
+
+  kryo_serialize(encoded_txn, encoded_txn_len, output, output_len);
 }

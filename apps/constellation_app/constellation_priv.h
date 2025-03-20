@@ -21,6 +21,16 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  /**
+   * The structure holds the wallet information of the transaction.
+   * @note Populated by constellation_handle_initiate_query()
+   */
+  constellation_sign_txn_initiate_request_t init_info;
+
+  const constellation_transaction_t *txn;
+
+} constellation_txn_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

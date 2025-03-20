@@ -17,6 +17,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "constellation/sign_txn.pb.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -48,5 +50,20 @@
  * @retval false otherwise
  */
 bool constellation_derivation_path_guard(const uint32_t *path, uint8_t levels);
+
+/**
+ * @brief Serializes a constellation_transaction_t.
+ * @details Encodes the transaction as per dag4.js library and
+ * serializes the encoded txn with kryo_serialize
+ *
+ * @param[in] txn         The constellation_transaction_t to serialize
+ * @param[out] output     The buffer to hold the serialized txn
+ * @param[out] output_len The length of the output serialized txn
+ *
+ * @return None
+ */
+void serialize_txn(const constellation_transaction_t *txn,
+                   uint8_t *output,
+                   size_t *output_len);
 
 #endif    // CONSTELLATION_HELPERS_H
