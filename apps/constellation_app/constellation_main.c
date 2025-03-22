@@ -137,6 +137,10 @@ void constellation_main(usb_event_t usb_evt,
       constellation_sign_transaction(&query);
       break;
     }
+    case CONSTELLATION_QUERY_SIGN_MSG_TAG: {
+      constellation_sign_msg(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
