@@ -435,7 +435,7 @@ void constellation_sign_transaction(constellation_query_t *query) {
   if (handle_initiate_query(query) && fetch_valid_input(query) &&
       get_user_verification() && sign_txn(&der_signature) &&
       send_signature(query, &der_signature)) {
-    delay_scr_init(ui_text_check_cysync, DELAY_TIME);
+    delay_scr_init(ui_text_check_software_wallet_app, DELAY_TIME);
   }
 
   if (constellation_txn_context) {

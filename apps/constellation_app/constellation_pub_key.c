@@ -512,5 +512,5 @@ void constellation_get_pub_keys(constellation_query_t *query) {
     return;
   }
 
-  delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
+  delay_scr_init(ui_text_check_software_wallet_app, DELAY_TIME);
 }
