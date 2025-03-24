@@ -133,70 +133,161 @@ int compare_hashes(const void *a, const void *b) {
                 SHA256_DIGEST_LENGTH);
 }
 
-bool decode_vec(int64_t type,
-                const uint8_t *data,
-                size_t *offset,
-                uint8_t *res) {
+uint64_t decode_vec(int64_t type,
+                    const uint8_t *data,
+                    size_t *offset,
+                    uint8_t *res) {
   switch (type) {
     case Nat8: {
       uint64_t len = leb_decode(data, offset);
       memcpy(res, data + *offset, len);
       (*offset) += len;
-      break;
+      return len;
     }
     default:
-      return false;
+      break;
   }
-  return true;
+  return 0;
 }
 
 bool read_recipient_account_id(const uint8_t *data,
                                size_t *offset,
-                               icp_transfer_t *txn) {
-  return decode_vec(Nat8, data, offset, txn->to);
+                               icp_txn_context_t *icp_txn_context) {
+  if (icp_txn_context->is_token_transfer_txn) {
+    bool has_owner = *(data + *offset);
+    (*offset)++;
+
+    if (!has_owner) {
+      return false;
+    }
+
+    icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
+
+    if (!decode_vec(Nat8, data, offset, txn->to.owner)) {
+      return false;
+    }
+
+    txn->to.has_subaccount = *(data + *offset);
+    (*offset)++;
+
+    if (txn->to.has_subaccount) {
+      return decode_vec(Nat8, data, offset, txn->to.subaccount);
+    }
+    return true;
+  }
+
+  return decode_vec(
+      Nat8, data, offset, icp_txn_context->raw_icp_coin_transfer_txn->to);
 }
 
 bool read_amount_value(const uint8_t *data,
                        size_t *offset,
-                       icp_transfer_t *txn) {
-  txn->amount.e8s = U64_READ_LE_ARRAY(data + *offset);
-  (*offset) += 8;
+                       icp_txn_context_t *icp_txn_context) {
+  if (icp_txn_context->is_token_transfer_txn) {
+    icp_txn_context->raw_icp_token_transfer_txn->amount =
+        leb_decode(data, offset);
+  } else {
+    icp_txn_context->raw_icp_coin_transfer_txn->amount.e8s =
+        U64_READ_LE_ARRAY(data + *offset);
+    (*offset) += 8;
+  }
   return true;
 }
 
-bool read_fee_value(const uint8_t *data, size_t *offset, icp_transfer_t *txn) {
-  txn->fee.e8s = U64_READ_LE_ARRAY(data + *offset);
-  (*offset) += 8;
+bool read_fee_value(const uint8_t *data,
+                    size_t *offset,
+                    icp_txn_context_t *icp_txn_context) {
+  if (icp_txn_context->is_token_transfer_txn) {
+    icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
+
+    txn->has_fee = *(data + *offset);
+    (*offset)++;
+
+    if (txn->has_fee) {
+      icp_txn_context->raw_icp_token_transfer_txn->fee =
+          leb_decode(data, offset);
+    }
+  } else {
+    icp_txn_context->raw_icp_coin_transfer_txn->fee.e8s =
+        U64_READ_LE_ARRAY(data + *offset);
+    (*offset) += 8;
+  }
   return true;
 }
 
-bool read_memo_value(const uint8_t *data, size_t *offset, icp_transfer_t *txn) {
-  txn->memo = U64_READ_LE_ARRAY(data + *offset);
-  (*offset) += 8;
+bool read_memo_value(const uint8_t *data,
+                     size_t *offset,
+                     icp_txn_context_t *icp_txn_context) {
+  if (icp_txn_context->is_token_transfer_txn) {
+    bool has_memo = *(data + *offset);
+    (*offset)++;
+
+    if (has_memo) {
+      icp_txn_context->raw_icp_token_transfer_txn->has_memo = has_memo;
+      uint64_t decoded_len =
+          decode_vec(Nat8,
+                     data,
+                     offset,
+                     icp_txn_context->raw_icp_token_transfer_txn->memo.bytes);
+      if (!decoded_len) {
+        return false;
+      }
+      icp_txn_context->raw_icp_token_transfer_txn->memo.size = decoded_len;
+    }
+  } else {
+    icp_txn_context->raw_icp_coin_transfer_txn->memo =
+        U64_READ_LE_ARRAY(data + *offset);
+    (*offset) += 8;
+  }
   return true;
 }
 
 bool read_from_subaccount_value(const uint8_t *data,
                                 size_t *offset,
-                                icp_transfer_t *txn) {
-  txn->has_from_subaccount = *(data + *offset);
+                                icp_txn_context_t *icp_txn_context) {
+  bool has_from_subaccount = *(data + *offset);
   (*offset)++;
 
-  if (txn->has_from_subaccount) {
-    return decode_vec(Nat8, data, offset, txn->from_subaccount);
+  if (has_from_subaccount) {
+    uint8_t *from_subaccount = NULL;
+    if (icp_txn_context->is_token_transfer_txn) {
+      icp_txn_context->raw_icp_token_transfer_txn->has_from_subaccount =
+          has_from_subaccount;
+      from_subaccount =
+          icp_txn_context->raw_icp_token_transfer_txn->from_subaccount;
+    } else {
+      icp_txn_context->raw_icp_coin_transfer_txn->has_from_subaccount =
+          has_from_subaccount;
+      from_subaccount =
+          icp_txn_context->raw_icp_coin_transfer_txn->from_subaccount;
+    }
+
+    return decode_vec(Nat8, data, offset, from_subaccount);
   }
   return true;
 }
 
 bool read_created_at_time_value(const uint8_t *data,
                                 size_t *offset,
-                                icp_transfer_t *txn) {
-  txn->has_created_at_time = *(data + *offset);
+                                icp_txn_context_t *icp_txn_context) {
+  bool has_created_at_time = *(data + *offset);
   (*offset)++;
 
-  if (txn->has_created_at_time) {
-    txn->created_at_time.timestamp_nanos = U64_READ_LE_ARRAY(data + *offset);
+  if (has_created_at_time) {
+    uint64_t timestamp_nanos = U64_READ_LE_ARRAY(data + *offset);
     (*offset) += 8;
+
+    if (icp_txn_context->is_token_transfer_txn) {
+      icp_txn_context->raw_icp_token_transfer_txn->has_created_at_time =
+          has_created_at_time;
+      icp_txn_context->raw_icp_token_transfer_txn->created_at_time =
+          timestamp_nanos;
+    } else {
+      icp_txn_context->raw_icp_coin_transfer_txn->has_created_at_time =
+          has_created_at_time;
+      icp_txn_context->raw_icp_coin_transfer_txn->created_at_time
+          .timestamp_nanos = timestamp_nanos;
+    }
   }
 
   return true;
@@ -247,7 +338,7 @@ int64_t sleb_decode(const uint8_t *buffer, size_t *offset) {
 // @TODO: add unit tests for parser
 bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             uint16_t byte_array_size,
-                            icp_transfer_t *txn) {
+                            icp_txn_context_t *icp_txn_context) {
   size_t offset = 0;
 
   // Verify the "DIDL" Magic Number
@@ -324,32 +415,32 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case transfer_hash_to:
         // we can also verify the type
         // not doing right now
-        if (!read_recipient_account_id(byte_array, &offset, txn)) {
+        if (!read_recipient_account_id(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
       case transfer_hash_amount:
-        if (!read_amount_value(byte_array, &offset, txn)) {
+        if (!read_amount_value(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
       case transfer_hash_fee:
-        if (!read_fee_value(byte_array, &offset, txn)) {
+        if (!read_fee_value(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
       case transfer_hash_memo:
-        if (!read_memo_value(byte_array, &offset, txn)) {
+        if (!read_memo_value(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
       case transfer_hash_from_subaccount:
-        if (!read_from_subaccount_value(byte_array, &offset, txn)) {
+        if (!read_from_subaccount_value(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
       case transfer_hash_created_at_time:
-        if (!read_created_at_time_value(byte_array, &offset, txn)) {
+        if (!read_created_at_time_value(byte_array, &offset, icp_txn_context)) {
           return false;
         }
         break;
@@ -393,8 +484,8 @@ void hash_icp_transfer_request(const icp_transfer_request_t *request,
   pair_count++;
 
   hash_string("method_name", pairs[pair_count].key_hash);
-  sha256_Raw(request->method_name,
-             sizeof(request->method_name),
+  sha256_Raw(request->method_name.bytes,
+             request->method_name.size,
              pairs[pair_count].value_hash);
   pair_count++;
 

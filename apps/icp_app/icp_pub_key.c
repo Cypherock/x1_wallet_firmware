@@ -64,7 +64,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "base32.h"
 #include "bip32.h"
 #include "constant_texts.h"
 #include "curves.h"
@@ -468,75 +467,6 @@ void get_account_id_to_display(const uint8_t *principal,
       account_id_bytes, ICP_ACCOUNT_ID_LENGTH, account_id, account_id_max_size);
 }
 
-/**
- * @brief Converts a principal ID into a human-readable principal ID format.
- *
- * This function computes a checksum for the given principal ID and generates a
- * base32-encoded representation of the principal ID. The result is formatted
- * with hyphens at regular intervals to generate a more readable version of the
- * principal ID.
- *
- * @param[in] principal The principal ID to convert.
- * @param[out] principal_id The buffer to store the resulting principal ID in
- * string format.
- * @param[in] principal_id_max_size The maximum size of the `principal_id`
- * buffer.
- *
- * @note The caller must ensure that `principal_id` is large enough to hold the
- * formatted principal ID.
- *
- * @return None
- */
-void get_principal_id_to_display(const uint8_t *principal,
-                                 char *principal_id,
-                                 size_t principal_id_max_size) {
-  if (principal == NULL || principal_id == NULL ||
-      principal_id_max_size < (ICP_ACCOUNT_ID_LENGTH * 2 + 1)) {
-    // TODO: Error handling
-    return;
-  }
-
-  uint32_t checksum = compute_crc32(principal, ICP_PRINCIPAL_LENGTH);
-
-  uint8_t principal_id_bytes[ICP_PRINCIPAL_LENGTH + 4] = {0};
-
-  // Store checksum in Big-Endian order
-  principal_id_bytes[0] = (checksum >> 24) & 0xFF;
-  principal_id_bytes[1] = (checksum >> 16) & 0xFF;
-  principal_id_bytes[2] = (checksum >> 8) & 0xFF;
-  principal_id_bytes[3] = (checksum) & 0xFF;
-
-  memcpy(principal_id_bytes + 4, principal, ICP_PRINCIPAL_LENGTH);
-
-  char principal_id_without_dashes[200] = {0};
-  size_t length = base32_encoded_length(sizeof(principal_id_bytes));
-  base32_encode(principal_id_bytes,
-                sizeof(principal_id_bytes),
-                principal_id_without_dashes,
-                sizeof(principal_id_without_dashes),
-                BASE32_ALPHABET_RFC4648_SMALLCASE);
-
-  // hyphenate output
-  size_t offset = 0;
-  size_t hyphens = 0;
-  const size_t limit = 5;
-  while (offset < length) {
-    const size_t curr_limit =
-        limit <= (length - offset) ? limit : length - offset;
-    memcpy(principal_id + offset + hyphens,
-           principal_id_without_dashes + offset,
-           curr_limit);
-    offset += curr_limit;
-
-    if (offset < length) {
-      memcpy(principal_id + offset + hyphens, "-", 1);
-      hyphens += 1;
-    }
-  }
-
-  // Ensure Null character
-  principal_id[offset + hyphens] = 0x00;
-}
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -609,7 +539,7 @@ void icp_get_pub_keys(icp_query_t *query) {
     }
 
     char principal_id[200] = {0};
-    get_principal_id_to_display(principal, principal_id, sizeof(principal_id));
+    get_principal_id_to_display(principal, ICP_PRINCIPAL_LENGTH, principal_id);
 
     if (!core_scroll_page(ui_text_principal_id, principal_id, icp_send_error)) {
       return;

@@ -30,9 +30,13 @@ typedef struct {
 
   const icp_transfer_request_t *icp_transfer_req;
 
-  // decoded raw txn
-  icp_transfer_t *raw_icp_transfer_txn;
+  // decoded raw coin txn
+  icp_coin_transfer_t *raw_icp_coin_transfer_txn;
 
+  // decoded raw token txn
+  icp_token_transfer_t *raw_icp_token_transfer_txn;
+
+  bool is_token_transfer_txn;
 } icp_txn_context_t;
 
 /*****************************************************************************
