@@ -364,7 +364,8 @@ static bool is_token_whitelisted(const uint8_t *cansister_id,
   bool status = false;
 
   for (int16_t i = 0; i < ICRC_WHITELISTED_TOKEN_COUNT; i++) {
-    if (memcmp(cansister_id,
+    if (canister_id_len == sizeof(icrc_tokens[i].ledger_canister_id) &&
+        memcmp(cansister_id,
                icrc_tokens[i].ledger_canister_id,
                canister_id_len) == 0) {
       match = &icrc_tokens[i];

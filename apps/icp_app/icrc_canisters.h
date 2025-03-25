@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 // Number of entries in whitelisted canisters list
-#define ICRC_WHITELISTED_TOKEN_COUNT 2
+#define ICRC_WHITELISTED_TOKEN_COUNT 17
 
 /*****************************************************************************
  * TYPEDEFS
@@ -27,7 +27,7 @@
 
 typedef struct {
   /// upto 29-byte ledger cansister id of the token
-  const uint8_t ledger_canister_id[ICP_PRINCIPAL_LENGTH];
+  const uint8_t ledger_canister_id[ICP_LEDGER_CANISTER_ID_LENGTH];
   /// Symbol (short alphabetical representation) of the icrc token
   const char *symbol;
   /// Decimal value used to display the amount in token transfer in token units

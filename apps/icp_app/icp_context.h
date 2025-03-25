@@ -45,6 +45,7 @@
 #define SHA256_DIGEST_LENGTH 32
 
 #define MAX_ICRC_MEMO_LENGTH 256
+#define ICP_LEDGER_CANISTER_ID_LENGTH 10
 
 /*****************************************************************************
  * TYPEDEFS
