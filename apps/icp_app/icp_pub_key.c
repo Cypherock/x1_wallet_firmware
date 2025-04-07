@@ -68,6 +68,7 @@
 #include "constant_texts.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "icp/get_public_key.pb.h"
 #include "icp_api.h"
 #include "icp_context.h"
 #include "icp_helpers.h"
@@ -306,6 +307,12 @@ static bool send_public_keys(icp_query_t *query,
                              const pb_size_t count,
                              const pb_size_t which_request,
                              const pb_size_t which_response) {
+  if (!icp_get_query(query, which_request) ||
+      !check_which_request(query,
+                          ICP_GET_PUBLIC_KEYS_REQUEST_RESULT_TAG)) {
+    return false;
+  }
+
   icp_result_t response = init_icp_result(which_response);
   icp_get_public_keys_result_response_t *result =
       &response.get_public_keys.result;
@@ -538,6 +545,14 @@ void icp_get_pub_keys(icp_query_t *query) {
       return;
     }
 
+    set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_ACCOUNT_ID_VERIFY);
+
+    icp_result_t result = init_icp_result(which_response);
+    result.sign_txn.which_response = ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
+    icp_send_result(&result);
+
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+
     char principal_id[200] = {0};
     get_principal_id_to_display(principal, ICP_PRINCIPAL_LENGTH, principal_id);
 
@@ -545,7 +560,11 @@ void icp_get_pub_keys(icp_query_t *query) {
       return;
     }
 
-    set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_VERIFY);
+    set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_PRINCIPAL_ID_VERIFY);
+  } else {
+    icp_result_t result = init_icp_result(which_response);
+    result.sign_txn.which_response = ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
+    icp_send_result(&result);
   }
 
   if (!send_public_keys(
