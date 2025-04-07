@@ -308,8 +308,7 @@ static bool send_public_keys(icp_query_t *query,
                              const pb_size_t which_request,
                              const pb_size_t which_response) {
   if (!icp_get_query(query, which_request) ||
-      !check_which_request(query,
-                          ICP_GET_PUBLIC_KEYS_REQUEST_RESULT_TAG)) {
+      !check_which_request(query, ICP_GET_PUBLIC_KEYS_REQUEST_RESULT_TAG)) {
     return false;
   }
 
@@ -548,7 +547,8 @@ void icp_get_pub_keys(icp_query_t *query) {
     set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_ACCOUNT_ID_VERIFY);
 
     icp_result_t result = init_icp_result(which_response);
-    result.sign_txn.which_response = ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
+    result.sign_txn.which_response =
+        ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
     icp_send_result(&result);
 
     delay_scr_init(ui_text_processing, DELAY_SHORT);
@@ -563,7 +563,8 @@ void icp_get_pub_keys(icp_query_t *query) {
     set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_PRINCIPAL_ID_VERIFY);
   } else {
     icp_result_t result = init_icp_result(which_response);
-    result.sign_txn.which_response = ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
+    result.sign_txn.which_response =
+        ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
     icp_send_result(&result);
   }
 
