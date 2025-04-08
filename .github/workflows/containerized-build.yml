@@ -32,7 +32,7 @@ jobs:
         ninja && cd ../..
         cp x1_wallet_firmware/build/Cypherock-*.* ./build/
     - name: Archive Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.firmware }}-${{ inputs.target }}-outputs
         path: build
