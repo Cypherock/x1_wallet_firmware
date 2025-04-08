@@ -430,7 +430,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
 
     if (false == query->decrypt.encrypted_data.has_chunk_payload ||
         payload->chunk_index >= payload->total_chunks ||
-        size + chunk->size > total_size) {
+        size + chunk->size > INHERITANCE_PACKET_MAX_SIZE) {
       SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
       return false;
     }
