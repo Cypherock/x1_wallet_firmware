@@ -1,0 +1,10 @@
+# Options for file common/cypherock-common/proto/constellation/sign_txn.proto
+constellation.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+constellation.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_length:true
+constellation.SignTxnSignatureResponse.signature type:FT_STATIC max_size:72 fixed_length:false
+
+constellation.Transaction.source type:FT_STATIC max_size:41 fixed_length:true
+constellation.Transaction.destination type:FT_STATIC max_size:41 fixed_length:true
+constellation.Parent.hash type:FT_STATIC max_size:65 fixed_length:true
+constellation.Transaction.salt type:FT_STATIC max_size:16 fixed_length:false
+
