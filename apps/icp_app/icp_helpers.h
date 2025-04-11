@@ -115,4 +115,27 @@ uint32_t compute_crc32(const uint8_t *data, size_t length);
  */
 void sha224_Raw(const uint8_t *data, size_t len, uint8_t *digest);
 
+/**
+ * @brief Converts a principal ID into a human-readable principal ID format.
+ *
+ * This function computes a checksum for the given principal ID and generates a
+ * base32-encoded representation of the principal ID. The result is formatted
+ * with hyphens at regular intervals to generate a more readable version of the
+ * principal ID.
+ *
+ * @param[in] principal The principal ID to convert.
+ * @param[in] principal_length The length of the principal ID to convert.
+ *
+ * @param[out] principal_id The buffer to store the resulting principal ID in
+ * string format.
+ *
+ * @note The caller must ensure that `principal_id` is large enough to hold the
+ * formatted principal ID.
+ *
+ * @return None
+ */
+void get_principal_id_to_display(const uint8_t *principal,
+                                 size_t principal_length,
+                                 char *principal_id);
+
 #endif    // ICP_HELPERS_H

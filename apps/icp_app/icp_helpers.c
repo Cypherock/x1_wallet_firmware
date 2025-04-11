@@ -61,9 +61,7 @@
  *****************************************************************************/
 #include "icp_helpers.h"
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include "base32.h"
 #include "sha2.h"
 
 /*****************************************************************************
@@ -185,4 +183,53 @@ void sha224_Raw(const uint8_t *data, size_t len, uint8_t *digest) {
 
   // Truncate to 224 bits (first 28 bytes)
   memzero(&digest[SHA224_DIGEST_LENGTH], 32 - SHA224_DIGEST_LENGTH);
+}
+
+void get_principal_id_to_display(const uint8_t *principal,
+                                 size_t principal_length,
+                                 char *principal_id) {
+  if (principal == NULL || principal_id == NULL) {
+    return;
+  }
+
+  uint32_t checksum = compute_crc32(principal, principal_length);
+
+  uint8_t principal_id_bytes[principal_length + 4];
+
+  // Store checksum in Big-Endian order
+  principal_id_bytes[0] = (checksum >> 24) & 0xFF;
+  principal_id_bytes[1] = (checksum >> 16) & 0xFF;
+  principal_id_bytes[2] = (checksum >> 8) & 0xFF;
+  principal_id_bytes[3] = (checksum) & 0xFF;
+
+  memcpy(principal_id_bytes + 4, principal, principal_length);
+
+  char principal_id_without_dashes[200] = {0};
+  size_t length = base32_encoded_length(sizeof(principal_id_bytes));
+  base32_encode(principal_id_bytes,
+                sizeof(principal_id_bytes),
+                principal_id_without_dashes,
+                sizeof(principal_id_without_dashes),
+                BASE32_ALPHABET_RFC4648_SMALLCASE);
+
+  // hyphenate output
+  size_t offset = 0;
+  size_t hyphens = 0;
+  const size_t limit = 5;
+  while (offset < length) {
+    const size_t curr_limit =
+        limit <= (length - offset) ? limit : length - offset;
+    memcpy(principal_id + offset + hyphens,
+           principal_id_without_dashes + offset,
+           curr_limit);
+    offset += curr_limit;
+
+    if (offset < length) {
+      memcpy(principal_id + offset + hyphens, "-", 1);
+      hyphens += 1;
+    }
+  }
+
+  // Ensure Null character
+  principal_id[offset + hyphens] = 0x00;
 }

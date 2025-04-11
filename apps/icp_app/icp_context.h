@@ -44,6 +44,9 @@
 
 #define SHA256_DIGEST_LENGTH 32
 
+#define MAX_ICRC_MEMO_LENGTH 256
+#define ICP_LEDGER_CANISTER_ID_LENGTH 10
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -123,7 +126,33 @@ typedef struct {
   uint8_t from_subaccount[ICP_SUBACCOUNT_ID_LEN];
   bool has_created_at_time;
   timestamp_t created_at_time;
-} icp_transfer_t;
+} icp_coin_transfer_t;
+
+typedef PB_BYTES_ARRAY_T(MAX_ICRC_MEMO_LENGTH) icrc_memo_t;
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icrc/candid/icrc_ledger.certified.idl.js#L178
+typedef struct {
+  struct {
+    uint8_t owner[ICP_PRINCIPAL_LENGTH];
+    bool has_subaccount;
+    uint8_t subaccount[ICP_SUBACCOUNT_ID_LEN];
+  } to;
+  uint64_t amount;
+
+  // optional fields
+  bool has_fee;
+  uint64_t fee;
+
+  bool has_memo;
+  icrc_memo_t memo;
+
+  bool has_from_subaccount;
+  uint8_t from_subaccount[ICP_SUBACCOUNT_ID_LEN];
+
+  bool has_created_at_time;
+  uint64_t created_at_time;
+} icp_token_transfer_t;
 
 typedef PB_BYTES_ARRAY_T(MAX_SEGMENT_SIZE) icp_path_segment_t;
 typedef PB_BYTES_ARRAY_T(MAX_INGRESS_EXPIRY_SIZE)

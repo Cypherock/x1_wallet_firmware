@@ -96,7 +96,7 @@ int64_t sleb_decode(const uint8_t *buffer, size_t *offset);
  */
 bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             uint16_t byte_array_size,
-                            icp_transfer_t *utxn);
+                            icp_txn_context_t *icp_txn_context);
 
 /**
  * @brief Hash icp_transfer_request_t structure using SHA-256.

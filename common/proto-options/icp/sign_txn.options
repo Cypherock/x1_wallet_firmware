@@ -6,7 +6,7 @@ icp.SignTxnSignatureResponse.read_state_req_signature type:FT_STATIC max_size:64
 
 icp.TransferRequest.request_type type:FT_STATIC max_size:4 fixed_length:true
 icp.TransferRequest.canister_id type:FT_STATIC max_size:29 fixed_length:false
-icp.TransferRequest.method_name type:FT_STATIC max_size:8 fixed_length:true
+icp.TransferRequest.method_name type:FT_STATIC max_size:14 fixed_length:false
 icp.TransferRequest.arg type:FT_STATIC max_size:200 fixed_length:false
 icp.TransferRequest.sender type:FT_STATIC max_size:29 fixed_length:true
 icp.TransferRequest.ingress_expiry type:FT_STATIC max_size:10 fixed_length:false

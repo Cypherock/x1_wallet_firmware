@@ -67,17 +67,20 @@
 #include <string.h>
 
 #include "base58.h"
+#include "constant_texts.h"
 #include "icp/sign_txn.pb.h"
 #include "icp_api.h"
 #include "icp_context.h"
 #include "icp_helpers.h"
 #include "icp_priv.h"
 #include "icp_txn_helpers.h"
+#include "icrc_canisters.h"
 #include "reconstruct_wallet_flow.h"
 #include "sha2.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "utils.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -168,15 +171,37 @@ static bool fetch_valid_input(icp_query_t *query);
 /**
  * @brief This function executes user verification flow of the unsigned txn
  * received from the host.
- * @details The user verification flow is different for different type of action
- * types identified from the unsigned txn
+ * @details The user verification flow is different for different type of
+ * transactions.
  * @note This function expected that the unsigned txn is parsed using the helper
- * function as only few action types are supported currently.
+ * function.
  *
  * @return true If the user accepted the transaction display
  * @return false If any user rejection occured or P0 event occured
  */
 static bool get_user_verification(void);
+
+/**
+ * @brief This function executes user verification flow of the unsigned coin txn
+ * received from the host.
+ * @note This function expected that the unsigned txn is parsed using the helper
+ * function.
+ *
+ * @return true If the user accepted the transaction display
+ * @return false If any user rejection occured or P0 event occured
+ */
+static bool get_user_verification_for_coin_txn(void);
+
+/**
+ * @brief This function executes user verification flow of the unsigned token
+ * txn received from the host.
+ * @note This function expected that the unsigned txn is parsed using the helper
+ * function.
+ *
+ * @return true If the user accepted the transaction display
+ * @return false If any user rejection occured or P0 event occured
+ */
+static bool get_user_verification_for_token_txn(void);
 
 /**
  * @brief Calculates ED25519 curve based signature over the digest of the user
@@ -296,20 +321,34 @@ static bool fetch_valid_input(icp_query_t *query) {
     return false;
   }
 
-  // Verify method_name = "transfer"
-  if (memcmp(icp_txn_context->icp_transfer_req->method_name, "transfer", 8) !=
-      0) {
+  // Verify method_name = "transfer" or "icrc1_transfer"
+  if (memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
+             "transfer",
+             8) != 0 &&
+      memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
+             "icrc1_transfer",
+             14) != 0) {
     return false;
   }
 
   send_response(ICP_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG);
 
-  icp_txn_context->raw_icp_transfer_txn =
-      (icp_transfer_t *)malloc(sizeof(icp_transfer_t));
+  icp_txn_context->is_token_transfer_txn =
+      memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
+             "icrc1_transfer",
+             14) == 0;
+
+  if (icp_txn_context->is_token_transfer_txn) {
+    icp_txn_context->raw_icp_token_transfer_txn =
+        (icp_token_transfer_t *)malloc(sizeof(icp_token_transfer_t));
+  } else {
+    icp_txn_context->raw_icp_coin_transfer_txn =
+        (icp_coin_transfer_t *)malloc(sizeof(icp_coin_transfer_t));
+  }
 
   if (!icp_parse_transfer_txn(icp_txn_context->icp_transfer_req->arg.bytes,
                               icp_txn_context->icp_transfer_req->arg.size,
-                              icp_txn_context->raw_icp_transfer_txn)) {
+                              icp_txn_context)) {
     icp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
@@ -318,8 +357,167 @@ static bool fetch_valid_input(icp_query_t *query) {
   return true;
 }
 
-static bool get_user_verification(void) {
-  const icp_transfer_t *decoded_utxn = icp_txn_context->raw_icp_transfer_txn;
+static bool is_token_whitelisted(const uint8_t *cansister_id,
+                                 size_t canister_id_len,
+                                 icrc_token_t *token) {
+  const icrc_token_t *match = NULL;
+  bool status = false;
+
+  for (int16_t i = 0; i < ICRC_WHITELISTED_TOKEN_COUNT; i++) {
+    if (canister_id_len == sizeof(icrc_tokens[i].ledger_canister_id) &&
+        memcmp(cansister_id,
+               icrc_tokens[i].ledger_canister_id,
+               canister_id_len) == 0) {
+      match = &icrc_tokens[i];
+      status = true;
+      break;
+    }
+  }
+
+  if (NULL != token && NULL != match) {
+    memcpy(token, match, sizeof(*match));
+  }
+
+  // return unknown empty token if not found in the whitelist
+  if (!status) {
+    icrc_token_t empty_token = {
+        .ledger_canister_id = {},
+        .symbol = "",
+        .decimal = 0,
+    };
+
+    memcpy(token, &empty_token, sizeof(empty_token));
+  }
+
+  return status;
+}
+
+static bool get_user_verification_for_token_txn(void) {
+  const uint8_t *canister_id =
+      icp_txn_context->icp_transfer_req->canister_id.bytes;
+  size_t canister_id_len = icp_txn_context->icp_transfer_req->canister_id.size;
+
+  icrc_token_t token = {0};
+  if (!is_token_whitelisted(canister_id, canister_id_len, &token)) {
+    // Token Unverifed, Display warning
+    delay_scr_init(ui_text_unverified_token, DELAY_TIME);
+
+    char canister_principal_id[200] = {0};
+    get_principal_id_to_display(
+        canister_id, canister_id_len, canister_principal_id);
+
+    if (!core_scroll_page(ui_text_verify_token_address,
+                          canister_principal_id,
+                          icp_send_error)) {
+      return false;
+    }
+
+  } else {
+    char msg[100] = "";
+    snprintf(
+        msg, sizeof(msg), UI_TEXT_SEND_TOKEN_PROMPT, token.symbol, ICP_NAME);
+    if (!core_confirmation(msg, icp_send_error)) {
+      return false;
+    }
+  }
+
+  const icp_token_transfer_t *decoded_utxn =
+      icp_txn_context->raw_icp_token_transfer_txn;
+
+  // verify recipient principal id;
+  char principal_id[200] = {0};
+  get_principal_id_to_display(
+      decoded_utxn->to.owner, ICP_PRINCIPAL_LENGTH, principal_id);
+
+  // Now take user verification
+  if (!core_scroll_page(
+          ui_text_verify_principal_id, principal_id, icp_send_error)) {
+    return false;
+  }
+
+  // verify recipient amount
+  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+  char display_amount[100] = "";
+
+  uint8_t be_amount[8] = {0};
+  int amount_index = 8;
+  while (amount_index--)
+    be_amount[amount_index] = decoded_utxn->amount >> 8 * (7 - amount_index);
+
+  byte_array_to_hex_string(be_amount, 8, amount_string, sizeof(amount_string));
+  if (!convert_byte_array_to_decimal_string(16,
+                                            token.decimal,
+                                            amount_string,
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))) {
+    icp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+
+  snprintf(display_amount,
+           sizeof(display_amount),
+           UI_TEXT_VERIFY_AMOUNT,
+           amount_decimal_string,
+           token.symbol);
+  if (!core_confirmation(display_amount, icp_send_error)) {
+    return false;
+  }
+
+  // verify fee
+  if (decoded_utxn->has_fee) {
+    char fee_string[40] = {'\0'}, fee_decimal_string[30] = {'\0'};
+    char display_fee[100] = "";
+
+    uint8_t be_fee[8] = {0};
+    int fee_index = 8;
+    while (fee_index--)
+      be_fee[fee_index] = decoded_utxn->fee >> 8 * (7 - fee_index);
+
+    byte_array_to_hex_string(be_fee, 8, fee_string, sizeof(fee_string));
+    if (!convert_byte_array_to_decimal_string(16,
+                                              token.decimal,
+                                              fee_string,
+                                              fee_decimal_string,
+                                              sizeof(fee_decimal_string))) {
+      icp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(display_fee,
+             sizeof(display_fee),
+             UI_TEXT_SEND_TXN_FEE,
+             fee_decimal_string,
+             token.symbol);
+
+    if (!core_scroll_page(UI_TEXT_TXN_FEE, display_fee, icp_send_error)) {
+      return false;
+    }
+  }
+
+  // Verfy memo
+  if (decoded_utxn->has_memo) {
+    char memo_string[decoded_utxn->memo.size * 2 + 1];
+    byte_array_to_hex_string(decoded_utxn->memo.bytes,
+                             decoded_utxn->memo.size,
+                             memo_string,
+                             sizeof(memo_string));
+
+    char display_memo[50 + decoded_utxn->memo.size * 2 + 1];
+    snprintf(
+        display_memo, sizeof(display_memo), UI_TEXT_VERIFY_MEMO, memo_string);
+
+    if (!core_confirmation(display_memo, icp_send_error)) {
+      return false;
+    }
+  }
+
+  set_app_flow_status(ICP_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
+static bool get_user_verification_for_coin_txn(void) {
+  const icp_coin_transfer_t *decoded_utxn =
+      icp_txn_context->raw_icp_coin_transfer_txn;
 
   char to_address[ICP_ACCOUNT_ID_LENGTH * 2 + 1] = "";
 
@@ -366,11 +564,12 @@ static bool get_user_verification(void) {
   }
 
   // verify memo
+  char memo_string[30] = "";
+  snprintf(memo_string, sizeof(memo_string), "%llu", decoded_utxn->memo);
+
   char display_memo[50] = {'\0'};
-  snprintf(display_memo,
-           sizeof(display_memo),
-           UI_TEXT_VERIFY_MEMO,
-           decoded_utxn->memo);
+  snprintf(
+      display_memo, sizeof(display_memo), UI_TEXT_VERIFY_MEMO, memo_string);
 
   if (!core_confirmation(display_memo, icp_send_error)) {
     return false;
@@ -379,6 +578,13 @@ static bool get_user_verification(void) {
   set_app_flow_status(ICP_SIGN_TXN_STATUS_VERIFY);
 
   return true;
+}
+
+static bool get_user_verification(void) {
+  if (icp_txn_context->is_token_transfer_txn) {
+    return get_user_verification_for_token_txn();
+  }
+  return get_user_verification_for_coin_txn();
 }
 
 static bool sign_txn(sig_t *signature) {
@@ -485,9 +691,13 @@ void icp_sign_transaction(icp_query_t *query) {
   }
 
   if (icp_txn_context) {
-    if (icp_txn_context->raw_icp_transfer_txn) {
-      free(icp_txn_context->raw_icp_transfer_txn);
-      icp_txn_context->raw_icp_transfer_txn = NULL;
+    if (icp_txn_context->raw_icp_coin_transfer_txn) {
+      free(icp_txn_context->raw_icp_coin_transfer_txn);
+      icp_txn_context->raw_icp_coin_transfer_txn = NULL;
+    }
+    if (icp_txn_context->raw_icp_token_transfer_txn) {
+      free(icp_txn_context->raw_icp_token_transfer_txn);
+      icp_txn_context->raw_icp_token_transfer_txn = NULL;
     }
     free(icp_txn_context);
     icp_txn_context = NULL;
