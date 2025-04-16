@@ -13,6 +13,16 @@ else()
     set(PROJECT Cypherock_Simulator)
 endif()
 
+# Replace this with actual vendors
+if ("${VENDOR}" STREQUAL "Dummy")
+    add_compile_definitions(VENDOR_NAME="Dummy X1")
+    add_compile_definitions(VENDOR_COMPANION_APP="Dumsync")
+    set(PROJECT ${PROJECT}-Dummy)
+else()
+    add_compile_definitions(VENDOR_NAME="Cypherock X1 Wallet")
+    add_compile_definitions(VENDOR_COMPANION_APP="cySync")
+endif()
+
 project(${PROJECT})
 
 # python is needed for compiling proto files using nanopb

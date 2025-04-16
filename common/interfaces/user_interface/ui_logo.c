@@ -61,13 +61,18 @@
 #include "events.h"
 #include "ui_multi_instruction.h"
 
-LV_IMG_DECLARE(cypherock_logo);
+#ifndef VENDOR_LOGO    // Need to create a file in lv_font similar to
+                       // cypherock_logo to use this
+#define VENDOR_LOGO cypherock_logo
+#endif
+
+LV_IMG_DECLARE(VENDOR_LOGO);
 
 void logo_scr_init(const uint16_t delay_in_ms) {
   instruction_content_t logo_content = {
-      .img = &cypherock_logo,
-      .img_x_offset = (128 - (cypherock_logo.header.w)) >> 1,
-      .img_y_offset = (64 - (cypherock_logo.header.h)) >> 1,
+      .img = &VENDOR_LOGO,
+      .img_x_offset = (128 - (VENDOR_LOGO.header.w)) >> 1,
+      .img_y_offset = (64 - (VENDOR_LOGO.header.h)) >> 1,
       .text = "",
       .text_align = LV_ALIGN_CENTER};
 
