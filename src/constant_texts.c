@@ -59,6 +59,10 @@
 #include "ui_menu.h"
 #include "ui_text_slideshow.h"
 
+#ifndef VENDOR_COMPANION_APP
+#define VENDOR_COMPANION_APP "cySync"
+#endif
+
 // Main menu text
 const char *ui_text_heading_main_menu = "Main Menu";
 const char *ui_text_options_main_menu[] = {"Create Wallet",
@@ -196,8 +200,8 @@ const char *ui_text_wallet_selector_invalid =
 const char *ui_text_onboarding_welcome = "Welcome";
 const char *ui_text_onboarding[NUMBER_OF_SLIDESHOW_SCREENS_ONBOARDING] = {
     "Visit\ncypherock.com/go",
-    "And download the cySync app to set up the device",
-    "Follow instructions on the cySync app"};
+    "And download the " VENDOR_COMPANION_APP "app to set up the device",
+    "Follow instructions on the " VENDOR_COMPANION_APP "app"};
 const char *ui_text_onboarding_complete =
     "Congratulations!\nCypherock X1 is ready to use";
 
@@ -207,7 +211,7 @@ const char *ui_text_verification_is_now_complete_messages[] = {
     "You can view the seed phrase on the device",
     "You'll need this device and a card to make transactions",
     "You'll require the PIN to view seed or transact",
-    "To get started export this wallet to the cySync app",
+    "To get started export this wallet to the " VENDOR_COMPANION_APP "app",
     "Press the center button to return to the main menu",
 };
 
@@ -227,7 +231,7 @@ const char *ui_text_startup_instruction_screen_2[] = {
 
 const char *ui_text_startup_instruction_screen_4[] = {
     "Now visit cypherock.com/gs",
-    "and download the cySync app to set up the device"
+    "and download the " VENDOR_COMPANION_APP "app to set up the device"
 
 };
 
@@ -242,7 +246,7 @@ const char *ui_text_something_went_wrong_contact_support_send_logs =
     "Something went wrong! Contact support";
 const char *ui_text_already_have_maxi_wallets =
     "You already have maximum number of wallets";
-const char *ui_text_aborted = "Aborted from\nthe cySync app";
+const char *ui_text_aborted = "Aborted from\nthe " VENDOR_COMPANION_APP "app";
 const char *ui_text_operation_has_been_cancelled =
     "Operation has been cancelled!";
 const char *ui_text_wallet_name_exists =
@@ -254,7 +258,7 @@ const char *ui_text_incorrect_mnemonics = "Incorrect mnemonics";
 const char *ui_text_incorrect_choice_view_seed_again =
     "Incorrect choice!\nView the seed phrase again?";
 const char *ui_text_xpub_not_found_add_coin_first =
-    "Click OK on the cySync app to resync coins";
+    "Click OK on the " VENDOR_COMPANION_APP "app to resync coins";
 const char *ui_wallet_pin_instruction_2 =
     "If you forget it\nyou will lose access\nto this wallet";
 const char *ui_wallet_passphrase_instruction_2 =
@@ -268,7 +272,7 @@ const char *ui_text_invalid_transaction = "Invalid transaction";
 // errors X1 Card flows
 const char *ui_text_authentication_required = "Device authentication required";
 const char *ui_text_start_auth_from_CySync =
-    "Authenticate device from the cySync app";
+    "Authenticate device from the " VENDOR_COMPANION_APP "app";
 const char *ui_text_invalid_card_contact_cypherock =
     "Authentication failed Contact Cypherock";
 const char *ui_text_wrong_card_sequence = "Wrong card sequence";
@@ -280,7 +284,7 @@ const char *ui_text_wallet_verification_failed_in_creation =
 const char *ui_text_wallet_verification_failed_in_reconstruction =
     "Verification failed.\n Contact support.";
 const char *ui_text_no_response_from_desktop =
-    "No response from the cySync app!\nTry again";
+    "No response from the " VENDOR_COMPANION_APP "app!\nTry again";
 
 const char *ui_text_tap_a_card = "Tap any card";
 
@@ -375,7 +379,7 @@ const char *ui_text_confirm_data = "Confirm data";
 const char *ui_text_verification_cancelled = "Verification cancelled";
 const char *ui_text_verify_nonce = "Verify nonce";
 const char *ui_text_waiting_for_desktop =
-    "Follow the\ninstructions on\nthe cySync app";
+    "Follow the\ninstructions on\nthe " VENDOR_COMPANION_APP "app";
 
 // headings near specific
 const char *ui_text_verify_create_from = "Verify Create from";
@@ -395,7 +399,7 @@ const char *ui_text_use_passphrase_question =
     "Do you want to use passphrase with this wallet?";
 const char *ui_text_wallet_name_size_limit =
     "Wallet name cannot exceed 15 letters";
-const char *ui_text_check_cysync = "Check the cySync app";
+const char *ui_text_check_cysync = "Check the " VENDOR_COMPANION_APP "app";
 const char *ui_text_tap_x1card_auth_instruction_1 =
     "Tap a card and do not lift until you hear 2 beep sound";
 const char *ui_text_tap_x1card_auth_instruction_2 =
@@ -411,7 +415,7 @@ const char *ui_text_now_enter_your_seed_phrase = "Now enter your\nseed phrase";
 const char *ui_text_now_enter_your_data = "Now enter your\ndata";
 const char *ui_text_verify_entered_words = "Verify the entered words";
 const char *ui_text_exported_signed_transaction_to_desktop =
-    "Exported signed transaction to the cySync app!";
+    "Exported signed transaction to the " VENDOR_COMPANION_APP "app!";
 const char *ui_text_start_card_update =
     "Start card update?\nThis will format the card";
 const char *ui_text_start_verification_of_card = "Start verification of card";
@@ -451,7 +455,7 @@ const char *ui_text_disable_log_export = "Do you want to disable logging?";
 
 //?
 const char *ui_text_do_you_want_import_wallet_to_desktop =
-    "Do you want to import wallet to the cySync app?";
+    "Do you want to import wallet to the " VENDOR_COMPANION_APP "app?";
 const char *ui_text_do_you_want_to_set_pin = "Do you want to set a PIN?";
 
 const char *ui_text_auth_process = "Waiting for device authentication...";
@@ -465,7 +469,7 @@ const char *ui_text_device_verification_success =
 const char *ui_text_device_verification_failure =
     "Device authentication failed";
 const char *ui_text_unauthenticate_via_cysync =
-    "Authenticate the device via the cySync app";
+    "Authenticate the device via the " VENDOR_COMPANION_APP "app";
 const char *ui_text_start_device_verification = "Start device authentication?";
 const char *ui_text_its_a_while_check_your_cards =
     "It's been a while check if your cards are working properly";
@@ -493,7 +497,7 @@ const char *ui_text_retry_or_repair = "Retry or re-pair your cards";
 const char *ui_text_process_reset_due_to_inactivity =
     "Operation aborted due to inactivity";
 const char *ui_text_device_already_provisioned = "Device already provisioned";
-const char *ui_text_check_cysync_app = "Check the cySync app";
+const char *ui_text_check_cysync_app = "Check the " VENDOR_COMPANION_APP "app";
 const char *ui_text_provision_success = "Device provision successful";
 const char *ui_text_provision_fail = "Device provision unsuccessful";
 const char *ui_text_cannot_verify_card_contact_support =
@@ -565,5 +569,6 @@ const char *ui_text_account_id = "Account Id";
 const char *ui_text_verify_principal_id = "Verify recipient principal id";
 
 #ifdef ALLOW_LOG_EXPORT
-const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
+const char *ui_text_send_logs_prompt =
+    "Send logs to the " VENDOR_COMPANION_APP "app?";
 #endif
