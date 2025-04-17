@@ -13,14 +13,8 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdint.h>
 
-#include "card_fetch_data.h"
-#include "ed25519.h"
 #include "exchange/core.pb.h"
-#include "exchange_context.h"
-#include "ui_input_text.h"
-#include "wallet.h"
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -43,5 +37,11 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+
+void exchange_initiate_flow(exchange_query_t *query);
+
+void exchange_get_signature(exchange_query_t *query);
+
+void exchange_store_signature(exchange_query_t *query);
 
 #endif
