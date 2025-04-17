@@ -497,9 +497,12 @@ static bool get_user_verification_for_token_txn(void) {
       return false;
     }
 
-    snprintf(
-      display_fee, sizeof(display_fee), UI_TEXT_VERIFY_FEE, fee_decimal_string, token.symbol);
-  
+    snprintf(display_fee,
+             sizeof(display_fee),
+             UI_TEXT_VERIFY_FEE,
+             fee_decimal_string,
+             token.symbol);
+
     if (!core_confirmation(display_fee, icp_send_error)) {
       return false;
     }
@@ -543,7 +546,8 @@ static bool get_user_verification_for_coin_txn(void) {
     }
   }
 
-  if (!core_scroll_page(ui_text_verify_account_id, to_account_id, icp_send_error)) {
+  if (!core_scroll_page(
+          ui_text_verify_account_id, to_account_id, icp_send_error)) {
     return false;
   }
 
@@ -574,8 +578,7 @@ static bool get_user_verification_for_coin_txn(void) {
   decimal_fee *= 1e-8;
   snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
 
-  snprintf(
-    display, sizeof(display), UI_TEXT_VERIFY_FEE, fee_string, ICP_LUNIT);
+  snprintf(display, sizeof(display), UI_TEXT_VERIFY_FEE, fee_string, ICP_LUNIT);
 
   if (!core_confirmation(display, icp_send_error)) {
     return false;
