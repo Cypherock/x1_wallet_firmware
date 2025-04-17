@@ -1,7 +1,7 @@
 /**
- * @file    exchange_main.c
+ * @file    get_signature.c
  * @author  Cypherock X1 Team
- * @brief   A common entry point to various Exchange actions supported.
+ * @brief   Dumps stored signature from shared_context to the host
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -60,12 +60,14 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "exchange_main.h"
-
-#include "exchange/core.pb.h"
+#include "common_error.h"
+#include "exchange/get_signature.pb.h"
 #include "exchange_api.h"
-#include "exchange_priv.h"
+#include "flash_api.h"
+#include "onboarding.h"
 #include "status_api.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -80,74 +82,71 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+
 /**
- * @brief Entry point for the EXCHANGE application of the X1 vault. It is
- * invoked by the X1 vault firmware, as soon as there is a USB request raised
- * for the Exchange app.
+ * @brief Checks if the provided query contains expected request.
+ * @details The function performs the check on the request type and if the check
+ * fails, then it will send an error to the host exchange app and return false.
  *
- * @param usb_evt The USB event which triggered invocation of the exchange
- * app
+ * @param query Reference to an instance of exchange_query_t containing query
+ * received from host app
+ * @param which_request The expected request type enum
+ *
+ * @return bool Indicating if the check succeeded or failed
+ * @retval true If the query contains the expected request
+ * @retval false If the query does not contain the expected request
  */
-void exchange_main(usb_event_t usb_evt, const void *app_config);
+static bool check_which_request(const exchange_query_t *query,
+                                pb_size_t which_request);
+
+static bool send_signature(exchange_query_t *query, exchange_result_t *result);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const cy_app_desc_t exchange_app_desc = {.id = 24,
-                                                .version =
-                                                    {
-                                                        .major = 1,
-                                                        .minor = 0,
-                                                        .patch = 0,
-                                                    },
-                                                .app = exchange_main,
-                                                .app_config = NULL};
+
+/*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-void exchange_main(usb_event_t usb_evt, const void *app_config) {
-  exchange_query_t query = EXCHANGE_QUERY_INIT_DEFAULT;
 
-  if (false == decode_exchange_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
-    return;
+static bool check_which_request(const exchange_query_t *query,
+                                pb_size_t which_request) {
+  if (which_request != query->get_signature.which_request) {
+    exchange_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
   }
 
-  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
-   * servicing a USB initiated command */
-  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+  return true;
+}
 
-  LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
-  switch ((uint8_t)query.which_request) {
-    case EXCHANGE_QUERY_INITIATE_FLOW_TAG: {
-      exchange_initiate_flow(&query);
-      break;
-    }
-    case EXCHANGE_QUERY_GET_SIGNATURE_TAG: {
-      exchange_get_signature(&query);
-      break;
-    }
-    case EXCHANGE_QUERY_STORE_SIGNATURE_TAG: {
-      exchange_store_signature(&query);
-      break;
-    }
-    default: {
-      /* In case we ever encounter invalid query, convey to the host app */
-      exchange_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                          ERROR_DATA_FLOW_INVALID_QUERY);
-    } break;
-  }
+static bool send_signature(exchange_query_t *query, exchange_result_t *result) {
+  exchange_send_result(result);
+  return true;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const cy_app_desc_t *get_exchange_app_desc() {
-  return &exchange_app_desc;
+
+void exchange_get_signature(exchange_query_t *query) {
+  exchange_result_t result =
+      init_exchange_result(EXCHANGE_RESULT_GET_SIGNATURE_TAG);
+  if (!check_which_request(query,
+                           EXCHANGE_GET_SIGNATURE_REQUEST_INITIATE_TAG)) {
+    return;
+  }
+
+  result.get_signature.which_response =
+      EXCHANGE_GET_SIGNATURE_RESPONSE_RESULT_TAG;
+
+  if (send_signature(query, &result) == false) {
+    // TODO: handle signature export failed
+  }
 }

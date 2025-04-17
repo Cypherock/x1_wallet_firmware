@@ -72,6 +72,7 @@
 #include "doge_app.h"
 #include "eth_app.h"
 #include "evm_main.h"
+#include "exchange_main.h"
 #include "fantom_app.h"
 #include "icp_main.h"
 #include "inheritance_main.h"
@@ -187,4 +188,5 @@ void core_init_app_registry() {
   registry_add_app(get_xrp_app_desc());
   registry_add_app(get_starknet_app_desc());
   registry_add_app(get_icp_app_desc());
+  registry_add_app(get_exchange_app_desc());
 }
