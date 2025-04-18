@@ -66,6 +66,7 @@
 
 #include "bip32.h"
 #include "btc_api.h"
+#include "btc_app.h"
 #include "btc_helpers.h"
 #include "btc_inputs_validator.h"
 #include "btc_priv.h"
@@ -308,7 +309,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
     status = false;
   }
 
-  caq_node_data_t data = {.applet_id = get_applet_id()};
+  caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
 
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
