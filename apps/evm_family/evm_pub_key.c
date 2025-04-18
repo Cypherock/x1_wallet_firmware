@@ -65,6 +65,7 @@
 
 #include "address.h"
 #include "composable_app_queue.h"
+#include "eth_app.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
@@ -277,7 +278,7 @@ static bool validate_request_data(evm_get_public_keys_request_t *request,
     }
   }
 
-  caq_node_data_t data = {.applet_id = get_applet_id()};
+  caq_node_data_t data = {.applet_id = get_eth_app_desc()->id};
 
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
