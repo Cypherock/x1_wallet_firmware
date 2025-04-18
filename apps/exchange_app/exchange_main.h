@@ -19,6 +19,7 @@
  *****************************************************************************/
 
 #include "app_registry.h"
+#include "composable_app_queue.h"
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -26,6 +27,13 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+
+typedef enum EXCHANGE_FLOW_TAGS {
+  EXCHANGE_FLOW_TAG_RECEIVE = 0x1,
+  EXCHANGE_FLOW_TAG_FETCH_SIGNATURE,
+  EXCHANGE_FLOW_TAG_STORE_SIGNATURE,
+  EXCHANGE_FLOW_TAG_SEND,
+} exchange_flow_tag_e;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -40,4 +48,6 @@
  * @return A const reference to cy_app_desc_t
  */
 const cy_app_desc_t *get_exchange_app_desc();
+
+bool exchange_app_validate_caq(caq_node_data_t data);
 #endif /* EXCHANGE_MAIN_H */
