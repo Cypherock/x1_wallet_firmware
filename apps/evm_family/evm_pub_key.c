@@ -64,9 +64,11 @@
 #include <stdint.h>
 
 #include "address.h"
+#include "composable_app_queue.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -274,6 +276,16 @@ static bool validate_request_data(evm_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }

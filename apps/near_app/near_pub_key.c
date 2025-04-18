@@ -60,6 +60,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "near_api.h"
 #include "near_context.h"
 #include "near_helpers.h"
@@ -251,6 +253,14 @@ static bool validate_request(const near_get_public_keys_intiate_request_t *req,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params, req->wallet_id, sizeof(req->wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }

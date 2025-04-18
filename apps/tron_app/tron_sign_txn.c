@@ -69,8 +69,10 @@
 
 #include "base58.h"
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "hasher.h"
 #include "reconstruct_wallet_flow.h"
 #include "secp256k1.h"
@@ -83,7 +85,7 @@
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "wallet_list.h"
-//#include "tron_contracts.c"
+// #include "tron_contracts.c"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -249,6 +251,16 @@ static bool validate_request_data(const tron_sign_txn_request_t *request) {
                     ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }
