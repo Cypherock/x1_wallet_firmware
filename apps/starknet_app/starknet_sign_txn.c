@@ -63,7 +63,9 @@
  *****************************************************************************/
 
 #include "bignum.h"
+#include "composable_app_queue.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "mini-gmp-helpers.h"
 #include "mini-gmp.h"
 #include "mpz_ecdsa.h"
@@ -254,6 +256,17 @@ static bool validate_request_data(const starknet_sign_txn_request_t *request) {
                         ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  exchange_app_validate_caq(data);
+
   return status;
 }
 

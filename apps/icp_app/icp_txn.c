@@ -67,7 +67,9 @@
 #include <string.h>
 
 #include "base58.h"
+#include "composable_app_queue.h"
 #include "constant_texts.h"
+#include "exchange_main.h"
 #include "icp/sign_txn.pb.h"
 #include "icp_api.h"
 #include "icp_context.h"
@@ -268,6 +270,17 @@ static bool validate_request_data(const icp_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  exchange_app_validate_caq(data);
+
   return status;
 }
 

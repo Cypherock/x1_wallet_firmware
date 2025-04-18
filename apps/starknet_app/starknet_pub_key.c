@@ -64,6 +64,8 @@
 #include <stdint.h>
 
 #include "assert_conf.h"
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "mini-gmp-helpers.h"
 #include "reconstruct_wallet_flow.h"
 #include "starkcurve.h"
@@ -278,6 +280,16 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }

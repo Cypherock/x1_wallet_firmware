@@ -74,8 +74,10 @@
 #include "byte_stream.h"
 #include "coin_utils.h"
 #include "common.pb.h"
+#include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -305,6 +307,17 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  exchange_app_validate_caq(data);
+
   return status;
 }
 

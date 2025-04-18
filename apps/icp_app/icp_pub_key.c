@@ -65,9 +65,11 @@
 #include <string.h>
 
 #include "bip32.h"
+#include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "icp/get_public_key.pb.h"
 #include "icp_api.h"
 #include "icp_context.h"
@@ -261,6 +263,14 @@ static bool validate_request(const icp_get_public_keys_intiate_request_t *req,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params, req->wallet_id, sizeof(req->wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }

@@ -66,7 +66,9 @@
 #include "base58.h"
 #include "bip32.h"
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "sha3.h"
 #include "status_api.h"
@@ -263,6 +265,16 @@ static bool validate_request_data(tron_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  exchange_app_validate_caq(data);
 
   return status;
 }
