@@ -62,10 +62,17 @@
 
 #include "exchange_main.h"
 
+#include <string.h>
+
+#include "board.h"
+#include "composable_app_queue.h"
 #include "exchange/core.pb.h"
 #include "exchange_api.h"
 #include "exchange_priv.h"
 #include "status_api.h"
+#include "ui_core_confirm.h"
+#include "ui_delay.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -150,4 +157,41 @@ void exchange_main(usb_event_t usb_evt, const void *app_config) {
  *****************************************************************************/
 const cy_app_desc_t *get_exchange_app_desc() {
   return &exchange_app_desc;
+}
+
+bool exchange_app_validate_caq(caq_node_data_t data) {
+  bool status = false;
+  caq_node_data_t caq_data = caq_peek(&status);
+  if (!status) {
+    return false;
+  }
+
+  /*{*/
+  /*  char hex_arr[500] = {0};*/
+  /*  byte_array_to_hex_string(*/
+  /*      data.params, sizeof(data.params), hex_arr, sizeof(hex_arr));*/
+  /*  core_scroll_page("params", hex_arr, NULL);*/
+  /*}*/
+  /**/
+  /*{*/
+  /*  char hex_arr[500] = {0};*/
+  /*  byte_array_to_hex_string(*/
+  /*      caq_data.params, sizeof(caq_data.params), hex_arr, sizeof(hex_arr));*/
+  /*  core_scroll_page("params", hex_arr, NULL);*/
+  /*}*/
+
+  if (caq_data.applet_id == data.applet_id &&
+      memcmp(caq_data.params, data.params, sizeof(data.params)) == 0) {
+    if (caq_data.applet_id != exchange_app_desc.id) {
+      delay_scr_init("Swap", DELAY_SHORT);
+    }
+
+    caq_pop();
+    return true;
+  }
+
+  delay_scr_init("Invalid operation during Swap\n rebooting...", DELAY_TIME);
+  BSP_reset();
+
+  return false;
 }

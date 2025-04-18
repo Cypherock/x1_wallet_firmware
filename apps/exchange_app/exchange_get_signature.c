@@ -60,14 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "common_error.h"
 #include "exchange/get_signature.pb.h"
 #include "exchange_api.h"
-#include "flash_api.h"
-#include "onboarding.h"
+#include "exchange_main.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -122,6 +118,13 @@ static bool check_which_request(const exchange_query_t *query,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
+
+  exchange_app_validate_caq(data);
 
   return true;
 }

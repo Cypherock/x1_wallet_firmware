@@ -60,8 +60,14 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <string.h>
+
+#include "composable_app_queue.h"
 #include "exchange/initiate_flow.pb.h"
 #include "exchange_api.h"
+#include "exchange_context.h"
+#include "exchange_main.h"
+#include "memzero.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -130,10 +136,58 @@ void exchange_initiate_flow(exchange_query_t *query) {
     return;
   }
 
-  // TODO: do things here
+  // Clear existing composable app queue
+  caq_clear();
+
+  // Receive flow
+  {
+    caq_node_data_t data = {.applet_id =
+                                query->initiate_flow.initiate.to.applet_id};
+
+    memzero(data.params, sizeof(data.params));
+    memcpy(data.params,
+           query->initiate_flow.initiate.to.wallet_id,
+           sizeof(query->initiate_flow.initiate.to.wallet_id));
+    data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+    caq_push(data);
+  }
+
+  // Fetch signature for receive address
+  {
+    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
+
+    memzero(data.params, sizeof(data.params));
+    data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
+
+    caq_push(data);
+  }
+
+  // Store signature for receiver address in send flow
+  {
+    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
+
+    memzero(data.params, sizeof(data.params));
+    data.params[0] = EXCHANGE_FLOW_TAG_STORE_SIGNATURE;
+
+    caq_push(data);
+  }
+
+  // Send flow
+  {
+    caq_node_data_t data = {.applet_id =
+                                query->initiate_flow.initiate.from.applet_id};
+
+    memzero(data.params, sizeof(data.params));
+    memcpy(data.params,
+           query->initiate_flow.initiate.to.wallet_id,
+           sizeof(query->initiate_flow.initiate.to.wallet_id));
+    data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+    caq_push(data);
+  }
 
   result.initiate_flow.which_response =
       EXCHANGE_INITIATE_FLOW_RESPONSE_RESULT_TAG;
-
   exchange_send_result(&result);
 }
