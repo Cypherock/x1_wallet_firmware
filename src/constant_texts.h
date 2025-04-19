@@ -57,6 +57,7 @@
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
 #define UI_TEXT_VERIFY_PRIORITY_FEE "Verify Priority Fee\n%s\n%s"
 #define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
+#define UI_TEXT_VERIFY_FEE "Verify Fee\n%s\n%s"
 
 // product hash
 extern const char *product_hash;
@@ -399,6 +400,7 @@ extern const char *ui_text_inheritance_decryption_flow_failure;
 extern const char *ui_text_principal_id;
 extern const char *ui_text_account_id;
 extern const char *ui_text_verify_principal_id;
+extern const char *ui_text_verify_account_id;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
