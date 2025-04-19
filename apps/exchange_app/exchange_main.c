@@ -62,6 +62,7 @@
 
 #include "exchange_main.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "board.h"
@@ -166,20 +167,6 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
     return false;
   }
 
-  /*{*/
-  /*  char hex_arr[500] = {0};*/
-  /*  byte_array_to_hex_string(*/
-  /*      data.params, sizeof(data.params), hex_arr, sizeof(hex_arr));*/
-  /*  core_scroll_page("params", hex_arr, NULL);*/
-  /*}*/
-  /**/
-  /*{*/
-  /*  char hex_arr[500] = {0};*/
-  /*  byte_array_to_hex_string(*/
-  /*      caq_data.params, sizeof(caq_data.params), hex_arr, sizeof(hex_arr));*/
-  /*  core_scroll_page("params", hex_arr, NULL);*/
-  /*}*/
-
   if (caq_data.applet_id == data.applet_id &&
       memcmp(caq_data.params, data.params, sizeof(data.params)) == 0) {
     if (caq_data.applet_id != exchange_app_desc.id) {
@@ -188,6 +175,22 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
 
     caq_pop();
     return true;
+  }
+
+  {
+    char hex_arr[500] = {0};
+    char title[100] = {0};
+    snprintf(title, 100, "%ld", data.applet_id);
+    byte_array_to_hex_string(data.params, 40, hex_arr, 100);
+    LOG_ERROR("CAQ Invalid data received: %ld [%s]", title, hex_arr);
+  }
+
+  {
+    char hex_arr[500] = {0};
+    char title[100] = {0};
+    snprintf(title, 100, "%ld", caq_data.applet_id);
+    byte_array_to_hex_string(caq_data.params, 40, hex_arr, 100);
+    LOG_ERROR("CAQ data exptected: %ld [%s]", title, hex_arr);
   }
 
   delay_scr_init("Invalid operation during Swap\n rebooting...", DELAY_TIME);
