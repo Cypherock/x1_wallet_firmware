@@ -277,7 +277,7 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
+static bool use_signature_verification = false;
 static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
@@ -317,7 +317,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-  exchange_app_validate_caq(data);
+  use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -586,6 +586,14 @@ static bool get_user_verification() {
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
       return false;
     }
+
+    if (use_signature_verification) {
+      if (!exchange_validate_stored_signature(address, sizeof(address))) {
+        btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
+        return false;
+      }
+    }
+
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
       return false;

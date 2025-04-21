@@ -60,6 +60,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "core_session.h"
+#include "core_shared_context.h"
 #include "exchange/get_signature.pb.h"
 #include "exchange_api.h"
 #include "exchange_main.h"
@@ -97,8 +99,6 @@
 static bool check_which_request(const exchange_query_t *query,
                                 pb_size_t which_request);
 
-static bool send_signature(exchange_query_t *query, exchange_result_t *result);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -129,11 +129,6 @@ static bool check_which_request(const exchange_query_t *query,
   return true;
 }
 
-static bool send_signature(exchange_query_t *query, exchange_result_t *result) {
-  exchange_send_result(result);
-  return true;
-}
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -149,7 +144,10 @@ void exchange_get_signature(exchange_query_t *query) {
   result.get_signature.which_response =
       EXCHANGE_GET_SIGNATURE_RESPONSE_RESULT_TAG;
 
-  if (send_signature(query, &result) == false) {
-    // TODO: handle signature export failed
-  }
+  memcpy(result.get_signature.result.signature,
+         shared_context,
+         sizeof(result.get_signature.result.signature));
+  result.get_signature.result.index = SESSION_KEY_INDEX;
+
+  exchange_send_result(&result);
 }

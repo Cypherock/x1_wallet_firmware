@@ -65,11 +65,17 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "base58.h"
+#include "bip32.h"
 #include "board.h"
 #include "composable_app_queue.h"
+#include "core_session.h"
+#include "core_shared_context.h"
+#include "curves.h"
 #include "exchange/core.pb.h"
 #include "exchange_api.h"
 #include "exchange_priv.h"
+#include "nist256p1.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
@@ -120,6 +126,23 @@ static const cy_app_desc_t exchange_app_desc = {.id = 24,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void derive_server_public_key(uint8_t *server_verification_pub_key) {
+  HDNode node;
+  char xpub[XPUB_SIZE] = {'\0'};
+
+  base58_encode_check(get_card_root_xpub(),
+                      FS_KEYSTORE_XPUB_LEN,
+                      nist256p1_info.hasher_base58,
+                      xpub,
+                      XPUB_SIZE);
+
+  hdnode_deserialize_public(
+      (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
+  hdnode_public_ckd(&node, SESSION_KEY_INDEX);
+
+  memcpy(server_verification_pub_key, node.public_key, SESSION_PUB_KEY_SIZE);
+}
+
 void exchange_main(usb_event_t usb_evt, const void *app_config) {
   exchange_query_t query = EXCHANGE_QUERY_INIT_DEFAULT;
 
@@ -172,6 +195,13 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
     if (caq_data.applet_id != exchange_app_desc.id) {
       delay_scr_init("Swap", DELAY_SHORT);
     }
+    {
+      char hex_arr[500] = {0};
+      char title[100] = {0};
+      snprintf(title, 100, "%ld", data.applet_id);
+      byte_array_to_hex_string(data.params, 40, hex_arr, 100);
+      LOG_ERROR("Match %s [%s]", title, hex_arr);
+    }
 
     caq_pop();
     return true;
@@ -182,7 +212,7 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
     char title[100] = {0};
     snprintf(title, 100, "%ld", data.applet_id);
     byte_array_to_hex_string(data.params, 40, hex_arr, 100);
-    LOG_ERROR("CAQ Invalid data received: %ld [%s]", title, hex_arr);
+    LOG_ERROR("CAQ Invalid data received: %s [%s]", title, hex_arr);
   }
 
   {
@@ -190,11 +220,35 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
     char title[100] = {0};
     snprintf(title, 100, "%ld", caq_data.applet_id);
     byte_array_to_hex_string(caq_data.params, 40, hex_arr, 100);
-    LOG_ERROR("CAQ data exptected: %ld [%s]", title, hex_arr);
+    LOG_ERROR("CAQ data exptected: %s [%s]", title, hex_arr);
   }
 
   delay_scr_init("Invalid operation during Swap\n rebooting...", DELAY_TIME);
   BSP_reset();
 
   return false;
+}
+
+bool exchange_validate_stored_signature(char *receiver,
+                                        size_t receiver_max_size) {
+  uint8_t sig[64] = {0};
+  memcpy(sig, shared_context, sizeof(sig));
+
+  core_clear_shared_context();
+
+  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE];
+  derive_server_public_key(server_verification_pub_key);
+
+  size_t len = strnlen(receiver, receiver_max_size);
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
+
+  sha256_Raw((uint8_t *)receiver, len, hash);
+
+  if (ecdsa_verify_digest(&nist256p1, server_verification_pub_key, sig, hash) !=
+      0) {
+    delay_scr_init("Failed to validate signature\n Do not proceed with Swap",
+                   DELAY_TIME);
+    return false;
+  }
+  return true;
 }

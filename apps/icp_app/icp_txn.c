@@ -235,6 +235,7 @@ static bool send_signature(icp_query_t *query, const sig_t *signature);
  * STATIC VARIABLES
  *****************************************************************************/
 static icp_txn_context_t *icp_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -279,7 +280,7 @@ static bool validate_request_data(const icp_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-  exchange_app_validate_caq(data);
+  use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -538,6 +539,12 @@ static bool get_user_verification_for_coin_txn(void) {
                            ICP_ACCOUNT_ID_LENGTH,
                            to_address,
                            ICP_ACCOUNT_ID_LENGTH * 2 + 1);
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
+      return false;
+    }
+  }
 
   if (!core_scroll_page(ui_text_verify_address, to_address, icp_send_error)) {
     return false;

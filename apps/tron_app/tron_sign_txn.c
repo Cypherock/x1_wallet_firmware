@@ -223,6 +223,8 @@ static bool send_signature(tron_query_t *query,
 
 STATIC tron_txn_context_t *tron_txn_context = NULL;
 
+static bool use_signature_verification = false;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -260,7 +262,7 @@ static bool validate_request_data(const tron_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-  exchange_app_validate_caq(data);
+  use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -360,7 +362,8 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
 
 STATIC bool tron_get_user_verification() {
   // extract raw
-  if (!extract_contract_info(tron_txn_context->raw_txn)) {
+  if (!extract_contract_info(tron_txn_context->raw_txn,
+                             use_signature_verification)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
