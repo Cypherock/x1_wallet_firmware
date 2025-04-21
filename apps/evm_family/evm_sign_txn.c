@@ -255,7 +255,7 @@ static bool validate_request_data(const evm_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-  exchange_app_validate_caq(data);
+  txn_context->use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }

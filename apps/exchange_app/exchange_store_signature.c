@@ -60,7 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <string.h>
+
 #include "composable_app_queue.h"
+#include "core_shared_context.h"
 #include "exchange/store_signature.pb.h"
 #include "exchange_api.h"
 #include "exchange_main.h"
@@ -140,7 +143,11 @@ void exchange_store_signature(exchange_query_t *query) {
     return;
   }
 
-  // TODO: do things here
+  core_clear_shared_context();
+
+  memcpy(shared_context,
+         query->store_signature.initiate.signature,
+         sizeof(query->store_signature.initiate.signature));
 
   result.store_signature.which_response =
       EXCHANGE_STORE_SIGNATURE_RESPONSE_RESULT_TAG;

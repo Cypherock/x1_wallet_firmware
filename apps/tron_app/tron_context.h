@@ -41,6 +41,7 @@ typedef struct {
  * @param[in] raw_txn: tron raw transaction
  * @return bool True if decoding was successful, else false
  */
-bool extract_contract_info(tron_transaction_raw_t *raw_txn);
+bool extract_contract_info(tron_transaction_raw_t *raw_txn,
+                           bool use_signature_verification);
 
 #endif /* TRON_CONTEXT_H */
