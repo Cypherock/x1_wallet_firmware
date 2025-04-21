@@ -38,10 +38,38 @@
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
 
+/**
+ * @brief Initiates the exchange flow by pushing data onto the composable app
+ * queue.
+ *
+ * This function clears the existing queue, then pushes data for the receive
+ * flow, fetching the signature, storing the signature, and finally the send
+ * flow.
+ *
+ * @param query Pointer to the exchange query structure.
+ */
 void exchange_initiate_flow(exchange_query_t *query);
 
+/**
+ * @brief Retrieves the signature from the shared context and sends it as a
+ * result.
+ *
+ * This function retrieves the signature stored in the shared context, copies it
+ * into the result structure, and sends the result.
+ *
+ * @param query Pointer to the exchange query structure.
+ */
 void exchange_get_signature(exchange_query_t *query);
 
+/**
+ * @brief Stores the provided signature in the shared context.
+ *
+ * This function clears the existing shared context and copies the provided
+ * signature into it.
+ *
+ * @param query Pointer to the exchange query structure containing the signature
+ * to store.
+ */
 void exchange_store_signature(exchange_query_t *query);
 
 #endif
