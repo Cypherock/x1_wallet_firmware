@@ -62,9 +62,11 @@
 
 #include "exchange_main.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "atecc_utils.h"
 #include "base58.h"
 #include "bip32.h"
 #include "board.h"
@@ -76,6 +78,7 @@
 #include "exchange_api.h"
 #include "exchange_priv.h"
 #include "nist256p1.h"
+#include "sha2.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
@@ -251,4 +254,22 @@ bool exchange_validate_stored_signature(char *receiver,
     return false;
   }
   return true;
+}
+
+void exchange_sign_address(char *address, size_t address_max_size) {
+  uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
+  size_t len = strnlen(address, address_max_size);
+  sha256_Raw((uint8_t *)address, len, hash);
+
+  auth_data_t data = atecc_sign(hash);
+  core_clear_shared_context();
+  size_t offset = 0;
+  memcpy(shared_context, data.signature, sizeof(data.signature));
+  offset += sizeof(data.signature);
+
+  memcpy(shared_context + offset, data.postfix1, sizeof(data.postfix1));
+  offset += sizeof(data.postfix1);
+
+  memcpy(shared_context + offset, data.postfix2, sizeof(data.postfix2));
+  offset += sizeof(data.postfix2);
 }

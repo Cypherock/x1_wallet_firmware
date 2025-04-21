@@ -206,6 +206,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -266,7 +267,7 @@ STATIC bool validate_request_data(solana_get_public_keys_request_t *request,
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
 
-  exchange_app_validate_caq(data);
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -446,6 +447,10 @@ void solana_get_pub_keys(solana_query_t *query) {
       solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
     };
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
+    }
 
     if (!core_scroll_page(ui_text_receive_on, address, solana_send_error)) {
       return;

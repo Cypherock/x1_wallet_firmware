@@ -229,6 +229,7 @@ static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr);
 /*****************************************************************************
  * static VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -289,7 +290,7 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
 
-  exchange_app_validate_caq(data);
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -543,6 +544,10 @@ void starknet_get_pub_keys(starknet_query_t *query) {
         sprintf(address + index++, "0");
       }
       snprintf(address + index, sizeof(address) - index, raw_address);
+    }
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
