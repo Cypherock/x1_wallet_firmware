@@ -213,7 +213,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
+static bool sign_address = false;
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -274,7 +274,7 @@ static bool validate_request_data(tron_get_public_keys_request_t *request,
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
 
-  exchange_app_validate_caq(data);
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -468,6 +468,10 @@ void tron_get_pub_keys(tron_query_t *query) {
                              TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
       tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
+    }
+
+    if (sign_address) {
+      exchange_sign_address(main_address, sizeof(main_address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, main_address, tron_send_error)) {

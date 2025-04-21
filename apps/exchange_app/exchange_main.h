@@ -52,4 +52,5 @@ const cy_app_desc_t *get_exchange_app_desc();
 bool exchange_app_validate_caq(caq_node_data_t data);
 bool exchange_validate_stored_signature(char *receiver,
                                         size_t receiver_max_size);
+void exchange_sign_address(char *address, size_t address_max_size);
 #endif /* EXCHANGE_MAIN_H */

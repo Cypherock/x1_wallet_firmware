@@ -157,6 +157,7 @@ static void send_public_key(const uint8_t *public_key);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 static bool check_which_request(const btc_query_t *query,
                                 pb_size_t which_request) {
@@ -187,7 +188,7 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
 
-  exchange_app_validate_caq(data);
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -299,6 +300,11 @@ void btc_get_pub_key(btc_query_t *query) {
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   size_t length = btc_get_address(seed, path, path_length, public_key, msg);
   memzero(seed, sizeof(seed));
+
+  if (sign_address) {
+    exchange_sign_address(msg, sizeof(msg));
+  }
+
   if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_VERIFY);
