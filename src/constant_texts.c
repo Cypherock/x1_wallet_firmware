@@ -556,9 +556,6 @@ const char *ui_text_inheritance_decryption_flow_confirmation_generic =
 const char *ui_text_inheritance_decryption_flow_success = "Decryption Success";
 const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 
-// Solana Specific
-const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
-
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif

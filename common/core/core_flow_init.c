@@ -82,7 +82,6 @@
 #include "optimism_app.h"
 #include "polygon_app.h"
 #include "restricted_app.h"
-#include "solana_main.h"
 #include "starknet_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
@@ -175,7 +174,6 @@ void core_init_app_registry() {
   registry_add_app(get_eth_app_desc());
   registry_add_app(get_near_app_desc());
   registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
   registry_add_app(get_bsc_app_desc());
   registry_add_app(get_fantom_app_desc());
   registry_add_app(get_avalanche_app_desc());

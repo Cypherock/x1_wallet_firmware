@@ -8,8 +8,6 @@
 #include "ltc_app.h"
 #include "near.h"
 #include "near_helpers.h"
-#include "solana.h"
-#include "solana_helpers.h"
 #include "unity_fixture.h"
 
 const uint32_t paths[][7] = {
@@ -49,34 +47,6 @@ const uint32_t paths[][7] = {
     // 2 non-hardened indices
     {5, 0, NON_SEGWIT, NEAR, 0x00000000, 0x80000000, 0x0fffffff},    // near
                                                                      // invalid
-
-    // sol-paper account
-    {2, 1, NON_SEGWIT, SOLANA},    // sol  valid
-    // sol-ledger account 0
-    {3, 1, NON_SEGWIT, SOLANA, 0x80000000},    // sol  valid
-    // sol-ledger account 0x7fffffff
-    {3, 1, NON_SEGWIT, SOLANA, 0xffffffff},    // sol  valid
-    // sol-phantom account 0
-    {4, 1, NON_SEGWIT, SOLANA, 0x80000000, 0x80000000},    // sol  valid
-    // sol-phantom account 0x7fffffff
-    {4, 1, NON_SEGWIT, SOLANA, 0x8fffffff, 0x80000000},    // sol  valid
-    // sol-paper wrong purpose-id
-    {2, 0, NATIVE_SEGWIT, SOLANA},    // sol  invalid
-    // sol-ledger non-hardened account
-    {3, 0, NON_SEGWIT, SOLANA, 0x00000000},    // sol  invalid
-    // sol-ledger wrong purpose-id and non-hardened account
-    {3, 0, NATIVE_SEGWIT, SOLANA, 0x00000000},    // sol  invalid
-    // sol-phantom wrong purpose-id
-    {4, 0, NATIVE_SEGWIT, SOLANA, 0x80000000, 0x80000001},    // sol  invalid
-    // sol-phantom
-    {4, 0, NON_SEGWIT, SOLANA, 0x80000000, 0x80000001},    // sol  invalid
-    {5,
-     0,
-     NON_SEGWIT,
-     SOLANA,
-     0x80000000,
-     0x80000000,
-     0x8fffffff},    // sol  invalid
 
     // wrong depth for xpub
     {5,
@@ -178,9 +148,6 @@ TEST(xpub, derivation_path_tests) {
         break;
       case NEAR:
         status = near_derivation_path_guard(&paths[i][2], depth);
-        break;
-      case SOLANA:
-        status = solana_derivation_path_guard(&paths[i][2], depth);
         break;
       case ETHEREUM:
         status = evm_derivation_path_guard(&paths[i][2], depth);

@@ -68,7 +68,6 @@
 #include "optimism.h"
 #include "polygon.h"
 #include "segwit_addr.h"
-#include "solana.h"
 
 void s_memcpy(uint8_t *dst,
               const uint8_t *src,

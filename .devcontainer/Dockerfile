@@ -17,4 +17,7 @@ RUN ln -s git-clang-format-15 /usr/bin/git-clang-format
 RUN ln -s clang-tidy-15 /usr/bin/clang-tidy
 RUN ln -s run-clang-tidy-15 /usr/bin/run-clang-tidy
 
+ENV XDG_RUNTIME_DIR=/tmp/xdg-runtime
+RUN mkdir -p $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
+
 USER $USERNAME

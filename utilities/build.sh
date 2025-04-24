@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#set -x
 
 usage() {
 	echo -e "USAGE: $0 [-c] [-u] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
@@ -119,6 +120,7 @@ if [[ "${clean_flag}" = "true" ]]; then
 	rm -rf "${ACTIVE_ROOT_DIR}/generated/proto"
 fi
 
+# --log-level=VERBOSE --trace-expand
 "${CMAKE}" -DDEV_SWITCH=${DEV} \
 	-DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}" \
 	-DSIGN_BINARY:BOOL="${SIGN_BINARY}" \

@@ -225,11 +225,6 @@ TEST_GROUP_RUNNER(near_txn_user_verification_test) {
                 near_txn_user_verification_function_call_explicit_account);
 }
 
-TEST_GROUP_RUNNER(solana_add_account_test) {
-  RUN_TEST_CASE(solana_add_account_test, solana_validate_req_action);
-  RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
-}
-
 TEST_GROUP_RUNNER(inheritance_encryption_tests) {
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
   RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);

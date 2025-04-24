@@ -102,7 +102,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
                             uint16_t byte_array_size,
                             near_unsigned_txn *utxn) {
   if (byte_array == NULL || utxn == NULL)
-    return;
+    return false;
   memzero(utxn, sizeof(near_unsigned_txn));
 
   uint16_t offset = 0;

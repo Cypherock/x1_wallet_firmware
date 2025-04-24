@@ -61,14 +61,17 @@
 #include "mpz_ecdsa.h"
 
 #include <bignum.h>
+#include <string.h>
 #include <starknet_context.h>
 
 #include "mini-gmp-helpers.h"
 #include <stdbool.h>
+#include "rand.h"
 
 #include "assert_conf.h"
 #include "mini-gmp.h"
 #include "rfc6979.h"
+#include "memzero.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
