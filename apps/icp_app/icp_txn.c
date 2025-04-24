@@ -499,11 +499,11 @@ static bool get_user_verification_for_token_txn(void) {
 
     snprintf(display_fee,
              sizeof(display_fee),
-             UI_TEXT_SEND_TXN_FEE,
+             UI_TEXT_VERIFY_FEE,
              fee_decimal_string,
              token.symbol);
 
-    if (!core_scroll_page(UI_TEXT_TXN_FEE, display_fee, icp_send_error)) {
+    if (!core_confirmation(display_fee, icp_send_error)) {
       return false;
     }
   }
@@ -533,20 +533,21 @@ static bool get_user_verification_for_coin_txn(void) {
   const icp_coin_transfer_t *decoded_utxn =
       icp_txn_context->raw_icp_coin_transfer_txn;
 
-  char to_address[ICP_ACCOUNT_ID_LENGTH * 2 + 1] = "";
+  char to_account_id[ICP_ACCOUNT_ID_LENGTH * 2 + 1] = "";
 
   byte_array_to_hex_string(decoded_utxn->to,
                            ICP_ACCOUNT_ID_LENGTH,
-                           to_address,
+                           to_account_id,
                            ICP_ACCOUNT_ID_LENGTH * 2 + 1);
 
   if (use_signature_verification) {
-    if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
+    if (!exchange_validate_stored_signature(to_account_id, sizeof(to_account_id))) {
       return false;
     }
   }
 
-  if (!core_scroll_page(ui_text_verify_address, to_address, icp_send_error)) {
+  if (!core_scroll_page(
+          ui_text_verify_account_id, to_account_id, icp_send_error)) {
     return false;
   }
 
@@ -556,7 +557,7 @@ static bool get_user_verification_for_coin_txn(void) {
   char amount_string[30] = {'\0'};
   double decimal_amount = (double)amount;
   decimal_amount *= 1e-8;
-  snprintf(amount_string, sizeof(amount_string), "%.8f", decimal_amount);
+  snprintf(amount_string, sizeof(amount_string), "%.*g", 8, decimal_amount);
 
   char display[100] = {'\0'};
   snprintf(display,
@@ -575,11 +576,11 @@ static bool get_user_verification_for_coin_txn(void) {
   char fee_string[30] = {'\0'};
   double decimal_fee = (double)fee;
   decimal_fee *= 1e-8;
-  snprintf(fee_string, sizeof(fee_string), "%.8f", decimal_fee);
+  snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
 
-  snprintf(
-      display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee_string, ICP_LUNIT);
-  if (!core_scroll_page(UI_TEXT_TXN_FEE, display, icp_send_error)) {
+  snprintf(display, sizeof(display), UI_TEXT_VERIFY_FEE, fee_string, ICP_LUNIT);
+
+  if (!core_confirmation(display, icp_send_error)) {
     return false;
   }
 
