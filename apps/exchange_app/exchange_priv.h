@@ -72,4 +72,14 @@ void exchange_get_signature(exchange_query_t *query);
  */
 void exchange_store_signature(exchange_query_t *query);
 
+/**
+ * @brief Closes the exchange flow by clearing the composable app
+ * queue and shared context.
+ *
+ * This function clears the existing queue, and the shared context.
+ *
+ * @param query Pointer to the exchange query structure.
+ */
+void exchange_close_flow(exchange_query_t *query);
+
 #endif

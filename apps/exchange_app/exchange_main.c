@@ -171,6 +171,10 @@ void exchange_main(usb_event_t usb_evt, const void *app_config) {
       exchange_store_signature(&query);
       break;
     }
+    case EXCHANGE_QUERY_CLOSE_FLOW_TAG: {
+      exchange_close_flow(&query);
+      break;
+    }
     default: {
       /* In case we ever encounter invalid query, convey to the host app */
       exchange_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -195,9 +199,6 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
 
   if (caq_data.applet_id == data.applet_id &&
       memcmp(caq_data.params, data.params, sizeof(data.params)) == 0) {
-    if (caq_data.applet_id != exchange_app_desc.id) {
-      delay_scr_init("Swap", DELAY_SHORT);
-    }
     {
       char hex_arr[500] = {0};
       char title[100] = {0};

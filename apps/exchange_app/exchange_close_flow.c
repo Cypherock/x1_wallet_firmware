@@ -1,7 +1,7 @@
 /**
- * @file    initiate_flow.c
+ * @file    close_flow.c
  * @author  Cypherock X1 Team
- * @brief   Initiates the exhchange flow
+ * @brief   Closes the exhchange flow
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -63,11 +63,9 @@
 #include <string.h>
 
 #include "composable_app_queue.h"
-#include "exchange/initiate_flow.pb.h"
+#include "core_shared_context.h"
+#include "exchange/close_flow.pb.h"
 #include "exchange_api.h"
-#include "exchange_context.h"
-#include "exchange_main.h"
-#include "memzero.h"
 #include "ui_delay.h"
 
 /*****************************************************************************
@@ -116,7 +114,7 @@ static bool check_which_request(const exchange_query_t *query,
 
 static bool check_which_request(const exchange_query_t *query,
                                 pb_size_t which_request) {
-  if (which_request != query->initiate_flow.which_request) {
+  if (which_request != query->close_flow.which_request) {
     exchange_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -129,68 +127,21 @@ static bool check_which_request(const exchange_query_t *query,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void exchange_initiate_flow(exchange_query_t *query) {
+void exchange_close_flow(exchange_query_t *query) {
   exchange_result_t result =
-      init_exchange_result(EXCHANGE_RESULT_INITIATE_FLOW_TAG);
-  if (!check_which_request(query,
-                           EXCHANGE_INITIATE_FLOW_REQUEST_INITIATE_TAG)) {
+      init_exchange_result(EXCHANGE_RESULT_CLOSE_FLOW_TAG);
+  if (!check_which_request(query, EXCHANGE_CLOSE_FLOW_REQUEST_CLOSE_TAG)) {
     return;
   }
 
   // Clear existing composable app queue
   caq_clear();
 
-  delay_scr_init("Swap flow initiated", DELAY_TIME);
+  // Clear shared context
+  core_clear_shared_context();
 
-  // Receive flow
-  {
-    caq_node_data_t data = {.applet_id =
-                                query->initiate_flow.initiate.to.applet_id};
+  delay_scr_init("Swap flow closed", DELAY_TIME);
 
-    memzero(data.params, sizeof(data.params));
-    memcpy(data.params,
-           query->initiate_flow.initiate.to.wallet_id,
-           sizeof(query->initiate_flow.initiate.to.wallet_id));
-    data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
-
-    caq_push(data);
-  }
-
-  // Fetch signature for receive address
-  {
-    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
-
-    memzero(data.params, sizeof(data.params));
-    data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
-
-    caq_push(data);
-  }
-
-  // Store signature for receiver address in send flow
-  {
-    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
-
-    memzero(data.params, sizeof(data.params));
-    data.params[0] = EXCHANGE_FLOW_TAG_STORE_SIGNATURE;
-
-    caq_push(data);
-  }
-
-  // Send flow
-  {
-    caq_node_data_t data = {.applet_id =
-                                query->initiate_flow.initiate.from.applet_id};
-
-    memzero(data.params, sizeof(data.params));
-    memcpy(data.params,
-           query->initiate_flow.initiate.to.wallet_id,
-           sizeof(query->initiate_flow.initiate.to.wallet_id));
-    data.params[32] = EXCHANGE_FLOW_TAG_SEND;
-
-    caq_push(data);
-  }
-
-  result.initiate_flow.which_response =
-      EXCHANGE_INITIATE_FLOW_RESPONSE_RESULT_TAG;
+  result.close_flow.which_response = EXCHANGE_CLOSE_FLOW_RESPONSE_RESULT_TAG;
   exchange_send_result(&result);
 }
