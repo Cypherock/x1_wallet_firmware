@@ -204,7 +204,7 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
       char title[100] = {0};
       snprintf(title, 100, "%ld", data.applet_id);
       byte_array_to_hex_string(data.params, 40, hex_arr, 100);
-      LOG_ERROR("Match %s [%s]", title, hex_arr);
+      LOG_INFO("Match %s [%s]", title, hex_arr);
     }
 
     caq_pop();
