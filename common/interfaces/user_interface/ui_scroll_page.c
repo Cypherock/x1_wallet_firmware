@@ -261,8 +261,10 @@ static void page_update_header(void) {
       gp_scrollabe_page_lvgl->p_ui_page_lvgl, 128, scroll_page_height);
   lv_obj_align(
       gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL, scroll_page_aligment, 0, 0);
-  lv_obj_set_hidden(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
-                    is_heading_hidden);
+  if (gp_scrollabe_page_lvgl->p_ui_header_lvgl != NULL) {
+    lv_obj_set_hidden(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
+                      is_heading_hidden);
+  }
 }
 
 static void page_update_footnote(void) {
