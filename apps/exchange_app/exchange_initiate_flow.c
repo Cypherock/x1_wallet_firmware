@@ -183,8 +183,8 @@ void exchange_initiate_flow(exchange_query_t *query) {
 
     memzero(data.params, sizeof(data.params));
     memcpy(data.params,
-           query->initiate_flow.initiate.to.wallet_id,
-           sizeof(query->initiate_flow.initiate.to.wallet_id));
+           query->initiate_flow.initiate.from.wallet_id,
+           sizeof(query->initiate_flow.initiate.from.wallet_id));
     data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
     caq_push(data);
