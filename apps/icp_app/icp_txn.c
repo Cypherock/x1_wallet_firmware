@@ -541,7 +541,8 @@ static bool get_user_verification_for_coin_txn(void) {
                            ICP_ACCOUNT_ID_LENGTH * 2 + 1);
 
   if (use_signature_verification) {
-    if (!exchange_validate_stored_signature(to_account_id, sizeof(to_account_id))) {
+    if (!exchange_validate_stored_signature(to_account_id,
+                                            sizeof(to_account_id))) {
       return false;
     }
   }
