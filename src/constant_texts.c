@@ -559,6 +559,12 @@ const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 // Solana Specific
 const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
 
+// ICP
+const char *ui_text_principal_id = "Principal Id";
+const char *ui_text_account_id = "Account Id";
+const char *ui_text_verify_principal_id = "Verify principal id";
+const char *ui_text_verify_account_id = "Verify account id";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif
