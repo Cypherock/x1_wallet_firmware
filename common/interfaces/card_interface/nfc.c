@@ -669,6 +669,9 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
   ASSERT(recv_len != NULL);
   ASSERT(send_len != 0);
 
+  uint8_t expected_recv_len = *recv_len;
+  *recv_len = 0;
+
   ret_code_t err_code = adafruit_diagnose_card_presence();
   if (err_code != 0)
     return NFC_CARD_ABSENT;
@@ -693,8 +696,10 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   total_packets = ceil(send_len / (1.0 * SEND_PACKET_MAX_LEN));
   for (int packet = 1; packet <= total_packets;) {
-    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN; /* On every request set acceptable
-                                               packet length */
+    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= expected_recv_len
+                    ? RECV_PACKET_MAX_ENC_LEN
+                    : expected_recv_len; /* On every request set acceptable
+                                                packet length */
 
     /**
      * Sets appropriate CLA byte for each packet. CLA byte (first byte of
@@ -757,11 +762,14 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   /** Prepare to request next packet from the card */
   *recv_len = recv_pkt_len;
-  recv_pkt_len = RECV_PACKET_MAX_ENC_LEN;
+  uint8_t remaining_recv_len = expected_recv_len - *recv_len + 2;
+  recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= remaining_recv_len
+                  ? RECV_PACKET_MAX_ENC_LEN
+                  : remaining_recv_len;
   request_chain_pkt[2] = ceil(*recv_len * 1.0 / RECV_PACKET_MAX_LEN);
 
   /** Request all the remaining packets of multi-packet response */
-  while (recv_apdu[*recv_len - 2] == 0x61) {
+  while (recv_apdu[*recv_len - 2] == 0x61 && recv_pkt_len > 0) {
     *recv_len -= 2;
     err_code = adafruit_pn532_in_data_exchange(request_chain_pkt,
                                                sizeof(request_chain_pkt),
@@ -787,7 +795,10 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
     /** Prepare to request next packet from the card */
     *recv_len += recv_pkt_len;
-    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN;
+    remaining_recv_len = expected_recv_len - *recv_len + 2;
+    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= remaining_recv_len
+                    ? RECV_PACKET_MAX_ENC_LEN
+                    : remaining_recv_len;
     request_chain_pkt[2] = *recv_len / RECV_PACKET_MAX_LEN + 1;
   }
 
