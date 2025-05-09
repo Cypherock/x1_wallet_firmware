@@ -60,6 +60,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "near_api.h"
 #include "near_context.h"
 #include "near_helpers.h"
@@ -207,6 +209,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 static bool check_which_request(const near_query_t *query,
                                 pb_size_t which_request) {
@@ -251,6 +254,14 @@ static bool validate_request(const near_get_public_keys_intiate_request_t *req,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params, req->wallet_id, sizeof(req->wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -422,6 +433,11 @@ void near_get_pub_keys(near_query_t *query) {
     char address[100] = "";
     byte_array_to_hex_string(
         pubkey_list[0], sizeof(pubkey_list[0]), address, sizeof(address));
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
+    }
+
     if (!core_scroll_page(ui_text_receive_on, address, near_send_error)) {
       return;
     }

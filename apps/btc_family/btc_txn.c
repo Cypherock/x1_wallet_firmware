@@ -66,6 +66,7 @@
 
 #include "bip32.h"
 #include "btc_api.h"
+#include "btc_app.h"
 #include "btc_helpers.h"
 #include "btc_inputs_validator.h"
 #include "btc_priv.h"
@@ -74,8 +75,10 @@
 #include "byte_stream.h"
 #include "coin_utils.h"
 #include "common.pb.h"
+#include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -274,7 +277,7 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
+static bool use_signature_verification = false;
 static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
@@ -305,6 +308,17 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
+
   return status;
 }
 
@@ -572,6 +586,14 @@ static bool get_user_verification() {
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
       return false;
     }
+
+    if (use_signature_verification) {
+      if (!exchange_validate_stored_signature(address, sizeof(address))) {
+        btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
+        return false;
+      }
+    }
+
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
       return false;

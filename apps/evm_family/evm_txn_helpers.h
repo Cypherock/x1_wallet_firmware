@@ -108,6 +108,9 @@ typedef struct {
 
   /// pointer to maintain a list of display nodes
   ui_display_node *display_node;
+
+  /// for exchange app
+  bool use_signature_verification;
 } evm_txn_context_t;
 
 /*****************************************************************************

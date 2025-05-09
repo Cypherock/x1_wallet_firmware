@@ -60,12 +60,17 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <string.h>
+
 #include "bip32.h"
 #include "btc_api.h"
+#include "btc_app.h"
 #include "btc_helpers.h"
 #include "btc_priv.h"
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -152,6 +157,7 @@ static void send_public_key(const uint8_t *public_key);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 static bool check_which_request(const btc_query_t *query,
                                 pb_size_t which_request) {
@@ -173,6 +179,17 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
+
   return status;
 }
 
@@ -283,6 +300,11 @@ void btc_get_pub_key(btc_query_t *query) {
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   size_t length = btc_get_address(seed, path, path_length, public_key, msg);
   memzero(seed, sizeof(seed));
+
+  if (sign_address) {
+    exchange_sign_address(msg, sizeof(msg));
+  }
+
   if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_VERIFY);

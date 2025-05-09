@@ -64,6 +64,8 @@
 #include <stdint.h>
 
 #include "assert_conf.h"
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "mini-gmp-helpers.h"
 #include "reconstruct_wallet_flow.h"
 #include "starkcurve.h"
@@ -227,6 +229,7 @@ static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr);
 /*****************************************************************************
  * static VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -278,6 +281,16 @@ static bool validate_request_data(starknet_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -531,6 +544,10 @@ void starknet_get_pub_keys(starknet_query_t *query) {
         sprintf(address + index++, "0");
       }
       snprintf(address + index, sizeof(address) - index, raw_address);
+    }
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {

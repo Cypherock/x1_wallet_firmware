@@ -60,9 +60,9 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/tron_app
         apps/inheritance_app
         apps/starknet_app
-        
         apps/xrp_app
         apps/icp_app
+        apps/exchange_app
         
         src/
         src/menu

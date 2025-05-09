@@ -72,6 +72,7 @@
 #include "coin_utils.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "hasher.h"
 #include "secp256k1.h"
 #include "sha2.h"
@@ -283,7 +284,8 @@ static bool parse_unverified(uint8_t *data, uint8_t *contract_address) {
   return true;
 }
 
-static bool transfer_contract_txn(tron_transaction_contract_t *contract) {
+static bool transfer_contract_txn(tron_transaction_contract_t *contract,
+                                  bool use_signature_verification) {
   uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   // uint8_t owner_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   int64_t amount = 0;
@@ -312,6 +314,12 @@ static bool transfer_contract_txn(tron_transaction_contract_t *contract) {
                            TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
     tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
+  }
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
   }
 
   if (!core_scroll_page(ui_text_verify_address, address, tron_send_error)) {
@@ -430,7 +438,8 @@ static bool transfer_asset_contract_txn(tron_transaction_contract_t *contract) {
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-bool extract_contract_info(tron_transaction_raw_t *raw_txn) {
+bool extract_contract_info(tron_transaction_raw_t *raw_txn,
+                           bool use_signature_verification) {
   if (!(raw_txn->contract_count > 0)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_DATA);
@@ -442,7 +451,7 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn) {
   switch (contract.type) {
     case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
       // Transfer TRX type
-      if (!transfer_contract_txn(&contract)) {
+      if (!transfer_contract_txn(&contract, use_signature_verification)) {
         return false;
       }
       break;

@@ -66,7 +66,9 @@
 #include "base58.h"
 #include "bip32.h"
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "sha3.h"
 #include "status_api.h"
@@ -211,7 +213,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
+static bool sign_address = false;
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -263,6 +265,16 @@ static bool validate_request_data(tron_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -456,6 +468,10 @@ void tron_get_pub_keys(tron_query_t *query) {
                              TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
       tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
+    }
+
+    if (sign_address) {
+      exchange_sign_address(main_address, sizeof(main_address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, main_address, tron_send_error)) {

@@ -63,6 +63,8 @@
 
 #include <stdint.h>
 
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -199,6 +201,7 @@ static bool send_signature(xrp_query_t *query, const der_sig_t *der_signature);
  * STATIC VARIABLES
  *****************************************************************************/
 static xrp_txn_context_t *xrp_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -233,6 +236,16 @@ static bool validate_request_data(const xrp_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
   return status;
 }
 
@@ -345,6 +358,12 @@ static bool get_user_verification(void) {
           XRP_BASE58_DIGITS_ORDERED)) {
     xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
+  }
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
+      return false;
+    }
   }
 
   if (!core_scroll_page(ui_text_verify_address, to_address, xrp_send_error)) {

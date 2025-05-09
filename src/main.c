@@ -76,6 +76,7 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "composable_app_queue.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -137,6 +138,7 @@ int main(void) {
   ekp_queue_init();
 #endif
   application_init();
+  caq_init();
 
 #ifdef RUN_ENGINE
 #if USE_SIMULATOR == 0

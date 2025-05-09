@@ -59,6 +59,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/xrp_app
         apps/starknet_app
         apps/icp_app
+        apps/exchange_app
 
         src/
         src/menu

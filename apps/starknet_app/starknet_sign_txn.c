@@ -63,7 +63,9 @@
  *****************************************************************************/
 
 #include "bignum.h"
+#include "composable_app_queue.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "mini-gmp-helpers.h"
 #include "mini-gmp.h"
 #include "mpz_ecdsa.h"
@@ -220,6 +222,8 @@ static void stark_amount_get_decimal_str(const uint8_t *byte_array,
  *****************************************************************************/
 static starknet_txn_context_t *starknet_txn_context = NULL;
 
+static bool use_signature_verification = false;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -254,6 +258,17 @@ static bool validate_request_data(const starknet_sign_txn_request_t *request) {
                         ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
+
   return status;
 }
 
@@ -407,6 +422,12 @@ static bool get_invoke_txn_user_verification() {
       STARKNET_BIGNUM_SIZE,
       &address[2],
       sizeof(address));
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
+  }
 
   if (!core_scroll_page(ui_text_verify_address, address, starknet_send_error)) {
     return false;
