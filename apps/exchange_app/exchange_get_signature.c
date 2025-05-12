@@ -140,7 +140,6 @@ void exchange_get_signature(exchange_query_t *query) {
                            EXCHANGE_GET_SIGNATURE_REQUEST_INITIATE_TAG)) {
     return;
   }
-  caq_pop();
 
   result.get_signature.which_response =
       EXCHANGE_GET_SIGNATURE_RESPONSE_RESULT_TAG;

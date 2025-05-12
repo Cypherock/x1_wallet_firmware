@@ -207,7 +207,7 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
       LOG_INFO("Match %s [%s]", title, hex_arr);
     }
 
-    // caq_pop();
+    caq_pop();
     return true;
   }
 
@@ -268,7 +268,7 @@ bool exchange_validate_stored_signature(char *receiver,
     }
     return false;
   }
-  caq_pop();
+
   return true;
 }
 
@@ -288,5 +288,4 @@ void exchange_sign_address(char *address, size_t address_max_size) {
 
   memcpy(shared_context + offset, data.postfix2, sizeof(data.postfix2));
   offset += sizeof(data.postfix2);
-  caq_pop();
 }
