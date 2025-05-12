@@ -207,7 +207,7 @@ bool exchange_app_validate_caq(caq_node_data_t data) {
       LOG_INFO("Match %s [%s]", title, hex_arr);
     }
 
-    caq_pop();
+    // caq_pop();
     return true;
   }
 
@@ -244,9 +244,12 @@ bool exchange_validate_stored_signature(char *receiver,
   derive_server_public_key(server_verification_pub_key);
 
   size_t len = strnlen(receiver, receiver_max_size);
+  char recv_addr[len];
+  strncpy(recv_addr, receiver, len);
+
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
 
-  sha256_Raw((uint8_t *)receiver, len, hash);
+  sha256_Raw((uint8_t *)recv_addr, len, hash);
 
   if (ecdsa_verify_digest(&nist256p1, server_verification_pub_key, sig, hash) !=
       0) {
@@ -254,16 +257,18 @@ bool exchange_validate_stored_signature(char *receiver,
                    DELAY_TIME);
 
     {
-      char hex_arr[500] = {0};
-      char title[500] = {0};
-      byte_array_to_hex_string(sig, 64, title, 200);
+      char signature[500] = {0};
+      byte_array_to_hex_string(sig, 64, signature, 200);
+      LOG_ERROR("CAQ Signature: [%s]", signature);
+
+      char pubkey[500] = {0};
       byte_array_to_hex_string(
-          server_verification_pub_key, SESSION_PUB_KEY_SIZE, hex_arr, 200);
-      LOG_ERROR("CAQ Signature: [%s]", title);
-      LOG_ERROR("CAQ Data received: [%s] [%s]", hex_arr, receiver);
+          server_verification_pub_key, SESSION_PUB_KEY_SIZE, pubkey, 200);
+      LOG_ERROR("CAQ Data received: [%s] [%s]", pubkey, recv_addr);
     }
     return false;
   }
+  caq_pop();
   return true;
 }
 
@@ -283,4 +288,5 @@ void exchange_sign_address(char *address, size_t address_max_size) {
 
   memcpy(shared_context + offset, data.postfix2, sizeof(data.postfix2));
   offset += sizeof(data.postfix2);
+  caq_pop();
 }

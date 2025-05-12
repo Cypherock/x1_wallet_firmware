@@ -142,6 +142,7 @@ void exchange_store_signature(exchange_query_t *query) {
                            EXCHANGE_STORE_SIGNATURE_REQUEST_INITIATE_TAG)) {
     return;
   }
+  caq_pop();
 
   core_clear_shared_context();
 
