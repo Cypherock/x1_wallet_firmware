@@ -680,7 +680,8 @@ static void ui_scrollable_page_create(void) {
   /**
    * Recalculate the total pages if heading is only visible on the first page
    */
-  if (gp_scrollabe_page_data->bool_only_first_page_header_visible) {
+  if (NULL != gp_scrollabe_page_data->p_ui_heading &&
+      gp_scrollabe_page_data->bool_only_first_page_header_visible) {
     gp_scrollabe_page_data->total_page_num = 1;
     int16_t first_page_height = currPageHeight;
 
