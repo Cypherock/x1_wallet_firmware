@@ -691,6 +691,12 @@ static bool verify_solana_transfer_token_transaction() {
     return false;
   }
 
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
+  }
+
   // Now take user verification
   if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
     return false;

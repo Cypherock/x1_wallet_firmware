@@ -443,6 +443,13 @@ static bool get_user_verification_for_token_txn(void) {
   get_principal_id_to_display(
       decoded_utxn->to.owner, ICP_PRINCIPAL_LENGTH, principal_id);
 
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(principal_id,
+                                            sizeof(principal_id))) {
+      return false;
+    }
+  }
+
   // Now take user verification
   if (!core_scroll_page(
           ui_text_verify_principal_id, principal_id, icp_send_error)) {
