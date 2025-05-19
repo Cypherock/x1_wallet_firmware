@@ -256,16 +256,6 @@ bool exchange_validate_stored_signature(char *receiver,
     delay_scr_init("Failed to validate signature\n Do not proceed with Swap",
                    DELAY_TIME);
 
-    // {
-    //   char signature[500] = {0};
-    //   byte_array_to_hex_string(sig, 64, signature, 200);
-    //   LOG_ERROR("CAQ Signature: [%s]", signature);
-
-    //   char pubkey[500] = {0};
-    //   byte_array_to_hex_string(
-    //       server_verification_pub_key, SESSION_PUB_KEY_SIZE, pubkey, 200);
-    //   LOG_ERROR("CAQ Data received: [%s] [%s]", pubkey, recv_addr);
-    // }
     return false;
   }
 
