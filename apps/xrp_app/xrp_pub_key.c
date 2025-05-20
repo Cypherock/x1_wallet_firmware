@@ -61,7 +61,9 @@
  *****************************************************************************/
 
 #include "bip32.h"
+#include "composable_app_queue.h"
 #include "curves.h"
+#include "exchange_main.h"
 #include "hasher.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
@@ -209,6 +211,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 static bool check_which_request(const xrp_query_t *query,
                                 pb_size_t which_request) {
@@ -253,6 +256,14 @@ static bool validate_request(const xrp_get_public_keys_intiate_request_t *req,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params, req->wallet_id, sizeof(req->wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -444,6 +455,10 @@ void xrp_get_pub_keys(xrp_query_t *query) {
             XRP_BASE58_DIGITS_ORDERED)) {
       xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
+    }
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, address, xrp_send_error)) {

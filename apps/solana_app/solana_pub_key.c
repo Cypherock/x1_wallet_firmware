@@ -63,6 +63,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
 #include "solana_helpers.h"
@@ -204,6 +206,7 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+static bool sign_address = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -255,6 +258,16 @@ STATIC bool validate_request_data(solana_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -434,6 +447,10 @@ void solana_get_pub_keys(solana_query_t *query) {
       solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;
     };
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
+    }
 
     if (!core_scroll_page(ui_text_receive_on, address, solana_send_error)) {
       return;
