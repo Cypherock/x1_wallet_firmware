@@ -62,6 +62,8 @@
 
 #include <ed25519-donna.h>
 
+#include "composable_app_queue.h"
+#include "exchange_main.h"
 #include "int-util.h"
 #include "reconstruct_wallet_flow.h"
 #include "solana_api.h"
@@ -216,6 +218,7 @@ static bool send_signature(solana_query_t *query,
  *****************************************************************************/
 
 STATIC solana_txn_context_t *solana_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -245,6 +248,16 @@ static bool validate_request_data(const solana_sign_txn_request_t *request) {
                       ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -422,6 +435,12 @@ static bool verify_solana_transfer_sol_transaction() {
               SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
     solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
+  }
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
   }
 
   if (!core_scroll_page(ui_text_verify_address, address, solana_send_error)) {
@@ -670,6 +689,12 @@ static bool verify_solana_transfer_token_transaction() {
              SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0) {
     solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, 2);
     return false;
+  }
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
   }
 
   // Now take user verification
