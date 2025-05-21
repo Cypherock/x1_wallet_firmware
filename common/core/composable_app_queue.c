@@ -27,7 +27,7 @@ static composable_app_queue_t *caq_create_queue() {
 }
 
 bool caq_is_empty() {
-  return (composable_app_queue->count == 0);
+  return (composable_app_queue == NULL || composable_app_queue->count == 0);
 }
 
 void caq_push(caq_node_data_t data) {
