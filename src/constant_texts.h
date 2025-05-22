@@ -60,6 +60,7 @@
 #define UI_TEXT_VERIFY_DATA "Verify Data"
 #define UI_TEXT_SIGN_MSG_PROMPT "Sign message on %s from %s"
 #define UI_TEXT_SIGN_DATA_PROMPT "Sign data on %s from %s"
+#define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
 
 // product hash
 extern const char *product_hash;
@@ -397,6 +398,13 @@ extern const char *ui_text_inheritance_decryption_flow_confirmation;
 extern const char *ui_text_inheritance_decryption_flow_confirmation_generic;
 extern const char *ui_text_inheritance_decryption_flow_success;
 extern const char *ui_text_inheritance_decryption_flow_failure;
+
+// ICP
+
+extern const char *ui_text_principal_id;
+extern const char *ui_text_account_id;
+extern const char *ui_text_verify_principal_id;
+extern const char *ui_text_verify_account_id;
 
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;

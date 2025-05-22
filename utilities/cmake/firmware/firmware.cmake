@@ -62,7 +62,9 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/starknet_app
         apps/xrp_app
         apps/constellation_app
-
+        apps/icp_app
+        apps/exchange_app
+        
         src/
         src/menu
         src/wallet
@@ -189,6 +191,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/inheritance_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/xrp_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/constellation_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/icp_app>
         )
 
 target_compile_options(${EXECUTABLE} PRIVATE

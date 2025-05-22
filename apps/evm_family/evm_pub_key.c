@@ -64,9 +64,12 @@
 #include <stdint.h>
 
 #include "address.h"
+#include "composable_app_queue.h"
+#include "eth_app.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -224,6 +227,8 @@ static bool get_address(const evm_address_format_t format,
  * STATIC VARIABLES
  *****************************************************************************/
 
+static bool sign_address = false;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -274,6 +279,16 @@ static bool validate_request_data(evm_get_public_keys_request_t *request,
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_eth_app_desc()->id};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -481,6 +496,10 @@ void evm_get_pub_keys(evm_query_t *query) {
             init_req->format, public_keys[0], address, sizeof(address))) {
       evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
       return;
+    }
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
 
     if (!core_scroll_page(ui_text_receive_on, address, evm_send_error)) {
