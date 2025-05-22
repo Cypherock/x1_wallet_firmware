@@ -66,12 +66,14 @@
 #include "base58.h"
 #include "bip32.h"
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "constellation_api.h"
 #include "constellation_context.h"
 #include "constellation_helpers.h"
 #include "constellation_priv.h"
 #include "curves.h"
 #include "ecdsa.h"
+#include "exchange_main.h"
 #include "hasher.h"
 #include "reconstruct_wallet_flow.h"
 #include "secp256k1.h"
@@ -222,7 +224,8 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
+ static bool sign_address = false;
+ 
 /// Ref:
 /// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L39
 static const uint8_t PKCS_PREFIX[PKCS_PREFIX_SIZE] = {
@@ -273,6 +276,14 @@ static bool validate_request(
       break;
     }
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params, req->wallet_id, sizeof(req->wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
+
+  sign_address = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -498,6 +509,10 @@ void constellation_get_pub_keys(constellation_query_t *query) {
     char address[CONSTELLATION_ACCOUNT_ADDRESS_SIZE + 1] = "\0";
     if (!generate_dag_address(address, pubkey_list[0])) {
       return;
+    }
+
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
 
     if (!core_scroll_page(

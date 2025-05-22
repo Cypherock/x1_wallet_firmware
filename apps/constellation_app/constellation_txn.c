@@ -66,12 +66,14 @@
 #include <stdint.h>
 
 #include "coin_utils.h"
+#include "composable_app_queue.h"
 #include "constellation/core.pb.h"
 #include "constellation/sign_txn.pb.h"
 #include "constellation_api.h"
 #include "constellation_context.h"
 #include "constellation_helpers.h"
 #include "constellation_priv.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -205,6 +207,7 @@ static bool send_signature(constellation_query_t *query,
  * STATIC VARIABLES
  *****************************************************************************/
 static constellation_txn_context_t *constellation_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -242,6 +245,17 @@ static bool validate_request_data(
                              ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
+
   return status;
 }
 
@@ -304,6 +318,13 @@ static bool fetch_valid_input(constellation_query_t *query) {
 
 static bool get_user_verification(void) {
   const constellation_transaction_t *txn = constellation_txn_context->txn;
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature((char *)txn->destination,
+                                            sizeof(txn->destination))) {
+      return false;
+    }
+  }
 
   // verify recipient address
   if (!core_scroll_page(
