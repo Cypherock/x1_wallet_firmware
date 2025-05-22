@@ -131,7 +131,7 @@ void view_firmware_version(void) {
 }
 
 void view_device_regulatory_information(void) {
-  instruction_content_t content[7] = {0};
+  instruction_content_t content[8] = {0};
   LV_IMG_DECLARE(fcc_logo_black_2020);
   LV_IMG_DECLARE(ce_mark);
   content[0].img = &fcc_logo_black_2020;
@@ -140,9 +140,9 @@ void view_device_regulatory_information(void) {
   content[0].img_y_offset =
       (LV_VER_RES_MAX - fcc_logo_black_2020.header.h) >> 1;
   content[0].text_align = LV_ALIGN_OUT_BOTTOM_MID;
-  content[6].img = &ce_mark;
-  content[6].img_x_offset = (LV_HOR_RES_MAX - ce_mark.header.w) >> 1;
-  content[6].img_y_offset = (LV_VER_RES_MAX - ce_mark.header.h) >> 1;
+  content[7].img = &ce_mark;
+  content[7].img_x_offset = (LV_HOR_RES_MAX - ce_mark.header.w) >> 1;
+  content[7].img_y_offset = (LV_VER_RES_MAX - ce_mark.header.h) >> 1;
 
   for (uint8_t slide = 0; slide < NUMBER_OF_SLIDES_REGULATORY_INFO; slide++) {
     snprintf(content[slide + 1].text,

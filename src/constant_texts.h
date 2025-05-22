@@ -108,7 +108,7 @@ extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */
 
 // Regulatory info text
-#define NUMBER_OF_SLIDES_REGULATORY_INFO 5
+#define NUMBER_OF_SLIDES_REGULATORY_INFO 6
 extern const char *ui_text_regulatory_info[];
 
 // Version info text
