@@ -224,8 +224,8 @@ static bool get_user_consent(const pb_size_t which_request,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
- static bool sign_address = false;
- 
+static bool sign_address = false;
+
 /// Ref:
 /// https://github.com/StardustCollective/dag4.js/blob/main/packages/dag4-keystore/src/key-store.ts#L39
 static const uint8_t PKCS_PREFIX[PKCS_PREFIX_SIZE] = {
