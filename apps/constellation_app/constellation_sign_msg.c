@@ -63,6 +63,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "atca_helpers.h"
 #include "atca_status.h"
@@ -428,14 +429,16 @@ static size_t constellation_get_prefixed_msg_data(
   size_t msg_len = ctx->init.message_size;
 
   char length_string[20] = "";
-  size_t length_string_len =
-      snprintf(length_string, sizeof(length_string), "%zu\n", msg_len);
+  size_t length_string_len = sprintf(length_string, "%zu\n", msg_len);
 
   size_t total_len = prefix_len + length_string_len + msg_len;
 
-  strncpy(prefixed_msg_data, prefix, prefix_len);
-  strncat(prefixed_msg_data, length_string, length_string_len);
-  strncat(prefixed_msg_data, (const char *)ctx->msg_data, msg_len);
+  snprintf(prefixed_msg_data,
+           total_len + 1,    // +1 for \0
+           "%s%s%s",
+           prefix,
+           length_string,
+           (const char *)ctx->msg_data);
 
   return total_len;
 }
