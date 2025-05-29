@@ -431,7 +431,7 @@ static size_t constellation_get_prefixed_msg_data(
   core_scroll_page("prefix", prefix, NULL);
 
   char length_string[20] = "";
-  size_t length_string_len = sprintf(length_string, "%zu\n", msg_len);
+  size_t length_string_len = sprintf(length_string, "%u\n", msg_len);
   core_scroll_page("length_string", length_string, NULL);
 
   size_t total_len = prefix_len + length_string_len + msg_len;
