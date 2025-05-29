@@ -427,12 +427,9 @@ static size_t constellation_get_prefixed_msg_data(
     size_t prefix_len,
     char *prefixed_msg_data) {
   size_t msg_len = ctx->init.message_size;
-  core_scroll_page("msg", (const char *)ctx->msg_data, NULL);
-  core_scroll_page("prefix", prefix, NULL);
 
   char length_string[20] = "";
   size_t length_string_len = sprintf(length_string, "%u\n", msg_len);
-  core_scroll_page("length_string", length_string, NULL);
 
   size_t total_len = prefix_len + length_string_len + msg_len;
 
@@ -443,7 +440,6 @@ static size_t constellation_get_prefixed_msg_data(
            length_string,
            (const char *)ctx->msg_data);
 
-  core_scroll_page("prefixed_msg_data", prefixed_msg_data, NULL);
   return total_len;
 }
 
