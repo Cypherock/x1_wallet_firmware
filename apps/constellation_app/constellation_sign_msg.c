@@ -429,7 +429,7 @@ static size_t constellation_get_prefixed_msg_data(
   size_t msg_len = ctx->init.message_size;
 
   char length_string[20] = "";
-  size_t length_string_len = sprintf(length_string, "%zu\n", msg_len);
+  size_t length_string_len = sprintf(length_string, "%u\n", msg_len);
 
   size_t total_len = prefix_len + length_string_len + msg_len;
 
