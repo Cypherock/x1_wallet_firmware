@@ -61,22 +61,21 @@
 #include "events.h"
 #include "ui_multi_instruction.h"
 
-#if VENDOR_ID == 0  // cypherock
+#if VENDOR_ID == 0    // cypherock
 LV_IMG_DECLARE(cypherock_logo);
-#define VENDOR_LOGO_LIST  cypherock_logo
+#define VENDOR_LOGO_LIST cypherock_logo
 #define VENDOR_LOGO_COUNT 1
 
-#elif VENDOR_ID == 1  // odix
+#elif VENDOR_ID == 1    // odix
 LV_IMG_DECLARE(odix_logo);
 LV_IMG_DECLARE(cypherock_vendor_logo);
-#define VENDOR_LOGO_LIST  odix_logo, cypherock_vendor_logo
+#define VENDOR_LOGO_LIST odix_logo, cypherock_vendor_logo
 #define VENDOR_LOGO_COUNT 2
 
 #endif
 
-
 void logo_scr_init(const uint16_t delay_in_ms) {
-  const lv_img_dsc_t logos[] = { VENDOR_LOGO_LIST };
+  const lv_img_dsc_t logos[] = {VENDOR_LOGO_LIST};
 
   for (int i = 0; i < VENDOR_LOGO_COUNT; i++) {
     instruction_content_t logo_content = {
@@ -85,7 +84,7 @@ void logo_scr_init(const uint16_t delay_in_ms) {
         .img_y_offset = (64 - (logos[i].header.h)) >> 1,
         .text = "",
         .text_align = LV_ALIGN_CENTER};
-  
+
     multi_instruction_with_image_init(&logo_content, 1, 0, false);
     lv_task_handler();
     BSP_DelayMs(delay_in_ms);
