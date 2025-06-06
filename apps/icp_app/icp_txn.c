@@ -67,7 +67,9 @@
 #include <string.h>
 
 #include "base58.h"
+#include "composable_app_queue.h"
 #include "constant_texts.h"
+#include "exchange_main.h"
 #include "icp/sign_txn.pb.h"
 #include "icp_api.h"
 #include "icp_context.h"
@@ -233,6 +235,7 @@ static bool send_signature(icp_query_t *query, const sig_t *signature);
  * STATIC VARIABLES
  *****************************************************************************/
 static icp_txn_context_t *icp_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -268,6 +271,17 @@ static bool validate_request_data(const icp_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_applet_id()};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  use_signature_verification = exchange_app_validate_caq(data);
+
   return status;
 }
 
@@ -429,6 +443,13 @@ static bool get_user_verification_for_token_txn(void) {
   get_principal_id_to_display(
       decoded_utxn->to.owner, ICP_PRINCIPAL_LENGTH, principal_id);
 
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(principal_id,
+                                            sizeof(principal_id))) {
+      return false;
+    }
+  }
+
   // Now take user verification
   if (!core_scroll_page(
           ui_text_verify_principal_id, principal_id, icp_send_error)) {
@@ -525,6 +546,13 @@ static bool get_user_verification_for_coin_txn(void) {
                            ICP_ACCOUNT_ID_LENGTH,
                            to_account_id,
                            ICP_ACCOUNT_ID_LENGTH * 2 + 1);
+
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(to_account_id,
+                                            sizeof(to_account_id))) {
+      return false;
+    }
+  }
 
   if (!core_scroll_page(
           ui_text_verify_account_id, to_account_id, icp_send_error)) {

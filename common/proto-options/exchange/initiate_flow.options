@@ -1,0 +1,1 @@
+exchange.CoinDetails.wallet_id type:FT_STATIC max_size:32 fixed_length:true
