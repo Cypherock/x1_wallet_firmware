@@ -56,8 +56,11 @@
 #define UI_TEXT_PIN "PIN\n %s"
 #define UI_TEXT_VERIFY_DESTINATION_TAG "Verify Destination Tag\n%lu"
 #define UI_TEXT_VERIFY_PRIORITY_FEE "Verify Priority Fee\n%s\n%s"
-#define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
 #define UI_TEXT_VERIFY_FEE "Verify Fee\n%s\n%s"
+#define UI_TEXT_VERIFY_DATA "Verify Data"
+#define UI_TEXT_SIGN_MSG_PROMPT "Sign message on %s from %s"
+#define UI_TEXT_SIGN_DATA_PROMPT "Sign data on %s from %s"
+#define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
 
 // product hash
 extern const char *product_hash;
@@ -376,6 +379,7 @@ extern const char *ui_text_card_detected;
 extern const char *ui_text_nfc_hardware_fault_detected;
 extern const char *ui_text_unreliable_cards;
 extern const char *ui_critical_card_health_migrate_data;
+extern const char *ui_text_check_software_wallet_app;
 
 // App specific
 

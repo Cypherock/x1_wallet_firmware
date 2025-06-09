@@ -261,8 +261,10 @@ static void page_update_header(void) {
       gp_scrollabe_page_lvgl->p_ui_page_lvgl, 128, scroll_page_height);
   lv_obj_align(
       gp_scrollabe_page_lvgl->p_ui_page_lvgl, NULL, scroll_page_aligment, 0, 0);
-  lv_obj_set_hidden(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
-                    is_heading_hidden);
+  if (gp_scrollabe_page_lvgl->p_ui_header_lvgl != NULL) {
+    lv_obj_set_hidden(gp_scrollabe_page_lvgl->p_ui_header_lvgl,
+                      is_heading_hidden);
+  }
 }
 
 static void page_update_footnote(void) {
@@ -678,7 +680,8 @@ static void ui_scrollable_page_create(void) {
   /**
    * Recalculate the total pages if heading is only visible on the first page
    */
-  if (gp_scrollabe_page_data->bool_only_first_page_header_visible) {
+  if (NULL != gp_scrollabe_page_data->p_ui_heading &&
+      gp_scrollabe_page_data->bool_only_first_page_header_visible) {
     gp_scrollabe_page_data->total_page_num = 1;
     int16_t first_page_height = currPageHeight;
 

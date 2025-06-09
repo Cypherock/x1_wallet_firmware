@@ -61,10 +61,13 @@
  *****************************************************************************/
 
 #include "address.h"
+#include "composable_app_queue.h"
+#include "eth_app.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
 #include "evm_user_verification.h"
+#include "exchange_main.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -243,6 +246,17 @@ static bool validate_request_data(const evm_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
+  caq_node_data_t data = {.applet_id = get_eth_app_desc()->id};
+
+  memzero(data.params, sizeof(data.params));
+  memcpy(data.params,
+         request->initiate.wallet_id,
+         sizeof(request->initiate.wallet_id));
+  data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+  txn_context->use_signature_verification = exchange_app_validate_caq(data);
+
   return status;
 }
 
