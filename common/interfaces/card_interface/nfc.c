@@ -76,6 +76,7 @@
 #define SEND_PACKET_MAX_LEN 236
 #define RECV_PACKET_MAX_ENC_LEN 242
 #define RECV_PACKET_MAX_LEN 225
+#define MAX_EXPECTED_RECV_LEN 600
 
 static void (*early_exit_handler)() = NULL;
 static uint8_t nfc_device_key_id[4];
@@ -669,7 +670,7 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
   ASSERT(recv_len != NULL);
   ASSERT(send_len != 0);
 
-  uint8_t expected_recv_len = *recv_len;
+  uint16_t expected_recv_len = MAX_EXPECTED_RECV_LEN;
   *recv_len = 0;
 
   ret_code_t err_code = adafruit_diagnose_card_presence();
@@ -696,9 +697,7 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   total_packets = ceil(send_len / (1.0 * SEND_PACKET_MAX_LEN));
   for (int packet = 1; packet <= total_packets;) {
-    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= expected_recv_len
-                       ? RECV_PACKET_MAX_ENC_LEN
-                       : expected_recv_len; /* On every request set acceptable
+    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN; /* On every request set acceptable
                                                    packet length */
 
     /**
@@ -762,7 +761,7 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   /** Prepare to request next packet from the card */
   *recv_len = recv_pkt_len;
-  uint8_t remaining_recv_len = expected_recv_len - *recv_len + 2;
+  uint16_t remaining_recv_len = expected_recv_len - *recv_len + 2;
   recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= remaining_recv_len
                      ? RECV_PACKET_MAX_ENC_LEN
                      : remaining_recv_len;
