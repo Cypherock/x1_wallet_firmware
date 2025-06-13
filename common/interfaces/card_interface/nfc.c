@@ -76,6 +76,7 @@
 #define SEND_PACKET_MAX_LEN 236
 #define RECV_PACKET_MAX_ENC_LEN 242
 #define RECV_PACKET_MAX_LEN 225
+#define MAX_EXPECTED_RECV_LEN 600
 
 static void (*early_exit_handler)() = NULL;
 static uint8_t nfc_device_key_id[4];
@@ -193,7 +194,7 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[],
   ISO7816 status_word;
   uint8_t send_apdu[255], recv_apdu[255] = {0},
                           _version[CARD_VERSION_SIZE] = {0};
-  uint16_t send_len = 5, recv_len = 236;
+  uint16_t send_len = 5, recv_len = 255;
 
   send_len = create_apdu_select_applet(send_apdu);
 
@@ -261,7 +262,7 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[255], recv_apdu[255] = {0};
-  uint16_t send_len = 5, recv_len = 236;
+  uint16_t send_len = 5, recv_len = 255;
 
   send_len = create_apdu_pair(data_inOut, *length_inOut, send_apdu);
 
@@ -292,7 +293,7 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
 ISO7816 nfc_unpair() {
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[255], recv_apdu[255] = {0};
-  uint16_t send_len = 5, recv_len = 236;
+  uint16_t send_len = 5, recv_len = 255;
 
   hex_string_to_byte_array("00130000", 8, send_apdu);
   nfc_secure_comm = true;
@@ -320,7 +321,7 @@ ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
 
   // recv_len receives the length of response APDU. It also
   // acts as expected length of response APDU.
-  uint16_t recv_len = 236;
+  uint16_t recv_len = 300;
 
   send_len = create_apdu_list_wallet(send_apdu);
 
@@ -366,7 +367,7 @@ ISO7816 nfc_add_wallet(const struct Wallet *wallet) {
   // Call nfc_select_card() before
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   calculate_checksum(wallet, (uint8_t *)wallet->checksum);
   if (WALLET_IS_ARBITRARY_DATA(wallet->wallet_info))
@@ -436,7 +437,7 @@ ISO7816 nfc_delete_wallet(const struct Wallet *wallet) {
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_delete_wallet(wallet, send_apdu);
 
@@ -465,7 +466,7 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_ecdsa(data_inOut, *length_inOut, send_apdu);
 
@@ -506,7 +507,7 @@ ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE],
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_verify_challenge(name, nonce, password, send_apdu);
 
@@ -536,7 +537,7 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE],
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_get_challenge(name, send_apdu);
 
@@ -574,7 +575,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
 #if USE_SIMULATOR == 0
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_inheritance(name,
                                      plain_data,
@@ -627,7 +628,7 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
 
   ISO7816 status_word = CLA_ISO7816;
   uint8_t send_apdu[600] = {0}, *recv_apdu = send_apdu;
-  uint16_t send_len = 0, recv_len = 236;
+  uint16_t send_len = 0, recv_len = 600;
 
   send_len = create_apdu_inheritance(name,
                                      encrypted_data,
@@ -669,7 +670,7 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
   ASSERT(recv_len != NULL);
   ASSERT(send_len != 0);
 
-  uint8_t expected_recv_len = *recv_len;
+  uint16_t expected_recv_len = *recv_len;
   *recv_len = 0;
 
   ret_code_t err_code = adafruit_diagnose_card_presence();
@@ -696,10 +697,11 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   total_packets = ceil(send_len / (1.0 * SEND_PACKET_MAX_LEN));
   for (int packet = 1; packet <= total_packets;) {
-    recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= expected_recv_len
-                       ? RECV_PACKET_MAX_ENC_LEN
-                       : expected_recv_len; /* On every request set acceptable
-                                                   packet length */
+    recv_pkt_len =
+        RECV_PACKET_MAX_ENC_LEN <= expected_recv_len
+            ? RECV_PACKET_MAX_ENC_LEN
+            : expected_recv_len; /* On every request set acceptable
+                                                           packet length */
 
     /**
      * Sets appropriate CLA byte for each packet. CLA byte (first byte of
@@ -762,7 +764,7 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   /** Prepare to request next packet from the card */
   *recv_len = recv_pkt_len;
-  uint8_t remaining_recv_len = expected_recv_len - *recv_len + 2;
+  uint16_t remaining_recv_len = expected_recv_len - *recv_len + 2;
   recv_pkt_len = RECV_PACKET_MAX_ENC_LEN <= remaining_recv_len
                      ? RECV_PACKET_MAX_ENC_LEN
                      : remaining_recv_len;
