@@ -105,6 +105,17 @@ TEST_GROUP_RUNNER(nfc_events_test) {
   RUN_TEST_CASE(nfc_events_test, set_card_removed_event);
 }
 
+TEST_GROUP_RUNNER(core_session_test) {
+  RUN_TEST_CASE(core_session_test, core_session_initate_ok);
+  RUN_TEST_CASE(core_session_test, core_session_start_fail);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_encrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test,
+                core_session_aes_decrypt_session_state_terminated);
+  RUN_TEST_CASE(core_session_test, core_session_wallet_id_check_fail);
+  RUN_TEST_CASE(core_session_test, core_session_all_ok);
+}
+
 #ifdef NFC_EVENT_CARD_DETECT_MANUAL_TEST
 TEST_GROUP_RUNNER(nfc_events_manual_test) {
   RUN_TEST_CASE(nfc_events_manual_test, detect_and_remove_card);
@@ -144,7 +155,7 @@ TEST_GROUP_RUNNER(btc_txn_helper_test) {
                 btc_txn_helper_verify_input_p2wpkh_in_p2sh);
   RUN_TEST_CASE(btc_txn_helper_test,
                 btc_txn_helper_verify_input_p2wpkh_in_p2sh_fail);
-
+  
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy1);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_legacy2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_transaction_weight_segwit1);
@@ -234,6 +245,28 @@ TEST_GROUP_RUNNER(solana_add_account_test) {
   RUN_TEST_CASE(solana_add_account_test, solana_get_addr_action);
 }
 
+TEST_GROUP_RUNNER(inheritance_encryption_tests) {
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_request);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_invalid_wallet_id);
+  RUN_TEST_CASE(inheritance_encryption_tests, encryption_wallet_pin_not_set);
+}
+TEST_GROUP_RUNNER(inheritance_auth_wallet_tests) {
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_valid_input_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_which_request_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_valid_wallet_id_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_min_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests,
+                auth_wallet_max_challenge_length_fail);
+  RUN_TEST_CASE(inheritance_auth_wallet_tests, auth_wallet_ok);
+}
+
+TEST_GROUP_RUNNER(inheritance_decryption_tests) {
+  RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_request);
+  // RUN_TEST_CASE(inheritance_decryption_tests, decryption_invalid_wallet_id);
+}
+
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
@@ -243,4 +276,38 @@ TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, escape_string_invalid_non_print_utf);
   RUN_TEST_CASE(utils_tests, escape_string_short_out_buff);
   RUN_TEST_CASE(utils_tests, escape_string_invalid_args);
+}
+
+TEST_GROUP_RUNNER(byte_stream_tests) {
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_stream);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_destination);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_stream_pointer);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_null_writer_callback);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_negative_offset);
+  RUN_TEST_CASE(byte_stream_tests,
+                returns_error_for_offset_greater_than_capacity);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_when_writer_fails);
+  RUN_TEST_CASE(byte_stream_tests, returns_error_for_zero_capacity);
+  RUN_TEST_CASE(byte_stream_tests,
+                can_handle_large_reads_with_multiple_writer_calls);
+  RUN_TEST_CASE(byte_stream_tests, can_handle_small_chunk_reads);
+  RUN_TEST_CASE(byte_stream_tests, skip_handles_large_offsets);
+  RUN_TEST_CASE(byte_stream_tests, handles_writer_changing_stream_parameters);
+  RUN_TEST_CASE(byte_stream_tests, read_exactly_capacity_size);
+}
+
+TEST_GROUP_RUNNER(btc_inputs_validator_tests) {
+  RUN_TEST_CASE(btc_inputs_validator_tests, test_null_stream);
+  RUN_TEST_CASE(btc_inputs_validator_tests, test_null_input);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pk);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2pk_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2pkh);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2pkh_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2wpkh_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_validate_inputs_for_a_transaction_with_witness_data);
 }

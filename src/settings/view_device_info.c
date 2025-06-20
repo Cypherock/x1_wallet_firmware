@@ -147,6 +147,7 @@ void view_device_regulatory_information(void) {
   for (uint8_t slide = 0; slide < NUMBER_OF_SLIDES_REGULATORY_INFO; slide++) {
     snprintf(content[slide + 1].text,
              sizeof(content[slide + 1].text),
+             "%s",
              ui_text_regulatory_info[slide]);
   }
 

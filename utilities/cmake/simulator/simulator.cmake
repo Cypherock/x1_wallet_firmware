@@ -20,7 +20,7 @@ set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
 
-add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
+add_executable(${EXECUTABLE} ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/version.c ${MINI_GMP_SRCS} ${POSEIDON_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${INCLUDES})
 
 if ("${FIRMWARE_TYPE}" STREQUAL "Main")
     add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
@@ -55,6 +55,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
         apps/solana_app
         apps/tron_app
+        apps/inheritance_app
+        apps/xrp_app
+        apps/starknet_app
+        apps/constellation_app
+        apps/icp_app
+        apps/exchange_app
 
         src/
         src/menu
@@ -96,6 +102,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         common/libraries/atecc/host
         common/libraries/atecc/jwt
         common/libraries/crypto
+        common/libraries/crypto/mpz_operations
         common/libraries/crypto/aes
         common/libraries/crypto/chacha20poly1305
         common/libraries/crypto/ed25519-donna
@@ -157,6 +164,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/near_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/solana_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/inheritance_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/xrp_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/constellation_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/icp_app>
         )
 
 IF(UNIT_TESTS_SWITCH)

@@ -69,39 +69,6 @@
 
 uint32_t get_transaction_weight(const btc_txn_context_t *txn_ctx);
 
-// wrapper function to call 'btc_verify_input'
-// The function takes the entire 'raw_txn' and feeds it to
-// 'btc_verify_input' in chunks of size CHUNK_SIZE, simulating the sdk
-int btc_verify_input_test(btc_sign_txn_input_t *input,
-                          uint8_t *raw_txn,
-                          int ip_txn_bytes_size) {
-  btc_verify_input_t verify_input_data;
-  int status = 4;
-  memzero(&(verify_input_data), sizeof(btc_verify_input_t));
-  verify_input_data.chunk_total = (ip_txn_bytes_size % CHUNK_SIZE == 0)
-                                      ? (ip_txn_bytes_size / CHUNK_SIZE)
-                                      : (ip_txn_bytes_size / CHUNK_SIZE) + 1;
-
-  uint8_t txn_chunk[CHUNK_SIZE] = {0};
-  verify_input_data.size_last_chunk = ip_txn_bytes_size % CHUNK_SIZE;
-  int index = 0;
-  for (int chunk_var = ip_txn_bytes_size; chunk_var > 0;
-       chunk_var -= CHUNK_SIZE) {
-    int chvar = (chunk_var >= CHUNK_SIZE) ? CHUNK_SIZE : chunk_var % CHUNK_SIZE;
-
-    for (int i = 0; i < (chvar); i++) {
-      txn_chunk[i] = raw_txn[i + (CHUNK_SIZE * index)];
-    }
-
-    status = btc_verify_input(txn_chunk, index, &verify_input_data, input);
-    if (status != 4) {
-      break;
-    }
-    index++;
-  }
-  return status;
-}
-
 TEST_GROUP(btc_txn_helper_test);
 
 /**

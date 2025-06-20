@@ -246,6 +246,7 @@ static bool prepare_card_auth_context(auth_card_data_t *auth_card_data) {
   } else {
     snprintf(auth_card_data->ctx.heading,
              sizeof(auth_card_data->ctx.heading),
+             "%s",
              ui_text_tap_a_card);
   }
 
@@ -372,6 +373,7 @@ static bool handle_sign_challenge(auth_card_data_t *auth_card_data) {
   } else {
     snprintf(auth_card_data->ctx.message,
              sizeof(auth_card_data->ctx.message),
+             "%s",
              ui_text_processing);
   }
 
@@ -445,7 +447,7 @@ static bool handle_auth_card_result_query(auth_card_data_t *auth_card_data) {
           uint32_t pairing_status = DEFAULT_VALUE_IN_FLASH;
           if (CARD_OPERATION_SUCCESS !=
               card_pair_without_retap(card_number, &pairing_status)) {
-            LOG_ERROR("pairing error: %ld", pairing_status);
+            LOG_ERROR("pairing error: %d", pairing_status);
             manager_send_error(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                                get_card_error_from_nfc_status(pairing_status));
             if (SW_CONDITIONS_NOT_SATISFIED != pairing_status &&

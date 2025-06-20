@@ -366,6 +366,9 @@ const char *ui_text_verify_amount = "Verify amount";
 const char *ui_text_verify_contract = "Verify contract";
 const char *ui_text_unverified_contract =
     LV_SYMBOL_WARNING " Warning!\nUnverified contract";
+const char *ui_text_verify_token_address = "Verify token address";
+const char *ui_text_unverified_token =
+    LV_SYMBOL_WARNING " Warning!\nUnverified token";
 const char *ui_text_confirm_wallet_name = "Confirm wallet name";
 const char *ui_text_enter_data = "Enter data";
 const char *ui_text_confirm_data = "Confirm data";
@@ -526,6 +529,42 @@ const char *ui_text_unreliable_cards =
     "Warning, your cards are unreliable! Contact support";
 const char *ui_critical_card_health_migrate_data =
     "Card health is critical! Migrate to new set of cards";
+const char *ui_text_check_software_wallet_app = "Check the Software Wallet App";
+
+// App specific
+
+// Inheritance
+const char *ui_text_inheritance_wallet_auth_flow_confirmation =
+    "Start %s wallet authentication?";
+const char *ui_text_inheritance_wallet_auth_flow_confirmation_generic =
+    "Start wallet authentication?";
+const char *ui_text_inheritance_wallet_authenticating =
+    "Wallet\nauthenticating...";
+const char *ui_text_inheritance_wallet_auth_success =
+    "Wallet\nauthenticated\nsuccessfully";
+const char *ui_text_inheritance_wallet_auth_fail =
+    "Wallet\nauthentication\nfailed";
+
+const char *ui_text_inheritance_encryption_flow_confirmation =
+    "Proceed to encrypt data for %s?";
+const char *ui_text_inheritance_encryption_flow_success = "Encryption Success";
+const char *ui_text_inheritance_encryption_flow_failure = "Encryption Failed";
+
+const char *ui_text_inheritance_decryption_flow_confirmation =
+    "Proceed to decrypt data for %s?";
+const char *ui_text_inheritance_decryption_flow_confirmation_generic =
+    "Proceed to decrypt data?";
+const char *ui_text_inheritance_decryption_flow_success = "Decryption Success";
+const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
+
+// Solana Specific
+const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
+
+// ICP
+const char *ui_text_principal_id = "Principal Id";
+const char *ui_text_account_id = "Account Id";
+const char *ui_text_verify_principal_id = "Verify principal id";
+const char *ui_text_verify_account_id = "Verify account id";
 
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";

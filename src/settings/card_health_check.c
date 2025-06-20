@@ -107,6 +107,7 @@ void card_health_check(void) {
   configuration.operation.acceptable_cards = ACCEPTABLE_CARDS_ALL;
   configuration.operation.skip_card_removal = true;
   configuration.operation.expected_family_id = get_family_id();
+  configuration.operation.buzzer_on_success = true;
   configuration.frontend.heading = NULL;
   configuration.frontend.msg = ui_text_card_health_check_start;
 
@@ -191,8 +192,10 @@ void card_health_check(void) {
 
     char wallet_list[MAX_WALLETS_ALLOWED][NAME_SIZE] = {"", "", "", ""};
     for (uint8_t i = 0; i < wallets_in_card.count; i++) {
-      snprintf(
-          wallet_list[i], NAME_SIZE, (char *)wallets_in_card.wallet[i].name);
+      snprintf(wallet_list[i],
+               NAME_SIZE,
+               "%s",
+               (char *)wallets_in_card.wallet[i].name);
     }
     list_init(wallet_list, wallets_in_card.count, display_msg, false);
 

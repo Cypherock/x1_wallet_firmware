@@ -56,6 +56,12 @@
  ******************************************************************************
  */
 
+#include <stdint.h>
+
+#include "flash_struct.h"
+#include "flash_struct_priv.h"
+#include "utils.h"
+#include "wallet.h"
 #define _DEFAULT_SOURCE /* needed for usleep() */
 #include <stdlib.h>
 #include <unistd.h>
@@ -63,14 +69,12 @@
                             issue*/
 #include "application_startup.h"
 #include "unity_fixture.h"
-
 #if USE_SIMULATOR == 1
 #ifdef _WIN32
 #define main SDL_main
 #endif
 #include "sim_usb.h"
 extern lv_indev_t *indev_keypad;
-
 /*On OSX SDL needs different handling*/
 #if defined(__APPLE__) && defined(TARGET_OS_MAC)
 #if __APPLE__ && TARGET_OS_MAC
@@ -78,8 +82,12 @@ extern lv_indev_t *indev_keypad;
 #endif
 #endif
 #endif /* USE_SIMULATOR == 1 */
-
+#ifdef DEV_BUILD
+#include "dev_utils.h"
+#endif
 void RunAllTests(void) {
+  RUN_TEST_GROUP(btc_inputs_validator_tests);
+  RUN_TEST_GROUP(byte_stream_tests);
   RUN_TEST_GROUP(event_getter_test);
   RUN_TEST_GROUP(p0_events_test);
   RUN_TEST_GROUP(ui_events_test);
@@ -103,22 +111,70 @@ void RunAllTests(void) {
 #ifdef NEAR_FLOW_MANUAL_TEST
   RUN_TEST_GROUP(near_txn_user_verification_test);
 #endif
+  RUN_TEST_GROUP(inheritance_auth_wallet_tests);
   RUN_TEST_GROUP(utils_tests);
+  RUN_TEST_GROUP(inheritance_encryption_tests);
+  RUN_TEST_GROUP(inheritance_decryption_tests);
 }
-
 /**
  * @brief  The entry point to the unit test framework
  * This entry point is a parallel entry point to the int main(void) of the
  * actual firmware.
  */
-int main(void) {
-  application_init();
 
+#if USE_SIMULATOR == 1
+void fill_flash_wallets() {
+  // get_flash_ram_instance();
+  is_flash_ram_instance_loaded = true;
+  uint8_t wallet_id[WALLET_ID_SIZE] = {0};
+  char *wallet_name[] = {"DEV001", "DEV002"};
+  int wallet_index = 0;
+  //"DEV001" - without pin, and passphrase
+  hex_string_to_byte_array(
+      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2bff",
+      64,
+      wallet_id);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
+         wallet_id,
+         WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
+  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
+  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
+  flash_ram_instance.wallets[wallet_index].cards_states = 15;
+
+  // "DEV002" - has pin
+  wallet_index += 1;
+  hex_string_to_byte_array(
+      "cf19475f04c3b78f7d03f76f624e1ae426e6cd17ae1585e65c85a064312b2b88",
+      64,
+      wallet_id);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_id,
+         wallet_id,
+         WALLET_ID_SIZE);
+  memcpy(flash_ram_instance.wallets[wallet_index].wallet_name,
+         wallet_name[wallet_index],
+         strlen(wallet_name[wallet_index]));
+  flash_ram_instance.wallets[wallet_index].is_wallet_locked = 0;
+  flash_ram_instance.wallets[wallet_index].state = VALID_WALLET;
+  flash_ram_instance.wallets[wallet_index].cards_states = 15;
+  WALLET_SET_PIN(flash_ram_instance.wallets[wallet_index].wallet_info);
+}
+#endif
+
+int main(void) {
+#if USE_SIMULATOR == 1
+  fill_flash_wallets();
+#endif
+  application_init();
+#ifdef DEV_BUILD
+  ekp_queue_init();
+#endif
   UnityBegin("unit_tests_main.c");
   RunAllTests();
   UnityEnd();
 }
-
 #if USE_SIMULATOR == 0
 /**
  * @brief  This function is executed in case of error occurrence.
@@ -132,7 +188,6 @@ void Error_Handler(void) {
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
 /**
  * @brief Function to transmit data in real-time over SWV channel
  * @param file unused
@@ -150,5 +205,4 @@ int _write(int file, char *ptr, int len) {
   return len;
 #endif
 }
-
 #endif /* USE_SIMULATOR == 0 */

@@ -1,0 +1,4 @@
+inheritance.AuthWalletInitiateRequest.challenge type:FT_STATIC max_size:32 fixed_length:false
+inheritance.AuthWalletInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+inheritance.AuthWalletSignatureAndKey.public_key type:FT_STATIC max_size:32 fixed_length:true
+inheritance.AuthWalletSignatureAndKey.signature type:FT_STATIC max_size:64 fixed_length:true
