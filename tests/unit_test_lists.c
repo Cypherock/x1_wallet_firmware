@@ -157,10 +157,14 @@ TEST_GROUP_RUNNER(btc_txn_helper_test) {
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_format_value_1btc);
 
   RUN_TEST_CASE(btc_txn_helper_test, btc_script_check_script_address);
+  RUN_TEST_CASE(btc_txn_helper_test,
+                btc_script_check_p2sh_p2pwkh_script_address);
 
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2pkh_digest_1_2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_1_2);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_2_2);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_in_p2sh_digest_1_2);
+  RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_p2wpkh_in_p2sh_digest_2_2);
 
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_get_fee);
   RUN_TEST_CASE(btc_txn_helper_test, btc_txn_helper_get_fee_overspend);
@@ -293,6 +297,10 @@ TEST_GROUP_RUNNER(btc_inputs_validator_tests) {
   RUN_TEST_CASE(btc_inputs_validator_tests, btc_txn_helper_verify_input_p2wpkh);
   RUN_TEST_CASE(btc_inputs_validator_tests,
                 btc_txn_helper_verify_input_p2wpkh_fail);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2wpkh_in_p2sh);
+  RUN_TEST_CASE(btc_inputs_validator_tests,
+                btc_txn_helper_verify_input_p2wpkh_in_p2sh_fail);
   RUN_TEST_CASE(btc_inputs_validator_tests,
                 btc_validate_inputs_for_a_transaction_with_witness_data);
 }

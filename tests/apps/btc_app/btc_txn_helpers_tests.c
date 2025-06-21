@@ -352,6 +352,21 @@ TEST(btc_txn_helper_test, btc_script_check_script_address) {
       btc_check_script_address(script_pub, sizeof(script_pub), public_key));
 }
 
+TEST(btc_txn_helper_test, btc_script_check_p2sh_p2pwkh_script_address) {
+  uint8_t script_pub[23] = {0};
+  uint8_t public_key[33] = {0};
+
+  hex_string_to_byte_array(
+      "a914336caa13e08b96080a32b5d818d59b4ab3b3674287", 46, script_pub);
+  hex_string_to_byte_array(
+      "03a1af804ac108a8a51782198c2d034b28bf90c8803f5a53f76276fa69a4eae77f",
+      66,
+      public_key);
+
+  TEST_ASSERT_TRUE(
+      btc_check_script_address(script_pub, sizeof(script_pub), public_key));
+}
+
 TEST(btc_txn_helper_test, btc_txn_helper_p2pkh_digest_1_2) {
   uint8_t calculated_digest[32] = {0};
   uint8_t expected_digest[32] = {0};
@@ -501,6 +516,206 @@ TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_1_2) {
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_digest_2_2) {
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_in_p2sh_digest_1_2) {
+  uint8_t calculated_digest[32] = {0};
+  uint8_t expected_digest[32] = {0};
+  btc_segwit_cache_t expected_cache = {.filled = true};
+  btc_txn_input_t input = {
+      .prev_txn_hash = {0},
+      .value = 1000000000,
+      .prev_output_index = 0x00000001,
+      .script_pub_key = {.size = 22},
+      .change_index = 0,
+      .address_index = 1,
+      .sequence = 0xFFFFFFFe,
+  };
+  btc_sign_txn_output_t outputs[] = {
+      {
+          .value = 0x000000000bebb4b8,
+          .script_pub_key = {.size = 25},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+      {
+          .value = 0x000000002faf0800,
+          .script_pub_key = {.size = 25},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+  };
+  btc_txn_context_t context = {
+      .init_info = {.derivation_path_count = 3,
+                    .derivation_path = {0x80000000 + 49,
+                                        0x80000000,
+                                        0x80000000}},
+      .metadata = {.version = 0x00000001,
+                   .input_count = 0x01,
+                   .output_count = 0x02,
+                   .sighash = 0x00000001,
+                   .locktime = 0x00000492},
+      .segwit_cache = {0},
+      .change_output_idx = 1,
+  };
+
+  context.inputs = &input;
+  context.outputs = outputs;
+
+  hex_string_to_byte_array(
+      "db6b1b20aa0fd7b23880be2ecbd4a98130974cf4748fb66092ac4d3ceb1a5477",
+      64,
+      input.prev_txn_hash);
+  hex_string_to_byte_array("001479091972186c449eb1ded22b78e40d009bdf0089",
+                           44,
+                           input.script_pub_key.bytes);
+  hex_string_to_byte_array("76a914a457b684d7f0d539a46a45bbc043f35b59d0d96388ac",
+                           50,
+                           outputs[0].script_pub_key.bytes);
+  hex_string_to_byte_array("76a914fd270b1ee6abcaea97fea7ad0402e8bd8ad6d77c88ac",
+                           50,
+                           outputs[1].script_pub_key.bytes);
+  hex_string_to_byte_array(
+      "b0287b4a252ac05af83d2dcef00ba313af78a3e9c329afa216eb3aa2a7b4613a",
+      64,
+      expected_cache.hash_prevouts);
+  hex_string_to_byte_array(
+      "18606b350cd8bf565266bc352f0caddcf01e8fa789dd8a15386327cf8cabe198",
+      64,
+      expected_cache.hash_sequence);
+  hex_string_to_byte_array(
+      "de984f44532e2173ca0d64314fcefe6d30da6f8cf27bafa706da61df8a226c83",
+      64,
+      expected_cache.hash_outputs);
+  hex_string_to_byte_array(
+      "64f3b0f4dd2bb3aa1ce8566d220cc74dda9df97d8490cc81d89d735c92e59fb6",
+      64,
+      expected_digest);
+
+  btc_segwit_init_cache(&context);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_prevouts, context.segwit_cache.hash_prevouts, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_sequence, context.segwit_cache.hash_sequence, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_outputs, context.segwit_cache.hash_outputs, 32);
+
+  btc_digest_input(&context, 0, calculated_digest);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_digest, calculated_digest, 32);
+}
+
+TEST(btc_txn_helper_test, btc_txn_helper_p2wpkh_in_p2sh_digest_2_2) {
+  bool status = false;
+  uint8_t calculated_digest[32] = {0};
+  uint8_t expected_digest[2][32] = {0};
+  btc_segwit_cache_t expected_cache = {.filled = true};
+  btc_txn_input_t inputs[] = {{
+                                  .prev_txn_hash = {0},
+                                  .value = 8650,
+                                  .prev_output_index = 0x00000000,
+                                  .script_pub_key = {.size = 22},
+                                  .address_index = 0,
+                                  .sequence = 4294967295,
+                              },
+                              {
+                                  .prev_txn_hash = {0},
+                                  .value = 18123,
+                                  .prev_output_index = 0x00000000,
+                                  .script_pub_key = {.size = 22},
+                                  .address_index = 0,
+                                  .sequence = 4294967295,
+                              }};
+  btc_sign_txn_output_t outputs[] = {
+      {
+          .value = 4500,
+          .script_pub_key = {.size = 23},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+      {
+          .value = 12274,
+          .script_pub_key = {.size = 23},
+          .is_change = false,
+          .has_changes_index = false,
+      },
+  };
+  btc_txn_context_t context = {
+      .init_info = {.derivation_path_count = 3,
+                    .derivation_path = {0x80000000 + 49,
+                                        0x80000001,
+                                        0x80000000}},
+      .metadata = {.version = 0x00000002,
+                   .input_count = 0x02,
+                   .output_count = 0x02,
+                   .sighash = 0x01,
+                   .locktime = 0},
+      .segwit_cache = {0},
+  };
+
+  context.inputs = inputs;
+  context.outputs = outputs;
+
+  hex_string_to_byte_array(
+      "58afb1ece76f01c24f4935f453d210518163cb1d0383eaec331b202ebeb5e389",
+      64,
+      inputs[0].prev_txn_hash);
+  hex_string_to_byte_array("0014a76cad25cb569bb47305513ebedd6011dc419dee",
+                           44,
+                           inputs[0].script_pub_key.bytes);
+  hex_string_to_byte_array(
+      "2b3682b35925885001f0e321df28d4ac675a9cbbccef2a69533bea7c5e5ad2c4",
+      64,
+      inputs[1].prev_txn_hash);
+  hex_string_to_byte_array("0014a76cad25cb569bb47305513ebedd6011dc419dee",
+                           44,
+                           inputs[1].script_pub_key.bytes);
+  /*outputs*/
+  hex_string_to_byte_array("a914bd7aabdeeef211b1bdad7218e14fea6c032101c087",
+                           46,
+                           outputs[0].script_pub_key.bytes);
+  hex_string_to_byte_array("a914eaf97514c5ac1e41e413502e97ae42ebf27ace3a87",
+                           46,
+                           outputs[1].script_pub_key.bytes);
+  hex_string_to_byte_array(
+      "ce9186e6b6b4ce2ed0d42bdd2ae8a0003188b2b5070139eb53d1bd49ade831b7",
+      64,
+      expected_cache.hash_prevouts);
+  hex_string_to_byte_array(
+      "752adad0a7b9ceca853768aebb6965eca126a62965f698a0c1bc43d83db632ad",
+      64,
+      expected_cache.hash_sequence);
+  hex_string_to_byte_array(
+      "c42e53e6e72da4a8068e3115134201ebdcd8567fcaedaffc3169ab673ef4f0f9",
+      64,
+      expected_cache.hash_outputs);
+
+  btc_segwit_init_cache(&context);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_prevouts, context.segwit_cache.hash_prevouts, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_sequence, context.segwit_cache.hash_sequence, 32);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(
+      expected_cache.hash_outputs, context.segwit_cache.hash_outputs, 32);
+
+  /* digest input 0*/
+  hex_string_to_byte_array(
+      "84b6c444101a5d7d41c521b1034bf2c82afb19d45fe2a4fc6bdfae4edd720334",
+      64,
+      expected_digest[0]);
+
+  status = btc_digest_input(&context, 0, calculated_digest);
+  TEST_ASSERT_TRUE(status);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_digest[0], calculated_digest, 32);
+
+  /* digest input 1*/
+  hex_string_to_byte_array(
+      "7503b14676ff1de1d85819f31e43b96a5f400c273e7f143d8b05aa32e261a2b1",
+      64,
+      expected_digest[1]);
+
+  status = btc_digest_input(&context, 1, calculated_digest);
+  TEST_ASSERT_TRUE(status);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_digest[1], calculated_digest, 32);
 }
 
 TEST(btc_txn_helper_test, btc_txn_helper_get_fee) {
