@@ -15,10 +15,12 @@ jobs:
       matrix:
         firmware: [Main]
         target: [Release]
+        vendor: [Cypherock, Odix]
     uses: ./.github/workflows/containerized-build.yml
     with:
       firmware: ${{ matrix.firmware }}
       target: ${{ matrix.target }}
+      vendor: ${{ matrix.vendor }}
     secrets: inherit
   create-release:
     needs: build-firmwares
@@ -37,16 +39,18 @@ jobs:
           auth_token: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          chkmain=$(sha256sum Main-Release-outputs/Cypherock-Main.bin | cut -f -1 -d ' ')
+          chkmain=$(sha256sum Main-Release-Cypherock-outputs/Cypherock-Main.bin | cut -f -1 -d ' ')
+          chkmain_odix=$(sha256sum Main-Release-Odix-outputs/Cypherock-Main-Odix.bin | cut -f -1 -d ' ')
           APP_VERSION=$(cat version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
           HW_VERSION=$(cat version.txt | grep hardware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
           echo ${APP_VERSION}:${HW_VERSION}
-          curl   -X POST   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   https://api.github.com/repos/${REPOSITORY}/releases   -d '{"tag_name":"'${TAG_NAME}'","target_commitish":"main","name":"'${TAG_NAME}'","body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain}'","draft":true,"prerelease":false,"generate_release_notes":true}' > output.txt
+          curl   -X POST   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   https://api.github.com/repos/${REPOSITORY}/releases   -d '{"tag_name":"'${TAG_NAME}'","target_commitish":"main","name":"'${TAG_NAME}'","body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain}' \r\n**Cypherock-Main-Odix.bin** : '${chkmain_odix}'","draft":true,"prerelease":false,"generate_release_notes":true}' > output.txt
           echo "upload_url=$(cat output.txt | grep "\"upload_url\":" | cut -f 4-4 -d '"' | cut -f 1-1 -d '{')" >> $GITHUB_ENV
       - name: Upload assets
         env:
           auth_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          content_type=$(file -b --mime-type Main-Release-outputs/Cypherock-Main.bin)
-          curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=Cypherock-Main.bin  --data-binary @Main-Release-outputs/Cypherock-Main.bin
+          content_type=$(file -b --mime-type Main-Release-Cypherock-outputs/Cypherock-Main.bin)
+          curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=Cypherock-Main.bin  --data-binary @Main-Release-Cypherock-outputs/Cypherock-Main.bin
+          curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=Cypherock-Main-Odix.bin  --data-binary @Main-Release-Odix-outputs/Cypherock-Main-Odix.bin
           curl   -X POST   -H "Content-Type: ${content_type}"   -H "Accept: application/vnd.github+json"   -H "Authorization: Bearer ${auth_token}"  -H "X-GitHub-Api-Version: 2022-11-28"   ${upload_url}?name=version.txt  --data-binary @version.txt
