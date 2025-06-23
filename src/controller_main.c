@@ -86,25 +86,29 @@
 #include <string.h>
 
 #include "application_startup.h"
-#include "arbitrum.h"
-#include "avalanche.h"
-#include "bsc.h"
 #include "chacha20poly1305.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "cryptoauthlib.h"
+#include "rfc7539.h"
+#include "ui_events.h"
+#include "ui_instruction.h"
+#include "pb_decode.h"
+#include "options.h"
+#include "coin_utils.h"
+
+#ifndef BTC_ONLY_BUILD
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
 #include "etc.h"
 #include "eth.h"
 #include "fantom.h"
 #include "harmony.h"
 #include "near.h"
 #include "optimism.h"
-#include "pb_decode.h"
 #include "polygon.h"
-#include "rfc7539.h"
-#include "ui_events.h"
-#include "ui_instruction.h"
-
+#endif
 /**
  * @brief A task declared to execute a callback after a timeout.
  *
@@ -163,7 +167,9 @@ Flash_Wallet wallet_for_flash;
  * @brief Message data for wallet connect EIP-712 using protobuf
  *
  */
+#ifndef BTC_ONLY_BUILD
 MessageData msg_data;
+#endif
 ui_display_node *current_display_node = NULL;
 
 uint8_t provision_date[4];
@@ -214,7 +220,9 @@ void reset_flow_level() {
   memzero(wallet_credential_data.passphrase,
           sizeof(wallet_credential_data.passphrase));
   cy_free();
+#ifndef BTC_ONLY_BUILD
   pb_release(MessageData_fields, &msg_data);
+#endif
   current_display_node = NULL;
 }
 

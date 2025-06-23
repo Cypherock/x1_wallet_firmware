@@ -78,7 +78,11 @@
 #include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
+
+#ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
+#endif // BTC_ONLY_BUILD
+
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -308,16 +312,15 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
-
+#ifndef BTC_ONLY_BUILD
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
-
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
          request->initiate.wallet_id,
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
-
   use_signature_verification = exchange_app_validate_caq(data);
+#endif // BTC_ONLY_BUILD
 
   return status;
 }
@@ -588,10 +591,12 @@ static bool get_user_verification() {
     }
 
     if (use_signature_verification) {
+      #ifndef BTC_ONLY_BUILD
       if (!exchange_validate_stored_signature(address, sizeof(address))) {
         btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
         return false;
       }
+      #endif // BTC_ONLY_BUILD
     }
 
     if (!core_scroll_page(title, address, btc_send_error) ||

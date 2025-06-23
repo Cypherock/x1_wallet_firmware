@@ -40,6 +40,7 @@
 /// BTC TEST coin index
 #define BTC_TEST (BITCOIN + 0x01)
 
+#ifndef BTC_ONLY_BUILD
 /// LITECOIN coin index
 #define LITCOIN (BITCOIN + 0x02)
 #define LTC_COIN_VERSION 0x00000000
@@ -61,7 +62,7 @@
 
 /// SOLANA coin index
 #define SOLANA (BITCOIN + 0x1F5)
-
+#endif
 /// NATIVE SEGWIT purpose id
 #define NATIVE_SEGWIT 0x80000054
 
@@ -71,6 +72,7 @@
 typedef enum Coin_Type {
   COIN_TYPE_BITCOIN = 0x01,
   COIN_TYPE_BTC_TEST = 0x02,
+  #ifndef BTC_ONLY_BUILD
   COIN_TYPE_LITECOIN = 0x03,
   COIN_TYPE_DOGE = 0x04,
   COIN_TYPE_DASH = 0x05,
@@ -85,6 +87,7 @@ typedef enum Coin_Type {
   COIN_TYPE_HARMONY = 0x0E,
   COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
   COIN_TYPE_ARBITRUM = 0x10,
+  #endif
 } Coin_Type;
 
 #pragma pack(push, 1)

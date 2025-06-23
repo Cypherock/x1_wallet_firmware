@@ -70,7 +70,11 @@
 #include "coin_utils.h"
 #include "composable_app_queue.h"
 #include "curves.h"
+
+#ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
+#endif // BTC_ONLY_BUILD
+
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -186,9 +190,10 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
   memcpy(data.params,
          request->initiate.wallet_id,
          sizeof(request->initiate.wallet_id));
+#ifndef BTC_ONLY_BUILD
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
-
   sign_address = exchange_app_validate_caq(data);
+#endif // BTC_ONLY_BUILD
 
   return status;
 }
@@ -302,7 +307,9 @@ void btc_get_pub_key(btc_query_t *query) {
   memzero(seed, sizeof(seed));
 
   if (sign_address) {
+    #ifndef BTC_ONLY_BUILD
     exchange_sign_address(msg, sizeof(msg));
+    #endif // BTC_ONLY_BUILD
   }
 
   if (0 < length &&
