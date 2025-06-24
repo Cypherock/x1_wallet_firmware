@@ -67,8 +67,10 @@
 #include "evm_api.h"
 #include "evm_priv.h"
 #include "exchange_main.h"
+#include "flash_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -228,6 +230,17 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
       !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
       !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return status;
+  }
+
+  if (is_evm_calldata_enabled()) {
+    char data_str[1024] = "";
+    byte_array_to_hex_string(txn_context->transaction_info.data,
+                             txn_context->transaction_info.data_size,
+                             data_str,
+                             sizeof(data_str));
+    if (!core_scroll_page("Calldata", data_str, evm_send_error)) {
+      return status;
+    }
   }
 
   return true;

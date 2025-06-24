@@ -116,6 +116,22 @@ void toggle_log_export(void) {
   return;
 }
 
+void toggle_evm_calldata(void) {
+  bool evm_calldata_enabled = is_evm_calldata_enabled();
+  const char *msg = ui_text_show_evm_calldata;
+
+  if (evm_calldata_enabled) {
+    msg = ui_text_hide_evm_calldata;
+  }
+
+  if (core_confirmation(msg, NULL)) {
+    set_evm_calldata_config(evm_calldata_enabled ? EVM_CALLDATA_DISABLED : EVM_CALLDATA_ENABLED,
+                       FLASH_SAVE_NOW);
+  }
+
+  return;
+}
+
 void toggle_passphrase(void) {
   bool passphrase_enabled = is_passphrase_enabled();
   const char *msg = ui_text_enable_passphrase_step;

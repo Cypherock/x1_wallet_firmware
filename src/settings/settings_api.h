@@ -43,6 +43,8 @@ void view_firmware_version(void);
  */
 void toggle_log_export(void);
 
+void toggle_evm_calldata(void);
+
 /**
  * @brief This function configures the X1 vault to enable/disable usage of
  * passphrase on the X1 vault

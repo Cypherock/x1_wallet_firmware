@@ -87,11 +87,11 @@ extern const char *ui_text_mnemonics_number_options[];
 
 // Settings menu text
 #ifdef DEV_BUILD
-#define NUMBER_OF_OPTIONS_SETTINGS 12
+#define NUMBER_OF_OPTIONS_SETTINGS 13
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #else
-#define NUMBER_OF_OPTIONS_SETTINGS 11
+#define NUMBER_OF_OPTIONS_SETTINGS 12
 // TODO: Update after refactor - remove the following MACRO
 #define NUMBER_OF_OPTIONS_ADVANCED_OPTIONS NUMBER_OF_OPTIONS_SETTINGS
 #endif /* DEV_BUILD*/
@@ -99,6 +99,7 @@ extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
 extern const char *ui_text_rotate_display_confirm;
 extern const char *ui_text_options_logging_export[];
+extern const char *ui_text_options_show_evm_calldata[];
 extern const char *ui_text_options_passphrase[];
 
 extern const char *ui_text_pair_card_confirm;
@@ -326,6 +327,8 @@ extern const char *ui_text_disable_passphrase_step;
 extern const char *ui_text_warning_txn_fee_too_high;
 extern const char *ui_text_enable_log_export;
 extern const char *ui_text_disable_log_export;
+extern const char *ui_text_show_evm_calldata;
+extern const char *ui_text_hide_evm_calldata;
 
 //?
 extern const char *ui_text_do_you_want_import_wallet_to_desktop;

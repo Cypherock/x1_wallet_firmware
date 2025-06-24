@@ -91,6 +91,7 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "View Card Version",
     "Regulatory Info",
     "Pair Cards",
+    "Toggle evm calldata",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif
@@ -107,6 +108,11 @@ const char *ui_text_options_passphrase[] = {
 const char *ui_text_options_logging_export[] = {
     "Disable Logs",
     "Enable Logs",
+};
+
+const char *ui_text_options_show_evm_calldata[] = {
+    "Show EVM calldata",
+    "Hide EVM calldata",
 };
 
 const char *ui_text_pair_card_confirm =
@@ -448,6 +454,8 @@ const char *ui_text_warning_txn_fee_too_high =
     "WARNING!\nTransaction fees\ntoo high, proceed?";
 const char *ui_text_enable_log_export = "Do you want to enable logging?";
 const char *ui_text_disable_log_export = "Do you want to disable logging?";
+const char *ui_text_show_evm_calldata = "Do you want to show evm calldata?";
+const char *ui_text_hide_evm_calldata = "Do you want to hide evm calldata?";
 
 //?
 const char *ui_text_do_you_want_import_wallet_to_desktop =

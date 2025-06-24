@@ -528,6 +528,39 @@ int set_logging_config(log_config state, flash_save_mode save_mode);
  *
  * @note
  */
+bool is_evm_calldata_enabled();
+
+/**
+ * @brief
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
+int set_evm_calldata_config(evm_calldata_config state,
+                            flash_save_mode save_mode);
+
+/**
+ * @brief
+ * @details
+ *
+ * @param
+ *
+ * @return
+ * @retval
+ *
+ * @see
+ * @since v1.0.0
+ *
+ * @note
+ */
 uint32_t get_first_boot_on_update();
 
 /**
