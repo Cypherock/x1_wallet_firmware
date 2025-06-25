@@ -81,7 +81,7 @@
 
 #ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
@@ -312,7 +312,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
     status = false;
   }
 #ifndef BTC_ONLY_BUILD
-  bool use_signature_verification = false; // Declare and initialize here
+  bool use_signature_verification = false;    // Declare and initialize here
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
@@ -320,7 +320,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
   use_signature_verification = exchange_app_validate_caq(data);
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
   return status;
 }
@@ -574,11 +574,12 @@ static bool get_user_verification() {
 
 #ifndef BTC_ONLY_BUILD
   bool use_signature_verification = false;
-  // This needs to be re-evaluated as validate_request_data will be called first and will set this variable.
-  // The query is not accessible directly in get_user_verification.
-  // For now, removing this re-evaluation part.
-  // Keeping the if condition as is for the exchange_validate_stored_signature function call.
-#endif // BTC_ONLY_BUILD
+  // This needs to be re-evaluated as validate_request_data will be called first
+  // and will set this variable. The query is not accessible directly in
+  // get_user_verification. For now, removing this re-evaluation part. Keeping
+  // the if condition as is for the exchange_validate_stored_signature function
+  // call.
+#endif    // BTC_ONLY_BUILD
 
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
@@ -605,7 +606,7 @@ static bool get_user_verification() {
         return false;
       }
     }
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {

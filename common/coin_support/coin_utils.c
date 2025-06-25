@@ -61,16 +61,16 @@
 #include "segwit_addr.h"
 
 #ifndef BTC_ONLY_BUILD
-  #include "arbitrum.h"
-  #include "avalanche.h"
-  #include "bsc.h"
-  #include "etc.h"
-  #include "fantom.h"
-  #include "harmony.h"
-  #include "near.h"
-  #include "optimism.h"
-  #include "polygon.h"
-  #include "solana.h"
+#include "arbitrum.h"
+#include "avalanche.h"
+#include "bsc.h"
+#include "etc.h"
+#include "fantom.h"
+#include "harmony.h"
+#include "near.h"
+#include "optimism.h"
+#include "polygon.h"
+#include "solana.h"
 #endif
 
 void s_memcpy(uint8_t *dst,

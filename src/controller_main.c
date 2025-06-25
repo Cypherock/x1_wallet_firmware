@@ -87,15 +87,15 @@
 
 #include "application_startup.h"
 #include "chacha20poly1305.h"
+#include "coin_utils.h"
 #include "communication.h"
 #include "constant_texts.h"
 #include "cryptoauthlib.h"
+#include "options.h"
+#include "pb_decode.h"
 #include "rfc7539.h"
 #include "ui_events.h"
 #include "ui_instruction.h"
-#include "pb_decode.h"
-#include "options.h"
-#include "coin_utils.h"
 
 #ifndef BTC_ONLY_BUILD
 #include "arbitrum.h"

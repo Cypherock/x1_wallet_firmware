@@ -72,7 +72,7 @@
 typedef enum Coin_Type {
   COIN_TYPE_BITCOIN = 0x01,
   COIN_TYPE_BTC_TEST = 0x02,
-  #ifndef BTC_ONLY_BUILD
+#ifndef BTC_ONLY_BUILD
   COIN_TYPE_LITECOIN = 0x03,
   COIN_TYPE_DOGE = 0x04,
   COIN_TYPE_DASH = 0x05,
@@ -87,7 +87,7 @@ typedef enum Coin_Type {
   COIN_TYPE_HARMONY = 0x0E,
   COIN_TYPE_ETHEREUM_CLASSIC = 0x0f,
   COIN_TYPE_ARBITRUM = 0x10,
-  #endif
+#endif
 } Coin_Type;
 
 #pragma pack(push, 1)

@@ -61,17 +61,15 @@
  *****************************************************************************/
 #include "core_flow_init.h"
 
+#include "../apps/inheritance_app/inheritance_main.h"
 #include "app_registry.h"
 #include "application_startup.h"
-#include "../apps/inheritance_app/inheritance_main.h"
+#include "btc_app.h"
+#include "btc_main.h"
 #include "main_menu.h"
 #include "manager_app.h"
 #include "onboarding.h"
 #include "restricted_app.h"
-
-
-#include "btc_app.h"
-#include "btc_main.h"
 
 #ifndef BTC_ONLY_BUILD
 #include "arbitrum_app.h"
@@ -88,14 +86,14 @@
 #include "fantom_app.h"
 #include "icp_main.h"
 #include "ltc_app.h"
+#include "near_main.h"
 #include "optimism_app.h"
 #include "polygon_app.h"
 #include "solana_main.h"
 #include "starknet_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
-#include "near_main.h"
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -177,11 +175,9 @@ engine_ctx_t *get_core_flow_ctx(void) {
 }
 
 void core_init_app_registry() {
-
   registry_add_app(get_manager_app_desc());
   registry_add_app(get_btc_app_desc());
   registry_add_app(get_inheritance_app_desc());
-
 
 #ifndef BTC_ONLY_BUILD
   registry_add_app(get_ltc_app_desc());

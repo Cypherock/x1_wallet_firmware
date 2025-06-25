@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../apps/evm_family/evm_txn_helpers.h"
+#include "../common/coin_support/eth_sign_data/abi.h"
+#include "../common/coin_support/eth_sign_data/eip712.pb.h"
 #include "../crypto/base58.h"
 #include "../crypto/bip32.h"
 #include "../crypto/bip39.h"
@@ -28,10 +31,7 @@
 #include "../crypto/secp256k1.h"
 #include "../crypto/sha2.h"
 #include "../crypto/sha3.h"
-#include "../common/coin_support/eth_sign_data/abi.h"
 #include "coin_utils.h"
-#include "../common/coin_support/eth_sign_data/eip712.pb.h"
-#include "../apps/evm_family/evm_txn_helpers.h"
 
 #define ETHEREUM_MAINNET_CHAIN 1
 

@@ -73,7 +73,7 @@
 
 #ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
@@ -162,8 +162,8 @@ static void send_public_key(const uint8_t *public_key);
  * STATIC VARIABLES
  *****************************************************************************/
 #ifndef BTC_ONLY_BUILD
- static bool sign_address = false;
-#endif // BTC_ONLY_BUILD
+static bool sign_address = false;
+#endif    // BTC_ONLY_BUILD
 
 static bool check_which_request(const btc_query_t *query,
                                 pb_size_t which_request) {
@@ -186,7 +186,7 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
     status = false;
   }
 
-  #ifndef BTC_ONLY_BUILD
+#ifndef BTC_ONLY_BUILD
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
 
   memzero(data.params, sizeof(data.params));
@@ -195,7 +195,7 @@ static bool validate_request_data(btc_get_public_key_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
   sign_address = exchange_app_validate_caq(data);
-#endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
   return status;
 }
@@ -307,12 +307,12 @@ void btc_get_pub_key(btc_query_t *query) {
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   size_t length = btc_get_address(seed, path, path_length, public_key, msg);
   memzero(seed, sizeof(seed));
-  
-  #ifndef BTC_ONLY_BUILD
+
+#ifndef BTC_ONLY_BUILD
   if (sign_address) {
     exchange_sign_address(msg, sizeof(msg));
   }
-  #endif // BTC_ONLY_BUILD
+#endif    // BTC_ONLY_BUILD
 
   if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {

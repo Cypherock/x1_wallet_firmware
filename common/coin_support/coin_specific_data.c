@@ -207,7 +207,8 @@ static uint16_t prepare_coin_specific_data_tlv(
 //             (uint8_t *)malloc(meta_data_arr[current_index].data_length);
 //         ASSERT(meta_data_arr[current_index].data_struct.coin_data != NULL);
 //         read_cmd(meta_data_arr[current_index].data_addr,
-//                  (uint32_t *)meta_data_arr[current_index].data_struct.coin_data,
+//                  (uint32_t
+//                  *)meta_data_arr[current_index].data_struct.coin_data,
 //                  meta_data_arr[current_index].data_length);
 //       }
 //     }
@@ -220,7 +221,8 @@ static uint16_t prepare_coin_specific_data_tlv(
 //   for (size_t i = 0; i < MAX_UNIQUE_COIN_COUNT * MAX_WALLETS_ALLOWED; i++) {
 //     if (meta_data_arr[i].data_length > 0 &&
 //         FLASH_COIN_SPECIFIC_BASE_ADDRESS < meta_data_arr[i].data_addr &&
-//         meta_data_arr[i].data_addr + meta_data_arr[i].data_length < FLASH_END) {
+//         meta_data_arr[i].data_addr + meta_data_arr[i].data_length <
+//         FLASH_END) {
 //       uint16_t data_length =
 //           (3 + WALLET_ID_SIZE) + (3 + meta_data_arr[i].data_length);
 //       uint16_t tlv_size = 6 + data_length;
@@ -234,7 +236,8 @@ static uint16_t prepare_coin_specific_data_tlv(
 //                                          tlv,
 //                                          data_length);
 //       write_cmd(
-//           FLASH_COIN_SPECIFIC_BASE_ADDRESS + offset, (uint32_t *)tlv, tlv_size);
+//           FLASH_COIN_SPECIFIC_BASE_ADDRESS + offset, (uint32_t *)tlv,
+//           tlv_size);
 
 //       free(meta_data_arr[i].data_struct.coin_data);
 //     }
