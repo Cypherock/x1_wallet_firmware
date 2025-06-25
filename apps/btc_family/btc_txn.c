@@ -281,7 +281,6 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static bool use_signature_verification = false;
 static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
@@ -313,6 +312,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
     status = false;
   }
 #ifndef BTC_ONLY_BUILD
+  bool use_signature_verification = false; // Declare and initialize here
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
@@ -572,6 +572,14 @@ static bool get_user_verification() {
   char value[100] = "";
   char address[100] = "";
 
+#ifndef BTC_ONLY_BUILD
+  bool use_signature_verification = false;
+  // This needs to be re-evaluated as validate_request_data will be called first and will set this variable.
+  // The query is not accessible directly in get_user_verification.
+  // For now, removing this re-evaluation part.
+  // Keeping the if condition as is for the exchange_validate_stored_signature function call.
+#endif // BTC_ONLY_BUILD
+
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
     btc_sign_txn_output_script_pub_key_t *script = &output->script_pub_key;
@@ -590,14 +598,14 @@ static bool get_user_verification() {
       return false;
     }
 
+#ifndef BTC_ONLY_BUILD
     if (use_signature_verification) {
-      #ifndef BTC_ONLY_BUILD
       if (!exchange_validate_stored_signature(address, sizeof(address))) {
         btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
         return false;
       }
-      #endif // BTC_ONLY_BUILD
     }
+#endif // BTC_ONLY_BUILD
 
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {

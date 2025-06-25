@@ -187,7 +187,6 @@ void core_init_app_registry() {
   registry_add_app(get_ltc_app_desc());
   registry_add_app(get_doge_app_desc());
   registry_add_app(get_dash_app_desc());
-  registry_add_app(get_inheritance_app_desc());
 
   registry_add_app(get_eth_app_desc());
   registry_add_app(get_near_app_desc());
