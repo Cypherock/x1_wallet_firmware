@@ -167,83 +167,86 @@ static uint16_t prepare_coin_specific_data_tlv(
   return find_latest_coin_data(
       coin_specific_data, &coin_data_len, &coin_data_addr);
 }
+#ifndef BTC_ONLY_BUILD
+// This function is commented out as it is not used in the current
+// implementation. It is kept here for reference in case it is needed in the
+// future. It was intended to purge coin specific data from flash by reading all
+// the unique coin data and writing them back to flash after erasing the flash.
+// It is a complex operation and may not be necessary in the current context.
 
-// static void purge_coin_specific_data() {
-//   // Store all the unique data length and address in an array
-//   Coin_Type coin_type_arr[MAX_UNIQUE_COIN_COUNT] = {COIN_TYPE_NEAR};
-//   struct meta_data_t {
-//     Coin_Specific_Data_Struct data_struct;
-//     uint16_t data_length;
-//     uint32_t data_addr;
-//   } meta_data_arr[MAX_UNIQUE_COIN_COUNT * MAX_WALLETS_ALLOWED] = {0};
+static void purge_coin_specific_data() {
+  // Store all the unique data length and address in an array
+  Coin_Type coin_type_arr[MAX_UNIQUE_COIN_COUNT] = {COIN_TYPE_NEAR};
+  struct meta_data_t {
+    Coin_Specific_Data_Struct data_struct;
+    uint16_t data_length;
+    uint32_t data_addr;
+  } meta_data_arr[MAX_UNIQUE_COIN_COUNT * MAX_WALLETS_ALLOWED] = {0};
 
-//   for (size_t coin_type_index = 0; coin_type_index < MAX_UNIQUE_COIN_COUNT;
-//        coin_type_index++) {
-//     for (size_t wallet_id_index = 0; wallet_id_index < MAX_WALLETS_ALLOWED;
-//          wallet_id_index++) {
-//       size_t current_index =
-//           coin_type_index * MAX_WALLETS_ALLOWED + wallet_id_index;
+  for (size_t coin_type_index = 0; coin_type_index < MAX_UNIQUE_COIN_COUNT;
+       coin_type_index++) {
+    for (size_t wallet_id_index = 0; wallet_id_index < MAX_WALLETS_ALLOWED;
+         wallet_id_index++) {
+      size_t current_index =
+          coin_type_index * MAX_WALLETS_ALLOWED + wallet_id_index;
 
-//       meta_data_arr[current_index].data_length = 0;
-//       meta_data_arr[current_index].data_addr = 0;
+      meta_data_arr[current_index].data_length = 0;
+      meta_data_arr[current_index].data_addr = 0;
 
-//       meta_data_arr[current_index].data_struct.coin_type =
-//           coin_type_arr[coin_type_index];
-//       memcpy(meta_data_arr[current_index].data_struct.wallet_id,
-//              get_wallet_id(wallet_id_index),
-//              WALLET_ID_SIZE);
-//       find_latest_coin_data(&meta_data_arr[current_index].data_struct,
-//                             &meta_data_arr[current_index].data_length,
-//                             &meta_data_arr[current_index].data_addr);
+      meta_data_arr[current_index].data_struct.coin_type =
+          coin_type_arr[coin_type_index];
+      memcpy(meta_data_arr[current_index].data_struct.wallet_id,
+             get_wallet_id(wallet_id_index),
+             WALLET_ID_SIZE);
+      find_latest_coin_data(&meta_data_arr[current_index].data_struct,
+                            &meta_data_arr[current_index].data_length,
+                            &meta_data_arr[current_index].data_addr);
 
-//       if (meta_data_arr[current_index].data_length > 0 &&
-//           FLASH_COIN_SPECIFIC_BASE_ADDRESS <
-//               meta_data_arr[current_index].data_addr &&
-//           meta_data_arr[current_index].data_addr +
-//                   meta_data_arr[current_index].data_length <
-//               FLASH_END) {
-//         // Allocate a proper size array to store the data
-//         meta_data_arr[current_index].data_struct.coin_data =
-//             (uint8_t *)malloc(meta_data_arr[current_index].data_length);
-//         ASSERT(meta_data_arr[current_index].data_struct.coin_data != NULL);
-//         read_cmd(meta_data_arr[current_index].data_addr,
-//                  (uint32_t
-//                  *)meta_data_arr[current_index].data_struct.coin_data,
-//                  meta_data_arr[current_index].data_length);
-//       }
-//     }
-//   }
+      if (meta_data_arr[current_index].data_length > 0 &&
+          FLASH_COIN_SPECIFIC_BASE_ADDRESS <
+              meta_data_arr[current_index].data_addr &&
+          meta_data_arr[current_index].data_addr +
+                  meta_data_arr[current_index].data_length <
+              FLASH_END) {
+        // Allocate a proper size array to store the data
+        meta_data_arr[current_index].data_struct.coin_data =
+            (uint8_t *)malloc(meta_data_arr[current_index].data_length);
+        ASSERT(meta_data_arr[current_index].data_struct.coin_data != NULL);
+        read_cmd(meta_data_arr[current_index].data_addr,
+                 (uint32_t *)meta_data_arr[current_index].data_struct.coin_data,
+                 meta_data_arr[current_index].data_length);
+      }
+    }
+  }
 
-//   // Erase everything from flash
-//   erase_flash_coin_specific_data();
+  // Erase everything from flash
+  erase_flash_coin_specific_data();
 
-//   // Write the data back to flash
-//   for (size_t i = 0; i < MAX_UNIQUE_COIN_COUNT * MAX_WALLETS_ALLOWED; i++) {
-//     if (meta_data_arr[i].data_length > 0 &&
-//         FLASH_COIN_SPECIFIC_BASE_ADDRESS < meta_data_arr[i].data_addr &&
-//         meta_data_arr[i].data_addr + meta_data_arr[i].data_length <
-//         FLASH_END) {
-//       uint16_t data_length =
-//           (3 + WALLET_ID_SIZE) + (3 + meta_data_arr[i].data_length);
-//       uint16_t tlv_size = 6 + data_length;
-//       tlv_size = GET_NEXT_MULTIPLE_OF_8(tlv_size);
-//       uint8_t tlv[tlv_size];
-//       memzero(tlv, sizeof(tlv));
+  // Write the data back to flash
+  for (size_t i = 0; i < MAX_UNIQUE_COIN_COUNT * MAX_WALLETS_ALLOWED; i++) {
+    if (meta_data_arr[i].data_length > 0 &&
+        FLASH_COIN_SPECIFIC_BASE_ADDRESS < meta_data_arr[i].data_addr &&
+        meta_data_arr[i].data_addr + meta_data_arr[i].data_length < FLASH_END) {
+      uint16_t data_length =
+          (3 + WALLET_ID_SIZE) + (3 + meta_data_arr[i].data_length);
+      uint16_t tlv_size = 6 + data_length;
+      tlv_size = GET_NEXT_MULTIPLE_OF_8(tlv_size);
+      uint8_t tlv[tlv_size];
+      memzero(tlv, sizeof(tlv));
 
-//       uint16_t offset =
-//           prepare_coin_specific_data_tlv(&meta_data_arr[i].data_struct,
-//                                          meta_data_arr[i].data_length,
-//                                          tlv,
-//                                          data_length);
-//       write_cmd(
-//           FLASH_COIN_SPECIFIC_BASE_ADDRESS + offset, (uint32_t *)tlv,
-//           tlv_size);
+      uint16_t offset =
+          prepare_coin_specific_data_tlv(&meta_data_arr[i].data_struct,
+                                         meta_data_arr[i].data_length,
+                                         tlv,
+                                         data_length);
+      write_cmd(
+          FLASH_COIN_SPECIFIC_BASE_ADDRESS + offset, (uint32_t *)tlv, tlv_size);
 
-//       free(meta_data_arr[i].data_struct.coin_data);
-//     }
-//   }
-// }
-
+      free(meta_data_arr[i].data_struct.coin_data);
+    }
+  }
+}
+#endif    // BTC_ONLY_BUILD
 static int store_coin_data(const uint8_t *tlv_data,
                            uint16_t tlv_data_size,
                            uint16_t offset) {
@@ -253,7 +256,13 @@ static int store_coin_data(const uint8_t *tlv_data,
               (uint32_t *)tlv_data,
               tlv_data_size);
   } else {
-    // purge_coin_specific_data();
+#ifndef BTC_ONLY_BUILD
+    // If there is not enough space, purge the coin specific data and try again.
+    // This is a complex operation and may not be necessary in the current
+    // context. It is commented out for now, but can be uncommented if needed in
+    // the future
+    purge_coin_specific_data();
+#endif    // BTC_ONLY_BUILD
     uint16_t coin_data_len = 0;
     uint32_t coin_data_addr = 0;
     Coin_Specific_Data_Struct dummy = {0};

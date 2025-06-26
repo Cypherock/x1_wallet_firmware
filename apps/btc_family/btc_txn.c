@@ -78,11 +78,9 @@
 #include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
-
 #ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
-#endif    // BTC_ONLY_BUILD
-
+#endif
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -281,6 +279,11 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+#ifndef BTC_ONLY_BUILD
+// This variable is needed for the exchange flow and needs to maintain its state
+// across function calls.
+static bool use_signature_verification = false;
+#endif
 static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
@@ -311,16 +314,18 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
+
 #ifndef BTC_ONLY_BUILD
-  bool use_signature_verification = false;    // Declare and initialize here
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
+
   memzero(data.params, sizeof(data.params));
   memcpy(data.params,
          request->initiate.wallet_id,
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
   use_signature_verification = exchange_app_validate_caq(data);
-#endif    // BTC_ONLY_BUILD
+#endif
 
   return status;
 }
@@ -572,15 +577,6 @@ static bool get_user_verification() {
   char value[100] = "";
   char address[100] = "";
 
-#ifndef BTC_ONLY_BUILD
-  bool use_signature_verification = false;
-  // This needs to be re-evaluated as validate_request_data will be called first
-  // and will set this variable. The query is not accessible directly in
-  // get_user_verification. For now, removing this re-evaluation part. Keeping
-  // the if condition as is for the exchange_validate_stored_signature function
-  // call.
-#endif    // BTC_ONLY_BUILD
-
   for (int idx = 0; idx < btc_txn_context->metadata.output_count; idx++) {
     btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
     btc_sign_txn_output_script_pub_key_t *script = &output->script_pub_key;
@@ -606,7 +602,7 @@ static bool get_user_verification() {
         return false;
       }
     }
-#endif    // BTC_ONLY_BUILD
+#endif
 
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
