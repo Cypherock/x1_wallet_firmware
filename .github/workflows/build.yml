@@ -15,10 +15,12 @@ jobs:
       matrix:
         firmware: [Main]
         target: [Release]
+        coin_support: ["BTC_ONLY", "MULTI_COIN"]
     uses: ./.github/workflows/containerized-build.yml
     with:
       firmware: ${{ matrix.firmware }}
       target: ${{ matrix.target }}
+      coin_support_variant: ${{ matrix.coin_support }}
     secrets: inherit
   create-release:
     needs: build-firmwares
