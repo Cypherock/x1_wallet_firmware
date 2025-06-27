@@ -13,6 +13,24 @@ else()
     set(PROJECT Cypherock_Simulator)
 endif()
 
+# Define all options upfront, including BTC_ONLY
+OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
+OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
+OPTION(BTC_ONLY "Build firmware for Bitcoin only" OFF)
+
+# Logic to append -btc to project name if BTC_ONLY is enabled
+if (BTC_ONLY)
+    set(PROJECT ${PROJECT}-btc)
+endif()
+
+# Make static functions testable via unit-tests
+IF(UNIT_TESTS_SWITCH)
+    add_compile_definitions( STATIC= )
+ELSE()
+    add_compile_definitions( STATIC=static )
+ENDIF(UNIT_TESTS_SWITCH)
+
+# Now define the project with its final name, after all modifications
 project(${PROJECT})
 
 # python is needed for compiling proto files using nanopb
@@ -24,36 +42,25 @@ execute_process(COMMAND sh utilities/proto/generate-protob.sh WORKING_DIRECTORY 
 include(utilities/cmake/version.cmake)
 
 file(GLOB_RECURSE PROTO_SRCS "generated/proto/*.*")
-list(APPEND PROTO_SRCS 
-    "vendor/nanopb/pb_common.c" 
-    "vendor/nanopb/pb_decode.c" 
-    "vendor/nanopb/pb_encode.c" 
-    "vendor/nanopb/pb_common.h" 
-    "vendor/nanopb/pb_decode.h" 
-    "vendor/nanopb/pb_encode.h" 
+list(APPEND PROTO_SRCS
+    "vendor/nanopb/pb_common.c"
+    "vendor/nanopb/pb_decode.c"
+    "vendor/nanopb/pb_encode.c"
+    "vendor/nanopb/pb_common.h"
+    "vendor/nanopb/pb_decode.h"
+    "vendor/nanopb/pb_encode.h"
     "vendor/nanopb/pb.h"
 )
 
-list (APPEND MINI_GMP_SRCS 
-    "vendor/mini-gmp/mini-gmp-helpers.c" 
+list (APPEND MINI_GMP_SRCS
+    "vendor/mini-gmp/mini-gmp-helpers.c"
     "vendor/mini-gmp/mini-gmp.c"
 )
-list (APPEND POSEIDON_SRCS 
-    "vendor/poseidon/sources/f251.c" 
-    "vendor/poseidon/sources/poseidon.c" 
+list (APPEND POSEIDON_SRCS
+    "vendor/poseidon/sources/f251.c"
+    "vendor/poseidon/sources/poseidon.c"
     "vendor/poseidon/sources/poseidon_rc.c"
 )
-
-OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
-OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
-OPTION(BTC_ONLY "Build firmware for Bitcoin only" OFF)
-
-# Make static functions testable via unit-tests
-IF(UNIT_TESTS_SWITCH)
-    add_compile_definitions( STATIC= )
-ELSE()
-    add_compile_definitions( STATIC=static )
-ENDIF(UNIT_TESTS_SWITCH)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     add_compile_definitions(FIRMWARE_HASH_CALC=1)
@@ -68,10 +75,10 @@ else() # Simulator or default
 endif()
 
 # Include nanopb source headers
-target_include_directories( ${EXECUTABLE} PRIVATE 
-    vendor/nanopb 
-    generated/proto 
-    vendor/mini-gmp 
+target_include_directories( ${EXECUTABLE} PRIVATE
+    vendor/nanopb
+    generated/proto
+    vendor/mini-gmp
     vendor/poseidon/sources
 )
 
