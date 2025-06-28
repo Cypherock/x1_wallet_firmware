@@ -36,7 +36,19 @@ project(${PROJECT})
 # python is needed for compiling proto files using nanopb
 # also for generating & appending firmware signature headers
 find_package( Python3 REQUIRED COMPONENTS Interpreter )
-execute_process(COMMAND sh utilities/proto/generate-protob.sh WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND_ERROR_IS_FATAL ANY )
+
+# Conditionally generate protobuf files based on the BTC_ONLY option
+IF(BTC_ONLY)
+    message(STATUS "Generating protobufs for BTC-only build")
+    execute_process(COMMAND bash utilities/proto/generate-protob.sh --btc-only
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    COMMAND_ERROR_IS_FATAL ANY)
+ELSE()
+    message(STATUS "Generating protobufs for full build")
+    execute_process(COMMAND bash utilities/proto/generate-protob.sh
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    COMMAND_ERROR_IS_FATAL ANY)
+ENDIF()
 
 # Populate version.c
 include(utilities/cmake/version.cmake)
