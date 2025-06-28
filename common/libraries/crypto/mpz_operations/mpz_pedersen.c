@@ -65,11 +65,11 @@
 
 #include "coin_utils.h"
 #include "mini-gmp-helpers.h"
-#include "starknet_api.h"
-#include "starknet_context.h"
-#include "starknet_crypto.h"
-#include "starknet_helpers.h"
-#include "starknet_pedersen.h"
+#include "../apps/starknet_app/starknet_api.h"
+#include "../apps/starknet_app/starknet_context.h"
+#include "../apps/starknet_app/starknet_crypto.h"
+#include "../apps/starknet_app/starknet_helpers.h"
+#include "../apps/starknet_app/starknet_pedersen.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
