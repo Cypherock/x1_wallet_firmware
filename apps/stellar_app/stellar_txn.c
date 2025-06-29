@@ -351,114 +351,112 @@ static bool fetch_valid_input(stellar_query_t *query) {
   return true;
 }
 
+// Helper function for memo display
+static bool show_memo_details(const stellar_transaction_t *decoded_txn) {
+ if (decoded_txn->memo_type == MEMO_TEXT) {
+   char memo_display[100] = {'\0'};
+   snprintf(memo_display, sizeof(memo_display), "Memo: \"%s\"", decoded_txn->memo.text);
+   return core_confirmation(memo_display, stellar_send_error);
+ } else if (decoded_txn->memo_type == MEMO_ID) {
+   char memo_display[50] = {'\0'};
+   snprintf(memo_display, sizeof(memo_display), "Memo ID: %llu", decoded_txn->memo.id);
+   return core_confirmation(memo_display, stellar_send_error);
+ } else if (decoded_txn->memo_type == MEMO_NONE) {
+   return core_confirmation("Memo: (none)", stellar_send_error);
+ } else if (decoded_txn->memo_type == MEMO_HASH || decoded_txn->memo_type == MEMO_RETURN) {
+   char memo_hash[80] = {'\0'};
+   char temp[3];
+   strcpy(memo_hash, "Memo Hash: ");
+   for (int i = 0; i < 32; i++) {
+     snprintf(temp, sizeof(temp), "%02x", decoded_txn->memo.hash[i]);
+     strcat(memo_hash, temp);
+   }
+   return core_confirmation(memo_hash, stellar_send_error);
+ } else {
+   char memo_display[50] = {'\0'};
+   snprintf(memo_display, sizeof(memo_display), "Memo: (unknown type %u)", decoded_txn->memo_type);
+   return core_confirmation(memo_display, stellar_send_error);
+ }
+}
+
+// Updated main function
 static bool get_user_verification(void) {
-  const stellar_transaction_t *decoded_txn = stellar_txn_context->txn;
-  const stellar_payment_t *payment = stellar_txn_context->payment;
+ const stellar_transaction_t *decoded_txn = stellar_txn_context->txn;
+ const stellar_payment_t *payment = stellar_txn_context->payment;
 
-  char to_address[STELLAR_ADDRESS_LENGTH] = "";
-  char from_address[STELLAR_ADDRESS_LENGTH] = "";
+ char to_address[STELLAR_ADDRESS_LENGTH] = "";
+ char from_address[STELLAR_ADDRESS_LENGTH] = "";
 
-  // Generate addresses for display
-  if (!stellar_generate_address(payment->destination, to_address)) {
-    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    return false;
-  }
+ // Generate addresses for display
+ if (!stellar_generate_address(payment->destination, to_address)) {
+   stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+   return false;
+ }
 
-  if (!stellar_generate_address(decoded_txn->source_account, from_address)) {
-    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    return false;
-  }
+ if (!stellar_generate_address(decoded_txn->source_account, from_address)) {
+   stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+   return false;
+ }
 
-  // Exchange validation
-  if (use_signature_verification) {
-    if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
-      return false;
-    }
-  }
+ // Exchange validation
+ if (use_signature_verification) {
+   if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
+     return false;
+   }
+ }
 
-  // Show operation type
-  char operation_display[50] = {'\0'};
-  snprintf(operation_display, sizeof(operation_display), "Operation: %s", 
-           decoded_txn->operation_type == 0 ? "CREATE_ACCOUNT" : "PAYMENT");
-  if (!core_confirmation(operation_display, stellar_send_error)) {
-    return false;
-  }
+ // Show operation type
+ char operation_display[50] = {'\0'};
+ snprintf(operation_display, sizeof(operation_display), "Operation: %s", 
+          decoded_txn->operation_type == 0 ? "CREATE_ACCOUNT" : "PAYMENT");
+ if (!core_confirmation(operation_display, stellar_send_error)) {
+   return false;
+ }
 
-  // Show from address
-  if (!core_scroll_page("From:", from_address, stellar_send_error)) {
-    return false;
-  }
+ // Show from address
+ if (!core_scroll_page("From:", from_address, stellar_send_error)) {
+   return false;
+ }
 
-  // Show destination address
-  if (!core_scroll_page(ui_text_verify_address, to_address, stellar_send_error)) {
-    return false;
-  }
+ // Show destination address
+ if (!core_scroll_page(ui_text_verify_address, to_address, stellar_send_error)) {
+   return false;
+ }
 
-  // Show amount
-  char amount_string[30] = {'\0'};
-  double decimal_amount = (double)payment->amount;
-  decimal_amount *= 1e-7;  // Convert stroops to XLM
-  snprintf(amount_string, sizeof(amount_string), "%.7f", decimal_amount);
+ // Show amount
+ char amount_string[30] = {'\0'};
+ double decimal_amount = (double)payment->amount;
+ decimal_amount *= 1e-7;  // Convert stroops to XLM
+ snprintf(amount_string, sizeof(amount_string), "%.7f", decimal_amount);
 
-  char display[100] = {'\0'};
-  snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_string, STELLAR_LUNIT);
+ char display[100] = {'\0'};
+ snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, amount_string, STELLAR_LUNIT);
 
-  if (!core_confirmation(display, stellar_send_error)) {
-    return false;
-  }
+ if (!core_confirmation(display, stellar_send_error)) {
+   return false;
+ }
 
-  // Show fee
-  char fee_display[50] = {'\0'};
-  snprintf(fee_display, sizeof(fee_display), "Fee: %lu stroops", decoded_txn->fee);
-  if (!core_confirmation(fee_display, stellar_send_error)) {
-    return false;
-  }
+ // Show fee
+ char fee_display[50] = {'\0'};
+ snprintf(fee_display, sizeof(fee_display), "Fee: %lu stroops", decoded_txn->fee);
+ if (!core_confirmation(fee_display, stellar_send_error)) {
+   return false;
+ }
 
-  // Show sequence number
-  char seq_display[50] = {'\0'};
-  snprintf(seq_display, sizeof(seq_display), "Sequence: %llu", decoded_txn->sequence_number);
-  if (!core_confirmation(seq_display, stellar_send_error)) {
-    return false;
-  }
+ // Show sequence number
+ char seq_display[50] = {'\0'};
+ snprintf(seq_display, sizeof(seq_display), "Sequence: %llu", decoded_txn->sequence_number);
+ if (!core_confirmation(seq_display, stellar_send_error)) {
+   return false;
+ }
 
-  // Handle ALL memo types 
-  if (decoded_txn->memo_type == MEMO_TEXT) {
-    char memo_display[100] = {'\0'};
-    snprintf(memo_display, sizeof(memo_display), "Memo: \"%s\"", decoded_txn->memo.text);
-    if (!core_confirmation(memo_display, stellar_send_error)) {
-      return false;
-    }
-  } else if (decoded_txn->memo_type == MEMO_ID) {
-    char memo_display[50] = {'\0'};
-    snprintf(memo_display, sizeof(memo_display), "Memo ID: %llu", decoded_txn->memo.id);
-    if (!core_confirmation(memo_display, stellar_send_error)) {
-      return false;
-    }
-  } else if (decoded_txn->memo_type == MEMO_NONE) {
-    if (!core_confirmation("Memo: (none)", stellar_send_error)) {
-      return false;
-    }
-  } else if (decoded_txn->memo_type == MEMO_HASH || decoded_txn->memo_type == MEMO_RETURN) {
-    char memo_hash[80] = {'\0'};
-    char temp[3];
-    strcpy(memo_hash, "Memo Hash: ");
-    for (int i = 0; i < 32; i++) {
-      snprintf(temp, sizeof(temp), "%02x", decoded_txn->memo.hash[i]);
-      strcat(memo_hash, temp);
-    }
-    if (!core_confirmation(memo_hash, stellar_send_error)) {
-      return false;
-    }
-  } else {
-    char memo_display[50] = {'\0'};
-    snprintf(memo_display, sizeof(memo_display), "Memo: (unknown type %u)", decoded_txn->memo_type);
-    if (!core_confirmation(memo_display, stellar_send_error)) {
-      return false;
-    }
-  }
+ // Handle memo display
+ if (!show_memo_details(decoded_txn)) {
+   return false;
+ }
 
-  set_app_flow_status(STELLAR_SIGN_TXN_STATUS_VERIFY);
-  return true;
+ set_app_flow_status(STELLAR_SIGN_TXN_STATUS_VERIFY);
+ return true;
 }
 
 static void write_uint32_be(uint8_t *buffer, uint32_t value) {
