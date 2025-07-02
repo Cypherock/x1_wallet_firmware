@@ -62,14 +62,18 @@
 
 #include <error.pb.h>
 #include <stdint.h>
-
+#include "mpz_ecdsa.h"
 #include "coin_utils.h"
 #include "mini-gmp-helpers.h"
+
+// Exclude StarkNet specific includes for BTC-only builds
+#ifndef BTC_ONLY_BUILD
 #include "../apps/starknet_app/starknet_api.h"
 #include "../apps/starknet_app/starknet_context.h"
 #include "../apps/starknet_app/starknet_crypto.h"
 #include "../apps/starknet_app/starknet_helpers.h"
 #include "../apps/starknet_app/starknet_pedersen.h"
+#endif // BTC_ONLY_BUILD
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,7 +102,7 @@
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
+#ifndef BTC_ONLY_BUILD // Ensure these functions are only compiled when NOT BTC_ONLY_BUILD
 void process_single_element(mpz_t element,
                             mpz_curve_point *p1,
                             mpz_curve_point *p2,
@@ -139,7 +143,6 @@ void process_single_element(mpz_t element,
   mpz_curve_point_clear(&res1);
   mpz_curve_point_clear(&res2);
 }
-
 void pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   ASSERT(NULL != x);
   ASSERT(NULL != y);
@@ -199,3 +202,4 @@ void pederson_hash(uint8_t *x, uint8_t *y, uint8_t size, uint8_t *hash) {
   mpz_curve_point_clear(&P_3);
   mpz_curve_point_clear(&P_4);
 }
+#endif // BTC_ONLY_BUILD
