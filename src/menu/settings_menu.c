@@ -91,7 +91,7 @@ typedef enum {
   VIEW_CARD_VERSION,
   VIEW_REGULATORY_INFO,
   PAIR_CARD,
-  TOGGLE_EVM_CALLDATA,
+  TOGGLE_RAW_CALLDATA,
 #ifdef DEV_BUILD
   TOGGLE_BUZZER,
 #endif
@@ -166,9 +166,9 @@ static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
       (char *)(is_logging_enabled() ? ui_text_options_logging_export[0]
                                     : ui_text_options_logging_export[1]);
                                     
-  ui_text_options_settings[TOGGLE_EVM_CALLDATA - 1] =
-      (char *)(is_evm_calldata_enabled() ? ui_text_options_show_evm_calldata[1]
-                                          : ui_text_options_show_evm_calldata[0]);
+  ui_text_options_settings[TOGGLE_RAW_CALLDATA - 1] =
+      (char *)(is_raw_calldata_enabled() ? ui_text_options_raw_calldata[1]
+                                          : ui_text_options_raw_calldata[0]);
 
   ui_text_options_settings[TOGGLE_PASSPHRASE - 1] =
       (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
@@ -202,8 +202,8 @@ static void settings_menu_handler(engine_ctx_t *ctx,
         toggle_log_export();
         break;
       }
-      case TOGGLE_EVM_CALLDATA: {
-        toggle_evm_calldata();
+      case TOGGLE_RAW_CALLDATA: {
+        toggle_raw_calldata();
         break;
       }
       case TOGGLE_PASSPHRASE: {

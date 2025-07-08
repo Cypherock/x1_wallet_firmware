@@ -116,18 +116,17 @@ void toggle_log_export(void) {
   return;
 }
 
-void toggle_evm_calldata(void) {
-  bool evm_calldata_enabled = is_evm_calldata_enabled();
-  const char *msg = ui_text_show_evm_calldata;
+void toggle_raw_calldata(void) {
+  bool raw_calldata_enabled = is_raw_calldata_enabled();
 
-  if (evm_calldata_enabled) {
-    msg = ui_text_hide_evm_calldata;
+  if (!raw_calldata_enabled &&
+      !core_scroll_page(NULL, ui_text_enable_raw_calldata, NULL)) {
+    return;
   }
 
-  if (core_confirmation(msg, NULL)) {
-    set_evm_calldata_config(evm_calldata_enabled ? EVM_CALLDATA_DISABLED : EVM_CALLDATA_ENABLED,
-                       FLASH_SAVE_NOW);
-  }
+  bool toggled_state =
+      raw_calldata_enabled ? RAW_CALLDATA_DISABLED : RAW_CALLDATA_ENABLED;
+  set_raw_calldata_config(toggled_state, FLASH_SAVE_NOW);
 
   return;
 }

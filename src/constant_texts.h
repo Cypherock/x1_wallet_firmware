@@ -61,6 +61,7 @@
 #define UI_TEXT_SIGN_MSG_PROMPT "Sign message on %s from %s"
 #define UI_TEXT_SIGN_DATA_PROMPT "Sign data on %s from %s"
 #define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
+#define UI_TEXT_CALLDATA "Calldata"
 
 // product hash
 extern const char *product_hash;
@@ -99,7 +100,7 @@ extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
 extern const char *ui_text_rotate_display_confirm;
 extern const char *ui_text_options_logging_export[];
-extern const char *ui_text_options_show_evm_calldata[];
+extern const char *ui_text_options_raw_calldata[];
 extern const char *ui_text_options_passphrase[];
 
 extern const char *ui_text_pair_card_confirm;
@@ -327,8 +328,7 @@ extern const char *ui_text_disable_passphrase_step;
 extern const char *ui_text_warning_txn_fee_too_high;
 extern const char *ui_text_enable_log_export;
 extern const char *ui_text_disable_log_export;
-extern const char *ui_text_show_evm_calldata;
-extern const char *ui_text_hide_evm_calldata;
+extern const char *ui_text_enable_raw_calldata;
 
 //?
 extern const char *ui_text_do_you_want_import_wallet_to_desktop;

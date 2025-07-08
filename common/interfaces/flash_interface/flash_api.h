@@ -528,7 +528,7 @@ int set_logging_config(log_config state, flash_save_mode save_mode);
  *
  * @note
  */
-bool is_evm_calldata_enabled();
+bool is_raw_calldata_enabled();
 
 /**
  * @brief
@@ -544,7 +544,7 @@ bool is_evm_calldata_enabled();
  *
  * @note
  */
-int set_evm_calldata_config(evm_calldata_config state,
+int set_raw_calldata_config(raw_calldata_config state,
                             flash_save_mode save_mode);
 
 /**

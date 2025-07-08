@@ -209,36 +209,41 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   bool status = false;
   const uint8_t *to_address = NULL;
   char address[43] = "0x";
-  char path_str[64] = "";
   char fee[34] = "";
   char display[40] = "";
   const char *unit = g_evm_app->lunit_name;
-  const uint32_t *hd_path = txn_context->init_info.derivation_path;
-  size_t depth = txn_context->init_info.derivation_path_count;
 
   // TODO: decide on handling blind signing via wallet setting
   to_address = txn_context->transaction_info.to_address;
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
-  hd_path_array_to_string(hd_path, depth, false, path_str, sizeof(path_str));
+
   eth_get_fee_string(
       &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
-  // show warning for unknown EVM function; take user consent
-  if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
-      !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, path_str, evm_send_error) ||
-      !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
-      !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
-    return status;
-  }
 
-  if (is_evm_calldata_enabled()) {
+  if (is_raw_calldata_enabled()) {
     char data_str[1024] = "";
     byte_array_to_hex_string(txn_context->transaction_info.data,
                              txn_context->transaction_info.data_size,
                              data_str,
                              sizeof(data_str));
-    if (!core_scroll_page("Calldata", data_str, evm_send_error)) {
+    if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_CALLDATA, data_str, evm_send_error)) {
+      return status;
+    }
+  } else {
+    char path_str[64] = "";
+    const uint32_t *hd_path = txn_context->init_info.derivation_path;
+    size_t depth = txn_context->init_info.derivation_path_count;
+    hd_path_array_to_string(hd_path, depth, false, path_str, sizeof(path_str));
+    
+    // show warning for unknown EVM function; take user consent
+    if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, path_str, evm_send_error) ||
+        !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
       return status;
     }
   }

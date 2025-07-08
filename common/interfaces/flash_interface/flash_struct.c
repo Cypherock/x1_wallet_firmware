@@ -108,7 +108,7 @@ typedef enum Flash_tlv_tags {
   TAG_FLASH_TOGGLE_PASSPHRASE = 0x07,
   TAG_FLASH_TOGGLE_LOGS = 0x08,
   TAG_FLASH_ONBOARDING_STEP = 0x09,
-  TAG_FLASH_TOGGLE_EVM_CALLDATA = 0x10,
+  TAG_FLASH_TOGGLE_RAW_CALLDATA = 0x10,
 
   TAG_FLASH_WALLET = 0x20,
   TAG_FLASH_WALLET_STATE = 0x21,
@@ -430,9 +430,9 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
                  &(flash_struct->onboarding_step));
   fill_flash_tlv(tlv,
                  &index,
-                 TAG_FLASH_TOGGLE_EVM_CALLDATA,
-                 sizeof(flash_struct->enable_evm_calldata),
-                 &(flash_struct->enable_evm_calldata));
+                 TAG_FLASH_TOGGLE_RAW_CALLDATA,
+                 sizeof(flash_struct->enable_raw_calldata),
+                 &(flash_struct->enable_raw_calldata));
 
   tlv[4] = index - 6;
   tlv[5] = (index - 6) >> 8;
@@ -614,8 +614,8 @@ static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
         break;
       }
 
-      case TAG_FLASH_TOGGLE_EVM_CALLDATA: {
-        memcpy(&(flash_struct->enable_evm_calldata), tlv + index + 2, size);
+      case TAG_FLASH_TOGGLE_RAW_CALLDATA: {
+        memcpy(&(flash_struct->enable_raw_calldata), tlv + index + 2, size);
         break;
       }
 
