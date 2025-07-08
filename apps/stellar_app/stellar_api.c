@@ -101,11 +101,11 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 bool decode_stellar_query(const uint8_t *data,
-                      uint16_t data_size,
-                      stellar_query_t *query_out) {
+                          uint16_t data_size,
+                          stellar_query_t *query_out) {
   if (NULL == data || NULL == query_out || 0 == data_size) {
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
+                       ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
@@ -121,16 +121,16 @@ bool decode_stellar_query(const uint8_t *data,
   /* Send error to host if status is false*/
   if (false == status) {
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_DECODING_FAILED);
+                       ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
   return status;
 }
 
 bool encode_stellar_result(const stellar_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out) {
+                           uint8_t *buffer,
+                           uint16_t max_buffer_len,
+                           size_t *bytes_written_out) {
   if (NULL == result || NULL == buffer || NULL == bytes_written_out)
     return false;
 
@@ -147,10 +147,11 @@ bool encode_stellar_result(const stellar_result_t *result,
   return status;
 }
 
-bool check_stellar_query(const stellar_query_t *query, pb_size_t exp_query_tag) {
+bool check_stellar_query(const stellar_query_t *query,
+                         pb_size_t exp_query_tag) {
   if ((NULL == query) || (exp_query_tag != query->which_request)) {
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_QUERY);
+                       ERROR_DATA_FLOW_INVALID_QUERY);
     return false;
   }
   return true;
@@ -163,7 +164,8 @@ stellar_result_t init_stellar_result(pb_size_t result_tag) {
 }
 
 void stellar_send_error(pb_size_t which_error, uint32_t error_code) {
-  stellar_result_t result = init_stellar_result(STELLAR_RESULT_COMMON_ERROR_TAG);
+  stellar_result_t result =
+      init_stellar_result(STELLAR_RESULT_COMMON_ERROR_TAG);
   result.common_error = init_common_error(which_error, error_code);
   stellar_send_result(&result);
 }

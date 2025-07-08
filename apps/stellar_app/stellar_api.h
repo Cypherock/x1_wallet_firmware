@@ -41,8 +41,8 @@
  * @return bool True if decoding was successful, else false
  */
 bool decode_stellar_query(const uint8_t *data,
-                      uint16_t data_size,
-                      stellar_query_t *query_out);
+                          uint16_t data_size,
+                          stellar_query_t *query_out);
 
 /**
  * @brief Encodes the STELLAR result with `STELLAR_RESULT_FIELDS` to byte-stream
@@ -55,9 +55,9 @@ bool decode_stellar_query(const uint8_t *data,
  * @return bool True if decoding was successful, else false
  */
 bool encode_stellar_result(const stellar_result_t *result,
-                       uint8_t *buffer,
-                       uint16_t max_buffer_len,
-                       size_t *bytes_written_out);
+                           uint8_t *buffer,
+                           uint16_t max_buffer_len,
+                           size_t *bytes_written_out);
 
 /**
  * @brief This API checks if the `which_request` field of the query of type

@@ -87,9 +87,9 @@
 #include "restricted_app.h"
 #include "solana_main.h"
 #include "starknet_main.h"
+#include "stellar_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
-#include "stellar_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES

@@ -34,7 +34,6 @@ typedef struct {
   // decoded transaction structures
   stellar_transaction_t *txn;
   stellar_payment_t *payment;
-
 } stellar_txn_context_t;
 
 /*****************************************************************************
@@ -47,8 +46,8 @@ typedef struct {
 
 /**
  * @brief Handler for Stellar public key derivation.
- * @details This flow expects STELLAR_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as initial
- * query, otherwise the flow is aborted
+ * @details This flow expects STELLAR_GET_PUBLIC_KEY_REQUEST_INITIATE_TAG as
+ * initial query, otherwise the flow is aborted
  *
  * @param query object for address public key query
  */
@@ -56,8 +55,8 @@ void stellar_get_pub_keys(stellar_query_t *query);
 
 /**
  * @brief Handler for signing a transaction on stellar.
- * @details The expected request type is STELLAR_SIGN_TXN_REQUEST_INITIATE_TAG. The
- * function controls the complete data exchange with host, user prompts and
+ * @details The expected request type is STELLAR_SIGN_TXN_REQUEST_INITIATE_TAG.
+ * The function controls the complete data exchange with host, user prompts and
  * confirmations for signing an STELLAR based transaction.
  *
  * @param query Reference to the decoded query struct from the host app

@@ -60,21 +60,21 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "bip32.h"
 #include "base32.h"
+#include "bip32.h"
 #include "composable_app_queue.h"
 #include "curves.h"
 #include "exchange_main.h"
 #include "hasher.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
-#include "wallet_list.h"
 #include "stellar_api.h"
 #include "stellar_context.h"
 #include "stellar_helpers.h"
 #include "stellar_priv.h"
+#include "ui_core_confirm.h"
+#include "ui_screens.h"
+#include "wallet_list.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -114,14 +114,16 @@ static bool check_which_request(const stellar_query_t *query,
  * invalid index is detected, the function will send an error to the host and
  * return false.
  *
- * @param req Reference to an instance of stellar_get_public_keys_intiate_request_t
+ * @param req Reference to an instance of
+ * stellar_get_public_keys_intiate_request_t
  * @param which_request The type of request received from the host.
  * @return bool Indicating if the verification passed or failed
  * @retval true If the derivation path entries are valid
  * @retval false If any of the derivation path entries are invalid
  */
-static bool validate_request(const stellar_get_public_keys_intiate_request_t *req,
-                             const pb_size_t which_request);
+static bool validate_request(
+    const stellar_get_public_keys_intiate_request_t *req,
+    const pb_size_t which_request);
 
 /**
  * @brief Fills the list of public keys corresponding to the provided list of
@@ -129,7 +131,8 @@ static bool validate_request(const stellar_get_public_keys_intiate_request_t *re
  * @details The function expects the size of list for derivation paths and
  * location for storing derived public keys to be a match with provided count.
  *
- * @param path Reference to the list of stellar_get_public_keys_derivation_path_t
+ * @param path Reference to the list of
+ * stellar_get_public_keys_derivation_path_t
  * @param seed Reference to a const array containing the seed
  * @param public_key Reference to the location to store all the public keys to
  * be derived
@@ -139,10 +142,11 @@ static bool validate_request(const stellar_get_public_keys_intiate_request_t *re
  * @retval true If all the requested public keys were derived successfully
  * @retval false If there is any issue occurred during the key derivation
  */
-static bool fill_public_keys(const stellar_get_public_keys_derivation_path_t *path,
-                             const uint8_t *seed,
-                             uint8_t public_key_list[][STELLAR_PUBKEY_RAW_SIZE],
-                             pb_size_t count);
+static bool fill_public_keys(
+    const stellar_get_public_keys_derivation_path_t *path,
+    const uint8_t *seed,
+    uint8_t public_key_list[][STELLAR_PUBKEY_RAW_SIZE],
+    pb_size_t count);
 
 /**
  * @brief The function sends public keys for the requested batch
@@ -167,11 +171,12 @@ static bool fill_public_keys(const stellar_get_public_keys_derivation_path_t *pa
  * @retval false If the export was interrupted by a P0 event or an invalid query
  * was received from the host app.
  */
-static bool send_public_keys(stellar_query_t *query,
-                             const uint8_t pubkey_list[][STELLAR_PUBKEY_RAW_SIZE],
-                             const pb_size_t count,
-                             const pb_size_t which_request,
-                             const pb_size_t which_response);
+static bool send_public_keys(
+    stellar_query_t *query,
+    const uint8_t pubkey_list[][STELLAR_PUBKEY_RAW_SIZE],
+    const pb_size_t count,
+    const pb_size_t which_request,
+    const pb_size_t which_response);
 
 /**
  * @details The function provides an ED25519 public key for Stellar. It accepts
@@ -214,35 +219,36 @@ static bool get_user_consent(const pb_size_t which_request,
  *****************************************************************************/
 static bool sign_address = false;
 
- static bool check_which_request(const stellar_query_t *query,
+static bool check_which_request(const stellar_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_REQUEST);
+                       ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
   }
 
   return true;
 }
 
-static bool validate_request(const stellar_get_public_keys_intiate_request_t *req,
-                             const pb_size_t which_request) {
+static bool validate_request(
+    const stellar_get_public_keys_intiate_request_t *req,
+    const pb_size_t which_request) {
   bool status = true;
   const pb_size_t count = req->derivation_paths_count;
 
   if (0 == count) {
     // request does not have any derivation paths, invalid request
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_DATA);
+                       ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
   if (STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request &&
       1 < count) {
-    // `STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more than
-    // one derivation path which is not expected
+    // `STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG` request contains more
+    // than one derivation path which is not expected
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                   ERROR_DATA_FLOW_INVALID_DATA);
+                       ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
   }
 
@@ -252,7 +258,7 @@ static bool validate_request(const stellar_get_public_keys_intiate_request_t *re
     path = &req->derivation_paths[index];
     if (!stellar_derivation_path_guard(path->path, path->path_count)) {
       stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                     ERROR_DATA_FLOW_INVALID_DATA);
+                         ERROR_DATA_FLOW_INVALID_DATA);
       status = false;
       break;
     }
@@ -274,10 +280,14 @@ static bool get_user_consent(const pb_size_t which_request,
   char msg[100] = "";
 
   if (STELLAR_QUERY_GET_PUBLIC_KEYS_TAG == which_request) {
-    snprintf(
-        msg, sizeof(msg), UI_TEXT_ADD_ACCOUNT_PROMPT, STELLAR_NAME, wallet_name);
+    snprintf(msg,
+             sizeof(msg),
+             UI_TEXT_ADD_ACCOUNT_PROMPT,
+             STELLAR_NAME,
+             wallet_name);
   } else {
-    snprintf(msg, sizeof(msg), UI_TEXT_RECEIVE_PROMPT, STELLAR_NAME, wallet_name);
+    snprintf(
+        msg, sizeof(msg), UI_TEXT_RECEIVE_PROMPT, STELLAR_NAME, wallet_name);
   }
 
   return core_scroll_page(NULL, msg, stellar_send_error);
@@ -288,7 +298,7 @@ static bool get_public_key(const uint8_t *seed,
                            uint32_t path_length,
                            uint8_t *public_key) {
   HDNode node = {0};
-    
+
   // Initialize the HDNode with the seed
   if (hdnode_from_seed(seed, 64, "ed25519", &node) != 1) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
@@ -308,7 +318,7 @@ static bool get_public_key(const uint8_t *seed,
   hdnode_fill_public_key(&node);
 
   if (NULL != public_key) {
-    //skip first byte, use raw 32 bytes
+    // skip first byte, use raw 32 bytes
     memcpy(public_key, node.public_key + 1, STELLAR_PUBKEY_RAW_SIZE);
   }
 
@@ -316,10 +326,11 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-static bool fill_public_keys(const stellar_get_public_keys_derivation_path_t *path,
-                             const uint8_t *seed,
-                             uint8_t public_key_list[][STELLAR_PUBKEY_RAW_SIZE],
-                             pb_size_t count) {
+static bool fill_public_keys(
+    const stellar_get_public_keys_derivation_path_t *path,
+    const uint8_t *seed,
+    uint8_t public_key_list[][STELLAR_PUBKEY_RAW_SIZE],
+    pb_size_t count) {
   for (pb_size_t index = 0; index < count; index++) {
     const stellar_get_public_keys_derivation_path_t *current = &path[index];
     if (!get_public_key(
@@ -332,27 +343,30 @@ static bool fill_public_keys(const stellar_get_public_keys_derivation_path_t *pa
 }
 
 static uint16_t crc16(const uint8_t *data, size_t len) {
-    uint16_t crc = 0x0000;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= data[i] << 8;
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
-            else crc <<= 1;
-        }
+  uint16_t crc = 0x0000;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= data[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000)
+        crc = (crc << 1) ^ 0x1021;
+      else
+        crc <<= 1;
     }
-    return crc;
+  }
+  return crc;
 }
 
-static bool send_public_keys(stellar_query_t *query,
-                             const uint8_t pubkey_list[][STELLAR_PUBKEY_RAW_SIZE],
-                             const pb_size_t count,
-                             const pb_size_t which_request,
-                             const pb_size_t which_response) {
+static bool send_public_keys(
+    stellar_query_t *query,
+    const uint8_t pubkey_list[][STELLAR_PUBKEY_RAW_SIZE],
+    const pb_size_t count,
+    const pb_size_t which_request,
+    const pb_size_t which_response) {
   stellar_result_t response = init_stellar_result(which_response);
   stellar_get_public_keys_result_response_t *result =
       &response.get_public_keys.result;
-  size_t batch_limit =
-      sizeof(response.get_public_keys.result.public_keys) / STELLAR_PUBKEY_RAW_SIZE;
+  size_t batch_limit = sizeof(response.get_public_keys.result.public_keys) /
+                       STELLAR_PUBKEY_RAW_SIZE;
   size_t remaining = count;
 
   response.get_public_keys.which_response =
@@ -393,29 +407,27 @@ static bool send_public_keys(stellar_query_t *query,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
- bool stellar_generate_address(const uint8_t *public_key, char *address) {
-    
-    if(!public_key || !address) {
-        return false;
-    }
-    
-    uint8_t payload[35];
-    payload[0] = 6 << 3; // Account ID type
-    memcpy(payload + 1, public_key, 32);
-    
-    uint16_t checksum = crc16(payload, 33);
-    payload[33] = checksum & 0xFF;
-    payload[34] = checksum >> 8;
-    
-    base32_encode(payload, 35, address, 57, BASE32_ALPHABET_RFC4648);
-    return true;
+bool stellar_generate_address(const uint8_t *public_key, char *address) {
+  if (!public_key || !address) {
+    return false;
+  }
+
+  uint8_t payload[35];
+  payload[0] = 6 << 3;    // Account ID type
+  memcpy(payload + 1, public_key, 32);
+
+  uint16_t checksum = crc16(payload, 33);
+  payload[33] = checksum & 0xFF;
+  payload[34] = checksum >> 8;
+
+  base32_encode(payload, 35, address, 57, BASE32_ALPHABET_RFC4648);
+  return true;
 }
 
-
- void stellar_get_pub_keys(stellar_query_t *query) {
+void stellar_get_pub_keys(stellar_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};
-  
+
   // Validation & Setup
   const pb_size_t which_request = query->which_request;
   const stellar_get_public_keys_intiate_request_t *init_req = NULL;
@@ -432,27 +444,29 @@ static bool send_public_keys(stellar_query_t *query,
 
   const pb_size_t count = init_req->derivation_paths_count;
   uint8_t pubkey_list[sizeof(init_req->derivation_paths) /
-                   sizeof(stellar_get_public_keys_derivation_path_t)]
-                  [STELLAR_PUBKEY_RAW_SIZE] = {0};
+                      sizeof(stellar_get_public_keys_derivation_path_t)]
+                     [STELLAR_PUBKEY_RAW_SIZE] = {0};
 
-  if (!check_which_request(query, STELLAR_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
+  if (!check_which_request(query,
+                           STELLAR_GET_PUBLIC_KEYS_REQUEST_INITIATE_TAG) ||
       !validate_request(init_req, which_request) ||
-      !get_wallet_name_by_id(init_req->wallet_id, (uint8_t *)wallet_name, stellar_send_error)) {
+      !get_wallet_name_by_id(
+          init_req->wallet_id, (uint8_t *)wallet_name, stellar_send_error)) {
     return;
   }
 
-  //User consent
+  // User consent
   if (!get_user_consent(which_request, wallet_name)) {
     return;
   }
   set_app_flow_status(STELLAR_GET_PUBLIC_KEYS_STATUS_CONFIRM);
 
-  //Key derivation
+  // Key derivation
   if (!reconstruct_seed(init_req->wallet_id, &seed[0], stellar_send_error)) {
     memzero(seed, sizeof(seed));
     return;
   }
-  set_app_flow_status(STELLAR_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED); 
+  set_app_flow_status(STELLAR_GET_PUBLIC_KEYS_STATUS_SEED_GENERATED);
   delay_scr_init(ui_text_processing, DELAY_SHORT);
 
   if (!fill_public_keys(init_req->derivation_paths, seed, pubkey_list, count)) {
@@ -460,9 +474,9 @@ static bool send_public_keys(stellar_query_t *query,
     return;
   }
 
-  memzero(seed, sizeof(seed)); 
+  memzero(seed, sizeof(seed));
 
-  //Address verification (if single verified key)
+  // Address verification (if single verified key)
   if (STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG == which_request) {
     char address[STELLAR_ADDRESS_LENGTH] = "";
     if (!stellar_generate_address(pubkey_list[0], address)) {
@@ -474,8 +488,9 @@ static bool send_public_keys(stellar_query_t *query,
     set_app_flow_status(STELLAR_GET_PUBLIC_KEYS_STATUS_VERIFY);
   }
 
-  //Send results
-  if (!send_public_keys(query, pubkey_list, count, which_request, which_response)) {
+  // Send results
+  if (!send_public_keys(
+          query, pubkey_list, count, which_request, which_response)) {
     return;
   }
 

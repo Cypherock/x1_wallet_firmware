@@ -101,7 +101,7 @@ bool stellar_derivation_path_guard(const uint32_t *path, uint8_t levels) {
   }
 
   uint32_t purpose = path[0], coin = path[1], account = path[2];
-           
+
   // m/44'/148'/n' - support any hardened account index
   status = (STELLAR_PURPOSE_INDEX == purpose && STELLAR_COIN_INDEX == coin &&
             is_hardened(account));
