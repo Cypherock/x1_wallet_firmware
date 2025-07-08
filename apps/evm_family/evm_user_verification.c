@@ -168,6 +168,8 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
   const char *unit = g_evm_app->lunit_name;
+  char hex_str[30] = {'\0'};
+  char value[34] = {'\0'};
   char fee[34] = "";
   char display[40] = "";
 
@@ -179,6 +181,24 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
 
   if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
     return false;
+  }
+
+  // verify recipient amount
+  uint8_t zeros[32] = {0};
+  if (memcmp(txn_context->transaction_info.value,
+             zeros,
+             txn_context->transaction_info.value_size[0]) != 0) {
+    uint8_t len = eth_get_value(txn_context, hex_str);
+    if (!convert_byte_array_to_decimal_string(
+            len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, unit);
+    if (!core_confirmation(display, evm_send_error)) {
+      return false;
+    }
   }
 
   // verify transaction fee
@@ -211,6 +231,9 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   char fee[34] = "";
   char display[40] = "";
+  char amount_display[40] = "";
+  uint8_t zeros[32] = {0};
+  bool verify_amount = false;
   const char *unit = g_evm_app->lunit_name;
 
   // TODO: decide on handling blind signing via wallet setting
@@ -222,6 +245,27 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
       &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
 
+  // verify recipient amount
+  if (memcmp(txn_context->transaction_info.value,
+             zeros,
+             txn_context->transaction_info.value_size[0]) != 0) {
+    verify_amount = true;
+    char hex_str[30] = {'\0'};
+    char value[34] = {'\0'};
+    uint8_t len = eth_get_value(txn_context, hex_str);
+    if (!convert_byte_array_to_decimal_string(
+            len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(amount_display,
+             sizeof(amount_display),
+             UI_TEXT_VERIFY_AMOUNT,
+             value,
+             unit);
+  }
+
   if (is_raw_calldata_enabled()) {
     char data_str[1024] = "";
     byte_array_to_hex_string(txn_context->transaction_info.data,
@@ -229,6 +273,7 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
                              data_str,
                              sizeof(data_str));
     if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
         !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error) ||
         !core_scroll_page(UI_TEXT_CALLDATA, data_str, evm_send_error)) {
       return status;
@@ -238,11 +283,12 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
     const uint32_t *hd_path = txn_context->init_info.derivation_path;
     size_t depth = txn_context->init_info.derivation_path_count;
     hd_path_array_to_string(hd_path, depth, false, path_str, sizeof(path_str));
-    
+
     // show warning for unknown EVM function; take user consent
     if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
         !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, path_str, evm_send_error) ||
         !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
         !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
       return status;
     }
