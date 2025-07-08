@@ -100,7 +100,6 @@ extern const char *ui_text_heading_settings;
 extern const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS];
 extern const char *ui_text_rotate_display_confirm;
 extern const char *ui_text_options_logging_export[];
-extern const char *ui_text_options_raw_calldata[];
 extern const char *ui_text_options_passphrase[];
 
 extern const char *ui_text_pair_card_confirm;
@@ -111,6 +110,13 @@ extern const char *ui_text_card_pairing_warning;
 #if DEV_BUILD
 extern const char *ui_text_options_buzzer_adjust[];
 #endif /* DEV_BUILD */
+
+// Advanced Settings menu text
+#define NUMBER_OF_OPTIONS_ADVANCED_SETTINGS 1
+extern const char *ui_text_heading_advanced_settings;
+extern const char
+    *ui_text_options_advanced_settings[NUMBER_OF_OPTIONS_ADVANCED_SETTINGS];
+extern const char *ui_text_options_raw_calldata[];
 
 // Regulatory info text
 #define NUMBER_OF_SLIDES_REGULATORY_INFO 5
