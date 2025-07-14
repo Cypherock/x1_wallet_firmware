@@ -58,6 +58,7 @@
 
 #include "btc_helpers.h"
 #include "btc_priv.h"
+#include "btc_script.h"
 #include "curves.h"
 #include "flash_config.h"
 #include "ltc_app.h"
