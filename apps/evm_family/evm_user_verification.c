@@ -267,11 +267,13 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   }
 
   if (is_raw_calldata_enabled()) {
-    char data_str[1024] = "";
+    uint64_t data_size = txn_context->transaction_info.data_size;
+    char data_str[2 + data_size * 2 + 1];
+    snprintf(data_str, sizeof(data_str), "0x");
     byte_array_to_hex_string(txn_context->transaction_info.data,
-                             txn_context->transaction_info.data_size,
-                             data_str,
-                             sizeof(data_str));
+                             data_size,
+                             data_str + 2,
+                             sizeof(data_str) - 2);
     if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
         (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
         !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error) ||
