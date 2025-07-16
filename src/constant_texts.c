@@ -91,6 +91,7 @@ const char *ui_text_options_settings[NUMBER_OF_OPTIONS_SETTINGS] = {
     "View Card Version",
     "Regulatory Info",
     "Pair Cards",
+    "Advanced",
 #ifdef DEV_BUILD
     "Buzzer toggle",
 #endif
@@ -121,6 +122,17 @@ const char *ui_text_options_buzzer_adjust[] = {
     "Enable",
 };
 #endif /* DEV_BUILD */
+
+// Advanced Settings menu text
+const char *ui_text_heading_advanced_settings = "Advanced Settings";
+const char
+    *ui_text_options_advanced_settings[NUMBER_OF_OPTIONS_ADVANCED_SETTINGS] = {
+        "Toggle Raw Calldata"};
+
+const char *ui_text_options_raw_calldata[] = {
+    "Enable Raw Calldata",
+    "Disable Raw Calldata",
+};
 
 // Regulatory info text
 const char *ui_text_regulatory_info[NUMBER_OF_SLIDES_REGULATORY_INFO] = {
@@ -448,6 +460,9 @@ const char *ui_text_warning_txn_fee_too_high =
     "WARNING!\nTransaction fees\ntoo high, proceed?";
 const char *ui_text_enable_log_export = "Do you want to enable logging?";
 const char *ui_text_disable_log_export = "Do you want to disable logging?";
+const char *ui_text_enable_raw_calldata =
+    "This will display transaction's raw technical\ndata for in-depth "
+    "verification before signing\nEnable Raw Calldata?";
 
 //?
 const char *ui_text_do_you_want_import_wallet_to_desktop =
