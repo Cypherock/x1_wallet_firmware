@@ -198,3 +198,4 @@ jobs:
           cat test_results.txt
           # Unity prints "OK" if all tests pass, "FAIL" if tests fail; return 1 to indicate failure
           if [ ! "$(tail -n 1 test_results.txt)" = "OK" ]; then exit 1; fi
+          

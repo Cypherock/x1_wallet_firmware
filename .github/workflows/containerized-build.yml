@@ -9,30 +9,81 @@ on:
       target:
         required: true
         type: string
+      coin_support_variant:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      firmware:
+        required: true
+        type: string
+        default: 'Main'
+      target:
+        required: true
+        type: string
+        default: 'Release'
+      coin_support_variant:
+        required: true
+        type: string
+        default: 'MULTI_COIN'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
       image: cypherock/x1-firmware-builder:v0.0.0
+
     steps:
-    - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }})
+    - name: Set VERSION_TAG
+      id: set_version_tag
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          export VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')
+          echo "VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')" >> $GITHUB_OUTPUT
         elif [[ "${{ github.ref_type }}" == "branch" ]]; then
-          export VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')
+          echo "VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')" >> $GITHUB_OUTPUT
         else
-          # reftype is repository; use default branch
-          export VERSION_TAG=main
+          echo "VERSION_TAG=main" >> $GITHUB_OUTPUT
         fi
-        git clone --branch ${VERSION_TAG} --depth 1 https://github.com/${{ github.repository }}.git --recurse-submodules
-        mkdir build && cd x1_wallet_firmware && mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE="${{ inputs.target }}" -DFIRMWARE_TYPE="${{ inputs.firmware }}" -DCMAKE_BUILD_PLATFORM="Device" -G "Ninja" ..
-        ninja && cd ../..
-        cp x1_wallet_firmware/build/Cypherock-*.* ./build/
-    - name: Archive Build Artifacts
+
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.set_version_tag.outputs.VERSION_TAG }}
+        submodules: recursive
+
+    - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }} - ${{ inputs.coin_support_variant }})
+      run: |
+        cd x1_wallet_firmware
+
+        BTC_ONLY_FLAG="OFF"
+        if [[ "${{ inputs.coin_support_variant }}" == "BTC_ONLY" ]]; then
+          BTC_ONLY_FLAG="ON"
+        fi
+
+        BUILD_DIR="build_${{ inputs.coin_support_variant }}"
+        mkdir -p "${BUILD_DIR}"
+
+        cmake -B "${BUILD_DIR}" \
+              -DDEV_SWITCH=OFF \
+              -DUNIT_TESTS_SWITCH:BOOL=OFF \
+              -DBTC_ONLY:BOOL="${BTC_ONLY_FLAG}" \
+              -DSIGN_BINARY=OFF \
+              -DCMAKE_BUILD_TYPE:STRING="${{ inputs.target }}" \
+              -DFIRMWARE_TYPE="${{ inputs.firmware }}" \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=OFF \
+              -DCMAKE_BUILD_PLATFORM:STRING="Device" \
+              -G "Ninja" .
+
+        ninja -C "${BUILD_DIR}"
+        
+        cd .. 
+
+        mkdir -p build
+
+        cp x1_wallet_firmware/"${BUILD_DIR}"/Cypherock-*.* ./build/
+
+    - name: Archive Build Artifacts (${{ inputs.coin_support_variant }})
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.firmware }}-${{ inputs.target }}-outputs
+        name: ${{ inputs.firmware }}-${{ inputs.target }}-${{ inputs.coin_support_variant }}-outputs
         path: build
