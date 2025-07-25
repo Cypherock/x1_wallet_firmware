@@ -413,13 +413,15 @@ bool stellar_generate_address(const uint8_t *public_key, char *address) {
   }
 
   // Stellar address encoding (StrKey format)
-  // See https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
+  // See
+  // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
   uint8_t payload[35];
   payload[0] = 6 << 3;    // Account ID version byte (0x30)
   memcpy(payload + 1, public_key, 32);
 
   // CRC16-XModem checksum calculation
-  // See https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
+  // See
+  // https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
   uint16_t checksum = crc16(payload, 33);
   payload[33] = checksum & 0xFF;
   payload[34] = checksum >> 8;
