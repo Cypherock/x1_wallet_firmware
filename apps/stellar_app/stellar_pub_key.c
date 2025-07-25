@@ -412,14 +412,19 @@ bool stellar_generate_address(const uint8_t *public_key, char *address) {
     return false;
   }
 
+  // Stellar address encoding (StrKey format)
+  // See https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
   uint8_t payload[35];
-  payload[0] = 6 << 3;    // Account ID type
+  payload[0] = 6 << 3;    // Account ID version byte (0x30)
   memcpy(payload + 1, public_key, 32);
 
+  // CRC16-XModem checksum calculation
+  // See https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
   uint16_t checksum = crc16(payload, 33);
   payload[33] = checksum & 0xFF;
   payload[34] = checksum >> 8;
 
+  // RFC4648 base32 encoding without padding
   base32_encode(payload, 35, address, 57, BASE32_ALPHABET_RFC4648);
   return true;
 }

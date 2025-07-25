@@ -490,6 +490,9 @@ static bool get_user_verification(void) {
   return true;
 }
 
+// See https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
+// Envelope type (4 bytes) - ENVELOPE_TYPE_TX = 2
+// See https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md
 static void write_uint32_be(uint8_t *buffer, uint32_t value) {
   buffer[0] = (value >> 24) & 0xFF;
   buffer[1] = (value >> 16) & 0xFF;

@@ -32,6 +32,7 @@
 #define STELLAR_SIGNATURE_SIZE 64
 
 // Network passphrases
+// See https://developers.stellar.org/docs/learn/fundamentals/networks
 #define TESTNET_PASSPHRASE "Test SDF Network ; September 2015"
 #define MAINNET_PASSPHRASE "Public Global Stellar Network ; September 2015"
 
@@ -44,6 +45,7 @@ typedef struct {
 } stellar_config_t;
 
 // Stellar Memo types
+// See https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/memos
 typedef enum {
   MEMO_NONE = 0,
   MEMO_TEXT = 1,
@@ -90,6 +92,7 @@ typedef enum {
  * 1. Creates a payload with account ID type (0x30) and the public key
  * 2. Calculates CRC16 checksum
  * 3. Encodes the result using base32
+ * See https://developers.stellar.org/docs/fundamentals-and-concepts/stellar-data-structures/accounts
  *
  * @param public_key The 32-byte ED25519 public key
  * @param address Buffer to store the resulting address (must be at least

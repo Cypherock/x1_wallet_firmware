@@ -185,6 +185,8 @@ static int parse_memo_data(const uint8_t *xdr,
 }
 
 // Helper function 2: Parse operation data
+// Parse XDR transaction envelope format
+// See https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
 static int parse_operation_data(const uint8_t *xdr,
                                 int *pos,
                                 int xdr_len,
@@ -257,6 +259,8 @@ int stellar_parse_transaction(const uint8_t *xdr,
   memset(payment, 0, sizeof(stellar_payment_t));
 
   // 1. Parse Envelope Type (4 bytes)
+  // ENVELOPE_TYPE_TX = 2 
+  // See https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md
   uint32_t envelope_type = read_uint32_be_pos(xdr, &pos);
   if (envelope_type != 2) {
     return -1;

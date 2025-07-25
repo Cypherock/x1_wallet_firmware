@@ -25,6 +25,8 @@
 
 #define STELLAR_IMPLICIT_ACCOUNT_DEPTH 3
 
+// BIP44 derivation path: m/44'/148'/n'
+// See https://github.com/satoshilabs/slips/blob/master/slip-0044.md
 #define STELLAR_PURPOSE_INDEX 0x8000002C    // 44'
 #define STELLAR_COIN_INDEX 0x80000094       // 148'
 #define STELLAR_ACCOUNT_INDEX 0x80000000    // 0'
@@ -47,6 +49,7 @@
  * 3, then this function return false indicating invalid derivation path. The
  * function supports checking derivation paths for HD wallets Types of
  * derivations: address: m/44'/148'/0'
+ * See https://developers.stellar.org/docs/fundamentals-and-concepts/accounts
  *
  * @param[in] path      The derivation path as an uint32 array
  * @param[in] levels     The number of levels in the derivation path
