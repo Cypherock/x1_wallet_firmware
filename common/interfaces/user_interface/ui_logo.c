@@ -61,17 +61,32 @@
 #include "events.h"
 #include "ui_multi_instruction.h"
 
+#if VENDOR_ID == 0    // cypherock
 LV_IMG_DECLARE(cypherock_logo);
+#define VENDOR_LOGO_LIST cypherock_logo
+#define VENDOR_LOGO_COUNT 1
+
+#elif VENDOR_ID == 1    // odix
+LV_IMG_DECLARE(odix_logo);
+LV_IMG_DECLARE(cypherock_vendor_logo);
+#define VENDOR_LOGO_LIST odix_logo, cypherock_vendor_logo
+#define VENDOR_LOGO_COUNT 2
+
+#endif
 
 void logo_scr_init(const uint16_t delay_in_ms) {
-  instruction_content_t logo_content = {
-      .img = &cypherock_logo,
-      .img_x_offset = (128 - (cypherock_logo.header.w)) >> 1,
-      .img_y_offset = (64 - (cypherock_logo.header.h)) >> 1,
-      .text = "",
-      .text_align = LV_ALIGN_CENTER};
+  const lv_img_dsc_t logos[] = {VENDOR_LOGO_LIST};
 
-  multi_instruction_with_image_init(&logo_content, 1, 0, false);
-  lv_task_handler();
-  BSP_DelayMs(delay_in_ms);
+  for (int i = 0; i < VENDOR_LOGO_COUNT; i++) {
+    instruction_content_t logo_content = {
+        .img = &logos[i],
+        .img_x_offset = (128 - (logos[i].header.w)) >> 1,
+        .img_y_offset = (64 - (logos[i].header.h)) >> 1,
+        .text = "",
+        .text_align = LV_ALIGN_CENTER};
+
+    multi_instruction_with_image_init(&logo_content, 1, 0, false);
+    lv_task_handler();
+    BSP_DelayMs(delay_in_ms);
+  }
 }
