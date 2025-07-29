@@ -137,4 +137,19 @@ bool btc_derivation_path_guard(const uint32_t *path, uint32_t depth);
  */
 void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
 
+/**
+ * @brief Returns the taproot key path address string (Bech32M encoding)
+ * @details The functions assumes public key is compressed
+ *
+ * @param [in] public_key    33 Byte array representation of public key.
+ * @param [in] hrp           HRP value for bech32M encoding "bc" for mainnet and
+ * "tb" for testnet.
+ * @param [out] address  char array to store taproot address.
+ *
+ * @return 1 if successful and 0 if failure.
+ */
+int btc_get_taproot_address(uint8_t *public_key,
+                            const char *hrp,
+                            char *address);
+
 #endif

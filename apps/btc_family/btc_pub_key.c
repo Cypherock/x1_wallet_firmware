@@ -199,7 +199,7 @@ static size_t btc_get_address(const uint8_t *seed,
                               uint8_t *public_key,
                               char *address) {
   HDNode node = {0};
-  char addr[50] = "";
+  char addr[70] = "";
   size_t address_length = 0;
 
   if (!derive_hdnode_from_path(
@@ -230,7 +230,9 @@ static size_t btc_get_address(const uint8_t *seed,
                                     36);
       break;
 
-    // TODO: add support for taproot
+    case PURPOSE_TAPROOT:
+      btc_get_taproot_address(node.public_key, g_btc_app->bech32_hrp, addr);
+      break;
     default:
       break;
   }
