@@ -421,7 +421,7 @@ extern const char *ui_text_send_logs_prompt;
 
 // Stellar memo display texts
 #define UI_TEXT_STELLAR_MEMO_TEXT "Memo: \"%s\""
-#define UI_TEXT_STELLAR_MEMO_ID "Memo ID: %llu" 
+#define UI_TEXT_STELLAR_MEMO_ID "Memo ID: %llu"
 #define UI_TEXT_STELLAR_MEMO_HASH "Memo Hash: %s"
 #define UI_TEXT_STELLAR_OPERATION "Operation: %s"
 #define UI_TEXT_STELLAR_MEMO_UNKNOWN "Memo: (unknown type %u)"

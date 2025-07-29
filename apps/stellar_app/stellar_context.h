@@ -50,7 +50,8 @@ typedef struct {
 } stellar_config_t;
 
 // Stellar Memo types
-// See https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/memos
+// See
+// https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/memos
 typedef enum {
   STELLAR_MEMO_NONE = 0,
   STELLAR_MEMO_TEXT = 1,
@@ -59,8 +60,9 @@ typedef enum {
   STELLAR_MEMO_RETURN = 4
 } stellar_memo_type_t;
 
-// Stellar operation types  
-// See https://developers.stellar.org/docs/learn/fundamentals/transactions/list-of-operations
+// Stellar operation types
+// See
+// https://developers.stellar.org/docs/learn/fundamentals/transactions/list-of-operations
 typedef enum {
   STELLAR_OPERATION_CREATE_ACCOUNT = 0,
   STELLAR_OPERATION_PAYMENT = 1

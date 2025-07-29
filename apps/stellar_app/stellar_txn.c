@@ -459,7 +459,9 @@ static bool get_user_verification(void) {
   snprintf(operation_display,
            sizeof(operation_display),
            ui_text_stellar_operation,
-           decoded_txn->operation_type == STELLAR_OPERATION_CREATE_ACCOUNT ? "CREATE_ACCOUNT" : "PAYMENT");
+           decoded_txn->operation_type == STELLAR_OPERATION_CREATE_ACCOUNT
+               ? "CREATE_ACCOUNT"
+               : "PAYMENT");
   if (!core_confirmation(operation_display, stellar_send_error)) {
     return false;
   }
@@ -578,7 +580,8 @@ static int create_signature_base(const char *network_passphrase,
   } else if (tx->memo_type == STELLAR_MEMO_ID) {
     write_uint64_be(signature_base + offset, tx->memo.id);
     offset += 8;
-  } else if (tx->memo_type == STELLAR_MEMO_HASH || tx->memo_type == STELLAR_MEMO_RETURN) {
+  } else if (tx->memo_type == STELLAR_MEMO_HASH ||
+             tx->memo_type == STELLAR_MEMO_RETURN) {
     memcpy(signature_base + offset, tx->memo.hash, 32);
     offset += 32;
   }
@@ -599,15 +602,16 @@ static int create_signature_base(const char *network_passphrase,
   // Destination (type + pubkey)
   write_uint32_be(signature_base + offset, STELLAR_KEY_TYPE_ED25519);
   offset += 4;
-  memcpy(signature_base + offset, payment->destination, STELLAR_PUBKEY_RAW_SIZE);
+  memcpy(
+      signature_base + offset, payment->destination, STELLAR_PUBKEY_RAW_SIZE);
   offset += STELLAR_PUBKEY_RAW_SIZE;
-  
+
   // Asset (native) - only for PAYMENT operations
   if (tx->operation_type == STELLAR_OPERATION_PAYMENT) {
     write_uint32_be(signature_base + offset, STELLAR_ASSET_TYPE_NATIVE);
     offset += 4;
   }
-  
+
   // Amount
   write_uint64_be(signature_base + offset, payment->amount);
   offset += 8;
@@ -665,13 +669,15 @@ static bool sign_txn(der_sig_t *der_signature) {
 
   set_app_flow_status(STELLAR_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  // Create HDNode from seed and derive private key using derive_hdnode_from_path
+  // Create HDNode from seed and derive private key using
+  // derive_hdnode_from_path
   HDNode node = {0};
-  if (!derive_hdnode_from_path(stellar_txn_context->init_info.derivation_path,
-                               stellar_txn_context->init_info.derivation_path_count,
-                               ED25519_NAME, 
-                               seed, 
-                               &node)) {
+  if (!derive_hdnode_from_path(
+          stellar_txn_context->init_info.derivation_path,
+          stellar_txn_context->init_info.derivation_path_count,
+          ED25519_NAME,
+          seed,
+          &node)) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(seed, sizeof(seed));
     memzero(&node, sizeof(HDNode));

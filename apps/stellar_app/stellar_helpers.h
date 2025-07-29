@@ -64,9 +64,10 @@ bool stellar_derivation_path_guard(const uint32_t *path, uint8_t levels);
  * @brief Generates a Stellar address from a public key
  * @details Follows the Stellar address generation algorithm:
  * 1. Creates a payload with account ID type (0x30) and the public key
- * 2. Calculates CRC16 checksum  
+ * 2. Calculates CRC16 checksum
  * 3. Encodes the result using base32
- * See https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
+ * See
+ * https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
  *
  * @param public_key The 32-byte ED25519 public key
  * @param address Buffer to store the resulting address (must be at least

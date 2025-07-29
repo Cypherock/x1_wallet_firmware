@@ -109,16 +109,18 @@ static uint64_t read_uint64_be_offset(const uint8_t *data, int *offset) {
   return (high << 32) | low;
 }
 
-static void read_account_offset(const uint8_t *data, int *offset, uint8_t *account) {
+static void read_account_offset(const uint8_t *data,
+                                int *offset,
+                                uint8_t *account) {
   memcpy(account, data + *offset, STELLAR_PUBKEY_RAW_SIZE);
   *offset += STELLAR_PUBKEY_RAW_SIZE;
 }
 
 static int read_string_offset(const uint8_t *data,
-                           int *offset,
-                           char *str,
-                           int max_len,
-                           int data_len) {
+                              int *offset,
+                              char *str,
+                              int max_len,
+                              int data_len) {
   if (*offset + 4 > data_len)
     return -1;
 
@@ -154,8 +156,8 @@ static int parse_memo_data(const uint8_t *xdr,
 
     case STELLAR_MEMO_TEXT: {
       char temp_memo[64];
-      int memo_len =
-          read_string_offset(xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
+      int memo_len = read_string_offset(
+          xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
       if (memo_len < 0) {
         return -1;
       }
@@ -199,7 +201,7 @@ static int parse_operation_data(const uint8_t *xdr,
   uint32_t has_source_account = read_uint32_be_offset(xdr, offset);
 
   if (has_source_account == 1) {
-    *offset += 36;  // Skip source account (4 bytes type + 32 bytes key)
+    *offset += 36;    // Skip source account (4 bytes type + 32 bytes key)
   } else if (has_source_account != 0) {
     return -1;
   }
@@ -207,7 +209,7 @@ static int parse_operation_data(const uint8_t *xdr,
   // Parse operation type
   uint32_t operation_type = read_uint32_be_offset(xdr, offset);
 
-  if (operation_type != STELLAR_OPERATION_PAYMENT && 
+  if (operation_type != STELLAR_OPERATION_PAYMENT &&
       operation_type != STELLAR_OPERATION_CREATE_ACCOUNT) {
     return -1;
   }
@@ -230,7 +232,7 @@ static int parse_operation_data(const uint8_t *xdr,
 
   // Parse amount (common for both operations)
   payment->amount = read_uint64_be_offset(xdr, offset);
-  
+
   return 0;
 }
 
@@ -271,7 +273,7 @@ int stellar_parse_transaction(const uint8_t *xdr,
   uint32_t preconditions_type = read_uint32_be_offset(xdr, &offset);
 
   if (preconditions_type == 1) {
-    offset += 16;  // Skip time bounds (8 + 8 bytes)
+    offset += 16;    // Skip time bounds (8 + 8 bytes)
   } else if (preconditions_type != 0) {
     return -1;
   }
