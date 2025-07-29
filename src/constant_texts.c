@@ -584,3 +584,10 @@ const char *ui_text_verify_account_id = "Verify account id";
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif
+
+// Stellar memo display texts
+const char *ui_text_stellar_memo_text = "Memo: \"%s\"";
+const char *ui_text_stellar_memo_id = "Memo ID: %llu";
+const char *ui_text_stellar_memo_hash = "Memo Hash: %s";
+const char *ui_text_stellar_operation = "Operation: %s";
+const char *ui_text_stellar_memo_unknown = "Memo: (unknown type %u)";

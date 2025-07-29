@@ -219,6 +219,10 @@ static bool get_user_consent(const pb_size_t which_request,
  *****************************************************************************/
 static bool sign_address = false;
 
+/*****************************************************************************
+ * STATIC FUNCTIONS
+ *****************************************************************************/
+
 static bool check_which_request(const stellar_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->get_public_keys.which_request) {
@@ -299,23 +303,12 @@ static bool get_public_key(const uint8_t *seed,
                            uint8_t *public_key) {
   HDNode node = {0};
 
-  // Initialize the HDNode with the seed
-  if (hdnode_from_seed(seed, 64, "ed25519", &node) != 1) {
+  // Use derive_hdnode_from_path instead of manual derivation
+  if (!derive_hdnode_from_path(path, path_length, ED25519_NAME, seed, &node)) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(&node, sizeof(HDNode));
     return false;
   }
-
-  // Derive HDNode from path
-  for (uint32_t i = 0; i < path_length; i++) {
-    if (hdnode_private_ckd(&node, path[i]) != 1) {
-      stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-      memzero(&node, sizeof(HDNode));
-      return false;
-    }
-  }
-
-  hdnode_fill_public_key(&node);
 
   if (NULL != public_key) {
     // skip first byte, use raw 32 bytes
@@ -340,20 +333,6 @@ static bool fill_public_keys(
   }
 
   return true;
-}
-
-static uint16_t crc16(const uint8_t *data, size_t len) {
-  uint16_t crc = 0x0000;
-  for (size_t i = 0; i < len; i++) {
-    crc ^= data[i] << 8;
-    for (int j = 0; j < 8; j++) {
-      if (crc & 0x8000)
-        crc = (crc << 1) ^ 0x1021;
-      else
-        crc <<= 1;
-    }
-  }
-  return crc;
 }
 
 static bool send_public_keys(
@@ -400,36 +379,8 @@ static bool send_public_keys(
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTIONS
- *****************************************************************************/
-
-/*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-bool stellar_generate_address(const uint8_t *public_key, char *address) {
-  if (!public_key || !address) {
-    return false;
-  }
-
-  // Stellar address encoding (StrKey format)
-  // See
-  // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
-  uint8_t payload[35];
-  payload[0] = 6 << 3;    // Account ID version byte (0x30)
-  memcpy(payload + 1, public_key, 32);
-
-  // CRC16-XModem checksum calculation
-  // See
-  // https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
-  uint16_t checksum = crc16(payload, 33);
-  payload[33] = checksum & 0xFF;
-  payload[34] = checksum >> 8;
-
-  // RFC4648 base32 encoding without padding
-  base32_encode(payload, 35, address, 57, BASE32_ALPHABET_RFC4648);
-  return true;
-}
 
 void stellar_get_pub_keys(stellar_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
@@ -488,6 +439,9 @@ void stellar_get_pub_keys(stellar_query_t *query) {
     char address[STELLAR_ADDRESS_LENGTH] = "";
     if (!stellar_generate_address(pubkey_list[0], address)) {
       return;
+    }
+    if (sign_address) {
+      exchange_sign_address(address, sizeof(address));
     }
     if (!core_scroll_page(ui_text_receive_on, address, stellar_send_error)) {
       return;

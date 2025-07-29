@@ -63,9 +63,9 @@
 
 #include <stdint.h>
 
-#include "base32.h"
 #include "bip32.h"
 #include "composable_app_queue.h"
+#include "constant_texts.h"
 #include "curves.h"
 #include "ed25519-donna/ed25519-donna.h"
 #include "ed25519-donna/ed25519-hash-custom.h"
@@ -81,6 +81,7 @@
 #include "stellar_txn_helpers.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "utils.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -181,7 +182,8 @@ static bool get_user_verification(void);
 /**
  * @brief Calculates ED25519 curve based signature over the digest of the user
  * verified unsigned txn.
- * @details Seed reconstruction takes place within this function
+ * @details Seed reconstruction takes place within this function. Returns only
+ * the 64-byte signature, not the full transaction envelope.
  *
  * @param signature_buffer Reference to buffer where the signature will be
  * populated
@@ -190,6 +192,43 @@ static bool get_user_verification(void);
  * during seed reconstruction phase
  */
 static bool sign_txn(der_sig_t *der_signature);
+
+/**
+ * @brief Creates signature base data for Stellar transaction signing
+ * @details Builds the standardized data structure that must be signed according
+ * to Stellar protocol specifications
+ *
+ * @param network_passphrase Network passphrase string (mainnet/testnet)
+ * @param tx Parsed transaction structure
+ * @param payment Parsed payment operation structure
+ * @param signature_base Output buffer for signature base data
+ * @param base_len Output length of signature base data
+ * @return int 0 on success, non-zero on error
+ */
+static int create_signature_base(const char *network_passphrase,
+                                 stellar_transaction_t *tx,
+                                 stellar_payment_t *payment,
+                                 uint8_t *signature_base,
+                                 int *base_len);
+
+/**
+ * @brief Creates ED25519 signature for Stellar transaction
+ * @details Signs the transaction hash using ED25519 algorithm
+ *
+ * @param tx Parsed transaction structure
+ * @param payment Parsed payment operation structure
+ * @param private_key ED25519 private key for signing
+ * @param public_key ED25519 public key for verification
+ * @param network Target network (mainnet/testnet)
+ * @param signature Output buffer for 64-byte signature
+ * @return int 0 on success, non-zero on error
+ */
+static int stellar_create_signature(stellar_transaction_t *tx,
+                                    stellar_payment_t *payment,
+                                    const uint8_t *private_key,
+                                    const uint8_t *public_key,
+                                    stellar_network_t network,
+                                    uint8_t *signature);
 
 /**
  * @brief Sends signature of the STELLAR unsigned txn to the host
@@ -210,10 +249,6 @@ static bool send_signature(stellar_query_t *query,
  *****************************************************************************/
 static stellar_txn_context_t *stellar_txn_context = NULL;
 static bool use_signature_verification = false;
-static const char base64_chars[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static char envelope_b64[2048];
-static uint8_t signature_base[1024];
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -266,8 +301,6 @@ static bool handle_initiate_query(const stellar_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   char msg[100] = "";
 
-  // TODO: Handle wallet search failures - eg: Wallet ID not found, Wallet
-  // ID found but is invalid/locked wallet
   if (!check_which_request(query, STELLAR_SIGN_TXN_REQUEST_INITIATE_TAG) ||
       !validate_request_data(&query->sign_txn) ||
       !get_wallet_name_by_id(query->sign_txn.initiate.wallet_id,
@@ -278,7 +311,6 @@ static bool handle_initiate_query(const stellar_query_t *query) {
 
   snprintf(
       msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, STELLAR_NAME, wallet_name);
-  // Take user consent to sign transaction for the wallet
   if (!core_confirmation(msg, stellar_send_error)) {
     return false;
   }
@@ -289,8 +321,6 @@ static bool handle_initiate_query(const stellar_query_t *query) {
          sizeof(stellar_sign_txn_initiate_request_t));
 
   send_response(STELLAR_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
-  // show processing screen for a minimum duration (additional time will add due
-  // to actual processing)
   delay_scr_init(ui_text_processing, DELAY_SHORT);
   return true;
 }
@@ -361,26 +391,26 @@ static bool fetch_valid_input(stellar_query_t *query) {
   return true;
 }
 
-// Add this helper function before get_user_verification()
 static bool show_memo_details(const stellar_transaction_t *decoded_txn) {
-  if (decoded_txn->memo_type == MEMO_TEXT) {
+  if (decoded_txn->memo_type == STELLAR_MEMO_TEXT) {
     char memo_display[100] = {'\0'};
     snprintf(memo_display,
              sizeof(memo_display),
-             "Memo: \"%s\"",
+             ui_text_stellar_memo_text,
              decoded_txn->memo.text);
     return core_confirmation(memo_display, stellar_send_error);
-  } else if (decoded_txn->memo_type == MEMO_ID) {
+  } else if (decoded_txn->memo_type == STELLAR_MEMO_ID) {
     char memo_display[50] = {'\0'};
     snprintf(memo_display,
              sizeof(memo_display),
-             "Memo ID: %llu",
+             ui_text_stellar_memo_id,
              decoded_txn->memo.id);
     return core_confirmation(memo_display, stellar_send_error);
-  } else if (decoded_txn->memo_type == MEMO_NONE) {
-    return core_confirmation("Memo: (none)", stellar_send_error);
-  } else if (decoded_txn->memo_type == MEMO_HASH ||
-             decoded_txn->memo_type == MEMO_RETURN) {
+  } else if (decoded_txn->memo_type == STELLAR_MEMO_NONE) {
+    // Don't show anything for MEMO_NONE
+    return true;
+  } else if (decoded_txn->memo_type == STELLAR_MEMO_HASH ||
+             decoded_txn->memo_type == STELLAR_MEMO_RETURN) {
     char memo_hash[80] = {'\0'};
     char temp[3];
     strcpy(memo_hash, "Memo Hash: ");
@@ -393,13 +423,12 @@ static bool show_memo_details(const stellar_transaction_t *decoded_txn) {
     char memo_display[50] = {'\0'};
     snprintf(memo_display,
              sizeof(memo_display),
-             "Memo: (unknown type %u)",
+             ui_text_stellar_memo_unknown,
              decoded_txn->memo_type);
     return core_confirmation(memo_display, stellar_send_error);
   }
 }
 
-// Updated main function
 static bool get_user_verification(void) {
   const stellar_transaction_t *decoded_txn = stellar_txn_context->txn;
   const stellar_payment_t *payment = stellar_txn_context->payment;
@@ -429,8 +458,8 @@ static bool get_user_verification(void) {
   char operation_display[50] = {'\0'};
   snprintf(operation_display,
            sizeof(operation_display),
-           "Operation: %s",
-           decoded_txn->operation_type == 0 ? "CREATE_ACCOUNT" : "PAYMENT");
+           ui_text_stellar_operation,
+           decoded_txn->operation_type == STELLAR_OPERATION_CREATE_ACCOUNT ? "CREATE_ACCOUNT" : "PAYMENT");
   if (!core_confirmation(operation_display, stellar_send_error)) {
     return false;
   }
@@ -490,164 +519,104 @@ static bool get_user_verification(void) {
   return true;
 }
 
-// See https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
-// Envelope type (4 bytes) - ENVELOPE_TYPE_TX = 2
-// See https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md
-static void write_uint32_be(uint8_t *buffer, uint32_t value) {
-  buffer[0] = (value >> 24) & 0xFF;
-  buffer[1] = (value >> 16) & 0xFF;
-  buffer[2] = (value >> 8) & 0xFF;
-  buffer[3] = value & 0xFF;
-}
-
-static void write_uint64_be(uint8_t *buffer, uint64_t value) {
-  write_uint32_be(buffer, (uint32_t)(value >> 32));
-  write_uint32_be(buffer + 4, (uint32_t)(value & 0xFFFFFFFF));
-}
-
-static void base64_encode(const uint8_t *data, int len, char *output) {
-  int i = 0, j = 0;
-  uint8_t char_array_3[3];
-  uint8_t char_array_4[4];
-
-  while (len--) {
-    char_array_3[i++] = *(data++);
-    if (i == 3) {
-      char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-      char_array_4[1] =
-          ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-      char_array_4[2] =
-          ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-      char_array_4[3] = char_array_3[2] & 0x3f;
-
-      for (i = 0; i < 4; i++) {
-        output[j++] = base64_chars[char_array_4[i]];
-      }
-      i = 0;
-    }
-  }
-
-  if (i) {
-    for (int k = i; k < 3; k++) {
-      char_array_3[k] = '\0';
-    }
-
-    char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-    char_array_4[1] =
-        ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-    char_array_4[2] =
-        ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-    char_array_4[3] = char_array_3[2] & 0x3f;
-
-    for (int k = 0; k < i + 1; k++) {
-      output[j++] = base64_chars[char_array_4[k]];
-    }
-
-    while (i++ < 3) {
-      output[j++] = '=';
-    }
-  }
-
-  output[j] = '\0';
-}
-
 static int create_signature_base(const char *network_passphrase,
                                  stellar_transaction_t *tx,
                                  stellar_payment_t *payment,
                                  uint8_t *signature_base,
                                  int *base_len) {
-  int pos = 0;
+  int offset = 0;
 
   // 1. Network passphrase hash (32 bytes)
   uint8_t network_hash[32];
   sha256_Raw((const uint8_t *)network_passphrase,
              strlen(network_passphrase),
              network_hash);
-  memcpy(signature_base + pos, network_hash, 32);
-  pos += 32;
+  memcpy(signature_base + offset, network_hash, 32);
+  offset += 32;
 
-  // 2. TX_TYPE (4 bytes) - ENVELOPE_TYPE_TX = 2
-  write_uint32_be(signature_base + pos, 2);
-  pos += 4;
+  // 2. ENVELOPE_TYPE_TX (4 bytes)
+  write_uint32_be(signature_base + offset, STELLAR_ENVELOPE_TYPE_TX);
+  offset += 4;
 
   // 3. Source account type (4 bytes) + public key (32 bytes)
-  write_uint32_be(signature_base + pos, 0);    // KEY_TYPE_ED25519 = 0
-  pos += 4;
-  memcpy(signature_base + pos, tx->source_account, 32);
-  pos += 32;
+  write_uint32_be(signature_base + offset, STELLAR_KEY_TYPE_ED25519);
+  offset += 4;
+  memcpy(signature_base + offset, tx->source_account, STELLAR_PUBKEY_RAW_SIZE);
+  offset += STELLAR_PUBKEY_RAW_SIZE;
 
   // 4. Fee (4 bytes, big-endian)
-  write_uint32_be(signature_base + pos, tx->fee);
-  pos += 4;
+  write_uint32_be(signature_base + offset, tx->fee);
+  offset += 4;
 
   // 5. Sequence number (8 bytes, big-endian)
-  write_uint64_be(signature_base + pos, tx->sequence_number);
-  pos += 8;
+  write_uint64_be(signature_base + offset, tx->sequence_number);
+  offset += 8;
 
-  // 6. Time bounds (1 + 8 + 8 = 17 bytes)
-  write_uint32_be(signature_base + pos, 1);    // has time bounds = true
-  pos += 4;
-  write_uint64_be(signature_base + pos, 0);    // min_time = 0
-  pos += 8;
-  write_uint64_be(signature_base + pos, 0);    // max_time = 0
-  pos += 8;
+  // 6. Time bounds (17 bytes total)
+  write_uint32_be(signature_base + offset, 1);    // has time bounds = true
+  offset += 4;
+  write_uint64_be(signature_base + offset, 0);    // min_time = 0
+  offset += 8;
+  write_uint64_be(signature_base + offset, 0);    // max_time = 0
+  offset += 8;
 
   // 7. Memo
-  write_uint32_be(signature_base + pos, tx->memo_type);
-  pos += 4;
+  write_uint32_be(signature_base + offset, tx->memo_type);
+  offset += 4;
 
-  if (tx->memo_type == MEMO_TEXT) {
+  if (tx->memo_type == STELLAR_MEMO_TEXT) {
     int memo_len = strlen(tx->memo.text);
-    write_uint32_be(signature_base + pos, memo_len);
-    pos += 4;
-    memcpy(signature_base + pos, tx->memo.text, memo_len);
-    pos += memo_len;
+    write_uint32_be(signature_base + offset, memo_len);
+    offset += 4;
+    memcpy(signature_base + offset, tx->memo.text, memo_len);
+    offset += memo_len;
     // Add padding to 4-byte boundary
     int padding = (4 - (memo_len % 4)) % 4;
     for (int i = 0; i < padding; i++) {
-      signature_base[pos++] = 0;
+      signature_base[offset++] = 0;
     }
-  } else if (tx->memo_type == MEMO_ID) {
-    write_uint64_be(signature_base + pos, tx->memo.id);
-    pos += 8;
-  } else if (tx->memo_type == MEMO_HASH || tx->memo_type == MEMO_RETURN) {
-    memcpy(signature_base + pos, tx->memo.hash, 32);
-    pos += 32;
+  } else if (tx->memo_type == STELLAR_MEMO_ID) {
+    write_uint64_be(signature_base + offset, tx->memo.id);
+    offset += 8;
+  } else if (tx->memo_type == STELLAR_MEMO_HASH || tx->memo_type == STELLAR_MEMO_RETURN) {
+    memcpy(signature_base + offset, tx->memo.hash, 32);
+    offset += 32;
   }
 
   // 8. Operations count (4 bytes)
-  write_uint32_be(signature_base + pos, 1);
-  pos += 4;
+  write_uint32_be(signature_base + offset, 1);
+  offset += 4;
 
   // 9. Operation: has_source_account = false
-  write_uint32_be(signature_base + pos, 0);
-  pos += 4;
+  write_uint32_be(signature_base + offset, 0);
+  offset += 4;
 
   // 10. Operation type = PAYMENT OR CREATE_ACCOUNT
-  write_uint32_be(signature_base + pos, tx->operation_type);
-  pos += 4;
+  write_uint32_be(signature_base + offset, tx->operation_type);
+  offset += 4;
 
-  // 11. Payment operation
+  // 11. Payment/CreateAccount operation
   // Destination (type + pubkey)
-  write_uint32_be(signature_base + pos, 0);    // KEY_TYPE_ED25519
-  pos += 4;
-  memcpy(signature_base + pos, payment->destination, 32);
-  pos += 32;
-  // Asset (native)
-  if (tx->operation_type) {
-    write_uint32_be(signature_base + pos, 0);    // ASSET_TYPE_NATIVE
-    pos += 4;
+  write_uint32_be(signature_base + offset, STELLAR_KEY_TYPE_ED25519);
+  offset += 4;
+  memcpy(signature_base + offset, payment->destination, STELLAR_PUBKEY_RAW_SIZE);
+  offset += STELLAR_PUBKEY_RAW_SIZE;
+  
+  // Asset (native) - only for PAYMENT operations
+  if (tx->operation_type == STELLAR_OPERATION_PAYMENT) {
+    write_uint32_be(signature_base + offset, STELLAR_ASSET_TYPE_NATIVE);
+    offset += 4;
   }
+  
   // Amount
-  write_uint64_be(signature_base + pos, payment->amount);
-  pos += 8;
+  write_uint64_be(signature_base + offset, payment->amount);
+  offset += 8;
 
   // 12. Extension
-  write_uint32_be(signature_base + pos, 0);
-  pos += 4;
+  write_uint32_be(signature_base + offset, 0);
+  offset += 4;
 
-  *base_len = pos;
-
+  *base_len = offset;
   return 0;
 }
 
@@ -657,8 +626,8 @@ static int stellar_create_signature(stellar_transaction_t *tx,
                                     const uint8_t *public_key,
                                     stellar_network_t network,
                                     uint8_t *signature) {
-  // uint8_t signature_base[1024];
-  int base_len;
+  uint8_t signature_base[1024] = {0};
+  int base_len = 0;
 
   // 1. Create signature base
   const char *passphrase = (network == STELLAR_NETWORK_TESTNET)
@@ -676,133 +645,18 @@ static int stellar_create_signature(stellar_transaction_t *tx,
   sha256_Raw(signature_base, base_len, transaction_hash);
 
   // 3. Sign the hash (32 bytes), not the raw signature base
-  ed25519_signature sig;
+  ed25519_signature sig = {0};
   ed25519_sign(transaction_hash, 32, private_key, public_key, sig);
-  memcpy(signature, sig, 64);
-
-  return 0;
-}
-
-static int create_signed_transaction_envelope(stellar_transaction_t *tx,
-                                              stellar_payment_t *payment,
-                                              const uint8_t *private_key,
-                                              const uint8_t *public_key,
-                                              stellar_network_t network,
-                                              char *signed_envelope_b64) {
-  uint8_t signature[64];
-  uint8_t signed_envelope[1024];
-  int pos = 0;
-
-  // 1. Sign the transaction first
-  int result = stellar_create_signature(
-      tx, payment, private_key, public_key, network, signature);
-  if (result != 0) {
-    return result;
-  }
-
-  // 2. Create TransactionEnvelope XDR structure
-
-  // Envelope type (4 bytes) - ENVELOPE_TYPE_TX = 2
-  write_uint32_be(signed_envelope + pos, 2);
-  pos += 4;
-
-  // Transaction structure
-  // Source account
-  write_uint32_be(signed_envelope + pos, 0);    // KEY_TYPE_ED25519
-  pos += 4;
-  memcpy(signed_envelope + pos, tx->source_account, 32);
-  pos += 32;
-
-  // Fee
-  write_uint32_be(signed_envelope + pos, tx->fee);
-  pos += 4;
-
-  // Sequence number
-  write_uint64_be(signed_envelope + pos, tx->sequence_number);
-  pos += 8;
-
-  // Preconditions (time bounds)
-  write_uint32_be(signed_envelope + pos, 1);    // PRECOND_TIME
-  pos += 4;
-  write_uint64_be(signed_envelope + pos, 0);    // min_time
-  pos += 8;
-  write_uint64_be(signed_envelope + pos, 0);    // max_time
-  pos += 8;
-
-  // Memo
-  write_uint32_be(signed_envelope + pos, tx->memo_type);
-  pos += 4;
-
-  if (tx->memo_type == MEMO_TEXT) {
-    int memo_len = strlen(tx->memo.text);
-    write_uint32_be(signed_envelope + pos, memo_len);
-    pos += 4;
-    memcpy(signed_envelope + pos, tx->memo.text, memo_len);
-    pos += memo_len;
-    // Add padding
-    int padding = (4 - (memo_len % 4)) % 4;
-    for (int i = 0; i < padding; i++) {
-      signed_envelope[pos++] = 0;
-    }
-  } else if (tx->memo_type == MEMO_ID) {
-    write_uint64_be(signed_envelope + pos, tx->memo.id);
-    pos += 8;
-  } else if (tx->memo_type == MEMO_HASH || tx->memo_type == MEMO_RETURN) {
-    memcpy(signed_envelope + pos, tx->memo.hash, 32);
-    pos += 32;
-  }
-
-  // Operations
-  write_uint32_be(signed_envelope + pos, 1);    // operation count
-  pos += 4;
-
-  // Operation: source account (optional)
-  write_uint32_be(signed_envelope + pos, 0);    // no source account
-  pos += 4;
-
-  // Operation type
-  write_uint32_be(signed_envelope + pos, tx->operation_type);    // PAYMENT
-  pos += 4;
-
-  // Payment operation
-  write_uint32_be(signed_envelope + pos, 0);    // KEY_TYPE_ED25519
-  pos += 4;
-  memcpy(signed_envelope + pos, payment->destination, 32);
-  pos += 32;
-  if (tx->operation_type) {
-    write_uint32_be(signed_envelope + pos, 0);    // ASSET_TYPE_NATIVE
-    pos += 4;
-  }
-  write_uint64_be(signed_envelope + pos, payment->amount);
-  pos += 8;
-
-  // Transaction extension
-  write_uint32_be(signed_envelope + pos, 0);
-  pos += 4;
-
-  // 3. Add signatures array
-  write_uint32_be(signed_envelope + pos, 1);    // signature count
-  pos += 4;
-
-  // Decorated signature
-  // Signature hint (last 4 bytes of public key)
-  memcpy(signed_envelope + pos, public_key + 28, 4);
-  pos += 4;
-
-  // Signature data
-  write_uint32_be(signed_envelope + pos, 64);    // signature length
-  pos += 4;
-  memcpy(signed_envelope + pos, signature, 64);
-  pos += 64;
-
-  // 4. Convert to base64
-  base64_encode(signed_envelope, pos, signed_envelope_b64);
+  memcpy(signature, sig, STELLAR_SIGNATURE_SIZE);
 
   return 0;
 }
 
 static bool sign_txn(der_sig_t *der_signature) {
   uint8_t seed[64] = {0};
+  uint8_t signature[STELLAR_SIGNATURE_SIZE] = {0};
+
+  // Reconstruct seed
   if (!reconstruct_seed(
           stellar_txn_context->init_info.wallet_id, seed, stellar_send_error)) {
     memzero(seed, sizeof(seed));
@@ -811,39 +665,27 @@ static bool sign_txn(der_sig_t *der_signature) {
 
   set_app_flow_status(STELLAR_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  // Create HDNode from seed and derive private key
+  // Create HDNode from seed and derive private key using derive_hdnode_from_path
   HDNode node = {0};
-  if (hdnode_from_seed(seed, 64, "ed25519", &node) != 1) {
+  if (!derive_hdnode_from_path(stellar_txn_context->init_info.derivation_path,
+                               stellar_txn_context->init_info.derivation_path_count,
+                               ED25519_NAME, 
+                               seed, 
+                               &node)) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     memzero(seed, sizeof(seed));
     memzero(&node, sizeof(HDNode));
     return false;
   }
 
-  // Derive to correct path
-  for (uint32_t i = 0; i < stellar_txn_context->init_info.derivation_path_count;
-       i++) {
-    if (hdnode_private_ckd(
-            &node, stellar_txn_context->init_info.derivation_path[i]) != 1) {
-      stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-      memzero(seed, sizeof(seed));
-      memzero(&node, sizeof(HDNode));
-      return false;
-    }
-  }
-
-  // Fill public key
-  hdnode_fill_public_key(&node);
-
-  // Create the full transaction envelope
-  // char envelope_b64[2048] = {0};
-  int result = create_signed_transaction_envelope(
+  // Create signature only (not full envelope)
+  int result = stellar_create_signature(
       stellar_txn_context->txn,
       stellar_txn_context->payment,
       node.private_key,
       node.public_key + 1,    // Skip first byte for Stellar raw public key
       STELLAR_NETWORK_MAINNET,
-      envelope_b64);
+      signature);
 
   if (result != 0) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
@@ -852,23 +694,14 @@ static bool sign_txn(der_sig_t *der_signature) {
     return false;
   }
 
-  // Copy the base64 encoded envelope to the output buffer
-  // Check if the envelope fits in the signature buffer
-  size_t envelope_len = strlen(envelope_b64);
-  if (envelope_len > sizeof(der_signature->bytes)) {
-    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 3);
-    memzero(seed, sizeof(seed));
-    memzero(&node, sizeof(HDNode));
-    return false;
-  }
-
-  memcpy(der_signature->bytes, envelope_b64, envelope_len);
-  der_signature->size = envelope_len;
+  // Copy the 64-byte signature to output buffer
+  memcpy(der_signature->bytes, signature, STELLAR_SIGNATURE_SIZE);
+  der_signature->size = STELLAR_SIGNATURE_SIZE;
 
   // Clean up sensitive data
   memzero(seed, sizeof(seed));
   memzero(&node, sizeof(HDNode));
-  memzero(envelope_b64, sizeof(envelope_b64));
+  memzero(signature, sizeof(signature));
 
   return true;
 }

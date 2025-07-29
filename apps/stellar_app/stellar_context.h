@@ -31,9 +31,13 @@
 #define STELLAR_SECRET_KEY_LENGTH 57
 #define STELLAR_SIGNATURE_SIZE 64
 
+// Stellar XDR constants
+#define STELLAR_ENVELOPE_TYPE_TX 2
+#define STELLAR_KEY_TYPE_ED25519 0
+#define STELLAR_ASSET_TYPE_NATIVE 0
+
 // Network passphrases
-// See
-// https://developers.stellar.org/docs/learn/fundamentals/networks
+// See https://developers.stellar.org/docs/learn/fundamentals/networks
 #define TESTNET_PASSPHRASE "Test SDF Network ; September 2015"
 #define MAINNET_PASSPHRASE "Public Global Stellar Network ; September 2015"
 
@@ -46,28 +50,35 @@ typedef struct {
 } stellar_config_t;
 
 // Stellar Memo types
-// See
-// https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/memos
+// See https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/memos
 typedef enum {
-  MEMO_NONE = 0,
-  MEMO_TEXT = 1,
-  MEMO_ID = 2,
-  MEMO_HASH = 3,
-  MEMO_RETURN = 4
+  STELLAR_MEMO_NONE = 0,
+  STELLAR_MEMO_TEXT = 1,
+  STELLAR_MEMO_ID = 2,
+  STELLAR_MEMO_HASH = 3,
+  STELLAR_MEMO_RETURN = 4
 } stellar_memo_type_t;
 
+// Stellar operation types  
+// See https://developers.stellar.org/docs/learn/fundamentals/transactions/list-of-operations
+typedef enum {
+  STELLAR_OPERATION_CREATE_ACCOUNT = 0,
+  STELLAR_OPERATION_PAYMENT = 1
+} stellar_operation_type_t;
+
 // Stellar transaction structures
+// See https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
 typedef struct {
   uint8_t source_account[32];
   uint64_t sequence_number;
   uint32_t fee;
   uint32_t operation_count;
-  uint32_t operation_type;    // CREATE_ACCOUNT = 0, PAYMENT = 1
+  stellar_operation_type_t operation_type;
   stellar_memo_type_t memo_type;
   union {
-    char text[29];       // MEMO_TEXT (max 28 bytes + 1 byte delimiter)
-    uint64_t id;         // MEMO_ID
-    uint8_t hash[32];    // MEMO_HASH or MEMO_RETURN(32 bytes)
+    char text[29];       // STELLAR_MEMO_TEXT (max 28 bytes + 1 byte delimiter)
+    uint64_t id;         // STELLAR_MEMO_ID
+    uint8_t hash[32];    // STELLAR_MEMO_HASH or STELLAR_MEMO_RETURN(32 bytes)
   } memo;
 } stellar_transaction_t;
 
@@ -88,20 +99,5 @@ typedef enum {
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
-/**
- * @brief Generates a Stellar address from a public key
- * @details Follows the Stellar address generation algorithm:
- * 1. Creates a payload with account ID type (0x30) and the public key
- * 2. Calculates CRC16 checksum
- * 3. Encodes the result using base32
- * See
- * https://developers.stellar.org/docs/fundamentals-and-concepts/stellar-data-structures/accounts
- *
- * @param public_key The 32-byte ED25519 public key
- * @param address Buffer to store the resulting address (must be at least
- * STELLAR_ADDRESS_LENGTH bytes)
- * @return true if the address was generated successfully, false otherwise
- */
-bool stellar_generate_address(const uint8_t *public_key, char *address);
 
 #endif /* STELLAR_CONTEXT_H */

@@ -67,6 +67,7 @@
 #include <string.h>
 
 #include "stellar_context.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -96,44 +97,43 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static uint32_t read_uint32_be_pos(const uint8_t *data, int *pos) {
-  uint32_t value = (data[*pos] << 24) | (data[*pos + 1] << 16) |
-                   (data[*pos + 2] << 8) | data[*pos + 3];
-  *pos += 4;
+static uint32_t read_uint32_be_offset(const uint8_t *data, int *offset) {
+  uint32_t value = U32_READ_BE_ARRAY(data + *offset);
+  *offset += 4;
   return value;
 }
 
-static uint64_t read_uint64_be_pos(const uint8_t *data, int *pos) {
-  uint64_t high = read_uint32_be_pos(data, pos);
-  uint64_t low = read_uint32_be_pos(data, pos);
+static uint64_t read_uint64_be_offset(const uint8_t *data, int *offset) {
+  uint64_t high = read_uint32_be_offset(data, offset);
+  uint64_t low = read_uint32_be_offset(data, offset);
   return (high << 32) | low;
 }
 
-static void read_account_pos(const uint8_t *data, int *pos, uint8_t *account) {
-  memcpy(account, data + *pos, 32);
-  *pos += 32;
+static void read_account_offset(const uint8_t *data, int *offset, uint8_t *account) {
+  memcpy(account, data + *offset, STELLAR_PUBKEY_RAW_SIZE);
+  *offset += STELLAR_PUBKEY_RAW_SIZE;
 }
 
-static int read_string_pos(const uint8_t *data,
-                           int *pos,
+static int read_string_offset(const uint8_t *data,
+                           int *offset,
                            char *str,
                            int max_len,
                            int data_len) {
-  if (*pos + 4 > data_len)
+  if (*offset + 4 > data_len)
     return -1;
 
-  uint32_t len = read_uint32_be_pos(data, pos);
-  if (len >= max_len || *pos + len > data_len)
+  uint32_t len = read_uint32_be_offset(data, offset);
+  if (len >= max_len || *offset + len > data_len)
     return -1;
 
   // Calculate padded length (round up to 4-byte boundary)
   int padded_len = ((len + 3) / 4) * 4;
-  if (*pos + padded_len > data_len)
+  if (*offset + padded_len > data_len)
     return -1;
 
-  memcpy(str, data + *pos, len);
+  memcpy(str, data + *offset, len);
   str[len] = '\0';
-  *pos += padded_len;    // Skip data + padding in one go
+  *offset += padded_len;    // Skip data + padding in one go
 
   return len;
 }
@@ -142,21 +142,20 @@ static int read_string_pos(const uint8_t *data,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-// Helper function 1: Parse memo data
 static int parse_memo_data(const uint8_t *xdr,
-                           int *pos,
+                           int *offset,
                            int xdr_len,
                            stellar_transaction_t *tx) {
-  tx->memo_type = (stellar_memo_type_t)read_uint32_be_pos(xdr, pos);
+  tx->memo_type = (stellar_memo_type_t)read_uint32_be_offset(xdr, offset);
 
   switch (tx->memo_type) {
-    case MEMO_NONE:
+    case STELLAR_MEMO_NONE:
       break;
 
-    case MEMO_TEXT: {
+    case STELLAR_MEMO_TEXT: {
       char temp_memo[64];
       int memo_len =
-          read_string_pos(xdr, pos, temp_memo, sizeof(temp_memo), xdr_len);
+          read_string_offset(xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
       if (memo_len < 0) {
         return -1;
       }
@@ -164,17 +163,17 @@ static int parse_memo_data(const uint8_t *xdr,
       tx->memo.text[sizeof(tx->memo.text) - 1] = '\0';
     } break;
 
-    case MEMO_ID:
-      tx->memo.id = read_uint64_be_pos(xdr, pos);
+    case STELLAR_MEMO_ID:
+      tx->memo.id = read_uint64_be_offset(xdr, offset);
       break;
 
-    case MEMO_HASH:
-    case MEMO_RETURN:
-      if (*pos + 32 > xdr_len) {
+    case STELLAR_MEMO_HASH:
+    case STELLAR_MEMO_RETURN:
+      if (*offset + 32 > xdr_len) {
         return -1;
       }
-      memcpy(tx->memo.hash, xdr + *pos, 32);
-      *pos += 32;
+      memcpy(tx->memo.hash, xdr + *offset, 32);
+      *offset += 32;
       break;
 
     default:
@@ -184,67 +183,57 @@ static int parse_memo_data(const uint8_t *xdr,
   return 0;
 }
 
-// Helper function 2: Parse operation data
-// Parse XDR transaction envelope format
-// See
-// https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
 static int parse_operation_data(const uint8_t *xdr,
-                                int *pos,
+                                int *offset,
                                 int xdr_len,
                                 stellar_transaction_t *tx,
                                 stellar_payment_t *payment) {
   // Parse Operations count
-  tx->operation_count = read_uint32_be_pos(xdr, pos);
+  tx->operation_count = read_uint32_be_offset(xdr, offset);
 
   if (tx->operation_count == 0) {
     return -1;
   }
 
   // Parse First Operation
-  uint32_t has_source_account = read_uint32_be_pos(xdr, pos);
+  uint32_t has_source_account = read_uint32_be_offset(xdr, offset);
 
   if (has_source_account == 1) {
-    *pos += 36;
+    *offset += 36;  // Skip source account (4 bytes type + 32 bytes key)
   } else if (has_source_account != 0) {
     return -1;
   }
 
   // Parse operation type
-  uint32_t operation_type = read_uint32_be_pos(xdr, pos);
+  uint32_t operation_type = read_uint32_be_offset(xdr, offset);
 
-  if (operation_type != 1 && operation_type != 0) {
+  if (operation_type != STELLAR_OPERATION_PAYMENT && 
+      operation_type != STELLAR_OPERATION_CREATE_ACCOUNT) {
     return -1;
   }
-  tx->operation_type = operation_type;
+  tx->operation_type = (stellar_operation_type_t)operation_type;
 
-  if (operation_type == 0) {    // CREATE_ACCOUNT
-    uint32_t dest_account_type = read_uint32_be_pos(xdr, pos);
-    if (dest_account_type != 0) {
+  // Parse destination account (common for both operations)
+  uint32_t dest_account_type = read_uint32_be_offset(xdr, offset);
+  if (dest_account_type != STELLAR_KEY_TYPE_ED25519) {
+    return -1;
+  }
+  read_account_offset(xdr, offset, payment->destination);
+
+  // For PAYMENT operations, we need to parse the asset type
+  if (operation_type == STELLAR_OPERATION_PAYMENT) {
+    uint32_t asset_type = read_uint32_be_offset(xdr, offset);
+    if (asset_type != STELLAR_ASSET_TYPE_NATIVE) {
       return -1;
     }
-    read_account_pos(xdr, pos, payment->destination);
-    payment->amount = read_uint64_be_pos(xdr, pos);
-    return 0;    // Early return for CREATE_ACCOUNT
   }
 
-  // PAYMENT Operation
-  uint32_t dest_account_type = read_uint32_be_pos(xdr, pos);
-  if (dest_account_type != 0) {
-    return -1;
-  }
-
-  read_account_pos(xdr, pos, payment->destination);
-
-  uint32_t asset_type = read_uint32_be_pos(xdr, pos);
-  if (asset_type != 0) {
-    return -1;
-  }
-
-  payment->amount = read_uint64_be_pos(xdr, pos);
+  // Parse amount (common for both operations)
+  payment->amount = read_uint64_be_offset(xdr, offset);
+  
   return 0;
 }
 
-// Main function - much simpler now
 int stellar_parse_transaction(const uint8_t *xdr,
                               int xdr_len,
                               stellar_transaction_t *tx,
@@ -253,58 +242,54 @@ int stellar_parse_transaction(const uint8_t *xdr,
     return -1;
   }
 
-  int pos = 0;
+  int offset = 0;
 
-  // Clear structures
   memset(tx, 0, sizeof(stellar_transaction_t));
   memset(payment, 0, sizeof(stellar_payment_t));
 
-  // 1. Parse Envelope Type (4 bytes)
-  // ENVELOPE_TYPE_TX = 2
-  // See
-  // https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md
-  uint32_t envelope_type = read_uint32_be_pos(xdr, &pos);
-  if (envelope_type != 2) {
+  // Parse Envelope Type (4 bytes)
+  uint32_t envelope_type = read_uint32_be_offset(xdr, &offset);
+  if (envelope_type != STELLAR_ENVELOPE_TYPE_TX) {
     return -1;
   }
 
-  // 2. Parse Source Account
-  uint32_t source_account_type = read_uint32_be_pos(xdr, &pos);
-  if (source_account_type != 0) {
+  // Parse Source Account
+  uint32_t source_account_type = read_uint32_be_offset(xdr, &offset);
+  if (source_account_type != STELLAR_KEY_TYPE_ED25519) {
     return -1;
   }
 
-  read_account_pos(xdr, &pos, tx->source_account);
+  read_account_offset(xdr, &offset, tx->source_account);
 
-  // 3. Parse Fee (4 bytes)
-  tx->fee = read_uint32_be_pos(xdr, &pos);
+  // Parse Fee (4 bytes)
+  tx->fee = read_uint32_be_offset(xdr, &offset);
 
-  // 4. Parse Sequence Number (8 bytes)
-  tx->sequence_number = read_uint64_be_pos(xdr, &pos);
+  // Parse Sequence Number (8 bytes)
+  tx->sequence_number = read_uint64_be_offset(xdr, &offset);
 
-  // 5. Parse Preconditions
-  uint32_t preconditions_type = read_uint32_be_pos(xdr, &pos);
+  // Parse Preconditions
+  uint32_t preconditions_type = read_uint32_be_offset(xdr, &offset);
 
   if (preconditions_type == 1) {
-    pos += 16;
+    offset += 16;  // Skip time bounds (8 + 8 bytes)
   } else if (preconditions_type != 0) {
     return -1;
   }
 
-  // 6. Parse Memo
-  if (parse_memo_data(xdr, &pos, xdr_len, tx) != 0) {
+  // Parse Memo
+  if (parse_memo_data(xdr, &offset, xdr_len, tx) != 0) {
     return -1;
   }
 
-  // 7. Parse Operations
-  int result = parse_operation_data(xdr, &pos, xdr_len, tx, payment);
+  // Parse Operations
+  int result = parse_operation_data(xdr, &offset, xdr_len, tx, payment);
   if (result != 0) {
     return result;
   }
 
-  // 8. Skip transaction extension
-  if (pos + 4 <= xdr_len) {
-    read_uint32_be_pos(xdr, &pos);
+  // Skip transaction extension
+  if (offset + 4 <= xdr_len) {
+    read_uint32_be_offset(xdr, &offset);
   }
 
   return 0;
