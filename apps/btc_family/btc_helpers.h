@@ -149,7 +149,7 @@ void format_value(uint64_t value_in_sat, char *msg, size_t msg_len);
  * @return 1 if successful and 0 if failure.
  */
 int btc_get_taproot_address(uint8_t *public_key,
-                             const char *hrp,
-                             char *address);
+                            const char *hrp,
+                            char *address);
 
 #endif
