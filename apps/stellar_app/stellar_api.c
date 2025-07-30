@@ -1,15 +1,15 @@
 /**
- * @file    core_flow_init.c
+ * @file    stellar_api.c
  * @author  Cypherock X1 Team
- * @brief
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   Defines helpers apis for Stellar app.
+ * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2025 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,37 +59,15 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "constellation_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "exchange_main.h"
-#include "fantom_app.h"
-#include "icp_main.h"
-#include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "starknet_main.h"
-#include "stellar_main.h"
-#include "tron_main.h"
-#include "xrp_main.h"
+#include "stellar_api.h"
+
+#include <pb_decode.h>
+#include <pb_encode.h>
+
+#include "common_error.h"
+#include "core_api.h"
+#include "events.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,7 +76,6 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -107,13 +84,6 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -130,67 +100,99 @@ engine_ctx_t core_step_engine_ctx = {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
-
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
+bool decode_stellar_query(const uint8_t *data,
+                          uint16_t data_size,
+                          stellar_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
 
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(stellar_query_t));
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, STELLAR_QUERY_FIELDS, query_out);
+
+  /* Send error to host if status is false*/
+  if (false == status) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
   }
 
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
-
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+  return status;
 }
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  registry_add_app(get_starknet_app_desc());
-  registry_add_app(get_constellation_app_desc());
-  registry_add_app(get_icp_app_desc());
-  registry_add_app(get_exchange_app_desc());
-  registry_add_app(get_stellar_app_desc());
+bool encode_stellar_result(const stellar_result_t *result,
+                           uint8_t *buffer,
+                           uint16_t max_buffer_len,
+                           size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, STELLAR_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
+  }
+
+  return status;
+}
+
+bool check_stellar_query(const stellar_query_t *query,
+                         pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+stellar_result_t init_stellar_result(pb_size_t result_tag) {
+  stellar_result_t result = STELLAR_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void stellar_send_error(pb_size_t which_error, uint32_t error_code) {
+  stellar_result_t result =
+      init_stellar_result(STELLAR_RESULT_COMMON_ERROR_TAG);
+  result.common_error = init_common_error(which_error, error_code);
+  stellar_send_result(&result);
+}
+
+void stellar_send_result(const stellar_result_t *result) {
+  // TODO: Set all option files
+  uint8_t buffer[1700] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_stellar_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  send_response_to_host(&buffer[0], bytes_encoded);
+}
+
+bool stellar_get_query(stellar_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
+  }
+
+  if (!decode_stellar_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
+
+  if (!check_stellar_query(query, exp_query_tag)) {
+    return false;
+  }
+
+  return true;
 }
