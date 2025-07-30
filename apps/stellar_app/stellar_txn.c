@@ -214,6 +214,8 @@ static int create_signature_base(const char *network_passphrase,
 /**
  * @brief Creates ED25519 signature for Stellar transaction
  * @details Signs the transaction hash using ED25519 algorithm
+ * See
+ * https://github.com/trezor/trezor-firmware/blob/main/core/src/apps/stellar/sign_tx.py
  *
  * @param tx Parsed transaction structure
  * @param payment Parsed payment operation structure
