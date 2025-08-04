@@ -422,7 +422,6 @@ extern const char *ui_text_send_logs_prompt;
 extern const char *ui_text_memo_text;
 extern const char *ui_text_memo_id;
 extern const char *ui_text_memo_hash;
-extern const char *ui_text_operation;
 extern const char *ui_text_memo_unknown;
 extern const char *ui_text_memo_hash_prefix;
 

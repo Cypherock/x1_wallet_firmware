@@ -589,6 +589,5 @@ const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 const char *ui_text_memo_text = "Memo: \"%s\"";
 const char *ui_text_memo_id = "Memo ID: %llu";
 const char *ui_text_memo_hash = "Memo Hash: %s";
-const char *ui_text_operation = "Operation: %s";
 const char *ui_text_memo_unknown = "Memo: (unknown type %u)";
 const char *ui_text_memo_hash_prefix = "Memo Hash: ";
