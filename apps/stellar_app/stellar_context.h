@@ -68,26 +68,31 @@ typedef enum {
   STELLAR_OPERATION_PAYMENT = 1
 } stellar_operation_type_t;
 
-// Stellar transaction structures
-// See https://developers.stellar.org/docs/learn/encyclopedia/data-format/xdr
+// Custom generic structure for Stellar operation data
+// So far we only support create account and payment operations with native
+// asset only
 typedef struct {
-  uint8_t source_account[32];
+  stellar_operation_type_t type;
+  uint8_t destination[STELLAR_PUBKEY_RAW_SIZE];
+  uint64_t amount;
+} stellar_operation_data_t;
+
+// Stellar transaction structures
+// See
+// https://github.com/stellar/stellar-xdr/blob/curr/Stellar-transaction.x#L911
+typedef struct {
+  uint8_t source_account[STELLAR_PUBKEY_RAW_SIZE];
   uint64_t sequence_number;
   uint32_t fee;
-  uint32_t operation_count;
-  stellar_operation_type_t operation_type;
   stellar_memo_type_t memo_type;
   union {
     char text[29];       // STELLAR_MEMO_TEXT (max 28 bytes + 1 byte delimiter)
     uint64_t id;         // STELLAR_MEMO_ID
     uint8_t hash[32];    // STELLAR_MEMO_HASH or STELLAR_MEMO_RETURN(32 bytes)
   } memo;
+  uint32_t operation_count;
+  stellar_operation_data_t operations[1];    // Only one operation supported
 } stellar_transaction_t;
-
-typedef struct {
-  uint8_t destination[32];
-  uint64_t amount;
-} stellar_payment_t;
 
 typedef enum {
   STELLAR_NETWORK_MAINNET = 0,

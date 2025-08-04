@@ -371,20 +371,16 @@ static bool fetch_valid_input(stellar_query_t *query) {
 
   stellar_txn_context->txn =
       (stellar_transaction_t *)malloc(sizeof(stellar_transaction_t));
-  stellar_txn_context->payment =
-      (stellar_payment_t *)malloc(sizeof(stellar_payment_t));
 
-  int signature_data_len = 0;
   if (stellar_parse_transaction(stellar_txn_context->transaction,
                                 total_size,
                                 stellar_txn_context->txn,
-                                stellar_txn_context->payment,
-                                &signature_data_len) != 0) {
+                                &stellar_txn_context->txn_signature_data_len) !=
+      0) {
     stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
-  stellar_txn_context->signature_data_len = signature_data_len;
 
   return true;
 }
@@ -429,12 +425,12 @@ static bool show_memo_details(const stellar_transaction_t *decoded_txn) {
 
 static bool get_user_verification(void) {
   const stellar_transaction_t *decoded_txn = stellar_txn_context->txn;
-  const stellar_payment_t *payment = stellar_txn_context->payment;
 
   char to_address[STELLAR_ADDRESS_LENGTH] = "";
 
   // Generate addresses for display
-  if (!stellar_generate_address(payment->destination, to_address)) {
+  if (!stellar_generate_address(decoded_txn->operations[0].destination,
+                                to_address)) {
     stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
   }
@@ -454,7 +450,7 @@ static bool get_user_verification(void) {
 
   // Show amount
   char amount_string[30] = {'\0'};
-  double decimal_amount = (double)payment->amount;
+  double decimal_amount = (double)decoded_txn->operations[0].amount;
   decimal_amount *= 1e-7;    // Convert stroops to XLM
   snprintf(amount_string, sizeof(amount_string), "%.7f", decimal_amount);
 
@@ -498,7 +494,8 @@ static int create_signature_base(const char *network_passphrase,
 
   // Combine: network_hash + truncated_xdr (only signature-relevant part)
   memcpy(output, network_hash, SHA256_DIGEST_LENGTH);
-  memcpy(output + SHA256_DIGEST_LENGTH, transaction_xdr, txn_signature_data_len);
+  memcpy(
+      output + SHA256_DIGEST_LENGTH, transaction_xdr, txn_signature_data_len);
 
   return 0;
 }
@@ -507,7 +504,7 @@ static int stellar_create_signature(const uint8_t *private_key,
                                     const uint8_t *public_key,
                                     stellar_network_t network,
                                     uint8_t *signature) {
-  size_t txn_signature_data_len = stellar_txn_context->signature_data_len;
+  size_t txn_signature_data_len = stellar_txn_context->txn_signature_data_len;
   size_t base_len = SHA256_DIGEST_LENGTH + txn_signature_data_len;
   uint8_t signature_base[base_len];
   memzero(signature_base, base_len);
@@ -532,7 +529,8 @@ static int stellar_create_signature(const uint8_t *private_key,
 
   // Sign the hash
   ed25519_signature sig = {0};
-  ed25519_sign(transaction_hash, SHA256_DIGEST_LENGTH, private_key, public_key, sig);
+  ed25519_sign(
+      transaction_hash, SHA256_DIGEST_LENGTH, private_key, public_key, sig);
   memcpy(signature, sig, STELLAR_SIGNATURE_SIZE);
 
   return 0;
@@ -597,9 +595,7 @@ static bool send_signature(stellar_query_t *query,
     return false;
   }
 
-  memcpy(&result.sign_txn.signature,
-         signature,
-         sizeof(stellar_sig_t));
+  memcpy(&result.sign_txn.signature, signature, sizeof(stellar_sig_t));
 
   stellar_send_result(&result);
   return true;
@@ -628,9 +624,6 @@ void stellar_sign_transaction(stellar_query_t *query) {
     }
     if (stellar_txn_context->txn) {
       free(stellar_txn_context->txn);
-    }
-    if (stellar_txn_context->payment) {
-      free(stellar_txn_context->payment);
     }
     free(stellar_txn_context);
     stellar_txn_context = NULL;
