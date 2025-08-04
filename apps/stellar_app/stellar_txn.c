@@ -385,42 +385,42 @@ static bool fetch_valid_input(stellar_query_t *query) {
   return true;
 }
 
-static bool show_memo_details(const stellar_transaction_t *decoded_txn) {
-  if (decoded_txn->memo_type == STELLAR_MEMO_TEXT) {
-    char memo_display[100] = {'\0'};
-    snprintf(memo_display,
-             sizeof(memo_display),
-             ui_text_memo_text,
-             decoded_txn->memo.text);
-    return core_confirmation(memo_display, stellar_send_error);
-  } else if (decoded_txn->memo_type == STELLAR_MEMO_ID) {
-    char memo_display[50] = {'\0'};
-    snprintf(memo_display,
-             sizeof(memo_display),
-             ui_text_memo_id,
-             decoded_txn->memo.id);
-    return core_confirmation(memo_display, stellar_send_error);
-  } else if (decoded_txn->memo_type == STELLAR_MEMO_NONE) {
-    // Don't show anything for MEMO_NONE
-    return true;
-  } else if (decoded_txn->memo_type == STELLAR_MEMO_HASH ||
-             decoded_txn->memo_type == STELLAR_MEMO_RETURN) {
-    char memo_hash[80] = {'\0'};
-    char temp[3];
-    strcpy(memo_hash, ui_text_memo_hash_prefix);
-    for (int i = 0; i < 32; i++) {
-      snprintf(temp, sizeof(temp), "%02x", decoded_txn->memo.hash[i]);
-      strcat(memo_hash, temp);
+static bool verify_memo_details(const stellar_transaction_t *decoded_txn) {
+  char memo_display[100] = {'\0'};
+  switch (decoded_txn->memo_type) {
+    case STELLAR_MEMO_NONE: {
+      return true;
     }
-    return core_confirmation(memo_hash, stellar_send_error);
-  } else {
-    char memo_display[50] = {'\0'};
-    snprintf(memo_display,
-             sizeof(memo_display),
-             ui_text_memo_unknown,
-             decoded_txn->memo_type);
-    return core_confirmation(memo_display, stellar_send_error);
+    case STELLAR_MEMO_TEXT: {
+      (void)snprintf(memo_display,
+                     sizeof(memo_display),
+                     UI_TEXT_VERIFY_MEMO,
+                     decoded_txn->memo.text);
+      break;
+    }
+    case STELLAR_MEMO_ID: {
+      (void)snprintf(memo_display,
+                     sizeof(memo_display),
+                     UI_TEXT_VERIFY_MEMO_ID,
+                     decoded_txn->memo.id);
+      break;
+    }
+    case STELLAR_MEMO_HASH:
+    case STELLAR_MEMO_RETURN: {
+      char hex_hash[32 * 2 + 1] = "";
+      byte_array_to_hex_string(
+          decoded_txn->memo.hash, 32, hex_hash, sizeof(hex_hash));
+      (void)snprintf(memo_display,
+                     sizeof(memo_display),
+                     UI_TEXT_VERIFY_MEMO_HASH,
+                     hex_hash);
+      break;
+    }
+    default: {
+      return false;
+    }
   }
+  return core_confirmation(memo_display, stellar_send_error);
 }
 
 static bool get_user_verification(void) {
@@ -442,13 +442,13 @@ static bool get_user_verification(void) {
     }
   }
 
-  // Show destination address
+  // Verify destination address
   if (!core_scroll_page(
           ui_text_verify_address, to_address, stellar_send_error)) {
     return false;
   }
 
-  // Show amount
+  // Verify amount
   char amount_string[30] = {'\0'};
   double decimal_amount = (double)decoded_txn->operations[0].amount;
   decimal_amount *= 1e-7;    // Convert stroops to XLM
@@ -465,7 +465,7 @@ static bool get_user_verification(void) {
     return false;
   }
 
-  // Show fee
+  // Verify fee
   char fee_string[30] = {'\0'};
   double decimal_fee = (double)decoded_txn->fee;
   decimal_fee *= 1e-7;    // Convert stroops to XLM
@@ -483,7 +483,7 @@ static bool get_user_verification(void) {
   }
 
   // Handle memo display
-  if (!show_memo_details(decoded_txn)) {
+  if (!verify_memo_details(decoded_txn)) {
     return false;
   }
 
@@ -579,17 +579,14 @@ static bool sign_txn(uint8_t *signature) {
       STELLAR_NETWORK_MAINNET,
       signature);
 
-  if (result != 0) {
-    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    memzero(seed, sizeof(seed));
-    memzero(&node, sizeof(HDNode));
-    return false;
-  }
-
   // Clean up sensitive data
   memzero(seed, sizeof(seed));
   memzero(&node, sizeof(HDNode));
-  memzero(signature, sizeof(signature));
+
+  if (result != 0) {
+    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return false;
+  }
 
   return true;
 }

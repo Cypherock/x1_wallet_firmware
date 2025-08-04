@@ -121,7 +121,7 @@ static uint32_t read_xdr_string(const uint8_t *data,
   }
 
   // Calculate padded length (round up to 4-byte boundary)
-  int padded_len = ((len + 3) / 4) * 4;
+  uint32_t padded_len = ((len + 3) / 4) * 4;
   if (*offset + padded_len > data_len) {
     return 0;
   }
@@ -149,7 +149,7 @@ static int parse_memo_data(const uint8_t *xdr,
       break;
 
     case STELLAR_MEMO_TEXT: {
-      char temp_memo[64];
+      char temp_memo[64] = "";
       uint32_t memo_len =
           read_xdr_string(xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
       if (memo_len == 0 || memo_len >= sizeof(txn->memo.text)) {
