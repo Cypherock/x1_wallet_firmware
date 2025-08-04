@@ -95,7 +95,7 @@
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
-typedef stellar_sign_txn_signature_response_signature_t stellar_sig_t;
+typedef stellar_sign_txn_signature_response_t stellar_sig_t;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -185,13 +185,13 @@ static bool get_user_verification(void);
  * @details Seed reconstruction takes place within this function. Returns only
  * the 64-byte signature, not the full transaction envelope.
  *
- * @param signature_buffer Reference to buffer where the signature will be
+ * @param signature Reference to buffer where the signature will be
  * populated
  * @return true If the signature was computed successfully
  * @return false If signature could not be computed - maybe due to some error
  * during seed reconstruction phase
  */
-static bool sign_txn(stellar_sig_t *der_signature);
+static bool sign_txn(uint8_t *signature);
 
 /**
  * @brief Creates signature base data for Stellar transaction signing
@@ -199,34 +199,28 @@ static bool sign_txn(stellar_sig_t *der_signature);
  *
  * @param network_passphrase Network passphrase string (mainnet/testnet)
  * @param transaction_xdr Raw XDR transaction data
- * @param signature_data_len Length of signature-relevant XDR data
- * @param signature_base Output buffer for signature base data
- * @param base_len Output length of signature base data
+ * @param txn_signature_data_len Length of signature-relevant XDR data
+ * @param output Output buffer for signature base data
  * @return int 0 on success, non-zero on error
  */
 
 static int create_signature_base(const char *network_passphrase,
                                  uint8_t *transaction_xdr,
-                                 size_t signature_data_len,
-                                 uint8_t *signature_base,
-                                 int *base_len);
+                                 size_t txn_signature_data_len,
+                                 uint8_t *output);
 /**
  * @brief Creates ED25519 signature for Stellar transaction
  * @details Signs the transaction hash using ED25519 algorithm
  * See
  * https://github.com/trezor/trezor-firmware/blob/main/core/src/apps/stellar/sign_tx.py
  *
- * @param tx Parsed transaction structure
- * @param payment Parsed payment operation structure
  * @param private_key ED25519 private key for signing
  * @param public_key ED25519 public key for verification
  * @param network Target network (mainnet/testnet)
  * @param signature Output buffer for 64-byte signature
  * @return int 0 on success, non-zero on error
  */
-static int stellar_create_signature(stellar_transaction_t *tx,
-                                    stellar_payment_t *payment,
-                                    const uint8_t *private_key,
+static int stellar_create_signature(const uint8_t *private_key,
                                     const uint8_t *public_key,
                                     stellar_network_t network,
                                     uint8_t *signature);
@@ -243,7 +237,7 @@ static int stellar_create_signature(stellar_transaction_t *tx,
  * or invalid request received from the host
  */
 static bool send_signature(stellar_query_t *query,
-                           const stellar_sig_t *der_signature);
+                           const stellar_sig_t *signature);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -494,62 +488,58 @@ static bool get_user_verification(void) {
 
 static int create_signature_base(const char *network_passphrase,
                                  uint8_t *transaction_xdr,
-                                 size_t signature_data_len,
-                                 uint8_t *signature_base,
-                                 int *base_len) {
-  // 1. Hash network passphrase
-  uint8_t network_hash[32];
+                                 size_t txn_signature_data_len,
+                                 uint8_t *output) {
+  // Hash network passphrase
+  uint8_t network_hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw((const uint8_t *)network_passphrase,
              strlen(network_passphrase),
              network_hash);
 
-  // 2. Combine: network_hash + truncated_xdr (only signature-relevant part)
-  memcpy(signature_base, network_hash, 32);
-  memcpy(signature_base + 32, transaction_xdr, signature_data_len);
+  // Combine: network_hash + truncated_xdr (only signature-relevant part)
+  memcpy(output, network_hash, SHA256_DIGEST_LENGTH);
+  memcpy(output + SHA256_DIGEST_LENGTH, transaction_xdr, txn_signature_data_len);
 
-  *base_len = 32 + signature_data_len;
   return 0;
 }
 
-static int stellar_create_signature(stellar_transaction_t *tx,
-                                    stellar_payment_t *payment,
-                                    const uint8_t *private_key,
+static int stellar_create_signature(const uint8_t *private_key,
                                     const uint8_t *public_key,
                                     stellar_network_t network,
                                     uint8_t *signature) {
-  uint8_t signature_base[1024] = {0};
-  int base_len = 0;
+  size_t txn_signature_data_len = stellar_txn_context->signature_data_len;
+  size_t base_len = SHA256_DIGEST_LENGTH + txn_signature_data_len;
+  uint8_t signature_base[base_len];
+  memzero(signature_base, base_len);
 
-  // 1. Create signature base
+  // Create signature base
   const char *passphrase = (network == STELLAR_NETWORK_TESTNET)
                                ? TESTNET_PASSPHRASE
                                : MAINNET_PASSPHRASE;
 
   int result = create_signature_base(passphrase,
                                      stellar_txn_context->transaction,
-                                     stellar_txn_context->signature_data_len,
-                                     signature_base,
-                                     &base_len);
+                                     txn_signature_data_len,
+                                     signature_base);
 
   if (result != 0) {
     return result;
   }
 
-  // 2. Hash the signature base (this is what we actually sign)
-  uint8_t transaction_hash[32];
+  // Hash the signature base
+  uint8_t transaction_hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(signature_base, base_len, transaction_hash);
 
-  // 3. Sign the hash (32 bytes), not the raw signature base
+  // Sign the hash
   ed25519_signature sig = {0};
-  ed25519_sign(transaction_hash, 32, private_key, public_key, sig);
+  ed25519_sign(transaction_hash, SHA256_DIGEST_LENGTH, private_key, public_key, sig);
   memcpy(signature, sig, STELLAR_SIGNATURE_SIZE);
 
   return 0;
 }
 
-static bool sign_txn(stellar_sig_t *der_signature) {
+static bool sign_txn(uint8_t *signature) {
   uint8_t seed[64] = {0};
-  uint8_t signature[STELLAR_SIGNATURE_SIZE] = {0};
 
   // Reconstruct seed
   if (!reconstruct_seed(
@@ -577,8 +567,6 @@ static bool sign_txn(stellar_sig_t *der_signature) {
 
   // Create signature only (not full envelope)
   int result = stellar_create_signature(
-      stellar_txn_context->txn,
-      stellar_txn_context->payment,
       node.private_key,
       node.public_key + 1,    // Skip first byte for Stellar raw public key
       STELLAR_NETWORK_MAINNET,
@@ -591,10 +579,6 @@ static bool sign_txn(stellar_sig_t *der_signature) {
     return false;
   }
 
-  // Copy the 64-byte signature to output buffer
-  memcpy(der_signature->bytes, signature, STELLAR_SIGNATURE_SIZE);
-  der_signature->size = STELLAR_SIGNATURE_SIZE;
-
   // Clean up sensitive data
   memzero(seed, sizeof(seed));
   memzero(&node, sizeof(HDNode));
@@ -604,7 +588,7 @@ static bool sign_txn(stellar_sig_t *der_signature) {
 }
 
 static bool send_signature(stellar_query_t *query,
-                           const stellar_sig_t *der_signature) {
+                           const stellar_sig_t *signature) {
   stellar_result_t result = init_stellar_result(STELLAR_RESULT_SIGN_TXN_TAG);
   result.sign_txn.which_response = STELLAR_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
 
@@ -613,8 +597,8 @@ static bool send_signature(stellar_query_t *query,
     return false;
   }
 
-  memcpy(&result.sign_txn.signature.signature,
-         der_signature,
+  memcpy(&result.sign_txn.signature,
+         signature,
          sizeof(stellar_sig_t));
 
   stellar_send_result(&result);
@@ -629,11 +613,11 @@ void stellar_sign_transaction(stellar_query_t *query) {
       (stellar_txn_context_t *)malloc(sizeof(stellar_txn_context_t));
   memzero(stellar_txn_context, sizeof(stellar_txn_context_t));
 
-  stellar_sig_t der_signature = {0};
+  stellar_sig_t sig = {0};
 
   if (handle_initiate_query(query) && fetch_valid_input(query) &&
-      get_user_verification() && sign_txn(&der_signature) &&
-      send_signature(query, &der_signature)) {
+      get_user_verification() && sign_txn(sig.signature) &&
+      send_signature(query, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
