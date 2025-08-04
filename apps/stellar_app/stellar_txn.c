@@ -452,7 +452,7 @@ static bool get_user_verification(void) {
   char amount_string[30] = {'\0'};
   double decimal_amount = (double)decoded_txn->operations[0].amount;
   decimal_amount *= 1e-7;    // Convert stroops to XLM
-  snprintf(amount_string, sizeof(amount_string), "%.7f", decimal_amount);
+  snprintf(amount_string, sizeof(amount_string), "%.*g", 7, decimal_amount);
 
   char display[100] = {'\0'};
   snprintf(display,
@@ -466,9 +466,18 @@ static bool get_user_verification(void) {
   }
 
   // Show fee
+  char fee_string[30] = {'\0'};
+  double decimal_fee = (double)decoded_txn->fee;
+  decimal_fee *= 1e-7;    // Convert stroops to XLM
+  snprintf(fee_string, sizeof(fee_string), "%.*g", 7, decimal_fee);
+
   char fee_display[50] = {'\0'};
-  snprintf(
-      fee_display, sizeof(fee_display), "Fee: %lu stroops", decoded_txn->fee);
+  snprintf(fee_display,
+           sizeof(fee_display),
+           UI_TEXT_VERIFY_FEE,
+           fee_string,
+           STELLAR_LUNIT);
+
   if (!core_confirmation(fee_display, stellar_send_error)) {
     return false;
   }
