@@ -481,18 +481,4 @@ uint8_t string_to_escaped_string(const char *input,
                                  char *escaped_string,
                                  size_t out_len);
 
-/**
- * @brief Write 32-bit value in big-endian format
- * @param buffer Output buffer
- * @param value 32-bit value to write
- */
-void write_uint32_be(uint8_t *buffer, uint32_t value);
-
-/**
- * @brief Write 64-bit value in big-endian format
- * @param buffer Output buffer
- * @param value 64-bit value to write
- */
-void write_uint64_be(uint8_t *buffer, uint64_t value);
-
 #endif

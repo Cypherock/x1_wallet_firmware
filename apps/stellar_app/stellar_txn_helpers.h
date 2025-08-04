@@ -53,6 +53,7 @@
 int stellar_parse_transaction(const uint8_t *xdr,
                               int xdr_len,
                               stellar_transaction_t *tx,
-                              stellar_payment_t *payment);
+                              stellar_payment_t *payment,
+                              int *signature_data_len);
 
 #endif /* STELLAR_TXN_HELPERS_H */

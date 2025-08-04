@@ -97,34 +97,24 @@
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static uint32_t read_uint32_be_offset(const uint8_t *data, int *offset) {
-  uint32_t value = U32_READ_BE_ARRAY(data + *offset);
-  *offset += 4;
-  return value;
-}
-
-static uint64_t read_uint64_be_offset(const uint8_t *data, int *offset) {
-  uint64_t high = read_uint32_be_offset(data, offset);
-  uint64_t low = read_uint32_be_offset(data, offset);
-  return (high << 32) | low;
-}
-
-static void read_account_offset(const uint8_t *data,
-                                int *offset,
-                                uint8_t *account) {
+static void read_stellar_account(const uint8_t *data,
+                                 int *offset,
+                                 uint8_t *account) {
   memcpy(account, data + *offset, STELLAR_PUBKEY_RAW_SIZE);
   *offset += STELLAR_PUBKEY_RAW_SIZE;
 }
 
-static int read_string_offset(const uint8_t *data,
-                              int *offset,
-                              char *str,
-                              int max_len,
-                              int data_len) {
+static int read_xdr_string(const uint8_t *data,
+                           int *offset,
+                           char *str,
+                           int max_len,
+                           int data_len) {
   if (*offset + 4 > data_len)
     return -1;
 
-  uint32_t len = read_uint32_be_offset(data, offset);
+  uint32_t len = U32_READ_BE_ARRAY(data + *offset);
+  *offset += 4;
+
   if (len >= max_len || *offset + len > data_len)
     return -1;
 
@@ -148,7 +138,8 @@ static int parse_memo_data(const uint8_t *xdr,
                            int *offset,
                            int xdr_len,
                            stellar_transaction_t *tx) {
-  tx->memo_type = (stellar_memo_type_t)read_uint32_be_offset(xdr, offset);
+  tx->memo_type = (stellar_memo_type_t)U32_READ_BE_ARRAY(xdr + *offset);
+  *offset += 4;
 
   switch (tx->memo_type) {
     case STELLAR_MEMO_NONE:
@@ -156,8 +147,8 @@ static int parse_memo_data(const uint8_t *xdr,
 
     case STELLAR_MEMO_TEXT: {
       char temp_memo[64];
-      int memo_len = read_string_offset(
-          xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
+      int memo_len =
+          read_xdr_string(xdr, offset, temp_memo, sizeof(temp_memo), xdr_len);
       if (memo_len < 0) {
         return -1;
       }
@@ -166,7 +157,8 @@ static int parse_memo_data(const uint8_t *xdr,
     } break;
 
     case STELLAR_MEMO_ID:
-      tx->memo.id = read_uint64_be_offset(xdr, offset);
+      tx->memo.id = U64_READ_BE_ARRAY(xdr + *offset);
+      *offset += 8;
       break;
 
     case STELLAR_MEMO_HASH:
@@ -191,23 +183,38 @@ static int parse_operation_data(const uint8_t *xdr,
                                 stellar_transaction_t *tx,
                                 stellar_payment_t *payment) {
   // Parse Operations count
-  tx->operation_count = read_uint32_be_offset(xdr, offset);
+  tx->operation_count = U32_READ_BE_ARRAY(xdr + *offset);
+  *offset += 4;
 
-  if (tx->operation_count == 0) {
+  if (tx->operation_count != 1) {
     return -1;
   }
 
   // Parse First Operation
-  uint32_t has_source_account = read_uint32_be_offset(xdr, offset);
+  uint32_t has_source_account = U32_READ_BE_ARRAY(xdr + *offset);
+  *offset += 4;
 
   if (has_source_account == 1) {
-    *offset += 36;    // Skip source account (4 bytes type + 32 bytes key)
+    uint32_t op_source_type = U32_READ_BE_ARRAY(xdr + *offset);
+    *offset += 4;
+
+    if (op_source_type != STELLAR_KEY_TYPE_ED25519) {
+      return -1;
+    }
+
+    if (memcmp(xdr + *offset, tx->source_account, STELLAR_PUBKEY_RAW_SIZE) !=
+        0) {
+      return -1;
+    }
+
+    *offset += STELLAR_PUBKEY_RAW_SIZE;
   } else if (has_source_account != 0) {
     return -1;
   }
 
   // Parse operation type
-  uint32_t operation_type = read_uint32_be_offset(xdr, offset);
+  uint32_t operation_type = U32_READ_BE_ARRAY(xdr + *offset);
+  *offset += 4;
 
   if (operation_type != STELLAR_OPERATION_PAYMENT &&
       operation_type != STELLAR_OPERATION_CREATE_ACCOUNT) {
@@ -216,22 +223,25 @@ static int parse_operation_data(const uint8_t *xdr,
   tx->operation_type = (stellar_operation_type_t)operation_type;
 
   // Parse destination account (common for both operations)
-  uint32_t dest_account_type = read_uint32_be_offset(xdr, offset);
+  uint32_t dest_account_type = U32_READ_BE_ARRAY(xdr + *offset);
+  *offset += 4;
   if (dest_account_type != STELLAR_KEY_TYPE_ED25519) {
     return -1;
   }
-  read_account_offset(xdr, offset, payment->destination);
+  read_stellar_account(xdr, offset, payment->destination);
 
   // For PAYMENT operations, we need to parse the asset type
   if (operation_type == STELLAR_OPERATION_PAYMENT) {
-    uint32_t asset_type = read_uint32_be_offset(xdr, offset);
+    uint32_t asset_type = U32_READ_BE_ARRAY(xdr + *offset);
+    *offset += 4;
     if (asset_type != STELLAR_ASSET_TYPE_NATIVE) {
       return -1;
     }
   }
 
   // Parse amount (common for both operations)
-  payment->amount = read_uint64_be_offset(xdr, offset);
+  payment->amount = U64_READ_BE_ARRAY(xdr + *offset);
+  *offset += 8;
 
   return 0;
 }
@@ -239,7 +249,8 @@ static int parse_operation_data(const uint8_t *xdr,
 int stellar_parse_transaction(const uint8_t *xdr,
                               int xdr_len,
                               stellar_transaction_t *tx,
-                              stellar_payment_t *payment) {
+                              stellar_payment_t *payment,
+                              int *signature_data_len) {
   if (!xdr || !tx || !payment || xdr_len < 60) {
     return -1;
   }
@@ -250,27 +261,32 @@ int stellar_parse_transaction(const uint8_t *xdr,
   memset(payment, 0, sizeof(stellar_payment_t));
 
   // Parse Envelope Type (4 bytes)
-  uint32_t envelope_type = read_uint32_be_offset(xdr, &offset);
+  uint32_t envelope_type = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
   if (envelope_type != STELLAR_ENVELOPE_TYPE_TX) {
     return -1;
   }
 
   // Parse Source Account
-  uint32_t source_account_type = read_uint32_be_offset(xdr, &offset);
+  uint32_t source_account_type = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
   if (source_account_type != STELLAR_KEY_TYPE_ED25519) {
     return -1;
   }
 
-  read_account_offset(xdr, &offset, tx->source_account);
+  read_stellar_account(xdr, &offset, tx->source_account);
 
   // Parse Fee (4 bytes)
-  tx->fee = read_uint32_be_offset(xdr, &offset);
+  tx->fee = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
 
   // Parse Sequence Number (8 bytes)
-  tx->sequence_number = read_uint64_be_offset(xdr, &offset);
+  tx->sequence_number = U64_READ_BE_ARRAY(xdr + offset);
+  offset += 8;
 
   // Parse Preconditions
-  uint32_t preconditions_type = read_uint32_be_offset(xdr, &offset);
+  uint32_t preconditions_type = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
 
   if (preconditions_type == 1) {
     offset += 16;    // Skip time bounds (8 + 8 bytes)
@@ -291,8 +307,9 @@ int stellar_parse_transaction(const uint8_t *xdr,
 
   // Skip transaction extension
   if (offset + 4 <= xdr_len) {
-    read_uint32_be_offset(xdr, &offset);
+    offset += 4;    // Just skip the extension, don't need to read the value
   }
 
+  *signature_data_len = offset;
   return 0;
 }

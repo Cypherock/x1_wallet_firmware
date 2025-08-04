@@ -419,17 +419,11 @@ extern const char *ui_text_verify_account_id;
 extern const char *ui_text_send_logs_prompt;
 #endif
 
-// Stellar memo display texts
-#define UI_TEXT_STELLAR_MEMO_TEXT "Memo: \"%s\""
-#define UI_TEXT_STELLAR_MEMO_ID "Memo ID: %llu"
-#define UI_TEXT_STELLAR_MEMO_HASH "Memo Hash: %s"
-#define UI_TEXT_STELLAR_OPERATION "Operation: %s"
-#define UI_TEXT_STELLAR_MEMO_UNKNOWN "Memo: (unknown type %u)"
-
-extern const char *ui_text_stellar_memo_text;
-extern const char *ui_text_stellar_memo_id;
-extern const char *ui_text_stellar_memo_hash;
-extern const char *ui_text_stellar_operation;
-extern const char *ui_text_stellar_memo_unknown;
+extern const char *ui_text_memo_text;
+extern const char *ui_text_memo_id;
+extern const char *ui_text_memo_hash;
+extern const char *ui_text_operation;
+extern const char *ui_text_memo_unknown;
+extern const char *ui_text_memo_hash_prefix;
 
 #endif    // CONSTANT_TEXTS_H

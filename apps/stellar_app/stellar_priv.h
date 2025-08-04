@@ -34,6 +34,7 @@ typedef struct {
   // decoded transaction structures
   stellar_transaction_t *txn;
   stellar_payment_t *payment;
+  size_t signature_data_len;
 } stellar_txn_context_t;
 
 /*****************************************************************************
