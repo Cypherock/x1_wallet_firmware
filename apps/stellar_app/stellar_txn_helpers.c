@@ -286,12 +286,20 @@ int stellar_parse_transaction(const uint8_t *xdr,
   offset += 8;
 
   // Parse Preconditions
-  uint32_t preconditions_type = U32_READ_BE_ARRAY(xdr + offset);
+  txn->preconditions.type = U32_READ_BE_ARRAY(xdr + offset);
   offset += 4;
 
-  if (preconditions_type == 1) {
-    offset += 16;    // Skip time bounds (8 + 8 bytes)
-  } else if (preconditions_type != 0) {
+  if (txn->preconditions.type == STELLAR_PRECOND_TIME) {
+    if (offset + 16 > xdr_len) {
+      return -1;
+    }
+    txn->preconditions.preconditions.time_bounds.min_time =
+        U64_READ_BE_ARRAY(xdr + offset);
+    offset += 8;
+    txn->preconditions.preconditions.time_bounds.max_time =
+        U64_READ_BE_ARRAY(xdr + offset);
+    offset += 8;
+  } else if (txn->preconditions.type != STELLAR_PRECOND_NONE) {
     return -1;
   }
 
@@ -306,9 +314,14 @@ int stellar_parse_transaction(const uint8_t *xdr,
     return result;
   }
 
-  // Skip transaction extension
-  if (offset + 4 <= xdr_len) {
-    offset += 4;    // Just skip the extension, don't need to read the value
+  // Parse transaction extension
+  if (offset + 4 > xdr_len) {
+    return -1;
+  }
+  txn->ext.type = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
+  if (txn->ext.type != STELLAR_EXT_TYPE_EMPTY) {
+    return -1;    // Only empty extension is supported
   }
 
   *txn_signature_data_len = offset;
