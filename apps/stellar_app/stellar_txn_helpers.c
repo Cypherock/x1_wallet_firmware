@@ -120,7 +120,9 @@ static uint32_t read_xdr_string(const uint8_t *data,
     return 0;
   }
 
-  // Calculate padded length (round up to 4-byte boundary)
+  // Calculate padded length for 4-byte XDR alignment
+  // See
+  // https://github.com/stellar/js-xdr/blob/master/src/serialization/xdr-writer.js#L110
   uint32_t padded_len = ((len + 3) / 4) * 4;
   if (*offset + padded_len > data_len) {
     return 0;
@@ -128,7 +130,7 @@ static uint32_t read_xdr_string(const uint8_t *data,
 
   memcpy(str, data + *offset, len);
   str[len] = '\0';
-  *offset += padded_len;    // Skip data + padding in one go
+  *offset += padded_len;
 
   return len;
 }
