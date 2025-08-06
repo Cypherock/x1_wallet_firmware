@@ -35,7 +35,7 @@ typedef struct {
   stellar_transaction_t *txn;
 
   // holds the length of the xdr txn used for signing
-  uint32_t txn_signature_data_len;
+  uint32_t tagged_txn_len;
 } stellar_txn_context_t;
 
 /*****************************************************************************

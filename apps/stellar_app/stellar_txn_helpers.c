@@ -252,7 +252,7 @@ static int parse_operation_data(const uint8_t *xdr,
 int stellar_parse_transaction(const uint8_t *xdr,
                               uint32_t xdr_len,
                               stellar_transaction_t *txn,
-                              uint32_t *txn_signature_data_len) {
+                              uint32_t *tagged_txn_len) {
   if (!xdr || !txn || xdr_len < 60) {
     return -1;
   }
@@ -324,6 +324,17 @@ int stellar_parse_transaction(const uint8_t *xdr,
     return -1;    // Only empty extension is supported
   }
 
-  *txn_signature_data_len = offset;
+  *tagged_txn_len = offset;
+
+  uint32_t signature_count = U32_READ_BE_ARRAY(xdr + offset);
+  offset += 4;
+  if (signature_count != 0) {
+    return -1;    // No signatures expected in unsigned transaction
+  }
+
+  if (offset != xdr_len) {
+    return -1;    // Extra data in XDR
+  }
+
   return 0;
 }

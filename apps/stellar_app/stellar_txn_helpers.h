@@ -43,7 +43,7 @@
  * @param xdr_len Size in bytes of the XDR transaction
  * @param tx Reference to buffer where decoded transaction information will be
  * populated. It can be used at a later stage for user verification.
- * @param txn_signature_data_len Pointer to store the length of the XDR data
+ * @param tagged_txn_len Pointer to store the length of the tagged txn xdr
  * used for signing
  * @return int 0 if the parsing was successful, negative value if parsing failed
  * @retval 0 If the parsing was successful
@@ -53,6 +53,6 @@
 int stellar_parse_transaction(const uint8_t *xdr,
                               uint32_t xdr_len,
                               stellar_transaction_t *txn,
-                              uint32_t *txn_signature_data_len);
+                              uint32_t *tagged_txn_len);
 
 #endif /* STELLAR_TXN_HELPERS_H */
