@@ -142,7 +142,7 @@ bool stellar_generate_address(const uint8_t *public_key, char *address) {
   // Stellar address encoding (StrKey format)
   // See
   // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
-  uint8_t payload[35];
+  uint8_t payload[35] = {0};
   payload[0] = 0x30;    // Account ID version byte (6 << 3 | 0 = STRKEY_PUBKEY
                         // OR STRKEY_ALG_ED25519)
   memcpy(payload + 1, public_key, STELLAR_PUBKEY_RAW_SIZE);
