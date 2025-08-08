@@ -61,7 +61,7 @@
 #include "mpz_ecdsa.h"
 
 #include <bignum.h>
-#include <starknet_context.h>
+#include <../apps/starknet_app/starknet_context.h>
 
 #include "mini-gmp-helpers.h"
 #include <stdbool.h>
