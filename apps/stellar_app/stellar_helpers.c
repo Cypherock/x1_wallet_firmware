@@ -1,15 +1,15 @@
 /**
- * @file    core_flow_init.c
+ * @file    stellar_helpers.c
  * @author  Cypherock X1 Team
- * @brief
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   Utilities specific to Stellar chains
+ * @copyright Copyright (c) 2024 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2024 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -59,37 +59,11 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "core_flow_init.h"
 
-#include "app_registry.h"
-#include "application_startup.h"
-#include "arbitrum_app.h"
-#include "avalanche_app.h"
-#include "bsc_app.h"
-#include "btc_app.h"
-#include "btc_main.h"
-#include "constellation_main.h"
-#include "dash_app.h"
-#include "doge_app.h"
-#include "eth_app.h"
-#include "evm_main.h"
-#include "exchange_main.h"
-#include "fantom_app.h"
-#include "icp_main.h"
-#include "inheritance_main.h"
-#include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
-#include "near_main.h"
-#include "onboarding.h"
-#include "optimism_app.h"
-#include "polygon_app.h"
-#include "restricted_app.h"
-#include "solana_main.h"
-#include "starknet_main.h"
-#include "stellar_main.h"
-#include "tron_main.h"
-#include "xrp_main.h"
+#include "stellar_helpers.h"
+
+#include "base32.h"
+#include "stellar_context.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -98,99 +72,90 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
-#define CORE_ENGINE_BUFFER_SIZE 10
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Calculate CRC16 checksum for Stellar address encoding
+ * @param data Input data buffer
+ * @param len Length of input data
+ * @return CRC16 checksum
+ */
+static uint16_t crc16(const uint8_t *data, size_t len);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-flow_step_t *core_step_buffer[CORE_ENGINE_BUFFER_SIZE] = {0};
-engine_ctx_t core_step_engine_ctx = {
-    .array = &core_step_buffer[0],
-    .current_index = 0,
-    .max_capacity = sizeof(core_step_buffer) / sizeof(core_step_buffer[0]),
-    .num_of_elements = 0,
-    .size_of_element = sizeof(core_step_buffer[0])};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+static uint16_t crc16(const uint8_t *data, size_t len) {
+  uint16_t crc = 0x0000;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= data[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000)
+        crc = (crc << 1) ^ 0x1021;
+      else
+        crc <<= 1;
+    }
+  }
+  return crc;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-engine_ctx_t *get_core_flow_ctx(void) {
-  engine_reset_flow(&core_step_engine_ctx);
 
-  const manager_onboarding_step_t step = onboarding_get_last_step();
-  /// Check if onboarding is complete or not
-  if (MANAGER_ONBOARDING_STEP_COMPLETE != step) {
-    // reset partial-onboarding if auth flag is reset (which can happen via
-    // secure-bootloader). Refer PRF-7078
-    if (MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE < step &&
-        DEVICE_NOT_AUTHENTICATED == get_auth_state()) {
-      // bypass onboarding_set_step_done as we want to force reset
-      save_onboarding_step(MANAGER_ONBOARDING_STEP_VIRGIN_DEVICE);
-    }
-
-    // Skip onbaording for infield devices with pairing and/or wallets count is
-    // greater than zero
-    if ((get_wallet_count() > 0) || (get_keystore_used_count() > 0)) {
-      onboarding_set_step_done(MANAGER_ONBOARDING_STEP_COMPLETE);
-    } else {
-      engine_add_next_flow_step(&core_step_engine_ctx, onboarding_get_step());
-      return &core_step_engine_ctx;
-    }
+bool stellar_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels != STELLAR_IMPLICIT_ACCOUNT_DEPTH) {
+    return status;
   }
 
-  // Check if device needs to go to restricted state or not
-  if (DEVICE_AUTHENTICATED != get_auth_state()) {
-    engine_add_next_flow_step(&core_step_engine_ctx, restricted_app_get_step());
-    return &core_step_engine_ctx;
-  }
+  uint32_t purpose = path[0], coin = path[1], account = path[2];
 
-  if (MANAGER_ONBOARDING_STEP_COMPLETE == get_onboarding_step() &&
-      DEVICE_AUTHENTICATED == get_auth_state()) {
-    check_invalid_wallets();
-  }
+  // m/44'/148'/n' - support any hardened account index
+  status = (STELLAR_PURPOSE_INDEX == purpose && STELLAR_COIN_INDEX == coin &&
+            is_hardened(account));
 
-  // Finally enable all flows from the user
-  engine_add_next_flow_step(&core_step_engine_ctx, main_menu_get_step());
-  return &core_step_engine_ctx;
+  return status;
 }
 
-void core_init_app_registry() {
-  registry_add_app(get_manager_app_desc());
-  registry_add_app(get_btc_app_desc());
-  registry_add_app(get_ltc_app_desc());
-  registry_add_app(get_doge_app_desc());
-  registry_add_app(get_dash_app_desc());
-  registry_add_app(get_eth_app_desc());
-  registry_add_app(get_near_app_desc());
-  registry_add_app(get_polygon_app_desc());
-  registry_add_app(get_solana_app_desc());
-  registry_add_app(get_bsc_app_desc());
-  registry_add_app(get_fantom_app_desc());
-  registry_add_app(get_avalanche_app_desc());
-  registry_add_app(get_optimism_app_desc());
-  registry_add_app(get_arbitrum_app_desc());
-  registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
-  registry_add_app(get_xrp_app_desc());
-  registry_add_app(get_starknet_app_desc());
-  registry_add_app(get_constellation_app_desc());
-  registry_add_app(get_icp_app_desc());
-  registry_add_app(get_exchange_app_desc());
-  registry_add_app(get_stellar_app_desc());
+bool stellar_generate_address(const uint8_t *public_key, char *address) {
+  if (!public_key || !address) {
+    return false;
+  }
+
+  // Stellar address encoding (StrKey format)
+  // See
+  // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
+  uint8_t payload[35] = {0};
+  payload[0] = 0x30;    // Account ID version byte (6 << 3 | 0 = STRKEY_PUBKEY
+                        // OR STRKEY_ALG_ED25519)
+  memcpy(payload + 1, public_key, STELLAR_PUBKEY_RAW_SIZE);
+
+  // CRC16-XModem checksum calculation
+  // See
+  // https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
+  uint16_t checksum = crc16(payload, 33);
+  payload[33] = checksum & 0xFF;
+  payload[34] = checksum >> 8;
+
+  // RFC4648 base32 encoding without padding
+  base32_encode(
+      payload, 35, address, STELLAR_ADDRESS_LENGTH, BASE32_ALPHABET_RFC4648);
+  return true;
 }

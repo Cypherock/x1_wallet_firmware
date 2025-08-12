@@ -480,4 +480,5 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
 uint8_t string_to_escaped_string(const char *input,
                                  char *escaped_string,
                                  size_t out_len);
+
 #endif

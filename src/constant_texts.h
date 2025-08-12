@@ -61,6 +61,8 @@
 #define UI_TEXT_SIGN_MSG_PROMPT "Sign message on %s from %s"
 #define UI_TEXT_SIGN_DATA_PROMPT "Sign data on %s from %s"
 #define UI_TEXT_VERIFY_MEMO "Verify Memo\n%s"
+#define UI_TEXT_VERIFY_MEMO_ID "Verify Memo ID\n%llu"
+#define UI_TEXT_VERIFY_MEMO_HASH "Verify Memo Hash\n%s"
 #define UI_TEXT_CALLDATA "Calldata"
 
 // product hash
@@ -418,4 +420,5 @@ extern const char *ui_text_verify_account_id;
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
+
 #endif    // CONSTANT_TEXTS_H
