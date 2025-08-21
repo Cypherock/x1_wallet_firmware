@@ -127,7 +127,7 @@ void bech32_addr_encode(char *output,
   uint8_t data[65] = {0};
   size_t datalen = 0;
   convert_bits(data, &datalen, 5, address_bytes, byte_len, 8, 1);
-  bech32_encode(output, hrp, data, datalen);
+  bech32_encode(output, hrp, data, datalen, BECH32_ENCODING_BECH32);
 }
 
 FUNC_RETURN_CODES hd_path_array_to_string(const uint32_t *path,
