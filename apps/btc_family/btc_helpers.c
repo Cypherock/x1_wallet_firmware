@@ -62,10 +62,18 @@
 
 #include "btc_helpers.h"
 
+#include <stdint.h>
+#include <string.h>
+
+#include "bignum.h"
 #include "btc_priv.h"
 #include "coin_utils.h"
+#include "ecdsa.h"
 #include "flash_config.h"
+#include "secp256k1.h"
 #include "segwit_addr.h"
+#include "sha2.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -86,6 +94,12 @@
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+// sha256("TapTweak") used in BIP-340
+// This is used to derive the taproot address
+static const uint8_t tap_tweak_hash[32] = {
+    232, 15,  225, 99,  156, 156, 160, 80,  227, 175, 27,
+    57,  193, 67,  198, 62,  66,  156, 188, 235, 21,  217,
+    64,  251, 181, 197, 161, 244, 175, 87,  197, 233};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -94,6 +108,99 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+// Computes sha256(tap_tweak_hash + tap_tweak_hash + x_only_public_key +
+// root_hash) and stores the result in tweak_key_hash.
+static bool bip340_tweak_key_hash(const uint8_t *x_only_public_key,
+                                  const uint8_t *root_hash,
+                                  uint8_t tweak_key_hash[32]) {
+  if (NULL == x_only_public_key || NULL == tweak_key_hash) {
+    return false;
+  }
+
+  size_t payload_size =
+      32 * 3;    // tap_tweak_hash + tap_tweak_hash + x_only_public_key
+  if (root_hash != NULL) {
+    payload_size += 32;
+  }
+
+  uint8_t payload[payload_size];
+  memzero(payload, payload_size);
+  // Prepare the data for hashing
+  memcpy(payload, tap_tweak_hash, 32);
+  memcpy(payload + 32, tap_tweak_hash, 32);
+  memcpy(payload + 64, x_only_public_key, 32);
+  if (root_hash != NULL) {
+    memcpy(payload + 32 * 3, root_hash, 32);
+  }
+
+  sha256_Raw(payload, payload_size, tweak_key_hash);
+  return true;
+}
+
+// Calculates result = (public_key_point + tweak_key_hash * G).x
+static bool bip340_point_add_tweak(const ecdsa_curve *curve,
+                                   const uint8_t *public_key,
+                                   const uint8_t *tweak_key_hash,
+                                   uint8_t result[32]) {
+  if (NULL == public_key || NULL == tweak_key_hash || NULL == result) {
+    return false;
+  }
+
+  curve_point public_key_point = {0};
+  if (!ecdsa_read_pubkey(curve, public_key, &public_key_point)) {
+    return false;
+  }
+
+  // Negate y-coordinate if it's odd
+  if (bn_is_odd(&public_key_point.y)) {
+    bn_subtract(&curve->prime, &public_key_point.y, &public_key_point.y);
+    bn_mod(&public_key_point.y, &curve->prime);
+  }
+
+  bignum256 tweak_hash_bn;
+  bn_read_be(tweak_key_hash, &tweak_hash_bn);
+  bn_mod(&tweak_hash_bn, &curve->order);
+
+  if (bn_is_zero(&tweak_hash_bn)) {
+    return false;
+  }
+
+  curve_point result_point = {0};
+  point_multiply(curve,
+                 &tweak_hash_bn,
+                 &curve->G,
+                 &result_point);    // result_point = tweak_hash_bn * G
+  point_add(curve,
+            &public_key_point,
+            &result_point);    // result_point = public_key_point + result_point
+
+  // take the x-coordinate of the result point
+  bn_write_be(&result_point.x, result);
+  return true;
+}
+
+// implementation of BIP-340 tweak public key for taproot without using
+// secp256k1 library
+static bool bip340_tweak_public_key(const uint8_t *public_key,
+                                    const uint8_t *root_hash,
+                                    uint8_t *tweaked_public_key) {
+  if (NULL == public_key || NULL == tweaked_public_key) {
+    return false;
+  }
+
+  uint8_t tweak_key_hash[32] = {0};
+  if (!bip340_tweak_key_hash(public_key + 1, root_hash, tweak_key_hash)) {
+    return false;
+  }
+
+  if (!bip340_point_add_tweak(
+          &secp256k1, public_key, tweak_key_hash, tweaked_public_key)) {
+    return false;
+  }
+
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -207,4 +314,19 @@ void format_value(const uint64_t value_in_sat,
   double fee_in_btc = 1.0 * value_in_sat / (SATOSHI_PER_BTC);
   snprintf(
       msg, msg_len, "%0.*f %s", precision, fee_in_btc, g_btc_app->lunit_name);
+}
+
+int btc_get_taproot_address(uint8_t *public_key,
+                            const char *hrp,
+                            char *address) {
+  if (NULL == public_key || NULL == hrp || NULL == address) {
+    return 0;
+  }
+
+  uint8_t tweaked_public_key[32] = {0};
+  if (!bip340_tweak_public_key(public_key, NULL, tweaked_public_key)) {
+    return 0;
+  }
+
+  return segwit_addr_encode(address, hrp, 1, tweaked_public_key, 32);
 }
