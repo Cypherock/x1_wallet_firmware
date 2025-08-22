@@ -1,16 +1,15 @@
 /**
- * @file    user_configuration.c
+ * @file    stellar_main.c
  * @author  Cypherock X1 Team
- * @brief   Source file containing helper functions to perform store user
- *          dependant configuration on the X1 vault
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   A common entry point to various Stellar coin actions supported.
+ * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2025 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -60,14 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include <stdbool.h>
 
-#include "constant_texts.h"
-#include "flash_api.h"
-#include "flash_struct.h"
-#include "settings_api.h"
-#include "ui_core_confirm.h"
-#include "ui_screens.h"
+#include "stellar_main.h"
+
+#include "status_api.h"
+#include "stellar_api.h"
+#include "stellar_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,79 +79,73 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * GLOBAL VARIABLES
+ *****************************************************************************/
+
+/*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
+/**
+ * @brief Entry point for the Stellar application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * Stellar app.
+ *
+ * @param usb_evt The USB event which triggered invocation of the Stellar app
+ */
+void stellar_main(usb_event_t usb_evt, const void *stellar_app_config);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
-/*****************************************************************************
- * GLOBAL VARIABLES
- *****************************************************************************/
+static const cy_app_desc_t stellar_app_desc = {.id = 25,
+                                               .version =
+                                                   {
+                                                       .major = 1,
+                                                       .minor = 0,
+                                                       .patch = 0,
+                                                   },
+                                               .app = stellar_main,
+                                               .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void stellar_main(usb_event_t usb_evt, const void *stellar_app_config) {
+  stellar_query_t query = STELLAR_QUERY_INIT_DEFAULT;
+
+  if (false == decode_stellar_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
+  }
+
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case STELLAR_QUERY_GET_PUBLIC_KEYS_TAG:
+    case STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
+      stellar_get_pub_keys(&query);
+      break;
+    }
+    case STELLAR_QUERY_SIGN_TXN_TAG: {
+      stellar_sign_transaction(&query);
+      break;
+    }
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_QUERY);
+      break;
+    }
+  }
+
+  return;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-void toggle_log_export(void) {
-  bool logging_enabled = is_logging_enabled();
-  const char *msg = ui_text_enable_log_export;
-
-  if (logging_enabled) {
-    msg = ui_text_disable_log_export;
-  }
-
-  if (core_confirmation(msg, NULL)) {
-    set_logging_config(logging_enabled ? LOGGING_DISABLED : LOGGING_ENABLED,
-                       FLASH_SAVE_NOW);
-  }
-
-  return;
-}
-
-void toggle_raw_calldata(void) {
-  bool raw_calldata_enabled = is_raw_calldata_enabled();
-
-  if (!raw_calldata_enabled &&
-      !core_scroll_page(NULL, ui_text_enable_raw_calldata, NULL)) {
-    return;
-  }
-
-  bool toggled_state =
-      raw_calldata_enabled ? RAW_CALLDATA_DISABLED : RAW_CALLDATA_ENABLED;
-  set_raw_calldata_config(toggled_state, FLASH_SAVE_NOW);
-
-  return;
-}
-
-void toggle_passphrase(void) {
-  bool passphrase_enabled = is_passphrase_enabled();
-  const char *msg = ui_text_enable_passphrase_step;
-
-  if (passphrase_enabled) {
-    msg = ui_text_disable_passphrase_step;
-  }
-
-  if (core_scroll_page(NULL, msg, NULL)) {
-    set_enable_passphrase(
-        passphrase_enabled ? PASSPHRASE_DISABLED : PASSPHRASE_ENABLED,
-        FLASH_SAVE_NOW);
-  }
-
-  return;
-}
-
-void rotate_display(void) {
-  if (core_confirmation(ui_text_rotate_display_confirm, NULL)) {
-    ui_rotate();
-    set_display_rotation(get_display_rotation() == LEFT_HAND_VIEW
-                             ? RIGHT_HAND_VIEW
-                             : LEFT_HAND_VIEW,
-                         FLASH_SAVE_NOW);
-  }
-  return;
+const cy_app_desc_t *get_stellar_app_desc() {
+  return &stellar_app_desc;
 }

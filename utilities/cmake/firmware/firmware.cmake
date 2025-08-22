@@ -325,7 +325,8 @@ ELSE()
         apps/icp_app
         apps/constellation_app
         apps/exchange_app
-
+        apps/stellar_app
+        
         # Common coin support sub-module includes for non-BTC builds
         common/coin_support/eth_sign_data  # Headers for eth_sign_data module
         common/coin_support/tron_parse_txn # Headers for tron_parse_txn module
@@ -342,6 +343,7 @@ ELSE()
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/xrp_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/constellation_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/icp_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/stellar_app>
     )
 ENDIF(BTC_ONLY)
 

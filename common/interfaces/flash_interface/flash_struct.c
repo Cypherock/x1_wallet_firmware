@@ -58,6 +58,7 @@
  */
 #include "flash_struct.h"
 
+#include <stdint.h>
 #include <string.h>
 
 #include "assert_conf.h"
@@ -84,7 +85,8 @@
   (6 + 3 + FAMILY_ID_SIZE + 3 + sizeof(uint32_t) + 3 +                         \
    (MAX_WALLETS_ALLOWED * ((15 * 3) + sizeof(Flash_Wallet))) + 3 +             \
    sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 +           \
-   sizeof(uint8_t))
+   sizeof(uint8_t)) +                                                          \
+      3 + sizeof(uint8_t)
 
 /// The size of tlv that will be read and written to flash. Since we read/write
 /// in multiples of 4 hence it is essential to make the size divisible by 4.
@@ -106,6 +108,7 @@ typedef enum Flash_tlv_tags {
   TAG_FLASH_TOGGLE_PASSPHRASE = 0x07,
   TAG_FLASH_TOGGLE_LOGS = 0x08,
   TAG_FLASH_ONBOARDING_STEP = 0x09,
+  TAG_FLASH_TOGGLE_RAW_CALLDATA = 0x10,
 
   TAG_FLASH_WALLET = 0x20,
   TAG_FLASH_WALLET_STATE = 0x21,
@@ -425,6 +428,12 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
                  TAG_FLASH_ONBOARDING_STEP,
                  sizeof(flash_struct->onboarding_step),
                  &(flash_struct->onboarding_step));
+  fill_flash_tlv(tlv,
+                 &index,
+                 TAG_FLASH_TOGGLE_RAW_CALLDATA,
+                 sizeof(flash_struct->enable_raw_calldata),
+                 &(flash_struct->enable_raw_calldata));
+
   tlv[4] = index - 6;
   tlv[5] = (index - 6) >> 8;
 
@@ -602,6 +611,11 @@ static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
 
       case TAG_FLASH_ONBOARDING_STEP: {
         memcpy(&(flash_struct->onboarding_step), tlv + index + 2, size);
+        break;
+      }
+
+      case TAG_FLASH_TOGGLE_RAW_CALLDATA: {
+        memcpy(&(flash_struct->enable_raw_calldata), tlv + index + 2, size);
         break;
       }
 

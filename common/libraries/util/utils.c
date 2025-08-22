@@ -668,3 +668,15 @@ uint8_t string_to_escaped_string(const char *input,
     return 0;
   }
 }
+
+void write_uint32_be(uint8_t *buffer, uint32_t value) {
+  buffer[0] = (value >> 24) & 0xFF;
+  buffer[1] = (value >> 16) & 0xFF;
+  buffer[2] = (value >> 8) & 0xFF;
+  buffer[3] = value & 0xFF;
+}
+
+void write_uint64_be(uint8_t *buffer, uint64_t value) {
+  write_uint32_be(buffer, (uint32_t)(value >> 32));
+  write_uint32_be(buffer + 4, (uint32_t)(value & 0xFFFFFFFF));
+}
