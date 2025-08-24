@@ -669,6 +669,8 @@ static bool sign_input(scrip_sig_t *signatures) {
 
   // populate hashes cache for segwit transaction types
   btc_segwit_init_cache(btc_txn_context);
+  // populate hashes cache for taproot transaction types
+  btc_taproot_init_cache(btc_txn_context);
   if (!derive_hdnode_from_path(hd_path, 3, SECP256K1_NAME, buffer, &node) ||
       false == validate_change_address(&node)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -702,10 +704,15 @@ static bool sign_input(scrip_sig_t *signatures) {
     }
 
     status = btc_digest_input(btc_txn_context, idx, buffer);
-    ecdsa_sign_digest(
-        curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
-    signatures[idx].size = btc_sig_to_script_sig(
-        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    if (TAPROOT_KEY_PATH == hd_path[0]) {
+      schnorrsig_sign32(t_node.private_key, buffer, signatures[idx].bytes, NULL);
+    }
+    else {
+      ecdsa_sign_digest(
+          curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
+      signatures[idx].size = btc_sig_to_script_sig(
+          signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    }
     if (0 == signatures[idx].size || false == status) {
       // early exit as digest could not be calculated
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
