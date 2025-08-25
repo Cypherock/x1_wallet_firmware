@@ -13,6 +13,7 @@
  * INCLUDES
  *****************************************************************************/
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "xrp_context.h"
@@ -50,5 +51,19 @@
 bool xrp_parse_transaction(const uint8_t *byte_array,
                            uint16_t byte_array_size,
                            xrp_unsigned_txn *utxn);
+
+/**
+ * @brief Parse transaction flags into human-readable strings
+ * @details Converts raw flag values into descriptive text for user display
+ *
+ * @param flags Raw flag value from transaction
+ * @param txn_type Transaction type (Payment or TrustSet)
+ * @param flag_buffer Buffer to store parsed flag strings
+ * @param buffer_size Size of the flag_buffer
+ */
+void parse_transaction_flags(uint32_t flags,
+                             uint16_t txn_type,
+                             char *flag_buffer,
+                             size_t buffer_size);
 
 #endif /* XRP_TXN_HELPERS_H */

@@ -25,7 +25,13 @@
 #define XRP_ACCOUNT_ADDRESS_LENGTH 34
 #define XRP_BASE58_DIGITS_ORDERED                                              \
   "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
-
+// See TrustSet flags:
+// https://xrpl.org/docs/references/protocol/transactions/types/trustset See
+// Payment flags:
+// https://xrpl.org/docs/references/protocol/transactions/types/payment
+#define XRP_TF_SET_NO_RIPPLE 0x00020000
+#define XRP_TF_CLEAR_NO_RIPPLE 0x00040000
+#define XRP_TF_PARTIAL_PAYMENTS 0x00020000
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -104,6 +110,21 @@ typedef struct {
   uint8_t SigningPubKey[33];
   uint8_t Account[20];
   uint8_t Destination[20];
+  bool has_LimitAmount;
+  bool has_Destination;
+  bool Amount_is_token;
+  uint8_t LimitAmount_currency[20];
+  uint8_t LimitAmount_issuer[20];
+  char LimitAmount_value[32];
+  uint8_t Amount_token_currency[20];
+  uint8_t Amount_token_issuer[20];
+  char Amount_token_value[32];
+  char Amount_token_currency_name[16];
+  char Amount_token_amount[32];
+  char Amount_token_issuer_address[35];
+  char LimitAmount_currency_name[16];
+  char LimitAmount_amount[32];
+  char LimitAmount_issuer_address[35];
 } xrp_unsigned_txn;
 
 /*****************************************************************************
