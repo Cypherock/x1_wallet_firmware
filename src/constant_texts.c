@@ -581,6 +581,17 @@ const char *ui_text_account_id = "Account Id";
 const char *ui_text_verify_principal_id = "Verify principal id";
 const char *ui_text_verify_account_id = "Verify account id";
 
+// XRP Specific
+const char *ui_text_transaction_type = "Transaction Type:";
+const char *ui_text_flags = "Flags:";
+const char *ui_text_currency = "Currency:";
+const char *ui_text_issuer = "Issuer:";
+const char *ui_text_limit_amount = "Limit Amount:";
+
+// XRP Transaction Types
+const char *ui_text_payment_txn = "Payment";
+const char *ui_text_trustset_txn = "Set Trust Line";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt = "Send logs to the cySync app?";
 #endif

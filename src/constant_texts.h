@@ -417,6 +417,15 @@ extern const char *ui_text_account_id;
 extern const char *ui_text_verify_principal_id;
 extern const char *ui_text_verify_account_id;
 
+// XRP
+extern const char *ui_text_transaction_type;
+extern const char *ui_text_flags;
+extern const char *ui_text_currency;
+extern const char *ui_text_issuer;
+extern const char *ui_text_limit_amount;
+extern const char *ui_text_payment_txn;
+extern const char *ui_text_trustset_txn;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
