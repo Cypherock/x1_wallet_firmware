@@ -67,6 +67,10 @@
 #include "manager_api.h"
 #include "manager_app.h"
 #include "onboarding.h"
+#include "version.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -110,16 +114,19 @@ static manager_get_device_info_response_t get_device_info(void);
  *****************************************************************************/
 
 static bool get_firmware_version(common_version_t *firmware_version) {
-  uint32_t version = get_fwVer();
-
-  if (NULL == firmware_version || 0 == version || 0xFFFFFFFF == version) {
+  if (NULL == firmware_version) {
     return false;
   }
 
-  firmware_version->major = (version >> 24) & 0xFF;
-  firmware_version->minor = (version >> 16) & 0xFF;
-  firmware_version->patch = version & 0xFFFF;
-  return true;
+  int major, minor, patch, build;
+  if (sscanf(FIRMWARE_VERSION, "%d.%d.%d.%d", &major, &minor, &patch, &build) == 4) {
+    firmware_version->major = major;
+    firmware_version->minor = minor;
+    firmware_version->patch = patch * 256 + build;
+    return true;
+  }
+
+  return false;
 }
 
 static manager_get_device_info_response_t get_device_info(void) {
