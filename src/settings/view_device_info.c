@@ -67,6 +67,7 @@
 #include "settings_api.h"
 #include "ui_screens.h"
 #include "ui_state_machine.h"
+#include "version.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -101,9 +102,7 @@ extern const char *GIT_REV;
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 void view_firmware_version(void) {
-  uint32_t blVersion = FW_get_bootloader_version(), fwVersion = get_fwVer();
-  uint16_t fwMajor = (fwVersion >> 24) & 0xFF,
-           fwMinor = (fwVersion >> 16) & 0xFF, fwPatch = fwVersion & 0xFFFF;
+  uint32_t blVersion = FW_get_bootloader_version();
   uint16_t blMajor = (blVersion >> 24) & 0xFF,
            blMinor = (blVersion >> 16) & 0xFF, blPatch = blVersion & 0xFFFF;
   char fw_msg[60] = {0}, bl_msg[60] = {0};
@@ -111,11 +110,9 @@ void view_firmware_version(void) {
 
   snprintf(fw_msg,
            sizeof(fw_msg),
-           UI_TEXT_FIRMWARE_VERSION,
-           fwMajor,
-           fwMinor,
-           fwPatch,
-           GIT_REV);
+           "Firmware Version\n%s-%s",
+           FIRMWARE_VERSION,
+           FIRMWARE_VARIANT);
   snprintf(bl_msg,
            sizeof(bl_msg),
            UI_TEXT_BOOTLOADER_VERSION,

@@ -178,7 +178,9 @@ else()
 endif()
 
 # Base include directories (always included)
-target_include_directories(${PROJECT} PRIVATE
+target_include_directories(${EXECUTABLE} PRIVATE
+        ${CMAKE_BINARY_DIR}
+
         apps/manager_app # Manager app is always included
 
         src/
