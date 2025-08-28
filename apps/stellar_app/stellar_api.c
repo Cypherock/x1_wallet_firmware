@@ -1,15 +1,15 @@
 /**
- * @file    get_device_info.c
+ * @file    stellar_api.c
  * @author  Cypherock X1 Team
- * @brief   Populates device info fields at runtime requests.
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   Defines helpers apis for Stellar app.
+ * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2025 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -60,17 +60,14 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "application_startup.h"
-#include "atca_status.h"
-#include "device_authentication_api.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "manager_app.h"
-#include "onboarding.h"
-#include "version.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stellar_api.h"
+
+#include <pb_decode.h>
+#include <pb_encode.h>
+
+#include "common_error.h"
+#include "core_api.h"
+#include "events.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -96,89 +93,106 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Returns the formatted semantic versioning.
- *
- * @param firmware_version
- * @return bool Status indicating the
- */
-static bool get_firmware_version(common_version_t *firmware_version);
-
-/**
- * @brief Return a filled instance of get_device_info_response_t.
- */
-static manager_get_device_info_response_t get_device_info(void);
-
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool get_firmware_version(common_version_t *firmware_version) {
-  if (NULL == firmware_version) {
-    return false;
-  }
-
-  int major, minor, patch, build;
-  if (sscanf(FIRMWARE_VERSION, "%d.%d.%d.%d", &major, &minor, &patch, &build) == 4) {
-    firmware_version->major = major;
-    firmware_version->minor = minor;
-    firmware_version->patch = patch * 256 + build;
-    return true;
-  }
-
-  return false;
-}
-
-static manager_get_device_info_response_t get_device_info(void) {
-  manager_get_device_info_response_t device_info =
-      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
-  uint32_t status = get_device_serial();
-
-  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
-  if (status != ATCA_SUCCESS) {
-    // TODO: Add specialized error codes in get_device_info response
-    ASSERT(false);
-  }
-
-  if (device_info.which_response ==
-      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
-    manager_get_device_info_result_response_t *result = &device_info.result;
-    result->has_firmware_version =
-        get_firmware_version(&result->firmware_version);
-    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    result->is_authenticated = is_device_authenticated();
-    result->is_initial =
-        (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
-    result->onboarding_step = onboarding_get_last_step();
-    
-    // Populate the firmware variant string based on the compile-time flag.
-    // This allows the client (CySync) to know which firmware variant is running.
-#ifdef BTC_ONLY_BUILD
-    strcpy(result->variant, "BTC_ONLY");
-#else
-    strcpy(result->variant, "MULTICOIN");
-#endif
-
-    // TODO: populate applet list (result->applet_list)
-  }
-
-  return device_info;
-}
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void get_device_info_flow(const manager_query_t *query) {
-  if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-      query->get_device_info.which_request) {
-    // set the relevant tags for error
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
-  } else {
-    manager_result_t result =
-        init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
-    result.get_device_info = get_device_info();
-    manager_send_result(&result);
+bool decode_stellar_query(const uint8_t *data,
+                          uint16_t data_size,
+                          stellar_query_t *query_out) {
+  if (NULL == data || NULL == query_out || 0 == data_size) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
   }
+
+  // zeroise for safety from garbage in the query reference
+  memzero(query_out, sizeof(stellar_query_t));
+
+  /* Create a stream that reads from the buffer. */
+  pb_istream_t stream = pb_istream_from_buffer(data, data_size);
+
+  /* Now we are ready to decode the message. */
+  bool status = pb_decode(&stream, STELLAR_QUERY_FIELDS, query_out);
+
+  /* Send error to host if status is false*/
+  if (false == status) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_DECODING_FAILED);
+  }
+
+  return status;
+}
+
+bool encode_stellar_result(const stellar_result_t *result,
+                           uint8_t *buffer,
+                           uint16_t max_buffer_len,
+                           size_t *bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out)
+    return false;
+
+  /* Create a stream that will write to our buffer. */
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, max_buffer_len);
+
+  /* Now we are ready to encode the message! */
+  bool status = pb_encode(&stream, STELLAR_RESULT_FIELDS, result);
+
+  if (true == status) {
+    *bytes_written_out = stream.bytes_written;
+  }
+
+  return status;
+}
+
+bool check_stellar_query(const stellar_query_t *query,
+                         pb_size_t exp_query_tag) {
+  if ((NULL == query) || (exp_query_tag != query->which_request)) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_QUERY);
+    return false;
+  }
+  return true;
+}
+
+stellar_result_t init_stellar_result(pb_size_t result_tag) {
+  stellar_result_t result = STELLAR_RESULT_INIT_ZERO;
+  result.which_response = result_tag;
+  return result;
+}
+
+void stellar_send_error(pb_size_t which_error, uint32_t error_code) {
+  stellar_result_t result =
+      init_stellar_result(STELLAR_RESULT_COMMON_ERROR_TAG);
+  result.common_error = init_common_error(which_error, error_code);
+  stellar_send_result(&result);
+}
+
+void stellar_send_result(const stellar_result_t *result) {
+  // TODO: Set all option files
+  uint8_t buffer[1700] = {0};
+  size_t bytes_encoded = 0;
+  ASSERT(encode_stellar_result(result, buffer, sizeof(buffer), &bytes_encoded));
+  send_response_to_host(&buffer[0], bytes_encoded);
+}
+
+bool stellar_get_query(stellar_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  if (true == event.p0_event.flag) {
+    return false;
+  }
+
+  if (!decode_stellar_query(
+          event.usb_event.p_msg, event.usb_event.msg_size, query)) {
+    return false;
+  }
+
+  if (!check_stellar_query(query, exp_query_tag)) {
+    return false;
+  }
+
+  return true;
 }

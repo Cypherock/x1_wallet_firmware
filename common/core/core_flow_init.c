@@ -91,6 +91,7 @@
 #include "polygon_app.h"
 #include "solana_main.h"
 #include "starknet_main.h"
+#include "stellar_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
 #endif    // BTC_ONLY_BUILD
@@ -199,5 +200,6 @@ void core_init_app_registry() {
   registry_add_app(get_constellation_app_desc());
   registry_add_app(get_icp_app_desc());
   registry_add_app(get_exchange_app_desc());
+  registry_add_app(get_stellar_app_desc());
 #endif
 }

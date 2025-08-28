@@ -1,15 +1,15 @@
 /**
- * @file    get_device_info.c
+ * @file    stellar_helpers.c
  * @author  Cypherock X1 Team
- * @brief   Populates device info fields at runtime requests.
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   Utilities specific to Stellar chains
+ * @copyright Copyright (c) 2024 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2024 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -60,17 +60,10 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "application_startup.h"
-#include "atca_status.h"
-#include "device_authentication_api.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "manager_app.h"
-#include "onboarding.h"
-#include "version.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stellar_helpers.h"
+
+#include "base32.h"
+#include "stellar_context.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,6 +78,18 @@
  *****************************************************************************/
 
 /*****************************************************************************
+ * STATIC FUNCTION PROTOTYPES
+ *****************************************************************************/
+
+/**
+ * @brief Calculate CRC16 checksum for Stellar address encoding
+ * @param data Input data buffer
+ * @param len Length of input data
+ * @return CRC16 checksum
+ */
+static uint16_t crc16(const uint8_t *data, size_t len);
+
+/*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
@@ -93,92 +98,64 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC FUNCTION PROTOTYPES
- *****************************************************************************/
-
-/**
- * @brief Returns the formatted semantic versioning.
- *
- * @param firmware_version
- * @return bool Status indicating the
- */
-static bool get_firmware_version(common_version_t *firmware_version);
-
-/**
- * @brief Return a filled instance of get_device_info_response_t.
- */
-static manager_get_device_info_response_t get_device_info(void);
-
-/*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool get_firmware_version(common_version_t *firmware_version) {
-  if (NULL == firmware_version) {
-    return false;
+static uint16_t crc16(const uint8_t *data, size_t len) {
+  uint16_t crc = 0x0000;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= data[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000)
+        crc = (crc << 1) ^ 0x1021;
+      else
+        crc <<= 1;
+    }
   }
-
-  int major, minor, patch, build;
-  if (sscanf(FIRMWARE_VERSION, "%d.%d.%d.%d", &major, &minor, &patch, &build) == 4) {
-    firmware_version->major = major;
-    firmware_version->minor = minor;
-    firmware_version->patch = patch * 256 + build;
-    return true;
-  }
-
-  return false;
-}
-
-static manager_get_device_info_response_t get_device_info(void) {
-  manager_get_device_info_response_t device_info =
-      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
-  uint32_t status = get_device_serial();
-
-  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
-  if (status != ATCA_SUCCESS) {
-    // TODO: Add specialized error codes in get_device_info response
-    ASSERT(false);
-  }
-
-  if (device_info.which_response ==
-      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
-    manager_get_device_info_result_response_t *result = &device_info.result;
-    result->has_firmware_version =
-        get_firmware_version(&result->firmware_version);
-    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    result->is_authenticated = is_device_authenticated();
-    result->is_initial =
-        (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
-    result->onboarding_step = onboarding_get_last_step();
-    
-    // Populate the firmware variant string based on the compile-time flag.
-    // This allows the client (CySync) to know which firmware variant is running.
-#ifdef BTC_ONLY_BUILD
-    strcpy(result->variant, "BTC_ONLY");
-#else
-    strcpy(result->variant, "MULTICOIN");
-#endif
-
-    // TODO: populate applet list (result->applet_list)
-  }
-
-  return device_info;
+  return crc;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-void get_device_info_flow(const manager_query_t *query) {
-  if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-      query->get_device_info.which_request) {
-    // set the relevant tags for error
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
-  } else {
-    manager_result_t result =
-        init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
-    result.get_device_info = get_device_info();
-    manager_send_result(&result);
+bool stellar_derivation_path_guard(const uint32_t *path, uint8_t levels) {
+  bool status = false;
+  if (levels != STELLAR_IMPLICIT_ACCOUNT_DEPTH) {
+    return status;
   }
+
+  uint32_t purpose = path[0], coin = path[1], account = path[2];
+
+  // m/44'/148'/n' - support any hardened account index
+  status = (STELLAR_PURPOSE_INDEX == purpose && STELLAR_COIN_INDEX == coin &&
+            is_hardened(account));
+
+  return status;
+}
+
+bool stellar_generate_address(const uint8_t *public_key, char *address) {
+  if (!public_key || !address) {
+    return false;
+  }
+
+  // Stellar address encoding (StrKey format)
+  // See
+  // https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md
+  uint8_t payload[35] = {0};
+  payload[0] = 0x30;    // Account ID version byte (6 << 3 | 0 = STRKEY_PUBKEY
+                        // OR STRKEY_ALG_ED25519)
+  memcpy(payload + 1, public_key, STELLAR_PUBKEY_RAW_SIZE);
+
+  // CRC16-XModem checksum calculation
+  // See
+  // https://stellar.stackexchange.com/questions/255/which-cryptographic-algorithm-is-used-to-generate-the-secret-and-public-keys
+  uint16_t checksum = crc16(payload, 33);
+  payload[33] = checksum & 0xFF;
+  payload[34] = checksum >> 8;
+
+  // RFC4648 base32 encoding without padding
+  base32_encode(
+      payload, 35, address, STELLAR_ADDRESS_LENGTH, BASE32_ALPHABET_RFC4648);
+  return true;
 }

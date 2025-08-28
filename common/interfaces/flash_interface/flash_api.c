@@ -1049,6 +1049,20 @@ uint8_t get_onboarding_step(void) {
   return flash_ram_instance.onboarding_step;
 }
 
+bool is_raw_calldata_enabled() {
+  get_flash_ram_instance();
+  return (flash_ram_instance.enable_raw_calldata == RAW_CALLDATA_ENABLED);
+}
+
+int set_raw_calldata_config(raw_calldata_config state,
+                            flash_save_mode save_mode) {
+  get_flash_ram_instance();
+  flash_ram_instance.enable_raw_calldata = state;
+  if (save_mode == FLASH_SAVE_NOW)
+    flash_struct_save();
+  return STM_SUCCESS;
+}
+
 const uint8_t *get_perm_self_key_id() {
   get_flash_perm_instance();
   return flash_perm_instance.permKeyData.ext_keys.self_key_id;

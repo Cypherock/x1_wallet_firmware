@@ -1,15 +1,15 @@
 /**
- * @file    get_device_info.c
+ * @file    stellar_main.c
  * @author  Cypherock X1 Team
- * @brief   Populates device info fields at runtime requests.
- * @copyright Copyright (c) 2023 HODL TECH PTE LTD
+ * @brief   A common entry point to various Stellar coin actions supported.
+ * @copyright Copyright (c) 2025 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2023 by HODL TECH PTE LTD
+ * (c) Copyright 2025 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -60,17 +60,11 @@
  * INCLUDES
  *****************************************************************************/
 
-#include "application_startup.h"
-#include "atca_status.h"
-#include "device_authentication_api.h"
-#include "flash_api.h"
-#include "manager_api.h"
-#include "manager_app.h"
-#include "onboarding.h"
-#include "version.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stellar_main.h"
+
+#include "status_api.h"
+#include "stellar_api.h"
+#include "stellar_priv.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -85,100 +79,73 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * STATIC VARIABLES
- *****************************************************************************/
-
-/*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
-
 /**
- * @brief Returns the formatted semantic versioning.
+ * @brief Entry point for the Stellar application of the X1 vault. It is invoked
+ * by the X1 vault firmware, as soon as there is a USB request raised for the
+ * Stellar app.
  *
- * @param firmware_version
- * @return bool Status indicating the
+ * @param usb_evt The USB event which triggered invocation of the Stellar app
  */
-static bool get_firmware_version(common_version_t *firmware_version);
+void stellar_main(usb_event_t usb_evt, const void *stellar_app_config);
 
-/**
- * @brief Return a filled instance of get_device_info_response_t.
- */
-static manager_get_device_info_response_t get_device_info(void);
+/*****************************************************************************
+ * STATIC VARIABLES
+ *****************************************************************************/
+
+static const cy_app_desc_t stellar_app_desc = {.id = 25,
+                                               .version =
+                                                   {
+                                                       .major = 1,
+                                                       .minor = 0,
+                                                       .patch = 0,
+                                                   },
+                                               .app = stellar_main,
+                                               .app_config = NULL};
 
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+void stellar_main(usb_event_t usb_evt, const void *stellar_app_config) {
+  stellar_query_t query = STELLAR_QUERY_INIT_DEFAULT;
 
-static bool get_firmware_version(common_version_t *firmware_version) {
-  if (NULL == firmware_version) {
-    return false;
+  if (false == decode_stellar_query(usb_evt.p_msg, usb_evt.msg_size, &query)) {
+    return;
   }
 
-  int major, minor, patch, build;
-  if (sscanf(FIRMWARE_VERSION, "%d.%d.%d.%d", &major, &minor, &patch, &build) == 4) {
-    firmware_version->major = major;
-    firmware_version->minor = minor;
-    firmware_version->patch = patch * 256 + build;
-    return true;
+  /* Set status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we are now
+   * servicing a USB initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+    case STELLAR_QUERY_GET_PUBLIC_KEYS_TAG:
+    case STELLAR_QUERY_GET_USER_VERIFIED_PUBLIC_KEY_TAG: {
+      stellar_get_pub_keys(&query);
+      break;
+    }
+    case STELLAR_QUERY_SIGN_TXN_TAG: {
+      stellar_sign_transaction(&query);
+      break;
+    }
+    default: {
+      /* In case we ever encounter invalid query, convey to the host app */
+      stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                         ERROR_DATA_FLOW_INVALID_QUERY);
+      break;
+    }
   }
 
-  return false;
-}
-
-static manager_get_device_info_response_t get_device_info(void) {
-  manager_get_device_info_response_t device_info =
-      MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
-  uint32_t status = get_device_serial();
-
-  device_info.which_response = MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG;
-  if (status != ATCA_SUCCESS) {
-    // TODO: Add specialized error codes in get_device_info response
-    ASSERT(false);
-  }
-
-  if (device_info.which_response ==
-      MANAGER_GET_DEVICE_INFO_RESPONSE_RESULT_TAG) {
-    manager_get_device_info_result_response_t *result = &device_info.result;
-    result->has_firmware_version =
-        get_firmware_version(&result->firmware_version);
-    memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
-    result->is_authenticated = is_device_authenticated();
-    result->is_initial =
-        (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
-    result->onboarding_step = onboarding_get_last_step();
-    
-    // Populate the firmware variant string based on the compile-time flag.
-    // This allows the client (CySync) to know which firmware variant is running.
-#ifdef BTC_ONLY_BUILD
-    strcpy(result->variant, "BTC_ONLY");
-#else
-    strcpy(result->variant, "MULTICOIN");
-#endif
-
-    // TODO: populate applet list (result->applet_list)
-  }
-
-  return device_info;
+  return;
 }
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-void get_device_info_flow(const manager_query_t *query) {
-  if (MANAGER_GET_DEVICE_INFO_REQUEST_INITIATE_TAG !=
-      query->get_device_info.which_request) {
-    // set the relevant tags for error
-    manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                       ERROR_DATA_FLOW_INVALID_REQUEST);
-  } else {
-    manager_result_t result =
-        init_manager_result(MANAGER_RESULT_GET_DEVICE_INFO_TAG);
-    result.get_device_info = get_device_info();
-    manager_send_result(&result);
-  }
+const cy_app_desc_t *get_stellar_app_desc() {
+  return &stellar_app_desc;
 }
