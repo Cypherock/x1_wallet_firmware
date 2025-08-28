@@ -116,6 +116,21 @@ void toggle_log_export(void) {
   return;
 }
 
+void toggle_raw_calldata(void) {
+  bool raw_calldata_enabled = is_raw_calldata_enabled();
+
+  if (!raw_calldata_enabled &&
+      !core_scroll_page(NULL, ui_text_enable_raw_calldata, NULL)) {
+    return;
+  }
+
+  bool toggled_state =
+      raw_calldata_enabled ? RAW_CALLDATA_DISABLED : RAW_CALLDATA_ENABLED;
+  set_raw_calldata_config(toggled_state, FLASH_SAVE_NOW);
+
+  return;
+}
+
 void toggle_passphrase(void) {
   bool passphrase_enabled = is_passphrase_enabled();
   const char *msg = ui_text_enable_passphrase_step;

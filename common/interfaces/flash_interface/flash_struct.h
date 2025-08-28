@@ -31,6 +31,12 @@ typedef enum log_config {
   LOGGING_ENABLED,
 } log_config;
 
+/// enum for raw calldata config
+typedef enum raw_calldata_config {
+  RAW_CALLDATA_DISABLED,
+  RAW_CALLDATA_ENABLED,
+} raw_calldata_config;
+
 /// enum to signify the wallet state
 typedef enum wallet_state {
   INVALID_WALLET = 1,
@@ -123,6 +129,7 @@ typedef struct Flash_Struct {
   uint8_t enable_passphrase;
   uint8_t enable_log;
   uint8_t onboarding_step;
+  uint8_t enable_raw_calldata;
 } Flash_Struct;
 #pragma pack(pop)
 

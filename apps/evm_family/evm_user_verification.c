@@ -67,8 +67,10 @@
 #include "evm_api.h"
 #include "evm_priv.h"
 #include "exchange_main.h"
+#include "flash_api.h"
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
+#include "utils.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -166,6 +168,8 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
   const char *unit = g_evm_app->lunit_name;
+  char hex_str[30] = {'\0'};
+  char value[34] = {'\0'};
   char fee[34] = "";
   char display[40] = "";
 
@@ -177,6 +181,24 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
 
   if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
     return false;
+  }
+
+  // verify recipient amount
+  uint8_t zeros[32] = {0};
+  if (memcmp(txn_context->transaction_info.value,
+             zeros,
+             txn_context->transaction_info.value_size[0]) != 0) {
+    uint8_t len = eth_get_value(txn_context, hex_str);
+    if (!convert_byte_array_to_decimal_string(
+            len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, unit);
+    if (!core_confirmation(display, evm_send_error)) {
+      return false;
+    }
   }
 
   // verify transaction fee
@@ -207,27 +229,71 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   bool status = false;
   const uint8_t *to_address = NULL;
   char address[43] = "0x";
-  char path_str[64] = "";
   char fee[34] = "";
   char display[40] = "";
+  char amount_display[40] = "";
+  uint8_t zeros[32] = {0};
+  bool verify_amount = false;
   const char *unit = g_evm_app->lunit_name;
-  const uint32_t *hd_path = txn_context->init_info.derivation_path;
-  size_t depth = txn_context->init_info.derivation_path_count;
 
   // TODO: decide on handling blind signing via wallet setting
   to_address = txn_context->transaction_info.to_address;
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
-  hd_path_array_to_string(hd_path, depth, false, path_str, sizeof(path_str));
+
   eth_get_fee_string(
       &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
-  // show warning for unknown EVM function; take user consent
-  if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
-      !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, path_str, evm_send_error) ||
-      !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
-      !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
-    return status;
+
+  // verify recipient amount
+  if (memcmp(txn_context->transaction_info.value,
+             zeros,
+             txn_context->transaction_info.value_size[0]) != 0) {
+    verify_amount = true;
+    char hex_str[30] = {'\0'};
+    char value[34] = {'\0'};
+    uint8_t len = eth_get_value(txn_context, hex_str);
+    if (!convert_byte_array_to_decimal_string(
+            len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(amount_display,
+             sizeof(amount_display),
+             UI_TEXT_VERIFY_AMOUNT,
+             value,
+             unit);
+  }
+
+  if (is_raw_calldata_enabled()) {
+    uint64_t data_size = txn_context->transaction_info.data_size;
+    char data_str[2 + data_size * 2 + 1];
+    snprintf(data_str, sizeof(data_str), "0x");
+    byte_array_to_hex_string(txn_context->transaction_info.data,
+                             data_size,
+                             data_str + 2,
+                             sizeof(data_str) - 2);
+    if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
+        !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_CALLDATA, data_str, evm_send_error)) {
+      return status;
+    }
+  } else {
+    char path_str[64] = "";
+    const uint32_t *hd_path = txn_context->init_info.derivation_path;
+    size_t depth = txn_context->init_info.derivation_path_count;
+    hd_path_array_to_string(hd_path, depth, false, path_str, sizeof(path_str));
+
+    // show warning for unknown EVM function; take user consent
+    if (!core_confirmation(UI_TEXT_BLIND_SIGNING_WARNING, evm_send_error) ||
+        !core_scroll_page(UI_TEXT_VERIFY_HD_PATH, path_str, evm_send_error) ||
+        !core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
+        (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
+        !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
+      return status;
+    }
   }
 
   return true;

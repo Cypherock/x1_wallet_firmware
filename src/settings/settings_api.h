@@ -44,6 +44,13 @@ void view_firmware_version(void);
 void toggle_log_export(void);
 
 /**
+ * @brief This function configures the X1 vault to enable/disable showing of
+ * raw calldata in txn
+ *
+ */
+void toggle_raw_calldata(void);
+
+/**
  * @brief This function configures the X1 vault to enable/disable usage of
  * passphrase on the X1 vault
  *

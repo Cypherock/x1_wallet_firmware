@@ -1,7 +1,7 @@
 /**
- * @file    settings_menu.c
+ * @file    advanced_settings_menu.c
  * @author  Cypherock X1 Team
- * @brief   Populate and handle setting menu options
+ * @brief   Populate and handle advanced setting menu options
  * @copyright Copyright (c) 2023 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
@@ -59,16 +59,12 @@
 /*****************************************************************************
  * INCLUDES
  *****************************************************************************/
-#include "settings_menu.h"
-
 #include "advanced_settings_menu.h"
+
 #include "constant_texts.h"
 #include "core_error_priv.h"
-#include "flash_api.h"
 #include "menu_priv.h"
 #include "settings_api.h"
-#include "ui_events.h"
-#include "ui_screens.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -82,47 +78,34 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 typedef enum {
-  RESTORE_WALLET_FROM_CARD = 1,
-  CHECK_CARD_HEALTH,
-  ROTATE_DISPLAY,
-  TOGGLE_LOG_EXPORT,
-  TOGGLE_PASSPHRASE,
-  CLEAR_DEVICE_DATA,
-  FACTORY_RESET_DEVICE,
-  VIEW_DEVICE_INFO,
-  VIEW_CARD_VERSION,
-  VIEW_REGULATORY_INFO,
-  PAIR_CARD,
-  ADVANCED_SETTINGS,
-#ifdef DEV_BUILD
-  TOGGLE_BUZZER,
-#endif
-} settings_options_e;
+  TOGGLE_RAW_CALLDATA = 1,
+} advanced_settings_options_e;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 /**
- * @brief This is the initializer callback for the settings menu.
+ * @brief This is the initializer callback for the advanced settings menu.
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param data_ptr Currently unused pointer set by the engine
  */
-static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr);
+static void advanced_settings_menu_initialize(engine_ctx_t *ctx,
+                                              const void *data_ptr);
 
 /**
- * @brief This is the UI event handler for the settings menu.
- * @details The function decodes the UI event and calls the settings flow
- * based on selection. It deletes the settings menu step if the back button
- * is pressed on the menu
+ * @brief This is the UI event handler for the advanced settings menu.
+ * @details The function decodes the UI event and calls the advanced settings
+ * flow based on selection. It deletes the advanced settings menu step if the
+ * back button is pressed on the menu
  *
  * @param ctx The engine context* from which the flow is invoked
  * @param ui_event The ui event object which triggered the callback
  * @param data_ptr Currently unused pointer set by the engine
  */
-static void settings_menu_handler(engine_ctx_t *ctx,
-                                  ui_event_t ui_event,
-                                  const void *data_ptr);
+static void advanced_settings_menu_handler(engine_ctx_t *ctx,
+                                           ui_event_t ui_event,
+                                           const void *data_ptr);
 
 /**
  * @brief This p0 event callback function handles clearing p0 events occured
@@ -141,10 +124,10 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static const flow_step_t settings_menu_step = {
-    .step_init_cb = settings_menu_initialize,
+static const flow_step_t advanced_settings_menu_step = {
+    .step_init_cb = advanced_settings_menu_initialize,
     .p0_cb = ignore_p0_handler,
-    .ui_cb = settings_menu_handler,
+    .ui_cb = advanced_settings_menu_handler,
     .usb_cb = NULL,
     .nfc_cb = NULL,
     .evt_cfg_ptr = &device_nav_evt_config,
@@ -163,74 +146,26 @@ static void ignore_p0_handler(engine_ctx_t *ctx,
   ignore_p0_event();
 }
 
-static void settings_menu_initialize(engine_ctx_t *ctx, const void *data_ptr) {
-  ui_text_options_settings[TOGGLE_LOG_EXPORT - 1] =
-      (char *)(is_logging_enabled() ? ui_text_options_logging_export[0]
-                                    : ui_text_options_logging_export[1]);
+static void advanced_settings_menu_initialize(engine_ctx_t *ctx,
+                                              const void *data_ptr) {
+  ui_text_options_advanced_settings[TOGGLE_RAW_CALLDATA - 1] =
+      (char *)(is_raw_calldata_enabled() ? ui_text_options_raw_calldata[1]
+                                         : ui_text_options_raw_calldata[0]);
 
-  ui_text_options_settings[TOGGLE_PASSPHRASE - 1] =
-      (char *)(is_passphrase_enabled() ? ui_text_options_passphrase[0]
-                                       : ui_text_options_passphrase[1]);
-
-  menu_init((const char **)ui_text_options_settings,
-            NUMBER_OF_OPTIONS_SETTINGS,
-            ui_text_heading_settings,
+  menu_init((const char **)ui_text_options_advanced_settings,
+            NUMBER_OF_OPTIONS_ADVANCED_SETTINGS,
+            ui_text_heading_advanced_settings,
             true);
   return;
 }
 
-static void settings_menu_handler(engine_ctx_t *ctx,
-                                  ui_event_t ui_event,
-                                  const void *data_ptr) {
+static void advanced_settings_menu_handler(engine_ctx_t *ctx,
+                                           ui_event_t ui_event,
+                                           const void *data_ptr) {
   if (UI_EVENT_LIST_CHOICE == ui_event.event_type) {
     switch (ui_event.list_selection) {
-      case RESTORE_WALLET_FROM_CARD: {
-        sync_with_cards();
-        break;
-      }
-      case CHECK_CARD_HEALTH: {
-        card_health_check();
-        break;
-      }
-      case ROTATE_DISPLAY: {
-        rotate_display();
-        break;
-      }
-      case TOGGLE_LOG_EXPORT: {
-        toggle_log_export();
-        break;
-      }
-      case TOGGLE_PASSPHRASE: {
-        toggle_passphrase();
-        break;
-      }
-      case CLEAR_DEVICE_DATA: {
-        clear_device_data();
-        break;
-      }
-      case FACTORY_RESET_DEVICE: {
-        factory_reset();
-        break;
-      }
-      case VIEW_DEVICE_INFO: {
-        view_firmware_version();
-        break;
-      }
-      case VIEW_CARD_VERSION: {
-        view_card_version();
-        break;
-      }
-      case VIEW_REGULATORY_INFO: {
-        view_device_regulatory_information();
-        break;
-      }
-      case PAIR_CARD: {
-        pair_x1_cards();
-        break;
-      }
-      case ADVANCED_SETTINGS: {
-        engine_add_next_flow_step(ctx, advanced_settings_menu_get_step());
-        engine_goto_next_flow_step(ctx);
+      case TOGGLE_RAW_CALLDATA: {
+        toggle_raw_calldata();
         break;
       }
       default: {
@@ -242,12 +177,9 @@ static void settings_menu_handler(engine_ctx_t *ctx,
     // UI_EVENT_LIST_REJECTION handled below already
   }
 
-  if (ui_event.event_type != UI_EVENT_LIST_CHOICE ||
-      ui_event.list_selection != ADVANCED_SETTINGS) {
-    /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
-     * detected, or any option was executed */
-    engine_delete_current_flow_step(ctx);
-  }
+  /* Return to the previous menu irrespective if UI_EVENT_REJECTION was
+   * detected, or any option was executed */
+  engine_delete_current_flow_step(ctx);
 
   return;
 }
@@ -255,6 +187,6 @@ static void settings_menu_handler(engine_ctx_t *ctx,
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-const flow_step_t *settings_menu_get_step(void) {
-  return &settings_menu_step;
+const flow_step_t *advanced_settings_menu_get_step(void) {
+  return &advanced_settings_menu_step;
 }
