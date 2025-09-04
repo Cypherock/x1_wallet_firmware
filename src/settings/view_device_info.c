@@ -106,12 +106,19 @@ void view_firmware_version(void) {
            fwMinor = (fwVersion >> 16) & 0xFF, fwPatch = fwVersion & 0xFFFF;
   uint16_t blMajor = (blVersion >> 24) & 0xFF,
            blMinor = (blVersion >> 16) & 0xFF, blPatch = blVersion & 0xFFFF;
+#ifndef BTC_ONLY_BUILD
+  char *variant = "Multi";
+#else
+  char *variant = "Bitcoin-only";
+#endif
+
   char fw_msg[60] = {0}, bl_msg[60] = {0};
   const char *msg[2] = {fw_msg, bl_msg};
 
   snprintf(fw_msg,
            sizeof(fw_msg),
            UI_TEXT_FIRMWARE_VERSION,
+           variant,
            fwMajor,
            fwMinor,
            fwPatch,

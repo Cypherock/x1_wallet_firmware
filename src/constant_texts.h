@@ -126,7 +126,7 @@ extern const char *ui_text_regulatory_info[];
 
 // Version info text
 #define UI_TEXT_CARD_VERSION "Card Version\n%d.%d.%d-%s"
-#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%s %d.%d.%d-%s"
 #define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // Factory reset text
