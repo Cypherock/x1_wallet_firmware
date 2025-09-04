@@ -71,6 +71,7 @@ file(GLOB_RECURSE CONSTELLATION_APP_SOURCE "apps/constellation_app/*.*")
 file(GLOB_RECURSE STARKNET_APP_SOURCES "apps/starknet_app/*.*")
 file(GLOB_RECURSE XRP_APP_SOURCES "apps/xrp_app/*.*")
 file(GLOB_RECURSE ICP_APP_SOURCES "apps/icp_app/*.*")
+file(GLOB_RECURSE STELLAR_APP_SOURCES "apps/stellar_app/*.*")
 
 # Define sources from common/coin_support that are specific to non-BTC builds
 set(COMMON_NON_BTC_SOURCES "")
@@ -120,7 +121,8 @@ ELSE()
         ${STARKNET_APP_SOURCES}
         ${XRP_APP_SOURCES}
         ${ICP_APP_SOURCES}
-        ${CONSTELLATION_APP_SOURCE})
+        ${CONSTELLATION_APP_SOURCE}
+        ${STELLAR_APP_SOURCES})
 ENDIF(BTC_ONLY)
 
 IF(UNIT_TESTS_SWITCH)
