@@ -61,8 +61,17 @@
  *****************************************************************************/
 #include "core_flow_init.h"
 
+#include "../apps/inheritance_app/inheritance_main.h"
 #include "app_registry.h"
 #include "application_startup.h"
+#include "btc_app.h"
+#include "btc_main.h"
+#include "main_menu.h"
+#include "manager_app.h"
+#include "onboarding.h"
+#include "restricted_app.h"
+
+#ifndef BTC_ONLY_BUILD
 #include "arbitrum_app.h"
 #include "avalanche_app.h"
 #include "bsc_app.h"
@@ -76,20 +85,16 @@
 #include "exchange_main.h"
 #include "fantom_app.h"
 #include "icp_main.h"
-#include "inheritance_main.h"
 #include "ltc_app.h"
-#include "main_menu.h"
-#include "manager_app.h"
 #include "near_main.h"
-#include "onboarding.h"
 #include "optimism_app.h"
 #include "polygon_app.h"
-#include "restricted_app.h"
 #include "solana_main.h"
 #include "starknet_main.h"
 #include "stellar_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
+#endif    // BTC_ONLY_BUILD
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -173,9 +178,13 @@ engine_ctx_t *get_core_flow_ctx(void) {
 void core_init_app_registry() {
   registry_add_app(get_manager_app_desc());
   registry_add_app(get_btc_app_desc());
+  registry_add_app(get_inheritance_app_desc());
+
+#ifndef BTC_ONLY_BUILD
   registry_add_app(get_ltc_app_desc());
   registry_add_app(get_doge_app_desc());
   registry_add_app(get_dash_app_desc());
+
   registry_add_app(get_eth_app_desc());
   registry_add_app(get_near_app_desc());
   registry_add_app(get_polygon_app_desc());
@@ -186,11 +195,11 @@ void core_init_app_registry() {
   registry_add_app(get_optimism_app_desc());
   registry_add_app(get_arbitrum_app_desc());
   registry_add_app(get_tron_app_desc());
-  registry_add_app(get_inheritance_app_desc());
   registry_add_app(get_xrp_app_desc());
   registry_add_app(get_starknet_app_desc());
   registry_add_app(get_constellation_app_desc());
   registry_add_app(get_icp_app_desc());
   registry_add_app(get_exchange_app_desc());
   registry_add_app(get_stellar_app_desc());
+#endif
 }

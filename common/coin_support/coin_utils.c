@@ -58,6 +58,9 @@
  */
 #include "coin_utils.h"
 
+#include "segwit_addr.h"
+
+#ifndef BTC_ONLY_BUILD
 #include "arbitrum.h"
 #include "avalanche.h"
 #include "bsc.h"
@@ -67,8 +70,8 @@
 #include "near.h"
 #include "optimism.h"
 #include "polygon.h"
-#include "segwit_addr.h"
 #include "solana.h"
+#endif
 
 void s_memcpy(uint8_t *dst,
               const uint8_t *src,

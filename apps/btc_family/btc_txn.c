@@ -78,7 +78,9 @@
 #include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "curves.h"
+#ifndef BTC_ONLY_BUILD
 #include "exchange_main.h"
+#endif
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -277,7 +279,11 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs);
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+#ifndef BTC_ONLY_BUILD
+// This variable is needed for the exchange flow and needs to maintain its state
+// across function calls.
 static bool use_signature_verification = false;
+#endif
 static btc_txn_context_t *btc_txn_context = NULL;
 
 /*****************************************************************************
@@ -309,6 +315,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
     status = false;
   }
 
+#ifndef BTC_ONLY_BUILD
   caq_node_data_t data = {.applet_id = get_btc_app_desc()->id};
 
   memzero(data.params, sizeof(data.params));
@@ -318,6 +325,7 @@ static bool validate_request_data(const btc_sign_txn_request_t *request) {
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
   use_signature_verification = exchange_app_validate_caq(data);
+#endif
 
   return status;
 }
@@ -588,12 +596,14 @@ static bool get_user_verification() {
       return false;
     }
 
+#ifndef BTC_ONLY_BUILD
     if (use_signature_verification) {
       if (!exchange_validate_stored_signature(address, sizeof(address))) {
         btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, status);
         return false;
       }
     }
+#endif
 
     if (!core_scroll_page(title, address, btc_send_error) ||
         !core_scroll_page(title, value, btc_send_error)) {
