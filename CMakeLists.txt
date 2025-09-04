@@ -4,28 +4,24 @@ set(CMAKE_MESSAGE_LOG_LEVEL debug)
 if("${CMAKE_BUILD_PLATFORM}" STREQUAL "Device")
     message("Device platform selected")
     set(CMAKE_TOOLCHAIN_FILE utilities/cmake/arm-none-eabi-gcc.cmake)
-    set(PROJECT_NAME_BASE Cypherock-${FIRMWARE_TYPE})
+    set(PROJECT Cypherock-${FIRMWARE_TYPE})
 elseif("${CMAKE_BUILD_PLATFORM}" STREQUAL "Simulator")
     message("Simulator platform selected")
-    set(PROJECT_NAME_BASE Cypherock_Simulator)
+    set(PROJECT Cypherock_Simulator)
 else()
-    message(WARNING "No platform specified, defaulting to Simulator. Specify using -DCMAKE_BUILD_PLATFORM=<Type>")
-    set(PROJECT_NAME_BASE Cypherock_Simulator)
+    message(WARNING "No platform specified defaulting to Simulator. Specify using -DCMAKE_BUILD_PLATFORM=<Type> Type can be Device or Simulator")
+    set(PROJECT Cypherock_Simulator)
 endif()
 
-# Define all build options
+# Define all options upfront, including BTC_ONLY
 OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
 OPTION(BTC_ONLY "Build firmware for Bitcoin only" OFF)
 
-# Append suffix to the project name if BTC_ONLY is enabled
-set(PROJECT ${PROJECT_NAME_BASE})
+# Logic to append -btc to project name if BTC_ONLY is enabled
 if (BTC_ONLY)
     set(PROJECT ${PROJECT}-btc)
 endif()
-
-# Define the project with its final calculated name
-project(${PROJECT})
 
 # Make static functions testable via unit-tests
 IF(UNIT_TESTS_SWITCH)
@@ -34,28 +30,11 @@ ELSE()
     add_compile_definitions( STATIC=static )
 ENDIF(UNIT_TESTS_SWITCH)
 
-# Set firmware type (Main or Initial)
-if ("${FIRMWARE_TYPE}" STREQUAL "Main")
-    add_compile_definitions(X1WALLET_INITIAL=0 X1WALLET_MAIN=1)
-elseif("${FIRMWARE_TYPE}" STREQUAL "Initial")
-    add_compile_definitions(X1WALLET_INITIAL=1 X1WALLET_MAIN=0)
-endif()
+# Now define the project with its final name, after all modifications
+project(${PROJECT})
 
-# Set variant-specific definition (BTC_ONLY_BUILD)
-if(BTC_ONLY)
-    add_compile_definitions(BTC_ONLY_BUILD=1)
-endif()
-
-# Set hash calculation definition based on build type
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    add_compile_definitions(FIRMWARE_HASH_CALC=1)
-else()
-    add_compile_definitions(FIRMWARE_HASH_CALC=0)
-endif()
-
-# Enable support for dynamically allocated fields in nanopb
-add_compile_definitions(PB_ENABLE_MALLOC=1 PB_NO_ERRMSG=1)
-
+# python is needed for compiling proto files using nanopb
+# also for generating & appending firmware signature headers
 find_package( Python3 REQUIRED COMPONENTS Interpreter )
 
 # Conditionally generate protobuf files based on the BTC_ONLY option
@@ -95,17 +74,26 @@ list (APPEND POSEIDON_SRCS
     "vendor/poseidon/sources/poseidon_rc.c"
 )
 
-# This is where add_executable(${PROJECT} ...) is called
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    add_compile_definitions(FIRMWARE_HASH_CALC=1)
+else()
+    add_compile_definitions(FIRMWARE_HASH_CALC=0)
+endif()
+
 if("${CMAKE_BUILD_PLATFORM}" STREQUAL "Device")
     include(utilities/cmake/firmware/firmware.cmake)
 else() # Simulator or default
     include(utilities/cmake/simulator/simulator.cmake)
 endif()
 
-# This must come AFTER the add_executable call in the included files
-target_include_directories( ${PROJECT} PRIVATE
+# Include nanopb source headers
+target_include_directories( ${EXECUTABLE} PRIVATE
     vendor/nanopb
     generated/proto
     vendor/mini-gmp
     vendor/poseidon/sources
 )
+
+# Enable support for dynamically allocated fields in nanopb
+# Ref: vendor/nanopb/pb.h
+add_compile_definitions(PB_ENABLE_MALLOC=1 PB_NO_ERRMSG=1)

@@ -67,7 +67,6 @@
 #include "manager_api.h"
 #include "manager_app.h"
 #include "onboarding.h"
-#include <string.h>
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -144,15 +143,6 @@ static manager_get_device_info_response_t get_device_info(void) {
     result->is_initial =
         (MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step());
     result->onboarding_step = onboarding_get_last_step();
-    
-    // Populate the firmware variant string based on the compile-time flag.
-    // This allows the client (CySync) to know which firmware variant is running.
-#ifdef BTC_ONLY_BUILD
-    strcpy(result->variant, "BTC_ONLY");
-#else
-    strcpy(result->variant, "MULTICOIN");
-#endif
-
     // TODO: populate applet list (result->applet_list)
   }
 
