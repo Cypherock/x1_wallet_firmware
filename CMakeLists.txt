@@ -20,7 +20,7 @@ OPTION(BTC_ONLY "Build firmware for Bitcoin only" OFF)
 
 # Logic to append -btc to project name if BTC_ONLY is enabled
 if (BTC_ONLY)
-    set(PROJECT ${PROJECT}-btc)
+    set(PROJECT ${PROJECT}-BTC)
 endif()
 
 # Make static functions testable via unit-tests

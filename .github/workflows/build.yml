@@ -15,7 +15,7 @@ jobs:
       matrix:
         firmware: [Main]
         target: [Release]
-        coin_support: ["BTC_ONLY", "MULTI_COIN"] # Builds both BTC_ONLY and MULTI_COIN variants
+        coin_support: ["BTC_ONLY", "MULTI_COIN"]
     uses: ./.github/workflows/containerized-build.yml
     with:
       firmware: ${{ matrix.firmware }}
@@ -24,7 +24,7 @@ jobs:
     secrets: inherit
 
   create-release:
-    needs: build-firmwares # Depends on all firmwares being built
+    needs: build-firmwares
     runs-on: ubuntu-latest
     if: ${{ github.ref_type }} == 'tag'
     steps:
@@ -34,7 +34,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./ # Downloads all artifacts to the current directory
+          path: ./
 
       - name: Publish a release
         env:
@@ -48,8 +48,8 @@ jobs:
 
           # Calculate SHA256 hash for the BTC_ONLY firmware
           # The path assumes download-artifact placed it in Main-Release-BTC_ONLY-outputs/build/
-          # The filename is Cypherock-Main-btc.bin due to the CMakeLists.txt modification
-          chkmain_btc_only=$(sha256sum Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-btc.bin | cut -f -1 -d ' ')
+          # The filename is Cypherock-Main-BTC.bin due to the CMakeLists.txt modification
+          chkmain_btc_only=$(sha256sum Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-BTC.bin | cut -f -1 -d ' ')
 
           APP_VERSION=$(cat version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
           HW_VERSION=$(cat version.txt | grep hardware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
@@ -67,7 +67,7 @@ jobs:
               "tag_name":"'${TAG_NAME}'",
               "target_commitish":"main",
               "name":"'${TAG_NAME}'",
-              "body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain_multicoin}' \r\n**Cypherock-Main-btc.bin** : '${chkmain_btc_only}'",
+              "body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain_multicoin}' \r\n**Cypherock-Main-BTC.bin** : '${chkmain_btc_only}'",
               "draft":true,
               "prerelease":false,
               "generate_release_notes":true
@@ -79,7 +79,6 @@ jobs:
       - name: Upload assets
         env:
           auth_token: ${{ secrets.GITHUB_TOKEN }}
-          upload_url: ${{ env.upload_url }} # Use the extracted upload_url
         run: |
           # Upload the MULTI_COIN firmware binary
           content_type_multicoin=$(file -b --mime-type Main-Release-MULTI_COIN-outputs/build/Cypherock-Main.bin)
@@ -92,14 +91,14 @@ jobs:
             --data-binary @Main-Release-MULTI_COIN-outputs/build/Cypherock-Main.bin
 
           # Upload the BTC_ONLY firmware binary
-          content_type_btc_only=$(file -b --mime-type Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-btc.bin)
+          content_type_btc_only=$(file -b --mime-type Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-BTC.bin)
           curl -X POST \
             -H "Content-Type: ${content_type_btc_only}" \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${auth_token}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${upload_url}?name=Cypherock-Main-btc.bin" \
-            --data-binary @Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-btc.bin
+            "${upload_url}?name=Cypherock-Main-BTC.bin" \
+            --data-binary @Main-Release-BTC_ONLY-outputs/build/Cypherock-Main-BTC.bin
 
           # Upload version.txt
           content_type_version=$(file -b --mime-type version.txt)

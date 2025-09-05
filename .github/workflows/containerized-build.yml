@@ -11,21 +11,8 @@ on:
         type: string
       coin_support_variant:
         required: true
-        type: string
-  workflow_dispatch:
-    inputs:
-      firmware:
-        required: true
-        type: string
-        default: 'Main'
-      target:
-        required: true
-        type: string
-        default: 'Release'
-      coin_support_variant:
-        required: true
-        type: string
         default: 'MULTI_COIN'
+        type: string
 
 jobs:
   build:
