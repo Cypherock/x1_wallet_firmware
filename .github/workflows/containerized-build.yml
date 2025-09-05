@@ -32,11 +32,13 @@ jobs:
           echo "VERSION_TAG=main" >> $GITHUB_OUTPUT
         fi
 
-    - name: Checkout Repository
+    - name: Checkout Firmware Repository
       uses: actions/checkout@v4
       with:
+        repository: Cypherock/x1_wallet_firmware
         ref: ${{ steps.set_version_tag.outputs.VERSION_TAG }}
         submodules: recursive
+        path: x1_wallet_firmware
 
     - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }} - ${{ inputs.coin_support_variant }})
       run: |
