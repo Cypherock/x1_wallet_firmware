@@ -4,6 +4,7 @@ usage() {
 	echo -e "USAGE: $0 [-c] [-u] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
 	echo -e "Parameters are optional and assumes 'main debug device' if not provided"
 	echo -e "\n\n -c \t Performs a forced clean before invoking build"
+	echo -e "\n\n -j \t Set jobs count, default is 8"
 	echo -e "\n\n -u \t Generate unsigned binary"
 	echo -e "\n\n -f \t Sets the preferred firmware to build. Can be main or initial"
 	echo -e "\n\n -p \t Provides the preferred platform to build for. Can be simulator or device"
@@ -33,6 +34,13 @@ validate_type() {
 	fi
 }
 
+validate_jobs() {
+    if ! [[ "$JOBS" =~ ^[1-9][0-9]*$ ]]; then
+        echo -e "Invalid jobs count ($JOBS) selected for build\n"
+        usage
+    fi
+}
+
 ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
@@ -40,11 +48,13 @@ BUILD_PLATFORM=Device
 UNIT_TESTS=OFF
 DEV=OFF
 SIGN_BINARY=ON
+JOBS=8
 
-while getopts 'cf:p:t:u' flag; do
+while getopts 'cf:p:t:u:j:' flag; do
 	case "${flag}" in
 	c) clean_flag="true" ;;
 	f) ACTIVE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+	j) JOBS="${OPTARG}" ;;
 	p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	t) BUILD_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	u) SIGN_BINARY=OFF ;;
@@ -56,6 +66,7 @@ shift "$((OPTIND - 1))"
 validate_name
 validate_platform
 validate_type
+validate_jobs
 
 if [ $# -gt 0 ]; then
 	usage
@@ -134,4 +145,4 @@ if [ ! $? -eq 0 ]; then exit 1; fi
 if [[ "${clean_flag}" = "true" ]]; then
 	"${BUILD_TOOL}" clean
 fi
-"${BUILD_TOOL}" -j8 all
+"${BUILD_TOOL}" -j"${JOBS}" all
