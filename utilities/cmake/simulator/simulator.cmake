@@ -15,6 +15,7 @@ IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
 
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
@@ -51,6 +52,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
+        apps/evm_family/hyperliquid
         apps/near_app
 
         apps/solana_app
