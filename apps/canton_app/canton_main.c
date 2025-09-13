@@ -63,9 +63,15 @@
 #include "canton_main.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "app_registry.h"
 #include "canton/core.pb.h"
+#include "canton_api.h"
+#include "canton_priv.h"
+#include "core.pb.h"
+#include "error.pb.h"
+#include "status_api.h"
 #include "usb_api.h"
 
 /*****************************************************************************
@@ -112,6 +118,31 @@ static const cy_app_desc_t canton_app_desc = {
  *****************************************************************************/
 
 void canton_main(usb_event_t usb_event, const void *canton_app_config) {
+  canton_query_t query = CANTON_QUERY_INIT_DEFAULT;
+  if (!decode_canton_query(usb_event.p_msg, usb_event.msg_size, &query)) {
+    return;
+  }
+
+  /* set device status to CORE_DEVICE_IDLE_STATE_USB to indicate host that we
+   * are now servicing a usb initiated command */
+  core_status_set_idle_state(CORE_DEVICE_IDLE_STATE_USB);
+
+  switch ((uint8_t)query.which_request) {
+      // TODO: add get public key flow
+
+    /* sign transaction query */
+    case CANTON_QUERY_SIGN_TXN_TAG: {
+      canton_sign_transaction(&query);
+      break;
+    }
+
+    /* Incase we encounter an invalid query */
+    default: {
+      canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_QUERY);
+      break;
+    }
+  }
 }
 
 /*****************************************************************************
