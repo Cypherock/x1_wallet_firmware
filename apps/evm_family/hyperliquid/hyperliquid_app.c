@@ -120,7 +120,7 @@ static const evm_config_t hyperliquid_app_config = {
 };
 
 static const cy_app_desc_t hyperliquid_app_desc = {
-    .id = 25,
+    .id = 26,
     .version =
         {
             .major = 1,
@@ -149,6 +149,6 @@ static bool is_token_whitelisted(const uint8_t *address,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-const cy_app_desc_t *get_arbitrum_app_desc() {
+const cy_app_desc_t *get_hyperliquid_app_desc() {
   return &hyperliquid_app_desc;
 }

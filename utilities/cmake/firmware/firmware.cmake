@@ -55,6 +55,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
+        apps/evm_family/hyperliquid
         apps/near_app
         apps/solana_app
         apps/tron_app
