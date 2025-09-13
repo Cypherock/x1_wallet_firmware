@@ -99,4 +99,14 @@ void canton_send_error(pb_size_t which_error, uint32_t error_code);
  */
 void canton_send_result(const canton_result_t *result);
 
+/**
+ * @brief Receives request of type @ref canton_query_t of the given tag type.
+ *
+ * @param[out] query Reference to @ref canton_query_t obj which would be
+ * populated
+ * @param [in] exp_query_tag The expected query type tag
+ * @return bool Indicating whether recieved query is of the given expected type.
+ */
+bool canton_get_query(canton_query_t *query, pb_size_t exp_query_tag);
+
 #endif

@@ -72,7 +72,9 @@
 #include "common_error.h"
 #include "core_api.h"
 #include "error.pb.h"
+#include "events.h"
 #include "memzero.h"
+#include "p0_events.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -183,4 +185,13 @@ void canton_send_result(const canton_result_t *result) {
   size_t bytes_encoded = 0;
   ASSERT(encode_canton_result(result, buffer, sizeof(buffer), &bytes_encoded));
   send_response_to_host(buffer, bytes_encoded);
+}
+
+bool canton_get_query(canton_query_t *query, pb_size_t exp_query_tag) {
+  evt_status_t event = get_events(EVENT_CONFIG_USB, MAX_INACTIVITY_TIMEOUT);
+
+  return true != event.p0_event.flag &&
+         decode_canton_query(
+             event.usb_event.p_msg, event.usb_event.msg_size, query) &&
+         check_canton_query(query, exp_query_tag);
 }
