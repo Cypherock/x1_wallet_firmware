@@ -157,7 +157,8 @@ bool encode_canton_result(const canton_result_t *result,
                           uint8_t *buffer,
                           uint16_t max_buffer_len,
                           size_t *bytes_written_out) {
-  if (NULL == result || NULL == buffer || NULL == bytes_written_out) {
+  if (NULL == result || NULL == buffer || NULL == bytes_written_out ||
+      0 >= max_buffer_len) {
     return false;
   }
 
