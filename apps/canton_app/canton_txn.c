@@ -133,6 +133,69 @@ static bool is_valid_request_data(const canton_sign_txn_request_t *request);
  */
 static void send_response(pb_size_t which_response);
 
+/**
+ * @brief Handles validations and user verification for a decoded query.
+ * @details This handles validation of type of request, wallet-id and
+ * derivation path. After the validations, the user is prompted for
+ * verification.
+ *
+ * @param query Reference to the original init query
+ * @returns bool indicating whether the function succeeded or not.
+ * @retval true If all the validations and user verification succeeds
+ * @retval false If any of the validation or user verification fails
+ */
+static bool handle_initiate_query(const canton_query_t *query);
+
+/**
+ * @brief Recieves transaction data and verifies it.
+ * @details Handles recieving transaction data and sending acknowledgements.
+ * Afterwards parses the transaction and verifies it.
+ *
+ * @param query Reference to the original init query
+ * @returns bool indicating whether the function succeeded or not.
+ * @retval true If all data is recieved and is not corrupted.
+ * @retval false If failed to recieve data or got corrupted is transfer
+ */
+static bool fetch_parse_txn_data(const canton_query_t *query);
+
+/**
+ * @brief Confirms user for signing transaction while displaying data about
+ * unsigned transaction.
+ * @note The function expects that unsigned txn is already parsed.
+ *
+ * @returns bool Indicating whether the user confirmed or rejected
+ * @retval true If the user accepted the transaction display
+ * @retval false If any user rejection occured
+ */
+static bool get_user_verification();
+
+/**
+ * @brief Calculates ED25519 curve based signature over the digest of the user
+ * verified unsigned txn.
+ * @details Seed reconstruction takes place within this function
+ *
+ * @param[out] signature_buffer Out signature buffer
+ * populated
+ * @return true If the signature was computed successfully
+ * @return false If signature could not be computed - maybe due to some error
+ * during seed reconstruction phase
+ */
+static bool sign_txn(signature_t *signature);
+
+/**
+ * @brief Sends signature of the canton unsigned txn to the host
+ * @details The function waits for the host to send a request of type
+ * XRP_SIGN_TXN_REQUEST_SIGNATURE_TAG and sends the response
+ *
+ * @param query Reference to buffer of type canton_query_t
+ * @param signature Reference to signature to be sent to the host
+ * @returns bool Indicating whether transfer to host was succeeded
+ * or not
+ * @retval true If the signature was sent successfully
+ * @retvalfalse If the signature could not be sent - maybe due invalid request
+ * received from the host
+ */
+static bool send_signature(canton_query_t *query, const signature_t *signature);
 
 /*****************************************************************************
  * STATIC VARIABLES
