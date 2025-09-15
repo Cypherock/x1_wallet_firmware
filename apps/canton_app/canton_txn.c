@@ -232,6 +232,62 @@ static void send_response(const pb_size_t which_response) {
   canton_send_result(&result);
 }
 
+static bool handle_initiate_query(const canton_query_t *query) {
+  char wallet_name[NAME_SIZE] = "";
+  char msg[100] = "";
+
+  /* Check query type, validate data then retrieve wallet */
+  if (!is_query_type(query, CANTON_SIGN_TXN_REQUEST_INITIATE_TAG) ||
+      !is_valid_request_data(&query->sign_txn) ||
+      !get_wallet_name_by_id(query->sign_txn.initiate.wallet_id,
+                             (uint8_t *)wallet_name,
+                             canton_send_error)) {
+    return false;
+  }
+
+  /* format message */
+  snprintf(msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, CANTON_NAME, wallet_name);
+
+  /* User confirmation */
+  if (!core_confirmation(msg, canton_send_error)) {
+    return false;
+  }
+
+  /* set device that it is ready to recieve transaction data */
+  set_app_flow_status(CANTON_SIGN_TXN_STATUS_CONFIRM);
+
+  /* copy sign_txn_init_request from this query to device memory */
+  memcpy(&canton_txn_context->init_info,
+         &query->sign_txn.initiate,
+         sizeof(canton_sign_txn_init_request_t));
+
+  /* indicate host that device has confirmed initiate query */
+  send_response(CANTON_SIGN_TXN_RESPONSE_CONFIRMATION_TAG);
+
+  /* manually added delay, additional delay will be added due to actual
+   * processing */
+  delay_scr_init(ui_text_processing, DELAY_SHORT);
+  return true;
+}
+
+static bool send_signature(canton_query_t *query,
+                           const signature_t *signature) {
+  /* create new result */
+  canton_result_t result = init_canton_result(CANTON_RESULT_SIGN_TXN_TAG);
+  result.sign_txn.which_response = CANTON_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
+
+  /* await for query of type `CANTON_QUERY_SIGN_TXN_TAG`
+   * and make sure its of type `CANTON_SIGN_TXN_REQUEST_SIGNATURE_TAG` */
+  if (!canton_get_query(query, CANTON_QUERY_SIGN_TXN_TAG) ||
+      !is_query_type(query, CANTON_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+    return false;
+  }
+
+  /* copy signature to result and sent it to host */
+  memcpy(&result.sign_txn.signature.signature, signature, sizeof(signature_t));
+  canton_send_result(&result);
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
