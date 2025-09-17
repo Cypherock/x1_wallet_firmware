@@ -120,7 +120,7 @@ static const evm_config_t hyperliquid_app_config = {
 };
 
 static const cy_app_desc_t hyperliquid_app_desc = {
-    .id = 26,
+    .id = 25,
     .version =
         {
             .major = 1,
