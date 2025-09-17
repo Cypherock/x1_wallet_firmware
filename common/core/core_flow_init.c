@@ -75,6 +75,7 @@
 #include "evm_main.h"
 #include "exchange_main.h"
 #include "fantom_app.h"
+#include "hyperliquid_app.h"
 #include "icp_main.h"
 #include "inheritance_main.h"
 #include "ltc_app.h"
@@ -90,7 +91,7 @@
 #include "stellar_main.h"
 #include "tron_main.h"
 #include "xrp_main.h"
-#include "hyperliquid_app.h"
+
 
 /*****************************************************************************
  * EXTERN VARIABLES
