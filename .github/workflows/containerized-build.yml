@@ -9,13 +9,11 @@ on:
       target:
         required: true
         type: string
-      coin_support_variant:
-        required: true
-        default: 'MULTI_COIN'
-        type: string
       vendor:
-        required: true
         default: "Cypherock"
+        type: string
+      coin_support_variant:
+        default: 'MULTI_COIN'
         type: string
 
 jobs:
@@ -74,9 +72,9 @@ jobs:
 
         mkdir -p build
 
-        cp x1_wallet_firmware/"${BUILD_DIR}"/Cypherock-*.* ./build/
+        cp x1_wallet_firmware/"${BUILD_DIR}"/${{ inputs.vendor }}-*.* ./build/
 
-    - name: Archive Build Artifacts ($${{ inputs.vendor }}-$${{ inputs.coin_support_variant }})
+    - name: Archive Build Artifacts (${{ inputs.vendor }}-${{ inputs.coin_support_variant }})
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.firmware }}-${{ inputs.target }}-${{ inputs.vendor }}-${{ inputs.coin_support_variant }}-outputs
