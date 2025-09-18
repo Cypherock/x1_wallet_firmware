@@ -2,13 +2,14 @@
 
 # Function to display usage information
 usage() {
-	echo -e "USAGE: $0 [-c] [-u] [-b] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>]"
+	echo -e "USAGE: $0 [-c] [-u] [-b] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>] [-v (vendor-id)]"
 	echo -e "Parameters are optional and assumes 'main debug device' if not provided"
 	echo -e "\n\n -c \t Performs a forced clean before invoking build"
 	echo -e "\n\n -u \t Generate unsigned binary"
     echo -e "\n\n -b \t Build BTC-only firmware"
 	echo -e "\n\n -f \t Sets the preferred firmware to build. Can be main or initial"
 	echo -e "\n\n -p \t Provides the preferred platform to build for. Can be simulator or device"
+	echo -e "\n\n -v \t Provides the vendor to build for"
 	echo -e "\n\n -t \t Tells the build type that should be generate. Can be a valid build type."
 	echo -e "\t    \t For example release, debug, dev, unit_tests"
 	exit 1
@@ -42,6 +43,7 @@ validate_type() {
 ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
+VENDOR=CYPHEROCK
 BUILD_PLATFORM=Device
 UNIT_TESTS=OFF
 DEV=OFF
@@ -49,12 +51,13 @@ SIGN_BINARY=ON
 BTC_ONLY=OFF # Default to multi-coin build
 
 # --- Parse Command Line Arguments ---
-while getopts 'cbuf:p:t:' flag; do
+while getopts 'cbuf:p:v:t:' flag; do
 	case "${flag}" in
 	c) clean_flag="true" ;;
     b) BTC_ONLY=ON ;;
 	f) ACTIVE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
+	v) VENDOR=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	t) BUILD_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	u) SIGN_BINARY=OFF ;;
 	*) usage ;;
@@ -142,6 +145,7 @@ fi
 
 # Configure the project with CMake
 "${CMAKE}" -DDEV_SWITCH=${DEV} \
+	-DVENDOR:STRING="${VENDOR}" \
 	-DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}" \
     -DBTC_ONLY:BOOL="${BTC_ONLY}" \
 	-DSIGN_BINARY:BOOL="${SIGN_BINARY}" \

@@ -18,7 +18,23 @@ OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
 OPTION(BTC_ONLY "Build firmware for Bitcoin only" OFF)
 
-# Logic to append -btc to project name if BTC_ONLY is enabled
+# Add vendor specific compile definitions
+if ("${VENDOR}" STREQUAL "Odix")
+    add_compile_definitions(VENDOR_NAME="Odix Wallet")
+    add_compile_definitions(VENDOR_COMPANION_APP="Odix")
+    add_compile_definitions(VENDOR_DEVICE_NAME="Odix Wallet")
+    add_compile_definitions(VENDOR_COMPANY_NAME"Odix")
+    set(PROJECT ${PROJECT}-Odix)
+    add_compile_definitions(VENDOR_ID=1)
+else()
+    add_compile_definitions(VENDOR_NAME="Cypherock X1 Wallet")
+    add_compile_definitions(VENDOR_COMPANION_APP="cySync")
+    add_compile_definitions(VENDOR_DEVICE_NAME="Cypherock X1")
+    add_compile_definitions(VENDOR_COMPANY_NAME"Cypherock")
+    add_compile_definitions(VENDOR_ID=0)
+endif()
+
+# Append -BTC to project name if BTC_ONLY is enabled
 if (BTC_ONLY)
     set(PROJECT ${PROJECT}-BTC)
 endif()

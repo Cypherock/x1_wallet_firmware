@@ -16,11 +16,13 @@ jobs:
         firmware: [Main]
         target: [Release]
         coin_support: ["BTC_ONLY", "MULTI_COIN"]
+        vendor: [Cypherock, Odix]
     uses: ./.github/workflows/containerized-build.yml
     with:
       firmware: ${{ matrix.firmware }}
       target: ${{ matrix.target }}
       coin_support_variant: ${{ matrix.coin_support }}
+      vendor: ${{ matrix.vendor }}
     secrets: inherit
 
   create-release:
@@ -42,14 +44,23 @@ jobs:
           auth_token: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          # Calculate SHA256 hash for the MULTI_COIN firmware
-          # The path assumes download-artifact placed it in Main-Release-MULTI_COIN-outputs/
-          chkmain_multicoin=$(sha256sum Main-Release-MULTI_COIN-outputs/Cypherock-Main.bin | cut -f -1 -d ' ')
+          # Calculate SHA256 hash for the Cypherock firmware with MULTI_COIN support
+          # The path assumes download-artifact placed it in Main-Release-Cypherock-MULTI_COIN-outputs/
+          chkmain_cypherock_multicoin=$(sha256sum Main-Release-Cypherock-MULTI_COIN-outputs/Cypherock-Main.bin | cut -f -1 -d ' ')
 
-          # Calculate SHA256 hash for the BTC_ONLY firmware
-          # The path assumes download-artifact placed it in Main-Release-BTC_ONLY-outputs/
+          # Calculate SHA256 hash for the Cypherock firmware with BTC_ONLY support
+          # The path assumes download-artifact placed it in Main-Release-Cypherock-BTC_ONLY-outputs/
           # The filename is Cypherock-Main-BTC.bin due to the CMakeLists.txt modification
-          chkmain_btc_only=$(sha256sum Main-Release-BTC_ONLY-outputs/Cypherock-Main-BTC.bin | cut -f -1 -d ' ')
+          chkmain_cypherock_btc_only=$(sha256sum Main-Release-Cypherock-BTC_ONLY-outputs/Cypherock-Main-BTC.bin | cut -f -1 -d ' ')
+
+          # Calculate SHA256 hash for the Odix firmware with MULTI_COIN support
+          # The path assumes download-artifact placed it in Main-Release-Odix-MULTI_COIN-outputs/
+          chkmain_odix_multicoin=$(sha256sum Main-Release-Odix-MULTI_COIN-outputs/Cypherock-Main-Odix.bin | cut -f -1 -d ' ')
+
+          # Calculate SHA256 hash for the Odix firmware with BTC_ONLY support
+          # The path assumes download-artifact placed it in Main-Release-Odix-BTC_ONLY-outputs/
+          # The filename is Cypherock-Main-BTC.bin due to the CMakeLists.txt modification
+          chkmain_odix_btc_only=$(sha256sum Main-Release-Odix-BTC_ONLY-outputs/Cypherock-Main-Odix-BTC.bin | cut -f -1 -d ' ')
 
           APP_VERSION=$(cat version.txt | grep firmware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
           HW_VERSION=$(cat version.txt | grep hardware | cut -f 2-2 -d '=' | awk -F ':' '{ print 0+$1 "." 0+$2 "." $3*2**8 + $4 }')
@@ -57,7 +68,7 @@ jobs:
           echo "Application version: ${APP_VERSION}"
           echo "Hardware version: ${HW_VERSION}"
 
-          # Create the release with both firmware hashes in the body
+          # Create the release with all firmware hashes in the body
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${auth_token}" \
@@ -67,7 +78,7 @@ jobs:
               "tag_name":"'${TAG_NAME}'",
               "target_commitish":"main",
               "name":"'${TAG_NAME}'",
-              "body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain_multicoin}' \r\n**Cypherock-Main-BTC.bin** : '${chkmain_btc_only}'",
+              "body":"Application version: '${APP_VERSION}'\r\nHardware version: '${HW_VERSION}'\r\n## SHA256 of binaries:\r\n**Cypherock-Main.bin** : '${chkmain_cypherock_multicoin}' \r\n**Cypherock-Main-BTC.bin** : '${chkmain_cypherock_btc_only}' \r\n**Odix-Main.bin** : '${chkmain_odix_multicoin}' \r\n**Odix-Main-BTC.bin** : '${chkmain_odix_btc_only}'",
               "draft":true,
               "prerelease":false,
               "generate_release_notes":true
@@ -80,25 +91,45 @@ jobs:
         env:
           auth_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Upload the MULTI_COIN firmware binary
-          content_type_multicoin=$(file -b --mime-type Main-Release-MULTI_COIN-outputs/Cypherock-Main.bin)
+          # Upload the Cypherock MULTI_COIN firmware binary
+          content_type_cypherock_multicoin=$(file -b --mime-type Main-Release-Cypherock-MULTI_COIN-outputs/Cypherock-Main.bin)
           curl -X POST \
-            -H "Content-Type: ${content_type_multicoin}" \
+            -H "Content-Type: ${content_type_cypherock_multicoin}" \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${auth_token}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${upload_url}?name=Cypherock-Main.bin" \
-            --data-binary @Main-Release-MULTI_COIN-outputs/Cypherock-Main.bin
+            --data-binary @Main-Release-Cypherock-MULTI_COIN-outputs/Cypherock-Main.bin
 
-          # Upload the BTC_ONLY firmware binary
-          content_type_btc_only=$(file -b --mime-type Main-Release-BTC_ONLY-outputs/Cypherock-Main-BTC.bin)
+          # Upload the Cypherock BTC_ONLY firmware binary
+          content_type_cypherock_btc_only=$(file -b --mime-type Main-Release-Cypherock-BTC_ONLY-outputs/Cypherock-Main-BTC.bin)
           curl -X POST \
-            -H "Content-Type: ${content_type_btc_only}" \
+            -H "Content-Type: ${content_type_cypherock_btc_only}" \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${auth_token}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${upload_url}?name=Cypherock-Main-BTC.bin" \
-            --data-binary @Main-Release-BTC_ONLY-outputs/Cypherock-Main-BTC.bin
+            --data-binary @Main-Release-Cypherock-BTC_ONLY-outputs/Cypherock-Main-BTC.bin
+
+          # Upload the Odix MULTI_COIN firmware binary
+          content_type_odix_multicoin=$(file -b --mime-type Main-Release-Odix-MULTI_COIN-outputs/Cypherock-Main-Odix.bin)
+          curl -X POST \
+            -H "Content-Type: ${content_type_odix_multicoin}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${auth_token}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${upload_url}?name=Odix-Main.bin" \
+            --data-binary @Main-Release-Odix-MULTI_COIN-outputs/Cypherock-Main-Odix.bin
+
+          # Upload the Odix BTC_ONLY firmware binary
+          content_type_odix_btc_only=$(file -b --mime-type Main-Release-Odix-BTC_ONLY-outputs/Cypherock-Main-Odix-BTC.bin)
+          curl -X POST \
+            -H "Content-Type: ${content_type_odix_btc_only}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${auth_token}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${upload_url}?name=Odix-Main-BTC.bin" \
+            --data-binary @Main-Release-Odix-BTC_ONLY-outputs/Cypherock-Main-Odix-BTC.bin
 
           # Upload version.txt
           content_type_version=$(file -b --mime-type version.txt)

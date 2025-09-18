@@ -13,6 +13,10 @@ on:
         required: true
         default: 'MULTI_COIN'
         type: string
+      vendor:
+        required: true
+        default: "Cypherock"
+        type: string
 
 jobs:
   build:
@@ -40,7 +44,7 @@ jobs:
         submodules: recursive
         path: x1_wallet_firmware
 
-    - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }} - ${{ inputs.coin_support_variant }})
+    - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }} - ${{ inputs.vendor }} - ${{ inputs.coin_support_variant }})
       run: |
         cd x1_wallet_firmware
 
@@ -61,6 +65,7 @@ jobs:
               -DFIRMWARE_TYPE="${{ inputs.firmware }}" \
               -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=OFF \
               -DCMAKE_BUILD_PLATFORM:STRING="Device" \
+              -DVENDOR="${{ inputs.vendor }}" \
               -G "Ninja" .
 
         ninja -C "${BUILD_DIR}"
@@ -71,8 +76,8 @@ jobs:
 
         cp x1_wallet_firmware/"${BUILD_DIR}"/Cypherock-*.* ./build/
 
-    - name: Archive Build Artifacts (${{ inputs.coin_support_variant }})
+    - name: Archive Build Artifacts ($${{ inputs.vendor }}-$${{ inputs.coin_support_variant }})
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.firmware }}-${{ inputs.target }}-${{ inputs.coin_support_variant }}-outputs
+        name: ${{ inputs.firmware }}-${{ inputs.target }}-${{ inputs.vendor }}-${{ inputs.coin_support_variant }}-outputs
         path: build
