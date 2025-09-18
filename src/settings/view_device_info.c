@@ -107,9 +107,9 @@ void view_firmware_version(void) {
   uint16_t blMajor = (blVersion >> 24) & 0xFF,
            blMinor = (blVersion >> 16) & 0xFF, blPatch = blVersion & 0xFFFF;
 #ifndef BTC_ONLY_BUILD
-  char *variant = "Multi";
+  char *variant = UI_TEXT_MULTI_COIN;
 #else
-  char *variant = "Bitcoin-only";
+  char *variant = UI_TEXT_BTC_ONLY;
 #endif
 
   char fw_msg[60] = {0}, bl_msg[60] = {0};

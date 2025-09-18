@@ -65,6 +65,9 @@
 #define UI_TEXT_VERIFY_MEMO_HASH "Verify Memo Hash\n%s"
 #define UI_TEXT_CALLDATA "Calldata"
 
+#define UI_TEXT_MULTI_COIN "Multi"
+#define UI_TEXT_BTC_ONLY "Bitcoin-only"
+
 // product hash
 extern const char *product_hash;
 
@@ -179,7 +182,7 @@ extern const char *ui_text_onboarding[];
 extern const char *ui_text_onboarding_complete;
 
 // Firmware update text
-#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to %s version %d.%d.%d"
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 

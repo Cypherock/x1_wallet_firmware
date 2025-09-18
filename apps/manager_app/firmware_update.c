@@ -142,9 +142,22 @@ static bool validate_query(const manager_firmware_update_request_t *request) {
   uint32_t target_version =
       (target->major << 24) | (target->minor << 16) | (target->patch);
 
-  // Query is invalid if the target version is equal or less than the current
+  const common_firmware_variant_t target_variant = request->initiate.variant;
+  const bool is_variant_allowed = (target_variant == COMMON_MULTI_COIN) ||
+                                  (target_variant == COMMON_BTC_ONLY);
+  if (!is_variant_allowed) {
+    manager_result_t result =
+        init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
+    manager_firmware_update_response_t *resp = &result.firmware_update;
+    resp->which_response = MANAGER_FIRMWARE_UPDATE_RESPONSE_ERROR_TAG;
+    resp->error.error = MANAGER_FIRMWARE_UPDATE_ERROR_VARIANT_NOT_ALLOWED;
+    manager_send_result(&result);
+    return false;
+  }
+
+  // Query is invalid if the target version is less than the current
   // firmware version installed
-  if (target_version <= current_version) {
+  if (target_version < current_version) {
     manager_result_t result =
         init_manager_result(MANAGER_RESULT_FIRMWARE_UPDATE_TAG);
     manager_firmware_update_response_t *resp = &result.firmware_update;
@@ -167,10 +180,16 @@ void manager_confirm_firmware_update(manager_query_t *query) {
     return;
   }
 
+  char *variant = UI_TEXT_MULTI_COIN;
+  if (query->firmware_update.initiate.variant == COMMON_BTC_ONLY) {
+    variant = UI_TEXT_BTC_ONLY;
+  }
+
   char msg[100];
   snprintf(msg,
            sizeof(msg),
            FIRMWARE_UPDATE_CONFIRMATION,
+           variant,
            query->firmware_update.initiate.version.major,
            query->firmware_update.initiate.version.minor,
            query->firmware_update.initiate.version.patch);
