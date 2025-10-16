@@ -65,6 +65,7 @@
 #include "application_startup.h"
 #include "arbitrum_app.h"
 #include "avalanche_app.h"
+#include "base_app.h"
 #include "bsc_app.h"
 #include "btc_app.h"
 #include "btc_main.h"
@@ -197,4 +198,5 @@ void core_init_app_registry() {
   registry_add_app(get_stellar_app_desc());
   registry_add_app(get_canton_app_desc());
   registry_add_app(get_hyperliquid_app_desc());
+  registry_add_app(get_base_app_desc());
 }
