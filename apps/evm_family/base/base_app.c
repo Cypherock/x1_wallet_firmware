@@ -124,7 +124,7 @@ static const evm_config_t base_app_config = {
     .is_token_whitelisted = is_token_whitelisted,
 };
 
-static const cy_app_desc_t base_app_desc = {.id = 11,
+static const cy_app_desc_t base_app_desc = {.id = 16,
                                             .version =
                                                 {
                                                     .major = 1,
