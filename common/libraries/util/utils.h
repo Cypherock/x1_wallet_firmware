@@ -50,7 +50,7 @@
 #define U16_SWAP_ENDIANNESS(x) ((x) >> 8 | (x) << 8)
 /// Change little-endian value to big-endian ordering and vice-versa
 #define U32_SWAP_ENDIANNESS(x)                                                 \
-  ((x) << 24 | ((x)&0xff00) << 8 | ((x)&0xff0000) >> 8 | (x) >> 24)
+  ((x) << 24 | ((x) & 0xff00) << 8 | ((x) & 0xff0000) >> 8 | (x) >> 24)
 /// Find maximum of two values
 #define CY_MAX(a, b) ((a) > (b) ? (a) : (b))
 /// Find minimum of two values
@@ -480,5 +480,13 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
 uint8_t string_to_escaped_string(const char *input,
                                  char *escaped_string,
                                  size_t out_len);
+
+/**
+ * Write a 64-bit unsigned integer to buffer in little-endian order.
+ *
+ * @param buffer  Output buffer (must have at least 8 bytes).
+ * @param value   64-bit value to write.
+ */
+void write_uint64_le(uint8_t *buffer, uint64_t value);
 
 #endif
