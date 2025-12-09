@@ -112,11 +112,11 @@ int mnemonic_to_bits(const char *mnemonic, uint8_t *bits) {
   }
   n++;
 
-  // check that number of words is valid for BIP-39:
-  // (a) between 128 and 256 bits of initial entropy (12 - 24 words)
-  // (b) number of bits divisible by 33 (1 checksum bit per 32 input bits)
-  //     - that is, (n * 11) % 33 == 0, so n % 3 == 0
-  if (n < 12 || n > 24 || (n % 3)) {
+  // check number of words
+  // NOTE: this was changed in trezor library to allow all words between 12 - 24
+  // and n  % 3 == 0
+  // but for us we only allow 12, 18 and 24.
+  if (n != 12 && n != 18 && n != 24) {
     return 0;
   }
 
