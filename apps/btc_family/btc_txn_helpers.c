@@ -722,9 +722,6 @@ bool btc_digest_input(const btc_txn_context_t *context,
   } else if (SCRIPT_TYPE_P2PKH == type) {
     // p2pkh digest calculation; has not failure case
     calculate_p2pkh_digest(context, index, digest);
-  } else if (SCRIPT_TYPE_P2SH == type) {
-    // TODO: Implement P2SH digest calculation
-    status = false;
   } else if (SCRIPT_TYPE_P2TR == type) {
     status = calculate_p2tr_digest(context, index, digest);
   } else {
