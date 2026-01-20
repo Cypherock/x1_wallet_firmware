@@ -68,11 +68,10 @@
 #include "app_registry.h"
 #include "cardano/core.pb.h"
 #include "cardano_api.h"
-#include "cardano_pub_key.h"
+#include "cardano_priv.h"
 #include "core.pb.h"
 #include "error.pb.h"
 #include "status_api.h"
-#include "ui_core_confirm.h"
 #include "usb_api.h"
 
 /*****************************************************************************

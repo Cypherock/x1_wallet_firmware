@@ -52,12 +52,13 @@
  * @param[in] path      The derivation path as an uint32 array
  * @param[in] levels    The number of levels in the derivation path
  *
- * @return bool Indicates if the provided derivation path is valid
- * @retval true if the derivation path is valid
- * @retval false otherwise
+ * @return bool  Indicates if the provided derivation path is valid
+ * @retval true  Derivation path is valid
+ * @retval false Derivation path is invalid
  *
  */
-bool cardano_derivation_path_guard(const uint32_t *path, uint8_t levels);
+bool cardano_derivation_path_guard(const uint32_t *path, uint8_t levels)
+    __attribute__((warn_unused_result));
 
 /**
  * @brief Converts payment derivation path into stake derivation path
