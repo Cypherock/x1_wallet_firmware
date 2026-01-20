@@ -432,6 +432,9 @@ extern const char *ui_text_account_id;
 extern const char *ui_text_verify_principal_id;
 extern const char *ui_text_verify_account_id;
 
+// Cardano
+extern const char *ui_text_stake_address;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif
