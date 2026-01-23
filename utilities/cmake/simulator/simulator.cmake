@@ -10,7 +10,7 @@ ELSE()
         file(GLOB_RECURSE SOURCES "simulator/*.*" "common/*.*" "src/*.*" "apps/*.*")
 ENDIF(UNIT_TESTS_SWITCH)
 
-add_compile_definitions(USE_SIMULATOR=1 ATCAPRINTF USE_MONERO=1 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0)
+add_compile_definitions(USE_SIMULATOR=1 ATCAPRINTF USE_MONERO=1 USE_BIP32_CACHE=0 USE_BIP39_CACHE=0 -DUSE_CARDANO)
 IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
@@ -67,6 +67,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/stellar_app
         apps/sia_app
         apps/canton_app
+        apps/cardano_app
 
         src/
         src/menu
