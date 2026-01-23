@@ -198,7 +198,7 @@ static bool get_public_key(const uint8_t *seed,
  * @retval true If all the requested public keys were derived successfully
  * @retval false If there is any issue occurred during the key derivation
  */
-bool fill_public_keys(
+static bool fill_public_keys(
     const cardano_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t out_public_key_list[][CARDANO_PUBLIC_KEY_SIZE],
@@ -320,7 +320,7 @@ static bool get_public_key(const uint8_t *seed,
   return true;
 }
 
-bool fill_public_keys(
+static bool fill_public_keys(
     const cardano_get_public_keys_derivation_path_t *path,
     const uint8_t *seed,
     uint8_t out_payment_public_key_list[][CARDANO_PUBLIC_KEY_SIZE],
