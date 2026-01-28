@@ -500,6 +500,15 @@ void cardano_get_pub_keys(cardano_query_t *query) {
       return;
     }
 
+    /* hint host that stake is verified */
+    set_app_flow_status(CARDANO_GET_PUBLIC_KEYS_STATUS_VERIFY_STAKE);
+    cardano_result_t result = init_cardano_result(which_response);
+    result.get_public_keys.which_response =
+        CARDANO_GET_PUBLIC_KEYS_RESPONSE_STAKE_VERIFY_TAG;
+    cardano_send_result(&result);
+
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+
     /* now compute payment address */
     uint8_t payment_addr[CARDANO_PAYMENT_ADDR_LENGTH] = {0};
     if (!get_payment_addr(
@@ -514,7 +523,7 @@ void cardano_get_pub_keys(cardano_query_t *query) {
       return;
     }
 
-    set_app_flow_status(CARDANO_GET_PUBLIC_KEYS_STATUS_VERIFY);
+    set_app_flow_status(CARDANO_GET_PUBLIC_KEYS_STATUS_VERIFY_PAYMENT);
   }
   if (!send_public_keys(query,
                         stake_pubkey_list,
