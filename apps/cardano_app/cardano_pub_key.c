@@ -332,7 +332,11 @@ static bool fill_public_keys(
   for (pb_size_t index = 0; index < count; index++) {
     const cardano_get_public_keys_derivation_path_t *current_payment =
         &path[index];
-    stake_derv_from_payment(current_payment, &current_stake);
+
+    /* we need to compute this just once */
+    if (0 == index) {
+      stake_derv_from_payment(current_payment, &current_stake);
+    }
 
     /* fill payment derivation public key */
     if (!get_public_key(seed,
@@ -342,12 +346,20 @@ static bool fill_public_keys(
       return false;
     }
 
-    /* fill stake derivation public key */
-    if (!get_public_key(seed,
-                        current_stake.path,
-                        current_stake.path_count,
-                        out_stake_public_key_list[index])) {
-      return false;
+    /* compute stake only for first derivation path */
+    if (0 == index) {
+      /* fill stake derivation public key */
+      if (!get_public_key(seed,
+                          current_stake.path,
+                          current_stake.path_count,
+                          out_stake_public_key_list[0])) {
+        return false;
+      }
+    } else {
+      /* we can simply copy for the rest of the stake address */
+      memcpy(out_stake_public_key_list[index],
+             out_stake_public_key_list[0],
+             CARDANO_PUBLIC_KEY_SIZE);
     }
   }
   return true;
