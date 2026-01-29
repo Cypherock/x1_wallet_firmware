@@ -65,11 +65,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "blake2b.h"
 #include "cardano/get_public_key.pb.h"
 #include "cardano_context.h"
+#include "cardano_priv.h"
 #include "coin_utils.h"
 #include "segwit_addr.h"
 
@@ -103,20 +105,6 @@
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Converts 8 bit wide byte buffer to 5 bit wide byte buffer as required
- * in cardano.
- *
- * @param out_buf        Out buffer to write to
- * @param out_buf_len    Written bytes count
- * @param in_bytes       Input bytes to convert
- * @param in_bytes_len   Input bytes len
- */
-static int convert_bits_bech32(uint8_t *out_buf,
-                               size_t *out_buf_len,
-                               const uint8_t *in_bytes,
-                               size_t in_bytes_len);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
@@ -129,18 +117,18 @@ static int convert_bits_bech32(uint8_t *out_buf,
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static int convert_bits_bech32(uint8_t *out_buf,
-                               size_t *out_buf_len,
-                               const uint8_t *in_bytes,
-                               size_t in_bytes_len) {
+/*****************************************************************************
+ * GLOBAL FUNCTIONS
+ *****************************************************************************/
+
+bool convert_bits_bech32(uint8_t *out_buf,
+                         size_t *out_buf_len,
+                         const uint8_t *in_bytes,
+                         size_t in_bytes_len) {
   /* convert_bits returns 1 on success */
   return 1 ==
          convert_bits(out_buf, out_buf_len, 5, in_bytes, in_bytes_len, 8, 1);
 }
-
-/*****************************************************************************
- * GLOBAL FUNCTIONS
- *****************************************************************************/
 
 bool cardano_derivation_path_guard(const uint32_t *path, uint8_t levels) {
   bool status = false;
@@ -237,4 +225,8 @@ bool get_payment_addr(const uint8_t stake_pub_key[CARDANO_PUBLIC_KEY_SIZE],
                             PAYMENT_BECH32_PREFIX,
                             payment_addr_5bit,
                             payment_addr_5bit_len);
+}
+
+double ada_from_lovelace(const uint64_t lovelace) {
+  return (double)lovelace * 1e-6;
 }
