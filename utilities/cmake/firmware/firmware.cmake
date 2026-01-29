@@ -72,6 +72,8 @@ file(GLOB_RECURSE STARKNET_APP_SOURCES "apps/starknet_app/*.*")
 file(GLOB_RECURSE XRP_APP_SOURCES "apps/xrp_app/*.*")
 file(GLOB_RECURSE ICP_APP_SOURCES "apps/icp_app/*.*")
 file(GLOB_RECURSE STELLAR_APP_SOURCES "apps/stellar_app/*.*")
+file(GLOB_RECURSE CANTON_APP_SOURCES "apps/canton_app/*.*")
+file(GLOB_RECURSE SIA_APP_SOURCES "apps/sia_app/*.*")
 
 # Define sources from common/coin_support that are specific to non-BTC builds
 set(COMMON_NON_BTC_SOURCES "")
@@ -122,7 +124,9 @@ ELSE()
         ${XRP_APP_SOURCES}
         ${ICP_APP_SOURCES}
         ${CONSTELLATION_APP_SOURCE}
-        ${STELLAR_APP_SOURCES})
+        ${STELLAR_APP_SOURCES}
+        ${CANTON_APP_SOURCES}
+        ${SIA_APP_SOURCES})
 ENDIF(BTC_ONLY)
 
 IF(UNIT_TESTS_SWITCH)
@@ -325,6 +329,8 @@ ELSE()
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
+        apps/evm_family/hyperliquid
+        apps/evm_family/base
         apps/near_app
         apps/solana_app
         apps/tron_app
@@ -335,14 +341,17 @@ ELSE()
         apps/constellation_app
         apps/exchange_app
         apps/stellar_app
+        apps/sia_app
+        apps/canton_app
         
         # Common coin support sub-module includes for non-BTC builds
         common/coin_support/eth_sign_data  # Headers for eth_sign_data module 
-        common/coin_support/tron_parse_txn # Headers for tron_parse_txn module 
+        common/coin_support/tron_parse_txn # Headers for tron_parse_txn module
         # If other coin-specific helper headers (e.g., solana_txn_helpers.h, near_context.h)
         # reside in specific subdirectories under common/coin_support/, add those paths here.
         # If they are within the app-specific directories (e.g. apps/solana_app/),
         # those are already covered by the app include paths.
+        
 
         # All unit tests for full build (conditional on UNIT_TESTS_SWITCH)
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/evm_app>
@@ -353,6 +362,8 @@ ELSE()
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/constellation_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/icp_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/stellar_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/sia_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/sia_app>
     )
 ENDIF(BTC_ONLY)
 

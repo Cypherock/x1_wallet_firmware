@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/sia/sign_txn.proto
+sia.SignTxnInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+sia.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:1 fixed_length:true
+sia.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true

@@ -1,0 +1,19 @@
+# options for file common/coin_support/canton_parse_txn/canton/canton_topology_txn.proto
+
+canton.CanSignSpecificMappings.mappings max_count:20
+canton.NamespaceDelegation.namespace type:FT_STATIC max_length:68 fixed_length:true
+
+canton.PartyToParticipant.HostingParticipant.participant_uid type:FT_STATIC max_length:255 fixed_length:false
+// expects x1 firmware generated party_ids which are of length 80 only
+canton.PartyToParticipant.party type:FT_STATIC max_length:80 fixed_length:true
+canton.PartyToParticipant.participants max_count:1
+
+// expects x1 firmware generated party_ids which are of length 80 only
+canton.PartyToKeyMapping.party type:FT_STATIC max_length:80 fixed_length:true
+canton.PartyToKeyMapping.signing_keys max_count:1
+
+canton.Synchronizer.id type:FT_STATIC max_length:255 fixed_length:false
+canton.Synchronizer.physical_id type:FT_STATIC max_length:255 fixed_length:false
+
+canton.StoreId.Temporary.name type:FT_STATIC max_length:255 fixed_length:false
+

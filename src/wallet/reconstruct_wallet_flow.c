@@ -62,6 +62,7 @@
 #include "reconstruct_wallet_flow.h"
 
 #include "bip39.h"
+#include "blake2b.h"
 #include "card_flow_reconstruct_wallet.h"
 #include "common_error.h"
 #include "constant_texts.h"
@@ -456,5 +457,60 @@ uint8_t reconstruct_mnemonics(const uint8_t *wallet_id,
 
   mnemonic_clear();
   clear_wallet_data();
+  return result;
+}
+
+bool reconstruct_sia_seed(const uint8_t *wallet_id,
+                          uint8_t *seed_out,
+                          rejection_cb *reject_cb) {
+  if ((NULL == wallet_id) || (NULL == seed_out)) {
+    return false;
+  }
+
+  bool result = false;
+
+  clear_wallet_data();
+  mnemonic_clear();
+
+  const char *mnemonic =
+      reconstruct_wallet(wallet_id, PASSPHRASE_INPUT, reject_cb);
+
+  if (mnemonic == NULL || !mnemonic_check(mnemonic)) {
+    mnemonic_clear();
+    clear_wallet_data();
+    return result;
+  }
+  // See
+  // https://github.com/SiaFoundation/coreutils/blob/v0.18.2/wallet/seed.go#L83
+  // https://github.com/SiaFoundation/coreutils/blob/v0.18.2/wallet/seed.go#L33
+
+  uint8_t bits[33] = {0}, entropy[32] = {0};
+  uint32_t entropy_bytes = 0;
+  int bit_count = mnemonic_to_bits(mnemonic, bits);
+
+  // Note: Sia natively supports 12 words mnemonic only
+  if (bit_count == 132) {    // 12 words
+    entropy_bytes = 16;
+  } else if (bit_count == 198) {    // 18 words
+    entropy_bytes = 24;
+  } else if (bit_count == 264) {    // 24 words
+    entropy_bytes = 32;
+  } else {
+    mnemonic_clear();
+    clear_wallet_data();
+    memzero(bits, sizeof(bits));
+    memzero(entropy, sizeof(entropy));
+    entropy_bytes = 0;
+    return result;
+  }
+
+  memcpy(entropy, bits, entropy_bytes);
+  result = (blake2b(entropy, entropy_bytes, seed_out, 32) == 0);
+
+  mnemonic_clear();
+  clear_wallet_data();
+  memzero(bits, sizeof(bits));
+  memzero(entropy, sizeof(entropy));
+  entropy_bytes = 0;
   return result;
 }

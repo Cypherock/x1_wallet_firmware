@@ -23,7 +23,11 @@
  * MACROS AND DEFINES
  *****************************************************************************/
 
-#define REGISTRY_MAX_APPS 26
+/*
+ * WARN: also update app_versions's max_count in
+ * common/proto-options/version.options
+ */
+#define REGISTRY_MAX_APPS 30
 
 /*****************************************************************************
  * TYPEDEFS

@@ -72,4 +72,31 @@ uint8_t reconstruct_mnemonics(
 bool reconstruct_seed_without_passphrase(const uint8_t *wallet_id,
                                          uint8_t *seed_out,
                                          rejection_cb *reject_cb);
+
+/**
+ * @brief Reconstructs Sia seed from wallet mnemonic using Blake2b derivation
+ * @details This function retrieves the mnemonic from secure storage and
+ * converts it to a Sia-compatible seed using Blake2b hashing instead of
+ * standard BIP39. Supports 12, 18, and 24 word mnemonics. The resulting seed is
+ * always 32 bytes.
+ *
+ * Process:
+ * 1. Retrieve mnemonic from secure element
+ * 2. Convert mnemonic to entropy bits
+ * 3. Extract entropy bytes (16/24/32 depending on word count)
+ * 4. Apply Blake2b hash to generate 32-byte seed
+ *
+ * @param[in] wallet_id Unique identifier for the wallet (32 bytes)
+ * @param[out] seed_out Buffer to store the resulting 32-byte seed
+ * @param[in] reject_cb Callback function for error handling and user rejection
+ *
+ * @return bool True if seed reconstruction was successful, false otherwise
+ * @retval true Mnemonic was successfully retrieved and converted to seed
+ * @retval false Failed due to invalid wallet_id, user rejection, invalid
+ * mnemonic, unsupported word count, or Blake2b computation error
+ */
+bool reconstruct_sia_seed(const uint8_t *wallet_id,
+                          uint8_t *seed_out,
+                          rejection_cb *reject_cb);
+
 #endif /* RECONSTRUCT_SEED_FLOW_H */

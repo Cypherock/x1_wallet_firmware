@@ -1,0 +1,4 @@
+# options for file common/coin_support/canton_parse_txn/canton/canton_crypto.proto
+
+canton.SigningPublicKey.public_key type:FT_STATIC max_size:44 fixed_length:true;
+canton.SigningPublicKey.usage max_count:5

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package canton;
+
+import "canton/canton_value.proto";
+
+message Fetch {
+  string lf_version = 1;
+  string contract_id = 2;
+  string package_name = 3;
+  Identifier template_id = 4;
+  repeated string signatories = 5;
+  repeated string stakeholders = 6;
+  repeated string acting_parties = 7;
+  Identifier interface_id = 8;
+}
+
+message Exercise {
+  string lf_version = 1;
+  string contract_id = 2;
+  string package_name = 3;
+  Identifier template_id = 4;
+  repeated string signatories = 5;
+  repeated string stakeholders = 6;
+  repeated string acting_parties = 7;
+  Identifier interface_id = 8;
+  string choice_id = 9;
+  Value chosen_value = 10;
+  bool consuming = 11;
+  repeated string children = 12;
+  Value exercise_result = 13;
+  repeated string choice_observers = 14;
+}
+
+message Create {
+  string lf_version = 1;
+  string contract_id = 2;
+  string package_name = 3;
+  Identifier template_id = 4;
+  Value argument = 5;
+  repeated string signatories = 6;
+  repeated string stakeholders = 7;
+}
+
+message Rollback { repeated string children = 1; }
+
+message Node {
+  oneof node_type {
+    Create create = 1;
+    Fetch fetch = 2;
+    Exercise exercise = 3;
+    Rollback rollback = 4;
+  }
+}

@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package canton;
+
+import "canton/canton_crypto.proto";
+
+enum TopologyChangeOp {
+  TOPOLOGY_CHANGE_OP_UNSPECIFIED = 0;
+
+  // Adds a new or replaces an existing mapping
+  TOPOLOGY_CHANGE_OP_ADD_REPLACE = 1;
+
+  // Remove an existing mapping
+  TOPOLOGY_CHANGE_OP_REMOVE = 2;
+}
+
+enum TopologyMappingCode {
+  TOPOLOGY_MAPPING_CODE_UNSPECIFIED = 0;
+  TOPOLOGY_MAPPING_CODE_NAMESPACE_DELEGATION = 1;
+  reserved 2; // was IdentifierDelegation
+  TOPOLOGY_MAPPING_CODE_DECENTRALIZED_NAMESPACE_DEFINITION = 3;
+  TOPOLOGY_MAPPING_CODE_OWNER_TO_KEY_MAPPING = 4;
+  TOPOLOGY_MAPPING_CODE_SYNCHRONIZER_TRUST_CERTIFICATE = 5;
+  TOPOLOGY_MAPPING_CODE_PARTICIPANT_PERMISSION = 6;
+  TOPOLOGY_MAPPING_CODE_PARTY_HOSTING_LIMITS = 7;
+  TOPOLOGY_MAPPING_CODE_VETTED_PACKAGES = 8;
+  TOPOLOGY_MAPPING_CODE_PARTY_TO_PARTICIPANT = 9;
+  reserved 10; // was AuthorityOf
+  TOPOLOGY_MAPPING_CODE_SYNCHRONIZER_PARAMETERS_STATE = 11;
+  TOPOLOGY_MAPPING_CODE_MEDIATOR_SYNCHRONIZER_STATE = 12;
+  TOPOLOGY_MAPPING_CODE_SEQUENCER_SYNCHRONIZER_STATE = 13;
+  reserved 14; // was OffboardParticipant
+  reserved 15; // was PurgeTopologyTransaction
+  reserved 16; // was TrafficControlState
+  TOPOLOGY_MAPPING_CODE_SEQUENCING_DYNAMIC_PARAMETERS_STATE = 17;
+  TOPOLOGY_MAPPING_CODE_PARTY_TO_KEY_MAPPING = 18;
+  TOPOLOGY_MAPPING_CODE_SYNCHRONIZER_MIGRATION_ANNOUNCEMENT = 19;
+  TOPOLOGY_MAPPING_CODE_SEQUENCER_CONNECTION_SUCCESSOR = 20;
+}
+
+enum ParticipantPermission {
+  PARTICIPANT_PERMISSION_UNSPECIFIED = 0;
+
+  // participant is active, can submit transactions and reassignments
+  PARTICIPANT_PERMISSION_SUBMISSION = 1;
+
+  // participant is passive, can only confirm transactions and submit reassignments
+  PARTICIPANT_PERMISSION_CONFIRMATION = 2;
+
+  // participant is passive, can only observe transactions and submit reassignments
+  PARTICIPANT_PERMISSION_OBSERVATION = 3;
+}
+
+// the key can sign all currently known mappings and all mappings that will be added in future releases
+message CanSignAllMappings {}
+
+// the key can sign all currently known mappings and all mappings that will be added in future releases, except for
+// namespace delegations
+message CanSignAllButNamespaceDelegations {}
+
+// the key can only sign the explicitly specified mappings
+message CanSignSpecificMappings {
+  repeated TopologyMappingCode mappings = 1;
+}
+
+message NamespaceDelegation {
+  string namespace = 1;
+
+  optional SigningPublicKey target_key = 2;
+
+  // flag indicating whether the given delegation is a root delegation or not
+  // a root delegation is also allowed to issue other NamespaceDelegations.
+  bool is_root_delegation = 3 [deprecated = true];
+
+  // restricts target_key to only sign transactions with the specified mapping types.
+  // for backwards compatibility, only the following combinations are valid:
+  // * is_root_delegation = true,  restriction = empty: the key can sign all mappings
+  // * is_root_delegation = false, restriction = empty: the key can sign all mappings but namespace delegations
+  // * is_root_delegation = false, restriction = non-empty: the key can only sign the mappings according the restriction that is set
+  oneof restriction {
+    CanSignAllMappings can_sign_all_mappings = 4;
+    CanSignAllButNamespaceDelegations can_sign_all_but_namespace_delegations = 5;
+    CanSignSpecificMappings can_sign_specific_mapings = 6;
+  }
+}
+
+message PartyToParticipant {
+  message HostingParticipant {
+    message Onboarding {}
+
+    // the target participant that the party should be mapped to
+    string participant_uid = 1;
+
+    // permission of the participant for this particular party (the actual
+    // will be min of ParticipantSynchronizerPermission.ParticipantPermission and this setting)
+    ParticipantPermission permission = 2;
+
+    // optional, present iff the party is being onboarded to the participant
+    Onboarding onboarding = 3;
+  }
+
+  // the party that is to be represented by the participants
+  string party = 1;
+
+  // the signatory threshold required by the participants to be able to act on behalf of the party.
+  // a mapping with threshold > 1 is considered a definition of a consortium party
+  uint32 threshold = 2;
+
+  // which participants will host the party.
+  // if threshold > 1, must be Confirmation or Observation
+  repeated HostingParticipant participants = 3;
+
+  reserved 4; // was group_addressing = 4;
+
+  reserved 5; // was synchronizer = 5;
+}
+
+message PartyToKeyMapping {
+  // the party
+  string party = 1;
+  // the authorization threshold
+  uint32 threshold = 3;
+  // the designated signing keys
+  repeated SigningPublicKey signing_keys = 4;
+
+  reserved 2; // was synchronizer_id = 2
+}
+
+message TopologyMapping {
+  oneof mapping {
+    NamespaceDelegation namespace_delegation = 1;
+    PartyToParticipant party_to_participant = 9;
+    PartyToKeyMapping party_to_key_mapping = 16;
+  }
+}
+
+message Synchronizer {
+  oneof kind {
+    string id = 1;
+    string physical_id = 2;
+  }
+}
+
+message StoreId {
+  message Authorized {}
+
+  message Temporary {
+    string name = 1;
+  }
+
+  oneof store {
+    Authorized authorized = 1;
+    Synchronizer synchronizer = 2;
+    Temporary temporary = 3;
+  }
+}
+
+message GenerateTransactionRequestProposal {
+  /** Replace / Remove */
+  TopologyChangeOp operation = 1;
+
+  uint32 serial = 2;
+
+  optional TopologyMapping mapping = 3;
+
+  optional StoreId store = 4;
+}

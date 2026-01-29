@@ -14,6 +14,7 @@ fi
 # --- Define paths and tools relative to the project root ---
 PROTO_COMMON_SRC="common/cypherock-common/proto"
 PROTO_TRON="common/coin_support/tron_parse_txn"
+PROTO_CANTON="common/coin_support/canton_parse_txn"
 OUTPUT_DIR="generated/proto"
 OPTIONS_DIR="common/proto-options"
 NANOPB_GEN="vendor/nanopb/generator/nanopb_generator.py"
@@ -48,7 +49,8 @@ else
     # For a full build, find all .proto files in all relevant directories.
     ALL_COMMON_PROTOS=($(find "${PROTO_COMMON_SRC}" -name "*.proto"))
     ALL_TRON_PROTOS=($(find "${PROTO_TRON}" -name "*.proto"))
-    PROTO_FILES_TO_GENERATE=("${ALL_COMMON_PROTOS[@]}" "${ALL_TRON_PROTOS[@]}")
+    ALL_CANTON_PROTOS=($(find "${PROTO_CANTON}" -name "*.proto"))
+    PROTO_FILES_TO_GENERATE=("${ALL_COMMON_PROTOS[@]}" "${ALL_TRON_PROTOS[@]}" "${ALL_CANTON_PROTOS[@]}")
 fi
 
 # Check if any proto files were found before attempting to generate
@@ -64,6 +66,7 @@ python3 "${NANOPB_GEN}" \
     --generated-include-format "#include <%s>" \
     --proto-path="${PROTO_COMMON_SRC}" \
     --proto-path="${PROTO_TRON}" \
+    --proto-path="${PROTO_CANTON}" \
     --options-path="${OPTIONS_DIR}" \
     --output-dir="${OUTPUT_DIR}" \
     --c-style -s anonymous_oneof:true -s long_names:false \
