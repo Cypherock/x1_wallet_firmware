@@ -288,6 +288,25 @@ bool derive_hdnode_from_path(const uint32_t *path,
                              const char *curve,
                              const uint8_t *seed,
                              HDNode *hdnode);
+/**
+ * @brief Generates the node from provided seed at the requested path for
+ * cardano
+ *
+ * @param [in] path                 Path to derive the hdnode
+ * @param [in] path_length          Length of the path
+ * @param [in] curve                Curve name
+ * @param [in] seed                 Seed to derive the hdnode of 64 bytes
+ * @param [out] hdnode              Pointer to the hdnode instance used to store
+ * the derived hdnode.
+ *
+ * @return bool Indicating if the derivation was successful
+ * @retval true If the node derivation succeeded
+ * @retval false If the node derivation failed
+ */
+bool derive_hdnode_from_path_cardano(const uint32_t *path,
+                                     const size_t path_length,
+                                     const uint8_t *seed,
+                                     HDNode *hdnode);
 
 void bech32_addr_encode(char *output,
                         char *hrp,

@@ -58,9 +58,13 @@
  */
 #include "coin_utils.h"
 
+#include <stdbool.h>
+
 #include "arbitrum.h"
 #include "avalanche.h"
+#include "bip32.h"
 #include "bsc.h"
+#include "cardano.h"
 #include "etc.h"
 #include "fantom.h"
 #include "harmony.h"
@@ -81,6 +85,23 @@ void s_memcpy(uint8_t *dst,
   }
   memcpy(dst, &src[*offset], len);
   *offset += len;
+}
+
+bool derive_hdnode_from_path_cardano(const uint32_t *path,
+                                     const size_t path_length,
+                                     const uint8_t *seed,
+                                     HDNode *hdnode) {
+  uint8_t secret[CARDANO_SECRET_LENGTH] = {0};
+  secret_from_seed_cardano_ledger(seed, 64, secret);
+  hdnode_from_secret_cardano(secret, hdnode);
+  for (size_t i = 0; i < path_length; i++) {
+    if (0 == hdnode_private_ckd_cardano(hdnode, path[i])) {
+      return false;
+    }
+  }
+
+  hdnode_fill_public_key(hdnode);
+  return true;
 }
 
 bool derive_hdnode_from_path(const uint32_t *path,
