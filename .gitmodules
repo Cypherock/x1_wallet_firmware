@@ -13,3 +13,6 @@
 [submodule "poseidon"]
 	path = vendor/poseidon
 	url = ../poseidon
+[submodule "vendor/libcbor"]
+	path = vendor/libcbor
+	url = https://github.com/cypherock/libcbor
