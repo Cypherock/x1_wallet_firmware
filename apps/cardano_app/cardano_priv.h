@@ -13,7 +13,10 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <stdint.h>
+
 #include "cardano/core.pb.h"
+#include "cardano_context.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -22,6 +25,21 @@
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
+typedef struct {
+  uint64_t fees;
+  uint8_t receiver_addr[CARDANO_PAYMENT_ADDR_LENGTH];
+  uint64_t receive_amount;
+} cardano_parsed_info;
+
+typedef struct {
+  cardano_sign_txn_initiate_request_t init_info;
+  /* raw transaction as received from host */
+  uint8_t *transaction;
+  /* parsed transaction */
+  cardano_parsed_info parsed_txn;
+  /* hashed transaction: this is signed */
+  uint8_t transaction_hash[CARDANO_HASHED_TXN_SIZE];
+} cardano_txn_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
