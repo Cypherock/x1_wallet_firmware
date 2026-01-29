@@ -623,11 +623,9 @@ static bool get_user_verification() {
 
   /* verify fees */
   char fees_string[30] = {0};
+  double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
   memzero(display, sizeof(display));
-  ignored = snprintf(fees_string,
-                     sizeof(fees_string),
-                     "%lli",
-                     cardano_txn_context->parsed_txn.fees);
+  ignored = snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
   (void)ignored;
   ignored = snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
   (void)ignored;
