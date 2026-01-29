@@ -40,4 +40,13 @@
  */
 void cardano_get_pub_keys(cardano_query_t *query);
 
+/**
+ * @brief Handler for Cardano transaction signing.
+ * @details This flow expects CARDANO_QUERY_SIGN_TXN_TAG as
+ * initial query, otherwise the flow is aborted
+ *
+ * @param query object for transaction signing query
+ */
+void cardano_sign_transaction(cardano_query_t *query);
+
 #endif    // CARDANO_PRIV_H

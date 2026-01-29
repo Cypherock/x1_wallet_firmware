@@ -135,7 +135,10 @@ void cardano_main(usb_event_t usb_event, const void *cardano_app_config) {
       cardano_get_pub_keys(&query);
       break;
     }
-
+    case CARDANO_QUERY_SIGN_TXN_TAG: {
+      cardano_sign_transaction(&query);
+      break;
+    }
     /* Incase we encounter an invalid query */
     default: {
       cardano_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
