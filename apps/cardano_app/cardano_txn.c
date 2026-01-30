@@ -576,6 +576,7 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
 static bool get_user_verification() {
   /* verify amount, addr for each receipt */
   char to_address[CARDANO_PAYMENT_ADDR_LENGTH + 1] = {0};
+  memzero(to_address, sizeof(to_address));
 
   for (size_t output_i = 0;
        output_i < cardano_txn_context->parsed_txn.outputs_count;
@@ -583,6 +584,13 @@ static bool get_user_verification() {
     memcpy(to_address,
            cardano_txn_context->parsed_txn.outputs[output_i].receiver_addr,
            CARDANO_PAYMENT_ADDR_LENGTH);
+
+    /* exchange address verification */
+    if (use_signature_verification) {
+      if (!exchange_validate_stored_signature(to_address, sizeof(to_address))) {
+        return false;
+      }
+    }
 
     if (!core_scroll_page(
             ui_text_verify_address, to_address, cardano_send_error)) {
