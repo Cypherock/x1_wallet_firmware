@@ -641,6 +641,8 @@ static bool sign_txn(uint8_t *seed,
                hdnode.private_key,
                hdnode.public_key,
                sig->signature);
+  memzero(seed, 64);
+  memzero(&hdnode, sizeof(hdnode));
   return true;
 }
 
@@ -681,8 +683,6 @@ void cardano_sign_transaction(cardano_query_t *query) {
       sign_txn(seed, &sig) && send_signature(query, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
-
-  memzero(seed, sizeof(seed));
 
   if (NULL != cardano_txn_context->transaction) {
     free(cardano_txn_context->transaction);
