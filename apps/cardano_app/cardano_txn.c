@@ -477,25 +477,13 @@ static bool cardano_parse_and_hash_txn_from_cbor(
     }
   }
 
-  /* canonical reencode */
-  unsigned char *serialized_txn_body = 0;
-  size_t serialized_txn_body_len = 0;
-  cbor_serialize_alloc(
-      txn_body_cbor, &serialized_txn_body, &serialized_txn_body_len);
-
-  /* libcbor failed to allocate */
-  if (0 >= serialized_txn_body_len) {
-    return false;
-  }
-
   /* hash */
-  blake2b(serialized_txn_body,
-          serialized_txn_body_len,
+  blake2b(txn,
+          txn_size,
           out_txn_context->transaction_hash,
           CARDANO_HASHED_TXN_SIZE);
-
-  /* free serialized transaction body */
-  free(serialized_txn_body);
+  /* cleanup */
+  cbor_decref(&txn_body_cbor);
   return true;
 }
 
