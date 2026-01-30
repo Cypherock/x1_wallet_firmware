@@ -331,9 +331,8 @@ static bool handle_initiate_query(const cardano_query_t *query) {
     return false;
   }
 
-  int32_t ignored = snprintf(
+  (void)snprintf(
       msg, sizeof(msg), UI_TEXT_SIGN_TXN_PROMPT, CARDANO_NAME, wallet_name);
-  (void)ignored;
 
   /* take user consent */
   if (!core_confirmation(msg, cardano_send_error)) {
@@ -549,7 +548,6 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
     return false;
   }
 
-  // TODO: validate transaction
   return true;
 }
 
@@ -580,17 +578,14 @@ static bool get_user_verification() {
     char amount_string[30] = {'\0'};
     double amount_ada = ada_from_lovelace(
         cardano_txn_context->parsed_txn.outputs[output_i].receive_amount);
-    int32_t ignored =
-        snprintf(amount_string, sizeof(amount_string), "%.6f", amount_ada);
-    (void)ignored;
+    (void)snprintf(amount_string, sizeof(amount_string), "%.6f", amount_ada);
 
     char display[100] = {'\0'};
-    ignored = snprintf(display,
-                       sizeof(display),
-                       UI_TEXT_VERIFY_AMOUNT,
-                       amount_string,
-                       CARDANO_LUNIT);
-    (void)ignored;
+    (void)snprintf(display,
+                   sizeof(display),
+                   UI_TEXT_VERIFY_AMOUNT,
+                   amount_string,
+                   CARDANO_LUNIT);
 
     if (!core_confirmation(display, cardano_send_error)) {
       return false;
@@ -600,11 +595,8 @@ static bool get_user_verification() {
     char fees_string[30] = {0};
     double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
     memzero(display, sizeof(display));
-    ignored = snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
-    (void)ignored;
-    ignored =
-        snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
-    (void)ignored;
+    (void)snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
+    (void)snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
 
     if (!core_confirmation(display, cardano_send_error)) {
       return false;
