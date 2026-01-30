@@ -350,14 +350,12 @@ static bool cardano_parse_and_hash_txn_from_cbor(
   cbor_item_t *cbor_decoded_raw_txn = cbor_load(txn, txn_size, &result);
 
   if (CBOR_ERR_NONE != result.error.code) {
-    logger("cborerror-1");
     return false;
   }
 
   /* make sure parent is array and has atleast 1 element */
   if (!cbor_isa_array(cbor_decoded_raw_txn) ||
       cbor_array_size(cbor_decoded_raw_txn) <= 0) {
-    logger("cborerror-2");
     return false;
   }
 
@@ -368,7 +366,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
   /* should be a map */
   if (!cbor_isa_map(txn_body_cbor)) {
-    logger("cborerror-3");
     return false;
   }
 
@@ -376,7 +373,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
   /* should have at least 4 elements */
   if (4 > txn_body_key_value_count) {
-    logger("cborerror-4");
     return false;
   }
 
@@ -389,7 +385,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
     /* key is always a uint */
     if (!cbor_isa_uint(key_pair->key)) {
-      logger("cborerror-5");
       return false;
     }
 
@@ -399,7 +394,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
       case CBOR_TXN_BODY_OUTPUTS_KEY_PAIR_ID: {
         /* should be an array of outputs */
         if (!cbor_isa_array(key_pair->value)) {
-          logger("cborerror-6");
           return false;
         }
 
@@ -407,7 +401,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
         /* there should be atleast 1 output */
         if (0 >= outputs_size) {
-          logger("cborerror-7");
           return false;
         }
 
@@ -417,7 +410,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
           /* each output is a array of 2 elements */
           if (!cbor_isa_array(output) || cbor_array_size(output) != 2) {
-            logger("cborerror-8");
             return false;
           }
 
@@ -426,7 +418,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
           cbor_item_t *raw_addr_wrapped = cbor_array_get(output, 0);
           if (!cbor_isa_bytestring(raw_addr_wrapped) ||
               29 < cbor_string_length(raw_addr_wrapped)) {
-            logger("cborerror-9");
             return false;
           }
 
@@ -441,27 +432,23 @@ static bool cardano_parse_and_hash_txn_from_cbor(
           size_t raw_addr_5bit_len = 0;
           if (!convert_bits_bech32(
                   raw_addr_5bit, &raw_addr_5bit_len, raw_addr, 29)) {
-            logger("cborerror-9.1");
             return false;
           }
 
           char display[30] = {0};
           snprintf(display, 30, "len = %d", raw_addr_5bit_len);
-          logger("%s", display);
 
           /* bech32 encode */
           if (!bech32_encode((char *)&out_txn_context->parsed_txn.receiver_addr,
                              PAYMENT_BECH32_PREFIX,
                              raw_addr_5bit,
                              raw_addr_5bit_len)) {
-            logger("cborerror-10");
             return false;
           }
 
           /* amount */
           cbor_item_t *sending_amount = cbor_array_get(output, 1);
           if (!cbor_isa_uint(sending_amount)) {
-            logger("cborerror-11");
             return false;
           }
 
@@ -473,7 +460,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
                    30,
                    "amount = %llu",
                    out_txn_context->parsed_txn.receive_amount);
-          logger("%s", display);
         }
         break;
       }
@@ -481,18 +467,15 @@ static bool cardano_parse_and_hash_txn_from_cbor(
         /* fees  */
       case CBOR_TXN_BODY_FEES_KEY_PAIR_ID: {
         if (!cbor_isa_uint(key_pair->value)) {
-          logger("cborerror-12");
           return false;
         }
 
         char display[30] = {0};
         snprintf(display, 30, "fees = %llu", cbor_get_int(key_pair->value));
-        logger("%s", display);
         out_txn_context->parsed_txn.fees = cbor_get_int(key_pair->value);
         break;
       }
       default:
-        logger("id = %ld", key_value_pair_id);
         break;
     }
   }
@@ -505,7 +488,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
 
   /* libcbor failed to allocate */
   if (0 >= serialized_txn_body_len) {
-    logger("cborerror-13");
     return false;
   }
 
@@ -530,7 +512,6 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
   cardano_result_t response = init_cardano_result(CARDANO_RESULT_SIGN_TXN_TAG);
   /* allocate mem for storing entire trnsaction */
   cardano_txn_context->transaction = (uint8_t *)malloc(total_txn_size);
-  logger("txn size = %d\n", total_txn_size);
 
   for (;;) {
     /* invalid request? */
@@ -577,9 +558,6 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
     return false;
   }
 
-  logger("first = %d\n", cardano_txn_context->transaction[0]);
-  logger("last = %d\n", cardano_txn_context->transaction[total_txn_size - 1]);
-    logger("unique2-error4");
   if (!cardano_parse_and_hash_txn_from_cbor(cardano_txn_context->transaction,
                                             total_txn_size,
                                             cardano_txn_context)) {
@@ -591,7 +569,6 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
 }
 
 static bool get_user_verification() {
-  logger("unique3");
   /* verify amount, addr for each receipt */
   char to_address[CARDANO_PAYMENT_ADDR_LENGTH + 1] = {0};
   memcpy(to_address,
@@ -639,7 +616,6 @@ static bool get_user_verification() {
 }
 
 static bool fetch_seed(cardano_query_t *query, uint8_t *seed_out) {
-  logger("unique4");
   if (!cardano_get_query(query, CARDANO_QUERY_SIGN_TXN_TAG)) {
     return false;
   }
@@ -658,7 +634,6 @@ static bool fetch_seed(cardano_query_t *query, uint8_t *seed_out) {
 static bool send_signature(cardano_query_t *query,
                            uint8_t *seed,
                            cardano_sign_txn_signature_response_t *sig) {
-  logger("unique5");
   HDNode hdnode = {0};
   const size_t depth = cardano_txn_context->init_info.derivation_path_count;
   const uint32_t *hd_path = cardano_txn_context->init_info.derivation_path;
@@ -709,7 +684,6 @@ void cardano_sign_transaction(cardano_query_t *query) {
   if (handle_initiate_query(query) && fetch_valid_transaction(query) &&
       get_user_verification() && fetch_seed(query, seed) &&
       send_signature(query, seed, &sig)) {
-    logger("unique6");
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
