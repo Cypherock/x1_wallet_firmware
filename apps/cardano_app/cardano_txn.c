@@ -414,6 +414,10 @@ static bool cardano_parse_and_hash_txn_from_cbor(
           return false;
         }
 
+        out_txn_context->parsed_txn.outputs_count = outputs_size;
+        out_txn_context->parsed_txn.outputs =
+            (cardano_output *)malloc(sizeof(cardano_output) * outputs_size);
+
         /* for each output in outputs */
         for (size_t output_i = 0; output_i < outputs_size; output_i++) {
           cbor_item_t *output = cbor_array_get(key_pair->value, output_i);
@@ -445,14 +449,13 @@ static bool cardano_parse_and_hash_txn_from_cbor(
             return false;
           }
 
-          char display[30] = {0};
-          snprintf(display, 30, "len = %d", raw_addr_5bit_len);
-
           /* bech32 encode */
-          if (!bech32_encode((char *)&out_txn_context->parsed_txn.receiver_addr,
-                             PAYMENT_BECH32_PREFIX,
-                             raw_addr_5bit,
-                             raw_addr_5bit_len)) {
+          if (!bech32_encode(
+                  (char *)&out_txn_context->parsed_txn.outputs[output_i]
+                      .receiver_addr,
+                  PAYMENT_BECH32_PREFIX,
+                  raw_addr_5bit,
+                  raw_addr_5bit_len)) {
             return false;
           }
 
@@ -462,14 +465,8 @@ static bool cardano_parse_and_hash_txn_from_cbor(
             return false;
           }
 
-          out_txn_context->parsed_txn.receive_amount =
+          out_txn_context->parsed_txn.outputs[output_i].receive_amount =
               cbor_get_int(sending_amount);
-
-          memzero(display, sizeof(display));
-          snprintf(display,
-                   30,
-                   "amount = %llu",
-                   out_txn_context->parsed_txn.receive_amount);
         }
         break;
       }
@@ -480,8 +477,6 @@ static bool cardano_parse_and_hash_txn_from_cbor(
           return false;
         }
 
-        char display[30] = {0};
-        snprintf(display, 30, "fees = %llu", cbor_get_int(key_pair->value));
         out_txn_context->parsed_txn.fees = cbor_get_int(key_pair->value);
         break;
       }
@@ -581,44 +576,51 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
 static bool get_user_verification() {
   /* verify amount, addr for each receipt */
   char to_address[CARDANO_PAYMENT_ADDR_LENGTH + 1] = {0};
-  memcpy(to_address,
-         cardano_txn_context->parsed_txn.receiver_addr,
-         CARDANO_PAYMENT_ADDR_LENGTH);
 
-  if (!core_scroll_page(
-          ui_text_verify_address, to_address, cardano_send_error)) {
-    return false;
-  }
+  for (size_t output_i = 0;
+       output_i < cardano_txn_context->parsed_txn.outputs_count;
+       output_i++) {
+    memcpy(to_address,
+           cardano_txn_context->parsed_txn.outputs[output_i].receiver_addr,
+           CARDANO_PAYMENT_ADDR_LENGTH);
 
-  char amount_string[30] = {'\0'};
-  double amount_ada =
-      ada_from_lovelace(cardano_txn_context->parsed_txn.receive_amount);
-  int32_t ignored =
-      snprintf(amount_string, sizeof(amount_string), "%.6f", amount_ada);
+    if (!core_scroll_page(
+            ui_text_verify_address, to_address, cardano_send_error)) {
+      return false;
+    }
 
-  char display[100] = {'\0'};
-  ignored = snprintf(display,
-                     sizeof(display),
-                     UI_TEXT_VERIFY_AMOUNT,
-                     amount_string,
-                     CARDANO_LUNIT);
-  (void)ignored;
+    char amount_string[30] = {'\0'};
+    double amount_ada = ada_from_lovelace(
+        cardano_txn_context->parsed_txn.outputs[output_i].receive_amount);
+    int32_t ignored =
+        snprintf(amount_string, sizeof(amount_string), "%.6f", amount_ada);
+    (void)ignored;
 
-  if (!core_confirmation(display, cardano_send_error)) {
-    return false;
-  }
+    char display[100] = {'\0'};
+    ignored = snprintf(display,
+                       sizeof(display),
+                       UI_TEXT_VERIFY_AMOUNT,
+                       amount_string,
+                       CARDANO_LUNIT);
+    (void)ignored;
 
-  /* verify fees */
-  char fees_string[30] = {0};
-  double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
-  memzero(display, sizeof(display));
-  ignored = snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
-  (void)ignored;
-  ignored = snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
-  (void)ignored;
+    if (!core_confirmation(display, cardano_send_error)) {
+      return false;
+    }
 
-  if (!core_confirmation(display, cardano_send_error)) {
-    return false;
+    /* verify fees */
+    char fees_string[30] = {0};
+    double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
+    memzero(display, sizeof(display));
+    ignored = snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
+    (void)ignored;
+    ignored =
+        snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
+    (void)ignored;
+
+    if (!core_confirmation(display, cardano_send_error)) {
+      return false;
+    }
   }
 
   set_app_flow_status(CARDANO_SIGN_TXN_STATUS_VERIFY);
@@ -705,6 +707,12 @@ void cardano_sign_transaction(cardano_query_t *query) {
   if (NULL != cardano_txn_context->transaction) {
     free(cardano_txn_context->transaction);
     cardano_txn_context->transaction = NULL;
+  }
+
+  if (NULL != cardano_txn_context->parsed_txn.outputs) {
+    free(cardano_txn_context->parsed_txn.outputs);
+    cardano_txn_context->parsed_txn.outputs = NULL;
+    cardano_txn_context->parsed_txn.outputs_count = 0;
   }
 
   if (NULL != cardano_txn_context) {

@@ -26,9 +26,14 @@
  * TYPEDEFS
  *****************************************************************************/
 typedef struct {
-  uint64_t fees;
   uint8_t receiver_addr[CARDANO_PAYMENT_ADDR_LENGTH];
   uint64_t receive_amount;
+} cardano_output;
+
+typedef struct {
+  uint64_t fees;
+  cardano_output *outputs;
+  uint8_t outputs_count;
 } cardano_parsed_info;
 
 typedef struct {
