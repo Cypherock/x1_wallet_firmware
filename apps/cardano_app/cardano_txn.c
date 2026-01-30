@@ -556,6 +556,8 @@ static bool get_user_verification() {
   char to_address[CARDANO_PAYMENT_ADDR_LENGTH + 1] = {0};
   memzero(to_address, sizeof(to_address));
 
+  char display[100] = {'\0'};
+
   for (size_t output_i = 0;
        output_i < cardano_txn_context->parsed_txn.outputs_count;
        output_i++) {
@@ -570,8 +572,10 @@ static bool get_user_verification() {
       }
     }
 
-    if (!core_scroll_page(
-            ui_text_verify_address, to_address, cardano_send_error)) {
+    char title[30] = {0};
+    (void)snprintf(
+        title, sizeof(title), "%s #%d", ui_text_verify_address, output_i + 1);
+    if (!core_scroll_page(title, to_address, cardano_send_error)) {
       return false;
     }
 
@@ -580,27 +584,27 @@ static bool get_user_verification() {
         cardano_txn_context->parsed_txn.outputs[output_i].receive_amount);
     (void)snprintf(amount_string, sizeof(amount_string), "%.6f", amount_ada);
 
-    char display[100] = {'\0'};
     (void)snprintf(display,
                    sizeof(display),
-                   UI_TEXT_VERIFY_AMOUNT,
+                   "Verify amount #%d\n%s\n%s",
+                   output_i + 1,
                    amount_string,
                    CARDANO_LUNIT);
 
     if (!core_confirmation(display, cardano_send_error)) {
       return false;
     }
+  }
 
-    /* verify fees */
-    char fees_string[30] = {0};
-    double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
-    memzero(display, sizeof(display));
-    (void)snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
-    (void)snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
+  /* verify fees */
+  char fees_string[30] = {0};
+  double fees_ada = ada_from_lovelace(cardano_txn_context->parsed_txn.fees);
+  memzero(display, sizeof(display));
+  (void)snprintf(fees_string, sizeof(fees_string), "%.6f", fees_ada);
+  (void)snprintf(display, sizeof(display), "Verify fees\n%s", fees_string);
 
-    if (!core_confirmation(display, cardano_send_error)) {
-      return false;
-    }
+  if (!core_confirmation(display, cardano_send_error)) {
+    return false;
   }
 
   set_app_flow_status(CARDANO_SIGN_TXN_STATUS_VERIFY);
