@@ -234,6 +234,17 @@ static bool fetch_seed(cardano_query_t *query, uint8_t *seed_out)
     __attribute__((warn_unused_result));
 
 /**
+ * @brief signs the transaction for the given seed and writes generated
+ * signature to `sig`
+ *
+ * @param[in] seed Seed to derive keys from
+ * @param[out] sig Buffer where generated signature will be written to
+ * @return bool Indicating whether derivation and signing was successful or not
+ */
+static bool sign_txn(uint8_t *seed, cardano_sign_txn_signature_response_t *sig)
+    __attribute__((warn_unused_result));
+
+/**
  * @brief Sends the generated signature to the host
  * @details The function internally updates the unsigned transaction with a
  * recent blockhash and signs the transaction before sending to the host
@@ -247,7 +258,6 @@ static bool fetch_seed(cardano_query_t *query, uint8_t *seed_out)
  * @retval false If the host responded with unknown/wrong query
  */
 static bool send_signature(cardano_query_t *query,
-                           uint8_t *seed,
                            cardano_sign_txn_signature_response_t *sig)
     __attribute__((warn_unused_result));
 
@@ -631,19 +641,11 @@ static bool fetch_seed(cardano_query_t *query, uint8_t *seed_out) {
   return true;
 }
 
-static bool send_signature(cardano_query_t *query,
-                           uint8_t *seed,
-                           cardano_sign_txn_signature_response_t *sig) {
+static bool sign_txn(uint8_t *seed,
+                     cardano_sign_txn_signature_response_t *sig) {
   HDNode hdnode = {0};
   const size_t depth = cardano_txn_context->init_info.derivation_path_count;
   const uint32_t *hd_path = cardano_txn_context->init_info.derivation_path;
-
-  cardano_result_t result = init_cardano_result(CARDANO_RESULT_SIGN_TXN_TAG);
-  result.sign_txn.which_response = CARDANO_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
-  if (!cardano_get_query(query, CARDANO_QUERY_SIGN_TXN_TAG) ||
-      !check_which_request(query, CARDANO_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
-    return false;
-  }
 
   /* derive keys */
   if (!derive_hdnode_from_path_cardano(hd_path, depth, seed, &hdnode)) {
@@ -657,10 +659,21 @@ static bool send_signature(cardano_query_t *query,
                hdnode.private_key,
                hdnode.public_key,
                sig->signature);
+  return true;
+}
 
-  memzero(&hdnode, sizeof(hdnode));
-  memzero(seed, sizeof(seed));
+static bool send_signature(cardano_query_t *query,
+                           cardano_sign_txn_signature_response_t *sig) {
+  /* verify request from host */
+  if (!cardano_get_query(query, CARDANO_QUERY_SIGN_TXN_TAG) ||
+      !check_which_request(query, CARDANO_SIGN_TXN_REQUEST_SIGNATURE_TAG)) {
+    return false;
+  }
 
+  cardano_result_t result = init_cardano_result(CARDANO_RESULT_SIGN_TXN_TAG);
+  result.sign_txn.which_response = CARDANO_SIGN_TXN_RESPONSE_SIGNATURE_TAG;
+
+  /* copy to result */
   memcpy(&result.sign_txn.signature,
          sig,
          sizeof(cardano_sign_txn_signature_response_t));
@@ -683,7 +696,7 @@ void cardano_sign_transaction(cardano_query_t *query) {
 
   if (handle_initiate_query(query) && fetch_valid_transaction(query) &&
       get_user_verification() && fetch_seed(query, seed) &&
-      send_signature(query, seed, &sig)) {
+      sign_txn(seed, &sig) && send_signature(query, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 
