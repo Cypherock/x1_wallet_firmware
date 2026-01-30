@@ -356,21 +356,13 @@ static bool cardano_parse_and_hash_txn_from_cbor(
     uint8_t *txn,
     size_t txn_size,
     cardano_txn_context_t *out_txn_context) {
+  /* get txn body  */
   struct cbor_load_result result;
-  cbor_item_t *cbor_decoded_raw_txn = cbor_load(txn, txn_size, &result);
+  cbor_item_t *txn_body_cbor = cbor_load(txn, txn_size, &result);
 
   if (CBOR_ERR_NONE != result.error.code) {
     return false;
   }
-
-  /* make sure parent is array and has atleast 1 element */
-  if (!cbor_isa_array(cbor_decoded_raw_txn) ||
-      cbor_array_size(cbor_decoded_raw_txn) <= 0) {
-    return false;
-  }
-
-  /* get txn body, the first element */
-  cbor_item_t *txn_body_cbor = cbor_array_get(cbor_decoded_raw_txn, 0);
 
   /* extract and store fields */
 
