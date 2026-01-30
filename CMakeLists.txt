@@ -45,9 +45,6 @@ list(APPEND PROTO_SRCS "vendor/nanopb/pb_common.c" "vendor/nanopb/pb_decode.c" "
 list (APPEND MINI_GMP_SRCS "vendor/mini-gmp/mini-gmp-helpers.c" "vendor/mini-gmp/mini-gmp.c")
 list (APPEND POSEIDON_SRCS "vendor/poseidon/sources/f251.c" "vendor/poseidon/sources/poseidon.c" "vendor/poseidon/sources/poseidon_rc.c")
 
-# libcbor
-add_subdirectory(vendor/libcbor EXCLUDE_FROM_ALL)
-
 OPTION(DEV_SWITCH "Additional features/logs to aid developers" OFF)
 OPTION(UNIT_TESTS_SWITCH "Compile build for main firmware or unit tests" OFF)
 

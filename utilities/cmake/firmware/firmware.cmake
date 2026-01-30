@@ -210,6 +210,9 @@ target_compile_options(${EXECUTABLE} PRIVATE
         $<$<CONFIG:Release>:-Werror>
         )
 
+# libcbor
+add_subdirectory(vendor/libcbor EXCLUDE_FROM_ALL)
+
 target_link_libraries(${EXECUTABLE} PRIVATE cbor)
 
 target_link_options(${EXECUTABLE} PRIVATE
