@@ -183,10 +183,10 @@ static bool handle_initiate_query(const cardano_query_t *query)
  *
  * @returns Bool Indicating whether succeeded or failed
  */
-static bool cardano_parse_txn_from_cbor(uint8_t *txn,
-                                        size_t txn_size,
-                                        cardano_txn_context_t *out_txn_context)
-    __attribute__((warn_unused_result));
+static bool cardano_parse_and_hash_txn_from_cbor(
+    uint8_t *txn,
+    size_t txn_size,
+    cardano_txn_context_t *out_txn_context) __attribute__((warn_unused_result));
 
 /**
  * @brief Fetches complete raw transaction to be signed for verification
@@ -342,7 +342,7 @@ static bool handle_initiate_query(const cardano_query_t *query) {
   return true;
 }
 
-static bool cardano_parse_txn_from_cbor(
+static bool cardano_parse_and_hash_txn_from_cbor(
     uint8_t *txn,
     size_t txn_size,
     cardano_txn_context_t *out_txn_context) {
@@ -579,10 +579,10 @@ static bool fetch_valid_transaction(cardano_query_t *query) {
 
   logger("first = %d\n", cardano_txn_context->transaction[0]);
   logger("last = %d\n", cardano_txn_context->transaction[total_txn_size - 1]);
-  if (!cardano_parse_txn_from_cbor(cardano_txn_context->transaction,
-                                   total_txn_size,
-                                   cardano_txn_context)) {
     logger("unique2-error4");
+  if (!cardano_parse_and_hash_txn_from_cbor(cardano_txn_context->transaction,
+                                            total_txn_size,
+                                            cardano_txn_context)) {
     return false;
   }
 
