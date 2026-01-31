@@ -50,7 +50,7 @@ char *base32_encode(const uint8_t *in, size_t inlen, char *out, size_t outlen,
     int ret = base32_encode_character(out[i], alphabet);
 
     if (ret == -1) {
-      return false;
+      return NULL;
     } else {
       out[i] = ret;
     }

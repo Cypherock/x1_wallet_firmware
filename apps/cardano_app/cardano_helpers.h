@@ -20,6 +20,7 @@
 #include "bip32.h"
 #include "cardano/get_public_key.pb.h"
 #include "cardano_context.h"
+#include "cardano_priv.h"
 
 /*****************************************************************************
  * MACROS AND DEFINES
@@ -36,6 +37,20 @@
 /*****************************************************************************
  * GLOBAL FUNCTION PROTOTYPES
  *****************************************************************************/
+
+/**
+ * @brief Converts 8 bit wide byte buffer to 5 bit wide byte buffer as required
+ * in cardano.
+ *
+ * @param out_buf        Out buffer to write to
+ * @param out_buf_len    Written bytes count
+ * @param in_bytes       Input bytes to convert
+ * @param in_bytes_len   Input bytes len
+ */
+bool convert_bits_bech32(uint8_t *out_buf,
+                         size_t *out_buf_len,
+                         const uint8_t *in_bytes,
+                         size_t in_bytes_len);
 
 /**
  * @brief Verifies the derivation path for cardano
@@ -101,5 +116,13 @@ bool get_stake_addr(const uint8_t stake_pub_key[CARDANO_PUBLIC_KEY_SIZE],
 bool get_payment_addr(const uint8_t stake_pub_key[CARDANO_PUBLIC_KEY_SIZE],
                       const uint8_t payment_pub_key[CARDANO_PUBLIC_KEY_SIZE],
                       uint8_t out_payment_addr[CARDANO_PAYMENT_ADDR_LENGTH]);
+
+/**
+ * @brief Converts Lovelace quantity into Ada
+ *
+ * @param[in] lovelace Quantity in lovelace
+ * @return double Quantity in Ada
+ */
+double ada_from_lovelace(uint64_t lovelace);
 
 #endif    // CARDANO_HELPERS_H

@@ -68,7 +68,7 @@ else()
 endif()
 
 # Include nanopb source headers
-target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto vendor/mini-gmp vendor/poseidon/sources)
+target_include_directories( ${EXECUTABLE} PRIVATE vendor/nanopb generated/proto vendor/mini-gmp vendor/poseidon/sources vendor/libcbor/src)
 
 # Enable support for dynamically allocated fields in nanopb
 # Ref: vendor/nanopb/pb.h

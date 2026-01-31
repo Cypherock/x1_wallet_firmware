@@ -210,6 +210,11 @@ target_compile_options(${EXECUTABLE} PRIVATE
         $<$<CONFIG:Release>:-Werror>
         )
 
+# libcbor
+add_subdirectory(vendor/libcbor EXCLUDE_FROM_ALL)
+
+target_link_libraries(${EXECUTABLE} PRIVATE cbor)
+
 target_link_options(${EXECUTABLE} PRIVATE
         -T${CMAKE_SOURCE_DIR}/STM32L486RGTX_FLASH.ld
         -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16
