@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "canton/core.pb.h"
+#include "canton/sign_txn_external.pb.h"
 #include "canton_context.h"
 #include "canton_txn_encoding.h"
 #include "sha2.h"
@@ -47,6 +48,11 @@ typedef struct {
   canton_unsigned_topology_txn unsigned_topology_txn;
 
 } canton_topology_txn_context_t;
+
+typedef struct {
+  canton_sign_txn_external_initiate_request_t init_info;
+  canton_unsigned_txn_external_info_t unsigned_txn_external_info;
+} canton_txn_external_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
