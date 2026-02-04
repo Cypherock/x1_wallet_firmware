@@ -92,4 +92,13 @@ void canton_sign_transaction(canton_query_t *query);
  */
 void canton_sign_topology_transaction(canton_query_t *query);
 
+/**
+ * @brief Entry point for sign_txn_external type queries
+ * @details Function handles complete flow required to sign and required
+ * transaction, this includes: recieving further data, parsing and validating
+ * data, user confirmation, returning data to the host. And incase of any error,
+ * returns error to the host.
+ */
+void canton_sign_txn_external(canton_query_t *query);
+
 #endif
