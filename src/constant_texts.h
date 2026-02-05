@@ -80,6 +80,7 @@
 #define UI_TEXT_EXPIRY "Expiry"
 #define UI_TEXT_VERIFY_INSTRUMENT_ID "Verify Token/Instrument ID"
 #define UI_TEXT_VERIFY_INSTRUMENT_ADMIN "Verify Token/Instrument Admin"
+#define UI_TEXT_NAMESPACE "Namespace"
 
 // product hash
 extern const char *product_hash;

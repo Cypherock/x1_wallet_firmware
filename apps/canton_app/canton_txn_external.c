@@ -162,6 +162,19 @@ static bool handle_initiate_query(const canton_query_t *query);
 static bool fetch_valid_input(canton_query_t *query);
 
 /**
+ * @brief This function executes user verification flow of the unsigned txn
+ * received from the host.
+ * @details The user verification flow is different for different type of
+ * transaction types identified from the unsigned txn
+ * @note This function expected that the unsigned txn is parsed using the helper
+ * function as only few transaction types are supported currently.
+ *
+ * @return true If the user accepted the transaction display
+ * @return false If any user rejection occured or P0 event occured
+ */
+static bool get_user_verification(void);
+
+/**
  * @brief Calculates ED25519 curve based signature over the digest of the user
  * verified unsigned txn.
  * @details Seed reconstruction takes place within this function
@@ -412,6 +425,36 @@ static bool fetch_valid_input(canton_query_t *query) {
   return true;
 }
 
+static bool get_user_verification(void) {
+  canton_unsigned_txn_external_info_t *ut_txn_info =
+      &canton_txn_external_context->unsigned_txn_external_info;
+
+  canton_sign_txn_external_supported_txn_types_t txn_type =
+      ut_txn_info->txn_type;
+
+  switch (txn_type) {
+    case CANTON_SUPPORTED_TXN_TYPE_NAMESPACE_DELEGATION: {
+      if (!core_scroll_page(UI_TEXT_TRANSACTION_TYPE,
+                            NAMESPACE_DELEGATION_TXN_TYPE_TEXT,
+                            canton_send_error) ||
+          !core_scroll_page(
+              UI_TEXT_NAMESPACE,
+              ut_txn_info->display_info.namespace_delegation.namespace,
+              canton_send_error)) {
+        return false;
+      }
+      break;
+    }
+    default: {
+      return false;
+    }
+  }
+
+  set_app_flow_status(CANTON_SIGN_TXN_EXTERNAL_STATUS_VERIFY);
+
+  return true;
+}
+
 static bool sign_txn_external(canton_external_sig_t *sig) {
   uint8_t seed[64] = {0};
   if (!reconstruct_seed(canton_txn_external_context->init_info.wallet_id,
@@ -476,7 +519,8 @@ void canton_sign_txn_external(canton_query_t *query) {
   canton_external_sig_t sig = {0};
 
   if (handle_initiate_query(query) && fetch_valid_input(query) &&
-      sign_txn_external(&sig) && send_signature(query, &sig)) {
+      get_user_verification() && sign_txn_external(&sig) &&
+      send_signature(query, &sig)) {
     delay_scr_init(ui_text_check_cysync, DELAY_TIME);
   }
 

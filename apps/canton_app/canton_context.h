@@ -64,6 +64,8 @@
 #define PREAPPROVAL_TXN_TYPE_TEXT "Enable Transfer Pre-approval"
 #define MERGE_DELEGATION_PROPOSAL_TXN_TYPE_TEXT "Enable UTXO Management"
 
+#define NAMESPACE_DELEGATION_TXN_TYPE_TEXT "Namespace Delegation"
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
