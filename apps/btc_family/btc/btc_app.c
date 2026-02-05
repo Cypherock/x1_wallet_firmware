@@ -106,6 +106,7 @@ const btc_config_t btc_app = {
     .legacy_xpub_ver = 0x0488b21e,
     .segwit_xpub_ver = 0x049d7cb2,
     .nsegwit_xpub_ver = 0x04b24746,
+    .taproot_xpub_ver = 0x04b24746,
     .bech32_hrp = "bc",
     .lunit_name = "BTC",
     .name = "Bitcoin",

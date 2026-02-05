@@ -680,3 +680,9 @@ void write_uint64_be(uint8_t *buffer, uint64_t value) {
   write_uint32_be(buffer, (uint32_t)(value >> 32));
   write_uint32_be(buffer + 4, (uint32_t)(value & 0xFFFFFFFF));
 }
+
+void write_uint64_le(uint8_t *buffer, uint64_t value) {
+  for (int i = 0; i < 8; i++) {
+    buffer[i] = (value >> (i * 8)) & 0xFF;
+  }
+}

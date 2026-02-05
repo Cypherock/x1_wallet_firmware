@@ -64,6 +64,7 @@
 
 #include "base58.h"
 #include "bip32.h"
+#include "btc_helpers.h"
 #include "btc_priv.h"
 #include "memzero.h"
 #include "ripemd160.h"
@@ -240,11 +241,20 @@ bool btc_check_script_address(const uint8_t *script,
   uint8_t digest[HASHER_DIGEST_LENGTH] = {0};
   btc_script_type_e type = btc_get_script_type(script, script_len);
   if (SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type &&
-      SCRIPT_TYPE_P2SH != type) {
+      SCRIPT_TYPE_P2SH != type && SCRIPT_TYPE_P2TR != type) {
     // allow only p2pkh and p2wpkh and p2sh-p2wpkh for change output
     return false;
   }
   uint8_t offset = (SCRIPT_TYPE_P2PKH == type) ? 3 : 2;
+
+  if (SCRIPT_TYPE_P2TR == type) {
+    offset = 2;
+    uint8_t tweaked_public_key[32] = {0};
+    if (!bip340_tweak_public_key(public_key, NULL, tweaked_public_key)) {
+      return false;
+    }
+    return memcmp(tweaked_public_key, script + offset, 32) == 0;
+  }
 
   hasher_Raw(HASHER_SHA2_RIPEMD, public_key, BTC_SHORT_PUB_KEY_SIZE, digest);
 

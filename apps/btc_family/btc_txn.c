@@ -85,6 +85,7 @@
 #include "status_api.h"
 #include "ui_core_confirm.h"
 #include "ui_delay.h"
+#include "utils.h"
 #include "wallet_list.h"
 
 /*****************************************************************************
@@ -374,8 +375,9 @@ static bool fetch_transaction_meta(btc_query_t *query) {
   uint32_t in_count = query->sign_txn.meta.input_count;
   uint32_t out_count = query->sign_txn.meta.output_count;
   // check important information for supported/compatibility
-  if (0x00000001 != query->sign_txn.meta.sighash || 0 == in_count ||
-      0 == out_count || TXN_MAX_INPUTS < in_count ||
+  if ((SIGHASH_DEFAULT != query->sign_txn.meta.sighash &&
+       SIGHASH_ALL != query->sign_txn.meta.sighash) ||
+      0 == in_count || 0 == out_count || TXN_MAX_INPUTS < in_count ||
       TXN_MAX_OUTPUTS < out_count ||
       TXN_MAX_UTXO_SUM < (in_count + out_count)) {
     /** Do not accept transaction with empty input/output.
@@ -511,7 +513,7 @@ static bool fetch_valid_input(btc_query_t *query) {
     hoisted_query = NULL;
 
     if ((SCRIPT_TYPE_P2PKH != type && SCRIPT_TYPE_P2WPKH != type &&
-         SCRIPT_TYPE_P2SH != type) ||
+         SCRIPT_TYPE_P2SH != type && SCRIPT_TYPE_P2TR != type) ||
         validation_result != BTC_VALIDATE_SUCCESS) {
       // input validation failed, terminate immediately
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -667,7 +669,16 @@ static bool sign_input(scrip_sig_t *signatures) {
   HDNode node = {0};
   HDNode t_node = {0};
   bool status = false;
+
+  // populate hashes cache for segwit transaction types
+  btc_segwit_init_cache(btc_txn_context);
+
   const uint32_t *hd_path = btc_txn_context->init_info.derivation_path;
+  if (PURPOSE_TAPROOT == hd_path[0]) {
+    // populate hashes cache for taproot transaction types
+    btc_taproot_init_cache(btc_txn_context);
+  }
+
   const ecdsa_curve *curve = get_curve_by_name(SECP256K1_NAME)->params;
   if (!reconstruct_seed(
           btc_txn_context->init_info.wallet_id, buffer, btc_send_error)) {
@@ -677,8 +688,6 @@ static bool sign_input(scrip_sig_t *signatures) {
 
   set_app_flow_status(BTC_SIGN_TXN_STATUS_SEED_GENERATED);
 
-  // populate hashes cache for segwit transaction types
-  btc_segwit_init_cache(btc_txn_context);
   if (!derive_hdnode_from_path(hd_path, 3, SECP256K1_NAME, buffer, &node) ||
       false == validate_change_address(&node)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
@@ -712,10 +721,26 @@ static bool sign_input(scrip_sig_t *signatures) {
     }
 
     status = btc_digest_input(btc_txn_context, idx, buffer);
-    ecdsa_sign_digest(
-        curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
-    signatures[idx].size = btc_sig_to_script_sig(
-        signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    if (PURPOSE_TAPROOT == hd_path[0]) {
+      // Sign with Schnorr signature
+      if (schnorrsig_sign32_taproot(t_node.private_key,
+                                    t_node.public_key,
+                                    buffer,
+                                    signatures[idx].bytes) != 0) {
+        status = false;
+        break;
+      }
+      // add public key to the signature
+      memcpy(signatures[idx].bytes + 64, t_node.public_key, 33);
+
+      // Taproot signatures are 64 bytes (no script sig encoding needed)
+      signatures[idx].size = 64 + 33;
+    } else {
+      ecdsa_sign_digest(
+          curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
+      signatures[idx].size = btc_sig_to_script_sig(
+          signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+    }
     if (0 == signatures[idx].size || false == status) {
       // early exit as digest could not be calculated
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);

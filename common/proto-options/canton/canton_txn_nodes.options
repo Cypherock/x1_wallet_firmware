@@ -1,0 +1,40 @@
+# options for file common/cypherock-common/proto/canton/canton_txn_nodes.proto
+
+# NameStrings are strings with length <= 1000 that match the regexp ``[A-Za-z\$_][A-Za-z0-9\$_]*``.
+# PackageIdStrings are strings with length <= 64 that match the regexp ``[A-Za-z0-9\-_ ]+``.
+# PartyIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9:\-_ ]+``.
+# LedgerStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ ]+``.
+# ApplicationIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ @\|]+``.
+
+# Create
+canton.Create.lf_version type:FT_POINTER max_size:10 fixed_length:false
+canton.Create.contract_id type:FT_POINTER max_size:150 fixed_length:false
+canton.Create.package_name type:FT_POINTER max_length:1000 fixed_length:false
+canton.Create.argument type:FT_POINTER
+canton.Create.signatories type:FT_POINTER max_length:255 max_count:5 fixed_length:false
+canton.Create.stakeholders type:FT_POINTER max_length:255 max_count:5 fixed_length:false
+
+# Fetch
+canton.Fetch.lf_version type:FT_POINTER max_size:10 fixed_length:false
+canton.Fetch.contract_id type:FT_POINTER max_size:150 fixed_length:false
+canton.Fetch.package_name type:FT_POINTER max_size:1000 fixed_length:false
+canton.Fetch.signatories type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+canton.Fetch.stakeholders type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+canton.Fetch.acting_parties type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+
+# Exercise
+canton.Exercise.lf_version type:FT_POINTER max_size:10 fixed_length:false
+canton.Exercise.contract_id type:FT_POINTER max_size:150 fixed_length:false
+canton.Exercise.package_name type:FT_POINTER max_size:1000 fixed_length:false
+canton.Exercise.signatories type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+canton.Exercise.stakeholders type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+canton.Exercise.acting_parties type:FT_POINTER max_size:255 max_count:5 fixed_length:false
+canton.Exercise.choice_id type:FT_POINTER max_size:1000 fixed_length:false
+canton.Exercise.children type:FT_POINTER max_size:1000 max_count:10 fixed_length:false
+canton.Exercise.choice_observers type:FT_POINTER max_size:1000 max_count:10 fixed_length:false
+canton.Exercise.chosen_value type:FT_POINTER
+canton.Exercise.exercise_result type:FT_POINTER
+
+
+# Rollback
+canton.Rollback.children type:FT_POINTER max_size:1000 max_count:10 fixed_length:false

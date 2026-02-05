@@ -15,6 +15,7 @@ IF (DEV_SWITCH)
     add_compile_definitions(DEV_BUILD)
 ENDIF(DEV_SWITCH)
 
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(EXECUTABLE ${PROJECT_NAME})
 find_package(SDL2 REQUIRED SDL2)
@@ -51,8 +52,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/evm_family/avalanche
         apps/evm_family/optimism
         apps/evm_family/arbitrum
-        apps/near_app
+        apps/evm_family/hyperliquid
+        apps/evm_family/base
 
+        apps/near_app
         apps/solana_app
         apps/tron_app
         apps/inheritance_app
@@ -62,6 +65,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         apps/icp_app
         apps/exchange_app
         apps/stellar_app
+        apps/sia_app
+        apps/canton_app
 
         src/
         src/menu
@@ -170,6 +175,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/constellation_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/icp_app>
         $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/stellar_app>
+        $<$<BOOL:UNIT_TESTS_SWITCH>:${PROJECT_SOURCE_DIR}/tests/apps/sia_app>
         )
 
 IF(UNIT_TESTS_SWITCH)

@@ -157,6 +157,71 @@ int mnemonic_to_entropy(const char *mnemonic, uint8_t *entropy) {
   memcpy(entropy, bits, sizeof(bits));
   return n * 11;
 }
+// Already exists in trezor crypto
+// See https://github.com/trezor/trezor-firmware/blob/main/crypto/bip39.c/#L90
+int mnemonic_to_bits(const char *mnemonic, uint8_t *bits) {
+  if (!mnemonic) {
+    return 0;
+  }
+
+  uint32_t i = 0, n = 0;
+
+  while (mnemonic[i]) {
+    if (mnemonic[i] == ' ') {
+      n++;
+    }
+    i++;
+  }
+  n++;
+
+  // check that number of words is valid for BIP-39:
+  // (a) between 128 and 256 bits of initial entropy (12 - 24 words)
+  // (b) number of bits divisible by 33 (1 checksum bit per 32 input bits)
+  //     - that is, (n * 11) % 33 == 0, so n % 3 == 0
+  if (n < 12 || n > 24 || (n % 3)) {
+    return 0;
+  }
+
+  char current_word[10] = {0};
+  uint32_t j = 0, ki = 0, bi = 0;
+  uint8_t result[32 + 1] = {0};
+
+  memzero(result, sizeof(result));
+  i = 0;
+  while (mnemonic[i]) {
+    j = 0;
+    while (mnemonic[i] != ' ' && mnemonic[i] != 0) {
+      if (j >= sizeof(current_word) - 1) {
+        return 0;
+      }
+      current_word[j] = mnemonic[i];
+      i++;
+      j++;
+    }
+    current_word[j] = 0;
+    if (mnemonic[i] != 0) {
+      i++;
+    }
+    int k = mnemonic_find_word(current_word);
+    if (k < 0) {    // word not found
+      return 0;
+    }
+    for (ki = 0; ki < 11; ki++) {
+      if (k & (1 << (10 - ki))) {
+        result[bi / 8] |= 1 << (7 - (bi % 8));
+      }
+      bi++;
+    }
+  }
+  if (bi != n * 11) {
+    return 0;
+  }
+  memcpy(bits, result, sizeof(result));
+  memzero(result, sizeof(result));
+
+  // returns amount of entropy + checksum BITS
+  return n * 11;
+}
 
 int mnemonic_check(const char *mnemonic) {
   uint8_t bits[32 + 1] = {0};

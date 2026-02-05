@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package canton;
+
+// Serialization format for crypto keys and signatures
+enum CryptoKeyFormat {
+  CRYPTO_KEY_FORMAT_UNSPECIFIED = 0;
+
+  // Previously Tink's proto serialization format
+  reserved 1;
+
+  // ASN.1 + DER encoding
+  // Legacy format no longer used, except for migrations
+  CRYPTO_KEY_FORMAT_DER = 2;
+
+  // Raw encoding of a key, used for symmetric keys
+  CRYPTO_KEY_FORMAT_RAW = 3;
+
+  // ASN.1 + DER-encoding of X.509 SubjectPublicKeyInfo structure: https://datatracker.ietf.org/doc/html/rfc5280#section-4.1
+  CRYPTO_KEY_FORMAT_DER_X509_SUBJECT_PUBLIC_KEY_INFO = 4;
+
+  // ASN.1 + DER-encoding of PKCS #8 PrivateKeyInfo structure: https://datatracker.ietf.org/doc/html/rfc5208#section-5
+  CRYPTO_KEY_FORMAT_DER_PKCS8_PRIVATE_KEY_INFO = 5;
+
+  // Symbolic crypto, must only be used for testing
+  CRYPTO_KEY_FORMAT_SYMBOLIC = 10000;
+}
+
+enum SigningKeySpec {
+  SIGNING_KEY_SPEC_UNSPECIFIED = 0;
+
+  // Elliptic Curve Key from Curve25519
+  // as defined in http://ed25519.cr.yp.to/
+  SIGNING_KEY_SPEC_EC_CURVE25519 = 1;
+
+  // Elliptic Curve Key from the NIST P-256 curve (aka secp256r1)
+  // as defined in https://doi.org/10.6028/NIST.FIPS.186-4
+  SIGNING_KEY_SPEC_EC_P256 = 2;
+
+  // Elliptic Curve Key from the NIST P-384 curve (aka secp384r1)
+  // as defined in https://doi.org/10.6028/NIST.FIPS.186-4
+  SIGNING_KEY_SPEC_EC_P384 = 3;
+
+  // Elliptic Curve Key from SECG P256k1 curve (aka secp256k1)
+  // commonly used in bitcoin and ethereum
+  // as defined in https://www.secg.org/sec2-v2.pdf
+  SIGNING_KEY_SPEC_EC_SECP256K1 = 4;
+}
+
+enum SigningKeyUsage {
+  SIGNING_KEY_USAGE_UNSPECIFIED = 0;
+  // the root namespace key that defines a node's identity and signs topology requests
+  SIGNING_KEY_USAGE_NAMESPACE = 1;
+  // No longer used (only kept for backwards compatibility)
+  SIGNING_KEY_USAGE_IDENTITY_DELEGATION = 2 [deprecated = true];
+  // keys that authenticate members of the network towards a sequencer
+  SIGNING_KEY_USAGE_SEQUENCER_AUTHENTICATION = 3;
+  // keys that deal with all the signing that happens as part of the protocol
+  SIGNING_KEY_USAGE_PROTOCOL = 4;
+  // used internally to identify keys that can self-sign to prove ownership
+  SIGNING_KEY_USAGE_PROOF_OF_OWNERSHIP = 5;
+}
+
+// @deprecated
+enum SigningKeyScheme {
+  SIGNING_KEY_SCHEME_UNSPECIFIED = 0;
+
+  // Signature based on Curve25519
+  // http://ed25519.cr.yp.to/
+  SIGNING_KEY_SCHEME_ED25519 = 1;
+
+  // EC-DSA with NIST curve P-256 or P-384
+  SIGNING_KEY_SCHEME_EC_DSA_P256 = 2;
+  SIGNING_KEY_SCHEME_EC_DSA_P384 = 3;
+}
+
+message SigningPublicKey {
+  // Previously public key id / fingerprint
+  reserved 1;
+
+  CryptoKeyFormat format = 2;
+
+  // Serialized public key in the format specified above
+  bytes public_key = 3;
+
+  // No longer used (only kept for backwards compatibility) stores both the crypto key scheme and algorithm.
+  SigningKeyScheme scheme = 4 [deprecated = true];
+
+  // Explicitly state the key's intended use
+  repeated SigningKeyUsage usage = 5;
+
+  // The key specification that was used to generate the key pair
+  SigningKeySpec key_spec = 6;
+}

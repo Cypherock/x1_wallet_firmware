@@ -1,0 +1,53 @@
+# options for file common/cypherock-common/proto/canton/canton_value.proto
+
+# NameStrings are strings with length <= 1000 that match the regexp ``[A-Za-z\$_][A-Za-z0-9\$_]*``.
+# PackageIdStrings are strings with length <= 64 that match the regexp ``[A-Za-z0-9\-_ ]+``.
+# PartyIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9:\-_ ]+``.
+# LedgerStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ ]+``.
+# ApplicationIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ @\|]+``.
+
+# Identifier
+canton.Identifier.package_id type:FT_POINTER max_size:70 fixed_length:false
+canton.Identifier.module_name type:FT_POINTER max_size:1000 fixed_length:false
+canton.Identifier.entity_name type:FT_POINTER max_size:1000 fixed_length:false
+
+# Enum
+canton.Enum.constructor  type:FT_POINTER max_size:1000 fixed_length:false
+
+# Name Strings
+canton.RecordField.label type:FT_POINTER max_size:1000 fixed_length:false
+canton.Variant.constructor type:FT_POINTER max_size:1000 fixed_length:false
+
+# name string
+canton.Value.numeric type:FT_POINTER max_size:1000 fixed_length:false
+
+# PartyIdStrings
+canton.Value.party type:FT_POINTER max_size:255 fixed_length:false
+
+# name string
+canton.Value.text type:FT_POINTER max_size:1000 fixed_length:false
+
+# LedgerStrings
+canton.Value.contract_id type:FT_POINTER max_size:255 fixed_length:false
+
+canton.TextMap.Entry.key type:FT_POINTER max_size:1000 fixed_length:false
+
+# repeated values
+canton.List.elements type:FT_POINTER max_count:50 fixed_length:false
+canton.Record.fields type:FT_POINTER max_count:50 fixed_length:false
+canton.TextMap.entries type:FT_POINTER max_count:50 fixed_length:false
+canton.GenMap.entries type:FT_POINTER
+
+# Optional and Variant values - use static for direct Value references
+canton.Optional.value type:FT_POINTER
+canton.Variant.value type:FT_POINTER
+canton.RecordField.value type:FT_POINTER
+canton.TextMap.Entry.value type:FT_POINTER
+canton.GenMap.Entry.key type:FT_POINTER
+canton.GenMap.Entry.value type:FT_POINTER
+canton.Value.optional type:FT_POINTER
+canton.Value.list type:FT_POINTER
+canton.Value.text_map type:FT_POINTER
+canton.Value.gen_map type:FT_POINTER
+canton.Value.record type:FT_POINTER
+canton.Value.variant type:FT_POINTER

@@ -60,7 +60,7 @@ typedef struct {
   uint32_t legacy_xpub_ver;
   uint32_t segwit_xpub_ver;
   uint32_t nsegwit_xpub_ver;
-
+  uint32_t taproot_xpub_ver;
   /** The human-readable prefix for Bech32 encoded addresses. Applicable for
    * Segwit and Taproot addresses. Ref:
    * https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#segwit-address-format

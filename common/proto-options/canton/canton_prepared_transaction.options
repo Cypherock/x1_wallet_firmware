@@ -1,0 +1,38 @@
+# options for file common/cypherock-common/proto/canton/canton_prepared_transaction.proto
+
+# NameStrings are strings with length <= 1000 that match the regexp ``[A-Za-z\$_][A-Za-z0-9\$_]*``.
+# PackageIdStrings are strings with length <= 64 that match the regexp ``[A-Za-z0-9\-_ ]+``.
+# PartyIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9:\-_ ]+``.
+# LedgerStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ ]+``.
+# ApplicationIdStrings are strings with length <= 255 that match the regexp ``[A-Za-z0-9#:\-_/ @\|]+``.
+
+## GlobalKey
+canton.GlobalKey.package_name type:FT_STATIC max_length:1000 fixed_length:false
+canton.GlobalKey.hash type:FT_STATIC max_size:32 fixed_length:false
+## canton.GlobalKey.key type:FT_POINTER
+
+## Metadata.SubmitterInfo
+canton.Metadata.SubmitterInfo.act_as type:FT_STATIC max_length:255 max_count:5 fixed_length:false
+canton.Metadata.SubmitterInfo.command_id type:FT_STATIC max_length:36 fixed_length:false
+
+## Metadata.GlobalKeyMappingEntry
+## canton.Metadata.GlobalKeyMappingEntry.key type:FT_POINTER
+## canton.Metadata.GlobalKeyMappingEntry.value type:FT_POINTER
+
+## Metadata.InputContract
+canton.Metadata.InputContract.event_blob type:FT_STATIC max_size:10 fixed_length:false
+
+# Metadata
+canton.Metadata.synchronizer_id type:FT_STATIC max_length:255 fixed_length:false
+canton.Metadata.transaction_uuid type:FT_STATIC max_length:36 fixed_length:false
+
+## DamlTransaction.NodeSeed
+canton.DamlTransaction.NodeSeed.seed type:FT_STATIC max_size:255 fixed_length:false
+
+## DamlTransaction.DNode
+canton.DamlTransaction.DNode.node_id type:FT_STATIC max_size:10 fixed_length:false
+
+# DamlTransaction
+canton.DamlTransaction.version type:FT_STATIC max_size:10 fixed_length:false
+canton.DamlTransaction.roots type:FT_STATIC max_size:10 max_count:1 fixed_length:false
+canton.DamlTransaction.node_seeds type:FT_STATIC max_count:10 fixed_length:false

@@ -21,6 +21,17 @@
 #define EXPECTED_SCRIPT_SIG_SIZE 106
 #define CHUNK_SIZE 2048
 
+#define DEFAULT_SEQUENCE 0xffffffff
+#define SIGHASH_DEFAULT 0x00
+#define SIGHASH_ALL 0x01
+#define SIGHASH_NONE 0x02
+#define SIGHASH_SINGLE 0x03
+#define SIGHASH_ANYONECANPAY 0x80
+#define SIGHASH_OUTPUT_MASK 0x03
+#define SIGHASH_INPUT_MASK 0x80
+#define ADVANCED_TRANSACTION_MARKER 0x00
+#define ADVANCED_TRANSACTION_FLAG 0x01
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -97,5 +108,34 @@ void btc_segwit_init_cache(btc_txn_context_t *context);
 bool btc_digest_input(const btc_txn_context_t *context,
                       uint32_t index,
                       uint8_t *digest);
+
+/**
+ * @brief Initializes the taproot cache for signing taproot transactions.
+ * @details The function fills the calculated cache for taproot transactions.
+ * The cache consists of pre-computed hashes needed for signing taproot inputs.
+ *
+ * @param context Reference to the context for the current transaction to be
+ * signed
+ */
+void btc_taproot_init_cache(btc_txn_context_t *context);
+
+/**
+ * @brief Generates a BIP340 Schnorr signature for Taproot transactions.
+ * @details This function implements BIP340 Schnorr signature generation
+ * specifically for Taproot key path spending with tweaked private keys.
+ *
+ * @param private_key The tweaked private key (32 bytes)
+ * @param public_key The corresponding public key x-coordinate (32 bytes)
+ * @param digest The transaction digest to sign (32 bytes)
+ * @param signature_bytes Output buffer for the signature (64 bytes)
+ *
+ * @return int Status code
+ * @retval 0 Success
+ * @retval -1 Error (invalid inputs, signature generation failed)
+ */
+int schnorrsig_sign32_taproot(const uint8_t *private_key,
+                              const uint8_t *public_key,
+                              const uint8_t *digest,
+                              uint8_t *signature_bytes);
 
 #endif    // BTC_TXN_HELPERS_H

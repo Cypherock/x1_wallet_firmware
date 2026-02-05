@@ -35,6 +35,17 @@ typedef struct {
 } btc_segwit_cache_t;
 
 typedef struct {
+  bool filled;
+  uint8_t sha_prevouts[32];
+  uint8_t sha_amounts[32];
+  uint8_t sha_scriptpubkeys[32];
+  uint8_t sha_sequences[32];
+  uint8_t sha_outputs[32];
+  uint8_t sha_annex[32];
+  uint8_t sha_single_output[32];
+} btc_taproot_cache_t;
+
+typedef struct {
   pb_byte_t prev_txn_hash[32];
   uint32_t prev_output_index;
   uint64_t value;
@@ -69,6 +80,8 @@ typedef struct {
   btc_sign_txn_metadata_t metadata;
   // Populated for segwit transactions
   btc_segwit_cache_t segwit_cache;
+  // Populated for taproot transactions
+  btc_taproot_cache_t taproot_cache;
 
   /**
    * The structure holds the outputs (TxOut) of the transaction. Refer
