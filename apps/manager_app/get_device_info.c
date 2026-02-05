@@ -122,6 +122,14 @@ static bool get_firmware_version(common_version_t *firmware_version) {
   return true;
 }
 
+static common_firmware_variant_t get_firmware_variant() {
+#ifndef BTC_ONLY_BUILD
+  return COMMON_MULTI_COIN;
+#else
+  return COMMON_BTC_ONLY;
+#endif
+}
+
 static manager_get_device_info_response_t get_device_info(void) {
   manager_get_device_info_response_t device_info =
       MANAGER_GET_DEVICE_INFO_RESPONSE_INIT_ZERO;
@@ -138,6 +146,7 @@ static manager_get_device_info_response_t get_device_info(void) {
     manager_get_device_info_result_response_t *result = &device_info.result;
     result->has_firmware_version =
         get_firmware_version(&result->firmware_version);
+    result->firmware_variant = get_firmware_variant();
     memcpy(result->device_serial, atecc_data.device_serial, DEVICE_SERIAL_SIZE);
     result->is_authenticated = is_device_authenticated();
     result->is_initial =
