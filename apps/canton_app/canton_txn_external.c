@@ -284,8 +284,8 @@ static bool validate_and_store_namespace_delegation_proposal(
 
   canton_namespace_delegation_t namespace_delegation =
       proposal->mapping.namespace_delegation;
-  if (namespace_delegation.which_restriction !=
-          CANTON_NAMESPACE_DELEGATION_CAN_SIGN_ALL_MAPPINGS_TAG ||
+  if (/*namespace_delegation.which_restriction !=
+          CANTON_NAMESPACE_DELEGATION_CAN_SIGN_ALL_MAPPINGS_TAG ||*/
       !namespace_delegation.has_target_key) {
     return false;
   }
