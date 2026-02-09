@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include "canton/sign_txn.pb.h"
+#include "canton/sign_txn_external.pb.h"
 #include "sha2.h"
 
 /*****************************************************************************
@@ -62,6 +63,8 @@
 #define REJECT_TXN_TYPE_TEXT "Reject"
 #define PREAPPROVAL_TXN_TYPE_TEXT "Enable Transfer Pre-approval"
 #define MERGE_DELEGATION_PROPOSAL_TXN_TYPE_TEXT "Enable UTXO Management"
+
+#define NAMESPACE_DELEGATION_TXN_TYPE_TEXT "Namespace Delegation"
 
 /*****************************************************************************
  * TYPEDEFS
@@ -127,6 +130,19 @@ typedef struct {
   bool has_public_key;
   uint8_t public_key[CANTON_PUB_KEY_SIZE];
 } canton_unsigned_topology_txn;
+
+typedef struct {
+  uint8_t target_public_key[CANTON_PUB_KEY_SIZE];
+  char namespace[CANTON_FINGERPRINT_STR_SIZE];
+} canton_namespace_delegation_txn_display_info_t;
+
+typedef struct {
+  canton_sign_txn_external_supported_txn_types_t txn_type;
+  uint8_t hash[CANTON_HASH_SIZE];
+  union {
+    canton_namespace_delegation_txn_display_info_t namespace_delegation;
+  } display_info;
+} canton_unsigned_txn_external_info_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES

@@ -143,6 +143,11 @@ void canton_main(usb_event_t usb_event, const void *canton_app_config) {
       break;
     }
 
+    case CANTON_QUERY_SIGN_TXN_EXTERNAL_TAG: {
+      canton_sign_txn_external(&query);
+      break;
+    }
+
     /* Incase we encounter an invalid query */
     default: {
       canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
