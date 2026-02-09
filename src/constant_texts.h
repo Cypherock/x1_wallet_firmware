@@ -66,6 +66,9 @@
 #define UI_TEXT_VERIFY_MEMO_HASH "Verify Memo Hash\n%s"
 #define UI_TEXT_CALLDATA "Calldata"
 
+#define UI_TEXT_MULTI_COIN "Multi"
+#define UI_TEXT_BTC_ONLY "Bitcoin-only"
+
 // canton
 #define UI_TEXT_SIGN_TOPOLOGY_TXN_PROMPT                                       \
   "Sign topology transaction on %s from %s"
@@ -143,7 +146,7 @@ extern const char *ui_text_regulatory_info[];
 
 // Version info text
 #define UI_TEXT_CARD_VERSION "Card Version\n%d.%d.%d-%s"
-#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%s %d.%d.%d-%s"
 #define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // Factory reset text
@@ -196,7 +199,7 @@ extern const char *ui_text_onboarding[];
 extern const char *ui_text_onboarding_complete;
 
 // Firmware update text
-#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to %s version %d.%d.%d"
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
+# Function to display usage information
 usage() {
-	echo -e "USAGE: $0 [-c] [-u] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>] [-v (vendor-id)]"
+	echo -e "USAGE: $0 [-c] [-u] [-b] [-f <main|initial>] [-p <device|simulator>] [-t <dev|debug|release|unit_tests>] [-v (vendor-id)]"
 	echo -e "Parameters are optional and assumes 'main debug device' if not provided"
 	echo -e "\n\n -c \t Performs a forced clean before invoking build"
 	echo -e "\n\n -u \t Generate unsigned binary"
+    echo -e "\n\n -b \t Build BTC-only firmware"
 	echo -e "\n\n -f \t Sets the preferred firmware to build. Can be main or initial"
 	echo -e "\n\n -p \t Provides the preferred platform to build for. Can be simulator or device"
 	echo -e "\n\n -v \t Provides the vendor to build for"
@@ -13,6 +15,7 @@ usage() {
 	exit 1
 }
 
+# Function to validate the firmware name
 validate_name() {
 	if ! [[ "$ACTIVE_TYPE" =~ ^(Main|Initial)$ ]]; then
 		echo -e "Incorrect firmware ($ACTIVE_TYPE) selected for build\n"
@@ -20,6 +23,7 @@ validate_name() {
 	fi
 }
 
+# Function to validate the build platform
 validate_platform() {
 	if ! [[ "$BUILD_PLATFORM" =~ ^(Device|Simulator)$ ]]; then
 		echo -e "Incorrect platform ($BUILD_PLATFORM) selected for build\n"
@@ -27,6 +31,7 @@ validate_platform() {
 	fi
 }
 
+# Function to validate the build type
 validate_type() {
 	if ! [[ "$BUILD_TYPE" =~ ^(Debug|Release|Dev|Unit_tests)$ ]]; then
 		echo -e "Incorrect type ($BUILD_TYPE) selected for build\n"
@@ -34,6 +39,7 @@ validate_type() {
 	fi
 }
 
+# --- Script Defaults ---
 ACTIVE_ROOT_DIR=$(pwd)
 ACTIVE_TYPE=Main
 BUILD_TYPE=Debug
@@ -42,10 +48,13 @@ BUILD_PLATFORM=Device
 UNIT_TESTS=OFF
 DEV=OFF
 SIGN_BINARY=ON
+BTC_ONLY=OFF # Default to multi-coin build
 
-while getopts 'cf:p:v:t:u' flag; do
+# --- Parse Command Line Arguments ---
+while getopts 'cbuf:p:v:t:' flag; do
 	case "${flag}" in
 	c) clean_flag="true" ;;
+    b) BTC_ONLY=ON ;;
 	f) ACTIVE_TYPE=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	p) BUILD_PLATFORM=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
 	v) VENDOR=$(echo "${OPTARG}" | awk '{print toupper(substr($0, 1, 1)) tolower(substr($0, 2))}') ;;
@@ -55,6 +64,7 @@ while getopts 'cf:p:v:t:u' flag; do
 	esac
 done
 
+# --- Validate Inputs ---
 shift "$((OPTIND - 1))"
 validate_name
 validate_platform
@@ -64,6 +74,7 @@ if [ $# -gt 0 ]; then
 	usage
 fi
 
+# --- Set Build-specific Variables ---
 case $BUILD_TYPE in
 Dev)
 	DEV=ON
@@ -77,17 +88,26 @@ Unit_tests)
 	;;
 esac
 
-cd "${ACTIVE_ROOT_DIR}" || exit
-mkdir -p "build/${ACTIVE_TYPE}"
-cd "build/${ACTIVE_TYPE}" || exit
+# --- Prepare Build Directory ---
+BUILD_DIR_SUFFIX=""
+if [ "${BTC_ONLY}" = "ON" ]; then
+    BUILD_DIR_SUFFIX="_BTC"
+fi
 
-# remove previous cmake configuration to ensure we are building with
+BUILD_DIR="build/${ACTIVE_TYPE}${BUILD_DIR_SUFFIX}"
+
+cd "${ACTIVE_ROOT_DIR}" || exit
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}" || exit
+
+# Remove previous cmake configuration to ensure we are building with
 # currently requested build configuration; it is important to delete
 # the existing cmake configuration
 if [ -f "CMakeCache.txt" ]; then
 	rm "CMakeCache.txt"
 fi
 
+# --- Find Build Tools ---
 # Detect if any one (cmake or mingw32-cmake) exists
 CMAKE=$(which cmake)
 if [ "${CMAKE}" = "" ]; then
@@ -118,13 +138,16 @@ if [ "${BUILD_TOOL}" = "" ]; then
 	exit 1
 fi
 
+# --- Run Build ---
 if [[ "${clean_flag}" = "true" ]]; then
 	rm -rf "${ACTIVE_ROOT_DIR}/generated/proto"
 fi
 
+# Configure the project with CMake
 "${CMAKE}" -DDEV_SWITCH=${DEV} \
 	-DVENDOR:STRING="${VENDOR}" \
 	-DUNIT_TESTS_SWITCH:BOOL="${UNIT_TESTS}" \
+    -DBTC_ONLY:BOOL="${BTC_ONLY}" \
 	-DSIGN_BINARY:BOOL="${SIGN_BINARY}" \
 	-DCMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
 	-DFIRMWARE_TYPE="${ACTIVE_TYPE}" \
@@ -135,6 +158,7 @@ fi
 # exit if configuration failed with errors
 if [ ! $? -eq 0 ]; then exit 1; fi
 
+# Clean and build the project
 if [[ "${clean_flag}" = "true" ]]; then
 	"${BUILD_TOOL}" clean
 fi
