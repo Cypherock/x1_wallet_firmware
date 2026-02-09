@@ -456,6 +456,8 @@ static bool get_user_verification(void) {
 }
 
 static bool sign_txn_external(canton_external_sig_t *sig) {
+  canton_unsigned_txn_external_info_t *ut_txn_info =
+      &canton_txn_external_context->unsigned_txn_external_info;
   uint8_t seed[64] = {0};
   if (!reconstruct_seed(canton_txn_external_context->init_info.wallet_id,
                         seed,
@@ -475,7 +477,18 @@ static bool sign_txn_external(canton_external_sig_t *sig) {
       seed,
       &hdnode);
 
-  ed25519_sign(canton_txn_external_context->unsigned_txn_external_info.hash,
+  if (ut_txn_info->txn_type == CANTON_SUPPORTED_TXN_TYPE_NAMESPACE_DELEGATION &&
+      memcmp(hdnode.public_key + 1,
+             ut_txn_info->display_info.namespace_delegation.target_public_key,
+             CANTON_PUB_KEY_SIZE) != 0) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    memzero(seed, sizeof(seed));
+    memzero(&hdnode, sizeof(hdnode));
+    return false;
+  }
+
+  ed25519_sign(ut_txn_info->hash,
                CANTON_HASH_SIZE,
                hdnode.private_key,
                hdnode.public_key + 1,
