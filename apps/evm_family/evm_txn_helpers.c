@@ -244,28 +244,22 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
     return EVM_TXN_TOKEN_TRANSFER_FUNC;
   }
 
-  if (EVM_swap_TAG == function_tag || EVM_uniswapV3Swap_TAG == function_tag ||
-      EVM_safeTransferFrom_TAG == function_tag ||
-      EVM_deposit_TAG == function_tag || EVM_transfer_TAG == function_tag) {
-    // decode the contract data for display
-    if (ETH_UTXN_ABI_DECODE_OK !=
-        ETH_ExtractArguments(txn_context->transaction_info.data,
-                             txn_context->transaction_info.data_size,
-                             &txn_context->display_node)) {
-      /**
-       * this could mean that the parameters to the function (provided in the
-       * transaction.data) are invalid. This means either of the following: the
-       * argument count mismatch, arguments are in the wrong order, or the
-       * arguments are of wrong type
-       */
-      return EVM_TXN_INVALID_DATA;
-    } else {
-      return EVM_TXN_KNOWN_FUNC_SIG;
-    }
-  }
+  /* All other functions — semantic parsers (HYSP and future protocols) and
+   * generic ABI display — are resolved by ETH_ExtractArguments via its
+   * internal registry and fallback. */
+  uint8_t decode_result =
+      ETH_ExtractArguments(txn_context->transaction_info.data,
+                           txn_context->transaction_info.data_size,
+                           txn_context->transaction_info.to_address,
+                           &txn_context->display_node);
 
-  // unidentified function signature
-  return EVM_TXN_UNKNOWN_FUNC_SIG;
+  if (ETH_UTXN_ABI_DECODE_OK == decode_result) {
+    return EVM_TXN_KNOWN_FUNC_SIG;
+  }
+  if (ETH_UTXN_FUNCTION_NOT_FOUND == decode_result) {
+    return EVM_TXN_UNKNOWN_FUNC_SIG;
+  }
+  return EVM_TXN_INVALID_DATA;
 }
 
 /*****************************************************************************
