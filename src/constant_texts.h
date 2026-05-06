@@ -437,6 +437,13 @@ extern const char *ui_text_account_id;
 extern const char *ui_text_verify_principal_id;
 extern const char *ui_text_verify_account_id;
 
+// Solana - Kamino Vault
+extern const char *ui_text_kamino_deposit_amount;
+extern const char *ui_text_kamino_deposit_into;
+extern const char *ui_text_kamino_withdraw_amount;
+extern const char *ui_text_kamino_withdraw_all;
+extern const char *ui_text_kamino_withdraw_from;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif

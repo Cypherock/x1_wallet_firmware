@@ -595,6 +595,11 @@ const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 
 // Solana Specific
 const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
+const char *ui_text_kamino_deposit_amount = "Depositing %s tokens";
+const char *ui_text_kamino_deposit_into = "Into Kamino Vault";
+const char *ui_text_kamino_withdraw_amount = "Withdrawing\n%s Shares";
+const char *ui_text_kamino_withdraw_all = "Withdrawing ALL";
+const char *ui_text_kamino_withdraw_from = "From Kamino Vault";
 
 // ICP
 const char *ui_text_principal_id = "Principal Id";
