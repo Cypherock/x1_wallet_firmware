@@ -383,8 +383,8 @@ static bool fetch_transaction_meta(canton_query_t *query) {
   uint32_t node_seeds_count = query->sign_txn.txn_meta.node_seeds_count;
   uint32_t nodes_count = query->sign_txn.txn_meta.nodes_count;
 
-  // Allowing maximum 20 nodes in a transaction
-  if (nodes_count > 20) {
+  // Allowing maximum 200 nodes in a transaction
+  if (nodes_count > 200) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;
@@ -538,8 +538,8 @@ static bool fetch_canton_meta(canton_query_t *query) {
   uint32_t input_contracts_count =
       canton_txn_context->unsigned_txn.canton_meta.input_contracts_count;
 
-  // Allowing maximum 20 input contracts in a transaction
-  if (input_contracts_count > 20) {
+  // Allowing maximum 200 input contracts in a transaction
+  if (input_contracts_count > 200) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;
