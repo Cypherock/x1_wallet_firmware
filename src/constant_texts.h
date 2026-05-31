@@ -294,6 +294,15 @@ extern const char *ui_text_verify_address;
 extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
+
+// EVM HYSP (Midas) clear signing
+extern const char *ui_text_hysp_label_token;
+extern const char *ui_text_hysp_label_spender;
+extern const char *ui_text_hysp_label_amount;
+extern const char *ui_text_hysp_label_token_in;
+extern const char *ui_text_hysp_label_token_out;
+extern const char *ui_text_hysp_label_amount_in;
+extern const char *ui_text_hysp_label_min_receive;
 extern const char *ui_text_verify_token_address;
 extern const char *ui_text_unverified_token;
 extern const char *ui_text_confirm_wallet_name;
@@ -438,6 +447,7 @@ extern const char *ui_text_verify_principal_id;
 extern const char *ui_text_verify_account_id;
 
 // Solana - Kamino Vault
+extern const char *ui_text_kamino_token_unverifiable;
 extern const char *ui_text_kamino_deposit_amount;
 extern const char *ui_text_kamino_deposit_into;
 extern const char *ui_text_kamino_withdraw_amount;

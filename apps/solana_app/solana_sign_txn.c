@@ -764,6 +764,8 @@ static bool verify_kamino_vault_transaction() {
    * contains 16 static accounts, the remaining accounts are resolved via ALT
    * which requires an RPC call that the device cannot make.
    * Token symbol therefore cannot be verified from whitelist. */
+  delay_scr_init(ui_text_kamino_token_unverifiable, DELAY_TIME);
+
   if (kamino_operation == KAMINO_OPERATION_DEPOSIT) {
     // convert amount
     uint8_t be_micro_usdc[8] = {0};

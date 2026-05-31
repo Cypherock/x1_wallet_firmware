@@ -64,6 +64,7 @@
 
 #include "abi.h"
 #include "address.h"
+#include "constant_texts.h"
 #include "evm_priv.h"
 #include "utils.h"
 
@@ -611,8 +612,9 @@ static uint8_t hysp_parse_function(uint32_t selector,
   } while (0)
 
   /* Working buffers — stack-allocated; ui_create_display_node copies strings */
-  char addr_buf[43];   /* "0x" + 40 hex chars + NUL */
-  char amount_buf[72]; /* "1.000000000000000000 mevUSD" fits in 72 */
+  char addr_buf[43] = "0x"; /* "0x" + 40 hex chars + NUL */
+  char amount_buf[72] = {
+      '\0'}; /* dec_str(49) + space(1) + symbol(20) + NUL(1) = 71 max */
 
   const char *tok_sym = NULL;
   uint8_t tok_dec = 0;
@@ -631,14 +633,17 @@ static uint8_t hysp_parse_function(uint32_t selector,
       /* Token: identified from the transaction's to_address */
       const erc20_contracts_t *token = NULL;
       g_evm_app->is_token_whitelisted(toAddress, &token);
-      tok_sym = token ? token->symbol : "unknown";
-      tok_dec = token ? token->decimal : 0;
-      hysp_append_node(displayNode, "Token", tok_sym);
+      if (token == NULL) {
+        return ETH_UTXN_FUNCTION_NOT_FOUND;
+      }
+      tok_sym = token->symbol;
+      tok_dec = token->decimal;
+      hysp_append_node(displayNode, ui_text_hysp_label_token, tok_sym);
 
       /* Spender address (arg0) */
       hysp_format_address(
           args + 0 * ABI_ELEMENT_SZ_IN_BYTES, addr_buf, sizeof(addr_buf));
-      hysp_append_node(displayNode, "Spender", addr_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_spender, addr_buf);
 
       /* Amount (arg1) in token units */
       hysp_format_amount(args + 1 * ABI_ELEMENT_SZ_IN_BYTES,
@@ -646,7 +651,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          tok_sym,
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Amount", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_amount, amount_buf);
       break;
     }
 
@@ -666,15 +671,17 @@ static uint8_t hysp_parse_function(uint32_t selector,
 
       /* arg0: tokenIn */
       const erc20_contracts_t *token = NULL;
-      uint8_t tokenAddr[EVM_ADDRESS_LENGTH];
+      uint8_t tokenAddr[EVM_ADDRESS_LENGTH] = {0};
       memcpy(tokenAddr,
              args + 0 * ABI_ELEMENT_SZ_IN_BYTES + 12,
              EVM_ADDRESS_LENGTH);
       g_evm_app->is_token_whitelisted(tokenAddr, &token);
-
-      tok_sym = token ? token->symbol : "unknown";
-      tok_dec = token ? token->decimal : 0;
-      hysp_append_node(displayNode, "Token In", tok_sym);
+      if (token == NULL) {
+        return ETH_UTXN_FUNCTION_NOT_FOUND;
+      }
+      tok_sym = token->symbol;
+      tok_dec = token->decimal;
+      hysp_append_node(displayNode, ui_text_hysp_label_token_in, tok_sym);
 
       /* arg1: deposit amount — always encoded at 18 decimals by the HYSP vault
        * regardless of tokenIn's native decimals (e.g. USDC is 1e6 natively).
@@ -686,7 +693,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          tok_sym,
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Amount", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_amount, amount_buf);
 
       /* arg2: minimum mevUSD to receive (18 decimals) */
       hysp_format_amount(args + 2 * ABI_ELEMENT_SZ_IN_BYTES,
@@ -694,7 +701,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          "mevUSD",
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Min Receive", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_min_receive, amount_buf);
       break;
     }
 
@@ -713,15 +720,17 @@ static uint8_t hysp_parse_function(uint32_t selector,
 
       /* arg0: tokenOut */
       const erc20_contracts_t *token = NULL;
-      uint8_t tokenAddr[EVM_ADDRESS_LENGTH];
+      uint8_t tokenAddr[EVM_ADDRESS_LENGTH] = {0};
       memcpy(tokenAddr,
              args + 0 * ABI_ELEMENT_SZ_IN_BYTES + 12,
              EVM_ADDRESS_LENGTH);
       g_evm_app->is_token_whitelisted(tokenAddr, &token);
-
-      tok_sym = token ? token->symbol : "unknown";
-      tok_dec = token ? token->decimal : 0;
-      hysp_append_node(displayNode, "Token Out", tok_sym);
+      if (token == NULL) {
+        return ETH_UTXN_FUNCTION_NOT_FOUND;
+      }
+      tok_sym = token->symbol;
+      tok_dec = token->decimal;
+      hysp_append_node(displayNode, ui_text_hysp_label_token_out, tok_sym);
 
       /* arg1: mevUSD input amount (18 decimals) */
       hysp_format_amount(args + 1 * ABI_ELEMENT_SZ_IN_BYTES,
@@ -729,7 +738,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          "mevUSD",
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Amount In", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_amount_in, amount_buf);
 
       /* arg2: minimum tokenOut amount */
       hysp_format_amount(args + 2 * ABI_ELEMENT_SZ_IN_BYTES,
@@ -737,7 +746,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          tok_sym,
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Min Receive", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_min_receive, amount_buf);
       break;
     }
 
@@ -756,14 +765,16 @@ static uint8_t hysp_parse_function(uint32_t selector,
 
       /* arg0: tokenOut */
       const erc20_contracts_t *token = NULL;
-      uint8_t tokenAddr[EVM_ADDRESS_LENGTH];
+      uint8_t tokenAddr[EVM_ADDRESS_LENGTH] = {0};
       memcpy(tokenAddr,
              args + 0 * ABI_ELEMENT_SZ_IN_BYTES + 12,
              EVM_ADDRESS_LENGTH);
       g_evm_app->is_token_whitelisted(tokenAddr, &token);
-
-      tok_sym = token ? token->symbol : "unknown";
-      hysp_append_node(displayNode, "Token Out", tok_sym);
+      if (token == NULL) {
+        return ETH_UTXN_FUNCTION_NOT_FOUND;
+      }
+      tok_sym = token->symbol;
+      hysp_append_node(displayNode, ui_text_hysp_label_token_out, tok_sym);
 
       /* arg1: mevUSD input amount (18 decimals) */
       hysp_format_amount(args + 1 * ABI_ELEMENT_SZ_IN_BYTES,
@@ -771,7 +782,7 @@ static uint8_t hysp_parse_function(uint32_t selector,
                          "mevUSD",
                          amount_buf,
                          sizeof(amount_buf));
-      hysp_append_node(displayNode, "Amount In", amount_buf);
+      hysp_append_node(displayNode, ui_text_hysp_label_amount_in, amount_buf);
       break;
     }
 
