@@ -223,6 +223,12 @@ file(GLOB_RECURSE LIBRARIES_SRC_DIR "common/libraries/atecc/*.c"
         "stm32-hal/Peripherals/*.c" "stm32-hal/Peripherals/*.h")
 set_source_files_properties(${LIBRARIES_SRC_DIR} PROPERTIES COMPILE_FLAGS "-w")
 
+# Enable size optimizations with debug info for "non-essential" sources to ensure
+# final build fits in the device flash
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+        set_source_files_properties(${LIBRARIES_SRC_DIR} APPEND PROPERTIES COMPILE_FLAGS "-Os -g1")
+endif()
+
 # Print executable size
 add_custom_command(TARGET ${EXECUTABLE}
         POST_BUILD
