@@ -20,7 +20,7 @@
  *****************************************************************************/
 
 /* Number of entries in whitelisted contracts list */
-#define BASE_WHITELISTED_CONTRACTS_COUNT 0
+#define BASE_WHITELISTED_CONTRACTS_COUNT 2
 
 #define BASE_NETWORK_NAME "Base"
 

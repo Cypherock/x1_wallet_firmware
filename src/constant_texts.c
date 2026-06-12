@@ -537,6 +537,15 @@ const char *ui_text_cannot_verify_card_contact_support =
 const char *ui_text_wrong_btc_transaction = "Wrong transaction formatting";
 const char *ui_text_btc_change_address_mismatch = "Change address mismatch";
 const char *ui_text_worng_eth_transaction = "Invalid transaction detected";
+
+// EVM HYSP (Midas) clear signing
+const char *ui_text_hysp_label_token = "Token";
+const char *ui_text_hysp_label_spender = "Spender";
+const char *ui_text_hysp_label_amount = "Amount";
+const char *ui_text_hysp_label_token_in = "Token In";
+const char *ui_text_hysp_label_token_out = "Token Out";
+const char *ui_text_hysp_label_amount_in = "Amount In";
+const char *ui_text_hysp_label_min_receive = "Min Receive";
 const char *ui_text_error_no_card_paired = "No cards paired with device";
 const char *ui_text_error_pair_all_cards = "Pair all four cards from Settings";
 const char *ui_text_error_pair_atleast_2_cards =
@@ -595,6 +604,13 @@ const char *ui_text_inheritance_decryption_flow_failure = "Decryption Failed";
 
 // Solana Specific
 const char *ui_text_solana_verify_mint_authority = "Verify Token Address";
+const char *ui_text_kamino_token_unverifiable =
+    "Token symbol cannot be parsed on device";
+const char *ui_text_kamino_deposit_amount = "Depositing %s tokens";
+const char *ui_text_kamino_deposit_into = "Into Kamino Vault";
+const char *ui_text_kamino_withdraw_amount = "Withdrawing\n%s Shares";
+const char *ui_text_kamino_withdraw_all = "Withdrawing ALL";
+const char *ui_text_kamino_withdraw_from = "From Kamino Vault";
 
 // ICP
 const char *ui_text_principal_id = "Principal Id";
