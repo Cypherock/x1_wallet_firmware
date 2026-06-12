@@ -744,7 +744,7 @@ static bool get_user_verification(void) {
 
   if (use_signature_verification) {
     if (!exchange_validate_stored_signature(receiver_party_id,
-                                            sizeof(receiver_party_id))) {
+                                            CANTON_PARTY_ID_STR_SIZE_MAX)) {
       return false;
     }
   }
