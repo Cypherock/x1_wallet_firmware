@@ -63,9 +63,12 @@
 #include "xrp_txn_helpers.h"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "base58.h"
+#include "hasher.h"
 #include "utils.h"
 #include "xrp_context.h"
 
@@ -216,9 +219,158 @@ uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
 
   uint8_t not_xrp = byte_data[0] >> 7;    // get the first bit
   if (not_xrp) {
-    // means amount is not plain xrp. It is token currency amount which is not
-    // supported yet.
-    return 0;
+    // See
+    // https://xrpl.org/docs/references/protocol/binary-format#token-amount-format
+    if (field_code == Amount) {
+      txn->Amount_is_token = true;
+      memcpy(txn->Amount_token_currency, &byte_data[8], 20);
+      memcpy(txn->Amount_token_issuer, &byte_data[28], 20);
+
+      uint64_t raw_amount = 0;
+      memcpy(&raw_amount, byte_data, 8);
+      raw_amount = __builtin_bswap64(raw_amount);
+
+      int exponent = (int)((raw_amount >> 54) & 0x7F) - 97;
+      uint64_t mantissa = raw_amount & 0x3FFFFFFFFFFFFF;
+
+      if (exponent >= 0) {
+        uint64_t result = mantissa;
+        for (int i = 0; i < exponent && i < 10; i++) {
+          result *= 10;
+        }
+        snprintf(txn->Amount_token_amount,
+                 sizeof(txn->Amount_token_amount),
+                 "%llu",
+                 (unsigned long long)result);
+      } else {
+        double result = (double)mantissa;
+        for (int i = 0; i < -exponent && i < 15; i++) {
+          result /= 10.0;
+        }
+        snprintf(txn->Amount_token_amount,
+                 sizeof(txn->Amount_token_amount),
+                 "%.6f",
+                 result);
+      }
+
+      // Extract currency name
+      if (txn->Amount_token_currency[0] == 0x00) {
+        char currency[4] = {0};
+        memcpy(currency, &txn->Amount_token_currency[12], 3);
+        snprintf(txn->Amount_token_currency_name,
+                 sizeof(txn->Amount_token_currency_name),
+                 "%s",
+                 currency);
+      } else {
+        char currency[21] = {0};
+        int readable_chars = 0;
+        for (int i = 0; i < 20 && readable_chars < 12; i++) {
+          if (txn->Amount_token_currency[i] >= 32 &&
+              txn->Amount_token_currency[i] <= 126) {
+            currency[readable_chars++] = txn->Amount_token_currency[i];
+          } else if (txn->Amount_token_currency[i] == 0) {
+            break;
+          }
+        }
+        if (readable_chars > 0) {
+          snprintf(txn->Amount_token_currency_name,
+                   sizeof(txn->Amount_token_currency_name),
+                   "%s",
+                   currency);
+        } else {
+          snprintf(txn->Amount_token_currency_name,
+                   sizeof(txn->Amount_token_currency_name),
+                   "TOKEN");
+        }
+      }
+
+      uint8_t prefixed_issuer[21];
+      prefixed_issuer[0] = 0x00;
+      memcpy(prefixed_issuer + 1, txn->Amount_token_issuer, 20);
+      base58_encode_check_with_custom_digits_order(
+          prefixed_issuer,
+          21,
+          HASHER_SHA2D,
+          txn->Amount_token_issuer_address,
+          35,
+          XRP_BASE58_DIGITS_ORDERED);
+
+    } else if (field_code == LimitAmount) {
+      txn->has_LimitAmount = true;
+      memcpy(txn->LimitAmount_currency, &byte_data[8], 20);
+      memcpy(txn->LimitAmount_issuer, &byte_data[28], 20);
+
+      uint64_t raw_limit = 0;
+      memcpy(&raw_limit, byte_data, 8);
+      raw_limit = __builtin_bswap64(raw_limit);
+
+      int exponent = (int)((raw_limit >> 54) & 0x7F) - 97;
+      uint64_t mantissa = raw_limit & 0x3FFFFFFFFFFFFF;
+
+      if (exponent >= 0) {
+        uint64_t result = mantissa;
+        for (int i = 0; i < exponent && i < 10; i++) {
+          result *= 10;
+        }
+        snprintf(txn->LimitAmount_amount,
+                 sizeof(txn->LimitAmount_amount),
+                 "%llu",
+                 (unsigned long long)result);
+      } else {
+        double result = (double)mantissa;
+        for (int i = 0; i < -exponent && i < 15; i++) {
+          result /= 10.0;
+        }
+        snprintf(txn->LimitAmount_amount,
+                 sizeof(txn->LimitAmount_amount),
+                 "%.6f",
+                 result);
+      }
+
+      if (txn->LimitAmount_currency[0] == 0x00) {
+        char currency[4] = {0};
+        memcpy(currency, &txn->LimitAmount_currency[12], 3);
+        snprintf(txn->LimitAmount_currency_name,
+                 sizeof(txn->LimitAmount_currency_name),
+                 "%s",
+                 currency);
+      } else {
+        char currency[21] = {0};
+        int readable_chars = 0;
+        for (int i = 0; i < 20 && readable_chars < 12; i++) {
+          if (txn->LimitAmount_currency[i] >= 32 &&
+              txn->LimitAmount_currency[i] <= 126) {
+            currency[readable_chars++] = txn->LimitAmount_currency[i];
+          } else if (txn->LimitAmount_currency[i] == 0) {
+            break;
+          }
+        }
+        if (readable_chars > 0) {
+          snprintf(txn->LimitAmount_currency_name,
+                   sizeof(txn->LimitAmount_currency_name),
+                   "%s",
+                   currency);
+        } else {
+          snprintf(txn->LimitAmount_currency_name,
+                   sizeof(txn->LimitAmount_currency_name),
+                   "TOKEN");
+        }
+      }
+
+      uint8_t prefixed_issuer[21];
+      prefixed_issuer[0] = 0x00;
+      memcpy(prefixed_issuer + 1, txn->LimitAmount_issuer, 20);
+      base58_encode_check_with_custom_digits_order(
+          prefixed_issuer,
+          21,
+          HASHER_SHA2D,
+          txn->LimitAmount_issuer_address,
+          35,
+          XRP_BASE58_DIGITS_ORDERED);
+    } else {
+      return 0;
+    }
+    return 48;
   }
 
   uint64_t decoded = U64_READ_BE_ARRAY(byte_data);
@@ -284,6 +436,7 @@ uint16_t fill_ACCOUNT_type(const uint8_t *byte_data,
       break;
     }
     case Destination: {
+      txn->has_Destination = true;
       memcpy(txn->Destination, byte_data + bytes_read, length);
       break;
     }
@@ -307,6 +460,9 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
   // See https://xrpl.org/docs/references/protocol/binary-format
 
   txn->hasDestinationTag = false;
+  txn->has_LimitAmount = false;
+  txn->has_Destination = false;
+  txn->Amount_is_token = false;
 
   uint16_t offset = 0;
   offset += 4;    // network prefix
@@ -373,4 +529,37 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
   }
 
   return true;
+}
+
+void parse_transaction_flags(uint32_t flags,
+                             uint16_t txn_type,
+                             char *flag_buffer,
+                             size_t buffer_size) {
+  flag_buffer[0] = '\0';
+
+  if (txn_type == TrustSet) {
+    if (flags & XRP_TF_SET_NO_RIPPLE) {
+      strncat(flag_buffer,
+              "Set No Ripple\n",
+              buffer_size - strlen(flag_buffer) - 1);
+    }
+    if (flags & XRP_TF_CLEAR_NO_RIPPLE) {
+      strncat(flag_buffer,
+              "Clear No Ripple\n",
+              buffer_size - strlen(flag_buffer) - 1);
+    }
+  } else if (txn_type == payment) {
+    if (flags & XRP_TF_PARTIAL_PAYMENTS) {
+      strncat(flag_buffer,
+              "Partial Payments\n",
+              buffer_size - strlen(flag_buffer) - 1);
+    }
+  }
+
+  // Show raw hex for other flags
+  if (strlen(flag_buffer) == 0 && flags != 0) {
+    snprintf(flag_buffer, buffer_size, "0x%08lX", flags);
+  } else if (flags == 0) {
+    strncpy(flag_buffer, "None", buffer_size - 1);
+  }
 }

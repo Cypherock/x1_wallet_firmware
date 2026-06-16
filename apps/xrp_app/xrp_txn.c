@@ -172,6 +172,28 @@ static bool fetch_valid_input(xrp_query_t *query);
 static bool get_user_verification(void);
 
 /**
+ * @brief Verifies TrustSet transaction with user confirmation
+ * @details Displays transaction type, flags, limit amount, currency, and issuer
+ * information to user for confirmation. Validates that LimitAmount is present.
+ *
+ * @param decoded_utxn Pointer to parsed transaction structure
+ * @return true If user accepted the TrustSet transaction
+ * @return false If user rejected or validation failed
+ */
+static bool verify_trustset_transaction(const xrp_unsigned_txn *decoded_utxn);
+
+/**
+ * @brief Verifies Payment transaction with user confirmation
+ * @details Displays transaction type, flags, destination, amount (XRP or
+ * token), and destination tag information to user for confirmation.
+ *
+ * @param decoded_utxn Pointer to parsed transaction structure
+ * @return true If user accepted the Payment transaction
+ * @return false If user rejected or validation failed
+ */
+static bool verify_payment_transaction(const xrp_unsigned_txn *decoded_utxn);
+
+/**
  * @brief Calculates ED25519 curve based signature over the digest of the user
  * verified unsigned txn.
  * @details Seed reconstruction takes place within this function
@@ -342,8 +364,69 @@ static bool fetch_valid_input(xrp_query_t *query) {
 static bool get_user_verification(void) {
   const xrp_unsigned_txn *decoded_utxn = xrp_txn_context->raw_txn;
 
-  char to_address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
+  if (decoded_utxn->TransactionType == TrustSet) {
+    return verify_trustset_transaction(decoded_utxn);
+  } else if (decoded_utxn->TransactionType == payment) {
+    return verify_payment_transaction(decoded_utxn);
+  } else {
+    xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+}
 
+static bool verify_trustset_transaction(const xrp_unsigned_txn *decoded_utxn) {
+  if (!core_scroll_page(
+          ui_text_transaction_type, ui_text_trustset_txn, xrp_send_error)) {
+    return false;
+  }
+
+  char flag_buffer[100] = {0};
+  parse_transaction_flags(decoded_utxn->Flags,
+                          decoded_utxn->TransactionType,
+                          flag_buffer,
+                          sizeof(flag_buffer));
+  if (!core_scroll_page(ui_text_flags, flag_buffer, xrp_send_error)) {
+    return false;
+  }
+
+  if (!core_scroll_page(
+          "Limit Amount:", decoded_utxn->LimitAmount_amount, xrp_send_error)) {
+    return false;
+  }
+
+  if (!core_scroll_page(ui_text_currency,
+                        decoded_utxn->LimitAmount_currency_name,
+                        xrp_send_error)) {
+    return false;
+  }
+
+  if (!core_scroll_page(ui_text_issuer,
+                        decoded_utxn->LimitAmount_issuer_address,
+                        xrp_send_error)) {
+    return false;
+  }
+
+  set_app_flow_status(XRP_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
+static bool verify_payment_transaction(const xrp_unsigned_txn *decoded_utxn) {
+  if (!core_scroll_page(
+          ui_text_transaction_type, ui_text_payment_txn, xrp_send_error)) {
+    return false;
+  }
+
+  char flag_buffer[100] = {0};
+  parse_transaction_flags(decoded_utxn->Flags,
+                          decoded_utxn->TransactionType,
+                          flag_buffer,
+                          sizeof(flag_buffer));
+  if (!core_scroll_page(ui_text_flags, flag_buffer, xrp_send_error)) {
+    return false;
+  }
+
+  char to_address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
   uint8_t prefixed_account_id[XRP_PREFIXED_ACCOUNT_ID_LENGTH];
   prefixed_account_id[0] = 0x00;
   memcpy(prefixed_account_id + 1, decoded_utxn->Destination, 20);
@@ -371,40 +454,53 @@ static bool get_user_verification(void) {
   }
 
   // verify recipient amount
-  uint64_t amount = 0;
-  memcpy(&amount, &decoded_utxn->Amount, sizeof(uint64_t));
-  char amount_string[30] = {'\0'};
-  double decimal_amount = (double)amount;
-  decimal_amount *= 1e-6;
-  snprintf(amount_string, sizeof(amount_string), "%.6f", decimal_amount);
+  if (decoded_utxn->Amount_is_token) {
+    if (!core_scroll_page(ui_text_verify_amount,
+                          decoded_utxn->Amount_token_amount,
+                          xrp_send_error)) {
+      return false;
+    }
+    if (!core_scroll_page(ui_text_currency,
+                          decoded_utxn->Amount_token_currency_name,
+                          xrp_send_error)) {
+      return false;
+    }
+    if (!core_scroll_page(ui_text_issuer,
+                          decoded_utxn->Amount_token_issuer_address,
+                          xrp_send_error)) {
+      return false;
+    }
+  } else {
+    uint64_t amount = 0;
+    memcpy(&amount, &decoded_utxn->Amount, sizeof(uint64_t));
+    char amount_string[30] = {'\0'};
+    double decimal_amount = (double)amount;
+    decimal_amount *= 1e-6;
+    snprintf(amount_string, sizeof(amount_string), "%.6f", decimal_amount);
 
-  char display[100] = {'\0'};
-  snprintf(display,
-           sizeof(display),
-           UI_TEXT_VERIFY_AMOUNT,
-           amount_string,
-           XRP_LUNIT);
-
-  if (!core_confirmation(display, xrp_send_error)) {
-    return false;
+    char display[100] = {'\0'};
+    snprintf(display,
+             sizeof(display),
+             UI_TEXT_VERIFY_AMOUNT,
+             amount_string,
+             XRP_LUNIT);
+    if (!core_confirmation(display, xrp_send_error)) {
+      return false;
+    }
   }
 
   if (decoded_utxn->hasDestinationTag) {
-    // verify destination tag
     uint32_t tag = 0;
     memcpy(&tag, &decoded_utxn->DestinationTag, sizeof(uint32_t));
-
     char display_tag[50] = {'\0'};
     snprintf(
         display_tag, sizeof(display_tag), UI_TEXT_VERIFY_DESTINATION_TAG, tag);
-
     if (!core_confirmation(display_tag, xrp_send_error)) {
       return false;
     }
   }
 
   set_app_flow_status(XRP_SIGN_TXN_STATUS_VERIFY);
-
   return true;
 }
 
