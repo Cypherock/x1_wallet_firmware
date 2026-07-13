@@ -147,7 +147,7 @@ static uint32_t firewall_func(const uint32_t task,
 #if USE_SIMULATOR == 0
   uint32_t retVal;
 
-  uint32_t (*sec_func)(uint32_t, uint8_t *, uint32_t, uint32_t) = (uint32_t (*)(
+  uint32_t (*sec_func)(uint32_t, uint8_t *, uint32_t, uint32_t) = (uint32_t(*)(
       uint32_t, uint8_t *, uint32_t, uint32_t))(FIREWALL_CODE_SEGMENT_ADDR + 1);
 
   __disable_irq();
