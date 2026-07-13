@@ -296,6 +296,7 @@ extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_verify_token_address;
 extern const char *ui_text_unverified_token;
+extern const char *ui_text_typed_data_string_too_long;
 extern const char *ui_text_confirm_wallet_name;
 extern const char *ui_text_enter_data;
 extern const char *ui_text_confirm_data;

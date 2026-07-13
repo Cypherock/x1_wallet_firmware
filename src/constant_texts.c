@@ -402,6 +402,8 @@ const char *ui_text_unverified_contract =
 const char *ui_text_verify_token_address = "Verify token address";
 const char *ui_text_unverified_token =
     LV_SYMBOL_WARNING " Warning!\nUnverified token";
+const char *ui_text_typed_data_string_too_long =
+    LV_SYMBOL_WARNING " Message too long\nCannot display safely";
 const char *ui_text_confirm_wallet_name = "Confirm wallet name";
 const char *ui_text_enter_data = "Enter data";
 const char *ui_text_confirm_data = "Confirm data";
