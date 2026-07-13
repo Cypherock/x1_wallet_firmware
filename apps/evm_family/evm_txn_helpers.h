@@ -25,6 +25,11 @@
 #define ETHEREUM_COIN_INDEX 0x8000003C
 
 #define ETH_VALUE_SIZE_BYTES (32U)
+/* hex string size for a 32-byte value: 2 chars/byte + null terminator
+ used by eth_get_value() to call byte_array_to_hex_string() with hex_str
+ buffers in evm_user_verification.c with this those buffers were previously
+ hardcoded to 30 causing a stack overflow */
+#define ETH_VALUE_HEX_STR_SIZE (2 * ETH_VALUE_SIZE_BYTES + 1)
 
 /*****************************************************************************
  * TYPEDEFS

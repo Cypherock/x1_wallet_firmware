@@ -153,7 +153,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->nonce, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->nonce,
+           sizeof(utxn_ptr->nonce),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // gas price
   item_bytes_len =
@@ -162,7 +167,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_price, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_price,
+           sizeof(utxn_ptr->gas_price),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // gas limit
   item_bytes_len =
@@ -171,7 +181,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_limit, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_limit,
+           sizeof(utxn_ptr->gas_limit),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // to address
   item_bytes_len =
@@ -179,7 +194,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   offset += decoded_len;
   if (type != STRING)
     return false;
-  s_memcpy(utxn_ptr->to_address, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->to_address,
+           sizeof(utxn_ptr->to_address),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // value
   item_bytes_len =
@@ -188,7 +208,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->value, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->value,
+           sizeof(utxn_ptr->value),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // data
   item_bytes_len =
@@ -207,7 +232,12 @@ static bool evm_parse_legacy(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->chain_id, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->chain_id,
+           sizeof(utxn_ptr->chain_id),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // r: Should be dummy (i.e. 0); no storage needed
   item_bytes_len =
@@ -239,6 +269,10 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
 
   uint32_t function_tag = U32_READ_BE_ARRAY(txn_context->transaction_info.data);
   if (EVM_transfer_TAG == function_tag &&
+      /* transfer(address,uint256) 4-byte selector plus
+       two 32-byte ABI-encoded parameters (address, amount) = 68 bytes */
+      (EVM_FUNC_SIGNATURE_LENGTH + 2 * EVM_FUNC_PARAM_BLOCK_LENGTH) ==
+          txn_context->transaction_info.data_size &&
       g_evm_app->is_token_whitelisted(txn_context->transaction_info.to_address,
                                       &txn_context->contract)) {
     return EVM_TXN_TOKEN_TRANSFER_FUNC;

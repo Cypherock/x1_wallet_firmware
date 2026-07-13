@@ -147,7 +147,7 @@ static uint32_t firewall_func(const uint32_t task,
 #if USE_SIMULATOR == 0
   uint32_t retVal;
 
-  uint32_t (*sec_func)(uint32_t, uint8_t *, uint32_t, uint32_t) = (uint32_t(*)(
+  uint32_t (*sec_func)(uint32_t, uint8_t *, uint32_t, uint32_t) = (uint32_t (*)(
       uint32_t, uint8_t *, uint32_t, uint32_t))(FIREWALL_CODE_SEGMENT_ADDR + 1);
 
   __disable_irq();
@@ -821,6 +821,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
     switch (tag) {
       case TAG_PERM_FLASH_EXT_DATA_IOKEY:
         s_memcpy(perm_fs->permKeyData.io_protection_key,
+                 IO_KEY_SIZE,
                  tlv,
                  size,
                  CY_MIN(length, IO_KEY_SIZE),
@@ -828,6 +829,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
         break;
       case TAG_PERM_FLASH_DEVICE_AUTH_PUBK:
         s_memcpy(perm_fs->permKeyData.ext_keys.device_auth_public_key,
+                 ECDSA_PUB_KEY_SIZE,
                  tlv,
                  size,
                  CY_MIN(length, ECDSA_PUB_KEY_SIZE),
@@ -835,6 +837,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
         break;
       case TAG_PERM_FLASH_DEVICE_KEY_ID:
         s_memcpy(perm_fs->permKeyData.ext_keys.self_key_id,
+                 FS_KEYSTORE_KEYID_LEN,
                  tlv,
                  size,
                  CY_MIN(length, FS_KEYSTORE_KEYID_LEN),
@@ -842,6 +845,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
         break;
       case TAG_PERM_FLASH_DEVICE_KEY_PATH:
         s_memcpy(perm_fs->permKeyData.ext_keys.self_key_path,
+                 FS_KEYSTORE_KEYPATH_LEN,
                  tlv,
                  size,
                  CY_MIN(length, FS_KEYSTORE_KEYPATH_LEN),
@@ -849,6 +853,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
         break;
       case TAG_PERM_FLASH_DEVICE_NFC_PRIV:
         s_memcpy(perm_fs->permKeyData.ext_keys.priv_key,
+                 FS_KEYSTORE_PRIVKEY_LEN,
                  tlv,
                  size,
                  CY_MIN(length, FS_KEYSTORE_PRIVKEY_LEN),
@@ -856,6 +861,7 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
         break;
       case TAG_PERM_FLASH_CARD_ROOT_XPUB:
         s_memcpy(perm_fs->permKeyData.ext_keys.card_root_xpub,
+                 FS_KEYSTORE_XPUB_LEN,
                  tlv,
                  size,
                  CY_MIN(length, FS_KEYSTORE_XPUB_LEN),

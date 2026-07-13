@@ -124,7 +124,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->chain_id, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->chain_id,
+           sizeof(utxn_ptr->chain_id),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // nonce
   item_bytes_len =
@@ -133,7 +138,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->nonce, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->nonce,
+           sizeof(utxn_ptr->nonce),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // gasPrice
   item_bytes_len =
@@ -142,7 +152,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_price, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_price,
+           sizeof(utxn_ptr->gas_price),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // gasLimit
   item_bytes_len =
@@ -151,7 +166,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_limit, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_limit,
+           sizeof(utxn_ptr->gas_limit),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // to
   item_bytes_len =
@@ -159,7 +179,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   offset += decoded_len;
   if (type != STRING)
     return false;
-  s_memcpy(utxn_ptr->to_address, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->to_address,
+           sizeof(utxn_ptr->to_address),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // value
   item_bytes_len =
@@ -168,7 +193,12 @@ bool evm_parse_eip2930(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->value, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->value,
+           sizeof(utxn_ptr->value),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // data
   item_bytes_len =
@@ -219,7 +249,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->chain_id_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->chain_id, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->chain_id,
+           sizeof(utxn_ptr->chain_id),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // nonce
   item_bytes_len =
@@ -228,7 +263,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->nonce_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->nonce, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->nonce,
+           sizeof(utxn_ptr->nonce),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // max_priority_fee_per_gas
   item_bytes_len =
@@ -237,8 +277,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->max_priority_fee_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(
-      utxn_ptr->max_priority_fee, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->max_priority_fee,
+           sizeof(utxn_ptr->max_priority_fee),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // max_fee_per_gas
   item_bytes_len =
@@ -247,7 +291,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_price_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_price, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_price,
+           sizeof(utxn_ptr->gas_price),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // gasLimit
   item_bytes_len =
@@ -256,7 +305,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->gas_limit_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->gas_limit, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->gas_limit,
+           sizeof(utxn_ptr->gas_limit),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // to
   item_bytes_len =
@@ -264,7 +318,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   offset += decoded_len;
   if (type != STRING)
     return false;
-  s_memcpy(utxn_ptr->to_address, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->to_address,
+           sizeof(utxn_ptr->to_address),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // value
   item_bytes_len =
@@ -273,7 +332,12 @@ bool evm_parse_eip1559(const uint8_t *data,
   if (type != STRING)
     return false;
   utxn_ptr->value_size[0] = CY_MAX(1, item_bytes_len);
-  s_memcpy(utxn_ptr->value, data, data_size, item_bytes_len, &offset);
+  s_memcpy(utxn_ptr->value,
+           sizeof(utxn_ptr->value),
+           data,
+           data_size,
+           item_bytes_len,
+           &offset);
 
   // data
   item_bytes_len =

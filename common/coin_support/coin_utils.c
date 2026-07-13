@@ -74,11 +74,12 @@
 #endif
 
 void s_memcpy(uint8_t *dst,
+              uint32_t dst_size,
               const uint8_t *src,
               uint32_t size,
               uint64_t len,
               int64_t *offset) {
-  if (*offset == -1 || (*offset + len > size)) {
+  if (*offset == -1 || (*offset + len > size) || (len > dst_size)) {
     *offset = -1;
     return;
   }
