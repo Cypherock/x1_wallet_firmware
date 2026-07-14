@@ -1,6 +1,5 @@
 #include "eip712_utils.h"
 
-#include "constant_texts.h"
 #include "evm_api.h"
 
 queue_node *new_queue_node(evm_sign_typed_data_node_t *tree_node,
@@ -113,18 +112,6 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
       else
         snprintf(buffer, sizeof(buffer), "false");
       break;
-    case EVM_EIP_712_DATA_TYPE_STRING: {
-      if (data_node->data->size > sizeof(buffer) - 1) {
-        snprintf(
-            buffer, sizeof(buffer), "%s", ui_text_typed_data_string_too_long);
-      } else {
-        snprintf(buffer,
-                 sizeof(buffer),
-                 "%.*s",
-                 (int)data_node->data->size,
-                 data_node->data->bytes);
-      }
-    } break;
     case EVM_EIP_712_DATA_TYPE_BYTES:
     case EVM_EIP_712_DATA_TYPE_ADDRESS:
     default:
