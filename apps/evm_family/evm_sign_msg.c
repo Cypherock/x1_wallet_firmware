@@ -381,6 +381,7 @@ static bool get_user_verification() {
     } break;
 
     case EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA: {
+      delay_scr_init(ui_text_processing, DELAY_SHORT);
       ui_display_node *display_node = NULL;
       evm_init_typed_data_display_node(&display_node,
                                        &(sign_msg_ctx.typed_data));
