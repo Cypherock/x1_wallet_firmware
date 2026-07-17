@@ -72,6 +72,10 @@ jobs:
 
         mkdir -p build
 
+        echo "--- Build output contents (${BUILD_DIR}) ---"
+        ls -la x1_wallet_firmware/"${BUILD_DIR}"/*.elf x1_wallet_firmware/"${BUILD_DIR}"/*.bin x1_wallet_firmware/"${BUILD_DIR}"/*.hex 2>/dev/null || true
+        echo "--- end listing ---"
+
         cp x1_wallet_firmware/"${BUILD_DIR}"/${{ inputs.vendor }}-*.* ./build/
 
     - name: Archive Build Artifacts (${{ inputs.vendor }}-${{ inputs.coin_support_variant }})
