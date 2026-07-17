@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: cypherock/x1-firmware-builder:v0.0.0
+      image: cypherock/x1-firmware-builder:v1.0.0
 
     steps:
     - name: Set VERSION_TAG
