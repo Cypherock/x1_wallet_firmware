@@ -72,11 +72,16 @@ jobs:
 
         mkdir -p build
 
-        echo "--- Build output contents (${BUILD_DIR}) ---"
-        ls -la x1_wallet_firmware/"${BUILD_DIR}"/*.elf x1_wallet_firmware/"${BUILD_DIR}"/*.bin x1_wallet_firmware/"${BUILD_DIR}"/*.hex 2>/dev/null || true
-        echo "--- end listing ---"
+        # Copy by extension instead of assuming a vendor-name-prefixed
+        # filename - the actual output name doesn't always match the
+        # ${vendor}-* pattern (e.g. Odix builds produce Cypherock-Main-Odix.*).
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.elf ./build/ 2>/dev/null || true
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.bin ./build/ 2>/dev/null || true
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.hex ./build/ 2>/dev/null || true
 
-        cp x1_wallet_firmware/"${BUILD_DIR}"/${{ inputs.vendor }}-*.* ./build/
+        echo "--- Copied to ./build ---"
+        ls -la ./build/
+        echo "--- end listing ---"
 
     - name: Archive Build Artifacts (${{ inputs.vendor }}-${{ inputs.coin_support_variant }})
       uses: actions/upload-artifact@v4
