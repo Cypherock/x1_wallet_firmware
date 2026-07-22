@@ -66,9 +66,13 @@
 #define UI_TEXT_VERIFY_MEMO_HASH "Verify Memo Hash\n%s"
 #define UI_TEXT_CALLDATA "Calldata"
 
+#define UI_TEXT_MULTI_COIN "Multi"
+#define UI_TEXT_BTC_ONLY "Bitcoin-only"
+
 // canton
 #define UI_TEXT_SIGN_TOPOLOGY_TXN_PROMPT                                       \
   "Sign topology transaction on %s from %s"
+#define UI_TEXT_SIGN_TXN_EXTERNAL_PROMPT "Sign transaction on %s from %s"
 #define UI_TEXT_VERIFY_PARTY_ID "Verify PartyId"
 #define UI_TEXT_SENDER_PARTY_ID "Sender PartyId"
 #define UI_TEXT_RECEIVER_PARTY_ID "Receiver PartyId"
@@ -79,6 +83,7 @@
 #define UI_TEXT_EXPIRY "Expiry"
 #define UI_TEXT_VERIFY_INSTRUMENT_ID "Verify Token/Instrument ID"
 #define UI_TEXT_VERIFY_INSTRUMENT_ADMIN "Verify Token/Instrument Admin"
+#define UI_TEXT_NAMESPACE "Namespace"
 
 // product hash
 extern const char *product_hash;
@@ -141,7 +146,7 @@ extern const char *ui_text_regulatory_info[];
 
 // Version info text
 #define UI_TEXT_CARD_VERSION "Card Version\n%d.%d.%d-%s"
-#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%d.%d.%d-%s"
+#define UI_TEXT_FIRMWARE_VERSION "Firmware Version\n%s %d.%d.%d-%s"
 #define UI_TEXT_BOOTLOADER_VERSION "Bootloader Version\n%d.%d.%d"
 
 // Factory reset text
@@ -194,7 +199,7 @@ extern const char *ui_text_onboarding[];
 extern const char *ui_text_onboarding_complete;
 
 // Firmware update text
-#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to version %d.%d.%d"
+#define FIRMWARE_UPDATE_CONFIRMATION "Update firmware to %s version %d.%d.%d"
 
 extern const char *ui_text_verification_is_now_complete_messages[];
 

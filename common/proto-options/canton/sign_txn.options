@@ -4,7 +4,7 @@ canton.SignTxnInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_l
 canton.SignTxnSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true
 
 canton.SignTxnTransactionMetadata.version type:FT_STATIC max_size:10 fixed_length:false
-canton.SignTxnTransactionMetadata.roots type:FT_STATIC max_size:10 max_count:50 fixed_length:false
+canton.SignTxnTransactionMetadata.roots type:FT_STATIC max_size:10 max_count:20 fixed_length:false
 
 canton.NodeSeed.seed type:FT_STATIC max_size:255 fixed_length:false
 

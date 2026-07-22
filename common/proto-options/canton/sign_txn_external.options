@@ -1,0 +1,4 @@
+# Options for file common/cypherock-common/proto/canton/sign_txn_external.proto
+canton.SignTxnExternalInitiateRequest.wallet_id type:FT_STATIC max_size:32 fixed_length:true
+canton.SignTxnExternalInitiateRequest.derivation_path type:FT_STATIC max_count:5 fixed_length:true
+canton.SignTxnExternalSignatureResponse.signature type:FT_STATIC max_size:64 fixed_length:true

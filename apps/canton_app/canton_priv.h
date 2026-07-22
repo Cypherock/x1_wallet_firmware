@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "canton/core.pb.h"
+#include "canton/sign_txn_external.pb.h"
 #include "canton_context.h"
 #include "canton_txn_encoding.h"
 #include "sha2.h"
@@ -47,6 +48,11 @@ typedef struct {
   canton_unsigned_topology_txn unsigned_topology_txn;
 
 } canton_topology_txn_context_t;
+
+typedef struct {
+  canton_sign_txn_external_initiate_request_t init_info;
+  canton_unsigned_txn_external_info_t unsigned_txn_external_info;
+} canton_txn_external_context_t;
 
 /*****************************************************************************
  * EXPORTED VARIABLES
@@ -85,5 +91,14 @@ void canton_sign_transaction(canton_query_t *query);
  * returns error to the host.
  */
 void canton_sign_topology_transaction(canton_query_t *query);
+
+/**
+ * @brief Entry point for sign_txn_external type queries
+ * @details Function handles complete flow required to sign and required
+ * transaction, this includes: recieving further data, parsing and validating
+ * data, user confirmation, returning data to the host. And incase of any error,
+ * returns error to the host.
+ */
+void canton_sign_txn_external(canton_query_t *query);
 
 #endif
