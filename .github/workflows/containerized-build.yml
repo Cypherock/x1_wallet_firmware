@@ -25,6 +25,7 @@ jobs:
     steps:
     - name: Set VERSION_TAG
       id: set_version_tag
+      shell: bash
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
           echo "VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')" >> $GITHUB_OUTPUT
