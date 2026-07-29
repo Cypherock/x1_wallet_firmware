@@ -146,8 +146,6 @@ static void flash_struct_load() {
 #if USE_SIMULATOR == 1
   uint32_t serialized_flash_metadata[2];
   read_cmd(FLASH_DATA_ADDRESS, serialized_flash_metadata, 8);
-  // bug in simulator this line wasnt there must have througn error
-  uint8_t *serialized_flash_metadata = (uint8_t *)serialized_flash_metadata;
 #else
   uint8_t *serialized_flash_metadata = (uint8_t *)FLASH_DATA_ADDRESS;
 #endif
