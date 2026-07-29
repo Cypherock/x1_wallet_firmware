@@ -162,6 +162,8 @@ static void flash_struct_load() {
 
   if (serialized_flash_struct_tag == TAG_FLASH_STRUCT &&
       serialized_flash_size <= FLASH_DATA_SIZE_LIMIT) {
+    // 6 is added to include the TAG_FLASH_STRUCT and length of the serialized
+    // structure
     uint16_t serialized_flash_size_tagged = serialized_flash_size + 6;
 
     uint8_t *serialized_flash_instance =
