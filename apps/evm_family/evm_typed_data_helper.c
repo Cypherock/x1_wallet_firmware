@@ -122,12 +122,33 @@ static ui_display_node *evm_create_typed_data_display_nodes(
       char title[BUFFER_SIZE] = {0};
       snprintf(title, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
 
-      char data[BUFFER_SIZE] = {0};
-      fill_string_with_data(curr_node, data, sizeof(data));
+      if (EVM_EIP_712_DATA_TYPE_STRING == curr_node->type) {
+        /* Strings can be arbitrarily long (no max_size cap) so skip
+         * fill_string_with_data() fixed BUFFER_SIZE buffer entirely no
+         * chunking needed either since ui_create_display_node() already
+         * heap-allocates and bounds the copy to the real size. Show the full
+         * value from source bytes in one node. */
+        char string_title[BUFFER_SIZE] = {0};
+        snprintf(string_title,
+                 sizeof(string_title),
+                 "%s (%s)",
+                 title,
+                 curr_node->struct_name);
 
-      temp->next =
-          ui_create_display_node(title, BUFFER_SIZE, data, sizeof(data));
-      temp = temp->next;
+        temp->next =
+            ui_create_display_node(string_title,
+                                   sizeof(string_title),
+                                   (const char *)curr_node->data->bytes,
+                                   curr_node->data->size);
+        temp = temp->next;
+      } else {
+        char data[BUFFER_SIZE] = {0};
+        fill_string_with_data(curr_node, data, sizeof(data));
+
+        temp->next =
+            ui_create_display_node(title, BUFFER_SIZE, data, sizeof(data));
+        temp = temp->next;
+      }
 
       for (int i = 0; i < curr_node->children_count; i++) {
         char prefix[1024] = {0};

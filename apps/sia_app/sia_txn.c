@@ -525,6 +525,29 @@ static bool sign_txn(uint8_t *signature) {
     return false;
   }
 
+  // outputs[1] if present, must be our own change address.
+  const sia_transaction_t *decoded_txn = sia_txn_context->txn;
+  if (decoded_txn->output_count == 2) {
+    uint8_t public_key[32];
+    ed25519_publickey(private_key, public_key);
+
+    char expected_address[SIA_ADDRESS_SIZE] = "";
+    char actual_address[SIA_ADDRESS_SIZE] = "";
+    bool addr_ok =
+        sia_generate_address(public_key, expected_address) &&
+        sia_full_address(decoded_txn->outputs[1].address_hash, actual_address);
+
+    if (!addr_ok ||
+        memcmp(expected_address, actual_address, SIA_ADDRESS_SIZE) != 0) {
+      sia_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      memzero(seed, sizeof(seed));
+      memzero(buffer, sizeof(buffer));
+      memzero(private_key, sizeof(private_key));
+      return false;
+    }
+  }
+
   int result = sia_create_signature(private_key, signature);
 
   memzero(seed, sizeof(seed));

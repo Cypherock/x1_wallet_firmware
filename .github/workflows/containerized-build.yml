@@ -20,11 +20,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: cypherock/x1-firmware-builder:v0.0.0
+      image: cypherock/x1-firmware-builder:v1.0.0
 
     steps:
     - name: Set VERSION_TAG
       id: set_version_tag
+      shell: bash
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
           echo "VERSION_TAG=$(echo "${{ github.ref }}" | cut -f 3- -d '/')" >> $GITHUB_OUTPUT
@@ -43,6 +44,7 @@ jobs:
         path: x1_wallet_firmware
 
     - name: Build Firmware (${{ inputs.firmware }} - ${{ inputs.target }} - ${{ inputs.vendor }} - ${{ inputs.coin_support_variant }})
+      shell: bash
       run: |
         cd x1_wallet_firmware
 
@@ -51,8 +53,10 @@ jobs:
           BTC_ONLY_FLAG="ON"
         fi
 
-        BUILD_DIR="build_${{ inputs.coin_support_variant }}"
+        BUILD_DIR="build_${{ inputs.vendor }}_${{ inputs.coin_support_variant }}"
+        rm -rf "${BUILD_DIR}"
         mkdir -p "${BUILD_DIR}"
+
 
         cmake -B "${BUILD_DIR}" \
               -DDEV_SWITCH=OFF \
@@ -72,7 +76,25 @@ jobs:
 
         mkdir -p build
 
-        cp x1_wallet_firmware/"${BUILD_DIR}"/${{ inputs.vendor }}-*.* ./build/
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.elf ./build/ 2>/dev/null || true
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.bin ./build/ 2>/dev/null || true
+        cp x1_wallet_firmware/"${BUILD_DIR}"/*.hex ./build/ 2>/dev/null || true
+
+        EXPECTED_NAME="${{ inputs.vendor }}-${{ inputs.firmware }}"
+        if [[ "${{ inputs.coin_support_variant }}" == "BTC_ONLY" ]]; then
+          EXPECTED_NAME="${EXPECTED_NAME}-BTC"
+        fi
+        for f in ./build/*; do
+          ext="${f##*.}"
+          target="./build/${EXPECTED_NAME}.${ext}"
+          if [ "$f" != "$target" ]; then
+            mv "$f" "$target"
+          fi
+        done
+
+        echo "--- Copied to ./build ---"
+        ls -la ./build/
+        echo "--- end listing ---"
 
     - name: Archive Build Artifacts (${{ inputs.vendor }}-${{ inputs.coin_support_variant }})
       uses: actions/upload-artifact@v4
