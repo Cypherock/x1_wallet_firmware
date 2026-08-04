@@ -101,22 +101,34 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-uint16_t decode_length(const uint8_t *byte_data, uint32_t *length) {
+uint16_t decode_length(const uint8_t *byte_data,
+                       uint16_t remaining_size,
+                       uint32_t *length) {
   // See
   // https://xrpl.org/docs/references/protocol/binary-format#length-prefixing
 
   uint32_t len = 0;
   uint16_t bytes_read = 0;
 
+  if (remaining_size < 1) {
+    return 0;
+  }
+
   uint8_t byte1 = byte_data[0];
   if (byte1 <= 192) {
     len = byte1;
     bytes_read = 1;
   } else if (byte1 <= 240) {
+    if (remaining_size < 2) {
+      return 0;
+    }
     uint16_t byte2 = byte_data[1];
     len = 193 + (((uint16_t)byte1 - 193) * 256) + byte2;
     bytes_read = 2;
   } else if (byte1 <= 254) {
+    if (remaining_size < 3) {
+      return 0;
+    }
     uint32_t byte2 = byte_data[1];
     uint32_t byte3 = byte_data[2];
     len = 12481 + (((uint32_t)byte1 - 241) * 65536) + (byte2 * 256) + byte3;
@@ -128,9 +140,14 @@ uint16_t decode_length(const uint8_t *byte_data, uint32_t *length) {
 }
 
 uint16_t decode_field_type(const uint8_t *byte_data,
+                           uint16_t remaining_size,
                            uint8_t *type_code,
                            uint8_t *field_code) {
   // See https://xrpl.org/docs/references/protocol/binary-format#field-ids
+
+  if (remaining_size < 1) {
+    return 0;
+  }
 
   uint8_t high_4_bits = byte_data[0] >> 4;
   uint8_t low_4_bits = byte_data[0] & 0x0f;
@@ -144,14 +161,23 @@ uint16_t decode_field_type(const uint8_t *byte_data,
     field = low_4_bits;
     bytes_read = 1;
   } else if (high_4_bits == 0 && low_4_bits != 0) {
+    if (remaining_size < 2) {
+      return 0;
+    }
     field = low_4_bits;
     type = byte_data[1];
     bytes_read = 2;
   } else if (high_4_bits != 0 && low_4_bits == 0) {
+    if (remaining_size < 2) {
+      return 0;
+    }
     type = high_4_bits;
     field = byte_data[1];
     bytes_read = 2;
   } else if (high_4_bits == 0 && low_4_bits == 0) {
+    if (remaining_size < 3) {
+      return 0;
+    }
     type = byte_data[1];
     field = byte_data[2];
     bytes_read = 3;
@@ -164,8 +190,12 @@ uint16_t decode_field_type(const uint8_t *byte_data,
 }
 
 uint16_t fill_INT16_type(const uint8_t *byte_data,
+                         uint16_t remaining_size,
                          uint8_t field_code,
                          xrp_unsigned_txn *txn) {
+  if (remaining_size < 2) {
+    return 0;
+  }
   uint16_t decoded = U16_READ_BE_ARRAY(byte_data);
   switch (field_code) {
     case TransactionType: {
@@ -180,8 +210,12 @@ uint16_t fill_INT16_type(const uint8_t *byte_data,
 }
 
 uint16_t fill_INT32_type(const uint8_t *byte_data,
+                         uint16_t remaining_size,
                          uint8_t field_code,
                          xrp_unsigned_txn *txn) {
+  if (remaining_size < 4) {
+    return 0;
+  }
   uint32_t decoded = U32_READ_BE_ARRAY(byte_data);
   switch (field_code) {
     case Flags: {
@@ -210,9 +244,14 @@ uint16_t fill_INT32_type(const uint8_t *byte_data,
 }
 
 uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
+                          uint16_t remaining_size,
                           uint8_t field_code,
                           xrp_unsigned_txn *txn) {
   // See https://xrpl.org/docs/references/protocol/binary-format#amount-fields
+
+  if (remaining_size < 8) {
+    return 0;
+  }
 
   uint8_t not_xrp = byte_data[0] >> 7;    // get the first bit
   if (not_xrp) {
@@ -242,18 +281,26 @@ uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
 }
 
 uint16_t fill_BLOB_type(const uint8_t *byte_data,
+                        uint16_t remaining_size,
                         uint8_t field_code,
                         xrp_unsigned_txn *txn) {
   // See https://xrpl.org/docs/references/protocol/binary-format#blob-fields
 
   uint32_t length = 0;
-  uint16_t bytes_read = decode_length(byte_data, &length);
+  uint16_t bytes_read = decode_length(byte_data, remaining_size, &length);
   if (!bytes_read || !length) {
+    return 0;
+  }
+
+  if (bytes_read + length > remaining_size) {
     return 0;
   }
 
   switch (field_code) {
     case SigningPubKey: {
+      if (length != sizeof(txn->SigningPubKey)) {
+        return 0;
+      }
       memcpy(txn->SigningPubKey, byte_data + bytes_read, length);
       break;
     }
@@ -267,23 +314,34 @@ uint16_t fill_BLOB_type(const uint8_t *byte_data,
 }
 
 uint16_t fill_ACCOUNT_type(const uint8_t *byte_data,
+                           uint16_t remaining_size,
                            uint8_t field_code,
                            xrp_unsigned_txn *txn) {
   // See
   // https://xrpl.org/docs/references/protocol/binary-format#accountid-fields
 
   uint32_t length = 0;
-  uint16_t bytes_read = decode_length(byte_data, &length);
+  uint16_t bytes_read = decode_length(byte_data, remaining_size, &length);
   if (!bytes_read || !length) {
+    return 0;
+  }
+
+  if (bytes_read + length > remaining_size) {
     return 0;
   }
 
   switch (field_code) {
     case Account: {
+      if (length != sizeof(txn->Account)) {
+        return 0;
+      }
       memcpy(txn->Account, byte_data + bytes_read, length);
       break;
     }
     case Destination: {
+      if (length != sizeof(txn->Destination)) {
+        return 0;
+      }
       memcpy(txn->Destination, byte_data + bytes_read, length);
       break;
     }
@@ -307,6 +365,13 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
   // See https://xrpl.org/docs/references/protocol/binary-format
 
   txn->hasDestinationTag = false;
+  bool seen_transaction_type = false;
+  bool seen_sequence = false;
+  bool seen_amount = false;
+  bool seen_fee = false;
+  bool seen_signing_pub_key = false;
+  bool seen_account = false;
+  bool seen_destination = false;
 
   uint16_t offset = 0;
   offset += 4;    // network prefix
@@ -314,8 +379,8 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
   while (offset < byte_array_size) {
     uint8_t type_code;
     uint8_t field_code;
-    uint16_t bytes_read =
-        decode_field_type(byte_array + offset, &type_code, &field_code);
+    uint16_t bytes_read = decode_field_type(
+        byte_array + offset, byte_array_size - offset, &type_code, &field_code);
     if (!bytes_read) {
       return false;
     }
@@ -324,41 +389,65 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
 
     switch (type_code) {
       case INT16: {
-        bytes_read = fill_INT16_type(byte_array + offset, field_code, txn);
+        bytes_read = fill_INT16_type(
+            byte_array + offset, byte_array_size - offset, field_code, txn);
         if (!bytes_read) {
           return false;
+        }
+        if (field_code == TransactionType) {
+          seen_transaction_type = true;
         }
         offset += bytes_read;
         break;
       }
       case INT32: {
-        bytes_read = fill_INT32_type(byte_array + offset, field_code, txn);
+        bytes_read = fill_INT32_type(
+            byte_array + offset, byte_array_size - offset, field_code, txn);
         if (!bytes_read) {
           return false;
+        }
+        if (field_code == Sequence) {
+          seen_sequence = true;
         }
         offset += bytes_read;
         break;
       }
       case AMOUNT: {
-        bytes_read = fill_AMOUNT_type(byte_array + offset, field_code, txn);
+        bytes_read = fill_AMOUNT_type(
+            byte_array + offset, byte_array_size - offset, field_code, txn);
         if (!bytes_read) {
           return false;
+        }
+        if (field_code == Amount) {
+          seen_amount = true;
+        } else if (field_code == Fee) {
+          seen_fee = true;
         }
         offset += bytes_read;
         break;
       }
       case BLOB: {
-        bytes_read = fill_BLOB_type(byte_array + offset, field_code, txn);
+        bytes_read = fill_BLOB_type(
+            byte_array + offset, byte_array_size - offset, field_code, txn);
         if (!bytes_read) {
           return false;
+        }
+        if (field_code == SigningPubKey) {
+          seen_signing_pub_key = true;
         }
         offset += bytes_read;
         break;
       }
       case ACCOUNT: {
-        bytes_read = fill_ACCOUNT_type(byte_array + offset, field_code, txn);
+        bytes_read = fill_ACCOUNT_type(
+            byte_array + offset, byte_array_size - offset, field_code, txn);
         if (!bytes_read) {
           return false;
+        }
+        if (field_code == Account) {
+          seen_account = true;
+        } else if (field_code == Destination) {
+          seen_destination = true;
         }
         offset += bytes_read;
         break;
@@ -368,7 +457,13 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
     }
   }
 
-  if (offset > byte_array_size) {
+  if (offset != byte_array_size) {
+    return false;
+  }
+
+  // reject a technically well-formed but incomplete transaction
+  if (!seen_transaction_type || !seen_sequence || !seen_amount || !seen_fee ||
+      !seen_signing_pub_key || !seen_account || !seen_destination) {
     return false;
   }
 
