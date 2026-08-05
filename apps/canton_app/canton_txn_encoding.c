@@ -1694,7 +1694,8 @@ static void parse_display_info_from_transfer_record(
             continue;
           }
           // [SEC-AUDIT BUG-09] numeric is a protobuf string up to 1000 bytes;
-          // amount is fixed-size. Bounded copy. See docs/SECURITY_AUDIT_BUGS.md.
+          // amount is fixed-size. Bounded copy. See
+          // docs/SECURITY_AUDIT_BUGS.md.
           snprintf(display_info->amount,
                    sizeof(display_info->amount),
                    "%s",
@@ -2071,8 +2072,7 @@ bool validate_and_encode_canton_unsigned_txn() {
                         ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
-    sha256_Update(
-        &transaction_hash_ctx, root_hash->hash, SHA256_DIGEST_LENGTH);
+    sha256_Update(&transaction_hash_ctx, root_hash->hash, SHA256_DIGEST_LENGTH);
   }
 
   /* finalize transaction hash digest */
