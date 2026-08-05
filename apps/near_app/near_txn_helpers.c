@@ -111,10 +111,10 @@ bool near_parse_transaction(const uint8_t *byte_array,
   // (or advance) stays within byte_array_size before it happens. The 32-bit
   // sum also prevents the uint16 offset from wrapping past the buffer.
   // See docs/SECURITY_AUDIT_BUGS.md.
-#define NEAR_NEED(n)                                                  \
-  do {                                                                \
-    if ((uint32_t)offset + (uint32_t)(n) > (uint32_t)byte_array_size) \
-      return false;                                                   \
+#define NEAR_NEED(n)                                                           \
+  do {                                                                         \
+    if ((uint32_t)offset + (uint32_t)(n) > (uint32_t)byte_array_size)          \
+      return false;                                                            \
   } while (0)
 
   NEAR_NEED(4);
