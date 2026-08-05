@@ -147,7 +147,8 @@ bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
   near_get_new_account_id_from_fn_args(
       (const char *)decoded_utxn->action.fn_call.args,
       decoded_utxn->action.fn_call.args_length,
-      account);
+      account,
+      sizeof(account));
 
   get_amount_string(decoded_utxn->action.fn_call.deposit, value, sizeof(value));
 

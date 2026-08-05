@@ -328,8 +328,20 @@ static bool fetch_valid_input(stellar_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  // [SEC-AUDIT BUG-26] reject a zero size and a failed allocation instead of
+  // dereferencing NULL in the copy loop below. See docs/SECURITY_AUDIT_BUGS.md.
+  if (0 == total_size) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // allocate memory for storing transaction
   stellar_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == stellar_txn_context->transaction) {
+    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   while (1) {
     if (!stellar_get_query(query, STELLAR_QUERY_SIGN_TXN_TAG) ||

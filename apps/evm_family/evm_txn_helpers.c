@@ -345,6 +345,10 @@ bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context) {
       (is_zero(utxn_ptr->gas_limit, utxn_ptr->gas_limit_size[0])) ||
       // Check if the gas price is non-zero
       (is_zero(utxn_ptr->gas_price, utxn_ptr->gas_price_size[0])) ||
+      // [SEC-AUDIT BUG-25] reject gas fields wider than 8 bytes here so the fee
+      // computation's ASSERT (eth_get_fee_string) can never reset the device on
+      // a malformed txn. See docs/SECURITY_AUDIT_BUGS.md.
+      (utxn_ptr->gas_limit_size[0] > 8 || utxn_ptr->gas_price_size[0] > 8) ||
       // Check if the chain id from app matches with the chain id from the
       // unsigned transaction
       (cy_read_be(utxn_ptr->chain_id, utxn_ptr->chain_id_size[0]) !=

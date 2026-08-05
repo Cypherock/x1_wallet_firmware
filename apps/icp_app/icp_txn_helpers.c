@@ -136,10 +136,19 @@ int compare_hashes(const void *a, const void *b) {
 uint64_t decode_vec(int64_t type,
                     const uint8_t *data,
                     size_t *offset,
-                    uint8_t *res) {
+                    uint8_t *res,
+                    size_t res_size,
+                    size_t buffer_size) {
   switch (type) {
     case Nat8: {
-      uint64_t len = leb_decode(data, offset);
+      uint64_t len = leb_decode(data, offset, buffer_size);
+      // [SEC-AUDIT BUG-02] reject a len that overflows the fixed destination.
+      // [SEC-AUDIT BUG-05] also require len bytes to remain in the source
+      // buffer (offset may already be past the end from leb_decode).
+      if (len > res_size || *offset > buffer_size ||
+          len > (uint64_t)(buffer_size - *offset)) {
+        return 0;
+      }
       memcpy(res, data + *offset, len);
       (*offset) += len;
       return len;
@@ -152,8 +161,12 @@ uint64_t decode_vec(int64_t type,
 
 bool read_recipient_account_id(const uint8_t *data,
                                size_t *offset,
-                               icp_txn_context_t *icp_txn_context) {
+                               icp_txn_context_t *icp_txn_context,
+                               size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
+    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     bool has_owner = *(data + *offset);
     (*offset)++;
 
@@ -163,30 +176,51 @@ bool read_recipient_account_id(const uint8_t *data,
 
     icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
 
-    if (!decode_vec(Nat8, data, offset, txn->to.owner)) {
+    if (!decode_vec(Nat8,
+                    data,
+                    offset,
+                    txn->to.owner,
+                    sizeof(txn->to.owner),
+                    buffer_size)) {
       return false;
     }
 
+    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     txn->to.has_subaccount = *(data + *offset);
     (*offset)++;
 
     if (txn->to.has_subaccount) {
-      return decode_vec(Nat8, data, offset, txn->to.subaccount);
+      return decode_vec(Nat8,
+                        data,
+                        offset,
+                        txn->to.subaccount,
+                        sizeof(txn->to.subaccount),
+                        buffer_size);
     }
     return true;
   }
 
-  return decode_vec(
-      Nat8, data, offset, icp_txn_context->raw_icp_coin_transfer_txn->to);
+  return decode_vec(Nat8,
+                    data,
+                    offset,
+                    icp_txn_context->raw_icp_coin_transfer_txn->to,
+                    sizeof(icp_txn_context->raw_icp_coin_transfer_txn->to),
+                    buffer_size);
 }
 
 bool read_amount_value(const uint8_t *data,
                        size_t *offset,
-                       icp_txn_context_t *icp_txn_context) {
+                       icp_txn_context_t *icp_txn_context,
+                       size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
     icp_txn_context->raw_icp_token_transfer_txn->amount =
-        leb_decode(data, offset);
+        leb_decode(data, offset, buffer_size);
   } else {
+    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     icp_txn_context->raw_icp_coin_transfer_txn->amount.e8s =
         U64_READ_LE_ARRAY(data + *offset);
     (*offset) += 8;
@@ -196,18 +230,25 @@ bool read_amount_value(const uint8_t *data,
 
 bool read_fee_value(const uint8_t *data,
                     size_t *offset,
-                    icp_txn_context_t *icp_txn_context) {
+                    icp_txn_context_t *icp_txn_context,
+                    size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
     icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
 
+    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     txn->has_fee = *(data + *offset);
     (*offset)++;
 
     if (txn->has_fee) {
       icp_txn_context->raw_icp_token_transfer_txn->fee =
-          leb_decode(data, offset);
+          leb_decode(data, offset, buffer_size);
     }
   } else {
+    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     icp_txn_context->raw_icp_coin_transfer_txn->fee.e8s =
         U64_READ_LE_ARRAY(data + *offset);
     (*offset) += 8;
@@ -217,24 +258,33 @@ bool read_fee_value(const uint8_t *data,
 
 bool read_memo_value(const uint8_t *data,
                      size_t *offset,
-                     icp_txn_context_t *icp_txn_context) {
+                     icp_txn_context_t *icp_txn_context,
+                     size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
+    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     bool has_memo = *(data + *offset);
     (*offset)++;
 
     if (has_memo) {
       icp_txn_context->raw_icp_token_transfer_txn->has_memo = has_memo;
-      uint64_t decoded_len =
-          decode_vec(Nat8,
-                     data,
-                     offset,
-                     icp_txn_context->raw_icp_token_transfer_txn->memo.bytes);
+      uint64_t decoded_len = decode_vec(
+          Nat8,
+          data,
+          offset,
+          icp_txn_context->raw_icp_token_transfer_txn->memo.bytes,
+          sizeof(icp_txn_context->raw_icp_token_transfer_txn->memo.bytes),
+          buffer_size);
       if (!decoded_len) {
         return false;
       }
       icp_txn_context->raw_icp_token_transfer_txn->memo.size = decoded_len;
     }
   } else {
+    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     icp_txn_context->raw_icp_coin_transfer_txn->memo =
         U64_READ_LE_ARRAY(data + *offset);
     (*offset) += 8;
@@ -244,7 +294,11 @@ bool read_memo_value(const uint8_t *data,
 
 bool read_from_subaccount_value(const uint8_t *data,
                                 size_t *offset,
-                                icp_txn_context_t *icp_txn_context) {
+                                icp_txn_context_t *icp_txn_context,
+                                size_t buffer_size) {
+  if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    return false;
+  }
   bool has_from_subaccount = *(data + *offset);
   (*offset)++;
 
@@ -262,18 +316,28 @@ bool read_from_subaccount_value(const uint8_t *data,
           icp_txn_context->raw_icp_coin_transfer_txn->from_subaccount;
     }
 
-    return decode_vec(Nat8, data, offset, from_subaccount);
+    // from_subaccount points to a fixed ICP_SUBACCOUNT_ID_LEN buffer in either
+    // branch above.
+    return decode_vec(
+        Nat8, data, offset, from_subaccount, ICP_SUBACCOUNT_ID_LEN, buffer_size);
   }
   return true;
 }
 
 bool read_created_at_time_value(const uint8_t *data,
                                 size_t *offset,
-                                icp_txn_context_t *icp_txn_context) {
+                                icp_txn_context_t *icp_txn_context,
+                                size_t buffer_size) {
+  if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    return false;
+  }
   bool has_created_at_time = *(data + *offset);
   (*offset)++;
 
   if (has_created_at_time) {
+    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+      return false;
+    }
     uint64_t timestamp_nanos = U64_READ_LE_ARRAY(data + *offset);
     (*offset) += 8;
 
@@ -295,11 +359,19 @@ bool read_created_at_time_value(const uint8_t *data,
 
 /// Reference:
 // https://github.com/dfinity/agent-js/blob/main/packages/candid/src/utils/leb128.ts#L74
-uint64_t leb_decode(const uint8_t *buffer, size_t *offset) {
+uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   uint64_t result = 0;
   int shift = 0;
   uint8_t byte;
   do {
+    // [SEC-AUDIT BUG-05] never read past the buffer, and cap the shift to avoid
+    // UB. On exhaustion push offset past the end so the caller's final
+    // `offset != byte_array_size` check rejects the truncated input.
+    // See docs/SECURITY_AUDIT_BUGS.md.
+    if (*offset >= buffer_size || shift >= 64) {
+      *offset = buffer_size + 1;
+      return result;
+    }
     byte = buffer[*offset];
     (*offset)++;
     result |= ((uint64_t)(byte & 0x7F) << shift);
@@ -310,12 +382,17 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset) {
 
 /// Reference:
 // https://github.com/dfinity/agent-js/blob/main/packages/candid/src/utils/leb128.ts#L135
-int64_t sleb_decode(const uint8_t *buffer, size_t *offset) {
+int64_t sleb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   int64_t result = 0;
   int shift = 0;
   uint8_t byte;
 
   while (1) {
+    // [SEC-AUDIT BUG-05] bounds + shift guard (see leb_decode).
+    if (*offset >= buffer_size || shift >= 64) {
+      *offset = buffer_size + 1;
+      return result;
+    }
     byte = buffer[*offset];
     (*offset)++;
     result |= (int64_t)(byte & 0x7F) << shift;
@@ -341,6 +418,11 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             icp_txn_context_t *icp_txn_context) {
   size_t offset = 0;
 
+  // [SEC-AUDIT BUG-05] need at least the 4-byte DIDL magic before reading it.
+  if (byte_array == NULL || byte_array_size < 4) {
+    return false;
+  }
+
   // Verify the "DIDL" Magic Number
   if (memcmp(byte_array, MAGIC_NUMBER, 4) != 0) {
     return false;
@@ -348,16 +430,22 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
   offset += 4;
 
   // Decode Type Table
-  size_t num_types = leb_decode(byte_array, &offset);
+  size_t num_types = leb_decode(byte_array, &offset, byte_array_size);
+  // [SEC-AUDIT BUG-04] num_types is host-controlled; cap it so the stack VLA
+  // below cannot exhaust the stack (a transfer's type table is tiny).
+  // See docs/SECURITY_AUDIT_BUGS.md.
+  if (num_types == 0 || num_types > 32) {
+    return false;
+  }
   IDL_complex_type_t type_table[num_types];
 
   for (size_t i = 0; i < num_types; i++) {
-    int64_t type = sleb_decode(byte_array, &offset);
+    int64_t type = sleb_decode(byte_array, &offset, byte_array_size);
 
     switch (type) {
       case Opt:
       case Vector: {
-        int64_t child_type = sleb_decode(byte_array, &offset);
+        int64_t child_type = sleb_decode(byte_array, &offset, byte_array_size);
         IDL_complex_type_t c_ty;
         c_ty.type_id = type;
         c_ty.child_type = child_type;
@@ -367,12 +455,21 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case Record: {
         IDL_complex_type_t c_ty;
         c_ty.type_id = type;
-        c_ty.num_fields = leb_decode(byte_array, &offset);
+        c_ty.num_fields = leb_decode(byte_array, &offset, byte_array_size);
+        // [SEC-AUDIT BUG-04] cap the host-controlled field count so the malloc
+        // size cannot integer-overflow, and NULL-check the allocation before
+        // the write loop below.
+        if (c_ty.num_fields > 32) {
+          return false;
+        }
         c_ty.fields =
             (record_field_t *)malloc(sizeof(record_field_t) * c_ty.num_fields);
+        if (NULL == c_ty.fields) {
+          return false;
+        }
         for (int j = 0; j < c_ty.num_fields; j++) {
-          uint64_t hash = leb_decode(byte_array, &offset);
-          int64_t field_type = sleb_decode(byte_array, &offset);
+          uint64_t hash = leb_decode(byte_array, &offset, byte_array_size);
+          int64_t field_type = sleb_decode(byte_array, &offset, byte_array_size);
           record_field_t field;
           field.key_hash = hash;
           field.type = field_type;
@@ -387,15 +484,18 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
     }
   }
 
-  uint64_t arg_count = leb_decode(byte_array, &offset);
+  uint64_t arg_count = leb_decode(byte_array, &offset, byte_array_size);
   // only 1 argument supported
   if (arg_count != 1) {
     return false;
   }
 
-  uint64_t arg_type_index = leb_decode(byte_array, &offset);
+  uint64_t arg_type_index = leb_decode(byte_array, &offset, byte_array_size);
 
-  if (arg_type_index < 0 && arg_type_index >= num_types) {
+  // [SEC-AUDIT BUG-03] arg_type_index is unsigned, so the original
+  // "< 0 && >= num_types" guard was always false (dead). Bound it against the
+  // type table to prevent an out-of-bounds index. See docs/SECURITY_AUDIT_BUGS.md.
+  if (arg_type_index >= num_types) {
     return false;
   }
 
@@ -415,32 +515,32 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case transfer_hash_to:
         // we can also verify the type
         // not doing right now
-        if (!read_recipient_account_id(byte_array, &offset, icp_txn_context)) {
+        if (!read_recipient_account_id(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_amount:
-        if (!read_amount_value(byte_array, &offset, icp_txn_context)) {
+        if (!read_amount_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_fee:
-        if (!read_fee_value(byte_array, &offset, icp_txn_context)) {
+        if (!read_fee_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_memo:
-        if (!read_memo_value(byte_array, &offset, icp_txn_context)) {
+        if (!read_memo_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_from_subaccount:
-        if (!read_from_subaccount_value(byte_array, &offset, icp_txn_context)) {
+        if (!read_from_subaccount_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_created_at_time:
-        if (!read_created_at_time_value(byte_array, &offset, icp_txn_context)) {
+        if (!read_created_at_time_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
