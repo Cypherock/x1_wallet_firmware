@@ -194,7 +194,10 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   sha256_Update(&hash_ctx, version_no, sizeof(version_no));
 
   // optional flag
-  if (stream->stream_pointer[stream->offset] == 0) {
+  // [SEC-AUDIT BUG-27] guard the direct peek against reading past the current
+  // chunk (read_byte_stream is bypassed here). See docs/SECURITY_AUDIT_BUGS.md.
+  if (stream->offset < stream->capacity &&
+      stream->stream_pointer[stream->offset] == 0) {
     status = skip_byte_stream(stream, 2);
     if (status != BYTE_STREAM_SUCCESS) {
       return BTC_VALIDATE_ERR_READ_STREAM;

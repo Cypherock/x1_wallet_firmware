@@ -62,6 +62,8 @@
 
 #include "evm_user_verification.h"
 
+#include <stdlib.h>    // [SEC-AUDIT BUG-24] malloc/free for calldata display
+
 #include "address.h"
 #include "constant_texts.h"
 #include "evm_api.h"
@@ -268,18 +270,28 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
 
   if (is_raw_calldata_enabled()) {
     uint64_t data_size = txn_context->transaction_info.data_size;
-    char data_str[2 + data_size * 2 + 1];
-    snprintf(data_str, sizeof(data_str), "0x");
+    // [SEC-AUDIT BUG-24] data_size is bounded only by EVM_TRANSACTION_SIZE_CAP
+    // (~20KB); a stack VLA of (2*data_size+3) would exhaust the stack. Allocate
+    // on the heap and NULL-check. See docs/SECURITY_AUDIT_BUGS.md.
+    size_t data_str_len = 2 + (size_t)data_size * 2 + 1;
+    char *data_str = (char *)malloc(data_str_len);
+    if (NULL == data_str) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return status;
+    }
+    snprintf(data_str, data_str_len, "0x");
     byte_array_to_hex_string(txn_context->transaction_info.data,
                              data_size,
                              data_str + 2,
-                             sizeof(data_str) - 2);
+                             data_str_len - 2);
     if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error) ||
         (verify_amount && !core_confirmation(amount_display, evm_send_error)) ||
         !core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error) ||
         !core_scroll_page(UI_TEXT_CALLDATA, data_str, evm_send_error)) {
+      free(data_str);
       return status;
     }
+    free(data_str);
   } else {
     char path_str[64] = "";
     const uint32_t *hd_path = txn_context->init_info.derivation_path;

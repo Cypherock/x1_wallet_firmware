@@ -568,9 +568,23 @@ static bool decrypt_packet(void) {
 static bool deserialize_packet(void) {
   SET_FLOW_TAG(DECRYPTION_PACKET_DESERIALIZE_FLOW);
   uint16_t packet_index = 0;
+  const uint16_t packet_size = decryption_context->encrypted_data.data.size;
   decryption_context->data_count =
       decryption_context->encrypted_data.data.bytes[packet_index++];
+  // [SEC-AUDIT BUG-13] the session-decrypted packet is fully host-controlled;
+  // validate the message count and every length BEFORE any copy (the original
+  // sanity check ran only after the overflowing memcpy loop).
+  // See docs/SECURITY_AUDIT_BUGS.md.
+  if (decryption_context->data_count > INHERITANCE_MESSAGES_MAX_COUNT) {
+    SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+    return false;
+  }
   for (uint8_t index = 0; index < decryption_context->data_count; index++) {
+    // need 1 (tag) + 2 (length) bytes still available in the packet
+    if ((uint32_t)packet_index + 3 > packet_size) {
+      SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+      return false;
+    }
     decryption_context->response_payload.decrypted_data[index].tag =
         decryption_context->encrypted_data.data.bytes[packet_index];
     packet_index++;    ///< Tag
@@ -578,6 +592,17 @@ static bool deserialize_packet(void) {
     decryption_context->data[index].encrypted_data_size = U16_READ_BE_ARRAY(
         &decryption_context->encrypted_data.data.bytes[packet_index]);
     packet_index += 2;    ///< Read length
+
+    // reject a length that overflows the destination buffer or runs past the
+    // end of the received packet
+    if (decryption_context->data[index].encrypted_data_size >
+            ENCRYPTED_DATA_SIZE ||
+        (uint32_t)packet_index +
+                decryption_context->data[index].encrypted_data_size >
+            packet_size) {
+      SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+      return false;
+    }
 
     memcpy(decryption_context->data[index].encrypted_data,
            &decryption_context->encrypted_data.data.bytes[packet_index],

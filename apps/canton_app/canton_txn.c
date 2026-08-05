@@ -389,6 +389,15 @@ static bool fetch_transaction_meta(canton_query_t *query) {
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
+  // [SEC-AUDIT BUG-10] node_seeds_count was unbounded before the malloc below;
+  // a large value overflows sizeof(canton_node_seed_t) * count and yields an
+  // undersized buffer the fetch loop then overruns. Bound it like nodes_count.
+  // See docs/SECURITY_AUDIT_BUGS.md.
+  if (node_seeds_count > 200) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   // we now know the number of node seeds and nodes
   // allocate memory for node seeds and node hashes in canton_txn_context

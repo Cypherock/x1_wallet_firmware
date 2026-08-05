@@ -117,12 +117,27 @@ bool near_derivation_path_guard(const uint32_t *path, uint8_t levels) {
 
 void near_get_new_account_id_from_fn_args(const char *args,
                                           uint32_t args_len,
-                                          char *account_id) {
+                                          char *account_id,
+                                          size_t account_id_size) {
   // length of '{"new_account_id":"'
   const int start = 19;
 
   // length of '","new_public_key":"ed25519:..."}'
-  const int end = args_len - 74;
+  const int suffix = 74;
+
+  // [SEC-AUDIT BUG-01] args_len is host-controlled; reject lengths that cannot
+  // contain the fixed prefix+suffix (would underflow the copy size) or that
+  // would overflow account_id. See docs/SECURITY_AUDIT_BUGS.md.
+  if (account_id_size == 0) {
+    return;
+  }
+  if (args_len < (uint32_t)(start + suffix) ||
+      (size_t)(args_len - suffix - start) >= account_id_size) {
+    account_id[0] = '\0';
+    return;
+  }
+
+  const int end = args_len - suffix;
 
   memcpy(account_id, args + start, end - start);
   account_id[end - start] = '\0';
