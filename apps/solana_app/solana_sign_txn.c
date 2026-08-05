@@ -367,6 +367,18 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
     return false;
   }
 
+  // [SEC-AUDIT BUG-08] The display/verify path is chosen from the host
+  // has_token_data flag, but the transfer union is populated according to the
+  // program actually parsed. Require the two to agree, otherwise a System
+  // (SOL) transfer read through the token path dereferences a host-controlled
+  // value as a pointer. See docs/SECURITY_AUDIT_BUGS.md.
+  if (solana_txn_context->is_token_transfer_transaction !=
+      solana_txn_context->extra_data.is_token_transfer) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   return true;
 }
 

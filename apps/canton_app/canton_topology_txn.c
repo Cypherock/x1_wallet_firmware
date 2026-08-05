@@ -439,6 +439,13 @@ static bool parse_and_hash_party_txn_proposal(
   // decode the proto serialized txn
   canton_generate_transaction_request_proposal_t decoded_proposal =
       CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_INIT_ZERO;
+  // [SEC-AUDIT BUG-11] serialized_txn_size is host-controlled; a value < 3
+  // makes (serialized_txn_size - 3) underflow to ~4 GB. Reject before use.
+  if (serialized_txn_size < 3) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   if (!decode_canton_serialized_data(
           serialized_txn + 3,    // skip the length prefix
           serialized_txn_size - 3,

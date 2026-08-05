@@ -184,8 +184,19 @@ static int parse_memo_data(const uint8_t *xdr,
 
 static int parse_operation_data(const uint8_t *xdr,
                                 uint32_t *offset,
+                                uint32_t xdr_len,
                                 stellar_transaction_t *txn) {
+// [SEC-AUDIT BUG-15] parse_operation_data previously wasn't given the buffer
+// length and read the whole operation past the allocation. Bound every read
+// against xdr_len. See docs/SECURITY_AUDIT_BUGS.md.
+#define STELLAR_NEED(n)                              \
+  do {                                               \
+    if ((uint64_t)*offset + (n) > (uint64_t)xdr_len) \
+      return -1;                                     \
+  } while (0)
+
   // Parse Operations count
+  STELLAR_NEED(4);
   txn->operation_count = U32_READ_BE_ARRAY(xdr + *offset);
   *offset += 4;
 
@@ -194,10 +205,12 @@ static int parse_operation_data(const uint8_t *xdr,
   }
 
   // Parse First Operation
+  STELLAR_NEED(4);
   uint32_t has_source_account = U32_READ_BE_ARRAY(xdr + *offset);
   *offset += 4;
 
   if (has_source_account == 1) {
+    STELLAR_NEED(4);
     uint32_t op_source_type = U32_READ_BE_ARRAY(xdr + *offset);
     *offset += 4;
 
@@ -205,6 +218,7 @@ static int parse_operation_data(const uint8_t *xdr,
       return -1;
     }
 
+    STELLAR_NEED(STELLAR_PUBKEY_RAW_SIZE);
     if (memcmp(xdr + *offset, txn->source_account, STELLAR_PUBKEY_RAW_SIZE) !=
         0) {
       return -1;
@@ -216,6 +230,7 @@ static int parse_operation_data(const uint8_t *xdr,
   }
 
   // Parse operation type
+  STELLAR_NEED(4);
   uint32_t operation_type = U32_READ_BE_ARRAY(xdr + *offset);
   *offset += 4;
 
@@ -226,15 +241,18 @@ static int parse_operation_data(const uint8_t *xdr,
   txn->operations[0].type = (stellar_operation_type_t)operation_type;
 
   // Parse destination account (common for both operations)
+  STELLAR_NEED(4);
   uint32_t dest_account_type = U32_READ_BE_ARRAY(xdr + *offset);
   *offset += 4;
   if (dest_account_type != STELLAR_KEY_TYPE_ED25519) {
     return -1;
   }
+  STELLAR_NEED(STELLAR_PUBKEY_RAW_SIZE);
   read_stellar_account(xdr, offset, txn->operations[0].destination);
 
   // For PAYMENT operations, we need to parse the asset type
   if (operation_type == STELLAR_OPERATION_PAYMENT) {
+    STELLAR_NEED(4);
     uint32_t asset_type = U32_READ_BE_ARRAY(xdr + *offset);
     *offset += 4;
     if (asset_type != STELLAR_ASSET_TYPE_NATIVE) {
@@ -243,9 +261,11 @@ static int parse_operation_data(const uint8_t *xdr,
   }
 
   // Parse amount (common for both operations)
+  STELLAR_NEED(8);
   txn->operations[0].amount = U64_READ_BE_ARRAY(xdr + *offset);
   *offset += 8;
 
+#undef STELLAR_NEED
   return 0;
 }
 
@@ -309,7 +329,7 @@ int stellar_parse_transaction(const uint8_t *xdr,
   }
 
   // Parse Operations
-  int result = parse_operation_data(xdr, &offset, txn);
+  int result = parse_operation_data(xdr, &offset, xdr_len, txn);
   if (result != 0) {
     return result;
   }

@@ -25,8 +25,9 @@
 
 #ifndef RAND_PLATFORM_INDEPENDENT
 
-//#pragma message( \
-//    "NOT SUITABLE FOR PRODUCTION USE! Replace random32() function with your own secure code.")
+// #pragma message( \
+//     "NOT SUITABLE FOR PRODUCTION USE! Replace random32() function with your
+//     own secure code.")
 
 // The following code is not supposed to be used in a production environment.
 // It's included only to make the library testable.
@@ -37,15 +38,20 @@
 // own secure code. There is also a possibility to replace the random_buffer()
 // function as it is defined as a weak symbol.
 
-static uint32_t seed = 0;
-
-void random_reseed(const uint32_t value) { seed = value; }
+// [SEC-AUDIT BUG-28] The reference LCG below is explicitly "NOT SUITABLE FOR
+// PRODUCTION". random32()/random_buffer() are instead backed by the hardware
+// TRNG: random_generate() mixes the MCU RNG with the ATECC secure element and
+// asserts on failure. These feed the ECDSA side-channel blinding in ecdsa.c;
+// the signature output is unchanged (blinding cancels) - only the entropy
+// source changes. See docs/SECURITY_AUDIT_BUGS.md.
+void random_reseed(const uint32_t value) {
+  (void)value;
+}
 
 uint32_t random32(void) {
-  // Linear congruential generator from Numerical Recipes
-  // https://en.wikipedia.org/wiki/Linear_congruential_generator
-  seed = 1664525 * seed + 1013904223;
-  return seed;
+  uint32_t r = 0;
+  random_buffer((uint8_t *)&r, sizeof(r));
+  return r;
 }
 
 #endif /* RAND_PLATFORM_INDEPENDENT */
@@ -54,13 +60,22 @@ uint32_t random32(void) {
 // The following code is platform independent
 //
 
+// [SEC-AUDIT BUG-28] hardware TRNG source (defined in common/libraries/util).
+extern void random_generate(uint8_t *arr, int len);
+
+// random_generate() fills at most 32 bytes per call; a small pool amortises the
+// TRNG calls so the blinding path (many small random32() draws) is not slowed
+// excessively. Bytes are never reused.
+static uint8_t s_trng_pool[32];
+static size_t s_trng_used = sizeof(s_trng_pool);    // start empty -> refill
+
 void random_buffer(uint8_t *buf, size_t len) {
-  uint32_t r = 0;
   for (size_t i = 0; i < len; i++) {
-    if (i % 4 == 0) {
-      r = random32();
+    if (s_trng_used >= sizeof(s_trng_pool)) {
+      random_generate(s_trng_pool, (int)sizeof(s_trng_pool));
+      s_trng_used = 0;
     }
-    buf[i] = (r >> ((i % 4) * 8)) & 0xFF;
+    buf[i] = s_trng_pool[s_trng_used++];
   }
 }
 

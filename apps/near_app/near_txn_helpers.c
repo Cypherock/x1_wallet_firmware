@@ -102,24 +102,41 @@ bool near_parse_transaction(const uint8_t *byte_array,
                             uint16_t byte_array_size,
                             near_unsigned_txn *utxn) {
   if (byte_array == NULL || utxn == NULL)
-    return;
+    return false;
   memzero(utxn, sizeof(near_unsigned_txn));
 
   uint16_t offset = 0;
 
+  // [SEC-AUDIT BUG-16] every length below is host-controlled; ensure the read
+  // (or advance) stays within byte_array_size before it happens. The 32-bit
+  // sum also prevents the uint16 offset from wrapping past the buffer.
+  // See docs/SECURITY_AUDIT_BUGS.md.
+#define NEAR_NEED(n)                                                  \
+  do {                                                                \
+    if ((uint32_t)offset + (uint32_t)(n) > (uint32_t)byte_array_size) \
+      return false;                                                   \
+  } while (0)
+
+  NEAR_NEED(4);
   utxn->signer_id_length = U32_READ_LE_ARRAY(byte_array);
   offset += 4;
+  NEAR_NEED(utxn->signer_id_length);
   utxn->signer = (byte_array + offset);
   offset += utxn->signer_id_length;
+  NEAR_NEED(1 + 32);
   utxn->signer_key.key_type = byte_array[offset++];
   utxn->signer_key.key = (byte_array + offset);
   offset += 32;
+  NEAR_NEED(8);
   memcpy(utxn->nonce, byte_array + offset, sizeof(utxn->nonce));
   offset += 8;
+  NEAR_NEED(4);
   utxn->receiver_id_length = U32_READ_LE_ARRAY(byte_array + offset);
   offset += 4;
+  NEAR_NEED(utxn->receiver_id_length);
   utxn->receiver = (byte_array + offset);
   offset += utxn->receiver_id_length;
+  NEAR_NEED(32 + 4 + 1);
   utxn->blockhash = (byte_array + offset);
   offset += 32;
   utxn->action_count = U32_READ_LE_ARRAY(byte_array + offset);
@@ -133,6 +150,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
 
   switch (utxn->actions_type) {
     case NEAR_ACTION_TRANSFER: {
+      NEAR_NEED(sizeof(utxn->action.transfer.amount));
       memcpy(utxn->action.transfer.amount,
              byte_array + offset,
              sizeof(utxn->action.transfer.amount));
@@ -142,23 +160,33 @@ bool near_parse_transaction(const uint8_t *byte_array,
     }
 
     case NEAR_ACTION_FUNCTION_CALL: {
+      NEAR_NEED(4);
       utxn->action.fn_call.method_name_length =
           U32_READ_LE_ARRAY(byte_array + offset);
       offset += 4;
+      NEAR_NEED(utxn->action.fn_call.method_name_length);
       utxn->action.fn_call.method_name = (char *)(byte_array + offset);
       offset += utxn->action.fn_call.method_name_length;
 
-      // As of now, we only support signing of create_account method
-      if (0 != strncmp(utxn->action.fn_call.method_name,
+      // As of now, we only support signing of create_account method.
+      // [SEC-AUDIT BUG-16] require an exact-length match so a 1-byte "c" cannot
+      // pass the prefix comparison.
+      if (utxn->action.fn_call.method_name_length !=
+              strlen(ui_text_near_create_account_method) ||
+          0 != strncmp(utxn->action.fn_call.method_name,
                        ui_text_near_create_account_method,
                        utxn->action.fn_call.method_name_length)) {
         return false;
       }
 
+      NEAR_NEED(4);
       utxn->action.fn_call.args_length = U32_READ_LE_ARRAY(byte_array + offset);
       offset += 4;
+      NEAR_NEED(utxn->action.fn_call.args_length);
       utxn->action.fn_call.args = (byte_array + offset);
       offset += utxn->action.fn_call.args_length;
+      NEAR_NEED(sizeof(utxn->action.fn_call.gas) +
+                sizeof(utxn->action.fn_call.deposit));
       memcpy(utxn->action.fn_call.gas,
              byte_array + offset,
              sizeof(utxn->action.fn_call.gas));
@@ -178,6 +206,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
       break;
     }
   }
+#undef NEAR_NEED
 
   // Reverse byte order
   cy_reverse_byte_array(utxn->nonce, sizeof(utxn->nonce));
