@@ -318,8 +318,12 @@ bool read_from_subaccount_value(const uint8_t *data,
 
     // from_subaccount points to a fixed ICP_SUBACCOUNT_ID_LEN buffer in either
     // branch above.
-    return decode_vec(
-        Nat8, data, offset, from_subaccount, ICP_SUBACCOUNT_ID_LEN, buffer_size);
+    return decode_vec(Nat8,
+                      data,
+                      offset,
+                      from_subaccount,
+                      ICP_SUBACCOUNT_ID_LEN,
+                      buffer_size);
   }
   return true;
 }
@@ -469,7 +473,8 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
         }
         for (int j = 0; j < c_ty.num_fields; j++) {
           uint64_t hash = leb_decode(byte_array, &offset, byte_array_size);
-          int64_t field_type = sleb_decode(byte_array, &offset, byte_array_size);
+          int64_t field_type =
+              sleb_decode(byte_array, &offset, byte_array_size);
           record_field_t field;
           field.key_hash = hash;
           field.type = field_type;
@@ -494,7 +499,8 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   // [SEC-AUDIT BUG-03] arg_type_index is unsigned, so the original
   // "< 0 && >= num_types" guard was always false (dead). Bound it against the
-  // type table to prevent an out-of-bounds index. See docs/SECURITY_AUDIT_BUGS.md.
+  // type table to prevent an out-of-bounds index. See
+  // docs/SECURITY_AUDIT_BUGS.md.
   if (arg_type_index >= num_types) {
     return false;
   }
@@ -515,32 +521,38 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case transfer_hash_to:
         // we can also verify the type
         // not doing right now
-        if (!read_recipient_account_id(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_recipient_account_id(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_amount:
-        if (!read_amount_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_amount_value(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_fee:
-        if (!read_fee_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_fee_value(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_memo:
-        if (!read_memo_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_memo_value(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_from_subaccount:
-        if (!read_from_subaccount_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_from_subaccount_value(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
       case transfer_hash_created_at_time:
-        if (!read_created_at_time_value(byte_array, &offset, icp_txn_context, byte_array_size)) {
+        if (!read_created_at_time_value(
+                byte_array, &offset, icp_txn_context, byte_array_size)) {
           return false;
         }
         break;
