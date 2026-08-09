@@ -112,10 +112,6 @@ sign_serial_number(void) {
   atca_sign_internal_in_out_t sign_internal_param = {0};
 
   atecc_data.retries = DEFAULT_ATECC_RETRIES;
-  // [SEC-AUDIT BUG-30] track that the produced signature passed its self-verify
-  // so a fault-injected (glitched) signature can never be returned. See
-  // docs/SECURITY_AUDIT_BUGS.md.
-  bool self_verify_ok = false;
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   do {
@@ -178,20 +174,10 @@ sign_serial_number(void) {
         LOG_ERROR("err xxx32 fault %d verify %d", atecc_data.status, result);
         continue;
       }
-      // [SEC-AUDIT BUG-30] signature verified against the auth public key.
-      self_verify_ok = true;
     }
-  } while (--atecc_data.retries && !self_verify_ok);
+  } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
-
-  // [SEC-AUDIT BUG-30] never return a signature that failed self-verification
-  // (e.g. from fault injection).
-  if (!self_verify_ok) {
-    memset(response.serial_signature.signature,
-           0,
-           sizeof(response.serial_signature.signature));
-  }
 
   memcpy(response.serial_signature.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
 
@@ -220,9 +206,6 @@ sign_random_challenge(uint8_t *challenge) {
     challenge[i] = challenge[i] ^ firmware_hash[i];
 
   atecc_data.retries = DEFAULT_ATECC_RETRIES;
-  // [SEC-AUDIT BUG-30] track that the produced signature passed its self-verify
-  // so a fault-injected (glitched) signature can never be returned.
-  bool self_verify_ok = false;
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   do {
@@ -287,24 +270,12 @@ sign_random_challenge(uint8_t *challenge) {
                               get_auth_public_key(),
                               response.challenge_signature.signature,
                               sign_internal_param.digest);
-      if (atecc_data.status != ATCA_SUCCESS || result != 0) {
+      if (atecc_data.status != ATCA_SUCCESS || result != 0)
         LOG_ERROR("err xxx33 fault %d verify %d", atecc_data.status, result);
-        continue;
-      }
-      // [SEC-AUDIT BUG-30] signature verified against the auth public key.
-      self_verify_ok = true;
     }
-  } while (--atecc_data.retries && !self_verify_ok);
+  } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
-
-  // [SEC-AUDIT BUG-30] never return a signature that failed self-verification
-  // (e.g. from fault injection).
-  if (!self_verify_ok) {
-    memset(response.challenge_signature.signature,
-           0,
-           sizeof(response.challenge_signature.signature));
-  }
 
   memcpy(
       response.challenge_signature.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
