@@ -327,11 +327,7 @@ typedef struct {
   uint8_t deactivate_instruction_count;
   uint8_t withdraw_instruction_count;
   uint64_t total_withdraw_lamports;
-  // [SEC-AUDIT BUG-08] the transfer program the parser actually matched (System
-  // = false, SPL Token = true). The display/verify path must be gated on this,
-  // not on the host-supplied has_token_data flag. See
-  // docs/SECURITY_AUDIT_BUGS.md.
-  bool is_token_transfer;
+  bool is_token_transfer; // [SEC-AUDIT BUG-08] 
 } solana_txn_extra_data;
 
 /*****************************************************************************

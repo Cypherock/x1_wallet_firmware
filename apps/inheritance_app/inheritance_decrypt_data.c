@@ -571,10 +571,7 @@ static bool deserialize_packet(void) {
   const uint16_t packet_size = decryption_context->encrypted_data.data.size;
   decryption_context->data_count =
       decryption_context->encrypted_data.data.bytes[packet_index++];
-  // [SEC-AUDIT BUG-13] the session-decrypted packet is fully host-controlled;
-  // validate the message count and every length BEFORE any copy (the original
-  // sanity check ran only after the overflowing memcpy loop).
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-13]
   if (decryption_context->data_count > INHERITANCE_MESSAGES_MAX_COUNT) {
     SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
     return false;

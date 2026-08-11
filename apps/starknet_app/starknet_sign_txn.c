@@ -62,7 +62,7 @@
  * INCLUDES
  *****************************************************************************/
 
-#include <string.h>    // [SEC-AUDIT BUG-19] memcmp/memcpy for selector check
+#include <string.h>
 
 #include "bignum.h"
 #include "composable_app_queue.h"
@@ -225,6 +225,20 @@ static void stark_amount_get_decimal_str(const uint8_t *byte_array,
 static starknet_txn_context_t *starknet_txn_context = NULL;
 
 static bool use_signature_verification = false;
+
+// [SEC-AUDIT BUG-19 / ext #15] See example in:
+// https://github.com/amanusk/starknet-selector-decoder/blob/main/README.md
+static const uint8_t STARKNET_TRANSFER_SELECTOR[STARKNET_BIGNUM_SIZE] = {
+    0x00, 0x83, 0xaf, 0xd3, 0xf4, 0xca, 0xed, 0xc6, 0xee, 0xbf, 0x44,
+    0x24, 0x6f, 0xe5, 0x4e, 0x38, 0xc9, 0x5e, 0x31, 0x79, 0xa5, 0xec,
+    0x9e, 0xa8, 0x17, 0x40, 0xec, 0xa5, 0xb4, 0x82, 0xd1, 0x2e};
+
+// [SEC-AUDIT BUG-33] See:
+// https://github.com/Cypherock/cypherock-cysync/blob/develop/packages/coin-support-starknet/src/constants.ts;
+static const uint8_t STARKNET_STRK_TOKEN_CONTRACT[STARKNET_BIGNUM_SIZE] = {
+    0x04, 0x71, 0x8f, 0x5a, 0x0f, 0xc3, 0x4c, 0xc1, 0xaf, 0x16, 0xa1,
+    0xcd, 0xee, 0x98, 0xff, 0xb2, 0x0c, 0x31, 0xf5, 0xcd, 0x61, 0xd6,
+    0xab, 0x07, 0x20, 0x18, 0x58, 0xf4, 0x28, 0x7c, 0x93, 0x8d};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -412,61 +426,22 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
   mpz_clear(unit_price);
 }
 
-// [SEC-AUDIT BUG-19 / ext #15] Starknet ERC20 transfer() entrypoint selector =
-// starknet_keccak("transfer"). Verified against the host's own `starknet`
-// dependency via hash.getSelectorFromName('transfer'); it is a fixed constant
-// for every ERC20-style contract. Stored big-endian, left-padded to 32 bytes
-// (the felt itself is 31 bytes, so byte[0] is the 0x00 pad).
-// IMPORTANT: the host only ever builds a single-call `transfer` invoke
-// (cypherock-cysync .../prepareInvokeTransaction.ts). If a second Starknet
-// entrypoint is ever supported, THIS check must be revisited — see
-// docs/SECURITY_AUDIT_BUGS.md (BUG-19).
-static const uint8_t STARKNET_TRANSFER_SELECTOR[STARKNET_BIGNUM_SIZE] = {
-    0x00, 0x83, 0xaf, 0xd3, 0xf4, 0xca, 0xed, 0xc6, 0xee, 0xbf, 0x44,
-    0x24, 0x6f, 0xe5, 0x4e, 0x38, 0xc9, 0x5e, 0x31, 0x79, 0xa5, 0xec,
-    0x9e, 0xa8, 0x17, 0x40, 0xec, 0xa5, 0xb4, 0x82, 0xd1, 0x2e};
-
-// [SEC-AUDIT BUG-33] Canonical Starknet-mainnet STRK token contract address
-// (0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d), stored
-// big-endian in 32 bytes. Verified against the host's STRK_TOKEN_CONTRACT
-// constant (cypherock-cysync .../coin-support-starknet/src/constants.ts), which
-// is the ONLY token contract the host builds transfers against.
-// The selector check alone is not enough: any contract can expose a function
-// named transfer(address,uint256), so the invoked contract (calldata[1]) must
-// also be the real STRK contract before the hardcoded "STRK" label is trusted.
-// IMPORTANT: single supported asset by design. If Starknet ever adds another
-// asset, this becomes a list — see docs/SECURITY_AUDIT_BUGS.md (BUG-33).
-static const uint8_t STARKNET_STRK_TOKEN_CONTRACT[STARKNET_BIGNUM_SIZE] = {
-    0x04, 0x71, 0x8f, 0x5a, 0x0f, 0xc3, 0x4c, 0xc1, 0xaf, 0x16, 0xa1,
-    0xcd, 0xee, 0x98, 0xff, 0xb2, 0x0c, 0x31, 0xf5, 0xcd, 0x61, 0xd6,
-    0xab, 0x07, 0x20, 0x18, 0x58, 0xf4, 0x28, 0x7c, 0x93, 0x8d};
-
 static bool get_invoke_txn_user_verification() {
   // verify address
   char address[100] = "0x";
-  // [SEC-AUDIT BUG-19] the invoke calldata is host-controlled and this path
-  // interprets fixed indices: call target=[1], selector=[2], recipient=[4],
-  // amount low=[5], amount high=[6]. Require the expected element count,
-  // enforce that the invoked selector is transfer() (so an approve()/other
-  // entrypoint can't be shown as a transfer), and reject a non-zero amount high
-  // word (signed but never displayed -> understatement).
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-19]
   if (starknet_txn_context->invoke_txn->calldata.value_count < 7) {
     return false;
   }
-  // [SEC-AUDIT BUG-33] enforce the invoked contract (calldata[1]) == the real
-  // STRK token contract. A transfer() selector says nothing about which
-  // contract is being called, and the "STRK" unit label is hardcoded; without
-  // this, a host could point the call at an attacker contract that also has a
-  // transfer(address,uint256) and the device would still display "Send X STRK".
+  // [SEC-AUDIT BUG-33]
   {
     const uint32_t tgt_size =
         starknet_txn_context->invoke_txn->calldata.value[1].size;
-    if (tgt_size > STARKNET_BIGNUM_SIZE) {
+    if (tgt_size != STARKNET_BIGNUM_SIZE) {
       return false;
     }
     uint8_t tgt_padded[STARKNET_BIGNUM_SIZE] = {0};
-    memcpy(tgt_padded + (STARKNET_BIGNUM_SIZE - tgt_size),
+    memcpy(tgt_padded,
            starknet_txn_context->invoke_txn->calldata.value[1].bytes,
            tgt_size);
     if (memcmp(tgt_padded,
@@ -491,6 +466,7 @@ static bool get_invoke_txn_user_verification() {
       return false;
     }
   }
+  // high word must be 0, else actual amount >> shown amount.
   for (uint32_t k = 0;
        k < starknet_txn_context->invoke_txn->calldata.value[6].size;
        k++) {
@@ -565,11 +541,7 @@ static bool get_invoke_txn_user_verification() {
     return false;
   }
 
-  // [SEC-AUDIT BUG-19 / ext #14] The signature commits to BOTH the L1 and L2
-  // gas bounds (starknet_poseidon.c encodes level_1 and level_2), and the host
-  // sends both (cypherock-cysync .../signTransaction). Previously only L1 was
-  // shown, so a large l2_gas.max_amount could be signed unseen. Display L2 too.
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-19 / ext #14]
   memzero(amount_str, sizeof(amount_str));
   uint8_t l2_max_fee[STARKNET_BIGNUM_SIZE] = {0};
   starknet_get_max_fee(

@@ -398,8 +398,7 @@ static bool fetch_transaction_meta(btc_query_t *query) {
       sizeof(btc_txn_input_t) * btc_txn_context->metadata.input_count);
   btc_txn_context->outputs = (btc_sign_txn_output_t *)malloc(
       sizeof(btc_sign_txn_output_t) * btc_txn_context->metadata.output_count);
-  // [SEC-AUDIT BUG-26] fail cleanly instead of dereferencing NULL if the
-  // (host-count-sized) allocation fails. See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-26]
   if (NULL == btc_txn_context->inputs || NULL == btc_txn_context->outputs) {
     btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     return false;

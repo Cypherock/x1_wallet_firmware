@@ -155,9 +155,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // Blockhash
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
-  // [SEC-AUDIT BUG-07] the account-address list + blockhash must lie within the
-  // buffer before anything indexes into account_addresses[].
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-07] 
   if (offset > byte_array_size)
     return SOL_D_READ_SIZE_MISMATCH;
 
@@ -213,8 +211,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   extra_data->split_instruction_index = -1;
   extra_data->deactivate_instruction_count = 0;
   bool allocate_with_seed_seen = false;
-  // [SEC-AUDIT BUG-08] default: not a token transfer until a token-program
-  // instruction is actually parsed below.
+  // [SEC-AUDIT BUG-08]
   extra_data->is_token_transfer = false;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
@@ -237,10 +234,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
     utxn->instruction[i].opaque_data = byte_array + offset;
     offset += utxn->instruction[i].opaque_data_length;
-    // [SEC-AUDIT BUG-07] the account-index list and opaque data consumed by
-    // this instruction must lie within the buffer, and program_id_index must
-    // be a valid account (it indexes account_addresses[] in the memcmp below).
-    // See docs/SECURITY_AUDIT_BUGS.md.
+    // [SEC-AUDIT BUG-07]
     if (offset > byte_array_size)
       return SOL_D_READ_SIZE_MISMATCH;
     if (utxn->instruction[i].program_id_index >= utxn->account_addresses_count)
@@ -256,8 +250,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
       extra_data->is_token_transfer = false;    // [SEC-AUDIT BUG-08] System
 
-      // [SEC-AUDIT BUG-07] only interpret the 4-byte instruction enum if it is
-      // actually present; otherwise fall through to the (ignored) default.
+      // [SEC-AUDIT BUG-07] 
       uint32_t instruction_enum =
           (utxn->instruction[i].opaque_data_length >= 4)
               ? U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data)
