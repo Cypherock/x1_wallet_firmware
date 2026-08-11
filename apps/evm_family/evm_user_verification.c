@@ -62,13 +62,14 @@
 
 #include "evm_user_verification.h"
 
+#include <stdlib.h>
+
 #include "address.h"
 #include "constant_texts.h"
 #include "evm_api.h"
 #include "evm_priv.h"
 #include "exchange_main.h"
 #include "flash_api.h"
-#include <stdlib.h>
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "utils.h"

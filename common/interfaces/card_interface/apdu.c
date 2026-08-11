@@ -666,7 +666,7 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
-  // [SEC-AUDIT BUG-18] 
+  // [SEC-AUDIT BUG-18]
   if (*len < 34) {
     return NFC_SC_MAC_ERROR;
   }

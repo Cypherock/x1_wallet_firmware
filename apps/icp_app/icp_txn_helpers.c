@@ -142,7 +142,7 @@ uint64_t decode_vec(int64_t type,
   switch (type) {
     case Nat8: {
       uint64_t len = leb_decode(data, offset, buffer_size);
-      // [SEC-AUDIT BUG-02, BUG-05] 
+      // [SEC-AUDIT BUG-02, BUG-05]
       if (len > res_size || *offset > buffer_size ||
           len > (uint64_t)(buffer_size - *offset)) {
         return 0;
