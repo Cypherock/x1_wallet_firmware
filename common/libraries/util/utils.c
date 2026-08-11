@@ -544,7 +544,7 @@ bool convert_byte_array_to_decimal_string(
 
   uint8_t offset = 0;
   while (i <= j) {
-    // [SEC-AUDIT BUG-20] 
+    // [SEC-AUDIT BUG-20]
     if ((size_t)offset >= amount_decimal_string_size) {
       return false;
     }

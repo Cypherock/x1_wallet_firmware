@@ -148,7 +148,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // Blockhash
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
-  // [SEC-AUDIT BUG-07] 
+  // [SEC-AUDIT BUG-07]
   if (offset > byte_array_size)
     return SOL_D_READ_SIZE_MISMATCH;
 
@@ -228,7 +228,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       extra_data->transfer_instruction_index = i;
       extra_data->is_token_transfer = false;    // [SEC-AUDIT BUG-08] System
 
-      // [SEC-AUDIT BUG-07] 
+      // [SEC-AUDIT BUG-07]
       uint32_t instruction_enum =
           (utxn->instruction[i].opaque_data_length >= 4)
               ? U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data)

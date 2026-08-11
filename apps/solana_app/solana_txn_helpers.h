@@ -186,7 +186,7 @@ typedef struct {
   uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
   uint32_t compute_unit_limit;           // To calculate priority fee
   uint64_t compute_unit_price_micro_lamports;
-  bool is_token_transfer; // [SEC-AUDIT BUG-08] 
+  bool is_token_transfer;    // [SEC-AUDIT BUG-08]
 } solana_txn_extra_data;
 
 /*****************************************************************************
