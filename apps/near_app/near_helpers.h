@@ -56,12 +56,10 @@ bool near_derivation_path_guard(const uint32_t *path, uint8_t levels);
  * @param args_len Length of the total argument
  * @param account_id Reference to char buffer where the `account_id` string will
  * be populated
- * @param account_id_size Size of the account_id destination buffer
  */
 void near_get_new_account_id_from_fn_args(const char *args,
                                           uint32_t args_len,
-                                          char *account_id,
-                                          size_t account_id_size);
+                                          char *account_id);
 
 /**
  * @brief Get the amount string from hex bytes of the NEAR unsigned transaction.

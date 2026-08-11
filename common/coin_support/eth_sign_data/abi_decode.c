@@ -165,9 +165,8 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
        * the array */
       pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
-      /* [SEC-AUDIT BUG-21] bound the element count so ABI_ELEMENT_SZ_IN_BYTES *
-       * numElementsInDataArr cannot overflow uint32 and falsely pass the bounds
-       * check below. See docs/SECURITY_AUDIT_BUGS.md. */
+      // [SEC-AUDIT BUG-21] loose cap so 32*numElementsInDataArr can't overflow
+      // uint32; exact fit checked by UTIL_CheckBound below.
       if (numElementsInDataArr > (sizeOfAbiChunk / ABI_ELEMENT_SZ_IN_BYTES)) {
         returnCode = ABI_PROCESS_INCOMPLETE;
         break;

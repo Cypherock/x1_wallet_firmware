@@ -108,12 +108,10 @@ bool near_parse_transaction(const uint8_t *byte_array,
   uint16_t offset = 0;
 
   // [SEC-AUDIT BUG-16] every length below is host-controlled; ensure the read
-  // (or advance) stays within byte_array_size before it happens. The 32-bit
-  // sum also prevents the uint16 offset from wrapping past the buffer.
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // (or advance) stays within byte_array_size before it happens.
 #define NEAR_NEED(n)                                                           \
   do {                                                                         \
-    if ((uint32_t)offset + (uint32_t)(n) > (uint32_t)byte_array_size)          \
+    if ((uint64_t)offset + (uint32_t)(n) > (uint64_t)byte_array_size)          \
       return false;                                                            \
   } while (0)
 
@@ -169,8 +167,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
       offset += utxn->action.fn_call.method_name_length;
 
       // As of now, we only support signing of create_account method.
-      // [SEC-AUDIT BUG-16] require an exact-length match so a 1-byte "c" cannot
-      // pass the prefix comparison.
+      // [SEC-AUDIT BUG-16] require an exact-length match
       if (utxn->action.fn_call.method_name_length !=
               strlen(ui_text_near_create_account_method) ||
           0 != strncmp(utxn->action.fn_call.method_name,

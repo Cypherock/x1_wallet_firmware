@@ -49,9 +49,8 @@ queue_node *dequeue(queue *q) {
 
 static void twos_complement_of_byte_array(uint8_t *arr, size_t size) {
   // [SEC-AUDIT BUG-22] size comes from a host-controlled typed-data node field;
-  // never touch more than the fixed 32-byte destination. This also fixes the
-  // reverse loop below, whose `i >= 0` on a size_t never terminated and could
-  // underflow. See docs/SECURITY_AUDIT_BUGS.md.
+  // This also fixes the reverse loop below, whose `i >= 0` on a size_t never
+  // terminated and could underflow.
   if (size > 32) {
     size = 32;
   }

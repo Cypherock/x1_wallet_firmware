@@ -142,9 +142,7 @@ uint64_t decode_vec(int64_t type,
   switch (type) {
     case Nat8: {
       uint64_t len = leb_decode(data, offset, buffer_size);
-      // [SEC-AUDIT BUG-02] reject a len that overflows the fixed destination.
-      // [SEC-AUDIT BUG-05] also require len bytes to remain in the source
-      // buffer (offset may already be past the end from leb_decode).
+      // [SEC-AUDIT BUG-02, BUG-05] 
       if (len > res_size || *offset > buffer_size ||
           len > (uint64_t)(buffer_size - *offset)) {
         return 0;
@@ -316,8 +314,6 @@ bool read_from_subaccount_value(const uint8_t *data,
           icp_txn_context->raw_icp_coin_transfer_txn->from_subaccount;
     }
 
-    // from_subaccount points to a fixed ICP_SUBACCOUNT_ID_LEN buffer in either
-    // branch above.
     return decode_vec(Nat8,
                       data,
                       offset,
@@ -368,10 +364,7 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   int shift = 0;
   uint8_t byte;
   do {
-    // [SEC-AUDIT BUG-05] never read past the buffer, and cap the shift to avoid
-    // UB. On exhaustion push offset past the end so the caller's final
-    // `offset != byte_array_size` check rejects the truncated input.
-    // See docs/SECURITY_AUDIT_BUGS.md.
+    // [SEC-AUDIT BUG-05]
     if (*offset >= buffer_size || shift >= 64) {
       *offset = buffer_size + 1;
       return result;
@@ -392,7 +385,7 @@ int64_t sleb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   uint8_t byte;
 
   while (1) {
-    // [SEC-AUDIT BUG-05] bounds + shift guard (see leb_decode).
+    // [SEC-AUDIT BUG-05]
     if (*offset >= buffer_size || shift >= 64) {
       *offset = buffer_size + 1;
       return result;
@@ -422,7 +415,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             icp_txn_context_t *icp_txn_context) {
   size_t offset = 0;
 
-  // [SEC-AUDIT BUG-05] need at least the 4-byte DIDL magic before reading it.
+  // [SEC-AUDIT BUG-05]
   if (byte_array == NULL || byte_array_size < 4) {
     return false;
   }
@@ -435,9 +428,8 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   // Decode Type Table
   size_t num_types = leb_decode(byte_array, &offset, byte_array_size);
-  // [SEC-AUDIT BUG-04] num_types is host-controlled; cap it so the stack VLA
-  // below cannot exhaust the stack (a transfer's type table is tiny).
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-04] num_types is host-controlled, capped at 32 real
+  // transfers use ~4-6 types.
   if (num_types == 0 || num_types > 32) {
     return false;
   }
@@ -460,9 +452,8 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
         IDL_complex_type_t c_ty;
         c_ty.type_id = type;
         c_ty.num_fields = leb_decode(byte_array, &offset, byte_array_size);
-        // [SEC-AUDIT BUG-04] cap the host-controlled field count so the malloc
-        // size cannot integer-overflow, and NULL-check the allocation before
-        // the write loop below.
+        // [SEC-AUDIT BUG-04] host-controlled field count, real transfers use
+        // ~5-6 fields.
         if (c_ty.num_fields > 32) {
           return false;
         }
@@ -497,10 +488,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   uint64_t arg_type_index = leb_decode(byte_array, &offset, byte_array_size);
 
-  // [SEC-AUDIT BUG-03] arg_type_index is unsigned, so the original
-  // "< 0 && >= num_types" guard was always false (dead). Bound it against the
-  // type table to prevent an out-of-bounds index. See
-  // docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-03]
   if (arg_type_index >= num_types) {
     return false;
   }

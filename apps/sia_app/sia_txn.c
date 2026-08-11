@@ -306,8 +306,7 @@ static bool fetch_valid_input(sia_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
-  // [SEC-AUDIT BUG-26] reject a zero size and a failed allocation instead of
-  // dereferencing NULL in the copy loop below. See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-26] 
   if (0 == total_size) {
     sia_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);

@@ -132,9 +132,7 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
     uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE] = {0};
     uint16_t encrypted_data_buffer_size = message->encrypted_data[offset++];
 
-    // [SEC-AUDIT BUG-14] the per-chunk length byte is host-controlled; reject a
-    // value that would overflow the fixed stack buffer before the copy.
-    // See docs/SECURITY_AUDIT_BUGS.md.
+    // [SEC-AUDIT BUG-14]
     if (encrypted_data_buffer_size > ENCRYPTED_DATA_BUFFER_SIZE) {
       if (reject_cb) {
         reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
