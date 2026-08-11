@@ -1693,7 +1693,11 @@ static void parse_display_info_from_transfer_record(
           if (CANTON_VALUE_NUMERIC_TAG != display_value->which_sum) {
             continue;
           }
-          strcpy(display_info->amount, display_value->numeric);
+          // [SEC-AUDIT BUG-09]
+          snprintf(display_info->amount,
+                   sizeof(display_info->amount),
+                   "%s",
+                   display_value->numeric);
         } else if (strcmp(display_field->label, START_TIME_LABEL) == 0) {
           if (CANTON_VALUE_TIMESTAMP_TAG != display_value->which_sum) {
             continue;
@@ -1721,7 +1725,11 @@ static void parse_display_info_from_transfer_record(
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
-              strcpy(display_info->instrument.id, instrument_value->text);
+              // [SEC-AUDIT BUG-09]
+              snprintf(display_info->instrument.id,
+                       sizeof(display_info->instrument.id),
+                       "%s",
+                       instrument_value->text);
             } else if (strcmp(instrument_field->label, ADMIN_LABEL) == 0) {
               if (CANTON_VALUE_PARTY_TAG != instrument_value->which_sum) {
                 continue;
@@ -1775,7 +1783,11 @@ static void parse_display_info(const char *choice_id,
         if (CANTON_VALUE_NUMERIC_TAG != tap_value->which_sum) {
           continue;
         }
-        strcpy(display_info->amount, tap_value->numeric);
+        // [SEC-AUDIT BUG-09]
+        snprintf(display_info->amount,
+                 sizeof(display_info->amount),
+                 "%s",
+                 tap_value->numeric);
       }
     }
   } else if (strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) == 0 ||
@@ -2048,9 +2060,15 @@ bool validate_and_encode_canton_unsigned_txn() {
        i++) {
     char *root_node_id = canton_txn_context->unsigned_txn.txn_meta.roots[i];
     int32_t root_node_id_l = strtol(root_node_id, NULL, 10);
-    sha256_Update(&transaction_hash_ctx,
-                  get_hashed_encoded_node_from_id(root_node_id_l)->hash,
-                  SHA256_DIGEST_LENGTH);
+    // [SEC-AUDIT BUG-12] a host-declared root id may match no fetched node
+    const canton_txn_node_hash_t *root_hash =
+        get_hashed_encoded_node_from_id(root_node_id_l);
+    if (NULL == root_hash) {
+      canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+    sha256_Update(&transaction_hash_ctx, root_hash->hash, SHA256_DIGEST_LENGTH);
   }
 
   /* finalize transaction hash digest */
