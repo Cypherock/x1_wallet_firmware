@@ -1725,7 +1725,7 @@ static void parse_display_info_from_transfer_record(
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
-              // [SEC-AUDIT BUG-09] 
+              // [SEC-AUDIT BUG-09]
               snprintf(display_info->instrument.id,
                        sizeof(display_info->instrument.id),
                        "%s",
