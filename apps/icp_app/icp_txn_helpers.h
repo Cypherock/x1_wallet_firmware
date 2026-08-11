@@ -67,7 +67,7 @@ typedef struct {
  * Function to decode LEB128 encoded positive integers.
  * @param buffer Pointer to the LEB128 encoded bytes.
  * @param offset Offset from the start of the buffer.
- * @param buffer_size Total size of buffer; reads never go past it (BUG-05).
+ * @param buffer_size Total size of buffer; reads never go past it.
  * @return Decoded integer value.
  */
 uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size);
@@ -77,7 +77,7 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size);
  * Supports decoding of negative values using two's complement.
  * @param buffer Pointer to the LEB128 encoded bytes.
  * @param offset Offset from the start of the buffer.
- * @param buffer_size Total size of buffer; reads never go past it (BUG-05).
+ * @param buffer_size Total size of buffer; reads never go past it.
  * @return Decoded integer value.
  */
 int64_t sleb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size);

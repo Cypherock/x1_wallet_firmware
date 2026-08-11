@@ -186,12 +186,10 @@ static int parse_operation_data(const uint8_t *xdr,
                                 uint32_t *offset,
                                 uint32_t xdr_len,
                                 stellar_transaction_t *txn) {
-// [SEC-AUDIT BUG-15] parse_operation_data previously wasn't given the buffer
-// length and read the whole operation past the allocation. Bound every read
-// against xdr_len. See docs/SECURITY_AUDIT_BUGS.md.
+// [SEC-AUDIT BUG-15]
 #define STELLAR_NEED(n)                                                        \
   do {                                                                         \
-    if ((uint64_t)*offset + (n) > (uint64_t)xdr_len)                           \
+    if ((uint64_t) * offset + (n) > (uint64_t)xdr_len)                         \
       return -1;                                                               \
   } while (0)
 

@@ -62,14 +62,13 @@
 
 #include "evm_user_verification.h"
 
-#include <stdlib.h>    // [SEC-AUDIT BUG-24] malloc/free for calldata display
-
 #include "address.h"
 #include "constant_texts.h"
 #include "evm_api.h"
 #include "evm_priv.h"
 #include "exchange_main.h"
 #include "flash_api.h"
+#include <stdlib.h>
 #include "ui_core_confirm.h"
 #include "ui_screens.h"
 #include "utils.h"
@@ -271,8 +270,7 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   if (is_raw_calldata_enabled()) {
     uint64_t data_size = txn_context->transaction_info.data_size;
     // [SEC-AUDIT BUG-24] data_size is bounded only by EVM_TRANSACTION_SIZE_CAP
-    // (~20KB); a stack VLA of (2*data_size+3) would exhaust the stack. Allocate
-    // on the heap and NULL-check. See docs/SECURITY_AUDIT_BUGS.md.
+    // a stack VLA of (2*data_size+3) would exhaust the stack
     size_t data_str_len = 2 + (size_t)data_size * 2 + 1;
     char *data_str = (char *)malloc(data_str_len);
     if (NULL == data_str) {

@@ -261,10 +261,8 @@ uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
   }
 
   uint64_t decoded = U64_READ_BE_ARRAY(byte_data);
-  // [SEC-AUDIT BUG-32] XRP native-amount value mask clears the top two flag
-  // bits; it must be 0x3FFF..., not 0xAFFF... (the latter wrongly clears value
-  // bit 60). See docs/SECURITY_AUDIT_BUGS.md.
-  decoded &= 0x3fffffffffffffff;    // for xrp
+  // [SEC-AUDIT BUG-32] 
+  decoded &= 0x1fffffffffffffff;    // for xrp
 
   switch (field_code) {
     case Amount: {

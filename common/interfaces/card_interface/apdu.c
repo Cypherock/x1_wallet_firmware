@@ -489,11 +489,7 @@ void extract_from_apdu(struct Wallet *wallet,
 
   uint16_t index = 0;
 
-  // [SEC-AUDIT BUG-17] every length below (apdu[index]) is card-supplied. Copy
-  // only if it fits the destination field AND stays within the apdu buffer;
-  // otherwise abort. Legitimate card data fits by construction, so this only
-  // rejects malformed/oversized (malicious or cloned card) input.
-  // See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-17] every length below (apdu[index]) is card-supplied
 #define APDU_COPY_FIELD(dst)                                                   \
   do {                                                                         \
     uint8_t _flen = apdu[index];                                               \
@@ -506,7 +502,6 @@ void extract_from_apdu(struct Wallet *wallet,
 
   while (index < len) {
     uint8_t ins = apdu[index++];
-    // every case below reads at least one more byte (length or scalar value)
     if (index >= len) {
       break;
     }
@@ -671,10 +666,7 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
-  // [SEC-AUDIT BUG-18] *len is card-controlled; a value below 34 makes
-  // (*len - 18) underflow into a ~64KB stack VLA and drives the OOB reads
-  // below. A valid secure-channel packet has at least one 16-byte block, the
-  // 16-byte MAC and 2 trailing bytes. See docs/SECURITY_AUDIT_BUGS.md.
+  // [SEC-AUDIT BUG-18] 
   if (*len < 34) {
     return NFC_SC_MAC_ERROR;
   }
