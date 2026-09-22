@@ -272,6 +272,10 @@ static bool handle_initiate_query(evm_query_t *query) {
 }
 
 static bool get_msg_data(evm_query_t *query) {
+  if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
+    delay_scr_init(ui_text_processing, DELAY_SHORT);
+  }
+
   evm_result_t response = init_evm_result(EVM_RESULT_SIGN_MSG_TAG);
   uint32_t total_size = sign_msg_ctx.init.total_msg_size;
   const evm_sign_msg_data_t *msg_data = &query->sign_msg.msg_data;

@@ -233,6 +233,7 @@ static inline bool is_non_hardened(uint32_t x) {
  * @details
  *
  * @param [out] dst         Destination address.
+ * @param [in] dst_size     Size of the destination buffer.
  * @param [in] src          Source address.
  * @param [in] size         Size of the source array.
  * @param [in] len          No of bytes to be copied.
@@ -247,6 +248,7 @@ static inline bool is_non_hardened(uint32_t x) {
  * @note
  */
 void s_memcpy(uint8_t *dst,
+              uint32_t dst_size,
               const uint8_t *src,
               uint32_t size,
               uint64_t len,

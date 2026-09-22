@@ -110,7 +110,7 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
   const uint8_t *to_address = NULL;
   const char *unit = evm_get_asset_symbol(txn_context);
   char value[34] = {'\0'};
-  char hex_str[30] = {'\0'};
+  char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
   char display[80] = "";
 
   // TODO: verify transaction nonce; this is pending on settings option
@@ -168,7 +168,7 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
   const char *unit = g_evm_app->lunit_name;
-  char hex_str[30] = {'\0'};
+  char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
   char value[34] = {'\0'};
   char fee[34] = "";
   char display[40] = "";
@@ -250,7 +250,7 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
              zeros,
              txn_context->transaction_info.value_size[0]) != 0) {
     verify_amount = true;
-    char hex_str[30] = {'\0'};
+    char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
     char value[34] = {'\0'};
     uint8_t len = eth_get_value(txn_context, hex_str);
     if (!convert_byte_array_to_decimal_string(
