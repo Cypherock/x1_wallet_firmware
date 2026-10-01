@@ -39,6 +39,15 @@
 #define UI_TEXT_TXN_FEE "Transaction fee"
 #define UI_TEXT_SEND_TXN_FEE "%s %s"
 #define UI_TEXT_VERIFY_AMOUNT "Verify amount\n%s\n%s"
+#define UI_TEXT_VERIFY_STAKE_AMOUNT                                            \
+  "Verify stake amount\n(incl. rent reserve)\n%s\n%s"
+#define UI_TEXT_DEACTIVATE_STAKE_EXPLAINER                                     \
+  "Each time you stake, a new stake account is created to hold it. "           \
+  "Deactivating starts a cooldown before you can withdraw to your wallet. "    \
+  "Based on the amount you entered, this will deactivate %d stake account(s)."
+#define UI_TEXT_VERIFY_SPLIT_AMOUNT                                            \
+  "This splits your stake, creating a new account.\nThis transfers %s %s to "  \
+  "fund its rent-exempt reserve"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
 #define UI_TEXT_WALLET_LOCKED_WAIT_MSG "%s is currently locked\nWait for %d %s"
 #define UI_TEXT_PIN_INS1 "In next step you can setup an alphanumeric PIN for %s"
@@ -292,6 +301,8 @@ extern const char *ui_text_confirm_passphrase;
 extern const char *ui_text_receive_on;
 extern const char *ui_text_verify_address;
 extern const char *ui_text_verify_amount;
+extern const char *ui_text_verify_everstake_validator;
+extern const char *ui_text_deactivate_solana_staking;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_verify_token_address;

@@ -486,6 +486,68 @@ static bool verify_solana_transfer_sol_transaction() {
   return true;
 }
 
+static bool verify_solana_stake_transaction() {
+  char address[45] = {0};
+  size_t address_size = sizeof(address);
+
+  const solana_txn_extra_data *extra_data = &solana_txn_context->extra_data;
+  const solana_create_account_with_seed_data *cas =
+      &solana_txn_context->transaction_info
+           .instruction[extra_data->create_account_with_seed_instruction_index]
+           .program.create_account_with_seed;
+  const solana_stake_delegate_data *dg =
+      &solana_txn_context->transaction_info
+           .instruction[extra_data->stake_delegate_instruction_index]
+           .program.stake_delegate;
+
+  if (!b58enc(address,
+              &address_size,
+              dg->vote_account,
+              SOLANA_ACCOUNT_ADDRESS_LENGTH)) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return false;
+  }
+
+  if (!core_scroll_page(
+          ui_text_verify_everstake_validator, address, solana_send_error)) {
+    return false;
+  }
+
+  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+  char display[100] = "";
+
+  uint8_t be_lamports[8] = {0};
+  int i = 8;
+  while (i--)
+    be_lamports[i] = cas->lamports >> 8 * (7 - i);
+
+  byte_array_to_hex_string(
+      be_lamports, 8, amount_string, sizeof(amount_string));
+  if (!convert_byte_array_to_decimal_string(16,
+                                            solana_get_decimal(),
+                                            amount_string,
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+
+  snprintf(display,
+           sizeof(display),
+           UI_TEXT_VERIFY_STAKE_AMOUNT,
+           amount_decimal_string,
+           SOLANA_LUNIT);
+  if (!core_confirmation(display, solana_send_error)) {
+    return false;
+  }
+
+  if (!verify_priority_fee())
+    return false;
+
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
 static bool create_program_address(
     const uint8_t seed[][SOLANA_ACCOUNT_ADDRESS_LENGTH],
     const uint8_t seeds_size[],
@@ -740,8 +802,67 @@ static bool verify_solana_transfer_token_transaction() {
   return true;
 }
 
+static bool verify_solana_deactivate_transaction() {
+  char display[256] = "";
+  snprintf(display,
+           sizeof(display),
+           UI_TEXT_DEACTIVATE_STAKE_EXPLAINER,
+           solana_txn_context->extra_data.deactivate_instruction_count);
+
+  if (!core_scroll_page(
+          ui_text_deactivate_solana_staking, display, solana_send_error)) {
+    return false;
+  }
+
+  if (solana_txn_context->extra_data.split_instruction_index != -1) {
+    const solana_transfer_data *tr =
+        &solana_txn_context->transaction_info
+             .instruction[solana_txn_context->extra_data
+                              .transfer_instruction_index]
+             .program.transfer;
+
+    char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+    char reserve_display[100] = "";
+
+    uint8_t be_lamports[8] = {0};
+    int i = 8;
+    while (i--)
+      be_lamports[i] = tr->lamports >> 8 * (7 - i);
+
+    byte_array_to_hex_string(
+        be_lamports, 8, amount_string, sizeof(amount_string));
+    if (!convert_byte_array_to_decimal_string(16,
+                                              solana_get_decimal(),
+                                              amount_string,
+                                              amount_decimal_string,
+                                              sizeof(amount_decimal_string))) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    snprintf(reserve_display,
+             sizeof(reserve_display),
+             UI_TEXT_VERIFY_SPLIT_AMOUNT,
+             amount_decimal_string,
+             SOLANA_LUNIT);
+    if (!core_confirmation(reserve_display, solana_send_error)) {
+      return false;
+    }
+  }
+
+  if (!verify_priority_fee())
+    return false;
+
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
 STATIC bool solana_get_user_verification() {
-  if (solana_txn_context->is_token_transfer_transaction == true) {
+  if (solana_txn_context->extra_data.is_deactivate_operation) {
+    return verify_solana_deactivate_transaction();
+  } else if (solana_txn_context->extra_data.is_stake_operation) {
+    return verify_solana_stake_transaction();
+  } else if (solana_txn_context->is_token_transfer_transaction == true) {
     return verify_solana_transfer_token_transaction();
   } else
     return verify_solana_transfer_sol_transaction();
@@ -794,6 +915,14 @@ static bool send_signature(solana_query_t *query,
   if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode))
     return false;
 
+  if (!solana_verify_stake_authorities(&solana_txn_context->transaction_info,
+                                       &solana_txn_context->extra_data,
+                                       hdnode.public_key + 1)) {
+    memzero(&hdnode, sizeof(hdnode));
+    memzero(seed, sizeof(seed));
+    return false;
+  }
+
   ed25519_sign(solana_txn_context->transaction,
                solana_txn_context->init_info.transaction_size,
                hdnode.private_key,
@@ -832,6 +961,9 @@ void solana_sign_transaction(solana_query_t *query) {
 
   if (NULL != solana_txn_context->transaction) {
     free(solana_txn_context->transaction);
+  }
+  if (NULL != solana_txn_context->transaction_info.instruction) {
+    free(solana_txn_context->transaction_info.instruction);
   }
   if (NULL != solana_txn_context) {
     free(solana_txn_context);
