@@ -822,7 +822,7 @@ static bool verify_solana_deactivate_transaction() {
              .program.transfer;
 
     char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
-    char reserve_display[100] = "";
+    char reserve_display[150] = "";
 
     uint8_t be_lamports[8] = {0};
     int i = 8;
@@ -845,7 +845,8 @@ static bool verify_solana_deactivate_transaction() {
              UI_TEXT_VERIFY_SPLIT_AMOUNT,
              amount_decimal_string,
              SOLANA_LUNIT);
-    if (!core_confirmation(reserve_display, solana_send_error)) {
+    if (!core_scroll_page(
+            ui_text_verify_split_amount, reserve_display, solana_send_error)) {
       return false;
     }
   }
