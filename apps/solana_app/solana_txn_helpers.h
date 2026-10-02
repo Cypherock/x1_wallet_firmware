@@ -161,6 +161,7 @@ enum SOLANA_PARSED_INSTRUCTION_KIND {
   SOLANA_PARSED_ALLOCATE_WITH_SEED,
   SOLANA_PARSED_STAKE_SPLIT,
   SOLANA_PARSED_STAKE_DEACTIVATE,
+  SOLANA_PARSED_STAKE_WITHDRAW,
 };
 
 // Reference :
@@ -258,6 +259,15 @@ typedef struct solana_stake_deactivate_data {
   uint8_t *authorized_account;
 } solana_stake_deactivate_data;
 
+// See:
+// https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Withdraw
+typedef struct solana_stake_withdraw_data {
+  uint8_t *stake_account;
+  uint8_t *recipient_account;
+  uint8_t *withdraw_authority;
+  uint64_t lamports;
+} solana_stake_withdraw_data;
+
 // Reference :
 // https://docs.solana.com/developing/programming-model/transactions#instruction-format
 typedef struct solana_instruction {
@@ -278,6 +288,7 @@ typedef struct solana_instruction {
     solana_allocate_with_seed_data allocate_with_seed;
     solana_stake_split_data stake_split;
     solana_stake_deactivate_data stake_deactivate;
+    solana_stake_withdraw_data stake_withdraw;
   } program;
 } solana_instruction;
 
@@ -314,6 +325,8 @@ typedef struct {
   int8_t split_instruction_index;
   bool is_deactivate_operation;
   uint8_t deactivate_instruction_count;
+  uint8_t withdraw_instruction_count;
+  uint64_t total_withdraw_lamports;
 } solana_txn_extra_data;
 
 /*****************************************************************************

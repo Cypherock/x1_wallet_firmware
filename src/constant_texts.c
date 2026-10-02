@@ -399,6 +399,7 @@ const char *ui_text_verify_amount = "Verify amount";
 const char *ui_text_verify_everstake_validator = "Verify Everstake validator";
 const char *ui_text_deactivate_solana_staking = "Deactivate Solana staking";
 const char *ui_text_verify_split_amount = "Verify split amount";
+const char *ui_text_verify_withdraw_amount = "Verify withdraw amount";
 const char *ui_text_verify_contract = "Verify contract";
 const char *ui_text_unverified_contract =
     LV_SYMBOL_WARNING " Warning!\nUnverified contract";

@@ -858,9 +858,50 @@ static bool verify_solana_deactivate_transaction() {
   return true;
 }
 
+static bool verify_solana_withdraw_transaction() {
+  char amount_string[40] = {'\0'}, amount_decimal_string[30] = {'\0'};
+  char display[60] = "";
+
+  uint8_t be_lamports[8] = {0};
+  int i = 8;
+  uint64_t total_lamports =
+      solana_txn_context->extra_data.total_withdraw_lamports;
+  while (i--)
+    be_lamports[i] = total_lamports >> 8 * (7 - i);
+
+  byte_array_to_hex_string(
+      be_lamports, 8, amount_string, sizeof(amount_string));
+  if (!convert_byte_array_to_decimal_string(16,
+                                            solana_get_decimal(),
+                                            amount_string,
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+
+  snprintf(display,
+           sizeof(display),
+           UI_TEXT_VERIFY_WITHDRAW_AMOUNT,
+           amount_decimal_string,
+           SOLANA_LUNIT);
+  if (!core_scroll_page(
+          ui_text_verify_withdraw_amount, display, solana_send_error)) {
+    return false;
+  }
+
+  if (!verify_priority_fee())
+    return false;
+
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
 STATIC bool solana_get_user_verification() {
   if (solana_txn_context->extra_data.is_deactivate_operation) {
     return verify_solana_deactivate_transaction();
+  } else if (solana_txn_context->extra_data.withdraw_instruction_count > 0) {
+    return verify_solana_withdraw_transaction();
   } else if (solana_txn_context->extra_data.is_stake_operation) {
     return verify_solana_stake_transaction();
   } else if (solana_txn_context->is_token_transfer_transaction == true) {

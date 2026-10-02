@@ -487,6 +487,34 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
               U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 4);
           break;
 
+        case SPI_WITHDRAW:
+          if (utxn->instruction[i].account_addresses_index_count < 5)
+            return SOL_D_MIN_LENGTH;
+          // Opaque data: tag(4) + lamports(u64)
+          if (utxn->instruction[i].opaque_data_length < 12)
+            return SOL_D_MIN_LENGTH;
+
+          extra_data->withdraw_instruction_count++;
+
+          utxn->instruction[i].parsed_kind = SOLANA_PARSED_STAKE_WITHDRAW;
+          utxn->instruction[i].program.stake_withdraw.stake_account =
+              utxn->account_addresses +
+              (*(utxn->instruction[i].account_addresses_index + 0) *
+               SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          utxn->instruction[i].program.stake_withdraw.recipient_account =
+              utxn->account_addresses +
+              (*(utxn->instruction[i].account_addresses_index + 1) *
+               SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          utxn->instruction[i].program.stake_withdraw.withdraw_authority =
+              utxn->account_addresses +
+              (*(utxn->instruction[i].account_addresses_index + 4) *
+               SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          utxn->instruction[i].program.stake_withdraw.lamports =
+              U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 4);
+          extra_data->total_withdraw_lamports +=
+              utxn->instruction[i].program.stake_withdraw.lamports;
+          break;
+
         case SPI_DEACTIVATE:
           if (utxn->instruction[i].account_addresses_index_count < 3)
             return SOL_D_MIN_LENGTH;
@@ -577,6 +605,8 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   const uint8_t *allocate_new_account = NULL;
   const uint8_t *transfer_recipient = NULL;
   const uint8_t *split_destination = NULL;
+  int withdraw_instruction_count = 0;
+  int compute_budget_instruction_count = 0;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
     if (!(0 < utxn->instruction[i].program_id_index &&
@@ -686,6 +716,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
       switch (instruction_enum) {
         case SCBI_SET_COMPUTE_UNIT_LIMIT:
         case SCBI_SET_COMPUTE_UNIT_PRICE:
+          compute_budget_instruction_count++;
           break;
 
         default:
@@ -742,6 +773,10 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           deactivate_instruction_count++;
           break;
 
+        case SPI_WITHDRAW:
+          withdraw_instruction_count++;
+          break;
+
         default:
           return SOL_V_UNSUPPORTED_INSTRUCTION;
           break;
@@ -751,8 +786,14 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
     }
   }
 
-  if (!transfer_instruction_found && !is_deactivate_operation)
+  if (!transfer_instruction_found && !is_deactivate_operation &&
+      withdraw_instruction_count == 0)
     return SOL_ERROR;
+
+  if (withdraw_instruction_count > 0 &&
+      (withdraw_instruction_count + compute_budget_instruction_count) !=
+          utxn->instructions_count)
+    return SOL_V_MIXED_STAKE_OPERATION;
 
   if (create_flow_found && is_deactivate_operation)
     return SOL_V_MIXED_STAKE_OPERATION;
@@ -788,6 +829,27 @@ bool solana_verify_stake_authorities(const solana_unsigned_txn *utxn,
                                      const uint8_t *derived_public_key) {
   if (!extra_data->is_stake_operation)
     return true;
+
+  if (extra_data->withdraw_instruction_count > 0) {
+    for (int i = 0; i < utxn->instructions_count; i++) {
+      if (utxn->instruction[i].parsed_kind != SOLANA_PARSED_STAKE_WITHDRAW)
+        continue;
+
+      const solana_stake_withdraw_data *wd =
+          &utxn->instruction[i].program.stake_withdraw;
+
+      if (memcmp(wd->withdraw_authority,
+                 derived_public_key,
+                 SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
+        return false;
+
+      if (memcmp(wd->recipient_account,
+                 derived_public_key,
+                 SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
+        return false;
+    }
+    return true;
+  }
 
   if (extra_data->is_deactivate_operation) {
     for (int i = 0; i < utxn->instructions_count; i++) {

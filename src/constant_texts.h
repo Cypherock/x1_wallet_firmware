@@ -48,6 +48,7 @@
 #define UI_TEXT_VERIFY_SPLIT_AMOUNT                                            \
   "%s %s moves into your new stake account as part of a split, funding its "   \
   "rent-exempt reserve."
+#define UI_TEXT_VERIFY_WITHDRAW_AMOUNT "%s %s"
 #define UI_TEXT_PAIRING_TAP_CARD "Tap Card #%d to pair"
 #define UI_TEXT_WALLET_LOCKED_WAIT_MSG "%s is currently locked\nWait for %d %s"
 #define UI_TEXT_PIN_INS1 "In next step you can setup an alphanumeric PIN for %s"
@@ -304,6 +305,7 @@ extern const char *ui_text_verify_amount;
 extern const char *ui_text_verify_everstake_validator;
 extern const char *ui_text_deactivate_solana_staking;
 extern const char *ui_text_verify_split_amount;
+extern const char *ui_text_verify_withdraw_amount;
 extern const char *ui_text_verify_contract;
 extern const char *ui_text_unverified_contract;
 extern const char *ui_text_verify_token_address;
