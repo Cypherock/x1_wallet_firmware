@@ -398,7 +398,11 @@ static bool fetch_transaction_meta(btc_query_t *query) {
       sizeof(btc_txn_input_t) * btc_txn_context->metadata.input_count);
   btc_txn_context->outputs = (btc_sign_txn_output_t *)malloc(
       sizeof(btc_sign_txn_output_t) * btc_txn_context->metadata.output_count);
-  // TODO: check if malloc failed; report to host and exit
+  // [SEC-AUDIT BUG-26]
+  if (NULL == btc_txn_context->inputs || NULL == btc_txn_context->outputs) {
+    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   send_response(BTC_SIGN_TXN_RESPONSE_META_ACCEPTED_TAG);
   return true;
 }
