@@ -192,6 +192,18 @@ static bool parse_whitelist(uint8_t *data,
     return true;
   }
 
+  bool is_transfer_selector = false;
+  for (int i = 0; i < TRC20_FUNCTION_SELECTOR_COUNT; i++) {
+    if (memcmp(data, selector[i], 4) == 0) {
+      is_transfer_selector = true;
+      break;
+    }
+  }
+  if (!is_transfer_selector) {
+    *status = 0;
+    return true;
+  }
+
   *status = 1;
   char msg[100] = "";
   snprintf(msg, sizeof(msg), "Send \n%s on \n%s", contract->symbol, TRON_NAME);

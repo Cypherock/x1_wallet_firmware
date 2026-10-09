@@ -112,9 +112,6 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
       else
         snprintf(buffer, sizeof(buffer), "false");
       break;
-    case EVM_EIP_712_DATA_TYPE_STRING:
-      snprintf(buffer, data_node->data->size + 1, "%s", data_node->data->bytes);
-      break;
     case EVM_EIP_712_DATA_TYPE_BYTES:
     case EVM_EIP_712_DATA_TYPE_ADDRESS:
     default:

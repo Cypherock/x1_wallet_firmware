@@ -289,8 +289,18 @@ static bool fetch_valid_input(xrp_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  if (total_size == 0 || total_size > UINT16_MAX) {
+    xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   // allocate memory for storing transaction
   xrp_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (xrp_txn_context->transaction == NULL) {
+    xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   while (1) {
     if (!xrp_get_query(query, XRP_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, XRP_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
@@ -328,9 +338,15 @@ static bool fetch_valid_input(xrp_query_t *query) {
   }
   xrp_txn_context->raw_txn =
       (xrp_unsigned_txn *)malloc(sizeof(xrp_unsigned_txn));
+  if (xrp_txn_context->raw_txn == NULL) {
+    xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+  memzero(xrp_txn_context->raw_txn, sizeof(xrp_unsigned_txn));
 
-  if (!xrp_parse_transaction(
-          xrp_txn_context->transaction, total_size, xrp_txn_context->raw_txn)) {
+  if (!xrp_parse_transaction(xrp_txn_context->transaction,
+                             (uint16_t)total_size,
+                             xrp_txn_context->raw_txn)) {
     xrp_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
@@ -467,6 +483,10 @@ static bool send_signature(xrp_query_t *query, const der_sig_t *der_signature) {
 
 void xrp_sign_transaction(xrp_query_t *query) {
   xrp_txn_context = (xrp_txn_context_t *)malloc(sizeof(xrp_txn_context_t));
+  if (xrp_txn_context == NULL) {
+    xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(xrp_txn_context, sizeof(xrp_txn_context_t));
 
   der_sig_t der_signature = {0};
