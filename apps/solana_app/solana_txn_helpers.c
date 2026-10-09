@@ -128,6 +128,12 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   uint16_t offset = 0;
   int error = 0;
 
+  /* Skip versioned (v0) message prefix byte 0x80 if present.
+   See: https://solana.com/docs/core/transactions/versioned-transactions */
+  if (byte_array_size > 0 && byte_array[0] == SOLANA_VERSIONED_MSG_PREFIX) {
+    offset += 1;
+  }
+
   // Message header
   utxn->required_signatures_count = *(byte_array + offset++);
   utxn->read_only_accounts_require_signature_count = *(byte_array + offset++);
@@ -149,15 +155,16 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
 
-  // Instructions: Currently expecting count to be 1 to 4, with only 1 transfer
-  // instruction.
-  // TODO: Handle batch instructions
+  // Instructions: supports up to 8 instructions (SOL/SPL transfer,
+  // compute budget, Kamino vault, memo).
   offset += get_compact_array_size(
       byte_array + offset, &(utxn->instructions_count), &error);
   if (error != SOL_OK)
     return error;
   if (utxn->instructions_count == 0)
     return SOL_D_MIN_LENGTH;
+  if (utxn->instructions_count > SOLANA_MAX_INSTRUCTION_COUNT)
+    return SOL_V_UNSUPPORTED_INSTRUCTION_COUNT;
 
   // prepare list of supported program ids
   uint8_t system_program_id[SOLANA_PROGRAM_ID_COUNT]
@@ -179,9 +186,25 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS,
       SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
       system_program_id[SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX]);
+  // Set Kamino Farms program address
+  hex_string_to_byte_array(
+      SOLANA_KAMINO_FARMS_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_KAMINO_FARMS_PROGRAM_ID_INDEX]);
+  // Set Memo program address
+  hex_string_to_byte_array(SOLANA_MEMO_PROGRAM_ADDRESS,
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+                           system_program_id[SOLANA_MEMO_PROGRAM_ID_INDEX]);
+  // Set Kamino Vault program address
+  hex_string_to_byte_array(
+      SOLANA_KAMINO_VAULT_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_KAMINO_VAULT_PROGRAM_ID_INDEX]);
 
   extra_data->compute_unit_limit =
       extra_data->compute_unit_price_micro_lamports = 0;
+  extra_data->kamino_amount = 0;
+  extra_data->kamino_operation = KAMINO_OPERATION_NONE;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
     utxn->instruction[i].program_id_index = *(byte_array + offset++);
@@ -310,6 +333,36 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         default:
           break;
       }
+    } else if (memcmp(utxn->account_addresses +
+                          utxn->instruction[i].program_id_index *
+                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                      system_program_id[SOLANA_KAMINO_VAULT_PROGRAM_ID_INDEX],
+                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      if (utxn->instruction[i].opaque_data_length < 16)
+        return SOL_D_MIN_LENGTH;
+
+      uint64_t disc = U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
+
+      if (disc == SOLANA_KAMINO_VAULT_DEPOSIT_DISCRIMINATOR) {
+        // Deposit: bytes 8-15 contain amount in microUSDC
+        extra_data->kamino_amount =
+            U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 8);
+        extra_data->kamino_operation = KAMINO_OPERATION_DEPOSIT;
+        extra_data->transfer_instruction_index = i;
+      } else if (disc == SOLANA_KAMINO_VAULT_WITHDRAW_DISCRIMINATOR) {
+        // Withdraw: bytes 8-15 contain shares to withdraw
+        extra_data->kamino_amount =
+            U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 8);
+        extra_data->kamino_operation = KAMINO_OPERATION_WITHDRAW;
+        extra_data->transfer_instruction_index = i;
+      }
+    } else if (memcmp(utxn->account_addresses +
+                          utxn->instruction[i].program_id_index *
+                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                      system_program_id[SOLANA_KAMINO_FARMS_PROGRAM_ID_INDEX],
+                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      if (utxn->instruction[i].opaque_data_length < 8)
+        return SOL_D_MIN_LENGTH;
     }
   }
 
@@ -319,7 +372,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 }
 
 int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
-  if (utxn->instructions_count > 4)
+  if (utxn->instructions_count > SOLANA_MAX_INSTRUCTION_COUNT)
     return SOL_V_UNSUPPORTED_INSTRUCTION_COUNT;
 
   // prepare list of supported program ids
@@ -342,6 +395,20 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
       SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS,
       SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
       system_program_id[SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX]);
+  // Set Kamino Farms program address
+  hex_string_to_byte_array(
+      SOLANA_KAMINO_FARMS_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_KAMINO_FARMS_PROGRAM_ID_INDEX]);
+  // Set Memo program address
+  hex_string_to_byte_array(SOLANA_MEMO_PROGRAM_ADDRESS,
+                           SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+                           system_program_id[SOLANA_MEMO_PROGRAM_ID_INDEX]);
+  // Set Kamino Vault program address
+  hex_string_to_byte_array(
+      SOLANA_KAMINO_VAULT_PROGRAM_ADDRESS,
+      SOLANA_ACCOUNT_ADDRESS_LENGTH * 2,
+      system_program_id[SOLANA_KAMINO_VAULT_PROGRAM_ID_INDEX]);
 
   bool transfer_instruction_found = false;
 
@@ -409,6 +476,46 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           return SOL_V_UNSUPPORTED_INSTRUCTION;
           break;
       }
+    } else if (memcmp(utxn->account_addresses +
+                          utxn->instruction[i].program_id_index *
+                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                      system_program_id[SOLANA_KAMINO_VAULT_PROGRAM_ID_INDEX],
+                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      if (utxn->instruction[i].opaque_data_length < 16)
+        return SOL_D_MIN_LENGTH;
+
+      uint64_t disc = U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
+
+      if (disc == SOLANA_KAMINO_VAULT_DEPOSIT_DISCRIMINATOR ||
+          disc == SOLANA_KAMINO_VAULT_WITHDRAW_DISCRIMINATOR) {
+        if (transfer_instruction_found) {
+          return SOL_ERROR;
+        }
+        transfer_instruction_found = true;
+      } else {
+        return SOL_V_UNSUPPORTED_INSTRUCTION;
+      }
+    } else if (memcmp(utxn->account_addresses +
+                          utxn->instruction[i].program_id_index *
+                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                      system_program_id[SOLANA_KAMINO_FARMS_PROGRAM_ID_INDEX],
+                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      if (utxn->instruction[i].opaque_data_length < 8)
+        return SOL_D_MIN_LENGTH;
+
+      uint64_t disc = U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
+
+      if (disc != SOLANA_KAMINO_FARMS_STAKE_DISCRIMINATOR &&
+          disc != SOLANA_KAMINO_FARMS_UNSTAKE_DISCRIMINATOR &&
+          disc != SOLANA_KAMINO_FARMS_HELPER_DISCRIMINATOR) {
+        return SOL_V_UNSUPPORTED_INSTRUCTION;
+      }
+    } else if (memcmp(utxn->account_addresses +
+                          utxn->instruction[i].program_id_index *
+                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
+                      system_program_id[SOLANA_MEMO_PROGRAM_ID_INDEX],
+                      SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      // Memo program whitelisted
     } else {
       return SOL_V_UNSUPPORTED_PROGRAM;
     }

@@ -21,7 +21,7 @@
  *****************************************************************************/
 
 /// Number of entries in whitelisted contracts list
-#define ETH_WHITELISTED_CONTRACTS_COUNT 497
+#define ETH_WHITELISTED_CONTRACTS_COUNT 498
 
 /*****************************************************************************
  * TYPEDEFS

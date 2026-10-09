@@ -65,6 +65,7 @@
 #include "address.h"
 #include "constant_texts.h"
 #include "evm_api.h"
+#include "evm_contracts.h"
 #include "evm_priv.h"
 #include "exchange_main.h"
 #include "flash_api.h"
@@ -173,13 +174,28 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   char fee[34] = "";
   char display[40] = "";
 
-  // show warning for not-whitelisted contracts; take user consent
+  // show contract identity screen; take user consent
   to_address = txn_context->transaction_info.to_address;
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
-  delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
 
-  if (!core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
+  /* If the to_address is a known HYSP contract (vault or token), replace the
+   * "Unverified contract" warning with a specific name.
+   * For any other address the standard warning is shown unchanged.
+   * The checksummed address is always displayed regardless — user can verify.
+   */
+  const char *hysp_name = HYSP_FindContractName(to_address);
+  const char *page_title =
+      (hysp_name != NULL) ? hysp_name : ui_text_verify_contract;
+
+  /* Only flash the "Unverified contract" warning for unknown contracts.
+   * For known HYSP contracts the user can read the name and verify the address
+   * without a warning flash. */
+  if (hysp_name == NULL) {
+    delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
+  }
+
+  if (!core_scroll_page(page_title, address, evm_send_error)) {
     return false;
   }
 

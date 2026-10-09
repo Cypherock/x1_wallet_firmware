@@ -1,15 +1,15 @@
 /**
- * @file    base_app.c
+ * @file    base_contracts.c
  * @author  Cypherock X1 Team
- * @brief   Base chain application configuration and helpers
- * @copyright Copyright (c) 2025 HODL TECH PTE LTD
+ * @brief   Whitelisted ERC20 contracts for Base chain
+ * @copyright Copyright (c) 2026 HODL TECH PTE LTD
  * <br/> You may obtain a copy of license at <a href="https://mitcc.org/"
  *target=_blank>https://mitcc.org/</a>
  *
  ******************************************************************************
  * @attention
  *
- * (c) Copyright 2025 by HODL TECH PTE LTD
+ * (c) Copyright 2026 by HODL TECH PTE LTD
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -61,29 +61,11 @@
  *****************************************************************************/
 
 #include "base_app.h"
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#include "app_registry.h"
-#include "evm_context.h"
 #include "evm_contracts.h"
-#include "evm_main.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
-
-/**
- * @brief Whitelisted contracts with respective token symbol
- * @details A map of Ethereum contract addresses with their token symbols. These
- * will enable the device to verify the ERC20 token transaction in a
- * user-friendly manner.
- *
- * @see erc20_contracts_t
- */
-extern const erc20_contracts_t base_contracts[];
 
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
@@ -97,76 +79,31 @@ extern const erc20_contracts_t base_contracts[];
  * STATIC FUNCTION PROTOTYPES
  *****************************************************************************/
 
-/**
- * @brief Checks if the provided token address is whitelisted and return the
- * matching contract instance.
- *
- * @param address Reference to the buffer containing the token address
- * @param contract Pointer to store the matched contract address instance
- *
- * @return bool Indicating if the provided token address is whitelisted
- * @return true If the address matches to an entry in the whitelist
- * @return false If the address does not match to an entry in the whitelist
- */
-static bool is_token_whitelisted(const uint8_t *address,
-                                 const erc20_contracts_t **contract);
-
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-
-static const evm_config_t base_app_config = {
-    .lunit_name = BASE_CURRENCY_SYMBOL,
-    .name = BASE_NETWORK_NAME,
-    .chain_id = BASE_CHAIN_ID_MAINNET,
-
-    // whitelisted contracts
-    .is_token_whitelisted = is_token_whitelisted,
-};
-
-static const cy_app_desc_t base_app_desc = {.id = 16,
-                                            .version =
-                                                {
-                                                    .major = 1,
-                                                    .minor = 1,
-                                                    .patch = 0,
-                                                },
-                                            .app = evm_main,
-                                            .app_config = &base_app_config};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
 
+const erc20_contracts_t base_contracts[BASE_WHITELISTED_CONTRACTS_COUNT] = {
+    // USD Coin
+    {{0x83, 0x35, 0x89, 0xfc, 0xd6, 0xed, 0xb6, 0xe0, 0x8f, 0x4c,
+      0x7c, 0x32, 0xd4, 0xf7, 0x1b, 0x54, 0xbd, 0xa0, 0x29, 0x13},
+     "USDC",
+     6},
+    // mevUSD - Midas yield-bearing stablecoin
+    {{0xcc, 0xba, 0xd2, 0x82, 0x33, 0x28, 0xBC, 0xcA, 0xEa, 0x64,
+      0x76, 0xDf, 0x3A, 0xa5, 0x29, 0x31, 0x6a, 0xB7, 0x47, 0x4A},
+     "mevUSD",
+     18},
+};
+
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool is_token_whitelisted(const uint8_t *address,
-                                 const erc20_contracts_t **contract) {
-  if (NULL == address) {
-    return false;
-  }
-
-  for (uint32_t i = 0; i < BASE_WHITELISTED_CONTRACTS_COUNT; i++) {
-    if (0 == memcmp(address, base_contracts[i].address, EVM_ADDRESS_LENGTH)) {
-      if (NULL != contract) {
-        *contract = &base_contracts[i];
-      }
-      return true;
-    }
-  }
-
-  if (NULL != contract) {
-    *contract = NULL;
-  }
-  return false;
-}
-
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
-
-const cy_app_desc_t *get_base_app_desc() {
-  return &base_app_desc;
-}

@@ -28,11 +28,16 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH 32
 
-#define SOLANA_PROGRAM_ID_COUNT 4    ///< Number of supported program ids
+#define SOLANA_VERSIONED_MSG_PREFIX 0x80
+#define SOLANA_PROGRAM_ID_COUNT 7    ///< Number of supported program ids
+#define SOLANA_MAX_INSTRUCTION_COUNT 8
 #define SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX 0
 #define SOLANA_TOKEN_PROGRAM_ID_INDEX 1
 #define SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX 2
 #define SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX 3
+#define SOLANA_KAMINO_FARMS_PROGRAM_ID_INDEX 4
+#define SOLANA_MEMO_PROGRAM_ID_INDEX 5
+#define SOLANA_KAMINO_VAULT_PROGRAM_ID_INDEX 6
 
 #define SOLANA_TOKEN_PROGRAM_ADDRESS                                           \
   "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9"    ///< "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
@@ -40,6 +45,27 @@
   "8c97258f4e2489f1bb3d1029148e0d830b5a1399daff1084048e7bd8dbe9f859"    ///< "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 #define SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS                                  \
   "0306466fe5211732ffecadba72c39be7bc8ce5bbc5f7126b2c439b3a40000000"    ///< "ComputeBudget111111111111111111111111111111"
+#define SOLANA_KAMINO_FARMS_PROGRAM_ADDRESS                                    \
+  "d8b0101763d3e51f126e6156de85de8c613059b84468d0da3fe8a2a2251cc701"    ///< "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr"
+#define SOLANA_MEMO_PROGRAM_ADDRESS                                            \
+  "054a535a992921064d24e87160da387c7c35b5ddbc92bb81e41fa8404105448d"    ///< "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+#define SOLANA_KAMINO_VAULT_PROGRAM_ADDRESS                                    \
+  "04d90af1db8939ec35ff94d9640d57dcc32794bb3e1bb66fd3ae849a84dcdb94"    ///< "KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd"
+
+/* Kamino instruction discriminators —
+ * sha256("global:<instruction_name>")[0..8], stored little-endian to match
+ * U64_READ_LE_ARRAY output. Ref kvault:
+ * https://github.com/Kamino-Finance/klend-sdk/blob/master/src/idl/kvault.json
+ *   deposit (line 132), withdraw (line 285)
+ * Ref farms:
+ * https://github.com/Kamino-Finance/farms-sdk/blob/master/src/idl/farms.json
+ *   stake (line 455), unstake (line 600), withdrawUnstakedDeposits (line 654)
+ */
+#define SOLANA_KAMINO_VAULT_DEPOSIT_DISCRIMINATOR 0xb6f2e15289c623f2ULL
+#define SOLANA_KAMINO_VAULT_WITHDRAW_DISCRIMINATOR 0x22a16d949c4612b7ULL
+#define SOLANA_KAMINO_FARMS_STAKE_DISCRIMINATOR 0x6cb3d1c812cab0ceULL
+#define SOLANA_KAMINO_FARMS_UNSTAKE_DISCRIMINATOR 0xe1327ccd2a6b5f5aULL
+#define SOLANA_KAMINO_FARMS_HELPER_DISCRIMINATOR 0x438424dc31bb6624ULL
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -174,18 +200,29 @@ typedef struct solana_unsigned_txn {
 
   uint8_t *blockhash;
 
-  uint16_t instructions_count;    // deserialization only supports max 4
+  uint16_t instructions_count;    // deserialization only supports max 8
                                   // instructions: compute unit limit, compute
-                                  // unit price, create account and transfer
+                                  // unit price, create account, transfer,
+                                  // Kamino deposit/farm and memo
   solana_instruction
-      instruction[4];    ///< Expects max 4 instructions: TODO: HANDLE ANY
-                         ///< NUMBER/TYPE OF INSTRUCTIONS
+      instruction[SOLANA_MAX_INSTRUCTION_COUNT];    ///< Supports up to 8
+                                                    ///< instructions to
+                                                    ///< accommodate Kamino
+                                                    ///< vault transactions
 } solana_unsigned_txn;
+
+typedef enum {
+  KAMINO_OPERATION_NONE = 0,
+  KAMINO_OPERATION_DEPOSIT = 1,
+  KAMINO_OPERATION_WITHDRAW = 2,
+} kamino_operation_type_e;
 
 typedef struct {
   uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
   uint32_t compute_unit_limit;           // To calculate priority fee
   uint64_t compute_unit_price_micro_lamports;
+  uint64_t kamino_amount;
+  kamino_operation_type_e kamino_operation;
 } solana_txn_extra_data;
 
 /*****************************************************************************

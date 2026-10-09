@@ -112,6 +112,12 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
 
   if (memcmp(blockhash, empty_array, SOLANA_BLOCKHASH_LENGTH) == 0)
     return SOL_BU_INVALID_BLOCKHASH;
+
+  // Skip versioned (v0) message prefix byte 0x80 if present
+  if (byte_array[0] == SOLANA_VERSIONED_MSG_PREFIX) {
+    offset += 1;
+  }
+
   // Message headers
   offset += 3;
   // Account addresses

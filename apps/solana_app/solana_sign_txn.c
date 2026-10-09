@@ -357,13 +357,20 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   }
 
   // decode and verify the received transaction
-  if (SOL_OK != solana_byte_array_to_unsigned_txn(
-                    solana_txn_context->transaction,
-                    total_size,
-                    &solana_txn_context->transaction_info,
-                    &solana_txn_context->extra_data) ||
-      SOL_OK !=
-          solana_validate_unsigned_txn(&solana_txn_context->transaction_info)) {
+  int parse_result =
+      solana_byte_array_to_unsigned_txn(solana_txn_context->transaction,
+                                        total_size,
+                                        &solana_txn_context->transaction_info,
+                                        &solana_txn_context->extra_data);
+  if (SOL_OK != parse_result) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, parse_result);
+    return false;
+  }
+
+  int validate_result =
+      solana_validate_unsigned_txn(&solana_txn_context->transaction_info);
+  if (SOL_OK != validate_result) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG, validate_result);
     return false;
   }
 
@@ -740,11 +747,113 @@ static bool verify_solana_transfer_token_transaction() {
   return true;
 }
 
+static bool verify_kamino_vault_transaction() {
+  const uint64_t kamino_amount = solana_txn_context->extra_data.kamino_amount;
+  const uint8_t kamino_operation =
+      solana_txn_context->extra_data.kamino_operation;
+  char amount_string[40] = {'\0'};
+  char amount_decimal_string[30] = {'\0'};
+  char display[100] = "";
+
+  /* Token mint verification is not possible for Kamino Vault transactions.
+   * These transactions use Address Lookup Tables (ALT) to reference accounts,
+   * meaning the token mint index in the instruction points beyond the static
+   * accounts embedded in the transaction bytes. For example, in a typical
+   * Kamino USDC vault deposit, the token mint is at instruction account index 3
+   * which resolves to global account index 24, while the transaction only
+   * contains 16 static accounts, the remaining accounts are resolved via ALT
+   * which requires an RPC call that the device cannot make.
+   * Token symbol therefore cannot be verified from whitelist. */
+  delay_scr_init(ui_text_kamino_token_unverifiable, DELAY_TIME);
+
+  if (kamino_operation == KAMINO_OPERATION_DEPOSIT) {
+    // convert amount
+    uint8_t be_micro_usdc[8] = {0};
+    int i = 8;
+    while (i--) {
+      be_micro_usdc[i] = kamino_amount >> (8 * (7 - i));
+    }
+    byte_array_to_hex_string(
+        be_micro_usdc, 8, amount_string, sizeof(amount_string));
+    if (!convert_byte_array_to_decimal_string(16,
+                                              6,
+                                              amount_string,
+                                              amount_decimal_string,
+                                              sizeof(amount_decimal_string))) {
+      solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+
+    // show with dynamic symbol
+    snprintf(display,
+             sizeof(display),
+             ui_text_kamino_deposit_amount,
+             amount_decimal_string);
+    if (!core_confirmation(display, solana_send_error)) {
+      return false;
+    }
+
+    if (!core_confirmation(ui_text_kamino_deposit_into, solana_send_error)) {
+      return false;
+    }
+  } else if (kamino_operation == KAMINO_OPERATION_WITHDRAW) {
+    // WITHDRAW
+    if (kamino_amount == 0xFFFFFFFFFFFFFFFFULL) {
+      // Withdraw ALL shares
+      if (!core_confirmation(ui_text_kamino_withdraw_all, solana_send_error)) {
+        return false;
+      }
+    } else {
+      // Withdraw specific number of shares
+      uint8_t be_shares[8] = {0};
+      int i = 8;
+      while (i--) {
+        be_shares[i] = kamino_amount >> (8 * (7 - i));
+      }
+
+      byte_array_to_hex_string(
+          be_shares, 8, amount_string, sizeof(amount_string));
+      if (!convert_byte_array_to_decimal_string(
+              16,
+              6,
+              amount_string,
+              amount_decimal_string,
+              sizeof(amount_decimal_string))) {
+        solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+        return false;
+      }
+
+      snprintf(display,
+               sizeof(display),
+               ui_text_kamino_withdraw_amount,
+               amount_decimal_string);
+      if (!core_confirmation(display, solana_send_error)) {
+        return false;
+      }
+    }
+
+    if (!core_confirmation(ui_text_kamino_withdraw_from, solana_send_error)) {
+      return false;
+    }
+  }
+
+  if (!verify_priority_fee()) {
+    return false;
+  }
+
+  set_app_flow_status(SOLANA_SIGN_TXN_STATUS_VERIFY);
+  return true;
+}
+
 STATIC bool solana_get_user_verification() {
-  if (solana_txn_context->is_token_transfer_transaction == true) {
+  if (solana_txn_context->extra_data.kamino_operation !=
+      KAMINO_OPERATION_NONE) {
+    return verify_kamino_vault_transaction();
+  } else if (solana_txn_context->is_token_transfer_transaction == true) {
     return verify_solana_transfer_token_transaction();
-  } else
+  } else {
     return verify_solana_transfer_sol_transaction();
+  }
 }
 
 STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {

@@ -50,6 +50,28 @@
 #define EVM_transfer_TAG (0xa9059cbb)
 #define EVM_transfer_NUM_ARGS 2
 
+/** ERC-20 approve(address spender, uint256 amount)
+ *  Refer https://www.4byte.directory/signatures/?bytes4_signature=0x095ea7b3 */
+#define EVM_approve_TAG (0x095ea7b3)
+#define EVM_approve_NUM_ARGS 2
+
+/** HYSP depositInstant(address tokenIn, uint256 amount, uint256
+ * minReceiveAmount, bytes32 referrerId) Refer
+ * https://www.4byte.directory/signatures/?bytes4_signature=0xc02dd27a */
+#define EVM_hysp_depositInstant_TAG (0xc02dd27a)
+#define EVM_hysp_depositInstant_NUM_ARGS 4
+
+/** HYSP redeemInstant(address tokenOut, uint256 amount, uint256
+ * minReceiveAmount) Refer
+ * https://www.4byte.directory/signatures/?bytes4_signature=0x8b53f75e */
+#define EVM_hysp_redeemInstant_TAG (0x8b53f75e)
+#define EVM_hysp_redeemInstant_NUM_ARGS 3
+
+/** HYSP redeemRequest(address tokenOut, uint256 amount)
+ *  Refer https://www.4byte.directory/signatures/?bytes4_signature=0xbfc2d46a */
+#define EVM_hysp_redeemRequest_TAG (0xbfc2d46a)
+#define EVM_hysp_redeemRequest_NUM_ARGS 2
+
 /**
  * @brief An expected limit on length of Ethereum based ERC20 token symbols.
  * @details The token symbol is also exchanged in txn_metadata.token_name.
@@ -58,10 +80,15 @@
  * target="_blank">StackExchange question</a>
  */
 #define ETHEREUM_TOKEN_SYMBOL_LENGTH 20
+#define HYSP_MEVUSD_DECIMALS (18)
 
 #define ETH_UTXN_ABI_DECODE_OK (0xAA)
 #define ETH_UTXN_BAD_PAYLOAD (0x11)
-#define ETH_UTXN_FUNCTION_NOT_FOUND (0x11)
+/* Changed ETH_UTXN_FUNCTION_NOT_FOUND from 0x11 to 0x12: With semantic parsers,
+ * routing must distinguish "unknown function" (allow blind signing) from
+ * "malformed known function" (reject). Both being 0x11 caused broken HYSP txns
+ * to be blind-signable. */
+#define ETH_UTXN_FUNCTION_NOT_FOUND (0x12)
 #define ETH_BAD_ARGUMENTS (0x22)
 
 /*****************************************************************************
@@ -97,21 +124,41 @@ typedef struct erc20_contracts {
  *****************************************************************************/
 
 /**
- * @brief This function extracts Abi encoded arguments for EVM functions into UI
- * compatible nodes ui_display_node(s)
+ * @brief Extracts ABI-encoded arguments for EVM functions into UI display
+ * nodes.
+ * @details Checks the semantic parser registry first (for HYSP and future
+ *          protocols). If a semantic parser is registered for the selector,
+ *          it is called to produce token-aware display (symbols, decimals).
+ *          Otherwise falls back to the generic ABI parser.
  *
- * @param pAbiPayload Pointer to start of payload of the EVM transaction
- * @param sizeOfUTxn Size of payload of the EVM transaction
- * @param displayNode Pointer to storage for ui_display_node
+ * @param pAbiPayload   Pointer to start of payload (includes 4-byte selector).
+ * @param sizeOfPayload Size of the payload in bytes.
+ * @param toAddress     Transaction to_address (20 bytes). Required for
+ * approve() which is called on the token contract.
+ * @param displayNode   Output: pointer to storage for ui_display_node list.
  * @return uint8_t Depicts the status of operation for this function
  * @retval ETH_BAD_ARGUMENTS: If any argument is invalid
- * @retval ETH_UTXN_FUNCTION_NOT_FOUND: If a function NOT supported by X1 wallet
- * is in the EVM tx
- * @retval ETH_UTXN_BAD_PAYLOAD: If a payload contains invalid data
- * @retval ETH_UTXN_ABI_DECODE_OK: If the arguments are extracted successfully
+ * @retval ETH_UTXN_FUNCTION_NOT_FOUND: Selector not found in any parser
+ * @retval ETH_UTXN_BAD_PAYLOAD: Payload contains invalid data
+ * @retval ETH_UTXN_ABI_DECODE_OK: Arguments extracted successfully
  */
 uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
                              const uint64_t sizeOfPayload,
+                             const uint8_t *toAddress,
                              ui_display_node **displayNode);
+
+/**
+ * @brief Return a human-readable name for a known HYSP contract address.
+ * @details Returns the token symbol for token contracts (USDC, USDT, mevUSD)
+ *          and a descriptive name for vault contracts (Midas Issuance Vault,
+ *          Midas Redemption Vault). Returns NULL for any unknown address.
+ *          Used by evm_verify_clear_signing to replace the generic
+ *          "Unverified contract" text when the to_address is a known HYSP
+ *          contract — without suppressing the address display itself.
+ *
+ * @param addr20  20-byte contract address (raw bytes, not a 32-byte ABI slot).
+ * @return Pointer to a static string, or NULL if address is not HYSP-known.
+ */
+const char *HYSP_FindContractName(const uint8_t *addr20);
 
 #endif    // EVM_CONTRACTS_H
