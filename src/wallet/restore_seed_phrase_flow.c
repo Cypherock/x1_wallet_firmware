@@ -426,7 +426,7 @@ restore_wallet_state_e restore_wallet_state_handler(
       uint8_t secret[BLOCK_SIZE + 1];
       memzero(secret, BLOCK_SIZE + 1);
       mnemonic_clear();
-      mnemonic_to_entropy(single_line_mnemonics, secret);
+      mnemonic_to_bits(single_line_mnemonics, secret);
       mnemonic_clear();
       convert_to_shares(BLOCK_SIZE,
                         secret,
