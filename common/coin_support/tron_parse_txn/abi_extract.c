@@ -68,8 +68,6 @@
  * EXTERN VARIABLES
  *****************************************************************************/
 
-extern const uint8_t selector[][4];
-
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
@@ -110,14 +108,15 @@ ui_display_node *extract_data(uint8_t *data) {
   memcpy(amount, data + 4 + 32, 32);
 
   // check function selector
+  bool is_valid = false;
   for (int i = 0; i < TRC20_FUNCTION_SELECTOR_COUNT; i++) {
-    bool is_valid = 0;
     if (memcmp(function_selector, selector[i], 4) == 0) {
-      is_valid = 1;
+      is_valid = true;
+      break;
     }
-    if (!is_valid) {
-      return NULL;
-    }
+  }
+  if (!is_valid) {
+    return NULL;
   }
   char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
   // receipent address
