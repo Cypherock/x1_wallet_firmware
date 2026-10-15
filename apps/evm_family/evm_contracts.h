@@ -50,6 +50,33 @@
 #define EVM_transfer_TAG (0xa9059cbb)
 #define EVM_transfer_NUM_ARGS 2
 
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0x3a29dbae */
+#define EVM_stake_TAG (0x3a29dbae)
+#define EVM_stake_NUM_ARGS 1
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0x76ec871c */
+#define EVM_unstake_TAG (0x76ec871c)
+#define EVM_unstake_NUM_ARGS 3
+
+/** Pool for stake and unstake:
+ * https://etherscan.io/address/0xD523794C879D9eC028960a231F866758e405bE34 */
+#define EVM_everstake_POOL_ADDRESS                                             \
+  ((const uint8_t[EVM_ADDRESS_LENGTH]){                                        \
+      0xd5, 0x23, 0x79, 0x4c, 0x87, 0x9d, 0x9e, 0xc0, 0x28, 0x96,              \
+      0x0a, 0x23, 0x1f, 0x86, 0x67, 0x58, 0xe4, 0x05, 0xbe, 0x34})
+
+/**  Refer https://www.4byte.directory/signatures/?bytes4_signature=0x33986ffa
+ */
+#define EVM_claimWithdrawRequest_TAG (0x33986ffa)
+#define EVM_claimWithdrawRequest_NUM_ARGS 0
+
+/** Withdraw treasury:
+ * https://etherscan.io/address/0x7a7f0b3c23C23a31cFcb0c44709be70d4D545c6e   */
+#define EVM_everstake_TREASURY_ADDRESS                                         \
+  ((const uint8_t[EVM_ADDRESS_LENGTH]){                                        \
+      0x7a, 0x7f, 0x0b, 0x3c, 0x23, 0xc2, 0x3a, 0x31, 0xcf, 0xcb,              \
+      0x0c, 0x44, 0x70, 0x9b, 0xe7, 0x0d, 0x4d, 0x54, 0x5c, 0x6e})
+
 /**
  * @brief An expected limit on length of Ethereum based ERC20 token symbols.
  * @details The token symbol is also exchanged in txn_metadata.token_name.

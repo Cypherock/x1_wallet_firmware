@@ -437,6 +437,11 @@ extern const char *ui_text_account_id;
 extern const char *ui_text_verify_principal_id;
 extern const char *ui_text_verify_account_id;
 
+// EVM staking
+extern const char *ui_text_stake_eth_everstake;
+extern const char *ui_text_unstake_eth_everstake;
+extern const char *ui_text_claim_unstaked_eth_everstake;
+
 #ifdef ALLOW_LOG_EXPORT
 extern const char *ui_text_send_logs_prompt;
 #endif

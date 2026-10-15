@@ -602,6 +602,12 @@ const char *ui_text_account_id = "Account Id";
 const char *ui_text_verify_principal_id = "Verify principal id";
 const char *ui_text_verify_account_id = "Verify account id";
 
+// EVM staking
+const char *ui_text_stake_eth_everstake = "Stake ETH with Everstake";
+const char *ui_text_unstake_eth_everstake = "Unstake ETH from Everstake";
+const char *ui_text_claim_unstaked_eth_everstake =
+    "Claim unstaked ETH from Everstake";
+
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt =
     "Send logs to the " VENDOR_COMPANION_APP " app?";

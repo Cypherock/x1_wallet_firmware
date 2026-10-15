@@ -64,6 +64,7 @@
 #include "evm_txn_helpers.h"
 
 #include "eip1159.h"
+#include "eth_app.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
 #include "int-util.h"
@@ -268,6 +269,49 @@ static EVM_TRANSACTION_TYPE evm_decode_transaction_type(
   }
 
   uint32_t function_tag = U32_READ_BE_ARRAY(txn_context->transaction_info.data);
+
+  if (ETH_CHAIN_ID_MAINNET == g_evm_app->chain_id) {
+    const evm_unsigned_txn *utxn = &txn_context->transaction_info;
+    const bool value_is_zero = is_zero(utxn->value, utxn->value_size[0]);
+
+    // stake(uint64 source), payable: upper 24 bytes of source must be zero
+    if (EVM_stake_TAG == function_tag &&
+        (EVM_FUNC_SIGNATURE_LENGTH +
+         EVM_stake_NUM_ARGS * EVM_FUNC_PARAM_BLOCK_LENGTH) == utxn->data_size &&
+        0 == memcmp(utxn->to_address,
+                    EVM_everstake_POOL_ADDRESS,
+                    EVM_ADDRESS_LENGTH) &&
+        !value_is_zero && is_zero(&utxn->data[4], 24)) {
+      return EVM_TXN_STAKE;
+    }
+
+    // unstake(uint256 amount, uint16 interchangeNum, uint64 source):
+    // interchangeNum upper 30 bytes and source upper 24 bytes must be zero
+    if (EVM_unstake_TAG == function_tag &&
+        (EVM_FUNC_SIGNATURE_LENGTH +
+         EVM_unstake_NUM_ARGS * EVM_FUNC_PARAM_BLOCK_LENGTH) ==
+            utxn->data_size &&
+        0 == memcmp(utxn->to_address,
+                    EVM_everstake_POOL_ADDRESS,
+                    EVM_ADDRESS_LENGTH) &&
+        value_is_zero && is_zero(&utxn->data[36], 30) &&
+        is_zero(&utxn->data[68], 24)) {
+      return EVM_TXN_UNSTAKE;
+    }
+
+    // claimWithdrawRequest(): no arguments
+    if (EVM_claimWithdrawRequest_TAG == function_tag &&
+        (EVM_FUNC_SIGNATURE_LENGTH +
+         EVM_claimWithdrawRequest_NUM_ARGS * EVM_FUNC_PARAM_BLOCK_LENGTH) ==
+            utxn->data_size &&
+        0 == memcmp(utxn->to_address,
+                    EVM_everstake_TREASURY_ADDRESS,
+                    EVM_ADDRESS_LENGTH) &&
+        value_is_zero) {
+      return EVM_TXN_CLAIM_UNSTAKED;
+    }
+  }
+
   if (EVM_transfer_TAG == function_tag &&
       /* transfer(address,uint256) 4-byte selector plus
        two 32-byte ABI-encoded parameters (address, amount) = 68 bytes */

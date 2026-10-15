@@ -298,3 +298,67 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
 
   return true;
 }
+
+bool evm_verify_staking(const evm_txn_context_t *txn_context) {
+  char address[43] = "0x";
+  char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
+  char value[34] = {'\0'};
+  char fee[34] = {'\0'};
+  char display[80] = "";
+  const char *unit = g_evm_app->lunit_name;
+  const evm_unsigned_txn *utxn = &txn_context->transaction_info;
+  const char *prompt = NULL;
+  bool has_amount = true;
+  uint8_t len = 0;
+
+  switch (txn_context->txn_type) {
+    case EVM_TXN_STAKE:
+      prompt = ui_text_stake_eth_everstake;
+      len = eth_get_value(txn_context, hex_str);
+      break;
+    case EVM_TXN_UNSTAKE:
+      prompt = ui_text_unstake_eth_everstake;
+      // amount is the first ABI argument (uint256)
+      byte_array_to_hex_string(utxn->data + EVM_FUNC_SIGNATURE_LENGTH,
+                               EVM_FUNC_PARAM_BLOCK_LENGTH,
+                               hex_str,
+                               ETH_VALUE_HEX_STR_SIZE);
+      len = 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
+      break;
+    case EVM_TXN_CLAIM_UNSTAKED:
+      prompt = ui_text_claim_unstaked_eth_everstake;
+      has_amount = false;
+      break;
+    default:
+      // cannot reach
+      return false;
+  }
+
+  ethereum_address_checksum(
+      utxn->to_address, &address[2], false, g_evm_app->chain_id);
+
+  if (!core_scroll_page(NULL, prompt, evm_send_error) ||
+      !core_scroll_page(ui_text_verify_contract, address, evm_send_error)) {
+    return false;
+  }
+
+  if (has_amount) {
+    if (!convert_byte_array_to_decimal_string(
+            len, ETH_DECIMAL, hex_str, value, sizeof(value))) {
+      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
+    snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, unit);
+    if (!core_confirmation(display, evm_send_error)) {
+      return false;
+    }
+  }
+
+  eth_get_fee_string(utxn, fee, sizeof(fee), ETH_DECIMAL);
+  snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
+  if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
+    return false;
+  }
+
+  return true;
+}

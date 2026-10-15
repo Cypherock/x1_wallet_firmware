@@ -23,6 +23,9 @@
 /// Number of entries in whitelisted contracts list
 #define ETH_WHITELISTED_CONTRACTS_COUNT 497
 
+/// Chain ID of Ethereum mainnet
+#define ETH_CHAIN_ID_MAINNET 1
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
