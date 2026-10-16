@@ -77,6 +77,51 @@
       0x7a, 0x7f, 0x0b, 0x3c, 0x23, 0xc2, 0x3a, 0x31, 0xcf, 0xcb,              \
       0x0c, 0x44, 0x70, 0x9b, 0xe7, 0x0d, 0x4d, 0x54, 0x5c, 0x6e})
 
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0x095ea7b3 */
+#define EVM_approve_TAG (0x095ea7b3)
+#define EVM_approve_NUM_ARGS 2
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0xe4457a8a */
+#define EVM_buyVoucherPOL_TAG (0xe4457a8a)
+#define EVM_buyVoucherPOL_NUM_ARGS 2
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0xe570b78b */
+#define EVM_sellVoucher_newPOL_TAG (0xe570b78b)
+#define EVM_sellVoucher_newPOL_NUM_ARGS 2
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0x8759c234 */
+#define EVM_unstakeClaimTokens_newPOL_TAG (0x8759c234)
+#define EVM_unstakeClaimTokens_newPOL_NUM_ARGS 1
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0xe0db556b */
+#define EVM_withdrawRewardsPOL_TAG (0xe0db556b)
+#define EVM_withdrawRewardsPOL_NUM_ARGS 0
+
+/** Refer https://www.4byte.directory/signatures/?bytes4_signature=0x9ad5f5a4 */
+#define EVM_restakePOL_TAG (0x9ad5f5a4)
+#define EVM_restakePOL_NUM_ARGS 0
+
+/** POL token (approve):
+ * https://etherscan.io/address/0x455e53CBB86018Ac2B8092FdCd39d8444aFFC3F6 */
+#define EVM_pol_TOKEN_ADDRESS                                                  \
+  ((const uint8_t[EVM_ADDRESS_LENGTH]){                                        \
+      0x45, 0x5e, 0x53, 0xcb, 0xb8, 0x60, 0x18, 0xac, 0x2b, 0x80,              \
+      0x92, 0xfd, 0xcd, 0x39, 0xd8, 0x44, 0x4a, 0xff, 0xc3, 0xf6})
+
+/** Polygon StakeManager, the only spender allowed in a POL approve:
+ * https://etherscan.io/address/0x5e3Ef299fDDf15eAa0432e6e66473ace8c13D908 */
+#define EVM_pol_STAKE_MANAGER_ADDRESS                                          \
+  ((const uint8_t[EVM_ADDRESS_LENGTH]){                                        \
+      0x5e, 0x3e, 0xf2, 0x99, 0xfd, 0xdf, 0x15, 0xea, 0xa0, 0x43,              \
+      0x2e, 0x6e, 0x66, 0x47, 0x3a, 0xce, 0x8c, 0x13, 0xd9, 0x08})
+
+/** Everstake POL validator share (buy, sell and claim):
+ * https://etherscan.io/address/0xF30Cf4ed712D3734161fDAab5B1DBb49Fd2D0E5c */
+#define EVM_everstake_POL_VALIDATOR_ADDRESS                                    \
+  ((const uint8_t[EVM_ADDRESS_LENGTH]){                                        \
+      0xf3, 0x0c, 0xf4, 0xed, 0x71, 0x2d, 0x37, 0x34, 0x16, 0x1f,              \
+      0xda, 0xab, 0x5b, 0x1d, 0xbb, 0x49, 0xfd, 0x2d, 0x0e, 0x5c})
+
 /**
  * @brief An expected limit on length of Ethereum based ERC20 token symbols.
  * @details The token symbol is also exchanged in txn_metadata.token_name.

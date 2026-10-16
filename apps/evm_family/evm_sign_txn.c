@@ -368,6 +368,12 @@ STATIC bool get_user_verification() {
     case EVM_TXN_STAKE:
     case EVM_TXN_UNSTAKE:
     case EVM_TXN_CLAIM_UNSTAKED:
+    case EVM_TXN_POL_APPROVE:
+    case EVM_TXN_POL_STAKE:
+    case EVM_TXN_POL_UNSTAKE:
+    case EVM_TXN_POL_CLAIM_UNSTAKED:
+    case EVM_TXN_POL_CLAIM_REWARDS:
+    case EVM_TXN_POL_RESTAKE:
       status = evm_verify_staking(txn_context);
       break;
 

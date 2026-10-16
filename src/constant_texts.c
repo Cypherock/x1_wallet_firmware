@@ -607,6 +607,19 @@ const char *ui_text_stake_eth_everstake = "Stake ETH with Everstake";
 const char *ui_text_unstake_eth_everstake = "Unstake ETH from Everstake";
 const char *ui_text_claim_unstaked_eth_everstake =
     "Claim unstaked ETH from Everstake";
+const char *ui_text_approve_pol_staking = "Approve POL for staking";
+const char *ui_text_stake_pol_everstake = "Stake POL with Everstake";
+const char *ui_text_unstake_pol_everstake = "Unstake POL from Everstake";
+const char *ui_text_claim_unstaked_pol_everstake =
+    "Claim unstaked POL from Everstake";
+const char *ui_text_claim_rewards_pol_everstake =
+    "Claim POL rewards from Everstake";
+const char *ui_text_restake_pol_everstake =
+    "Restake POL rewards with Everstake";
+const char *ui_text_unlimited_approval =
+    LV_SYMBOL_WARNING " Warning!\nUnlimited approval";
+const char *ui_text_infinite = "Infinite";
+const char *ui_text_pol = "POL";
 
 #ifdef ALLOW_LOG_EXPORT
 const char *ui_text_send_logs_prompt =

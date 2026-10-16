@@ -306,9 +306,13 @@ bool evm_verify_staking(const evm_txn_context_t *txn_context) {
   char fee[34] = {'\0'};
   char display[80] = "";
   const char *unit = g_evm_app->lunit_name;
+  const char *amount_unit = evm_get_asset_symbol(txn_context);
   const evm_unsigned_txn *utxn = &txn_context->transaction_info;
   const char *prompt = NULL;
+  // 32-byte amount word in the calldata; NULL if the amount is the txn value
+  const uint8_t *calldata_amount = NULL;
   bool has_amount = true;
+  bool is_infinite = false;
   uint8_t len = 0;
 
   switch (txn_context->txn_type) {
@@ -318,20 +322,50 @@ bool evm_verify_staking(const evm_txn_context_t *txn_context) {
       break;
     case EVM_TXN_UNSTAKE:
       prompt = ui_text_unstake_eth_everstake;
-      // amount is the first ABI argument (uint256)
-      byte_array_to_hex_string(utxn->data + EVM_FUNC_SIGNATURE_LENGTH,
-                               EVM_FUNC_PARAM_BLOCK_LENGTH,
-                               hex_str,
-                               ETH_VALUE_HEX_STR_SIZE);
-      len = 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
+      calldata_amount = utxn->data + EVM_FUNC_SIGNATURE_LENGTH;
       break;
     case EVM_TXN_CLAIM_UNSTAKED:
       prompt = ui_text_claim_unstaked_eth_everstake;
       has_amount = false;
       break;
+    case EVM_TXN_POL_APPROVE:
+      prompt = ui_text_approve_pol_staking;
+      // amount is the second argument; 2^96 and above is shown as infinite
+      calldata_amount =
+          utxn->data + EVM_FUNC_SIGNATURE_LENGTH + EVM_FUNC_PARAM_BLOCK_LENGTH;
+      is_infinite = !is_zero(calldata_amount, 20);
+      break;
+    case EVM_TXN_POL_STAKE:
+      prompt = ui_text_stake_pol_everstake;
+      calldata_amount = utxn->data + EVM_FUNC_SIGNATURE_LENGTH;
+      break;
+    case EVM_TXN_POL_UNSTAKE:
+      prompt = ui_text_unstake_pol_everstake;
+      calldata_amount = utxn->data + EVM_FUNC_SIGNATURE_LENGTH;
+      break;
+    case EVM_TXN_POL_CLAIM_UNSTAKED:
+      prompt = ui_text_claim_unstaked_pol_everstake;
+      has_amount = false;
+      break;
+    case EVM_TXN_POL_CLAIM_REWARDS:
+      prompt = ui_text_claim_rewards_pol_everstake;
+      has_amount = false;
+      break;
+    case EVM_TXN_POL_RESTAKE:
+      prompt = ui_text_restake_pol_everstake;
+      has_amount = false;
+      break;
     default:
       // cannot reach
       return false;
+  }
+
+  if (NULL != calldata_amount) {
+    byte_array_to_hex_string(calldata_amount,
+                             EVM_FUNC_PARAM_BLOCK_LENGTH,
+                             hex_str,
+                             ETH_VALUE_HEX_STR_SIZE);
+    len = 2 * EVM_FUNC_PARAM_BLOCK_LENGTH;
   }
 
   ethereum_address_checksum(
@@ -343,12 +377,22 @@ bool evm_verify_staking(const evm_txn_context_t *txn_context) {
   }
 
   if (has_amount) {
-    if (!convert_byte_array_to_decimal_string(
-            len, ETH_DECIMAL, hex_str, value, sizeof(value))) {
-      evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
-      return false;
+    if (is_infinite) {
+      delay_scr_init(ui_text_unlimited_approval, DELAY_TIME);
+      snprintf(display,
+               sizeof(display),
+               UI_TEXT_VERIFY_AMOUNT,
+               ui_text_infinite,
+               amount_unit);
+    } else {
+      if (!convert_byte_array_to_decimal_string(
+              len, ETH_DECIMAL, hex_str, value, sizeof(value))) {
+        evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+        return false;
+      }
+      snprintf(
+          display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, amount_unit);
     }
-    snprintf(display, sizeof(display), UI_TEXT_VERIFY_AMOUNT, value, unit);
     if (!core_confirmation(display, evm_send_error)) {
       return false;
     }

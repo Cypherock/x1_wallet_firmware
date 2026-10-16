@@ -59,6 +59,24 @@ typedef enum {
 
   /// Everstake ETH staking: claimWithdrawRequest() on the withdraw treasury
   EVM_TXN_CLAIM_UNSTAKED,
+
+  /// POL staking: approve(spender,amount) on the POL token for StakeManager
+  EVM_TXN_POL_APPROVE,
+
+  /// POL staking: buyVoucherPOL(uint256,uint256) on the Everstake validator
+  EVM_TXN_POL_STAKE,
+
+  /// POL staking: sellVoucher_newPOL(uint256,uint256) on the validator
+  EVM_TXN_POL_UNSTAKE,
+
+  /// POL staking: unstakeClaimTokens_newPOL(uint256) on the validator
+  EVM_TXN_POL_CLAIM_UNSTAKED,
+
+  /// POL staking: withdrawRewardsPOL() on the Everstake validator
+  EVM_TXN_POL_CLAIM_REWARDS,
+
+  /// POL staking: restakePOL() on the Everstake validator
+  EVM_TXN_POL_RESTAKE,
 } EVM_TRANSACTION_TYPE;
 
 /**
