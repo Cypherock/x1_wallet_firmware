@@ -40,6 +40,8 @@
 #define FLASH_DATA_ADDRESS (0x08019000)        /// 0x08019000
 #define FLASH_DATA_END_ADDRESS (0x0801CFFF)    /// 0x0801cfff
 #define FLASH_DATA_SIZE_LIMIT (FLASH_DATA_END_ADDRESS - FLASH_DATA_ADDRESS)
+#define FLASH_DATA_BACKUP_ADDRESS                                              \
+  (FLASH_DATA_ADDRESS + 0x2000)                   /// 0x0801B000
 #define FLASH_DATA_LOGGER_ADDRESS (0x0801D000)    /// Logger Address 0x0801D000
 #define FLASH_DATA_LOGGER_MAX_PAGES 12
 #define FLASH_DATA_LOGGER_PAGE_SIZE 0x800    /// Logger page size - 0x800
