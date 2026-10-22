@@ -28,11 +28,17 @@
 #define SOLANA_ACCOUNT_ADDRESS_LENGTH 32
 #define SOLANA_BLOCKHASH_LENGTH 32
 
-#define SOLANA_PROGRAM_ID_COUNT 4    ///< Number of supported program ids
+/// v0 versioned transaction message prefix byte (MSB set = version number in
+/// low 7 bits, 0x80 => version 0).
+/// Ref: https://solana.com/docs/core/transactions/versioned-transactions
+#define SOLANA_VERSIONED_MSG_PREFIX 0x80
+
+#define SOLANA_PROGRAM_ID_COUNT 5    ///< Number of supported program ids
 #define SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX 0
 #define SOLANA_TOKEN_PROGRAM_ID_INDEX 1
 #define SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX 2
 #define SOLANA_COMPUTE_BUDGET_PROGRAM_ID_INDEX 3
+#define SOLANA_STAKE_PROGRAM_ID_INDEX 4
 
 #define SOLANA_TOKEN_PROGRAM_ADDRESS                                           \
   "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9"    ///< "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
@@ -40,6 +46,20 @@
   "8c97258f4e2489f1bb3d1029148e0d830b5a1399daff1084048e7bd8dbe9f859"    ///< "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 #define SOLANA_COMPUTE_BUDGET_PROGRAM_ADDRESS                                  \
   "0306466fe5211732ffecadba72c39be7bc8ce5bbc5f7126b2c439b3a40000000"    ///< "ComputeBudget111111111111111111111111111111"
+
+/* See:
+ * https://explorer.solana.com/address/Stake11111111111111111111111111111111111111
+ */
+#define SOLANA_STAKE_PROGRAM_ADDRESS                                           \
+  "06a1d8179137542a983437bdfe2a7ab2557f535c8a78722b68a49dc000000000"
+
+// See:
+// https://solanacompass.com/validators/9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF
+#define SOLANA_MAINNET_VALIDATOR_ADDRESS                                       \
+  "7ce0690f82fb61475febbd1605ef20c346a9167706d829ce4699435c4c2780ae"    ///< "9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF"
+#define SOLANA_DEVNET_VALIDATOR_ADDRESS                                        \
+  "ea1a2a344a8f706360bf067dc7465fe5db8354dd88c12c94956caad628cfddef"    ///< "GkqYQysEGmuL6V2AJoNnWZUz2ZBGWhzQXsJiXm2CLKAN"
+
 /*****************************************************************************
  * TYPEDEFS
  *****************************************************************************/
@@ -102,6 +122,17 @@ enum SOLANA_COMPUTE_BUDGET_INSTRUCTION {
   SCBI_SET_LOADED_ACCOUNT_DATA_SIZE_LIMIT
 };
 
+// See:
+// https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html
+enum SOLANA_STAKE_PROGRAM_INSTRUCTION {
+  SPI_INITIALIZE = 0,
+  SPI_AUTHORIZE,
+  SPI_DELEGATE_STAKE,
+  SPI_SPLIT,
+  SPI_WITHDRAW,
+  SPI_DEACTIVATE,
+};
+
 enum SOLANA_ERROR_CODES {
   SOL_OK = 0,
   SOL_ERROR,
@@ -113,6 +144,24 @@ enum SOLANA_ERROR_CODES {
   SOL_V_UNSUPPORTED_INSTRUCTION_COUNT,
   SOL_V_INDEX_OUT_OF_RANGE,
   SOL_BU_INVALID_BLOCKHASH,
+  SOL_V_UNSUPPORTED_VERSIONED_TXN,
+  SOL_V_STAKE_AUTHORITY_MISMATCH,
+  SOL_V_STAKE_PROGRAM_OWNER_MISMATCH,
+  SOL_V_STAKE_VALIDATOR_MISMATCH,
+  SOL_V_STAKE_SEQUENCE_MISMATCH,
+  SOL_V_UNSUPPORTED_SPLIT_COUNT,
+  SOL_V_MIXED_STAKE_OPERATION,
+  SOL_ALLOCATION_FAILED,
+};
+
+// Which union member of solana_instruction.program is populated. Only set for
+// the newer Deactivate-related instruction kinds
+enum SOLANA_PARSED_INSTRUCTION_KIND {
+  SOLANA_PARSED_NONE = 0,
+  SOLANA_PARSED_ALLOCATE_WITH_SEED,
+  SOLANA_PARSED_STAKE_SPLIT,
+  SOLANA_PARSED_STAKE_DEACTIVATE,
+  SOLANA_PARSED_STAKE_WITHDRAW,
 };
 
 // Reference :
@@ -146,6 +195,79 @@ typedef struct {
   uint64_t micro_lamports;
 } solana_compute_unit_price_data;
 
+/* Wire fields (in order): base, seed, lamports, space, owner — only
+base/lamports/owner are stored, seed/space are skipped via offset math. See:
+https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.CreateAccountWithSeed
+*/
+typedef struct solana_create_account_with_seed_data {
+  // from_account: funds move out of this account into new_account.
+  // base: used in the on-chain derivation new_account
+  // base_account: proving base signed the txn; must equal both from_account and
+  // base. new_account isnt stored/validated, System Program enforces
+  // new_account == create_with_seed(base, seed, owner) on-chain
+  uint8_t *from_account;
+  uint8_t *base_account;
+  uint8_t *base;
+  uint64_t lamports;
+  uint8_t *owner;    // opaque data: must equal Stake Program ID
+} solana_create_account_with_seed_data;
+
+/* Opaque data layout: Authorized{staker:32, withdrawer:32}
+                       + Lockup{unix_timestamp:8, epoch:8, custodian:32}
+   See:
+   https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Initialize
+ */
+typedef struct solana_stake_initialize_data {
+  uint8_t *staker;
+  uint8_t *withdrawer;
+} solana_stake_initialize_data;
+
+// See:
+// https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.DelegateStake
+typedef struct solana_stake_delegate_data {
+  uint8_t *vote_account;
+  uint8_t *authorized_account;
+} solana_stake_delegate_data;
+
+/* field order: base, seed (bincode u64 len + utf8 bytes), space, owner
+  See:
+  https://docs.rs/solana-program/1.14.3/solana_program/system_instruction/enum.SystemInstruction.html#variant.AllocateWithSeed
+*/
+typedef struct solana_allocate_with_seed_data {
+  uint8_t *new_account;    // accounts_index[0]: the account being allocated
+  uint8_t *base_account;
+  uint8_t *base;
+  uint8_t *owner;
+} solana_allocate_with_seed_data;
+
+/* opaque data is tag(u32) + lamports(u64).
+ See:
+ https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Split
+ */
+typedef struct solana_stake_split_data {
+  uint8_t *destination_stake_account;    // accounts_index[1]
+  uint8_t *authorized_account;
+  uint64_t lamports;
+} solana_stake_split_data;
+
+// See:
+// https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Deactivate
+typedef struct solana_stake_deactivate_data {
+  uint8_t *stake_account;    // accounts_index[0]: not printed to avoid jarring
+                             // multiaccount UI, stored in case we need to print
+                             // it anyways
+  uint8_t *authorized_account;
+} solana_stake_deactivate_data;
+
+// See:
+// https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Withdraw
+typedef struct solana_stake_withdraw_data {
+  uint8_t *stake_account;
+  uint8_t *recipient_account;
+  uint8_t *withdraw_authority;
+  uint64_t lamports;
+} solana_stake_withdraw_data;
+
 // Reference :
 // https://docs.solana.com/developing/programming-model/transactions#instruction-format
 typedef struct solana_instruction {
@@ -154,13 +276,27 @@ typedef struct solana_instruction {
   uint8_t *account_addresses_index;
   uint16_t opaque_data_length;
   uint8_t *opaque_data;
+  uint8_t parsed_kind;
   union {
     solana_transfer_data transfer;
     solana_token_transfer_checked_data transfer_checked;
     solana_compute_unit_limit_data compute_unit_limit_data;
     solana_compute_unit_price_data compute_unit_price_data;
+    solana_create_account_with_seed_data create_account_with_seed;
+    solana_stake_initialize_data stake_initialize;
+    solana_stake_delegate_data stake_delegate;
+    solana_allocate_with_seed_data allocate_with_seed;
+    solana_stake_split_data stake_split;
+    solana_stake_deactivate_data stake_deactivate;
+    solana_stake_withdraw_data stake_withdraw;
   } program;
 } solana_instruction;
+
+/* 22 = 1 ComputeBudget + 4 (Allocate/Transfer/Split/Deactivate quartet, max 1
+ * per bundle)
+ * + 17 bare Deactivates, worst case ~1213 bytes vs Solana's 1232-byte cap.
+ * Ref: https://solana.com/docs/core/transactions#limits */
+#define SOLANA_MAX_INSTRUCTION_COUNT 22
 
 // Reference :
 // https://docs.solana.com/developing/programming-model/transactions#anatomy-of-a-transaction
@@ -174,18 +310,23 @@ typedef struct solana_unsigned_txn {
 
   uint8_t *blockhash;
 
-  uint16_t instructions_count;    // deserialization only supports max 4
-                                  // instructions: compute unit limit, compute
-                                  // unit price, create account and transfer
-  solana_instruction
-      instruction[4];    ///< Expects max 4 instructions: TODO: HANDLE ANY
-                         ///< NUMBER/TYPE OF INSTRUCTIONS
+  uint16_t instructions_count;
+  solana_instruction *instruction;
 } solana_unsigned_txn;
 
 typedef struct {
   uint8_t transfer_instruction_index;    // Expects only 1 transfer instruction
   uint32_t compute_unit_limit;           // To calculate priority fee
   uint64_t compute_unit_price_micro_lamports;
+  bool is_stake_operation;
+  int8_t create_account_with_seed_instruction_index;
+  int8_t stake_initialize_instruction_index;
+  int8_t stake_delegate_instruction_index;
+  int8_t split_instruction_index;
+  bool is_deactivate_operation;
+  uint8_t deactivate_instruction_count;
+  uint8_t withdraw_instruction_count;
+  uint64_t total_withdraw_lamports;
 } solana_txn_extra_data;
 
 /*****************************************************************************
@@ -252,6 +393,20 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn);
  */
 int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
                                           const uint8_t *blockhash);
+
+/**
+ * @brief Verify every stake-authority field equals the wallet's own derived
+ * key.
+ *
+ * @param utxn Parsed unsigned transaction
+ * @param extra_data Populated during parsing
+ * @param derived_public_key Wallet's own derived public key (32 bytes)
+ * @return true if not a stake operation, or all authorities match
+ * @return false if any authority doesn't match
+ */
+bool solana_verify_stake_authorities(const solana_unsigned_txn *utxn,
+                                     const solana_txn_extra_data *extra_data,
+                                     const uint8_t *own_public_key);
 
 /**
  * @brief Returns the decimal value of solana asset
