@@ -365,6 +365,18 @@ STATIC bool get_user_verification() {
       status = evm_verify_clear_signing(txn_context);
       break;
 
+    case EVM_TXN_STAKE:
+    case EVM_TXN_UNSTAKE:
+    case EVM_TXN_CLAIM_UNSTAKED:
+    case EVM_TXN_POL_APPROVE:
+    case EVM_TXN_POL_STAKE:
+    case EVM_TXN_POL_UNSTAKE:
+    case EVM_TXN_POL_CLAIM_UNSTAKED:
+    case EVM_TXN_POL_CLAIM_REWARDS:
+    case EVM_TXN_POL_RESTAKE:
+      status = evm_verify_staking(txn_context);
+      break;
+
     case EVM_TXN_UNKNOWN_FUNC_SIG:
       // TODO: link with wallet setting
       status = evm_verify_blind_signing(txn_context);

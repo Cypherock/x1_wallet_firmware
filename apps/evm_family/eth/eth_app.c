@@ -111,7 +111,7 @@ static bool is_token_whitelisted(const uint8_t *address,
 static const evm_config_t eth_app_config = {
     .lunit_name = "ETH",
     .name = "Ethereum",
-    .chain_id = 1,
+    .chain_id = ETH_CHAIN_ID_MAINNET,
 
     .is_token_whitelisted = is_token_whitelisted,
 };
