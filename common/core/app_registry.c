@@ -122,6 +122,9 @@ bool registry_add_app(const cy_app_desc_t *app_desc) {
 }
 
 const cy_app_desc_t *registry_get_app_desc(uint32_t app_id) {
+  if (app_id >= REGISTRY_MAX_APPS) {
+    return NULL;
+  }
   return descriptors[app_id];
 }
 
