@@ -61,4 +61,14 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context);
  */
 bool evm_verify_blind_signing(const evm_txn_context_t *txn_context);
 
+/**
+ * @brief Verification flow for Everstake staking transactions (ETH: stake,
+ * unstake, claim; POL: approve, stake, unstake, claim, claim rewards, restake)
+ * recognized by evm_decode_transaction_type().
+ *
+ * @param txn_context Decoded transaction context
+ * @return true if the user confirmed all screens, false otherwise
+ */
+bool evm_verify_staking(const evm_txn_context_t *txn_context);
+
 #endif
