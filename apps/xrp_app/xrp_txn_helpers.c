@@ -261,7 +261,8 @@ uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
   }
 
   uint64_t decoded = U64_READ_BE_ARRAY(byte_data);
-  decoded &= 0xafffffffffffffff;    // for xrp
+  // [SEC-AUDIT BUG-32]
+  decoded &= 0x1fffffffffffffff;    // for xrp
 
   switch (field_code) {
     case Amount: {

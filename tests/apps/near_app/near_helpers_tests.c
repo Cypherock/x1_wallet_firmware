@@ -115,11 +115,11 @@ TEST(near_helper_test,
       "8be1dc6fc38a1b68902fd9d27ad5681a0849a1819aaeab815900000e0000006379706865"
       "726f636b2e6e6561726c9db75a59d0c3ad6b57db90865045b41a98690e3a7fe61cdfda87"
       "413cb5d19b010000000300788799cb4b5c6c310a000000000000",
-      260,
+      268,
       raw_txn);
 
   near_unsigned_txn utxn = {0};
-  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 130, &utxn));
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 134, &utxn));
 
   // Verify that the txn contains an action of type 'TRANSFER'
   TEST_ASSERT_EQUAL_UINT8(NEAR_ACTION_TRANSFER, utxn.actions_type);

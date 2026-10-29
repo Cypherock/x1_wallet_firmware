@@ -489,15 +489,28 @@ void extract_from_apdu(struct Wallet *wallet,
 
   uint16_t index = 0;
 
+  // [SEC-AUDIT BUG-17] every length below (apdu[index]) is card-supplied
+#define APDU_COPY_FIELD(dst)                                                   \
+  do {                                                                         \
+    uint8_t _flen = apdu[index];                                               \
+    if (_flen > sizeof(dst) || (uint32_t)index + 1 + _flen > len) {            \
+      return;                                                                  \
+    }                                                                          \
+    memcpy((dst), apdu + index + 1, _flen);                                    \
+    index += (_flen + 1);                                                      \
+  } while (0)
+
   while (index < len) {
-    switch (apdu[index++]) {
+    uint8_t ins = apdu[index++];
+    if (index >= len) {
+      break;
+    }
+    switch (ins) {
       case INS_NAME:
-        memcpy(wallet->wallet_name, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_name);
         break;
       case INS_PASSWORD:
-        memcpy(wallet->password_double_hash, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->password_double_hash);
         break;
       case INS_xCor:
         wallet->xcor = apdu[index];
@@ -512,14 +525,10 @@ void extract_from_apdu(struct Wallet *wallet,
         index++;
         break;
       case INS_WALLET_SHARE:
-        memcpy(wallet->wallet_share_with_mac_and_nonce,
-               apdu + index + 1,
-               apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_share_with_mac_and_nonce);
         break;
       case INS_STRUCTURE_CHECKSUM:
-        memcpy(wallet->checksum, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->checksum);
         break;
       case INS_MIN_NO_OF_SHARES:
         wallet->minimum_number_of_shares = apdu[index];
@@ -530,30 +539,26 @@ void extract_from_apdu(struct Wallet *wallet,
         index++;
         break;
       case INS_KEY:
-        memcpy(wallet->key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->key);
         break;
       case INS_BENEFICIARY_KEY:
-        memcpy(wallet->beneficiary_key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->beneficiary_key);
         break;
       case INS_IV_FOR_BENEFICIARY_KEY:
-        memcpy(wallet->iv_for_beneficiary_key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->iv_for_beneficiary_key);
         break;
       case INS_WALLET_ID:
-        memcpy(wallet->wallet_id, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_id);
         break;
       case INS_ARBITRARY_DATA:
-        memcpy(wallet->arbitrary_data_share, apdu + index + 1, apdu[index]);
         wallet->arbitrary_data_size = apdu[index];
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->arbitrary_data_share);
         break;
       default:
         break;
     }
   }
+#undef APDU_COPY_FIELD
 }
 
 ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
@@ -661,6 +666,10 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
+  // [SEC-AUDIT BUG-18]
+  if (*len < 34) {
+    return NFC_SC_MAC_ERROR;
+  }
   uint16_t data_len = *len - 16 - 2;
   uint8_t payload[data_len], iv[16] = {0};
   aes_decrypt_ctx dec_ctx = {0};

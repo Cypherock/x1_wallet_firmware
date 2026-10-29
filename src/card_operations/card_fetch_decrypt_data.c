@@ -132,6 +132,15 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
     uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE] = {0};
     uint16_t encrypted_data_buffer_size = message->encrypted_data[offset++];
 
+    // [SEC-AUDIT BUG-14]
+    if (encrypted_data_buffer_size > ENCRYPTED_DATA_BUFFER_SIZE) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)SW_OUT_OF_BOUNDARY);
+      }
+      return SW_OUT_OF_BOUNDARY;
+    }
+
     memcpy(encrypted_data_buffer,
            message->encrypted_data + offset,
            encrypted_data_buffer_size);

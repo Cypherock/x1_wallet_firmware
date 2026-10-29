@@ -544,6 +544,10 @@ bool convert_byte_array_to_decimal_string(
 
   uint8_t offset = 0;
   while (i <= j) {
+    // [SEC-AUDIT BUG-20]
+    if ((size_t)offset >= amount_decimal_string_size) {
+      return false;
+    }
     if (i == point_index && post_dec_digit) {
       if (!pre_dec_digit) {
         offset += snprintf(amount_decimal_string + offset,
@@ -591,6 +595,9 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
   if ((NULL == pBaseAddr) || (NULL == pCurrentSrcAddr) ||
       ((uint32_t)pCurrentSrcAddr < (uint32_t)pBaseAddr)) {
     returnCode = UTIL_INVALID_ARGUMENTS;
+  } else if (readSize > totalSizeOfChunk) {
+    // [SEC-AUDIT BUG-21]
+    returnCode = UTIL_OUT_OF_BOUNDS;
   } else {
     if (((uint32_t)(pCurrentSrcAddr + readSize) - (uint32_t)pBaseAddr) <=
         (totalSizeOfChunk)) {
