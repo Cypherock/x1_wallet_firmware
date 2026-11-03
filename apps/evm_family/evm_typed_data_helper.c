@@ -152,9 +152,14 @@ static ui_display_node *evm_create_typed_data_display_nodes(
 
       for (int i = 0; i < curr_node->children_count; i++) {
         char prefix[1024] = {0};
-        strcat(prefix, node->prefix);
-        strcat(prefix, node->tree_node->name);
-        strcat(prefix, ".");
+        // node->prefix (accumulated path) and the host-controlled node name are
+        // unbounded; build the prefix with a bounded, truncating snprintf
+        // instead of strcat into the fixed stack buffer to avoid an overflow.
+        snprintf(prefix,
+                 sizeof(prefix),
+                 "%s%s.",
+                 node->prefix,
+                 node->tree_node->name);
         enqueue(q, curr_node->children + i, prefix);
       }
       // free(node);
