@@ -367,6 +367,14 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
     return false;
   }
 
+  // [SEC-AUDIT BUG-08]
+  if (solana_txn_context->is_token_transfer_transaction !=
+      solana_txn_context->extra_data.is_token_transfer) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   return true;
 }
 
