@@ -405,6 +405,23 @@ static bool get_user_verification(void) {
     return false;
   }
 
+  // verify fee
+  char fee_string[30] = {'\0'};
+  double decimal_fee = (double)decoded_utxn->Fee;
+  decimal_fee *= 1e-6;
+  snprintf(fee_string, sizeof(fee_string), "%.6f", decimal_fee);
+
+  char fee_display[100] = {'\0'};
+  snprintf(fee_display,
+           sizeof(fee_display),
+           UI_TEXT_VERIFY_FEE,
+           fee_string,
+           XRP_LUNIT);
+
+  if (!core_confirmation(fee_display, xrp_send_error)) {
+    return false;
+  }
+
   if (decoded_utxn->hasDestinationTag) {
     // verify destination tag
     uint32_t tag = 0;
