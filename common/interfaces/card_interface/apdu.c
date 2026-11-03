@@ -579,29 +579,57 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
 
   uint16_t index = 0;
 
+  // every length below (apdu[index]) is card-supplied
+#define APDU_COPY_DETAIL(dst, cap)                                             \
+  do {                                                                         \
+    uint8_t _flen = apdu[index];                                               \
+    if ((_flen) > (cap) || (uint32_t)index + 1 + (_flen) > len) {              \
+      return SW_OUT_OF_BOUNDARY;                                               \
+    }                                                                          \
+    memcpy((dst), apdu + index + 1, (_flen));                                  \
+    index += (_flen + 1);                                                      \
+  } while (0)
+
   while (index < len) {
-    switch (apdu[index++]) {
+    uint8_t tag = apdu[index++];
+    if (index >= len) {
+      break;
+    }
+    switch (tag) {
       case TAG_VERSION:
-        if (version)
-          memcpy(version, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        if (version) {
+          APDU_COPY_DETAIL(version, CARD_VERSION_SIZE);
+        } else {
+          if ((uint32_t)index + 1 + apdu[index] > len) {
+            return SW_OUT_OF_BOUNDARY;
+          }
+          index += (apdu[index] + 1);
+        }
         break;
       case TAG_FAMILY_ID:
+        if ((uint32_t)index + 1 + CARD_ID_SIZE > len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         memcpy(family_id, apdu + index + 1, FAMILY_ID_SIZE);
         index += CARD_ID_SIZE;
         *card_number = apdu[index];
         index++;
         break;
       case TAG_CARD_KEYID:
+        if ((uint32_t)index + 1 + 4 > len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         if (card_key_id)
           memcpy(card_key_id, apdu + index + 1, 4);
         index += (apdu[index] + 1);
         break;
       case TAG_CARD_IV:
-        memcpy(session_iv, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_DETAIL(session_iv, sizeof(session_iv));
         break;
       case TAG_RECOVERY_MODE:
+        if ((uint32_t)index + 1 >= len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         if (recovery_mode)
           *recovery_mode = apdu[++index];
         break;
@@ -609,6 +637,7 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
         break;
     }
   }
+#undef APDU_COPY_DETAIL
 
   return status_word;
 }
