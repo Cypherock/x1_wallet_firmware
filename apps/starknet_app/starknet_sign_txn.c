@@ -226,14 +226,14 @@ static starknet_txn_context_t *starknet_txn_context = NULL;
 
 static bool use_signature_verification = false;
 
-// [SEC-AUDIT BUG-19 / ext #15] See example in:
+// See example in:
 // https://github.com/amanusk/starknet-selector-decoder/blob/main/README.md
 static const uint8_t STARKNET_TRANSFER_SELECTOR[STARKNET_BIGNUM_SIZE] = {
     0x00, 0x83, 0xaf, 0xd3, 0xf4, 0xca, 0xed, 0xc6, 0xee, 0xbf, 0x44,
     0x24, 0x6f, 0xe5, 0x4e, 0x38, 0xc9, 0x5e, 0x31, 0x79, 0xa5, 0xec,
     0x9e, 0xa8, 0x17, 0x40, 0xec, 0xa5, 0xb4, 0x82, 0xd1, 0x2e};
 
-// [SEC-AUDIT BUG-33] See:
+// See:
 // https://github.com/Cypherock/cypherock-cysync/blob/develop/packages/coin-support-starknet/src/constants.ts;
 static const uint8_t STARKNET_STRK_TOKEN_CONTRACT[STARKNET_BIGNUM_SIZE] = {
     0x04, 0x71, 0x8f, 0x5a, 0x0f, 0xc3, 0x4c, 0xc1, 0xaf, 0x16, 0xa1,
@@ -429,11 +429,9 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
 static bool get_invoke_txn_user_verification() {
   // verify address
   char address[100] = "0x";
-  // [SEC-AUDIT BUG-19]
   if (starknet_txn_context->invoke_txn->calldata.value_count < 7) {
     return false;
   }
-  // [SEC-AUDIT BUG-33]
   {
     const uint32_t tgt_size =
         starknet_txn_context->invoke_txn->calldata.value[1].size;
@@ -450,7 +448,7 @@ static bool get_invoke_txn_user_verification() {
       return false;
     }
   }
-  // [SEC-AUDIT BUG-19 / ext #15] enforce the invoked selector == transfer().
+  // enforce the invoked selector == transfer().
   {
     const uint32_t sel_size =
         starknet_txn_context->invoke_txn->calldata.value[2].size;
@@ -541,7 +539,6 @@ static bool get_invoke_txn_user_verification() {
     return false;
   }
 
-  // [SEC-AUDIT BUG-19 / ext #14]
   memzero(amount_str, sizeof(amount_str));
   uint8_t l2_max_fee[STARKNET_BIGNUM_SIZE] = {0};
   starknet_get_max_fee(

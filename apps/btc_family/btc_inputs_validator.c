@@ -194,7 +194,6 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   sha256_Update(&hash_ctx, version_no, sizeof(version_no));
 
   // optional flag
-  // [SEC-AUDIT BUG-27]
   if (stream->offset < stream->capacity &&
       stream->stream_pointer[stream->offset] == 0) {
     status = skip_byte_stream(stream, 2);

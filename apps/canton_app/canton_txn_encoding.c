@@ -1693,7 +1693,6 @@ static void parse_display_info_from_transfer_record(
           if (CANTON_VALUE_NUMERIC_TAG != display_value->which_sum) {
             continue;
           }
-          // [SEC-AUDIT BUG-09]
           snprintf(display_info->amount,
                    sizeof(display_info->amount),
                    "%s",
@@ -1725,7 +1724,6 @@ static void parse_display_info_from_transfer_record(
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
-              // [SEC-AUDIT BUG-09]
               snprintf(display_info->instrument.id,
                        sizeof(display_info->instrument.id),
                        "%s",
@@ -1783,7 +1781,6 @@ static void parse_display_info(const char *choice_id,
         if (CANTON_VALUE_NUMERIC_TAG != tap_value->which_sum) {
           continue;
         }
-        // [SEC-AUDIT BUG-09]
         snprintf(display_info->amount,
                  sizeof(display_info->amount),
                  "%s",
@@ -2060,7 +2057,7 @@ bool validate_and_encode_canton_unsigned_txn() {
        i++) {
     char *root_node_id = canton_txn_context->unsigned_txn.txn_meta.roots[i];
     int32_t root_node_id_l = strtol(root_node_id, NULL, 10);
-    // [SEC-AUDIT BUG-12] a host-declared root id may match no fetched node
+    // a host-declared root id may match no fetched node
     const canton_txn_node_hash_t *root_hash =
         get_hashed_encoded_node_from_id(root_node_id_l);
     if (NULL == root_hash) {

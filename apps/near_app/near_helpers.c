@@ -124,7 +124,7 @@ void near_get_new_account_id_from_fn_args(const char *args,
   // length of '","new_public_key":"ed25519:..."}'
   const int end = args_len - 74;
 
-  // [SEC-AUDIT BUG-01] args_len is host-controlled
+  // args_len is host-controlled
   if (args_len < 74 || (size_t)(end - start) >= 200) {
     account_id[0] = '\0';
     return;

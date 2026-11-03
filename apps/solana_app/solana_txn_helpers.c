@@ -155,7 +155,6 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // Blockhash
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
-  // [SEC-AUDIT BUG-07]
   if (offset > byte_array_size)
     return SOL_D_READ_SIZE_MISMATCH;
 
@@ -211,7 +210,6 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   extra_data->split_instruction_index = -1;
   extra_data->deactivate_instruction_count = 0;
   bool allocate_with_seed_seen = false;
-  // [SEC-AUDIT BUG-08]
   extra_data->is_token_transfer = false;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
@@ -234,7 +232,6 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
     utxn->instruction[i].opaque_data = byte_array + offset;
     offset += utxn->instruction[i].opaque_data_length;
-    // [SEC-AUDIT BUG-07]
     if (offset > byte_array_size)
       return SOL_D_READ_SIZE_MISMATCH;
     if (utxn->instruction[i].program_id_index >= utxn->account_addresses_count)
@@ -248,9 +245,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
-      extra_data->is_token_transfer = false;    // [SEC-AUDIT BUG-08] System
+      extra_data->is_token_transfer = false;    // System
 
-      // [SEC-AUDIT BUG-07]
       uint32_t instruction_enum =
           (utxn->instruction[i].opaque_data_length >= 4)
               ? U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data)
@@ -258,7 +254,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
       switch (instruction_enum) {
         case SSI_TRANSFER:    // transfer instruction
-          // [SEC-AUDIT BUG-07] need 2 valid account indices and 4-byte enum +
+          // need 2 valid account indices and 4-byte enum +
           // 8-byte lamports of opaque data before dereferencing.
           if (utxn->instruction[i].account_addresses_index_count < 2 ||
               utxn->instruction[i].opaque_data_length < 12 ||
@@ -376,13 +372,13 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         return SOL_D_MIN_LENGTH;
 
       extra_data->transfer_instruction_index = i;
-      extra_data->is_token_transfer = true;    // [SEC-AUDIT BUG-08] SPL Token
+      extra_data->is_token_transfer = true;    // SPL Token
 
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
 
       switch (instruction_enum) {
         case STPI_TRANSFER_CHECKED:    // transfer checked instruction
-          // [SEC-AUDIT BUG-07] need 4 valid account indices and 1-byte enum +
+          // need 4 valid account indices and 1-byte enum +
           // 8-byte amount + 1-byte decimals of opaque data.
           if (utxn->instruction[i].account_addresses_index_count < 4 ||
               utxn->instruction[i].opaque_data_length < 10 ||
@@ -441,7 +437,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
       switch (instruction_enum) {
         case SCBI_SET_COMPUTE_UNIT_LIMIT:
-          // [SEC-AUDIT BUG-07] 1-byte enum + 4-byte u32 must be present.
+          // 1-byte enum + 4-byte u32 must be present.
           if (utxn->instruction[i].opaque_data_length < 5)
             return SOL_D_READ_SIZE_MISMATCH;
           extra_data->compute_unit_limit =
@@ -450,7 +446,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           break;
 
         case SCBI_SET_COMPUTE_UNIT_PRICE:
-          // [SEC-AUDIT BUG-07] 1-byte enum + 8-byte u64 must be present.
+          // 1-byte enum + 8-byte u64 must be present.
           if (utxn->instruction[i].opaque_data_length < 9)
             return SOL_D_READ_SIZE_MISMATCH;
           extra_data->compute_unit_price_micro_lamports =

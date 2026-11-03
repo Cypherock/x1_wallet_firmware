@@ -489,7 +489,7 @@ void extract_from_apdu(struct Wallet *wallet,
 
   uint16_t index = 0;
 
-  // [SEC-AUDIT BUG-17] every length below (apdu[index]) is card-supplied
+  // every length below (apdu[index]) is card-supplied
 #define APDU_COPY_FIELD(dst)                                                   \
   do {                                                                         \
     uint8_t _flen = apdu[index];                                               \
@@ -666,7 +666,6 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
-  // [SEC-AUDIT BUG-18]
   if (*len < 34) {
     return NFC_SC_MAC_ERROR;
   }

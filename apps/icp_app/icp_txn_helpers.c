@@ -142,7 +142,6 @@ uint64_t decode_vec(int64_t type,
   switch (type) {
     case Nat8: {
       uint64_t len = leb_decode(data, offset, buffer_size);
-      // [SEC-AUDIT BUG-02, BUG-05]
       if (len > res_size || *offset > buffer_size ||
           len > (uint64_t)(buffer_size - *offset)) {
         return 0;
@@ -162,7 +161,7 @@ bool read_recipient_account_id(const uint8_t *data,
                                icp_txn_context_t *icp_txn_context,
                                size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
-    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset >= buffer_size) {
       return false;
     }
     bool has_owner = *(data + *offset);
@@ -183,7 +182,7 @@ bool read_recipient_account_id(const uint8_t *data,
       return false;
     }
 
-    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset >= buffer_size) {
       return false;
     }
     txn->to.has_subaccount = *(data + *offset);
@@ -216,7 +215,7 @@ bool read_amount_value(const uint8_t *data,
     icp_txn_context->raw_icp_token_transfer_txn->amount =
         leb_decode(data, offset, buffer_size);
   } else {
-    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset + 8 > buffer_size) {
       return false;
     }
     icp_txn_context->raw_icp_coin_transfer_txn->amount.e8s =
@@ -233,7 +232,7 @@ bool read_fee_value(const uint8_t *data,
   if (icp_txn_context->is_token_transfer_txn) {
     icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
 
-    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset >= buffer_size) {
       return false;
     }
     txn->has_fee = *(data + *offset);
@@ -244,7 +243,7 @@ bool read_fee_value(const uint8_t *data,
           leb_decode(data, offset, buffer_size);
     }
   } else {
-    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset + 8 > buffer_size) {
       return false;
     }
     icp_txn_context->raw_icp_coin_transfer_txn->fee.e8s =
@@ -259,7 +258,7 @@ bool read_memo_value(const uint8_t *data,
                      icp_txn_context_t *icp_txn_context,
                      size_t buffer_size) {
   if (icp_txn_context->is_token_transfer_txn) {
-    if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset >= buffer_size) {
       return false;
     }
     bool has_memo = *(data + *offset);
@@ -280,7 +279,7 @@ bool read_memo_value(const uint8_t *data,
       icp_txn_context->raw_icp_token_transfer_txn->memo.size = decoded_len;
     }
   } else {
-    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset + 8 > buffer_size) {
       return false;
     }
     icp_txn_context->raw_icp_coin_transfer_txn->memo =
@@ -294,7 +293,7 @@ bool read_from_subaccount_value(const uint8_t *data,
                                 size_t *offset,
                                 icp_txn_context_t *icp_txn_context,
                                 size_t buffer_size) {
-  if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+  if (*offset >= buffer_size) {
     return false;
   }
   bool has_from_subaccount = *(data + *offset);
@@ -328,14 +327,14 @@ bool read_created_at_time_value(const uint8_t *data,
                                 size_t *offset,
                                 icp_txn_context_t *icp_txn_context,
                                 size_t buffer_size) {
-  if (*offset >= buffer_size) {    // [SEC-AUDIT BUG-05]
+  if (*offset >= buffer_size) {
     return false;
   }
   bool has_created_at_time = *(data + *offset);
   (*offset)++;
 
   if (has_created_at_time) {
-    if (*offset + 8 > buffer_size) {    // [SEC-AUDIT BUG-05]
+    if (*offset + 8 > buffer_size) {
       return false;
     }
     uint64_t timestamp_nanos = U64_READ_LE_ARRAY(data + *offset);
@@ -364,7 +363,6 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   int shift = 0;
   uint8_t byte;
   do {
-    // [SEC-AUDIT BUG-05]
     if (*offset >= buffer_size || shift >= 64) {
       *offset = buffer_size + 1;
       return result;
@@ -385,7 +383,6 @@ int64_t sleb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
   uint8_t byte;
 
   while (1) {
-    // [SEC-AUDIT BUG-05]
     if (*offset >= buffer_size || shift >= 64) {
       *offset = buffer_size + 1;
       return result;
@@ -415,7 +412,6 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
                             icp_txn_context_t *icp_txn_context) {
   size_t offset = 0;
 
-  // [SEC-AUDIT BUG-05]
   if (byte_array == NULL || byte_array_size < 4) {
     return false;
   }
@@ -428,7 +424,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   // Decode Type Table
   size_t num_types = leb_decode(byte_array, &offset, byte_array_size);
-  // [SEC-AUDIT BUG-04] num_types is host-controlled, capped at 32 real
+  // num_types is host-controlled, capped at 32 real
   // transfers use ~4-6 types.
   if (num_types == 0 || num_types > 32) {
     return false;
@@ -462,7 +458,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case Record: {
         type_table[i].type_id = type;
         uint64_t num_fields = leb_decode(byte_array, &offset, byte_array_size);
-        // [SEC-AUDIT BUG-04] host-controlled field count, real transfers use
+        // host-controlled field count, real transfers use
         // ~5-6 fields.
         if (num_fields > 32) {
           goto cleanup;
@@ -498,7 +494,6 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   arg_type_index = leb_decode(byte_array, &offset, byte_array_size);
 
-  // [SEC-AUDIT BUG-03]
   if (arg_type_index >= num_types) {
     goto cleanup;
   }

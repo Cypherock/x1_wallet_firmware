@@ -165,7 +165,7 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
        * the array */
       pAbiTypeData += ABI_ELEMENT_SZ_IN_BYTES;
 
-      // [SEC-AUDIT BUG-21] loose cap so 32*numElementsInDataArr can't overflow
+      // loose cap so 32*numElementsInDataArr can't overflow
       // uint32; exact fit checked by UTIL_CheckBound below.
       if (numElementsInDataArr > (sizeOfAbiChunk / ABI_ELEMENT_SZ_IN_BYTES)) {
         returnCode = ABI_PROCESS_INCOMPLETE;
