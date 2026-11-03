@@ -434,6 +434,19 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
     return false;
   }
   IDL_complex_type_t type_table[num_types];
+  // Zero-initialise so every `.fields` is NULL until an entry is populated.
+  // This keeps the single cleanup path below correct on every exit: it frees
+  // exactly the entries that were allocated (fixing the leak on each error
+  // path) and never frees an uninitialised `.fields` for an Opt/Vector entry.
+  memset(type_table, 0, sizeof(type_table));
+
+  bool result = false;
+  // Declared before the first `goto cleanup` so the jumps do not skip an
+  // initializer (avoids -Wjump-misses-init); assigned once reached below.
+  uint64_t arg_count = 0;
+  uint64_t arg_type_index = 0;
+  IDL_complex_type_t arg_type;
+  memset(&arg_type, 0, sizeof(arg_type));
 
   for (size_t i = 0; i < num_types; i++) {
     int64_t type = sleb_decode(byte_array, &offset, byte_array_size);
@@ -442,68 +455,65 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
       case Opt:
       case Vector: {
         int64_t child_type = sleb_decode(byte_array, &offset, byte_array_size);
-        IDL_complex_type_t c_ty;
-        c_ty.type_id = type;
-        c_ty.child_type = child_type;
-        type_table[i] = c_ty;
+        type_table[i].type_id = type;
+        type_table[i].child_type = child_type;
         break;
       }
       case Record: {
-        IDL_complex_type_t c_ty;
-        c_ty.type_id = type;
-        c_ty.num_fields = leb_decode(byte_array, &offset, byte_array_size);
+        type_table[i].type_id = type;
+        uint64_t num_fields = leb_decode(byte_array, &offset, byte_array_size);
         // [SEC-AUDIT BUG-04] host-controlled field count, real transfers use
         // ~5-6 fields.
-        if (c_ty.num_fields > 32) {
-          return false;
+        if (num_fields > 32) {
+          goto cleanup;
         }
-        c_ty.fields =
-            (record_field_t *)malloc(sizeof(record_field_t) * c_ty.num_fields);
-        if (NULL == c_ty.fields) {
-          return false;
+        type_table[i].num_fields = num_fields;
+        type_table[i].fields = NULL;
+        if (num_fields > 0) {
+          type_table[i].fields =
+              (record_field_t *)malloc(sizeof(record_field_t) * num_fields);
+          if (NULL == type_table[i].fields) {
+            goto cleanup;
+          }
         }
-        for (int j = 0; j < c_ty.num_fields; j++) {
+        for (uint64_t j = 0; j < num_fields; j++) {
           uint64_t hash = leb_decode(byte_array, &offset, byte_array_size);
           int64_t field_type =
               sleb_decode(byte_array, &offset, byte_array_size);
-          record_field_t field;
-          field.key_hash = hash;
-          field.type = field_type;
-          c_ty.fields[j] = field;
+          type_table[i].fields[j].key_hash = hash;
+          type_table[i].fields[j].type = field_type;
         }
-
-        type_table[i] = c_ty;
         break;
       }
       default:
-        return false;
+        goto cleanup;
     }
   }
 
-  uint64_t arg_count = leb_decode(byte_array, &offset, byte_array_size);
+  arg_count = leb_decode(byte_array, &offset, byte_array_size);
   // only 1 argument supported
   if (arg_count != 1) {
-    return false;
+    goto cleanup;
   }
 
-  uint64_t arg_type_index = leb_decode(byte_array, &offset, byte_array_size);
+  arg_type_index = leb_decode(byte_array, &offset, byte_array_size);
 
   // [SEC-AUDIT BUG-03]
   if (arg_type_index >= num_types) {
-    return false;
+    goto cleanup;
   }
 
-  IDL_complex_type_t arg_type = type_table[arg_type_index];
+  arg_type = type_table[arg_type_index];
 
   // we expect a single record of 4-6 fields (to, amount, fee, memo,
   // from_subaccount, created_at_time)
   if (arg_type.type_id != Record || arg_type.num_fields < 4 ||
       arg_type.num_fields > 6) {
-    return false;
+    goto cleanup;
   }
 
   // Decode Transfer Args
-  for (int i = 0; i < arg_type.num_fields; i++) {
+  for (uint64_t i = 0; i < arg_type.num_fields; i++) {
     record_field_t field = arg_type.fields[i];
     switch (field.key_hash) {
       case transfer_hash_to:
@@ -511,48 +521,51 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
         // not doing right now
         if (!read_recipient_account_id(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       case transfer_hash_amount:
         if (!read_amount_value(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       case transfer_hash_fee:
         if (!read_fee_value(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       case transfer_hash_memo:
         if (!read_memo_value(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       case transfer_hash_from_subaccount:
         if (!read_from_subaccount_value(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       case transfer_hash_created_at_time:
         if (!read_created_at_time_value(
                 byte_array, &offset, icp_txn_context, byte_array_size)) {
-          return false;
+          goto cleanup;
         }
         break;
       default:
-        return false;
+        goto cleanup;
     }
   }
 
   if (offset != byte_array_size) {
-    return false;
+    goto cleanup;
   }
 
+  result = true;
+
+cleanup:
   // free memory
   for (size_t i = 0; i < num_types; i++) {
     if (type_table[i].fields) {
@@ -561,7 +574,7 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
     }
   }
 
-  return true;
+  return result;
 }
 
 /// Reference:
