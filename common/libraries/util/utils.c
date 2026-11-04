@@ -313,23 +313,30 @@ void random_generate(uint8_t *arr, int len) {
   ASSERT(crypto_random_generate(arr, len) == true);
 
   // using atecc
+  // Use a local retry counter and status: random_generate() is reached from
+  // random32() (e.g. EC point blinding inside ecdsa_verify_digest), so it can
+  // run inside another function's ATECC retry loop. Touching the global
+  // atecc_data.retries/status here would reset that caller's counter (making
+  // its loop unbounded) and overwrite its status.
   uint8_t temp[32] = {0};
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  uint8_t retries = DEFAULT_ATECC_RETRIES;
+  ATCA_STATUS status = ATCA_GEN_FAIL;
 
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   do {
-    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
-    atecc_data.status = atcab_random(temp);
-  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    status = atcab_init(atecc_data.cfg_atecc608a_iface);
+    status = atcab_random(temp);
+  } while (status != ATCA_SUCCESS && --retries);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
-  ASSERT((atecc_data.status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
+  ASSERT((status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
 
   for (int i = 0; i < len; ++i) {
     arr[i] ^= temp[i];
   }
+  memzero(temp, sizeof(temp));
 #else
   uint8_t get_ec_random[32] = {0x0b, 0x78, 0x9a, 0x1e, 0xb8, 0x0b, 0x7a, 0xac,
                                0x97, 0xa1, 0x54, 0xd7, 0x0c, 0x5a, 0x53, 0x95,

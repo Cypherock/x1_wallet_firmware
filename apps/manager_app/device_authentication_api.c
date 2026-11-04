@@ -111,7 +111,9 @@ sign_serial_number(void) {
   uint8_t final_hash[32] = {0};
   atca_sign_internal_in_out_t sign_internal_param = {0};
 
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  // Local attempt counter: the self-verify below (ecdsa_verify_digest) draws
+  // randomness, which must not be able to reset the loop bound.
+  uint8_t attempts_left = DEFAULT_ATECC_RETRIES;
   // track that the produced signature passed its self-verify so a
   // fault-injected (glitched) signature can never be returned.
   bool self_verify_ok = false;
@@ -123,7 +125,7 @@ sign_serial_number(void) {
     if (atecc_data.status != ATCA_SUCCESS)
       LOG_CRITICAL("AUTH SN: %04x, count:%d",
                    atecc_data.status,
-                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
+                   DEFAULT_ATECC_RETRIES - attempts_left);
 
     if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
         ATCA_SUCCESS) {
@@ -180,7 +182,7 @@ sign_serial_number(void) {
       // signature verified against the auth public key.
       self_verify_ok = true;
     }
-  } while (--atecc_data.retries && !self_verify_ok);
+  } while (--attempts_left && !self_verify_ok);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
@@ -217,8 +219,14 @@ sign_random_challenge(uint8_t *challenge) {
 #endif
   for (int i = 0; i < 32; ++i)
     challenge[i] = challenge[i] ^ firmware_hash[i];
+  // keep the challenge to be signed: the slot-overwrite step inside the loop
+  // zeroes `challenge`, so each retry must reload it rather than sign zeros.
+  uint8_t challenge_to_sign[RANDOM_CHALLENGE_SIZE] = {0};
+  memcpy(challenge_to_sign, challenge, RANDOM_CHALLENGE_SIZE);
 
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  // Local attempt counter: the self-verify below (ecdsa_verify_digest) draws
+  // randomness, which must not be able to reset the loop bound.
+  uint8_t attempts_left = DEFAULT_ATECC_RETRIES;
   // track that the produced signature passed its self-verify so a
   // fault-injected (glitched) signature can never be returned.
   bool self_verify_ok = false;
@@ -230,7 +238,9 @@ sign_random_challenge(uint8_t *challenge) {
     if (atecc_data.status != ATCA_SUCCESS)
       LOG_CRITICAL("AERR CH: %04x, count:%d",
                    atecc_data.status,
-                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
+                   DEFAULT_ATECC_RETRIES - attempts_left);
+
+    memcpy(challenge, challenge_to_sign, RANDOM_CHALLENGE_SIZE);
 
     if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
         ATCA_SUCCESS) {
@@ -293,7 +303,7 @@ sign_random_challenge(uint8_t *challenge) {
       // signature verified against the auth public key.
       self_verify_ok = true;
     }
-  } while (--atecc_data.retries && !self_verify_ok);
+  } while (--attempts_left && !self_verify_ok);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
@@ -308,8 +318,9 @@ sign_random_challenge(uint8_t *challenge) {
   memcpy(
       response.challenge_signature.postfix2, &tempkey_hash[32], POSTFIX2_SIZE);
 
-  /* Zeroise IO protection key */
+  /* Zeroise IO protection key and challenge copy */
   memset(&io_protection_key[0], 0, sizeof(io_protection_key));
+  memset(challenge_to_sign, 0, sizeof(challenge_to_sign));
   return response;
 }
 
