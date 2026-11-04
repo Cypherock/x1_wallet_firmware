@@ -144,7 +144,9 @@ static bool verify_fetched_wallet(uint8_t xcor) {
   if (VALID_WALLET_WITHOUT_DEVICE_SHARE != flash_wallet->state) {
     // Wallet nonce present on flash, so compare current wallet nonce with flash
     // wallet nonce.
-    uint8_t wallet_nonce[NONCE_SIZE] = {0};
+    // getter writes the full padded nonce; only the first NONCE_SIZE bytes are
+    // compared below.
+    uint8_t wallet_nonce[PADDED_NONCE_SIZE] = {0};
     ASSERT(SUCCESS ==
            get_flash_wallet_nonce_by_name(
                (const char *)flash_wallet->wallet_name, wallet_nonce));
