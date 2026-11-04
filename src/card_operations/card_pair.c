@@ -376,8 +376,8 @@ static void init_and_pair_card(card_operation_data_t *card_data,
         (-1 != get_paired_card_index(card_data->nfc_data.card_key_id)) ? true
                                                                        : false;
     if (false == pair_data->is_paired) {
-      card_data->nfc_data.status =
-          nfc_pair(pair_data->data, &(pair_data->data_len));
+      card_data->nfc_data.status = nfc_pair(
+          pair_data->data, &(pair_data->data_len), sizeof(pair_data->data));
 
       if (card_data->nfc_data.status != SW_NO_ERROR) {
         card_handle_errors(card_data);
