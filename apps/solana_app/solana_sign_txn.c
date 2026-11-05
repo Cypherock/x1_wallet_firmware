@@ -317,8 +317,19 @@ STATIC bool solana_fetch_valid_transaction(solana_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  // the parser takes a uint16_t size
+  if (0 == total_size || UINT16_MAX < total_size) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // allocate memory for storing transaction
   solana_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == solana_txn_context->transaction) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   while (1) {
     if (!solana_get_query(query, SOLANA_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, SOLANA_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
@@ -956,7 +967,9 @@ static bool send_signature(solana_query_t *query,
 
   // update unsigned transaction with latest blockhash
   int update_status = solana_update_blockhash_in_byte_array(
-      solana_txn_context->transaction, solana_latest_blockhash);
+      solana_txn_context->transaction,
+      solana_txn_context->init_info.transaction_size,
+      solana_latest_blockhash);
   if (update_status != SOL_OK)
     return false;
 

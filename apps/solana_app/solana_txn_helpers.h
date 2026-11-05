@@ -389,10 +389,12 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn);
  *
  * @param byte_array    pointer to serialized array of unsigned transaction to
  * be modified
+ * @param byte_array_size size of byte_array
  * @param blockhash     pointer to array of latest blockhash
  * @return int
  */
 int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
+                                          uint32_t byte_array_size,
                                           const uint8_t *blockhash);
 
 /**

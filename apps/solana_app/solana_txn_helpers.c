@@ -126,7 +126,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
     return SOL_ERROR;
   memzero(utxn, sizeof(solana_unsigned_txn));
 
-  uint16_t offset = 0;
+  // uint32_t so host-sized counts cannot wrap the offset past the bound checks
+  uint32_t offset = 0;
   int error = 0;
   bool is_versioned = false;
 
@@ -136,6 +137,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   }
 
   // Message header
+  if (offset + 3 > byte_array_size)
+    return SOL_D_READ_SIZE_MISMATCH;
   utxn->required_signatures_count = *(byte_array + offset++);
   utxn->read_only_accounts_require_signature_count = *(byte_array + offset++);
   utxn->read_only_accounts_not_require_signature_count =
@@ -213,6 +216,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   extra_data->is_token_transfer = false;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
+    if (offset >= byte_array_size)
+      return SOL_D_READ_SIZE_MISMATCH;
     utxn->instruction[i].program_id_index = *(byte_array + offset++);
 
     offset += get_compact_array_size(
