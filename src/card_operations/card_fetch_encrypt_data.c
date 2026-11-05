@@ -146,7 +146,8 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
                          plain_data_buffer,
                          plain_data_buffer_size,
                          encrypted_data_buffer,
-                         &encrypted_data_buffer_size);
+                         &encrypted_data_buffer_size,
+                         sizeof(encrypted_data_buffer));
 
     if (status != SW_NO_ERROR) {
       if (reject_cb) {
@@ -154,6 +155,17 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
                   (uint32_t)get_card_error_from_nfc_status(status));
       }
       return status;
+    }
+
+    // each chunk is stored as a 1 byte length followed by the chunk
+    if ((uint32_t)message->encrypted_data_size + 1 +
+            encrypted_data_buffer_size >
+        sizeof(message->encrypted_data)) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)SW_OUT_OF_BOUNDARY);
+      }
+      return SW_OUT_OF_BOUNDARY;
     }
 
     message->encrypted_data[message->encrypted_data_size++] =
