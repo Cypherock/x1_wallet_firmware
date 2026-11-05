@@ -358,7 +358,7 @@ static bool fetch_valid_input(xrp_query_t *query) {
 static bool get_user_verification(void) {
   const xrp_unsigned_txn *decoded_utxn = xrp_txn_context->raw_txn;
 
-  char to_address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
+  char to_address[XRP_ACCOUNT_ADDRESS_LENGTH + 1] = "";
 
   uint8_t prefixed_account_id[XRP_PREFIXED_ACCOUNT_ID_LENGTH];
   prefixed_account_id[0] = 0x00;
@@ -370,7 +370,7 @@ static bool get_user_verification(void) {
           XRP_PREFIXED_ACCOUNT_ID_LENGTH,
           HASHER_SHA2D,
           to_address,
-          XRP_ACCOUNT_ADDRESS_LENGTH + 1,
+          sizeof(to_address),
           XRP_BASE58_DIGITS_ORDERED)) {
     xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
     return false;
