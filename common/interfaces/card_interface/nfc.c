@@ -256,7 +256,9 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[],
   return 0;
 }
 
-ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
+ISO7816 nfc_pair(uint8_t *data_inOut,
+                 uint8_t *length_inOut,
+                 const uint8_t data_inOut_size) {
   ASSERT(data_inOut != NULL);
   ASSERT(length_inOut != NULL);
 
@@ -275,14 +277,20 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
   memset(send_apdu, 0, sizeof(send_apdu));
   if (err_code != STM_SUCCESS) {
     return err_code;
+  } else if (recv_len < 2) {
+    status_word = SW_OUT_OF_BOUNDARY;
   } else {
     status_word = (recv_apdu[recv_len - 2] << 8);
     status_word += recv_apdu[recv_len - 1];
 
     if (status_word == SW_NO_ERROR) {
-      // Extracting Data from APDU
-      *length_inOut = recv_len;
-      memcpy(data_inOut, recv_apdu, recv_len);
+      if (recv_len > data_inOut_size) {
+        status_word = SW_OUT_OF_BOUNDARY;
+      } else {
+        // Extracting Data from APDU
+        *length_inOut = recv_len;
+        memcpy(data_inOut, recv_apdu, recv_len);
+      }
     }
   }
 

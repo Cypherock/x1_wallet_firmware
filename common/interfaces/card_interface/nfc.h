@@ -140,6 +140,8 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time);
  * @param [in/out] data_inOut pointer to buffer with input and output data
  * @param [in,out] length_inOut pointer to variable with length of send and
  * receive data
+ * @param [in] data_inOut_size capacity of data_inOut in bytes; a card
+ * response longer than this is rejected with SW_OUT_OF_BOUNDARY
  *
  * @return ISO7816 Status Word
  * @retval
@@ -149,7 +151,9 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time);
  *
  * @note
  */
-ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut);
+ISO7816 nfc_pair(uint8_t *data_inOut,
+                 uint8_t *length_inOut,
+                 const uint8_t data_inOut_size);
 
 /**
  * @brief Operation to unpair card
