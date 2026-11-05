@@ -665,28 +665,44 @@ static bool show_data(void) {
   pb_size_t response_count = 0;
 
   for (uint8_t i = 0; i < decryption_context->data_count; i++) {
-    uint8_t tag = decryption_context->data[i].plain_data[0];
+    const secure_data_t *data = &decryption_context->data[i];
+    // tag (1 byte) + length (2 bytes) + value, as decrypted by the card
+    if (data->plain_data_size < 3) {
+      SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+      return false;
+    }
+    uint8_t tag = data->plain_data[0];
+    uint16_t length = U16_READ_BE_ARRAY(data->plain_data + 1);
+    if (length > data->plain_data_size - 3) {
+      SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+      return false;
+    }
 
     if (tag == INHERITANCE_ONLY_SHOW_ON_DEVICE) {
+      char pin[MAX_PIN_SIZE + 1] = {0};
+      if (length > MAX_PIN_SIZE) {
+        SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+        return false;
+      }
+      memcpy(pin, data->plain_data + 3, length);
       char msg[100] = {0};
       snprintf(msg,
                sizeof(msg),
                UI_TEXT_PIN,    ///< TODO: Make this generic
-               &decryption_context->data[i].plain_data[3]);
-      message_scr_init(msg);    ///< sizeof (tag) + sizeof (length) = 3
+               pin);
+      memzero(pin, sizeof(pin));
+      message_scr_init(msg);
       // Do not care about the return value from confirmation screen
       (void)get_state_on_confirm_scr(0, 0, 0);
     } else {
-      uint16_t offset = 1;    // Skip tag
-      decryption_context->response_payload.decrypted_data[response_count]
-          .message.size =
-          U16_READ_BE_ARRAY(decryption_context->data[i].plain_data + offset);
-      offset += 2;    // Skip length
-      memcpy(decryption_context->response_payload.decrypted_data[response_count]
-                 .message.bytes,
-             decryption_context->data[i].plain_data + offset,
-             decryption_context->response_payload.decrypted_data[response_count]
-                 .message.size);
+      inheritance_plain_data_t *decrypted_data =
+          &decryption_context->response_payload.decrypted_data[response_count];
+      if (length > sizeof(decrypted_data->message.bytes)) {
+        SET_ERROR_TYPE(DECRYPTION_INVALID_DATA_ERROR);
+        return false;
+      }
+      decrypted_data->message.size = length;
+      memcpy(decrypted_data->message.bytes, data->plain_data + 3, length);
       decryption_context->response_payload.decrypted_data_count =
           ++response_count;
     }

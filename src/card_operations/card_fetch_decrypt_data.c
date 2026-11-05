@@ -132,7 +132,9 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
     uint8_t encrypted_data_buffer[ENCRYPTED_DATA_BUFFER_SIZE] = {0};
     uint16_t encrypted_data_buffer_size = message->encrypted_data[offset++];
 
-    if (encrypted_data_buffer_size > ENCRYPTED_DATA_BUFFER_SIZE) {
+    if (0 == encrypted_data_buffer_size ||
+        encrypted_data_buffer_size > ENCRYPTED_DATA_BUFFER_SIZE ||
+        offset + encrypted_data_buffer_size > message->encrypted_data_size) {
       if (reject_cb) {
         reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                   (uint32_t)SW_OUT_OF_BOUNDARY);
@@ -148,6 +150,7 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
         nfc_decrypt_data((const uint8_t *)wallet_name,
                          plain_data_buffer,
                          &plain_data_buffer_size,
+                         sizeof(plain_data_buffer),
                          encrypted_data_buffer,
                          encrypted_data_buffer_size);
 
@@ -157,6 +160,15 @@ static card_error_status_word_e decrypt_secure_data(secure_data_t *message,
                   (uint32_t)get_card_error_from_nfc_status(status));
       }
       return status;
+    }
+
+    if ((uint32_t)message->plain_data_size + plain_data_buffer_size >
+        sizeof(message->plain_data)) {
+      if (reject_cb) {
+        reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                  (uint32_t)SW_OUT_OF_BOUNDARY);
+      }
+      return SW_OUT_OF_BOUNDARY;
     }
 
     memcpy(message->plain_data + message->plain_data_size,

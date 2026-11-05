@@ -386,17 +386,18 @@ uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE],
  * @param target Byte array to store target.
  * @param random_number Byte array to store random number
  * @param apdu Byte array to store apdu.
- * @param len Length of received apdu.
+ * @param len Length of received apdu (including the 2 byte status word).
  *
- * @return
- * @retval
+ * @return bool Whether the response was well formed
+ * @retval true Both target and random number were found with expected sizes
+ * @retval false Malformed response, or a field is missing or has a wrong size
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-void extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
+bool extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
                                 uint8_t random_number[POW_RAND_NUMBER_SIZE],
                                 const uint8_t apdu[],
                                 uint16_t len);
@@ -547,8 +548,14 @@ void reset_card_data_health();
  * @param list Reference to buffer where wallet list will be populated after
  * deserialization
  * @param apdu Reference to buffer which contains the raw APDU received
- * @param len Length of raw APDU
+ * @param len Length of raw APDU (including the 2 byte status word)
+ *
+ * @return bool Whether the response was well formed
+ * @retval true The list was deserialized into list
+ * @retval false Malformed response; list is zeroed
  */
-void apdu_extract_wallet_list(wallet_list_t *list, uint8_t *apdu, uint16_t len);
+bool apdu_extract_wallet_list(wallet_list_t *list,
+                              const uint8_t *apdu,
+                              uint16_t len);
 
 #endif
