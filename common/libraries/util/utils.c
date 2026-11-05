@@ -357,33 +357,53 @@ uint8_t get_floating_precision(uint64_t num, uint64_t den) {
   return precision;
 }
 
-void der_to_sig(const uint8_t *der, uint8_t *sig) {
+static bool der_read_integer(const uint8_t *der,
+                             size_t end,
+                             size_t *offset,
+                             uint8_t *out) {
+  if (*offset + 2 > end || der[*offset] != 0x02) {
+    return false;
+  }
+  size_t len = der[*offset + 1];
+  *offset += 2;
+  if (len == 0 || *offset + len > end) {
+    return false;
+  }
+  if (len == 33) {
+    if (der[*offset] != 0x00) {
+      return false;
+    }
+    (*offset)++;
+    len--;
+  }
+  if (len > 32) {
+    return false;
+  }
+  // Copy the integer prepending 0's
+  memcpy(out + (32 - len), der + *offset, len);
+  *offset += len;
+  return true;
+}
+
+bool der_to_sig(const uint8_t *der, size_t der_len, uint8_t *sig) {
   if (!der || !sig)
-    return;
+    return false;
   memzero(sig, 64);
-  uint8_t len, offset = 0;
-  if (der[offset++] != 0x30)
-    return;    // Verify the starting byte is 0x30
-  offset++;    // Skip the length byte
-  if (der[offset++] != 0x02)
-    return;               // Verify the marker byte is 0x02
-  len = der[offset++];    // Get the length of the r value
-  if (len == 0x21) {
-    offset++;
-    len--;
+  // SEQUENCE with a short-form length that fits in the input
+  if (der_len < 2 || der[0] != 0x30 || (der[1] & 0x80) != 0) {
+    return false;
   }
-  // Copy the r component of signature prepending 0's
-  memcpy(sig + (32 - len), der + offset, len);
-  offset += len;
-  if (der[offset++] != 0x02)
-    return;               // Verify the marker byte is 0x02
-  len = der[offset++];    // Get the length of the s value
-  if (len == 0x21) {
-    offset++;
-    len--;
+  size_t end = 2 + (size_t)der[1];
+  if (end > der_len) {
+    return false;
   }
-  // Copy the s component of signature prepending 0's
-  memcpy(sig + 32 + (32 - len), der + offset, len);
+  size_t offset = 2;
+  if (!der_read_integer(der, end, &offset, sig) ||
+      !der_read_integer(der, end, &offset, sig + 32)) {
+    memzero(sig, 64);
+    return false;
+  }
+  return true;
 }
 
 /**
