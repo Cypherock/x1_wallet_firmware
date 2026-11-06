@@ -2185,13 +2185,16 @@ void sha256_canton(int32_t purpose,
                    const uint8_t *data,
                    size_t data_size,
                    uint8_t *hash) {
-  uint8_t buf[4 + data_size];
-  memzero(buf, sizeof(buf));
+  // stream the data instead of copying it into a host-sized stack buffer;
+  // same result as sha256_with_prefix(purpose || data)
+  uint8_t purpose_buf[4] = {0};
+  encode_int32(purpose, purpose_buf);
 
-  encode_int32(purpose, buf);
-
-  memcpy(buf + 4, data, data_size);
-  sha256_with_prefix(buf, sizeof(buf), hash);
+  SHA256_CTX ctx = {0};
+  sha256_Init(&ctx);
+  sha256_Update(&ctx, purpose_buf, sizeof(purpose_buf));
+  sha256_Update(&ctx, data, data_size);
+  sha256_final_with_prefix(&ctx, hash);
 }
 
 void hash_party_txns(canton_party_txn *party_txns,

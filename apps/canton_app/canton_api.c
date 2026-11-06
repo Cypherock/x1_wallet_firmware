@@ -77,6 +77,7 @@
 #include "p0_events.h"
 #include "pb.h"
 #include "pb_decode.h"
+#include "pb_depth.h"
 #include "pb_encode.h"
 
 /*****************************************************************************
@@ -86,6 +87,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+
+/// Max protobuf nesting accepted for serialized canton data (about 20 levels
+/// of DAML values; each level is Value -> Record -> RecordField)
+#define CANTON_PB_MAX_DEPTH 64
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -209,6 +214,13 @@ bool decode_canton_serialized_data(const uint8_t *data,
 
   /* zero dest_struct for safety */
   memzero(dest_struct, sizeof(dest_struct));
+
+  /* DAML values nest recursively; pb_decode has no depth limit */
+  if (!pb_check_depth(data, data_size, fields, CANTON_PB_MAX_DEPTH)) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
+  }
 
   /* create pb stream for reading */
   pb_istream_t stream = pb_istream_from_buffer(data, data_size);

@@ -69,6 +69,7 @@
 #include "evm_priv.h"
 #include "evm_typed_data_helper.h"
 #include "pb_decode.h"
+#include "pb_depth.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -81,6 +82,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+
+/// Max protobuf nesting accepted for EIP-712 typed data (one level per nested
+/// struct or array)
+#define EVM_TYPED_DATA_PB_MAX_DEPTH 20
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -331,6 +336,15 @@ static bool get_msg_data(evm_query_t *query) {
   }
 
   if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
+    // typed data nodes nest recursively; pb_decode has no depth limit
+    if (!pb_check_depth(sign_msg_ctx.msg_data,
+                        total_size,
+                        EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
+                        EVM_TYPED_DATA_PB_MAX_DEPTH)) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
     pb_istream_t istream =
         pb_istream_from_buffer(sign_msg_ctx.msg_data, total_size);
     bool result = pb_decode(&istream,

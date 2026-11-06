@@ -17,6 +17,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "sha2.h"
+
 /*****************************************************************************
  * MACROS AND DEFINES
  *****************************************************************************/
@@ -60,6 +62,16 @@ bool canton_derivation_path_guard(const uint32_t *path, uint8_t levels);
  * bytes.
  */
 void sha256_with_prefix(const uint8_t *data, size_t data_size, uint8_t *hash);
+
+/**
+ * @brief Finalizes a SHA-256 context and prepends the canton hash prefix.
+ * @details Streaming counterpart of sha256_with_prefix for data that should
+ * not be copied into a single buffer first.
+ *
+ * @param[in] ctx The SHA-256 context holding the hashed data
+ * @param[out] hash The prefixed hash. Must be at least CANTON_HASH_SIZE bytes.
+ */
+void sha256_final_with_prefix(SHA256_CTX *ctx, uint8_t *hash);
 
 /**
  * @brief Generates the party id string from the public key.

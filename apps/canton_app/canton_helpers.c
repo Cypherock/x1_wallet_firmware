@@ -136,6 +136,18 @@ void sha256_with_prefix(const uint8_t *data, size_t data_size, uint8_t *hash) {
   memcpy(hash + CANTON_HASH_PREFIX_SIZE, digest, SHA256_DIGEST_LENGTH);
 }
 
+void sha256_final_with_prefix(SHA256_CTX *ctx, uint8_t *hash) {
+  if (!ctx || !hash) {
+    return;
+  }
+
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Final(ctx, digest);
+
+  memcpy(hash, CANTON_HASH_PREFIX, CANTON_HASH_PREFIX_SIZE);
+  memcpy(hash + CANTON_HASH_PREFIX_SIZE, digest, SHA256_DIGEST_LENGTH);
+}
+
 bool get_party_id(const uint8_t *public_key, char *party_id) {
   if (!public_key || !party_id) {
     return false;
