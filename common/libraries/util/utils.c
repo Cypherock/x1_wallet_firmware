@@ -228,7 +228,8 @@ void hex_string_to_byte_array(const char *hex_string,
                               uint8_t *byte_array) {
   char hex[3] = {'\0'};
 
-  for (int i = 0; i < string_length; i += 2) {
+  // only whole pairs; an odd trailing digit would write past string_length / 2
+  for (uint32_t i = 0; i + 1 < string_length; i += 2) {
     hex[0] = hex_string[i];
     hex[1] = hex_string[i + 1];
     byte_array[i / 2] = (uint8_t)strtol(hex, NULL, 16);

@@ -322,6 +322,30 @@ static bool handle_initiate_query(const starknet_query_t *query) {
   return true;
 }
 
+static bool fits_in_bytes(const uint8_t *bytes,
+                          pb_size_t size,
+                          pb_size_t max_bytes) {
+  // ignore leading zero bytes
+  for (pb_size_t i = 0; i + max_bytes < size; i++) {
+    if (0 != bytes[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool is_gas_amount_valid(const starknet_gas_amount_t *gas) {
+  // max_amount is a u64 and max_price_per_unit a u128 when packed for hashing
+  return fits_in_bytes(gas->max_amount.bytes, gas->max_amount.size, 8) &&
+         fits_in_bytes(
+             gas->max_price_per_unit.bytes, gas->max_price_per_unit.size, 16);
+}
+
+static bool is_resource_bounds_valid(const starknet_resource_bounds_t *bounds) {
+  return is_gas_amount_valid(&bounds->level_1) &&
+         is_gas_amount_valid(&bounds->level_2);
+}
+
 static bool fetch_valid_input(starknet_query_t *query) {
   if (!starknet_get_query(query, STARKNET_QUERY_SIGN_TXN_TAG) &&
       !check_which_request(query, STARKNET_SIGN_TXN_REQUEST_TXN_TAG)) {
@@ -333,10 +357,22 @@ static bool fetch_valid_input(starknet_query_t *query) {
   switch (starknet_txn_context->which_type) {
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
       starknet_txn_context->invoke_txn = &query->sign_txn.txn.invoke_txn;
+      if (!is_resource_bounds_valid(
+              &starknet_txn_context->invoke_txn->resource_bound)) {
+        starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
     } break;
 
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
       starknet_txn_context->deploy_txn = &query->sign_txn.txn.deploy_txn;
+      if (!is_resource_bounds_valid(
+              &starknet_txn_context->deploy_txn->resource_bounds)) {
+        starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
     } break;
 
     default: {

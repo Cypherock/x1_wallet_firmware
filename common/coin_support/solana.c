@@ -101,9 +101,10 @@ void solana_sig_unsigned_byte_array(const uint8_t *unsigned_txn_byte_array,
 }
 
 int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
+                                          uint32_t byte_array_size,
                                           const uint8_t *blockhash) {
   uint8_t empty_array[SOLANA_BLOCKHASH_LENGTH] = {0};
-  uint16_t offset = 0;
+  uint32_t offset = 0;
   int status = SOL_OK;
   uint16_t addresses_count = 0;
 
@@ -112,10 +113,14 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
 
   if (memcmp(blockhash, empty_array, SOLANA_BLOCKHASH_LENGTH) == 0)
     return SOL_BU_INVALID_BLOCKHASH;
+  if (byte_array_size == 0)
+    return SOL_D_READ_SIZE_MISMATCH;
   if (byte_array[0] == SOLANA_VERSIONED_MSG_PREFIX)
     offset += 1;
   // Message headers
   offset += 3;
+  if (offset >= byte_array_size)
+    return SOL_D_READ_SIZE_MISMATCH;
   // Account addresses
   offset +=
       get_compact_array_size(byte_array + offset, &addresses_count, &status);
@@ -125,6 +130,8 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
     return SOL_D_MIN_LENGTH;
   offset += addresses_count * SOLANA_ACCOUNT_ADDRESS_LENGTH;
   // Blockhash
+  if (offset + SOLANA_BLOCKHASH_LENGTH > byte_array_size)
+    return SOL_D_READ_SIZE_MISMATCH;
   memcpy(byte_array + offset, blockhash, SOLANA_BLOCKHASH_LENGTH);
   return SOL_OK;
 }

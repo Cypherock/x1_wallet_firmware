@@ -323,6 +323,11 @@ static bool parse_hash_and_validate_transaction_external(
     canton_unsigned_txn_external_info_t *ut_txn) {
   memzero(ut_txn->hash, CANTON_HASH_PREFIX_SIZE + SHA256_DIGEST_LENGTH);
 
+  // 3 byte length prefix; the remainder is decoded with a uint16_t size
+  if (serialized_txn_size < 3 || serialized_txn_size - 3 > UINT16_MAX) {
+    return false;
+  }
+
   switch (ut_txn->txn_type) {
     case CANTON_SUPPORTED_TXN_TYPE_NAMESPACE_DELEGATION: {
       canton_generate_transaction_request_proposal_t decoded_proposal =
