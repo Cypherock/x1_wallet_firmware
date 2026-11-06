@@ -453,31 +453,55 @@ uint16_t create_apdu_inheritance(const uint8_t name[NAME_SIZE],
   return index;
 }
 
-void extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
+bool extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
                                 uint8_t random_number[POW_RAND_NUMBER_SIZE],
                                 const uint8_t apdu[],
                                 const uint16_t len) {
   ASSERT(target != NULL);
   ASSERT(random_number != NULL);
   ASSERT(apdu != NULL);
-  ASSERT(len != 0);
 
+  // last 2 bytes are the status word
+  if (len < 2) {
+    return false;
+  }
+  const uint16_t data_len = len - 2;
+  bool target_found = false, random_number_found = false;
   uint16_t index = 0;
 
-  while (index < len) {
-    switch (apdu[index++]) {
+  while (index < data_len) {
+    if ((uint32_t)index + 2 > data_len) {
+      return false;
+    }
+    uint8_t tag = apdu[index];
+    uint8_t field_len = apdu[index + 1];
+    index += 2;
+    if ((uint32_t)index + field_len > data_len) {
+      return false;
+    }
+
+    switch (tag) {
       case TAG_POW_TARGET:
-        memcpy(target, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        if (field_len != SHA256_SIZE) {
+          return false;
+        }
+        memcpy(target, apdu + index, SHA256_SIZE);
+        target_found = true;
         break;
       case TAG_POW_RANDOM_NUM:
-        memcpy(random_number, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        if (field_len != POW_RAND_NUMBER_SIZE) {
+          return false;
+        }
+        memcpy(random_number, apdu + index, POW_RAND_NUMBER_SIZE);
+        random_number_found = true;
         break;
       default:
         break;
     }
+    index += field_len;
   }
+
+  return target_found && random_number_found;
 }
 
 void extract_from_apdu(struct Wallet *wallet,
@@ -489,15 +513,28 @@ void extract_from_apdu(struct Wallet *wallet,
 
   uint16_t index = 0;
 
+  // every length below (apdu[index]) is card-supplied
+#define APDU_COPY_FIELD(dst)                                                   \
+  do {                                                                         \
+    uint8_t _flen = apdu[index];                                               \
+    if (_flen > sizeof(dst) || (uint32_t)index + 1 + _flen > len) {            \
+      return;                                                                  \
+    }                                                                          \
+    memcpy((dst), apdu + index + 1, _flen);                                    \
+    index += (_flen + 1);                                                      \
+  } while (0)
+
   while (index < len) {
-    switch (apdu[index++]) {
+    uint8_t ins = apdu[index++];
+    if (index >= len) {
+      break;
+    }
+    switch (ins) {
       case INS_NAME:
-        memcpy(wallet->wallet_name, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_name);
         break;
       case INS_PASSWORD:
-        memcpy(wallet->password_double_hash, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->password_double_hash);
         break;
       case INS_xCor:
         wallet->xcor = apdu[index];
@@ -512,14 +549,10 @@ void extract_from_apdu(struct Wallet *wallet,
         index++;
         break;
       case INS_WALLET_SHARE:
-        memcpy(wallet->wallet_share_with_mac_and_nonce,
-               apdu + index + 1,
-               apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_share_with_mac_and_nonce);
         break;
       case INS_STRUCTURE_CHECKSUM:
-        memcpy(wallet->checksum, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->checksum);
         break;
       case INS_MIN_NO_OF_SHARES:
         wallet->minimum_number_of_shares = apdu[index];
@@ -530,30 +563,26 @@ void extract_from_apdu(struct Wallet *wallet,
         index++;
         break;
       case INS_KEY:
-        memcpy(wallet->key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->key);
         break;
       case INS_BENEFICIARY_KEY:
-        memcpy(wallet->beneficiary_key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->beneficiary_key);
         break;
       case INS_IV_FOR_BENEFICIARY_KEY:
-        memcpy(wallet->iv_for_beneficiary_key, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->iv_for_beneficiary_key);
         break;
       case INS_WALLET_ID:
-        memcpy(wallet->wallet_id, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->wallet_id);
         break;
       case INS_ARBITRARY_DATA:
-        memcpy(wallet->arbitrary_data_share, apdu + index + 1, apdu[index]);
         wallet->arbitrary_data_size = apdu[index];
-        index += (apdu[index] + 1);
+        APDU_COPY_FIELD(wallet->arbitrary_data_share);
         break;
       default:
         break;
     }
   }
+#undef APDU_COPY_FIELD
 }
 
 ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
@@ -574,29 +603,57 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
 
   uint16_t index = 0;
 
+  // every length below (apdu[index]) is card-supplied
+#define APDU_COPY_DETAIL(dst, cap)                                             \
+  do {                                                                         \
+    uint8_t _flen = apdu[index];                                               \
+    if ((_flen) > (cap) || (uint32_t)index + 1 + (_flen) > len) {              \
+      return SW_OUT_OF_BOUNDARY;                                               \
+    }                                                                          \
+    memcpy((dst), apdu + index + 1, (_flen));                                  \
+    index += (_flen + 1);                                                      \
+  } while (0)
+
   while (index < len) {
-    switch (apdu[index++]) {
+    uint8_t tag = apdu[index++];
+    if (index >= len) {
+      break;
+    }
+    switch (tag) {
       case TAG_VERSION:
-        if (version)
-          memcpy(version, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        if (version) {
+          APDU_COPY_DETAIL(version, CARD_VERSION_SIZE);
+        } else {
+          if ((uint32_t)index + 1 + apdu[index] > len) {
+            return SW_OUT_OF_BOUNDARY;
+          }
+          index += (apdu[index] + 1);
+        }
         break;
       case TAG_FAMILY_ID:
+        if ((uint32_t)index + 1 + CARD_ID_SIZE > len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         memcpy(family_id, apdu + index + 1, FAMILY_ID_SIZE);
         index += CARD_ID_SIZE;
         *card_number = apdu[index];
         index++;
         break;
       case TAG_CARD_KEYID:
+        if ((uint32_t)index + 1 + 4 > len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         if (card_key_id)
           memcpy(card_key_id, apdu + index + 1, 4);
         index += (apdu[index] + 1);
         break;
       case TAG_CARD_IV:
-        memcpy(session_iv, apdu + index + 1, apdu[index]);
-        index += (apdu[index] + 1);
+        APDU_COPY_DETAIL(session_iv, sizeof(session_iv));
         break;
       case TAG_RECOVERY_MODE:
+        if ((uint32_t)index + 1 >= len) {
+          return SW_OUT_OF_BOUNDARY;
+        }
         if (recovery_mode)
           *recovery_mode = apdu[++index];
         break;
@@ -604,6 +661,7 @@ ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],
         break;
     }
   }
+#undef APDU_COPY_DETAIL
 
   return status_word;
 }
@@ -661,6 +719,9 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   ASSERT(InOut_data != NULL);
   ASSERT(len != NULL);
 
+  if (*len < 34) {
+    return NFC_SC_MAC_ERROR;
+  }
   uint16_t data_len = *len - 16 - 2;
   uint8_t payload[data_len], iv[16] = {0};
   aes_decrypt_ctx dec_ctx = {0};
@@ -684,9 +745,9 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
   if (aes_cbc_decrypt(payload, InOut_data, data_len, iv, &dec_ctx) !=
       EXIT_SUCCESS)
     return NFC_SC_DEC_ERROR;
-  while (InOut_data[data_len - 1] == 0x00)
+  while (data_len > 0 && InOut_data[data_len - 1] == 0x00)
     data_len--;
-  if (InOut_data[data_len - 1] == 0x80)
+  if (data_len > 0 && InOut_data[data_len - 1] == 0x80)
     data_len--;
   InOut_data[data_len] = InOut_data[*len - 2];
   InOut_data[data_len + 1] = InOut_data[*len - 1];
@@ -719,37 +780,79 @@ void reset_card_data_health() {
   card_data_health = DATA_HEALTH_UNKNOWN;
 }
 
-void apdu_extract_wallet_list(wallet_list_t *list,
-                              uint8_t *apdu,
+static bool apdu_read_wallet_list_byte(const uint8_t *apdu,
+                                       uint16_t len,
+                                       uint16_t *offset,
+                                       uint8_t tag,
+                                       uint8_t *out) {
+  if ((uint32_t)*offset + 2 > len || apdu[*offset] != tag) {
+    return false;
+  }
+  *out = apdu[*offset + 1];
+  *offset += 2;
+  return true;
+}
+
+static bool apdu_read_wallet_list_field(const uint8_t *apdu,
+                                        uint16_t len,
+                                        uint16_t *offset,
+                                        uint8_t tag,
+                                        uint8_t *out,
+                                        uint8_t out_size) {
+  if ((uint32_t)*offset + 2 > len || apdu[*offset] != tag) {
+    return false;
+  }
+  uint8_t field_len = apdu[*offset + 1];
+  *offset += 2;
+  if (field_len > out_size || (uint32_t)*offset + field_len > len) {
+    return false;
+  }
+  memcpy(out, apdu + *offset, field_len);
+  *offset += field_len;
+  return true;
+}
+
+bool apdu_extract_wallet_list(wallet_list_t *list,
+                              const uint8_t *apdu,
                               uint16_t len) {
-  if (NULL == list || NULL == apdu || 0 == len) {
-    return;
+  if (NULL == list || NULL == apdu || len < 3) {
+    return false;
   }
 
-  uint8_t read_offset = 0;
+  memzero(list, sizeof(wallet_list_t));
+  // last 2 bytes are the status word
+  const uint16_t data_len = len - 2;
+  uint16_t read_offset = 0;
   // First byte of the APDU depicts number of wallets
-  list->count = apdu[read_offset++];
+  const uint8_t count = apdu[read_offset++];
+  if (count > MAX_WALLETS_ALLOWED) {
+    return false;
+  }
 
-  for (uint8_t index = 0; index < list->count; index++) {
-    if (read_offset < len && INS_WALLET_INFO == apdu[read_offset++]) {
-      list->wallet[index].info = apdu[read_offset++];
-    }
-
-    if (read_offset < len && TAG_WALLET_LOCKED == apdu[read_offset++]) {
-      list->wallet[index].locked = apdu[read_offset++];
-    }
-
-    if (read_offset < len && INS_NAME == apdu[read_offset++]) {
-      memcpy(
-          list->wallet[index].name, apdu + read_offset + 1, apdu[read_offset]);
-      read_offset += (apdu[read_offset] + 1);
-    }
-
-    if (read_offset < len && INS_WALLET_ID == apdu[read_offset++]) {
-      memcpy(list->wallet[index].id, apdu + read_offset + 1, apdu[read_offset]);
-      read_offset += (apdu[read_offset] + 1);
+  for (uint8_t index = 0; index < count; index++) {
+    wallet_metadata_t *wallet = &list->wallet[index];
+    if (!apdu_read_wallet_list_byte(
+            apdu, data_len, &read_offset, INS_WALLET_INFO, &wallet->info) ||
+        !apdu_read_wallet_list_byte(
+            apdu, data_len, &read_offset, TAG_WALLET_LOCKED, &wallet->locked) ||
+        !apdu_read_wallet_list_field(apdu,
+                                     data_len,
+                                     &read_offset,
+                                     INS_NAME,
+                                     wallet->name,
+                                     sizeof(wallet->name)) ||
+        !apdu_read_wallet_list_field(apdu,
+                                     data_len,
+                                     &read_offset,
+                                     INS_WALLET_ID,
+                                     wallet->id,
+                                     sizeof(wallet->id)) ||
+        NULL == memchr(wallet->name, '\0', sizeof(wallet->name))) {
+      memzero(list, sizeof(wallet_list_t));
+      return false;
     }
   }
 
-  return;
+  list->count = count;
+  return true;
 }

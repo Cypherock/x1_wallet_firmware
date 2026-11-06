@@ -62,6 +62,7 @@
 
 #include "board.h"
 #include "flash_api.h"
+#include "memzero.h"
 #include "sha2.h"
 #if USE_SIMULATOR == 0
 #include "stm32l4xx_it.h"
@@ -218,13 +219,14 @@ auth_data_t atecc_sign(uint8_t *hash) {
   uint8_t final_hash[32] = {0};
   get_io_protection_key(io_protection_key);
 
-  memset(challenge_no, 0, sizeof(challenge_no));
-  for (int i = 0; i < 32; ++i)
-    challenge_no[i] = challenge_no[i] ^ hash[i];
-
   atca_sign_internal_in_out_t sign_internal_param = {0};
 
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  // Local attempt counter: the self-verify below (ecdsa_verify_digest) draws
+  // randomness, which must not be able to reset the loop bound.
+  uint8_t attempts_left = DEFAULT_ATECC_RETRIES;
+  // track that the produced signature passed its self-verify so a
+  // fault-injected (glitched) signature can never be returned.
+  bool self_verify_ok = false;
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   do {
@@ -233,7 +235,11 @@ auth_data_t atecc_sign(uint8_t *hash) {
     if (atecc_data.status != ATCA_SUCCESS)
       LOG_CRITICAL("AERR CH: %04x, count:%d",
                    atecc_data.status,
-                   DEFAULT_ATECC_RETRIES - atecc_data.retries);
+                   DEFAULT_ATECC_RETRIES - attempts_left);
+
+    // (re)load the challenge every attempt: the slot-overwrite step below
+    // zeroes challenge_no, so a retry must not sign an all-zero challenge.
+    memcpy(challenge_no, hash, sizeof(challenge_no));
 
     if ((atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface)) !=
         ATCA_SUCCESS) {
@@ -291,16 +297,30 @@ auth_data_t atecc_sign(uint8_t *hash) {
                                            sign_internal_param.digest);
       if (atecc_data.status != ATCA_SUCCESS || result != 0) {
         LOG_ERROR("err xxx33 fault %d verify %d", atecc_data.status, result);
+        continue;
       }
+      // signature verified against the auth public key.
+      self_verify_ok = true;
     }
 
-  } while (--atecc_data.retries && atecc_data.status != ATCA_SUCCESS);
+  } while (--attempts_left && !self_verify_ok);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
+
+  // never return a signature that failed self-verification (e.g. from fault
+  // injection).
+  if (!self_verify_ok) {
+    memzero(auth_challenge_packet.signature,
+            sizeof(auth_challenge_packet.signature));
+  }
 
   memcpy(auth_challenge_packet.postfix2,
          &tempkey_hash[32],
          POSTFIX2_SIZE);    // postfix 2 (12bytes)
+
+  /* Zeroise IO protection key and challenge copy */
+  memzero(io_protection_key, sizeof(io_protection_key));
+  memzero(challenge_no, sizeof(challenge_no));
 
   return auth_challenge_packet;
 }

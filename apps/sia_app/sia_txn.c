@@ -306,8 +306,18 @@ static bool fetch_valid_input(sia_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  if (0 == total_size) {
+    sia_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // allocate memory for storing transaction
   sia_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == sia_txn_context->transaction) {
+    sia_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   while (1) {
     if (!sia_get_query(query, SIA_QUERY_SIGN_TXN_TAG) ||
@@ -347,6 +357,11 @@ static bool fetch_valid_input(sia_query_t *query) {
   }
 
   sia_txn_context->txn = (sia_transaction_t *)malloc(sizeof(sia_transaction_t));
+  if (NULL == sia_txn_context->txn) {
+    sia_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   if (sia_parse_transaction(sia_txn_context->transaction,
                             total_size,
@@ -582,6 +597,11 @@ static bool send_signature(sia_query_t *query, const sia_sig_t *signature) {
  *****************************************************************************/
 void sia_sign_transaction(sia_query_t *query) {
   sia_txn_context = (sia_txn_context_t *)malloc(sizeof(sia_txn_context_t));
+  if (NULL == sia_txn_context) {
+    sia_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return;
+  }
   memzero(sia_txn_context, sizeof(sia_txn_context_t));
 
   sia_sig_t sig = {0};

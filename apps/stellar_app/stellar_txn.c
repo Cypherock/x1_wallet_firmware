@@ -194,21 +194,6 @@ static bool get_user_verification(void);
 static bool sign_txn(uint8_t *signature);
 
 /**
- * @brief Creates signature base data for Stellar transaction signing
- * @details Combines network passphrase hash with truncated XDR transaction data
- *
- * @param network_passphrase Network passphrase string (mainnet/testnet)
- * @param transaction_xdr Raw XDR transaction data
- * @param tagged_txn_len Length of signature-relevant tagged txn XDR
- * @param output Output buffer for signature base data
- * @return int 0 on success, non-zero on error
- */
-
-static int create_signature_base(const char *network_passphrase,
-                                 uint8_t *transaction_xdr,
-                                 size_t tagged_txn_len,
-                                 uint8_t *output);
-/**
  * @brief Creates ED25519 signature for Stellar transaction
  * @details Signs the transaction hash using ED25519 algorithm
  * See
@@ -328,8 +313,18 @@ static bool fetch_valid_input(stellar_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  if (0 == total_size) {
+    stellar_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // allocate memory for storing transaction
   stellar_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == stellar_txn_context->transaction) {
+    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                       ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   while (1) {
     if (!stellar_get_query(query, STELLAR_QUERY_SIGN_TXN_TAG) ||
@@ -490,49 +485,28 @@ static bool get_user_verification(void) {
   return true;
 }
 
-static int create_signature_base(const char *network_passphrase,
-                                 uint8_t *transaction_xdr,
-                                 size_t tagged_txn_len,
-                                 uint8_t *output) {
-  // Hash network passphrase
-  uint8_t network_hash[SHA256_DIGEST_LENGTH] = {0};
-  sha256_Raw((const uint8_t *)network_passphrase,
-             strlen(network_passphrase),
-             network_hash);
-
-  // Combine: network_hash + truncated_xdr (only signature-relevant part)
-  memcpy(output, network_hash, SHA256_DIGEST_LENGTH);
-  memcpy(output + SHA256_DIGEST_LENGTH, transaction_xdr, tagged_txn_len);
-
-  return 0;
-}
-
 static int stellar_create_signature(const uint8_t *private_key,
                                     const uint8_t *public_key,
                                     stellar_network_t network,
                                     uint8_t *signature) {
-  size_t tagged_txn_len = stellar_txn_context->tagged_txn_len;
-  size_t base_len = SHA256_DIGEST_LENGTH + tagged_txn_len;
-  uint8_t signature_base[base_len];
-  memzero(signature_base, base_len);
-
-  // Create signature base
   const char *passphrase = (network == STELLAR_NETWORK_TESTNET)
                                ? TESTNET_PASSPHRASE
                                : MAINNET_PASSPHRASE;
 
-  int result = create_signature_base(passphrase,
-                                     stellar_txn_context->transaction,
-                                     tagged_txn_len,
-                                     signature_base);
+  // Hash network passphrase
+  uint8_t network_hash[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Raw((const uint8_t *)passphrase, strlen(passphrase), network_hash);
 
-  if (result != 0) {
-    return result;
-  }
-
-  // Hash the signature base
+  // transaction hash = sha256(network_hash || tagged txn); streamed rather
+  // than copied into a host-sized stack buffer
+  SHA256_CTX ctx = {0};
   uint8_t transaction_hash[SHA256_DIGEST_LENGTH] = {0};
-  sha256_Raw(signature_base, base_len, transaction_hash);
+  sha256_Init(&ctx);
+  sha256_Update(&ctx, network_hash, sizeof(network_hash));
+  sha256_Update(&ctx,
+                stellar_txn_context->transaction,
+                stellar_txn_context->tagged_txn_len);
+  sha256_Final(&ctx, transaction_hash);
 
   // Sign the hash
   ed25519_signature sig = {0};

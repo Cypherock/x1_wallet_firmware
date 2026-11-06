@@ -48,18 +48,23 @@ queue_node *dequeue(queue *q) {
 }
 
 static void twos_complement_of_byte_array(uint8_t *arr, size_t size) {
-  size_t i;
+  // size comes from a host-controlled typed-data node field;
+  // This also fixes the reverse loop below, whose `i >= 0` on a size_t never
+  // terminated and could underflow.
+  if (size > 32) {
+    size = 32;
+  }
 
   // flip all the bits
-  for (i = 0; i < size; i++)
+  for (size_t i = 0; i < size; i++)
     arr[i] = ~arr[i];
 
   // add 1 to the least significant bit
-  for (i = size - 1; i >= 0; i--) {
-    if (arr[i] == 255) {
-      arr[i] = 0;
+  for (size_t k = size; k > 0; k--) {
+    if (arr[k - 1] == 255) {
+      arr[k - 1] = 0;
     } else {
-      arr[i]++;
+      arr[k - 1]++;
       break;
     }
   }
@@ -259,14 +264,17 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
 int hash_struct(const evm_sign_typed_data_node_t *data_node, uint8_t *output) {
   if (data_node->type != EVM_EIP_712_DATA_TYPE_STRUCT)
     return EIP712_INVALID_DATA;
+  // type_hash is host supplied (FT_POINTER) and must be exactly one hash
+  if (NULL == data_node->type_hash || HASH_SIZE != data_node->type_hash->size)
+    return EIP712_INVALID_DATA;
   size_t data_size = HASH_SIZE + (data_node->children_count) * HASH_SIZE;
   size_t used_size = 0;
   uint8_t *data = malloc(data_size);
-  memcpy(data, data_node->type_hash->bytes, data_node->type_hash->size);
-  int status = encode_data(data_node,
-                           data + data_node->type_hash->size,
-                           (data_size - data_node->type_hash->size),
-                           &used_size);
+  if (NULL == data)
+    return EIP712_MEMORY_ALLOCATION_FAILED;
+  memcpy(data, data_node->type_hash->bytes, HASH_SIZE);
+  int status = encode_data(
+      data_node, data + HASH_SIZE, data_size - HASH_SIZE, &used_size);
   keccak_256(data, data_size, output);
   free(data);
   return status;

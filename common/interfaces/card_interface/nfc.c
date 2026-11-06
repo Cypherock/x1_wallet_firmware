@@ -256,7 +256,9 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[],
   return 0;
 }
 
-ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
+ISO7816 nfc_pair(uint8_t *data_inOut,
+                 uint8_t *length_inOut,
+                 const uint8_t data_inOut_size) {
   ASSERT(data_inOut != NULL);
   ASSERT(length_inOut != NULL);
 
@@ -275,14 +277,20 @@ ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut) {
   memset(send_apdu, 0, sizeof(send_apdu));
   if (err_code != STM_SUCCESS) {
     return err_code;
+  } else if (recv_len < 2) {
+    status_word = SW_OUT_OF_BOUNDARY;
   } else {
     status_word = (recv_apdu[recv_len - 2] << 8);
     status_word += recv_apdu[recv_len - 1];
 
     if (status_word == SW_NO_ERROR) {
-      // Extracting Data from APDU
-      *length_inOut = recv_len;
-      memcpy(data_inOut, recv_apdu, recv_len);
+      if (recv_len > data_inOut_size) {
+        status_word = SW_OUT_OF_BOUNDARY;
+      } else {
+        // Extracting Data from APDU
+        *length_inOut = recv_len;
+        memcpy(data_inOut, recv_apdu, recv_len);
+      }
     }
   }
 
@@ -337,8 +345,9 @@ ISO7816 nfc_list_all_wallet(wallet_list_t *wallet_list) {
     status_word = (recv_apdu[recv_len - 2] * 256);
     status_word += recv_apdu[recv_len - 1];
 
-    if (status_word == SW_NO_ERROR) {
-      apdu_extract_wallet_list(wallet_list, recv_apdu, recv_len);
+    if (status_word == SW_NO_ERROR &&
+        !apdu_extract_wallet_list(wallet_list, recv_apdu, recv_len)) {
+      status_word = SW_OUT_OF_BOUNDARY;
     }
     return status_word;
   }
@@ -484,7 +493,8 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
   status_word += recv_apdu[recv_len - 1];
 
   if (status_word == SW_NO_ERROR) {
-    if (recv_len != ECDSA_EXPECTED_LENGTH) {
+    if (recv_len != ECDSA_EXPECTED_LENGTH ||
+        recv_apdu[1] != ECDSA_SIGNATURE_SIZE) {
       status_word = CARD_SIGNATURE_INCORRECT_LEN;
       LOG_ERROR("Card error: %04x", status_word);
     } else {
@@ -553,8 +563,10 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE],
     status_word = (recv_apdu[recv_len - 2] * 256);
     status_word += recv_apdu[recv_len - 1];
 
-    if (status_word == SW_NO_ERROR) {
-      extract_apdu_get_challenge(target, random_number, recv_apdu, recv_len);
+    if (status_word == SW_NO_ERROR &&
+        !extract_apdu_get_challenge(
+            target, random_number, recv_apdu, recv_len)) {
+      status_word = SW_OUT_OF_BOUNDARY;
     }
   }
 
@@ -566,7 +578,8 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
                          const uint8_t *plain_data,
                          const uint16_t plain_data_size,
                          uint8_t *encrypted_data,
-                         uint16_t *encrypted_data_size) {
+                         uint16_t *encrypted_data_size,
+                         const uint16_t encrypted_data_capacity) {
   ASSERT(name != NULL);
   ASSERT(plain_data != NULL);
   ASSERT(plain_data_size != 0);
@@ -599,15 +612,22 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
     status_word += recv_apdu[recv_len - 1];
 
     if (status_word == SW_NO_ERROR) {
-      // Extracting Data from APDU
-      *encrypted_data_size = recv_len - 5;
-      memcpy(encrypted_data, recv_apdu + 3, recv_len - 5);
+      if (recv_len < 5 || recv_len - 5 > encrypted_data_capacity) {
+        status_word = SW_OUT_OF_BOUNDARY;
+      } else {
+        // Extracting Data from APDU
+        *encrypted_data_size = recv_len - 5;
+        memcpy(encrypted_data, recv_apdu + 3, recv_len - 5);
+      }
     }
   }
   memzero(recv_apdu, sizeof(send_apdu));
   return status_word;
 #else
   // TODO: Standardize simulator/test wallet info
+  if (1 + plain_data_size > encrypted_data_capacity) {
+    return SW_OUT_OF_BOUNDARY;
+  }
   memcpy(name, "DEV002", 6);
   memcpy(encrypted_data, name, 1);
   memcpy(encrypted_data + 1, plain_data, plain_data_size);
@@ -619,6 +639,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
 ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
                          uint8_t *plain_data,
                          uint16_t *plain_data_size,
+                         const uint16_t plain_data_capacity,
                          const uint8_t *encrypted_data,
                          const uint16_t encrypted_data_size) {
   ASSERT(name != NULL);
@@ -651,9 +672,13 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
     status_word += recv_apdu[recv_len - 1];
 
     if (status_word == SW_NO_ERROR) {
-      // Extracting Data from APDU
-      *plain_data_size = recv_len - 5;
-      memcpy(plain_data, recv_apdu + 3, recv_len - 5);
+      if (recv_len < 5 || recv_len - 5 > plain_data_capacity) {
+        status_word = SW_OUT_OF_BOUNDARY;
+      } else {
+        // Extracting Data from APDU
+        *plain_data_size = recv_len - 5;
+        memcpy(plain_data, recv_apdu + 3, recv_len - 5);
+      }
     }
   }
 

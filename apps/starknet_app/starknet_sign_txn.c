@@ -62,6 +62,8 @@
  * INCLUDES
  *****************************************************************************/
 
+#include <string.h>
+
 #include "bignum.h"
 #include "composable_app_queue.h"
 #include "ecdsa.h"
@@ -224,6 +226,20 @@ static starknet_txn_context_t *starknet_txn_context = NULL;
 
 static bool use_signature_verification = false;
 
+// See example in:
+// https://github.com/amanusk/starknet-selector-decoder/blob/main/README.md
+static const uint8_t STARKNET_TRANSFER_SELECTOR[STARKNET_BIGNUM_SIZE] = {
+    0x00, 0x83, 0xaf, 0xd3, 0xf4, 0xca, 0xed, 0xc6, 0xee, 0xbf, 0x44,
+    0x24, 0x6f, 0xe5, 0x4e, 0x38, 0xc9, 0x5e, 0x31, 0x79, 0xa5, 0xec,
+    0x9e, 0xa8, 0x17, 0x40, 0xec, 0xa5, 0xb4, 0x82, 0xd1, 0x2e};
+
+// See:
+// https://github.com/Cypherock/cypherock-cysync/blob/develop/packages/coin-support-starknet/src/constants.ts;
+static const uint8_t STARKNET_STRK_TOKEN_CONTRACT[STARKNET_BIGNUM_SIZE] = {
+    0x04, 0x71, 0x8f, 0x5a, 0x0f, 0xc3, 0x4c, 0xc1, 0xaf, 0x16, 0xa1,
+    0xcd, 0xee, 0x98, 0xff, 0xb2, 0x0c, 0x31, 0xf5, 0xcd, 0x61, 0xd6,
+    0xab, 0x07, 0x20, 0x18, 0x58, 0xf4, 0x28, 0x7c, 0x93, 0x8d};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -306,6 +322,30 @@ static bool handle_initiate_query(const starknet_query_t *query) {
   return true;
 }
 
+static bool fits_in_bytes(const uint8_t *bytes,
+                          pb_size_t size,
+                          pb_size_t max_bytes) {
+  // ignore leading zero bytes
+  for (pb_size_t i = 0; i + max_bytes < size; i++) {
+    if (0 != bytes[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool is_gas_amount_valid(const starknet_gas_amount_t *gas) {
+  // max_amount is a u64 and max_price_per_unit a u128 when packed for hashing
+  return fits_in_bytes(gas->max_amount.bytes, gas->max_amount.size, 8) &&
+         fits_in_bytes(
+             gas->max_price_per_unit.bytes, gas->max_price_per_unit.size, 16);
+}
+
+static bool is_resource_bounds_valid(const starknet_resource_bounds_t *bounds) {
+  return is_gas_amount_valid(&bounds->level_1) &&
+         is_gas_amount_valid(&bounds->level_2);
+}
+
 static bool fetch_valid_input(starknet_query_t *query) {
   if (!starknet_get_query(query, STARKNET_QUERY_SIGN_TXN_TAG) &&
       !check_which_request(query, STARKNET_SIGN_TXN_REQUEST_TXN_TAG)) {
@@ -317,10 +357,22 @@ static bool fetch_valid_input(starknet_query_t *query) {
   switch (starknet_txn_context->which_type) {
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
       starknet_txn_context->invoke_txn = &query->sign_txn.txn.invoke_txn;
+      if (!is_resource_bounds_valid(
+              &starknet_txn_context->invoke_txn->resource_bound)) {
+        starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
     } break;
 
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
       starknet_txn_context->deploy_txn = &query->sign_txn.txn.deploy_txn;
+      if (!is_resource_bounds_valid(
+              &starknet_txn_context->deploy_txn->resource_bounds)) {
+        starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
     } break;
 
     default: {
@@ -413,6 +465,49 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
 static bool get_invoke_txn_user_verification() {
   // verify address
   char address[100] = "0x";
+  if (starknet_txn_context->invoke_txn->calldata.value_count < 7) {
+    return false;
+  }
+  {
+    const uint32_t tgt_size =
+        starknet_txn_context->invoke_txn->calldata.value[1].size;
+    if (tgt_size != STARKNET_BIGNUM_SIZE) {
+      return false;
+    }
+    uint8_t tgt_padded[STARKNET_BIGNUM_SIZE] = {0};
+    memcpy(tgt_padded,
+           starknet_txn_context->invoke_txn->calldata.value[1].bytes,
+           tgt_size);
+    if (memcmp(tgt_padded,
+               STARKNET_STRK_TOKEN_CONTRACT,
+               STARKNET_BIGNUM_SIZE) != 0) {
+      return false;
+    }
+  }
+  // enforce the invoked selector == transfer().
+  {
+    const uint32_t sel_size =
+        starknet_txn_context->invoke_txn->calldata.value[2].size;
+    if (sel_size > STARKNET_BIGNUM_SIZE) {
+      return false;
+    }
+    uint8_t sel_padded[STARKNET_BIGNUM_SIZE] = {0};
+    memcpy(sel_padded + (STARKNET_BIGNUM_SIZE - sel_size),
+           starknet_txn_context->invoke_txn->calldata.value[2].bytes,
+           sel_size);
+    if (memcmp(sel_padded, STARKNET_TRANSFER_SELECTOR, STARKNET_BIGNUM_SIZE) !=
+        0) {
+      return false;
+    }
+  }
+  // high word must be 0, else actual amount >> shown amount.
+  for (uint32_t k = 0;
+       k < starknet_txn_context->invoke_txn->calldata.value[6].size;
+       k++) {
+    if (starknet_txn_context->invoke_txn->calldata.value[6].bytes[k] != 0) {
+      return false;
+    }
+  }
   if (starknet_txn_context->invoke_txn->calldata.value[4].size !=
       STARKNET_BIGNUM_SIZE) {
     return false;
@@ -472,7 +567,31 @@ static bool get_invoke_txn_user_verification() {
   memzero(display, sizeof(display));
   snprintf(display,
            sizeof(display),
-           "Verify Max Fee\n%s\n%s",
+           "Verify L1 Max Fee\n%s\n%s",
+           amount_str,
+           starknet_app.lunit1_name);
+
+  if (!core_confirmation(display, starknet_send_error)) {
+    return false;
+  }
+
+  memzero(amount_str, sizeof(amount_str));
+  uint8_t l2_max_fee[STARKNET_BIGNUM_SIZE] = {0};
+  starknet_get_max_fee(
+      starknet_txn_context->invoke_txn->resource_bound.level_2.max_amount.bytes,
+      starknet_txn_context->invoke_txn->resource_bound.level_2.max_amount.size,
+      starknet_txn_context->invoke_txn->resource_bound.level_2
+          .max_price_per_unit.bytes,
+      starknet_txn_context->invoke_txn->resource_bound.level_2
+          .max_price_per_unit.size,
+      l2_max_fee);
+  stark_amount_get_decimal_str(
+      l2_max_fee, STARKNET_BIGNUM_SIZE, amount_str, sizeof(amount_str));
+
+  memzero(display, sizeof(display));
+  snprintf(display,
+           sizeof(display),
+           "Verify L2 Max Fee\n%s\n%s",
            amount_str,
            starknet_app.lunit1_name);
 

@@ -155,21 +155,6 @@ static inline void encode_int64(int64_t value, uint8_t *buf);
 static bool encode_string(const char *str, uint8_t *out_buf, size_t *out_len);
 
 /**
- * @brief Encodes raw bytes
- * @details length (as int32) + data is encoded
- *
- * @param data[in] Encoding bytes
- * @param len[in] Data length
- * @param out_buf[out] Out buffer
- * @param out_len[out] Total encoded length
- * @returns Bool indicating whether successfully encoded or not
- */
-static bool encode_bytes(const uint8_t *data,
-                         size_t len,
-                         uint8_t *out_buf,
-                         size_t *out_len);
-
-/**
  * @brief Encodes hex string
  *
  * @param str[in] Hex string
@@ -377,7 +362,7 @@ static uint8_t *encode_metadata(
  *
  * @param value[in] Reference to @ref canton_value_t instance
  */
-static void parse_display_info(const char *choice_id,
+static bool parse_display_info(const char *choice_id,
                                const canton_value_t *chosen_value);
 
 /*****************************************************************************
@@ -492,23 +477,15 @@ static bool encode_string(const char *str, uint8_t *out_buf, size_t *out_len) {
   return true;
 }
 
-static bool encode_bytes(const uint8_t *data,
-                         size_t len,
-                         uint8_t *out_buf,
-                         size_t *out_len) {
-  encode_int32((int32_t)len, out_buf);
-  memcpy(out_buf + 4, data, len);
-  *out_len = 4 + len;
-  return true;
-}
-
 static bool encode_hex_string(const char *str,
                               uint8_t *out_buf,
                               size_t *out_len) {
-  int32_t tmp_out_len = (int32_t)strlen(str) / 2;
-  uint8_t result[tmp_out_len];
-  hex_string_to_byte_array(str, strlen(str), result);
-  encode_bytes(result, tmp_out_len, out_buf, out_len);
+  // decode straight into out_buf (sized 4 + strlen(str) / 2 by the callers);
+  // only whole hex pairs are decoded
+  size_t byte_len = strlen(str) / 2;
+  encode_int32((int32_t)byte_len, out_buf);
+  hex_string_to_byte_array(str, byte_len * 2, out_buf + 4);
+  *out_len = 4 + byte_len;
   return true;
 }
 
@@ -1229,6 +1206,9 @@ static uint8_t *encode_fetch_node(const canton_fetch_t *node,
                                   size_t *out_len) {
   *out_len = get_encoded_fetch_node_size(node, node_id);
   uint8_t *buf = (uint8_t *)malloc(*out_len);
+  if (!buf) {
+    return NULL;
+  }
   size_t offset = 0;
   size_t tmp_len = 0;
 
@@ -1303,6 +1283,9 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
                                      size_t *out_len) {
   *out_len = get_encoded_exercise_node_size(node, node_id);
   uint8_t *buf = (uint8_t *)malloc(*out_len);
+  if (!buf) {
+    return NULL;
+  }
   size_t offset = 0;
   size_t tmp_len = 0;
 
@@ -1387,7 +1370,10 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
   // we would want to extract amount, receiver address right before encoding
   // them. They are stored in exersie node's chosen_value field.
 
-  parse_display_info(node->choice_id, node->chosen_value);
+  if (!parse_display_info(node->choice_id, node->chosen_value)) {
+    free(buf);
+    return NULL;
+  }
 
   tmp_len = get_encoded_value_size(node->chosen_value);
   encode_value(node->chosen_value, (buf + offset));
@@ -1486,7 +1472,10 @@ static uint8_t *encode_create_node(const canton_create_t *node,
     encode_identifier(&node->template_id, (buf + offset), &tmp_len);
     offset += tmp_len;
 
-    parse_display_info(node->template_id.entity_name, node->argument);
+    if (!parse_display_info(node->template_id.entity_name, node->argument)) {
+      free(buf);
+      return NULL;
+    }
   }
 
   // argument: value
@@ -1522,6 +1511,9 @@ static uint8_t *encode_rollback_node(const canton_rollback_t *node,
   *out_len = get_encoded_rollback_node_size(node, node_id);
 
   uint8_t *buf = (uint8_t *)malloc(*out_len);
+  if (!buf) {
+    return NULL;
+  }
   size_t offset = 0;
 
   // NODE_ENCODING_VERSION: 1 byte
@@ -1598,6 +1590,9 @@ static uint8_t *encode_metadata(
     size_t *out_len) {
   *out_len = get_encoded_metadata_size(metadata);
   uint8_t *buf = (uint8_t *)malloc(*out_len);
+  if (!buf) {
+    return NULL;
+  }
   size_t offset = 0;
   size_t tmp_len = 0;
 
@@ -1647,11 +1642,21 @@ static uint8_t *encode_metadata(
   return buf;
 }
 
-static void parse_display_info_from_transfer_record(
+static bool copy_party_id(char *dst, size_t dst_size, const char *src) {
+  // party ids are host supplied (FT_POINTER) with no decode-time bound
+  size_t len = strnlen(src, dst_size);
+  if (len >= dst_size) {
+    return false;
+  }
+  memcpy(dst, src, len + 1);
+  return true;
+}
+
+static bool parse_display_info_from_transfer_record(
     const canton_record_t *record,
     canton_txn_display_info_t *display_info) {
   if (!record || !display_info) {
-    return;
+    return true;
   }
   for (size_t i = 0; i < record->fields_count; i++) {
     canton_record_field_t *transfer_field = &record->fields[i];
@@ -1681,19 +1686,30 @@ static void parse_display_info_from_transfer_record(
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
-          strcpy(display_info->sender_party_id, display_value->party);
+          if (!copy_party_id(display_info->sender_party_id,
+                             sizeof(display_info->sender_party_id),
+                             display_value->party)) {
+            return false;
+          }
 
         } else if (strcmp(display_field->label, RECEIVER_LABEL) == 0) {
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
-          strcpy(display_info->receiver_party_id, display_value->party);
+          if (!copy_party_id(display_info->receiver_party_id,
+                             sizeof(display_info->receiver_party_id),
+                             display_value->party)) {
+            return false;
+          }
 
         } else if (strcmp(display_field->label, AMOUNT_LABEL) == 0) {
           if (CANTON_VALUE_NUMERIC_TAG != display_value->which_sum) {
             continue;
           }
-          strcpy(display_info->amount, display_value->numeric);
+          snprintf(display_info->amount,
+                   sizeof(display_info->amount),
+                   "%s",
+                   display_value->numeric);
         } else if (strcmp(display_field->label, START_TIME_LABEL) == 0) {
           if (CANTON_VALUE_TIMESTAMP_TAG != display_value->which_sum) {
             continue;
@@ -1721,12 +1737,19 @@ static void parse_display_info_from_transfer_record(
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
-              strcpy(display_info->instrument.id, instrument_value->text);
+              snprintf(display_info->instrument.id,
+                       sizeof(display_info->instrument.id),
+                       "%s",
+                       instrument_value->text);
             } else if (strcmp(instrument_field->label, ADMIN_LABEL) == 0) {
               if (CANTON_VALUE_PARTY_TAG != instrument_value->which_sum) {
                 continue;
               }
-              strcpy(display_info->instrument.admin, instrument_value->party);
+              if (!copy_party_id(display_info->instrument.admin,
+                                 sizeof(display_info->instrument.admin),
+                                 instrument_value->party)) {
+                return false;
+              }
             }
           }
         }
@@ -1735,16 +1758,17 @@ static void parse_display_info_from_transfer_record(
       }
     }
   }
+  return true;
 }
 
-static void parse_display_info(const char *choice_id,
+static bool parse_display_info(const char *choice_id,
                                const canton_value_t *chosen_value) {
   if (!choice_id || !chosen_value) {
-    return;
+    return true;
   }
 
   if (CANTON_VALUE_RECORD_TAG != chosen_value->which_sum) {
-    return;
+    return true;
   }
   canton_txn_display_info_t *display_info =
       &canton_txn_context->unsigned_txn.txn_display_info;
@@ -1753,7 +1777,7 @@ static void parse_display_info(const char *choice_id,
   // for send, compare choice_id with TransferFactory_Transfer
   if (strcmp(choice_id, TRANSFER_CHOICE_ID) == 0) {
     display_info->txn_type = CANTON_TXN_TYPE_TRANSFER;
-    parse_display_info_from_transfer_record(record, display_info);
+    return parse_display_info_from_transfer_record(record, display_info);
   } else if (strcmp(choice_id, TAP_CHOICE_ID) == 0) {
     display_info->txn_type = CANTON_TXN_TYPE_TAP;
 
@@ -1769,13 +1793,20 @@ static void parse_display_info(const char *choice_id,
         if (CANTON_VALUE_PARTY_TAG != tap_value->which_sum) {
           continue;
         }
-        strcpy(display_info->receiver_party_id, tap_value->party);
+        if (!copy_party_id(display_info->receiver_party_id,
+                           sizeof(display_info->receiver_party_id),
+                           tap_value->party)) {
+          return false;
+        }
 
       } else if (0 == strcmp(tap_field->label, AMOUNT_LABEL)) {
         if (CANTON_VALUE_NUMERIC_TAG != tap_value->which_sum) {
           continue;
         }
-        strcpy(display_info->amount, tap_value->numeric);
+        snprintf(display_info->amount,
+                 sizeof(display_info->amount),
+                 "%s",
+                 tap_value->numeric);
       }
     }
   } else if (strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) == 0 ||
@@ -1785,9 +1816,9 @@ static void parse_display_info(const char *choice_id,
         (strcmp(record->record_id.entity_name, CANTON_TRANSFER_INSTRUCTION) !=
              0 &&
          strcmp(record->record_id.entity_name, CANTON_TRANSFER_OFFER) != 0)) {
-      return;
+      return true;
     }
-    parse_display_info_from_transfer_record(record, display_info);
+    return parse_display_info_from_transfer_record(record, display_info);
   } else if (strcmp(choice_id, WITHDRAW_CHOICE_ID) == 0) {
     display_info->txn_type = CANTON_TXN_TYPE_WITHDRAW;
   } else if (strcmp(choice_id, ACCEPT_CHOICE_ID) == 0) {
@@ -1797,7 +1828,7 @@ static void parse_display_info(const char *choice_id,
   } else if (strcmp(choice_id, PREAPPROVAL_CHOICE_ID) == 0) {
     if (!record->has_record_id ||
         strcmp(record->record_id.entity_name, PREAPPROVAL_CHOICE_ID) != 0) {
-      return;
+      return true;
     }
     display_info->txn_type = CANTON_TXN_TYPE_PREAPPROVAL;
 
@@ -1813,7 +1844,11 @@ static void parse_display_info(const char *choice_id,
         if (CANTON_VALUE_PARTY_TAG != preapproval_value->which_sum) {
           continue;
         }
-        strcpy(display_info->receiver_party_id, preapproval_value->party);
+        if (!copy_party_id(display_info->receiver_party_id,
+                           sizeof(display_info->receiver_party_id),
+                           preapproval_value->party)) {
+          return false;
+        }
       }
 
       // TODO: parse other fields if required. ex 'provider'
@@ -1822,7 +1857,7 @@ static void parse_display_info(const char *choice_id,
     if (!record->has_record_id ||
         strcmp(record->record_id.entity_name,
                MERGE_DELEGATION_PROPOSAL_CHOICE_ID) != 0) {
-      return;
+      return true;
     }
     display_info->txn_type = CANTON_TXN_TYPE_MERGE_DELEGATION_PROPOSAL;
 
@@ -1866,7 +1901,11 @@ static void parse_display_info(const char *choice_id,
             if (CANTON_VALUE_PARTY_TAG != merge_delegation_value->which_sum) {
               continue;
             }
-            strcpy(display_info->owner_party_id, merge_delegation_value->party);
+            if (!copy_party_id(display_info->owner_party_id,
+                               sizeof(display_info->owner_party_id),
+                               merge_delegation_value->party)) {
+              return false;
+            }
           }
         }
       }
@@ -1874,6 +1913,7 @@ static void parse_display_info(const char *choice_id,
       // TODO: parse other fields if required. ex 'operator'
     }
   }
+  return true;
 }
 
 static int compare_hashes(const void *a, const void *b) {
@@ -1919,6 +1959,7 @@ uint8_t *encode_canton_metadata_input_contract(
   size_t tmp_out_len = 0;
   uint8_t *buf = encode_create_node(&input_contract->v1, -10, &tmp_out_len);
   if (NULL == buf) {
+    free(final_buf);
     return NULL;
   }
 
@@ -1996,6 +2037,7 @@ bool parse_and_hash_canton_txn_node(const uint8_t *txn_serialized_node,
       encode_canton_txn_node(&decoded_d_node, &node_out_len);
 
   if (!encoded_node) {
+    pb_release(CANTON_DAML_TRANSACTION_D_NODE_FIELDS, &decoded_d_node);
     return false;
   }
 
@@ -2028,7 +2070,9 @@ bool validate_and_encode_canton_unsigned_txn() {
                 sizeof(PREPARED_TRANSACTION_HASH_PURPOSE));
 
   /* update transaction_hash with transaction version encoded as string */
-  uint8_t version_out_buf[10];
+  // int32 length prefix + version string
+  uint8_t version_out_buf[4 + sizeof(canton_txn_context->unsigned_txn.txn_meta
+                                         .version)];
   size_t out_len = 0;
   encode_string(canton_txn_context->unsigned_txn.txn_meta.version,
                 version_out_buf,
@@ -2048,9 +2092,15 @@ bool validate_and_encode_canton_unsigned_txn() {
        i++) {
     char *root_node_id = canton_txn_context->unsigned_txn.txn_meta.roots[i];
     int32_t root_node_id_l = strtol(root_node_id, NULL, 10);
-    sha256_Update(&transaction_hash_ctx,
-                  get_hashed_encoded_node_from_id(root_node_id_l)->hash,
-                  SHA256_DIGEST_LENGTH);
+    // a host-declared root id may match no fetched node
+    const canton_txn_node_hash_t *root_hash =
+        get_hashed_encoded_node_from_id(root_node_id_l);
+    if (NULL == root_hash) {
+      canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+    sha256_Update(&transaction_hash_ctx, root_hash->hash, SHA256_DIGEST_LENGTH);
   }
 
   /* finalize transaction hash digest */
@@ -2070,6 +2120,11 @@ bool validate_and_encode_canton_unsigned_txn() {
   size_t encoded_metadata_size = 0;
   uint8_t *encoded_metadata = encode_metadata(
       &canton_txn_context->unsigned_txn.canton_meta, &encoded_metadata_size);
+  if (!encoded_metadata) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   sha256_Update(&metadata_hash_ctx, encoded_metadata, encoded_metadata_size);
   free(encoded_metadata);
@@ -2130,13 +2185,16 @@ void sha256_canton(int32_t purpose,
                    const uint8_t *data,
                    size_t data_size,
                    uint8_t *hash) {
-  uint8_t buf[4 + data_size];
-  memzero(buf, sizeof(buf));
+  // stream the data instead of copying it into a host-sized stack buffer;
+  // same result as sha256_with_prefix(purpose || data)
+  uint8_t purpose_buf[4] = {0};
+  encode_int32(purpose, purpose_buf);
 
-  encode_int32(purpose, buf);
-
-  memcpy(buf + 4, data, data_size);
-  sha256_with_prefix(buf, sizeof(buf), hash);
+  SHA256_CTX ctx = {0};
+  sha256_Init(&ctx);
+  sha256_Update(&ctx, purpose_buf, sizeof(purpose_buf));
+  sha256_Update(&ctx, data, data_size);
+  sha256_final_with_prefix(&ctx, hash);
 }
 
 void hash_party_txns(canton_party_txn *party_txns,
