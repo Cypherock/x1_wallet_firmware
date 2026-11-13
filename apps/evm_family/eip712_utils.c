@@ -1,5 +1,6 @@
 #include "eip712_utils.h"
 
+#include "eip712_validate.h"
 #include "evm_api.h"
 
 queue_node *new_queue_node(evm_sign_typed_data_node_t *tree_node,
@@ -94,7 +95,8 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
       char hex_string[65] = {0};
       uint8_t array[32] = {0};
       uint8_t offset = 0;
-      memcpy(array, data_node->data->bytes, sizeof(array));
+      // validated to 1..32 bytes; copying a fixed 32 read past shorter data
+      memcpy(array, data_node->data->bytes, data_node->size);
 
       // if signed integer get 2's complement
       if (array[0] & 0x80) {
@@ -112,7 +114,7 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
                                            sizeof(buffer) - offset);
     } break;
     case EVM_EIP_712_DATA_TYPE_BOOL:
-      if (data_node->data->bytes[0] == 1)
+      if (eip712_bool_value(data_node) == 1)
         snprintf(buffer, sizeof(buffer), "true");
       else
         snprintf(buffer, sizeof(buffer), "false");
@@ -159,8 +161,9 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
         *bytes_written += HASH_SIZE;
       } break;
       case EVM_EIP_712_DATA_TYPE_BOOL: {
-        uint8_t abi_status = Abi_Encode(
-            Abi_bool_e, data_node->size, data_node->data->bytes, output);
+        // same value as displayed (empty data is false)
+        uint8_t value = eip712_bool_value(data_node);
+        uint8_t abi_status = Abi_Encode(Abi_bool_e, 1, &value, output);
         if (abi_status != ABI_PROCESS_COMPLETE) {
           LOG_ERROR("ABI:%d", abi_status);
           printf("ABI:%d", abi_status);
@@ -194,7 +197,8 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
         }
       }
       case EVM_EIP_712_DATA_TYPE_STRING:
-        keccak_256(data_node->data->bytes, data_node->size, output);
+        // hash the bytes that are displayed
+        keccak_256(data_node->data->bytes, data_node->data->size, output);
         *bytes_written += HASH_SIZE;
         break;
       case EVM_EIP_712_DATA_TYPE_ARRAY: {
@@ -254,7 +258,8 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
       } break;
 
       default:
-        break;
+        // an unknown type would be signed as zeros while shown as hex
+        return EIP712_INVALID_DATA;
     }
   }
 

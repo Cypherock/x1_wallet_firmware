@@ -64,6 +64,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "eip712_validate.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
@@ -351,7 +352,8 @@ static bool get_msg_data(evm_query_t *query) {
                             EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
                             &(sign_msg_ctx.typed_data));
 
-    if (!result) {
+    // every displayed value and type name must be exactly what is hashed
+    if (!result || !eip712_validate_typed_data(&(sign_msg_ctx.typed_data))) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
