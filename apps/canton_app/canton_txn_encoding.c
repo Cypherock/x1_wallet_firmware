@@ -363,13 +363,17 @@ static uint8_t *encode_metadata(
  * @param value[in] Reference to @ref canton_value_t instance
  */
 static bool parse_display_info(const char *choice_id,
-                               const canton_value_t *chosen_value);
+                               const canton_value_t *chosen_value,
+                               bool input_contract,
+                               bool *recognized);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
 
 const static uint32_t PREPARED_TRANSACTION_HASH_PURPOSE = 0x30000000;
+/// node id used when encoding metadata input contracts (not part of the tree)
+#define INPUT_CONTRACT_NODE_ID (-10)
 const static uint8_t HASHING_SCHEME_VERSION_V2 = 0x02;
 const static uint8_t NODE_ENCODING_VERSION = 0x01;
 const static uint8_t CREATE_NODE_TAG = 0x00;
@@ -425,21 +429,106 @@ static inline const canton_node_seed_t *get_node_seed_from_node_id(
   return NULL;
 }
 
+/// node ids are decimal strings; anything else must not alias node 0
+static bool parse_node_id(const char *str, int32_t *node_id) {
+  if (NULL == str || '\0' == *str) {
+    return false;
+  }
+  char *end = NULL;
+  long value = strtol(str, &end, 10);
+  if ('\0' != *end || value < 0 || value > INT32_MAX) {
+    return false;
+  }
+  *node_id = (int32_t)value;
+  return true;
+}
+
 static inline const canton_txn_node_hash_t *get_hashed_encoded_node_from_id(
     int32_t node_id) {
   const canton_txn_node_hash_t *node_hashes =
       canton_txn_context->unsigned_txn.txn_node_hashes;
 
-  // TODO: use number of current encoded nodes instead of total nodes
-  // count
-  // WARN: could lead to reading uninit memory
-  for (size_t i = 0; i < canton_txn_context->unsigned_txn.txn_meta.nodes_count;
+  // only entries already parsed and hashed by the device
+  for (size_t i = 0; i < canton_txn_context->unsigned_txn.txn_node_hashes_count;
        i++) {
     if (node_id == node_hashes[i].node_id) {
       return &node_hashes[i];
     }
   }
   return NULL;
+}
+
+/**
+ * Looks up an already hashed node and marks it as used. Every node must be
+ * used exactly once (as a child or as a root) so the signed tree is exactly
+ * the set of nodes that were parsed.
+ */
+static const canton_txn_node_hash_t *reference_hashed_node(int32_t node_id) {
+  canton_txn_node_hash_t *node_hashes =
+      canton_txn_context->unsigned_txn.txn_node_hashes;
+
+  for (size_t i = 0; i < canton_txn_context->unsigned_txn.txn_node_hashes_count;
+       i++) {
+    if (node_id == node_hashes[i].node_id) {
+      if (node_hashes[i].referenced) {
+        return NULL;
+      }
+      node_hashes[i].referenced = true;
+      return &node_hashes[i];
+    }
+  }
+  return NULL;
+}
+
+static bool is_root_node(int32_t node_id) {
+  const canton_sign_txn_transaction_metadata_t *meta =
+      &canton_txn_context->unsigned_txn.txn_meta;
+  for (size_t i = 0; i < meta->roots_count; i++) {
+    int32_t root_id = 0;
+    if (parse_node_id(meta->roots[i], &root_id) && node_id == root_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Display info comes only from root nodes (the action the user signs) and from
+ * input contracts (the details of the instruction a root acts on). Child
+ * nodes are consequences of the root and are not shown. At most one
+ * recognized action is accepted from each.
+ */
+static bool collect_display_info(int32_t node_id,
+                                 const char *choice_id,
+                                 const canton_value_t *value,
+                                 const char *contract_id) {
+  canton_unsigned_txn *ut_txn = &canton_txn_context->unsigned_txn;
+  bool input_contract = (INPUT_CONTRACT_NODE_ID == node_id);
+  if (!input_contract && !is_root_node(node_id)) {
+    return true;
+  }
+
+  bool recognized = false;
+  if (!parse_display_info(choice_id, value, input_contract, &recognized)) {
+    return false;
+  }
+  if (!recognized) {
+    return true;
+  }
+
+  uint8_t *count = input_contract ? &ut_txn->input_contract_action_count
+                                  : &ut_txn->root_action_count;
+  char *action_contract_id = input_contract
+                                 ? ut_txn->input_contract_action_contract_id
+                                 : ut_txn->root_action_contract_id;
+  if (0 != *count || NULL == contract_id ||
+      strnlen(contract_id, CANTON_CONTRACT_ID_STR_SIZE_MAX) >=
+          CANTON_CONTRACT_ID_STR_SIZE_MAX) {
+    return false;
+  }
+  (*count)++;
+  strcpy(action_contract_id, contract_id);
+  return true;
 }
 
 static inline void encode_empty(uint8_t *buf) {
@@ -1370,7 +1459,8 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
   // we would want to extract amount, receiver address right before encoding
   // them. They are stored in exersie node's chosen_value field.
 
-  if (!parse_display_info(node->choice_id, node->chosen_value)) {
+  if (!collect_display_info(
+          node_id, node->choice_id, node->chosen_value, node->contract_id)) {
     free(buf);
     return NULL;
   }
@@ -1412,15 +1502,17 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
   // chidren: sha256 hash of encoded nodes with children ids
   for (size_t i = 0; i < node->children_count; i++) {
     // hash: 32 bytes
-    int32_t node_id = strtol(node->children[i], NULL, 10);
-    const canton_txn_node_hash_t *node =
-        get_hashed_encoded_node_from_id(node_id);
+    int32_t node_id = 0;
+    const canton_txn_node_hash_t *child_hash =
+        parse_node_id(node->children[i], &node_id)
+            ? reference_hashed_node(node_id)
+            : NULL;
 
-    if (NULL == node) {
+    if (NULL == child_hash) {
       free(buf);
       return NULL;
     }
-    encode_hash(node->hash, SHA256_DIGEST_LENGTH, buf + offset);
+    encode_hash(child_hash->hash, SHA256_DIGEST_LENGTH, buf + offset);
     offset += SHA256_DIGEST_LENGTH;
   }
   return buf;
@@ -1472,7 +1564,10 @@ static uint8_t *encode_create_node(const canton_create_t *node,
     encode_identifier(&node->template_id, (buf + offset), &tmp_len);
     offset += tmp_len;
 
-    if (!parse_display_info(node->template_id.entity_name, node->argument)) {
+    if (!collect_display_info(node_id,
+                              node->template_id.entity_name,
+                              node->argument,
+                              node->contract_id)) {
       free(buf);
       return NULL;
     }
@@ -1531,16 +1626,18 @@ static uint8_t *encode_rollback_node(const canton_rollback_t *node,
   // chidren: sha256 hash of encoded nodes with children ids
   for (size_t i = 0; i < node->children_count; i++) {
     // hash: 32 bytes
-    int32_t node_id = strtol(node->children[i], NULL, 10);
-    const canton_txn_node_hash_t *node =
-        get_hashed_encoded_node_from_id(node_id);
+    int32_t node_id = 0;
+    const canton_txn_node_hash_t *child_hash =
+        parse_node_id(node->children[i], &node_id)
+            ? reference_hashed_node(node_id)
+            : NULL;
 
-    if (NULL == node) {
+    if (NULL == child_hash) {
       free(buf);
       return NULL;
     }
 
-    encode_hash(node->hash, SHA256_DIGEST_LENGTH, buf + offset);
+    encode_hash(child_hash->hash, SHA256_DIGEST_LENGTH, buf + offset);
     offset += SHA256_DIGEST_LENGTH;
   }
 
@@ -1762,8 +1859,18 @@ static bool parse_display_info_from_transfer_record(
 }
 
 static bool parse_display_info(const char *choice_id,
-                               const canton_value_t *chosen_value) {
+                               const canton_value_t *chosen_value,
+                               bool input_contract,
+                               bool *recognized) {
+  *recognized = false;
   if (!choice_id || !chosen_value) {
+    return true;
+  }
+
+  // input contracts only supply the details of a transfer instruction; they
+  // never decide what the transaction does
+  if (input_contract && 0 != strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) &&
+      0 != strcmp(choice_id, CANTON_TRANSFER_OFFER)) {
     return true;
   }
 
@@ -1776,9 +1883,11 @@ static bool parse_display_info(const char *choice_id,
   canton_record_t *record = chosen_value->record;
   // for send, compare choice_id with TransferFactory_Transfer
   if (strcmp(choice_id, TRANSFER_CHOICE_ID) == 0) {
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_TRANSFER;
     return parse_display_info_from_transfer_record(record, display_info);
   } else if (strcmp(choice_id, TAP_CHOICE_ID) == 0) {
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_TAP;
 
     for (size_t i = 0; i < record->fields_count; i++) {
@@ -1818,18 +1927,23 @@ static bool parse_display_info(const char *choice_id,
          strcmp(record->record_id.entity_name, CANTON_TRANSFER_OFFER) != 0)) {
       return true;
     }
+    *recognized = true;
     return parse_display_info_from_transfer_record(record, display_info);
   } else if (strcmp(choice_id, WITHDRAW_CHOICE_ID) == 0) {
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_WITHDRAW;
   } else if (strcmp(choice_id, ACCEPT_CHOICE_ID) == 0) {
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_ACCEPT;
   } else if (strcmp(choice_id, REJECT_CHOICE_ID) == 0) {
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_REJECT;
   } else if (strcmp(choice_id, PREAPPROVAL_CHOICE_ID) == 0) {
     if (!record->has_record_id ||
         strcmp(record->record_id.entity_name, PREAPPROVAL_CHOICE_ID) != 0) {
       return true;
     }
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_PREAPPROVAL;
 
     for (size_t i = 0; i < record->fields_count; i++) {
@@ -1850,8 +1964,6 @@ static bool parse_display_info(const char *choice_id,
           return false;
         }
       }
-
-      // TODO: parse other fields if required. ex 'provider'
     }
   } else if (strcmp(choice_id, MERGE_DELEGATION_PROPOSAL_CHOICE_ID) == 0) {
     if (!record->has_record_id ||
@@ -1859,6 +1971,7 @@ static bool parse_display_info(const char *choice_id,
                MERGE_DELEGATION_PROPOSAL_CHOICE_ID) != 0) {
       return true;
     }
+    *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_MERGE_DELEGATION_PROPOSAL;
 
     for (size_t i = 0; i < record->fields_count; i++) {
@@ -1909,8 +2022,6 @@ static bool parse_display_info(const char *choice_id,
           }
         }
       }
-
-      // TODO: parse other fields if required. ex 'operator'
     }
   }
   return true;
@@ -1957,7 +2068,8 @@ uint8_t *encode_canton_metadata_input_contract(
   encode_int64(input_contract->created_at, final_buf);
 
   size_t tmp_out_len = 0;
-  uint8_t *buf = encode_create_node(&input_contract->v1, -10, &tmp_out_len);
+  uint8_t *buf = encode_create_node(
+      &input_contract->v1, INPUT_CONTRACT_NODE_ID, &tmp_out_len);
   if (NULL == buf) {
     free(final_buf);
     return NULL;
@@ -2031,6 +2143,17 @@ bool parse_and_hash_canton_txn_node(const uint8_t *txn_serialized_node,
     return false;
   }
 
+  // node ids must be unique; entries are filled in order
+  canton_unsigned_txn *ut_txn = &canton_txn_context->unsigned_txn;
+  int32_t node_id = 0;
+  if (!parse_node_id(decoded_d_node.node_id, &node_id) ||
+      NULL != get_hashed_encoded_node_from_id(node_id) ||
+      ut_txn->txn_node_hashes_count >= ut_txn->txn_meta.nodes_count ||
+      node_hash != &ut_txn->txn_node_hashes[ut_txn->txn_node_hashes_count]) {
+    pb_release(CANTON_DAML_TRANSACTION_D_NODE_FIELDS, &decoded_d_node);
+    return false;
+  }
+
   // validate and encode transaction node
   size_t node_out_len = 0;
   uint8_t *encoded_node =
@@ -2045,7 +2168,9 @@ bool parse_and_hash_canton_txn_node(const uint8_t *txn_serialized_node,
   sha256_Raw(encoded_node, node_out_len, node_hash->hash);
 
   // copy node id
-  node_hash->node_id = strtol(decoded_d_node.node_id, NULL, 10);
+  node_hash->node_id = node_id;
+  node_hash->referenced = false;
+  ut_txn->txn_node_hashes_count++;
 
   // release node data
   pb_release(CANTON_DAML_TRANSACTION_D_NODE_FIELDS, &decoded_d_node);
@@ -2053,6 +2178,43 @@ bool parse_and_hash_canton_txn_node(const uint8_t *txn_serialized_node,
   // free encoded node
   free(encoded_node);
   return true;
+}
+
+static bool is_signed_tree_complete(void) {
+  const canton_unsigned_txn *ut_txn = &canton_txn_context->unsigned_txn;
+  if (ut_txn->txn_node_hashes_count != ut_txn->txn_meta.nodes_count) {
+    return false;
+  }
+  for (size_t i = 0; i < ut_txn->txn_node_hashes_count; i++) {
+    if (!ut_txn->txn_node_hashes[i].referenced) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool is_display_info_consistent(void) {
+  const canton_unsigned_txn *ut_txn = &canton_txn_context->unsigned_txn;
+
+  // exactly one recognized action; unknown actions are not signed blindly
+  if (1 != ut_txn->root_action_count ||
+      CANTON_TXN_TYPE_UNRECOGNIZED == ut_txn->txn_display_info.txn_type) {
+    return false;
+  }
+
+  switch (ut_txn->txn_display_info.txn_type) {
+    case CANTON_TXN_TYPE_WITHDRAW:
+    case CANTON_TXN_TYPE_ACCEPT:
+    case CANTON_TXN_TYPE_REJECT:
+      // the details shown come from an input contract: it must be the very
+      // contract the root action exercises
+      return 1 == ut_txn->input_contract_action_count &&
+             0 == strcmp(ut_txn->root_action_contract_id,
+                         ut_txn->input_contract_action_contract_id);
+    default:
+      // details come from the root itself; nothing may overwrite them
+      return 0 == ut_txn->input_contract_action_count;
+  }
 }
 
 bool validate_and_encode_canton_unsigned_txn() {
@@ -2091,16 +2253,27 @@ bool validate_and_encode_canton_unsigned_txn() {
   for (size_t i = 0; i < canton_txn_context->unsigned_txn.txn_meta.roots_count;
        i++) {
     char *root_node_id = canton_txn_context->unsigned_txn.txn_meta.roots[i];
-    int32_t root_node_id_l = strtol(root_node_id, NULL, 10);
-    // a host-declared root id may match no fetched node
+    int32_t root_node_id_l = 0;
+    // a host-declared root id may match no fetched node, or a node already
+    // used as a child (or as another root)
     const canton_txn_node_hash_t *root_hash =
-        get_hashed_encoded_node_from_id(root_node_id_l);
+        parse_node_id(root_node_id, &root_node_id_l)
+            ? reference_hashed_node(root_node_id_l)
+            : NULL;
     if (NULL == root_hash) {
       canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                         ERROR_DATA_FLOW_INVALID_DATA);
       return false;
     }
     sha256_Update(&transaction_hash_ctx, root_hash->hash, SHA256_DIGEST_LENGTH);
+  }
+
+  /* only the tree reachable from the roots is signed: reject nodes that were
+   * parsed (and possibly displayed) but are not part of it */
+  if (!is_signed_tree_complete() || !is_display_info_consistent()) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
   }
 
   /* finalize transaction hash digest */

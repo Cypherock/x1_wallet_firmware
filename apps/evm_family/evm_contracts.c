@@ -336,11 +336,23 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
       } else if (Abi_uint256_array_dynamic_e ==
                  pArgumentAbiType[currArgument]) {
         uint32_t item;
+        ui_display_node *pTailNode = NULL;
         for (item = 0; item < numBytesReturned; item++) {
           uint8_t *pStaticData =
               (uint8_t *)(pDynamicDataPtr + (ABI_ELEMENT_SZ_IN_BYTES * item));
 
-          pAbiDispNode = ABI_Stringify(Abi_uint256_e, pStaticData, 0);
+          // show every element, not just the last one
+          ui_display_node *pItemNode =
+              ABI_Stringify(Abi_uint256_e, pStaticData, 0);
+          if (NULL == pItemNode) {
+            continue;
+          }
+          if (NULL == pAbiDispNode) {
+            pAbiDispNode = pItemNode;
+          } else {
+            pTailNode->next = pItemNode;
+          }
+          pTailNode = pItemNode;
         }
       }
     } else /* Static elements can be stringified straight away */

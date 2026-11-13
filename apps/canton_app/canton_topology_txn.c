@@ -439,14 +439,19 @@ static bool parse_and_hash_party_txn_proposal(
   // decode the proto serialized txn
   canton_generate_transaction_request_proposal_t decoded_proposal =
       CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_INIT_ZERO;
-  if (serialized_txn_size < 3) {
+  // decode exactly the payload of the versioned wrapper that is signed
+  const uint8_t *payload = NULL;
+  uint32_t payload_size = 0;
+  if (!canton_get_versioned_message_data(
+          serialized_txn, serialized_txn_size, &payload, &payload_size) ||
+      0 == payload_size || UINT16_MAX < payload_size) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
   if (!decode_canton_serialized_data(
-          serialized_txn + 3,    // skip the length prefix
-          serialized_txn_size - 3,
+          payload,
+          payload_size,
           CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_FIELDS,
           &decoded_proposal)) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,

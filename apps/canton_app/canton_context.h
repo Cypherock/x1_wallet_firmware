@@ -48,6 +48,7 @@
   (CANTON_PARTY_HINT_STR_SIZE + CANTON_PARTY_ID_SEPARATOR_SIZE +               \
    CANTON_FINGERPRINT_STR_SIZE - 2) /*for null byte*/
 #define CANTON_PARTY_ID_STR_SIZE_MAX 256
+#define CANTON_CONTRACT_ID_STR_SIZE_MAX 256
 #define CANTON_INPUT_CONTRACT_HASH_SIZE 8 + SHA256_DIGEST_LENGTH
 #define ENCODED_TXN_LENGTH                                                     \
   ((4 + 1 + SHA256_DIGEST_LENGTH + SHA256_DIGEST_LENGTH))
@@ -76,6 +77,8 @@ typedef struct {
 typedef struct {
   int32_t node_id;
   uint8_t hash[SHA256_DIGEST_LENGTH];
+  /// set once the node is used as a child or a root; each node exactly once
+  bool referenced;
 } canton_txn_node_hash_t;
 
 typedef enum {
@@ -117,6 +120,15 @@ typedef struct {
   canton_txn_node_hash_t *txn_node_hashes;
   canton_txn_input_contract_hash_t *input_contract_hashes;
   canton_txn_display_info_t txn_display_info;
+  /// number of entries of txn_node_hashes filled so far
+  uint32_t txn_node_hashes_count;
+  /// recognized actions found in root nodes / input contracts
+  uint8_t root_action_count;
+  uint8_t input_contract_action_count;
+  /// contract exercised by the recognized root action
+  char root_action_contract_id[CANTON_CONTRACT_ID_STR_SIZE_MAX];
+  /// input contract that supplied transfer instruction details
+  char input_contract_action_contract_id[CANTON_CONTRACT_ID_STR_SIZE_MAX];
 } canton_unsigned_txn;
 
 typedef struct {
