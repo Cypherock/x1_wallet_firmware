@@ -74,6 +74,24 @@ void sha256_with_prefix(const uint8_t *data, size_t data_size, uint8_t *hash);
 void sha256_final_with_prefix(SHA256_CTX *ctx, uint8_t *hash);
 
 /**
+ * @brief Extracts the payload of a serialized UntypedVersionedMessage.
+ * @details The message is `bytes data = 1; int32 version = 2;`. Only a buffer
+ * that is exactly the data field followed by an optional version field is
+ * accepted, so the payload validated by the device is exactly the payload the
+ * ledger reads from the signed bytes.
+ *
+ * @param[in] buf Serialized versioned message
+ * @param[in] size Size of buf
+ * @param[out] data Start of the payload inside buf
+ * @param[out] data_size Size of the payload
+ * @return true if buf has exactly that layout
+ */
+bool canton_get_versioned_message_data(const uint8_t *buf,
+                                       uint32_t size,
+                                       const uint8_t **data,
+                                       uint32_t *data_size);
+
+/**
  * @brief Generates the party id string from the public key.
  *
  * @param[in] public_key The public key
