@@ -90,7 +90,7 @@ jobs:
         firmware: [main]
         target: [release]
         platform: [device, simulator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3
@@ -162,7 +162,7 @@ jobs:
         firmware: [main]
         target: [release]
         platform: [simulator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3

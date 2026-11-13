@@ -281,8 +281,8 @@ int get_flash_wallet_share_by_name(const char *name, uint8_t *wallet_share);
  *
  * @param name A pointer to a character array representing the name of the
  * wallet.
- * @param wallet_nonce A pointer to a uint8_t array where the wallet nonce will
- * be stored.
+ * @param wallet_nonce A pointer to a uint8_t array of at least
+ * PADDED_NONCE_SIZE bytes where the wallet nonce will be stored.
  *
  * @return SUCCESS, INVALID_ARGUMENT, DOESNT_EXIST
  * @retval SUCCESS Wallet found & wallet share returned

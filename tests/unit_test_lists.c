@@ -259,6 +259,9 @@ TEST_GROUP_RUNNER(inheritance_decryption_tests) {
 TEST_GROUP_RUNNER(utils_tests) {
   RUN_TEST_CASE(utils_tests, der_to_sig_1);
   RUN_TEST_CASE(utils_tests, der_to_sig_2);
+  RUN_TEST_CASE(utils_tests, der_to_sig_oversized_integer);
+  RUN_TEST_CASE(utils_tests, der_to_sig_33_byte_integer_without_padding);
+  RUN_TEST_CASE(utils_tests, der_to_sig_truncated_input);
   RUN_TEST_CASE(utils_tests, escape_string_non_print_utf);
   RUN_TEST_CASE(utils_tests, escape_string_symbol);
   RUN_TEST_CASE(utils_tests, escape_string_ascii);
