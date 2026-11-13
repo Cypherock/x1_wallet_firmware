@@ -122,7 +122,37 @@ static ui_display_node *evm_create_typed_data_display_nodes(
       char title[BUFFER_SIZE] = {0};
       snprintf(title, BUFFER_SIZE, "%s%s", node->prefix, curr_node->name);
 
-      if (EVM_EIP_712_DATA_TYPE_STRING == curr_node->type) {
+      bool is_dynamic_bytes =
+          EVM_EIP_712_DATA_TYPE_BYTES == curr_node->type &&
+          0 == strcmp(curr_node->struct_name, DYNAMIC_BYTES_ID);
+      bool has_nul =
+          EVM_EIP_712_DATA_TYPE_STRING == curr_node->type &&
+          NULL != memchr(curr_node->data->bytes, '\0', curr_node->data->size);
+
+      if (is_dynamic_bytes || has_nul) {
+        /* Dynamic bytes can exceed the fixed BUFFER_SIZE buffer, and a string
+         * with an embedded NUL would be shown only up to the NUL; show the
+         * full value as hex so every signed byte is displayed. */
+        char hex_title[BUFFER_SIZE] = {0};
+        snprintf(hex_title,
+                 sizeof(hex_title),
+                 "%s (%s)",
+                 title,
+                 curr_node->struct_name);
+
+        size_t hex_size = 2 * curr_node->data->size + 3;
+        char *hex_value = cy_malloc(hex_size);
+        memzero(hex_value, hex_size);
+        snprintf(hex_value, hex_size, "0x");
+        byte_array_to_hex_string(curr_node->data->bytes,
+                                 curr_node->data->size,
+                                 hex_value + 2,
+                                 hex_size - 2);
+
+        temp->next = ui_create_display_node(
+            hex_title, sizeof(hex_title), hex_value, hex_size);
+        temp = temp->next;
+      } else if (EVM_EIP_712_DATA_TYPE_STRING == curr_node->type) {
         /* Strings can be arbitrarily long (no max_size cap) so skip
          * fill_string_with_data() fixed BUFFER_SIZE buffer entirely no
          * chunking needed either since ui_create_display_node() already
