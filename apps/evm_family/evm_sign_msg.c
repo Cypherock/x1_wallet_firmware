@@ -363,36 +363,63 @@ static bool get_msg_data(evm_query_t *query) {
   return true;
 }
 
+static bool verify_message_as_hex() {
+  const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
+  char *buffer = malloc(array_size);
+  if (NULL == buffer) {
+    return false;
+  }
+  memzero(buffer, array_size);
+  snprintf(buffer, array_size, "0x");
+  byte_array_to_hex_string(sign_msg_ctx.msg_data,
+                           sign_msg_ctx.init.total_msg_size,
+                           buffer + 2,
+                           array_size - 2);
+  // TODO: Add a limit on size of data per confirmation based on LVGL buffer
+  // and split message into multiple confirmations accordingly
+  bool result = core_scroll_page(
+      UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
+  memzero(buffer, array_size);
+  free(buffer);
+  return result;
+}
+
 static bool get_user_verification() {
   bool result = false;
   switch (sign_msg_ctx.init.message_type) {
     case EVM_SIGN_MSG_TYPE_ETH_SIGN: {
-      const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
-      char *buffer = malloc(array_size);
-      memzero(buffer, array_size);
-      snprintf(buffer, array_size, "0x");
-      byte_array_to_hex_string(sign_msg_ctx.msg_data,
-                               sign_msg_ctx.init.total_msg_size,
-                               buffer + 2,
-                               array_size - 2);
-      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
-      // and split message into multiple confirmations accordingly
-      result = core_scroll_page(
-          UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
-      memzero(buffer, array_size);
-      free(buffer);
+      result = verify_message_as_hex();
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      // The text view must show every signed byte: a NUL would end it early
+      // and invalid utf-8 is escaped as "\x00" whatever the byte. Show such
+      // messages (and empty ones) as hex instead.
+      if (0 == sign_msg_ctx.init.total_msg_size ||
+          NULL != memchr(sign_msg_ctx.msg_data,
+                         '\0',
+                         sign_msg_ctx.init.total_msg_size)) {
+        result = verify_message_as_hex();
+        break;
+      }
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
       size_t len = 4 * sign_msg_ctx.init.total_msg_size;
       char *escaped_str = malloc(len);
+      if (NULL == escaped_str) {
+        result = false;
+        break;
+      }
       uint8_t status = string_to_escaped_string(
           (const char *)sign_msg_ctx.msg_data, escaped_str, len);
       if (1 == status || 5 == status) {
         free(escaped_str);
         result = false;
+        break;
+      }
+      if (3 == status || 4 == status) {
+        free(escaped_str);
+        result = verify_message_as_hex();
         break;
       }
       result =
