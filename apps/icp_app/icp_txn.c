@@ -318,7 +318,7 @@ static bool handle_initiate_query(const icp_query_t *query) {
 }
 
 static bool fetch_valid_input(icp_query_t *query) {
-  if (!icp_get_query(query, ICP_QUERY_SIGN_TXN_TAG) &&
+  if (!icp_get_query(query, ICP_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query, ICP_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
     return false;
   }
