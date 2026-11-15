@@ -135,6 +135,7 @@ typedef PB_BYTES_ARRAY_T(MAX_ICRC_MEMO_LENGTH) icrc_memo_t;
 typedef struct {
   struct {
     uint8_t owner[ICP_PRINCIPAL_LENGTH];
+    uint8_t owner_length;
     bool has_subaccount;
     uint8_t subaccount[ICP_SUBACCOUNT_ID_LEN];
   } to;

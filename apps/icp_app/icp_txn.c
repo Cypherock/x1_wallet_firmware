@@ -465,7 +465,7 @@ static bool get_user_verification_for_token_txn(void) {
   // verify recipient principal id;
   char principal_id[200] = {0};
   get_principal_id_to_display(
-      decoded_utxn->to.owner, ICP_PRINCIPAL_LENGTH, principal_id);
+      decoded_utxn->to.owner, decoded_utxn->to.owner_length, principal_id);
 
   if (use_signature_verification) {
     if (!exchange_validate_stored_signature(principal_id,

@@ -173,14 +173,13 @@ bool read_recipient_account_id(const uint8_t *data,
 
     icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
 
-    if (!decode_vec(Nat8,
-                    data,
-                    offset,
-                    txn->to.owner,
-                    sizeof(txn->to.owner),
-                    buffer_size)) {
+    // the principal is shown with the length it was encoded with
+    uint64_t owner_length = decode_vec(
+        Nat8, data, offset, txn->to.owner, sizeof(txn->to.owner), buffer_size);
+    if (0 == owner_length) {
       return false;
     }
+    txn->to.owner_length = (uint8_t)owner_length;
 
     if (*offset >= buffer_size) {
       return false;
@@ -189,17 +188,28 @@ bool read_recipient_account_id(const uint8_t *data,
     (*offset)++;
 
     if (txn->to.has_subaccount) {
-      return decode_vec(Nat8,
-                        data,
-                        offset,
-                        txn->to.subaccount,
-                        sizeof(txn->to.subaccount),
-                        buffer_size);
+      if (ICP_SUBACCOUNT_ID_LEN != decode_vec(Nat8,
+                                              data,
+                                              offset,
+                                              txn->to.subaccount,
+                                              sizeof(txn->to.subaccount),
+                                              buffer_size)) {
+        return false;
+      }
+      // the recipient subaccount is not shown, so only the default
+      // subaccount (the one the shown principal refers to) is accepted
+      for (size_t i = 0; i < ICP_SUBACCOUNT_ID_LEN; i++) {
+        if (0 != txn->to.subaccount[i]) {
+          return false;
+        }
+      }
     }
     return true;
   }
 
-  return decode_vec(Nat8,
+  // the whole account identifier is shown
+  return ICP_ACCOUNT_ID_LENGTH ==
+         decode_vec(Nat8,
                     data,
                     offset,
                     icp_txn_context->raw_icp_coin_transfer_txn->to,
