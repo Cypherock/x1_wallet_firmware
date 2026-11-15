@@ -359,7 +359,8 @@ static bool transfer_contract_txn(tron_transaction_contract_t *contract,
   return true;
 }
 
-static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
+static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract,
+                                       int64_t fee_limit) {
   tron_trigger_smart_contract_t trigger_smc_contract =
       TRON_TRIGGER_SMART_CONTRACT_INIT_DEFAULT;
   google_protobuf_any_t any = contract->parameter;
@@ -376,7 +377,7 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
   // token calls are accepted
   if (0 != trigger_smc_contract.call_value ||
       0 != trigger_smc_contract.call_token_value ||
-      0 != trigger_smc_contract.token_id) {
+      0 != trigger_smc_contract.token_id || fee_limit < 0) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_INVALID_DATA);
     return false;
@@ -396,6 +397,18 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
     return false;
   }
   if (0 == is_verified && (!parse_unverified(data, contract_address))) {
+    return false;
+  }
+
+  // up to fee_limit TRX can be burnt for the energy the call uses
+  char fee_string[30] = {'\0'};
+  char display[100] = {'\0'};
+  double decimal_fee = (double)fee_limit;
+  decimal_fee *= 1e-6;
+  snprintf(fee_string, sizeof(fee_string), "%.6f", decimal_fee);
+  snprintf(
+      display, sizeof(display), UI_TEXT_VERIFY_MAX_FEE, fee_string, TRON_LUNIT);
+  if (!core_confirmation(display, tron_send_error)) {
     return false;
   }
 
@@ -480,7 +493,7 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     }
     case TRON_TRANSACTION_CONTRACT_TRIGGER_SMART_CONTRACT: {
       // TRC20 type
-      if (!trigger_smart_contract_txn(&contract)) {
+      if (!trigger_smart_contract_txn(&contract, raw_txn->fee_limit)) {
         return false;
       }
       break;
