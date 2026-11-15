@@ -372,6 +372,16 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
     return false;
   }
 
+  // TRX or TRC10 tokens sent along with the call are not shown, so only plain
+  // token calls are accepted
+  if (0 != trigger_smc_contract.call_value ||
+      0 != trigger_smc_contract.call_token_value ||
+      0 != trigger_smc_contract.token_id) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   // cpy details
   uint8_t contract_address[TRON_INITIAL_ADDRESS_LENGTH];
   uint8_t data[68];
