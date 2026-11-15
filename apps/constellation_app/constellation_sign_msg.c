@@ -378,6 +378,32 @@ static bool get_msg_data(constellation_query_t *query) {
   return true;
 }
 
+static bool is_base64_char(uint8_t c) {
+  return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') ||
+         ('0' <= c && c <= '9') || '+' == c || '/' == c;
+}
+
+/**
+ * The decoder skips bytes outside the base64 alphabet, so the signed message
+ * could carry bytes that are never shown. Only canonical base64 is accepted:
+ * whole groups of 4 alphabet characters, with '=' padding only at the end.
+ */
+static bool is_strict_base64(const uint8_t *data, size_t len) {
+  if (0 == len || 0 != len % 4) {
+    return false;
+  }
+  size_t padding = 0;
+  if ('=' == data[len - 1]) {
+    padding = ('=' == data[len - 2]) ? 2 : 1;
+  }
+  for (size_t i = 0; i < len - padding; i++) {
+    if (!is_base64_char(data[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool get_user_verification() {
   bool result = false;
 
@@ -387,7 +413,14 @@ static bool get_user_verification() {
       ui_text_title = UI_TEXT_VERIFY_MESSAGE;
     }
     case CONSTELLATION_SIGN_MSG_TYPE_SIGN_ARBITRARY_DATA: {
-      uint8_t decoded_json[sign_msg_ctx.init.message_size];
+      if (!is_strict_base64(sign_msg_ctx.msg_data,
+                            sign_msg_ctx.init.message_size)) {
+        constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                                 ERROR_DATA_FLOW_INVALID_DATA);
+        break;
+      }
+      // +1 for the terminating NUL of the displayed text
+      uint8_t decoded_json[sign_msg_ctx.init.message_size + 1];
       size_t decoded_json_len = sign_msg_ctx.init.message_size;
       ATCA_STATUS decoding_status =
           atcab_base64decode_((const char *)sign_msg_ctx.msg_data,
@@ -396,7 +429,16 @@ static bool get_user_verification() {
                               &decoded_json_len,
                               atcab_b64rules);
 
+      // a NUL would end the shown text before the end of the signed data
+      if (decoding_status == ATCA_SUCCESS &&
+          NULL != memchr(decoded_json, '\0', decoded_json_len)) {
+        constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                                 ERROR_DATA_FLOW_INVALID_DATA);
+        break;
+      }
+
       if (decoding_status == ATCA_SUCCESS) {
+        decoded_json[decoded_json_len] = '\0';
         // TODO: Add a limit on size of data per confirmation based on LVGL
         // buffer and split message into multiple confirmations accordingly
         result = core_scroll_page(
