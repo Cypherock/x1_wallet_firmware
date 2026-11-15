@@ -254,11 +254,6 @@ static bool check_which_request(const constellation_query_t *query,
 
 static bool validate_initiate_query(
     constellation_sign_msg_initiate_request_t *init_req) {
-  bool status = false;
-
-  status = constellation_derivation_path_guard(init_req->derivation_path,
-                                               init_req->derivation_path_count);
-
   uint32_t size_limit = MAX_ALLOWED_SIZE;
   if (init_req->message_type == CONSTELLATION_SIGN_MSG_TYPE_SIGN_TYPED_MSG ||
       init_req->message_type ==
@@ -266,9 +261,10 @@ static bool validate_initiate_query(
     size_limit = MAX_MSG_DATA_SIZE;
   }
 
-  status = size_limit >= init_req->message_size;
-
-  if (!status) {
+  // both the path and the size must be valid
+  if (!constellation_derivation_path_guard(init_req->derivation_path,
+                                           init_req->derivation_path_count) ||
+      size_limit < init_req->message_size) {
     constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                              ERROR_DATA_FLOW_INVALID_DATA);
     return false;
