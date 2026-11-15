@@ -462,10 +462,30 @@ static void starknet_get_max_fee(const uint8_t *max_amount_bytes,
   mpz_clear(unit_price);
 }
 
+/// Checks that a big-endian felt equals a small value
+static bool is_felt_value(const uint8_t *bytes, uint32_t size, uint8_t value) {
+  if (0 == size || size > STARKNET_BIGNUM_SIZE) {
+    return false;
+  }
+  for (uint32_t i = 0; i + 1 < size; i++) {
+    if (0 != bytes[i]) {
+      return false;
+    }
+  }
+  return value == bytes[size - 1];
+}
+
 static bool get_invoke_txn_user_verification() {
   // verify address
   char address[100] = "0x";
-  if (starknet_txn_context->invoke_txn->calldata.value_count < 7) {
+  // exactly one call with 3 calldata items:
+  // [call count = 1, to, selector, calldata length = 3, recipient, low, high]
+  // so no other call can be appended that is signed but not shown
+  const starknet_compiled_call_data_t *calldata =
+      &starknet_txn_context->invoke_txn->calldata;
+  if (7 != calldata->value_count ||
+      !is_felt_value(calldata->value[0].bytes, calldata->value[0].size, 1) ||
+      !is_felt_value(calldata->value[3].bytes, calldata->value[3].size, 3)) {
     return false;
   }
   {
