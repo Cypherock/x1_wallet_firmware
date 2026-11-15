@@ -359,7 +359,8 @@ static bool transfer_contract_txn(tron_transaction_contract_t *contract,
   return true;
 }
 
-static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
+static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract,
+                                       int64_t fee_limit) {
   tron_trigger_smart_contract_t trigger_smc_contract =
       TRON_TRIGGER_SMART_CONTRACT_INIT_DEFAULT;
   google_protobuf_any_t any = contract->parameter;
@@ -369,6 +370,16 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
           &stream, TRON_TRIGGER_SMART_CONTRACT_FIELDS, &trigger_smc_contract)) {
     tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                     ERROR_DATA_FLOW_DECODING_FAILED);
+    return false;
+  }
+
+  // TRX or TRC10 tokens sent along with the call are not shown, so only plain
+  // token calls are accepted
+  if (0 != trigger_smc_contract.call_value ||
+      0 != trigger_smc_contract.call_token_value ||
+      0 != trigger_smc_contract.token_id || fee_limit < 0) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
 
@@ -389,58 +400,17 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract) {
     return false;
   }
 
-  set_app_flow_status(TRON_SIGN_TXN_STATUS_VERIFY);
-  return true;
-}
-
-static bool transfer_asset_contract_txn(tron_transaction_contract_t *contract) {
-  tron_transfer_asset_contract_t tac_contract =
-      TRON_TRANSFER_ASSET_CONTRACT_INIT_DEFAULT;
-  google_protobuf_any_t any = contract->parameter;
-  pb_istream_t stream = pb_istream_from_buffer(any.value.bytes, any.value.size);
-
-  if (!pb_decode(&stream, TRON_TRANSFER_ASSET_CONTRACT_FIELDS, &tac_contract)) {
-    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                    ERROR_DATA_FLOW_DECODING_FAILED);
-    return false;
-  }
-
-  uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
-  int64_t amount = 0;
-  char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};
-
-  memcpy(&amount, &tac_contract.amount, sizeof(int64_t));
-  memcpy(to_address,
-         (uint8_t *)tac_contract.to_address,
-         TRON_INITIAL_ADDRESS_LENGTH);
-
-  // verify recipient address;
-  if (!base58_encode_check(to_address,
-                           1 + 20,
-                           HASHER_SHA2D,
-                           address,
-                           TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
-    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
-    return false;
-  }
-
-  delay_scr_init(ui_text_unverified_contract, DELAY_TIME);
-
-  if (!core_scroll_page(ui_text_verify_address, address, tron_send_error)) {
-    return false;
-  }
-
-  // verify recipient amount
-  char amount_string[30] = {'\0'};
+  // up to fee_limit TRX can be burnt for the energy the call uses
+  char fee_string[30] = {'\0'};
   char display[100] = {'\0'};
-
-  snprintf(amount_string, sizeof(amount_string), "%lli", amount);
-  snprintf(display, sizeof(display), "Verify amount\n%s", amount_string);
-
+  double decimal_fee = (double)fee_limit;
+  decimal_fee *= 1e-6;
+  snprintf(fee_string, sizeof(fee_string), "%.6f", decimal_fee);
+  snprintf(
+      display, sizeof(display), UI_TEXT_VERIFY_MAX_FEE, fee_string, TRON_LUNIT);
   if (!core_confirmation(display, tron_send_error)) {
     return false;
   }
-  // TODO: DISPLAY ASSET NAME/TOKEN ID
 
   set_app_flow_status(TRON_SIGN_TXN_STATUS_VERIFY);
   return true;
@@ -470,14 +440,7 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     }
     case TRON_TRANSACTION_CONTRACT_TRIGGER_SMART_CONTRACT: {
       // TRC20 type
-      if (!trigger_smart_contract_txn(&contract)) {
-        return false;
-      }
-      break;
-    }
-    case TRON_TRANSACTION_CONTRACT_TRANSFER_ASSET_CONTRACT: {
-      // TRC10 type
-      if (!transfer_asset_contract_txn(&contract)) {
+      if (!trigger_smart_contract_txn(&contract, raw_txn->fee_limit)) {
         return false;
       }
       break;

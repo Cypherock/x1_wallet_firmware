@@ -527,6 +527,26 @@ static bool fetch_valid_input(btc_query_t *query) {
   return true;
 }
 
+/**
+ * Change goes back to the account being spent from, so its script must be the
+ * type that account uses. Any other type would be hidden from the user, and
+ * segwit/taproot types are anyone-can-spend on chains without them.
+ */
+static bool is_change_script_type_valid(btc_script_type_e type) {
+  switch (btc_txn_context->init_info.derivation_path[0]) {
+    case PURPOSE_LEGACY:
+      return SCRIPT_TYPE_P2PKH == type;
+    case PURPOSE_SEGWIT:
+      return SCRIPT_TYPE_P2SH == type;
+    case PURPOSE_NSEGWIT:
+      return SCRIPT_TYPE_P2WPKH == type;
+    case PURPOSE_TAPROOT:
+      return SCRIPT_TYPE_P2TR == type;
+    default:
+      return false;
+  }
+}
+
 static bool fetch_valid_output(btc_query_t *query) {
   // track if it is a zero valued transaction; all input is going into fee
   bool zero_value_transaction = true;
@@ -552,10 +572,12 @@ static bool fetch_valid_output(btc_query_t *query) {
     if (SCRIPT_TYPE_P2MS == type || SCRIPT_TYPE_P2PK == type ||
         SCRIPT_TYPE_NONSTANDARD == type ||
         (SCRIPT_TYPE_NULL_DATA == type && 0 != output->value) ||
-        (true == change_detected && true == output->is_change)) {
+        (true == change_detected && true == output->is_change) ||
+        (true == output->is_change && !is_change_script_type_valid(type))) {
       // ensure output type is standard & we support verification by user
       // ensure any funds are not being locked (not spendable) to NULL_DATA
       // ensure exactly one change address is present/declared
+      // ensure change uses the script type of the account
       btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
@@ -653,6 +675,11 @@ static bool validate_change_address(const HDNode *acc_node) {
   int idx = btc_txn_context->change_output_idx;
   const btc_sign_txn_output_t *output = &btc_txn_context->outputs[idx];
   if (false == output->has_changes_index || false == output->is_change) {
+    return status;
+  }
+
+  if (!is_change_script_type_valid(btc_get_script_type(
+          output->script_pub_key.bytes, output->script_pub_key.size))) {
     return status;
   }
 

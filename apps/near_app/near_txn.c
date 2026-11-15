@@ -358,6 +358,20 @@ static bool sign_txn(uint8_t *signature_buffer) {
   ed25519_public_key public_key = {0};
   ed25519_publickey(t_node.private_key, public_key);
 
+  // the signer key in the transaction (which create_account args were checked
+  // against) must be this wallet's key
+  const near_key *signer_key = &near_txn_context->decoded_txn.signer_key;
+  if (NEAR_CURVE_ED25519 != signer_key->key_type ||
+      0 != memcmp(signer_key->key, public_key, sizeof(public_key))) {
+    memzero(digest, sizeof(digest));
+    memzero(seed, sizeof(seed));
+    memzero(&t_node, sizeof(t_node));
+    memzero(public_key, sizeof(public_key));
+    near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   ed25519_sign(
       digest, sizeof(digest), t_node.private_key, public_key, signature_buffer);
 
