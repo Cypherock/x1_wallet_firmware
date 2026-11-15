@@ -145,7 +145,8 @@ static bool evm_parse_legacy(const uint8_t *data,
   item_bytes_len =
       get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
   offset += decoded_len;
-  if (type != LIST)
+  // the transaction list must span the whole buffer
+  if (type != LIST || decoded_len + item_bytes_len != data_size)
     return false;
 
   // nonce
@@ -161,6 +162,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gas price
   item_bytes_len =
@@ -175,6 +178,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gas limit
   item_bytes_len =
@@ -189,6 +194,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // to address
   item_bytes_len =
@@ -202,6 +209,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // value
   item_bytes_len =
@@ -216,6 +225,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // data
   item_bytes_len =
@@ -240,6 +251,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // r: Should be dummy (i.e. 0); no storage needed
   item_bytes_len =
