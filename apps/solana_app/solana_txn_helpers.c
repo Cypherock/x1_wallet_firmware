@@ -651,6 +651,8 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   bool transfer_instruction_found = false;
   bool stake_initialize_found = false;
   int stake_initialize_index = -1;
+  int create_account_with_seed_index = -1;
+  int stake_delegate_index = -1;
   bool is_deactivate_operation = false;
   bool create_flow_found = false;
   int split_count = 0;
@@ -689,6 +691,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
             return SOL_ERROR;
           transfer_instruction_found = true;
           create_flow_found = true;
+          create_account_with_seed_index = i;
 
           const solana_create_account_with_seed_data *cas =
               &utxn->instruction[i].program.create_account_with_seed;
@@ -797,6 +800,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           if (!stake_initialize_found || stake_initialize_index != i - 1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
           create_flow_found = true;
+          stake_delegate_index = i;
 
           const solana_stake_delegate_data *dg =
               &utxn->instruction[i].program.stake_delegate;
@@ -851,6 +855,15 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
 
   if (create_flow_found && is_deactivate_operation)
     return SOL_V_MIXED_STAKE_OPERATION;
+
+  if (create_flow_found) {
+    // CreateAccountWithSeed -> Initialize -> Delegate must all be present;
+    // the confirmation and authority checks read each of them
+    if (create_account_with_seed_index == -1 || stake_initialize_index == -1 ||
+        stake_delegate_index == -1 ||
+        create_account_with_seed_index > stake_initialize_index)
+      return SOL_V_STAKE_SEQUENCE_MISMATCH;
+  }
 
   if (is_deactivate_operation == true && deactivate_instruction_count == 0)
     return SOL_V_MIXED_STAKE_OPERATION;
@@ -938,6 +951,11 @@ bool solana_verify_stake_authorities(const solana_unsigned_txn *utxn,
     }
     return true;
   }
+
+  if (extra_data->create_account_with_seed_instruction_index < 0 ||
+      extra_data->stake_initialize_instruction_index < 0 ||
+      extra_data->stake_delegate_instruction_index < 0)
+    return false;
 
   const solana_create_account_with_seed_data *cas =
       &utxn->instruction[extra_data->create_account_with_seed_instruction_index]
