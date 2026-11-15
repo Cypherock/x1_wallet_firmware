@@ -89,6 +89,9 @@
  * EXTERN AND GLOBAL VARIABLES
  *****************************************************************************/
 #define ICP_DOMAIN_SEPARATOR_LEN 11
+
+#define ICP_COIN_TRANSFER_METHOD "transfer"
+#define ICP_TOKEN_TRANSFER_METHOD "icrc1_transfer"
 // "\x0Aic-request"
 uint8_t domain_separator[ICP_DOMAIN_SEPARATOR_LEN] =
     {10, 105, 99, 45, 114, 101, 113, 117, 101, 115, 116};
@@ -235,6 +238,8 @@ static bool send_signature(icp_query_t *query, const sig_t *signature);
  * STATIC VARIABLES
  *****************************************************************************/
 static icp_txn_context_t *icp_txn_context = NULL;
+/// ICP ledger canister: ryjl3-tyaaa-aaaaa-aaaba-cai
+static const uint8_t icp_ledger_canister_id[] = {0, 0, 0, 0, 0, 0, 0, 2, 1, 1};
 static bool use_signature_verification = false;
 
 /*****************************************************************************
@@ -335,22 +340,34 @@ static bool fetch_valid_input(icp_query_t *query) {
     return false;
   }
 
-  // Verify method_name = "transfer" or "icrc1_transfer"
-  if (memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
-             "transfer",
-             8) != 0 &&
-      memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
-             "icrc1_transfer",
-             14) != 0) {
+  // Verify method_name = "transfer" or "icrc1_transfer" (exact match)
+  const icp_transfer_request_t *req = icp_txn_context->icp_transfer_req;
+  const bool is_coin_transfer =
+      sizeof(ICP_COIN_TRANSFER_METHOD) - 1 == req->method_name.size &&
+      0 == memcmp(req->method_name.bytes,
+                  ICP_COIN_TRANSFER_METHOD,
+                  req->method_name.size);
+  const bool is_token_transfer =
+      sizeof(ICP_TOKEN_TRANSFER_METHOD) - 1 == req->method_name.size &&
+      0 == memcmp(req->method_name.bytes,
+                  ICP_TOKEN_TRANSFER_METHOD,
+                  req->method_name.size);
+  if (!is_coin_transfer && !is_token_transfer) {
+    return false;
+  }
+
+  // an ICP transfer is shown as such only when it is sent to the ICP ledger
+  if (is_coin_transfer &&
+      (sizeof(icp_ledger_canister_id) != req->canister_id.size ||
+       0 != memcmp(req->canister_id.bytes,
+                   icp_ledger_canister_id,
+                   sizeof(icp_ledger_canister_id)))) {
     return false;
   }
 
   send_response(ICP_SIGN_TXN_RESPONSE_DATA_ACCEPTED_TAG);
 
-  icp_txn_context->is_token_transfer_txn =
-      memcmp(icp_txn_context->icp_transfer_req->method_name.bytes,
-             "icrc1_transfer",
-             14) == 0;
+  icp_txn_context->is_token_transfer_txn = is_token_transfer;
 
   if (icp_txn_context->is_token_transfer_txn) {
     icp_txn_context->raw_icp_token_transfer_txn =
