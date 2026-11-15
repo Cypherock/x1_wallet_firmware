@@ -369,6 +369,12 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
     }
     byte = buffer[*offset];
     (*offset)++;
+    // the 10th byte holds bit 63 only; a larger value can not be represented
+    // and must not be shown modulo 2^64
+    if (63 == shift && 0 != (byte & 0xFE)) {
+      *offset = buffer_size + 1;
+      return result;
+    }
     result |= ((uint64_t)(byte & 0x7F) << shift);
     shift += 7;
   } while ((byte & 0x80) != 0);
