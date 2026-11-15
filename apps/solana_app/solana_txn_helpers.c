@@ -516,6 +516,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           init->staker = ins->opaque_data + 4;
           init->withdrawer =
               ins->opaque_data + 4 + SOLANA_ACCOUNT_ADDRESS_LENGTH;
+          init->lockup_unix_timestamp = U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + (2 * SOLANA_ACCOUNT_ADDRESS_LENGTH));
+          init->lockup_epoch = U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + (2 * SOLANA_ACCOUNT_ADDRESS_LENGTH) + 8);
           break;
         }
 
@@ -790,11 +794,18 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
 
       switch (instruction_enum) {
-        case SPI_INITIALIZE:
+        case SPI_INITIALIZE: {
+          const solana_stake_initialize_data *init =
+              &utxn->instruction[i].program.stake_initialize;
+          // a lockup in force (custodian set by the host) would lock the
+          // user's stake; only a lockup that has no effect is accepted
+          if (init->lockup_unix_timestamp != 0 || init->lockup_epoch != 0)
+            return SOL_V_STAKE_AUTHORITY_MISMATCH;
           stake_initialize_found = true;
           stake_initialize_index = i;
           create_flow_found = true;
           break;
+        }
 
         case SPI_DELEGATE_STAKE: {
           // Must immediately follow Initialize

@@ -222,6 +222,8 @@ typedef struct solana_stake_initialize_data {
   uint8_t *stake_account;    // accounts_index[0]
   uint8_t *staker;
   uint8_t *withdrawer;
+  uint64_t lockup_unix_timestamp;
+  uint64_t lockup_epoch;
 } solana_stake_initialize_data;
 
 // See:
