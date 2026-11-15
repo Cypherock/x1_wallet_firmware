@@ -655,7 +655,33 @@ static bool get_deploy_txn_user_verification() {
   char display[200] = {'\0'};
   snprintf(display,
            sizeof(display),
-           "Verify Max Fee\n%s\n%s",
+           "Verify L1 Max Fee\n%s\n%s",
+           amount_str,
+           starknet_app.lunit1_name);
+
+  if (!core_confirmation(display, starknet_send_error)) {
+    return false;
+  }
+
+  // L2 bounds are signed as well, so their max fee is shown too
+  memzero(amount_str, sizeof(amount_str));
+  uint8_t l2_max_fee[STARKNET_BIGNUM_SIZE] = {0};
+  starknet_get_max_fee(
+      starknet_txn_context->deploy_txn->resource_bounds.level_2.max_amount
+          .bytes,
+      starknet_txn_context->deploy_txn->resource_bounds.level_2.max_amount.size,
+      starknet_txn_context->deploy_txn->resource_bounds.level_2
+          .max_price_per_unit.bytes,
+      starknet_txn_context->deploy_txn->resource_bounds.level_2
+          .max_price_per_unit.size,
+      l2_max_fee);
+  stark_amount_get_decimal_str(
+      l2_max_fee, STARKNET_BIGNUM_SIZE, amount_str, sizeof(amount_str));
+
+  memzero(display, sizeof(display));
+  snprintf(display,
+           sizeof(display),
+           "Verify L2 Max Fee\n%s\n%s",
            amount_str,
            starknet_app.lunit1_name);
 
