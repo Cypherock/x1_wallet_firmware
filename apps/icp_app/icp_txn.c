@@ -369,12 +369,19 @@ static bool fetch_valid_input(icp_query_t *query) {
 
   icp_txn_context->is_token_transfer_txn = is_token_transfer;
 
+  // zeroed so that optional fields left out of the txn are not shown
   if (icp_txn_context->is_token_transfer_txn) {
     icp_txn_context->raw_icp_token_transfer_txn =
-        (icp_token_transfer_t *)malloc(sizeof(icp_token_transfer_t));
+        (icp_token_transfer_t *)calloc(1, sizeof(icp_token_transfer_t));
+    if (NULL == icp_txn_context->raw_icp_token_transfer_txn) {
+      return false;
+    }
   } else {
     icp_txn_context->raw_icp_coin_transfer_txn =
-        (icp_coin_transfer_t *)malloc(sizeof(icp_coin_transfer_t));
+        (icp_coin_transfer_t *)calloc(1, sizeof(icp_coin_transfer_t));
+    if (NULL == icp_txn_context->raw_icp_coin_transfer_txn) {
+      return false;
+    }
   }
 
   if (!icp_parse_transfer_txn(icp_txn_context->icp_transfer_req->arg.bytes,
