@@ -101,6 +101,14 @@ typedef enum {
   transfer_hash_amount = 3573748184,
 } transfer_hash_fields;
 
+// Hashes of the fields of nested records in the transfer arguments
+typedef enum {
+  record_hash_e8s = 5035232,                  // Tokens
+  record_hash_timestamp_nanos = 268680022,    // TimeStamp
+  record_hash_owner = 947296307,              // Account
+  record_hash_subaccount = 1349681965,        // Account
+} record_hash_fields;
+
 /// Reference:
 // https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L13
 typedef struct {
