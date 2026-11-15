@@ -317,9 +317,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
               &ins->program.create_account_with_seed;
           // 0: from_account, 1: new_account, 2: base_account optional as per
           // spec when base == from_account, may or maynot be present
-          if (ins->account_addresses_index_count < 2)
-            return SOL_D_MIN_LENGTH;
-          if (!get_instruction_account(utxn, ins, 0, &cas->from_account))
+          if (!get_instruction_account(utxn, ins, 0, &cas->from_account) ||
+              !get_instruction_account(utxn, ins, 1, &cas->new_account))
             return SOL_V_INDEX_OUT_OF_RANGE;
           if (ins->account_addresses_index_count >= 3) {
             if (!get_instruction_account(utxn, ins, 2, &cas->base_account))
@@ -506,8 +505,9 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           if (extra_data->stake_initialize_instruction_index != -1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
           solana_stake_initialize_data *init = &ins->program.stake_initialize;
-          if (ins->account_addresses_index_count < 1)
-            return SOL_D_MIN_LENGTH;
+          // 0: stake account
+          if (!get_instruction_account(utxn, ins, 0, &init->stake_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
           // Opaque data: tag(4) + Authorized{staker:32, withdrawer:32} + Lockup
           if (ins->opaque_data_length < SOLANA_STAKE_INITIALIZE_DATA_LENGTH)
             return SOL_D_MIN_LENGTH;
@@ -525,8 +525,9 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           if (ins->account_addresses_index_count < 6)
             return SOL_D_MIN_LENGTH;
           solana_stake_delegate_data *dg = &ins->program.stake_delegate;
-          // 1: vote account, 5: stake authority
-          if (!get_instruction_account(utxn, ins, 1, &dg->vote_account) ||
+          // 0: stake account, 1: vote account, 5: stake authority
+          if (!get_instruction_account(utxn, ins, 0, &dg->stake_account) ||
+              !get_instruction_account(utxn, ins, 1, &dg->vote_account) ||
               !get_instruction_account(utxn, ins, 5, &dg->authorized_account))
             return SOL_V_INDEX_OUT_OF_RANGE;
 
@@ -856,13 +857,31 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   if (create_flow_found && is_deactivate_operation)
     return SOL_V_MIXED_STAKE_OPERATION;
 
+  // Split is only expected when partially deactivating
+  if (split_count > 0 && !is_deactivate_operation)
+    return SOL_V_MIXED_STAKE_OPERATION;
+
   if (create_flow_found) {
-    // CreateAccountWithSeed -> Initialize -> Delegate must all be present;
-    // the confirmation and authority checks read each of them
+    // CreateAccountWithSeed -> Initialize -> Delegate, all on the newly funded
+    // stake account; otherwise the funded account could be left uninitialised
+    // and initialised by anyone
     if (create_account_with_seed_index == -1 || stake_initialize_index == -1 ||
         stake_delegate_index == -1 ||
         create_account_with_seed_index > stake_initialize_index)
       return SOL_V_STAKE_SEQUENCE_MISMATCH;
+
+    const uint8_t *stake_account =
+        utxn->instruction[create_account_with_seed_index]
+            .program.create_account_with_seed.new_account;
+    if (memcmp(utxn->instruction[stake_initialize_index]
+                   .program.stake_initialize.stake_account,
+               stake_account,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0 ||
+        memcmp(utxn->instruction[stake_delegate_index]
+                   .program.stake_delegate.stake_account,
+               stake_account,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
+      return SOL_V_STAKE_AUTHORITY_MISMATCH;
   }
 
   if (is_deactivate_operation == true && deactivate_instruction_count == 0)
