@@ -11,7 +11,7 @@ on:
 
 jobs:
   check-commit-msg:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -22,7 +22,7 @@ jobs:
         run: bash ./utilities/ci/test-commit-msg.sh ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
 
   check-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -50,7 +50,7 @@ jobs:
           fi
 
   static-checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -90,7 +90,7 @@ jobs:
         firmware: [main]
         target: [release]
         platform: [device, simulator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3
@@ -162,7 +162,7 @@ jobs:
         firmware: [main]
         target: [release]
         platform: [simulator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v3
