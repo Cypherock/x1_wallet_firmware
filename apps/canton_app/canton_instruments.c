@@ -117,6 +117,42 @@ const canton_instrument_data_t
           "1220b8301e18aa8a401d6e34e6c20f8b0243183c514373bca8f1b6b9270246341a9"
           "e"},
          "SBC",
+         10},
+        {{"USDXLR",
+          "excellar-issuer::"
+          "12203d1e36930ee0e3fbb898add7e222a47ae9d2a5f0f6187e3a446ea32f871ce2c"
+          "a"},
+         "USDXLR",
+         10},
+        {{"HANDL",
+          "handl-issuer::"
+          "12207ac147ad3e95894e7a507da3f04a819e8996f0bdf31c084ab3b77e51746b03c"
+          "f"},
+         "HANDL",
+         10},
+        {{"cETH",
+          "rails-cethMain-1::"
+          "12200350ba6e96e3b701c3048b5aa013a8c1c08833e8ebf54339cff581055c29003"
+          "a"},
+         "cETH",
+         10},
+        {{"EDELx",
+          "edel-registrar::"
+          "122085b19d439b7e68abf7c94c3d9949f9e23aef3f1d4835ccbcb0993ed96fb5343"
+          "2"},
+         "EDELx",
+         10},
+        {{"aSOL",
+          "acme-lp::"
+          "1220a7daf7140e112f15a46f2daa52fe9c8651024ff8705bb23c494275dd0220959"
+          "6"},
+         "aSOL",
+         9},
+        {{"tf-usdt",
+          "tradefast-wallet3-1::"
+          "1220674b79cae334aa788ffa394a6bd7d10e427d9f2abd418048e5be49ceb4256ca"
+          "4"},
+         "tf-usdt",
          10}};
 
 /*****************************************************************************
