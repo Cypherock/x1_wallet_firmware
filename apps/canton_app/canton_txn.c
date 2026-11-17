@@ -733,9 +733,51 @@ static bool is_instrument_whitelisted(
   return status;
 }
 
+/**
+ * @brief Checks that every detail shown to the user for the transaction type
+ * was parsed from the transaction. A transaction with an unknown type, or
+ * whose details could not be parsed (eg. an unsupported contract shape), is
+ * rejected instead of being shown to the user with blank fields.
+ */
+static bool is_display_info_complete(
+    const canton_txn_display_info_t *display_info) {
+  switch (display_info->txn_type) {
+    case CANTON_TXN_TYPE_TRANSFER:
+    case CANTON_TXN_TYPE_WITHDRAW:
+    case CANTON_TXN_TYPE_ACCEPT:
+    case CANTON_TXN_TYPE_REJECT:
+      return display_info->sender_party_id[0] != '\0' &&
+             display_info->receiver_party_id[0] != '\0' &&
+             display_info->amount[0] != '\0' &&
+             display_info->instrument.id[0] != '\0' &&
+             display_info->instrument.admin[0] != '\0';
+
+    case CANTON_TXN_TYPE_TAP:
+      return display_info->receiver_party_id[0] != '\0' &&
+             display_info->amount[0] != '\0';
+
+    case CANTON_TXN_TYPE_PREAPPROVAL:
+      return display_info->receiver_party_id[0] != '\0';
+
+    case CANTON_TXN_TYPE_MERGE_DELEGATION_PROPOSAL:
+      // Only the transaction type is shown to the user
+      return true;
+
+    default:
+      return false;
+  }
+}
+
 static bool get_user_verification(void) {
   canton_txn_display_info_t *display_info =
       &canton_txn_context->unsigned_txn.txn_display_info;
+
+  if (!is_display_info_complete(display_info)) {
+    delay_scr_init(ui_text_invalid_transaction, DELAY_TIME);
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   char *sender_party_id = display_info->sender_party_id;
   char *receiver_party_id = display_info->receiver_party_id;
