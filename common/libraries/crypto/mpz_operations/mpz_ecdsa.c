@@ -67,7 +67,9 @@
 #include <stdbool.h>
 
 #include "assert_conf.h"
+#include "memzero.h"
 #include "mini-gmp.h"
+#include "rand.h"
 #include "rfc6979.h"
 
 /*****************************************************************************
