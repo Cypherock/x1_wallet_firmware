@@ -63,9 +63,11 @@
 #include <string.h>
 
 #include "composable_app_queue.h"
+#include "constant_texts.h"
 #include "core_shared_context.h"
 #include "exchange/close_flow.pb.h"
 #include "exchange_api.h"
+#include "exchange_priv.h"
 #include "ui_delay.h"
 
 /*****************************************************************************
@@ -140,7 +142,9 @@ void exchange_close_flow(exchange_query_t *query) {
   // Clear shared context
   core_clear_shared_context();
 
-  delay_scr_init("Swap flow closed", DELAY_TIME);
+  delay_scr_init(exchange_is_private_send_flow() ? UI_TEXT_PRIVATE_SEND_CLOSED
+                                                 : "Swap flow closed",
+                 DELAY_TIME);
 
   result.close_flow.which_response = EXCHANGE_CLOSE_FLOW_RESPONSE_RESULT_TAG;
   exchange_send_result(&result);

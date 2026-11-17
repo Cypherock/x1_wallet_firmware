@@ -63,6 +63,7 @@
 #include <string.h>
 
 #include "composable_app_queue.h"
+#include "constant_texts.h"
 #include "exchange/initiate_flow.pb.h"
 #include "exchange_api.h"
 #include "exchange_context.h"
@@ -106,6 +107,8 @@ static bool check_which_request(const exchange_query_t *query,
  * STATIC VARIABLES
  *****************************************************************************/
 
+static bool g_is_private_send_flow = false;
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -139,6 +142,7 @@ void exchange_initiate_flow(exchange_query_t *query) {
 
   // Clear existing composable app queue
   caq_clear();
+  g_is_private_send_flow = false;
 
   delay_scr_init("Swap flow initiated", DELAY_TIME);
 
@@ -193,4 +197,70 @@ void exchange_initiate_flow(exchange_query_t *query) {
   result.initiate_flow.which_response =
       EXCHANGE_INITIATE_FLOW_RESPONSE_RESULT_TAG;
   exchange_send_result(&result);
+}
+
+void exchange_initiate_private_send(exchange_query_t *query) {
+  exchange_result_t result =
+      init_exchange_result(EXCHANGE_RESULT_INITIATE_FLOW_TAG);
+  if (!check_which_request(
+          query, EXCHANGE_INITIATE_FLOW_REQUEST_INITIATE_PRIVATE_SEND_TAG)) {
+    return;
+  }
+
+  // Clear existing composable app queue
+  caq_clear();
+  g_is_private_send_flow = true;
+
+  delay_scr_init(UI_TEXT_PRIVATE_SEND_INITIATED, DELAY_TIME);
+
+  // Attest the recipient (exchange app, device signs after user confirms)
+  {
+    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
+
+    memzero(data.params, sizeof(data.params));
+    data.params[0] = EXCHANGE_FLOW_TAG_ATTEST;
+
+    caq_push(data);
+  }
+
+  // Fetch the attestation signature
+  {
+    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
+
+    memzero(data.params, sizeof(data.params));
+    data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
+
+    caq_push(data);
+  }
+
+  // Store the server signature of the deposit address for the send flow
+  {
+    caq_node_data_t data = {.applet_id = get_exchange_app_desc()->id};
+
+    memzero(data.params, sizeof(data.params));
+    data.params[0] = EXCHANGE_FLOW_TAG_STORE_SIGNATURE;
+
+    caq_push(data);
+  }
+
+  // Send flow
+  {
+    const exchange_coin_details_t *from =
+        &query->initiate_flow.initiate_private_send.from;
+    caq_node_data_t data = {.applet_id = from->applet_id};
+
+    memzero(data.params, sizeof(data.params));
+    memcpy(data.params, from->wallet_id, sizeof(from->wallet_id));
+    data.params[32] = EXCHANGE_FLOW_TAG_SEND;
+
+    caq_push(data);
+  }
+
+  result.initiate_flow.which_response =
+      EXCHANGE_INITIATE_FLOW_RESPONSE_RESULT_TAG;
+  exchange_send_result(&result);
+}
+
+bool exchange_is_private_send_flow(void) {
+  return g_is_private_send_flow;
 }

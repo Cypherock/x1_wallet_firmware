@@ -1,0 +1,2 @@
+exchange.AttestRecipientInitiateRequest.chain type:FT_STATIC max_size:32
+exchange.AttestRecipientInitiateRequest.address type:FT_STATIC max_size:256
