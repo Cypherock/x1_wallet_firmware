@@ -130,6 +130,9 @@ static void init() {
   init_file(FW_DATA_FILE);
 }
 
+/* `length` is in BYTES, like the device's BSP_NonVolatileRead(addr, dst,
+ * numOfbytes). Reading `length` 32-bit words overflowed the caller's buffer
+ * 4x (e.g. the 8-byte metadata read in flash_struct_load()). */
 int read_file(uint32_t addr, uint32_t *dstAddr, uint32_t length) {
   init();
   FILE *file = fopen(GET_FILE_FROM_ADDRESS(addr), "rb");
@@ -139,7 +142,7 @@ int read_file(uint32_t addr, uint32_t *dstAddr, uint32_t length) {
 
   errno = 0;
   fseek(file, offset, SEEK_SET);
-  uint32_t r_count = fread(dstAddr, sizeof(uint32_t), length, file);
+  uint32_t r_count = fread(dstAddr, 1, length, file);
 
   fclose(file);
   if (r_count != length) {
@@ -172,7 +175,9 @@ int erase_file(uint32_t page_address, uint32_t noOfpages) {
   return 1;
 }
 
-int write_file(uint32_t *dstAddr, const uint32_t *srcAddr, uint32_t noOfWords) {
+/* `noOfBytes` is in BYTES, like the device's BSP_FlashSectorWrite(dst, src,
+ * noOfbytes). Writing it as a word count read 4x past the source buffer. */
+int write_file(uint32_t *dstAddr, const uint32_t *srcAddr, uint32_t noOfBytes) {
   init();
   FILE *file = fopen(GET_FILE_FROM_ADDRESS((size_t)dstAddr), "rb+");
   if (!file)
@@ -181,7 +186,7 @@ int write_file(uint32_t *dstAddr, const uint32_t *srcAddr, uint32_t noOfWords) {
   errno = 0;
 
   fseek(file, offset, SEEK_SET);
-  fwrite(srcAddr, noOfWords * sizeof(uint32_t), 1, file);
+  fwrite(srcAddr, 1, noOfBytes, file);
   if (ferror(file)) {
     fclose(file);
     perror("");

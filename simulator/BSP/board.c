@@ -154,9 +154,9 @@ BSP_Status_t BSP_FlashSectorErase(uint32_t page_address, uint32_t noOfpages) {
 
 BSP_Status_t BSP_FlashSectorWrite(uint32_t *dstAddr,
                                   const uint32_t *srcAddr,
-                                  uint32_t noOfWords) {
+                                  uint32_t noOfBytes) {
   BSP_Status_t status = BSP_OK;
-  if (!write_file(dstAddr, srcAddr, noOfWords))
+  if (!write_file(dstAddr, srcAddr, noOfBytes))
     status = BSP_FLASH_ERR;
   return status;
 }
@@ -166,14 +166,14 @@ BSP_Status_t BSP_FlashSectorWrite(uint32_t *dstAddr,
  */
 BSP_Status_t BSP_NonVolatileWrite(uint32_t addr,
                                   uint32_t *srcAddr,
-                                  uint32_t noOfWords) {
+                                  uint32_t noOfBytes) {
   BSP_Status_t status = BSP_FLASH_ERR;
 
   status = BSP_FlashSectorErase(addr, 1);
   if (status != BSP_OK)
     return status;
   status = BSP_FLASH_ERR;
-  status = BSP_FlashSectorWrite((uint32_t *)addr, srcAddr, noOfWords);
+  status = BSP_FlashSectorWrite((uint32_t *)addr, srcAddr, noOfBytes);
   if (status != BSP_OK)
     return status;
   return status;
