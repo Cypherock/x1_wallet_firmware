@@ -606,8 +606,6 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
-  uint8_t tmp[236];
-  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Encrypt data in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
@@ -667,8 +665,6 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
   ret_code_t err_code =
       nfc_exchange_apdu(send_apdu, send_len, recv_apdu, &recv_len);
 
-  uint8_t tmp[236];
-  memcpy(tmp, recv_apdu, 236);
   LOG_SWV("Decrypt data in %lums\n", uwTick - system_clock);
   if (err_code != STM_SUCCESS) {
     return err_code;
