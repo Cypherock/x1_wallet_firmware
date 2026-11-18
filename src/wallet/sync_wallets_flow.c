@@ -62,9 +62,11 @@
  *****************************************************************************/
 #include "sync_wallets_flow.h"
 
+#include "bip39.h"
 #include "card_flow_reconstruct_wallet.h"
 #include "card_operations.h"
 #include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "settings_api.h"
 #include "shamir_wrapper.h"
@@ -72,6 +74,7 @@
 #include "ui_screens.h"
 #include "ui_state_machine.h"
 #include "utils.h"
+#include "wallet_utilities.h"
 
 /*****************************************************************************
  * EXTERN VARIABLES
@@ -179,12 +182,47 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
         decrypt_shares();
       }
 
-      recover_share_from_shares(BLOCK_SIZE,
-                                MINIMUM_NO_OF_SHARES,
-                                wallet_shamir_data.mnemonic_shares,
-                                wallet_shamir_data.share_x_coords,
-                                wallet_shamir_data.mnemonic_shares[4],
-                                5);
+      Flash_Wallet *flash_wallet = NULL;
+      bool is_valid =
+          SUCCESS == get_flash_wallet_by_name((const char *)wallet.wallet_name,
+                                              &flash_wallet) &&
+          NULL != flash_wallet;
+
+      // the card shares must rebuild this wallet's seed before the device
+      // share derived from them is written to flash
+      uint8_t secret[BLOCK_SIZE] = {0};
+      is_valid = is_valid &&
+                 recover_secret_from_shares(BLOCK_SIZE,
+                                            MINIMUM_NO_OF_SHARES,
+                                            wallet_shamir_data.mnemonic_shares,
+                                            wallet_shamir_data.share_x_coords,
+                                            secret);
+      if (is_valid) {
+        mnemonic_clear();
+        const char *mnemonics =
+            mnemonic_from_data(secret, wallet.number_of_mnemonics * 4 / 3);
+        is_valid = NULL != mnemonics &&
+                   verify_wallet_id(flash_wallet->wallet_id, mnemonics);
+        mnemonic_clear();
+      }
+      memzero(secret, sizeof(secret));
+
+      is_valid = is_valid && recover_share_from_shares(
+                                 BLOCK_SIZE,
+                                 MINIMUM_NO_OF_SHARES,
+                                 wallet_shamir_data.mnemonic_shares,
+                                 wallet_shamir_data.share_x_coords,
+                                 wallet_shamir_data.mnemonic_shares[4],
+                                 5);
+      if (!is_valid) {
+        memzero(temp_password_hash, sizeof(temp_password_hash));
+        memzero(wallet_shamir_data.mnemonic_shares,
+                sizeof(wallet_shamir_data.mnemonic_shares));
+        mark_core_error_screen(
+            ui_text_wallet_verification_failed_in_reconstruction, false);
+        next_state = SYNC_COMPLETED_WITH_ERRORS;
+        break;
+      }
 
       if (WALLET_IS_PIN_SET(wallet.wallet_info)) {
         memcpy(wallet_shamir_data.share_encryption_data[4],
@@ -200,10 +238,8 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
       }
 
       uint32_t wallet_index;
-      Flash_Wallet *flash_wallet;
       get_index_by_name((const char *)wallet.wallet_name,
                         (uint8_t *)(&wallet_index));
-      get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
       memcpy(&wallet_for_flash, flash_wallet, sizeof(Flash_Wallet));
       put_wallet_share_sec_flash(
           wallet_index, wallet_shamir_data.mnemonic_shares[4], wallet_nonce);

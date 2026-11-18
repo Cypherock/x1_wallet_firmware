@@ -186,7 +186,7 @@ void convert_to_shares(const uint8_t secret_len,
   }
 }
 
-void recover_share_from_shares(
+bool recover_share_from_shares(
     const uint8_t number_of_bytes,    // visualise this as horizontal length
     const uint8_t num_shares,    // threshold. shares is a 2D array. visualise
                                  // this as vertical height
@@ -194,6 +194,13 @@ void recover_share_from_shares(
     const uint8_t x_coords[num_shares],
     uint8_t share_OUT[number_of_bytes],
     uint8_t out_x_cor) {
+  // the two points must be distinct shares (x = 0 is the secret itself),
+  // otherwise the interpolation divides by zero and returns garbage
+  if (num_shares < MINIMUM_NO_OF_SHARES || 0 == x_coords[0] ||
+      0 == x_coords[1] || x_coords[0] == x_coords[1]) {
+    return false;
+  }
+
   for (uint8_t j = 0; j < number_of_bytes; j++) {
     uint8_t a0, a1;
     a1 = galois_div(galois_diff(shares[0][j], shares[1][j]),
@@ -203,16 +210,17 @@ void recover_share_from_shares(
     //        out_x_cor)));
     share_OUT[j] = galois_add(a0, out_x_cor == 0 ? 0 : eval(1, &a1, out_x_cor));
   }
+  return true;
 }
 
-void recover_secret_from_shares(
+bool recover_secret_from_shares(
     const uint8_t number_of_bytes,    // visualise this as horizontal length
     const uint8_t num_shares,    // threshold. shares is a 2D array. visualise
                                  // this as vertical height
     const uint8_t shares[num_shares][number_of_bytes],
     const uint8_t x_coords[num_shares],
     uint8_t secret_OUT[number_of_bytes]) {
-  recover_share_from_shares(
+  return recover_share_from_shares(
       number_of_bytes, num_shares, shares, x_coords, secret_OUT, 0);
 }
 

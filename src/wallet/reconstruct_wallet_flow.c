@@ -295,14 +295,25 @@ static reconstruct_state_e reconstruct_wallet_handler(reconstruct_state_e state,
         decrypt_shares();
       }
 
-      recover_secret_from_shares(BLOCK_SIZE,
-                                 MINIMUM_NO_OF_SHARES,
-                                 wallet_shamir_data.mnemonic_shares,
-                                 wallet_shamir_data.share_x_coords,
-                                 secret_out);
+      bool recovered =
+          recover_secret_from_shares(BLOCK_SIZE,
+                                     MINIMUM_NO_OF_SHARES,
+                                     wallet_shamir_data.mnemonic_shares,
+                                     wallet_shamir_data.share_x_coords,
+                                     secret_out);
 
       memzero(wallet_shamir_data.mnemonic_shares,
               sizeof(wallet_shamir_data.mnemonic_shares));
+      if (!recovered) {
+        mark_core_error_screen(
+            ui_text_wallet_verification_failed_in_reconstruction, false);
+        if (reject_cb) {
+          reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
+                    ERROR_CARD_ERROR_SW_RECORD_NOT_FOUND);
+        }
+        next_state = COMPLETED_WITH_ERRORS;
+        break;
+      }
       next_state = COMPLETED;
       break;
     }
