@@ -427,12 +427,17 @@ ISO7816 nfc_retrieve_wallet(struct Wallet *wallet) {
     status_word += recv_apdu[recv_len - 1];
 
     if (status_word == SW_NO_ERROR) {
-      // Extract data from APDU and add it to struct Wallet
-      extract_from_apdu(wallet, recv_apdu, recv_len);
-      Card_Data_errors_t status = validate_wallet(wallet);
-      if (status != VALID_DATA) {
-        LOG_CRITICAL("edat", status);
+      // Extract data from APDU (without the status word) into struct Wallet
+      if (recv_len <= 2 ||
+          !extract_from_apdu(wallet, recv_apdu, recv_len - 2)) {
+        LOG_CRITICAL("edat parse");
         status_word = 0;
+      } else {
+        Card_Data_errors_t status = validate_wallet(wallet);
+        if (status != VALID_DATA) {
+          LOG_CRITICAL("edat", status);
+          status_word = 0;
+        }
       }
     }
   }

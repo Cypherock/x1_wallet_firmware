@@ -504,7 +504,7 @@ bool extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
   return target_found && random_number_found;
 }
 
-void extract_from_apdu(struct Wallet *wallet,
+bool extract_from_apdu(struct Wallet *wallet,
                        const uint8_t apdu[],
                        const uint16_t len) {
   ASSERT(wallet != NULL);
@@ -513,22 +513,52 @@ void extract_from_apdu(struct Wallet *wallet,
 
   uint16_t index = 0;
 
-  // every length below (apdu[index]) is card-supplied
+  // the share and its parameters only come from the card, so they are cleared
+  // first and a field the card leaves out can not keep a value from an
+  // earlier card or flow
+  wallet->xcor = 0;
+  wallet->number_of_mnemonics = 0;
+  wallet->total_number_of_shares = 0;
+  wallet->minimum_number_of_shares = 0;
+  wallet->arbitrary_data_size = 0;
+  memzero(wallet->wallet_share_with_mac_and_nonce,
+          sizeof(wallet->wallet_share_with_mac_and_nonce));
+  memzero(wallet->arbitrary_data_share, sizeof(wallet->arbitrary_data_share));
+
+  // every length below (apdu[index]) is card-supplied; a field that does not
+  // fit fails the whole parse
 #define APDU_COPY_FIELD(dst)                                                   \
   do {                                                                         \
+    if (index >= len) {                                                        \
+      return false;                                                            \
+    }                                                                          \
     uint8_t _flen = apdu[index];                                               \
     if (_flen > sizeof(dst) || (uint32_t)index + 1 + _flen > len) {            \
-      return;                                                                  \
+      return false;                                                            \
     }                                                                          \
     memcpy((dst), apdu + index + 1, _flen);                                    \
     index += (_flen + 1);                                                      \
   } while (0)
 
+  // for fields that are always written with their full size
+#define APDU_COPY_EXACT_FIELD(dst)                                             \
+  do {                                                                         \
+    if (index >= len || sizeof(dst) != apdu[index]) {                          \
+      return false;                                                            \
+    }                                                                          \
+    APDU_COPY_FIELD(dst);                                                      \
+  } while (0)
+
+#define APDU_READ_BYTE(dst)                                                    \
+  do {                                                                         \
+    if (index >= len) {                                                        \
+      return false;                                                            \
+    }                                                                          \
+    (dst) = apdu[index++];                                                     \
+  } while (0)
+
   while (index < len) {
     uint8_t ins = apdu[index++];
-    if (index >= len) {
-      break;
-    }
     switch (ins) {
       case INS_NAME:
         APDU_COPY_FIELD(wallet->wallet_name);
@@ -537,30 +567,25 @@ void extract_from_apdu(struct Wallet *wallet,
         APDU_COPY_FIELD(wallet->password_double_hash);
         break;
       case INS_xCor:
-        wallet->xcor = apdu[index];
-        index++;
+        APDU_READ_BYTE(wallet->xcor);
         break;
       case INS_NO_OF_MNEMONICS:
-        wallet->number_of_mnemonics = apdu[index];
-        index++;
+        APDU_READ_BYTE(wallet->number_of_mnemonics);
         break;
       case INS_TOTAL_NO_OF_SHARE:
-        wallet->total_number_of_shares = apdu[index];
-        index++;
+        APDU_READ_BYTE(wallet->total_number_of_shares);
         break;
       case INS_WALLET_SHARE:
-        APDU_COPY_FIELD(wallet->wallet_share_with_mac_and_nonce);
+        APDU_COPY_EXACT_FIELD(wallet->wallet_share_with_mac_and_nonce);
         break;
       case INS_STRUCTURE_CHECKSUM:
         APDU_COPY_FIELD(wallet->checksum);
         break;
       case INS_MIN_NO_OF_SHARES:
-        wallet->minimum_number_of_shares = apdu[index];
-        index++;
+        APDU_READ_BYTE(wallet->minimum_number_of_shares);
         break;
       case INS_WALLET_INFO:
-        wallet->wallet_info = apdu[index];
-        index++;
+        APDU_READ_BYTE(wallet->wallet_info);
         break;
       case INS_KEY:
         APDU_COPY_FIELD(wallet->key);
@@ -572,9 +597,12 @@ void extract_from_apdu(struct Wallet *wallet,
         APDU_COPY_FIELD(wallet->iv_for_beneficiary_key);
         break;
       case INS_WALLET_ID:
-        APDU_COPY_FIELD(wallet->wallet_id);
+        APDU_COPY_EXACT_FIELD(wallet->wallet_id);
         break;
       case INS_ARBITRARY_DATA:
+        if (index >= len) {
+          return false;
+        }
         wallet->arbitrary_data_size = apdu[index];
         APDU_COPY_FIELD(wallet->arbitrary_data_share);
         break;
@@ -582,7 +610,10 @@ void extract_from_apdu(struct Wallet *wallet,
         break;
     }
   }
+#undef APDU_READ_BYTE
+#undef APDU_COPY_EXACT_FIELD
 #undef APDU_COPY_FIELD
+  return true;
 }
 
 ISO7816 extract_card_detail_from_apdu(const uint8_t apdu[],

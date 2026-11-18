@@ -408,17 +408,18 @@ bool extract_apdu_get_challenge(uint8_t target[SHA256_SIZE],
  *
  * @param[in,out]   wallet  Wallet structure
  * @param[in]  apdu Received APDU
- * @param[in]  len Length of received APDU
+ * @param[in]  len Length of received APDU, without the status word
  *
- * @return
- * @retval
+ * @return bool Indicating if all the fields were parsed
+ * @retval true If every field fits its destination
+ * @retval false If a field is truncated or longer than its destination
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-void extract_from_apdu(struct Wallet *wallet,
+bool extract_from_apdu(struct Wallet *wallet,
                        const uint8_t apdu[],
                        uint16_t len);
 
