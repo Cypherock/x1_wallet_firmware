@@ -124,7 +124,12 @@ static bool check_which_request(const exchange_query_t *query,
   memzero(data.params, sizeof(data.params));
   data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
 
-  exchange_app_validate_caq(data);
+  // only allowed as the next step of a swap flow
+  if (!exchange_app_validate_caq(data)) {
+    exchange_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_REQUEST);
+    return false;
+  }
 
   return true;
 }

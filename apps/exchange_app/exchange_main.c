@@ -129,21 +129,26 @@ static const cy_app_desc_t exchange_app_desc = {.id = 24,
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static void derive_server_public_key(uint8_t *server_verification_pub_key) {
-  HDNode node;
+static bool derive_server_public_key(uint8_t *server_verification_pub_key) {
+  HDNode node = {0};
   char xpub[XPUB_SIZE] = {'\0'};
 
-  base58_encode_check(get_card_root_xpub(),
-                      FS_KEYSTORE_XPUB_LEN,
-                      nist256p1_info.hasher_base58,
-                      xpub,
-                      XPUB_SIZE);
-
-  hdnode_deserialize_public(
-      (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
-  hdnode_public_ckd(&node, SESSION_KEY_INDEX);
+  // a failed derivation must not leave an unset key to verify against
+  if (0 == base58_encode_check(get_card_root_xpub(),
+                               FS_KEYSTORE_XPUB_LEN,
+                               nist256p1_info.hasher_base58,
+                               xpub,
+                               XPUB_SIZE) ||
+      0 != hdnode_deserialize_public(
+               (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL) ||
+      0 == hdnode_public_ckd(&node, SESSION_KEY_INDEX)) {
+    memzero(&node, sizeof(node));
+    return false;
+  }
 
   memcpy(server_verification_pub_key, node.public_key, SESSION_PUB_KEY_SIZE);
+  memzero(&node, sizeof(node));
+  return true;
 }
 
 void exchange_main(usb_event_t usb_evt, const void *app_config) {
@@ -240,10 +245,14 @@ bool exchange_validate_stored_signature(char *receiver,
 
   core_clear_shared_context();
 
-  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE];
-  derive_server_public_key(server_verification_pub_key);
-
+  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE] = {0};
   size_t len = strnlen(receiver, receiver_max_size);
+  if (0 == len || !derive_server_public_key(server_verification_pub_key)) {
+    delay_scr_init("Failed to validate signature\n Do not proceed with Swap",
+                   DELAY_TIME);
+    return false;
+  }
+
   char recv_addr[len];
   strncpy(recv_addr, receiver, len);
 
