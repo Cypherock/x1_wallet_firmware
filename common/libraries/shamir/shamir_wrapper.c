@@ -116,21 +116,6 @@ static uint8_t galois_div(const uint8_t a, const uint8_t b) {
 
 /***********************************************/
 
-int GetOneRandomByte() {
-  uint8_t random_byte = 0;
-  random_generate(&random_byte, 1);
-  return random_byte;
-}
-
-static void FillRandomVectorInARange(const uint16_t arr_size,
-                                     uint8_t arr[arr_size],
-                                     uint8_t l,
-                                     uint8_t h) {
-  for (uint16_t i = 0; i < arr_size; i++) {
-    arr[i] = (GetOneRandomByte() % (h - l + 1)) + l;
-  }
-}
-
 static uint8_t eval(const uint16_t n,
                     const uint8_t coeffs[n],
                     const uint8_t x) {
@@ -150,7 +135,9 @@ void convert_to_shares(const uint8_t secret_len,
                        uint8_t shares_OUT[total_number_of_shares][secret_len]) {
   for (uint8_t j = 0; j < secret_len; j++) {
     uint8_t coeffs[threshold_number_of_shares - 1];
-    FillRandomVectorInARange(threshold_number_of_shares - 1, coeffs, 1, 255);
+    // coefficients are uniform over the whole field, zero included, so a
+    // single share reveals nothing about the secret
+    random_generate(coeffs, sizeof(coeffs));
     for (uint8_t i = 0; i < total_number_of_shares; i++) {
       shares_OUT[i][j] = galois_add(
           secret[j],
@@ -158,6 +145,7 @@ void convert_to_shares(const uint8_t secret_len,
                coeffs,
                i + 1));    // galois_add(galois_mul(m, i+1), secret[j]);
     }
+    memzero(coeffs, sizeof(coeffs));
   }
 }
 
