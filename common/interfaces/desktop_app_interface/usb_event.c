@@ -181,6 +181,10 @@ static core_error_type_t get_core_req_type(usb_core_msg_t msg,
 
   switch (core_msg_p.which_type) {
     case CORE_MSG_CMD_TAG: {
+      if (core_msg_p.cmd.applet_id >= REGISTRY_MAX_APPS) {
+        status = CORE_UNKNOWN_APP;
+        break;
+      }
       // store applet id
       applet_id = core_msg_p.cmd.applet_id;
       status = CORE_NO_ERROR;

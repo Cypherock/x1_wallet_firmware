@@ -342,20 +342,25 @@ void random_generate(uint8_t *arr, int len);
 uint8_t get_floating_precision(uint64_t num, uint64_t den);
 
 /**
- * @brief
- * @details
+ * @brief Converts a DER encoded ECDSA signature to a 64 byte (r || s) array
+ * @details The DER structure is validated against der_len: the SEQUENCE and
+ * both INTEGERs must fit in the input, and each INTEGER must be 1 to 32
+ * bytes (or 33 bytes with a leading 0x00).
  *
- * @param
+ * @param [in] der DER encoded signature
+ * @param [in] der_len Number of readable bytes at der
+ * @param [out] sig 64 byte output buffer, zeroed on failure
  *
- * @return
- * @retval
+ * @return bool Whether the signature was parsed successfully
+ * @retval true Signature parsed into sig
+ * @retval false Malformed or truncated DER input
  *
  * @see
  * @since v1.0.0
  *
  * @note
  */
-void der_to_sig(const uint8_t *der, uint8_t *sig);
+bool der_to_sig(const uint8_t *der, size_t der_len, uint8_t *sig);
 
 /**
  * @brief conversion base16 to base10

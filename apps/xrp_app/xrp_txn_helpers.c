@@ -253,15 +253,15 @@ uint16_t fill_AMOUNT_type(const uint8_t *byte_data,
     return 0;
   }
 
-  uint8_t not_xrp = byte_data[0] >> 7;    // get the first bit
-  if (not_xrp) {
-    // means amount is not plain xrp. It is token currency amount which is not
-    // supported yet.
+  // top 3 bits: not-XRP (issued currency), sign (1 = positive), MPT. Only a
+  // positive XRP amount is supported; issued currency and MPT amounts are
+  // longer and would be misread (and shown) as XRP.
+  if (0x40 != (byte_data[0] & 0xE0)) {
     return 0;
   }
 
   uint64_t decoded = U64_READ_BE_ARRAY(byte_data);
-  decoded &= 0xafffffffffffffff;    // for xrp
+  decoded &= 0x1fffffffffffffff;    // for xrp
 
   switch (field_code) {
     case Amount: {

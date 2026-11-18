@@ -433,7 +433,7 @@ void xrp_get_pub_keys(xrp_query_t *query) {
 
     // see https://xrpl.org/docs/concepts/accounts/addresses#address-encoding
 
-    char address[XRP_ACCOUNT_ADDRESS_LENGTH] = "";
+    char address[XRP_ACCOUNT_ADDRESS_LENGTH + 1] = "";
 
     uint8_t public_key_digest[32];
     hasher_Raw(HASHER_SHA2_RIPEMD,
@@ -451,7 +451,7 @@ void xrp_get_pub_keys(xrp_query_t *query) {
             XRP_PREFIXED_ACCOUNT_ID_LENGTH,
             HASHER_SHA2D,
             address,
-            XRP_ACCOUNT_ADDRESS_LENGTH + 1,
+            sizeof(address),
             XRP_BASE58_DIGITS_ORDERED)) {
       xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
       return;

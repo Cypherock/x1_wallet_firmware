@@ -1,5 +1,6 @@
 #include "eip712_utils.h"
 
+#include "eip712_validate.h"
 #include "evm_api.h"
 
 queue_node *new_queue_node(evm_sign_typed_data_node_t *tree_node,
@@ -48,18 +49,23 @@ queue_node *dequeue(queue *q) {
 }
 
 static void twos_complement_of_byte_array(uint8_t *arr, size_t size) {
-  size_t i;
+  // size comes from a host-controlled typed-data node field;
+  // This also fixes the reverse loop below, whose `i >= 0` on a size_t never
+  // terminated and could underflow.
+  if (size > 32) {
+    size = 32;
+  }
 
   // flip all the bits
-  for (i = 0; i < size; i++)
+  for (size_t i = 0; i < size; i++)
     arr[i] = ~arr[i];
 
   // add 1 to the least significant bit
-  for (i = size - 1; i >= 0; i--) {
-    if (arr[i] == 255) {
-      arr[i] = 0;
+  for (size_t k = size; k > 0; k--) {
+    if (arr[k - 1] == 255) {
+      arr[k - 1] = 0;
     } else {
-      arr[i]++;
+      arr[k - 1]++;
       break;
     }
   }
@@ -89,7 +95,8 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
       char hex_string[65] = {0};
       uint8_t array[32] = {0};
       uint8_t offset = 0;
-      memcpy(array, data_node->data->bytes, sizeof(array));
+      // validated to 1..32 bytes; copying a fixed 32 read past shorter data
+      memcpy(array, data_node->data->bytes, data_node->size);
 
       // if signed integer get 2's complement
       if (array[0] & 0x80) {
@@ -107,7 +114,7 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
                                            sizeof(buffer) - offset);
     } break;
     case EVM_EIP_712_DATA_TYPE_BOOL:
-      if (data_node->data->bytes[0] == 1)
+      if (eip712_bool_value(data_node) == 1)
         snprintf(buffer, sizeof(buffer), "true");
       else
         snprintf(buffer, sizeof(buffer), "false");
@@ -154,8 +161,9 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
         *bytes_written += HASH_SIZE;
       } break;
       case EVM_EIP_712_DATA_TYPE_BOOL: {
-        uint8_t abi_status = Abi_Encode(
-            Abi_bool_e, data_node->size, data_node->data->bytes, output);
+        // same value as displayed (empty data is false)
+        uint8_t value = eip712_bool_value(data_node);
+        uint8_t abi_status = Abi_Encode(Abi_bool_e, 1, &value, output);
         if (abi_status != ABI_PROCESS_COMPLETE) {
           LOG_ERROR("ABI:%d", abi_status);
           printf("ABI:%d", abi_status);
@@ -189,7 +197,8 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
         }
       }
       case EVM_EIP_712_DATA_TYPE_STRING:
-        keccak_256(data_node->data->bytes, data_node->size, output);
+        // hash the bytes that are displayed
+        keccak_256(data_node->data->bytes, data_node->data->size, output);
         *bytes_written += HASH_SIZE;
         break;
       case EVM_EIP_712_DATA_TYPE_ARRAY: {
@@ -249,7 +258,8 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
       } break;
 
       default:
-        break;
+        // an unknown type would be signed as zeros while shown as hex
+        return EIP712_INVALID_DATA;
     }
   }
 
@@ -259,14 +269,17 @@ int encode_data(const evm_sign_typed_data_node_t *data_node,
 int hash_struct(const evm_sign_typed_data_node_t *data_node, uint8_t *output) {
   if (data_node->type != EVM_EIP_712_DATA_TYPE_STRUCT)
     return EIP712_INVALID_DATA;
+  // type_hash is host supplied (FT_POINTER) and must be exactly one hash
+  if (NULL == data_node->type_hash || HASH_SIZE != data_node->type_hash->size)
+    return EIP712_INVALID_DATA;
   size_t data_size = HASH_SIZE + (data_node->children_count) * HASH_SIZE;
   size_t used_size = 0;
   uint8_t *data = malloc(data_size);
-  memcpy(data, data_node->type_hash->bytes, data_node->type_hash->size);
-  int status = encode_data(data_node,
-                           data + data_node->type_hash->size,
-                           (data_size - data_node->type_hash->size),
-                           &used_size);
+  if (NULL == data)
+    return EIP712_MEMORY_ALLOCATION_FAILED;
+  memcpy(data, data_node->type_hash->bytes, HASH_SIZE);
+  int status = encode_data(
+      data_node, data + HASH_SIZE, data_size - HASH_SIZE, &used_size);
   keccak_256(data, data_size, output);
   free(data);
   return status;

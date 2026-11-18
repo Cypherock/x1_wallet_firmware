@@ -346,11 +346,14 @@ static bool auth_wallet_get_entropy() {
 }
 
 static bool auth_wallet_get_pairs() {
+  // mnemonic_to_seed writes 64 bytes; the private key is the first 32
+  uint8_t seed[64] = {0};
   if (auth->seed_based_data.has_data) {
-    mnemonic_to_seed((char *)auth->seed_based_data.entropy,
-                     "",
-                     auth->seed_based_data.private_key,
-                     NULL);
+    mnemonic_to_seed((char *)auth->seed_based_data.entropy, "", seed, NULL);
+    memcpy(auth->seed_based_data.private_key,
+           seed,
+           sizeof(auth->seed_based_data.private_key));
+    memzero(seed, sizeof(seed));
     ed25519_publickey(auth->seed_based_data.private_key,
                       auth->seed_based_data.result.public_key);
     // Clear seed as soon as it is not needed
@@ -358,10 +361,11 @@ static bool auth_wallet_get_pairs() {
             sizeof(auth->seed_based_data.entropy));
   }
   if (auth->wallet_based_data.has_data) {
-    mnemonic_to_seed((char *)auth->wallet_based_data.entropy,
-                     "",
-                     auth->wallet_based_data.private_key,
-                     NULL);
+    mnemonic_to_seed((char *)auth->wallet_based_data.entropy, "", seed, NULL);
+    memcpy(auth->wallet_based_data.private_key,
+           seed,
+           sizeof(auth->wallet_based_data.private_key));
+    memzero(seed, sizeof(seed));
     ed25519_publickey(auth->wallet_based_data.private_key,
                       auth->wallet_based_data.result.public_key);
   }

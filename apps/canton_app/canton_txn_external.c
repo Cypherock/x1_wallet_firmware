@@ -323,13 +323,23 @@ static bool parse_hash_and_validate_transaction_external(
     canton_unsigned_txn_external_info_t *ut_txn) {
   memzero(ut_txn->hash, CANTON_HASH_PREFIX_SIZE + SHA256_DIGEST_LENGTH);
 
+  // decode exactly the payload of the versioned wrapper that is signed; the
+  // payload is decoded with a uint16_t size
+  const uint8_t *payload = NULL;
+  uint32_t payload_size = 0;
+  if (!canton_get_versioned_message_data(
+          serialized_txn, serialized_txn_size, &payload, &payload_size) ||
+      0 == payload_size || UINT16_MAX < payload_size) {
+    return false;
+  }
+
   switch (ut_txn->txn_type) {
     case CANTON_SUPPORTED_TXN_TYPE_NAMESPACE_DELEGATION: {
       canton_generate_transaction_request_proposal_t decoded_proposal =
           CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_INIT_ZERO;
       if (!decode_canton_serialized_data(
-              serialized_txn + 3,    // skip the length prefix
-              serialized_txn_size - 3,
+              payload,
+              payload_size,
               CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_FIELDS,
               &decoded_proposal) ||
           !validate_and_store_namespace_delegation_proposal(&decoded_proposal,

@@ -140,6 +140,8 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time);
  * @param [in/out] data_inOut pointer to buffer with input and output data
  * @param [in,out] length_inOut pointer to variable with length of send and
  * receive data
+ * @param [in] data_inOut_size capacity of data_inOut in bytes; a card
+ * response longer than this is rejected with SW_OUT_OF_BOUNDARY
  *
  * @return ISO7816 Status Word
  * @retval
@@ -149,7 +151,9 @@ ret_code_t nfc_wait_for_card(const uint16_t wait_time);
  *
  * @note
  */
-ISO7816 nfc_pair(uint8_t *data_inOut, uint8_t *length_inOut);
+ISO7816 nfc_pair(uint8_t *data_inOut,
+                 uint8_t *length_inOut,
+                 const uint8_t data_inOut_size);
 
 /**
  * @brief Operation to unpair card
@@ -352,9 +356,11 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE],
  * @param [in] plain_data_size          Size of data to be encrypted
  * @param [out] encrypted_data          Encrypted data received by the card
  * @param [out] encrypted_data_size     Size of encrypted data
+ * @param [in] encrypted_data_capacity  Size of the encrypted_data buffer
  *
  * @return
- * @retval
+ * @retval SW_OUT_OF_BOUNDARY Card response is malformed or does not fit in
+ * encrypted_data
  *
  * @see
  * @since v1.0.0
@@ -365,7 +371,8 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
                          const uint8_t *plain_data,
                          uint16_t plain_data_size,
                          uint8_t *encrypted_data,
-                         uint16_t *encrypted_data_size);
+                         uint16_t *encrypted_data_size,
+                         uint16_t encrypted_data_capacity);
 
 /**
  * @brief Decrypt Data required for Inheritance flow
@@ -378,11 +385,13 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
  * @param name Wallet Name
  * @param plain_data Data to be encrypted
  * @param plain_data_size Size of data to be encrypted
+ * @param plain_data_capacity Size of the plain_data buffer
  * @param encrypted_data Encrypted data received by the card
  * @param encrypted_data_size Size of encrypted data
  *
  * @return
- * @retval
+ * @retval SW_OUT_OF_BOUNDARY Card response is malformed or does not fit in
+ * plain_data
  *
  * @see
  * @since v1.0.0
@@ -392,6 +401,7 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
 ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
                          uint8_t *plain_data,
                          uint16_t *plain_data_size,
+                         uint16_t plain_data_capacity,
                          const uint8_t *encrypted_data,
                          uint16_t encrypted_data_size);
 

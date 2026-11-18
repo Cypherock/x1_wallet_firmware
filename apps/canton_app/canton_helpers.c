@@ -136,6 +136,68 @@ void sha256_with_prefix(const uint8_t *data, size_t data_size, uint8_t *hash) {
   memcpy(hash + CANTON_HASH_PREFIX_SIZE, digest, SHA256_DIGEST_LENGTH);
 }
 
+void sha256_final_with_prefix(SHA256_CTX *ctx, uint8_t *hash) {
+  if (!ctx || !hash) {
+    return;
+  }
+
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {0};
+  sha256_Final(ctx, digest);
+
+  memcpy(hash, CANTON_HASH_PREFIX, CANTON_HASH_PREFIX_SIZE);
+  memcpy(hash + CANTON_HASH_PREFIX_SIZE, digest, SHA256_DIGEST_LENGTH);
+}
+
+static bool read_varint(const uint8_t *buf,
+                        uint32_t size,
+                        uint32_t *offset,
+                        uint64_t *value) {
+  uint64_t result = 0;
+  for (uint8_t i = 0; i < 10; i++) {
+    if (*offset >= size) {
+      return false;
+    }
+    uint8_t byte = buf[(*offset)++];
+    result |= (uint64_t)(byte & 0x7F) << (7 * i);
+    if (0 == (byte & 0x80)) {
+      *value = result;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool canton_get_versioned_message_data(const uint8_t *buf,
+                                       uint32_t size,
+                                       const uint8_t **data,
+                                       uint32_t *data_size) {
+  if (NULL == buf || NULL == data || NULL == data_size) {
+    return false;
+  }
+
+  // field 1 (data), wire type 2 (length delimited)
+  uint32_t offset = 0;
+  uint64_t length = 0;
+  if (size < 2 || 0x0A != buf[offset++] ||
+      !read_varint(buf, size, &offset, &length) ||
+      length > (uint64_t)(size - offset)) {
+    return false;
+  }
+  *data = buf + offset;
+  *data_size = (uint32_t)length;
+  offset += (uint32_t)length;
+
+  // nothing but an optional field 2 (version), wire type 0 (varint)
+  if (offset < size) {
+    uint64_t version = 0;
+    if (0x10 != buf[offset++] || !read_varint(buf, size, &offset, &version) ||
+        offset != size) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool get_party_id(const uint8_t *public_key, char *party_id) {
   if (!public_key || !party_id) {
     return false;

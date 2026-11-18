@@ -64,11 +64,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "eip712_validate.h"
 #include "evm_api.h"
 #include "evm_helpers.h"
 #include "evm_priv.h"
 #include "evm_typed_data_helper.h"
 #include "pb_decode.h"
+#include "pb_depth.h"
 #include "reconstruct_wallet_flow.h"
 #include "status_api.h"
 #include "ui_core_confirm.h"
@@ -81,6 +83,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+
+/// Max protobuf nesting accepted for EIP-712 typed data (one level per nested
+/// struct or array)
+#define EVM_TYPED_DATA_PB_MAX_DEPTH 20
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -331,13 +337,23 @@ static bool get_msg_data(evm_query_t *query) {
   }
 
   if (EVM_SIGN_MSG_TYPE_SIGN_TYPED_DATA == sign_msg_ctx.init.message_type) {
+    // typed data nodes nest recursively; pb_decode has no depth limit
+    if (!pb_check_depth(sign_msg_ctx.msg_data,
+                        total_size,
+                        EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
+                        EVM_TYPED_DATA_PB_MAX_DEPTH)) {
+      evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                     ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
     pb_istream_t istream =
         pb_istream_from_buffer(sign_msg_ctx.msg_data, total_size);
     bool result = pb_decode(&istream,
                             EVM_SIGN_TYPED_DATA_STRUCT_FIELDS,
                             &(sign_msg_ctx.typed_data));
 
-    if (!result) {
+    // every displayed value and type name must be exactly what is hashed
+    if (!result || !eip712_validate_typed_data(&(sign_msg_ctx.typed_data))) {
       evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                      ERROR_DATA_FLOW_INVALID_DATA);
       return false;
@@ -347,36 +363,63 @@ static bool get_msg_data(evm_query_t *query) {
   return true;
 }
 
+static bool verify_message_as_hex() {
+  const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
+  char *buffer = malloc(array_size);
+  if (NULL == buffer) {
+    return false;
+  }
+  memzero(buffer, array_size);
+  snprintf(buffer, array_size, "0x");
+  byte_array_to_hex_string(sign_msg_ctx.msg_data,
+                           sign_msg_ctx.init.total_msg_size,
+                           buffer + 2,
+                           array_size - 2);
+  // TODO: Add a limit on size of data per confirmation based on LVGL buffer
+  // and split message into multiple confirmations accordingly
+  bool result = core_scroll_page(
+      UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
+  memzero(buffer, array_size);
+  free(buffer);
+  return result;
+}
+
 static bool get_user_verification() {
   bool result = false;
   switch (sign_msg_ctx.init.message_type) {
     case EVM_SIGN_MSG_TYPE_ETH_SIGN: {
-      const size_t array_size = sign_msg_ctx.init.total_msg_size * 2 + 3;
-      char *buffer = malloc(array_size);
-      memzero(buffer, array_size);
-      snprintf(buffer, array_size, "0x");
-      byte_array_to_hex_string(sign_msg_ctx.msg_data,
-                               sign_msg_ctx.init.total_msg_size,
-                               buffer + 2,
-                               array_size - 2);
-      // TODO: Add a limit on size of data per confirmation based on LVGL buffer
-      // and split message into multiple confirmations accordingly
-      result = core_scroll_page(
-          UI_TEXT_VERIFY_MESSAGE, (const char *)buffer, evm_send_error);
-      memzero(buffer, array_size);
-      free(buffer);
+      result = verify_message_as_hex();
     } break;
 
     case EVM_SIGN_MSG_TYPE_PERSONAL_SIGN: {
+      // The text view must show every signed byte: a NUL would end it early
+      // and invalid utf-8 is escaped as "\x00" whatever the byte. Show such
+      // messages (and empty ones) as hex instead.
+      if (0 == sign_msg_ctx.init.total_msg_size ||
+          NULL != memchr(sign_msg_ctx.msg_data,
+                         '\0',
+                         sign_msg_ctx.init.total_msg_size)) {
+        result = verify_message_as_hex();
+        break;
+      }
       // TODO: Add a limit on size of data per confirmation based on LVGL buffer
       // and split message into multiple confirmations accordingly
       size_t len = 4 * sign_msg_ctx.init.total_msg_size;
       char *escaped_str = malloc(len);
+      if (NULL == escaped_str) {
+        result = false;
+        break;
+      }
       uint8_t status = string_to_escaped_string(
           (const char *)sign_msg_ctx.msg_data, escaped_str, len);
       if (1 == status || 5 == status) {
         free(escaped_str);
         result = false;
+        break;
+      }
+      if (3 == status || 4 == status) {
+        free(escaped_str);
+        result = verify_message_as_hex();
         break;
       }
       result =

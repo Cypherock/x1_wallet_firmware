@@ -589,9 +589,9 @@ int get_flash_wallet_nonce_by_name(const char *name, uint8_t *wallet_nonce) {
           return DOESNT_EXIST;
         }
       }
-      memcpy(wallet_nonce,
-             sec_flash_instance.wallet_share_data[walletIndex].wallet_nonce,
-             BLOCK_SIZE);
+      const uint8_t *stored_nonce =
+          sec_flash_instance.wallet_share_data[walletIndex].wallet_nonce;
+      memcpy(wallet_nonce, stored_nonce, PADDED_NONCE_SIZE);
       return SUCCESS_;
     }
   }

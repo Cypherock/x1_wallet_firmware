@@ -126,7 +126,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
     return SOL_ERROR;
   memzero(utxn, sizeof(solana_unsigned_txn));
 
-  uint16_t offset = 0;
+  // uint32_t so host-sized counts cannot wrap the offset past the bound checks
+  uint32_t offset = 0;
   int error = 0;
   bool is_versioned = false;
 
@@ -136,6 +137,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   }
 
   // Message header
+  if (offset + 3 > byte_array_size)
+    return SOL_D_READ_SIZE_MISMATCH;
   utxn->required_signatures_count = *(byte_array + offset++);
   utxn->read_only_accounts_require_signature_count = *(byte_array + offset++);
   utxn->read_only_accounts_not_require_signature_count =
@@ -155,6 +158,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // Blockhash
   utxn->blockhash = byte_array + offset;
   offset += SOLANA_BLOCKHASH_LENGTH;
+  if (offset > byte_array_size)
+    return SOL_D_READ_SIZE_MISMATCH;
 
   // Instructions
   offset += get_compact_array_size(
@@ -208,8 +213,11 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   extra_data->split_instruction_index = -1;
   extra_data->deactivate_instruction_count = 0;
   bool allocate_with_seed_seen = false;
+  extra_data->is_token_transfer = false;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
+    if (offset >= byte_array_size)
+      return SOL_D_READ_SIZE_MISMATCH;
     utxn->instruction[i].program_id_index = *(byte_array + offset++);
 
     offset += get_compact_array_size(
@@ -229,6 +237,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
     utxn->instruction[i].opaque_data = byte_array + offset;
     offset += utxn->instruction[i].opaque_data_length;
+    if (offset > byte_array_size)
+      return SOL_D_READ_SIZE_MISMATCH;
+    if (utxn->instruction[i].program_id_index >= utxn->account_addresses_count)
+      return SOL_V_INDEX_OUT_OF_RANGE;
 
     if (memcmp(utxn->account_addresses + utxn->instruction[i].program_id_index *
                                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
@@ -238,11 +250,25 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
+      extra_data->is_token_transfer = false;    // System
+
       uint32_t instruction_enum =
-          U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
+          (utxn->instruction[i].opaque_data_length >= 4)
+              ? U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data)
+              : 0xFFFFFFFFU;
 
       switch (instruction_enum) {
         case SSI_TRANSFER:    // transfer instruction
+          // need 2 valid account indices and 4-byte enum +
+          // 8-byte lamports of opaque data before dereferencing.
+          if (utxn->instruction[i].account_addresses_index_count < 2 ||
+              utxn->instruction[i].opaque_data_length < 12 ||
+              *(utxn->instruction[i].account_addresses_index + 0) >=
+                  utxn->account_addresses_count ||
+              *(utxn->instruction[i].account_addresses_index + 1) >=
+                  utxn->account_addresses_count)
+            return SOL_V_INDEX_OUT_OF_RANGE;
+
           extra_data->transfer_instruction_index = i;
           utxn->instruction[i].program.transfer.funding_account =
               utxn->account_addresses +
@@ -351,11 +377,25 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
         return SOL_D_MIN_LENGTH;
 
       extra_data->transfer_instruction_index = i;
+      extra_data->is_token_transfer = true;    // SPL Token
 
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
 
       switch (instruction_enum) {
         case STPI_TRANSFER_CHECKED:    // transfer checked instruction
+          // need 4 valid account indices and 1-byte enum +
+          // 8-byte amount + 1-byte decimals of opaque data.
+          if (utxn->instruction[i].account_addresses_index_count < 4 ||
+              utxn->instruction[i].opaque_data_length < 10 ||
+              *(utxn->instruction[i].account_addresses_index + 0) >=
+                  utxn->account_addresses_count ||
+              *(utxn->instruction[i].account_addresses_index + 1) >=
+                  utxn->account_addresses_count ||
+              *(utxn->instruction[i].account_addresses_index + 2) >=
+                  utxn->account_addresses_count ||
+              *(utxn->instruction[i].account_addresses_index + 3) >=
+                  utxn->account_addresses_count)
+            return SOL_V_INDEX_OUT_OF_RANGE;
           utxn->instruction[i].program.transfer_checked.source =
               utxn->account_addresses +
               (*(utxn->instruction[i].account_addresses_index + 0) *
@@ -402,12 +442,18 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
       switch (instruction_enum) {
         case SCBI_SET_COMPUTE_UNIT_LIMIT:
+          // 1-byte enum + 4-byte u32 must be present.
+          if (utxn->instruction[i].opaque_data_length < 5)
+            return SOL_D_READ_SIZE_MISMATCH;
           extra_data->compute_unit_limit =
               utxn->instruction[i].program.compute_unit_limit_data.units =
                   U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 1);
           break;
 
         case SCBI_SET_COMPUTE_UNIT_PRICE:
+          // 1-byte enum + 8-byte u64 must be present.
+          if (utxn->instruction[i].opaque_data_length < 9)
+            return SOL_D_READ_SIZE_MISMATCH;
           extra_data->compute_unit_price_micro_lamports =
               utxn->instruction[i]
                   .program.compute_unit_price_data.micro_lamports =

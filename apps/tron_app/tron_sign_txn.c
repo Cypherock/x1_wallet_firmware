@@ -310,8 +310,18 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
   const common_chunk_payload_t *payload = &txn_data->chunk_payload;
   const common_chunk_payload_chunk_t *chunk = &txn_data->chunk_payload.chunk;
 
+  if (0 == total_size) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // allocate memory for storing transaction
   tron_txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == tron_txn_context->transaction) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   while (1) {
     if (!tron_get_query(query, TRON_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, TRON_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
@@ -349,6 +359,11 @@ STATIC bool tron_fetch_valid_transaction(tron_query_t *query) {
   }
   tron_txn_context->raw_txn =
       (tron_transaction_raw_t *)malloc(sizeof(tron_transaction_raw_t));
+  if (NULL == tron_txn_context->raw_txn) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   // decode and verify the received transaction
   if (0 != tron_byte_array_to_raw_txn(tron_txn_context->transaction,
                                       total_size,
@@ -433,6 +448,11 @@ static bool send_signature(tron_query_t *query,
 
 void tron_sign_transaction(tron_query_t *query) {
   tron_txn_context = (tron_txn_context_t *)malloc(sizeof(tron_txn_context_t));
+  if (NULL == tron_txn_context) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return;
+  }
   memzero(tron_txn_context, sizeof(tron_txn_context_t));
   tron_sign_txn_signature_response_t sig = {0};
   uint8_t seed[64] = {0};

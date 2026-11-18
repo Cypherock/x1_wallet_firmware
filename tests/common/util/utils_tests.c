@@ -88,7 +88,7 @@ TEST(utils_tests, der_to_sig_1) {
       expected_signature);
 
   uint8_t signature[64] = {0};
-  der_to_sig(der_encoded_signature, signature);
+  TEST_ASSERT_TRUE(der_to_sig(der_encoded_signature, 72, signature));
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
       expected_signature, signature, sizeof(expected_signature));
@@ -111,10 +111,53 @@ TEST(utils_tests, der_to_sig_2) {
       expected_signature);
 
   uint8_t signature[64] = {0};
-  der_to_sig(der_encoded_signature, signature);
+  TEST_ASSERT_TRUE(der_to_sig(der_encoded_signature, 70, signature));
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(
       expected_signature, signature, sizeof(expected_signature));
+}
+
+TEST(utils_tests, der_to_sig_oversized_integer) {
+  // r length 0xFF: would have written before the start of the output buffer
+  const uint8_t der_encoded_signature[] = {
+      0x30, 0x44, 0x02, 0xFF, 0x01, 0x02, 0x03, 0x04};
+  uint8_t signature[64] = {0};
+
+  TEST_ASSERT_FALSE(der_to_sig(
+      der_encoded_signature, sizeof(der_encoded_signature), signature));
+
+  const uint8_t zero_signature[64] = {0};
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(zero_signature, signature, sizeof(signature));
+}
+
+TEST(utils_tests, der_to_sig_33_byte_integer_without_padding) {
+  uint8_t der_encoded_signature[72] = {0};
+  hex_string_to_byte_array("3046022101e4e87c417196c6e5cd63f93e94929ccda6d04fc0a"
+                           "7446922baf3070e854ec4f4022100a1ecd098008329de9bc93f"
+                           "b2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
+                           144,
+                           der_encoded_signature);
+  uint8_t signature[64] = {0};
+
+  TEST_ASSERT_FALSE(der_to_sig(
+      der_encoded_signature, sizeof(der_encoded_signature), signature));
+}
+
+TEST(utils_tests, der_to_sig_truncated_input) {
+  uint8_t der_encoded_signature[72] = {0};
+  hex_string_to_byte_array("3046022100e4e87c417196c6e5cd63f93e94929ccda6d04fc0a"
+                           "7446922baf3070e854ec4f4022100a1ecd098008329de9bc93f"
+                           "b2ded6aaceecc921f7183d6b3cfc673b3ef8af219e",
+                           144,
+                           der_encoded_signature);
+  uint8_t signature[64] = {0};
+
+  // sequence claims 70 bytes but only 40 are readable
+  TEST_ASSERT_FALSE(der_to_sig(der_encoded_signature, 40, signature));
+  // integer length runs past the sequence end
+  der_encoded_signature[1] = 0x20;
+  TEST_ASSERT_FALSE(der_to_sig(
+      der_encoded_signature, sizeof(der_encoded_signature), signature));
 }
 
 TEST(utils_tests, escape_string_non_print_utf) {

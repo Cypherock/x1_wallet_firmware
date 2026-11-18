@@ -310,10 +310,14 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
   index = read_be(pair_data->data + 40);
   hdnode_public_ckd(&guest_card_node, index);
 
-  der_to_sig(pair_data->data + 44, buffer);
   sha256_Raw(pair_data->data, 44, digest);
-  uint8_t status = ecdsa_verify_digest(
-      &nist256p1, guest_card_node.public_key, buffer, digest);
+  // DER signature follows the 44 byte pairing data; last 2 bytes are the SW
+  uint8_t status = 1;
+  if (pair_data->data_len >= 44 + 2 &&
+      der_to_sig(pair_data->data + 44, pair_data->data_len - 44 - 2, buffer)) {
+    status = ecdsa_verify_digest(
+        &nist256p1, guest_card_node.public_key, buffer, digest);
+  }
   if (status) {
     LOG_CRITICAL("xxec %d:%d", EXCEPTION_CARD_NOT_VERIFIED + status, __LINE__);
     log_hex_array("resp", pair_data->data, 128);
@@ -376,8 +380,8 @@ static void init_and_pair_card(card_operation_data_t *card_data,
         (-1 != get_paired_card_index(card_data->nfc_data.card_key_id)) ? true
                                                                        : false;
     if (false == pair_data->is_paired) {
-      card_data->nfc_data.status =
-          nfc_pair(pair_data->data, &(pair_data->data_len));
+      card_data->nfc_data.status = nfc_pair(
+          pair_data->data, &(pair_data->data_len), sizeof(pair_data->data));
 
       if (card_data->nfc_data.status != SW_NO_ERROR) {
         card_handle_errors(card_data);

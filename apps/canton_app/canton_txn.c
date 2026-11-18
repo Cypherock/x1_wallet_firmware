@@ -389,15 +389,32 @@ static bool fetch_transaction_meta(canton_query_t *query) {
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
+  // Capped at 200 to match the nodes_count limit above
+  if (node_seeds_count > 200) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
+  // every node must be reachable from a root, so a tree needs at least one
+  // root and no more roots than nodes
+  uint32_t roots_count = query->sign_txn.txn_meta.roots_count;
+  if (nodes_count == 0 || roots_count == 0 || roots_count > nodes_count) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   // we now know the number of node seeds and nodes
-  // allocate memory for node seeds and node hashes in canton_txn_context
+  // allocate memory for node seeds and node hashes in canton_txn_context;
+  // zeroed so that no entry ever holds stale heap data
   canton_txn_context->unsigned_txn.txn_node_seeds =
-      (canton_node_seed_t *)malloc(sizeof(canton_node_seed_t) *
-                                   node_seeds_count);
+      (canton_node_seed_t *)calloc(node_seeds_count ? node_seeds_count : 1,
+                                   sizeof(canton_node_seed_t));
   canton_txn_context->unsigned_txn.txn_node_hashes =
-      (canton_txn_node_hash_t *)malloc(sizeof(canton_txn_node_hash_t) *
-                                       nodes_count);
+      (canton_txn_node_hash_t *)calloc(nodes_count,
+                                       sizeof(canton_txn_node_hash_t));
+  canton_txn_context->unsigned_txn.txn_node_hashes_count = 0;
 
   if (canton_txn_context->unsigned_txn.txn_node_seeds == NULL ||
       canton_txn_context->unsigned_txn.txn_node_hashes == NULL) {

@@ -42,6 +42,12 @@
 #ifndef USE_RFC6979
 #define USE_RFC6979 1
 #endif
+// Disabling RFC6979 makes the ECDSA signing nonce come from random32()/
+// random_buffer() -> a predictable nonce allows private-key recovery from two
+// signatures. Refuse to compile if it is ever turned off.
+#if USE_RFC6979 != 1
+#error "USE_RFC6979 must remain 1 (predictable ECDSA nonce otherwise)"
+#endif
 
 // implement BIP32 caching
 #ifndef USE_BIP32_CACHE

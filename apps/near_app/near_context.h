@@ -169,6 +169,9 @@ typedef struct near_fn_call {
   const char *method_name;
   uint32_t args_length;
   const uint8_t *args;
+  /// new_account_id parsed from args (create_account), not NUL terminated
+  const uint8_t *new_account_id;
+  uint32_t new_account_id_length;
   uint8_t gas[NEAR_NONCE_SIZE_BYTES];
   uint8_t deposit[NEAR_DEPOSIT_SIZE_BYTES];
 } near_fn_call;

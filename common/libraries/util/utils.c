@@ -228,7 +228,8 @@ void hex_string_to_byte_array(const char *hex_string,
                               uint8_t *byte_array) {
   char hex[3] = {'\0'};
 
-  for (int i = 0; i < string_length; i += 2) {
+  // only whole pairs; an odd trailing digit would write past string_length / 2
+  for (uint32_t i = 0; i + 1 < string_length; i += 2) {
     hex[0] = hex_string[i];
     hex[1] = hex_string[i + 1];
     byte_array[i / 2] = (uint8_t)strtol(hex, NULL, 16);
@@ -313,23 +314,30 @@ void random_generate(uint8_t *arr, int len) {
   ASSERT(crypto_random_generate(arr, len) == true);
 
   // using atecc
+  // Use a local retry counter and status: random_generate() is reached from
+  // random32() (e.g. EC point blinding inside ecdsa_verify_digest), so it can
+  // run inside another function's ATECC retry loop. Touching the global
+  // atecc_data.retries/status here would reset that caller's counter (making
+  // its loop unbounded) and overwrite its status.
   uint8_t temp[32] = {0};
-  atecc_data.retries = DEFAULT_ATECC_RETRIES;
+  uint8_t retries = DEFAULT_ATECC_RETRIES;
+  ATCA_STATUS status = ATCA_GEN_FAIL;
 
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
   do {
-    atecc_data.status = atcab_init(atecc_data.cfg_atecc608a_iface);
-    atecc_data.status = atcab_random(temp);
-  } while (atecc_data.status != ATCA_SUCCESS && --atecc_data.retries);
+    status = atcab_init(atecc_data.cfg_atecc608a_iface);
+    status = atcab_random(temp);
+  } while (status != ATCA_SUCCESS && --retries);
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
-  ASSERT((atecc_data.status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
+  ASSERT((status == ATCA_SUCCESS) && (!is_zero(temp, sizeof(temp))));
 
   for (int i = 0; i < len; ++i) {
     arr[i] ^= temp[i];
   }
+  memzero(temp, sizeof(temp));
 #else
   uint8_t get_ec_random[32] = {0x0b, 0x78, 0x9a, 0x1e, 0xb8, 0x0b, 0x7a, 0xac,
                                0x97, 0xa1, 0x54, 0xd7, 0x0c, 0x5a, 0x53, 0x95,
@@ -350,33 +358,53 @@ uint8_t get_floating_precision(uint64_t num, uint64_t den) {
   return precision;
 }
 
-void der_to_sig(const uint8_t *der, uint8_t *sig) {
+static bool der_read_integer(const uint8_t *der,
+                             size_t end,
+                             size_t *offset,
+                             uint8_t *out) {
+  if (*offset + 2 > end || der[*offset] != 0x02) {
+    return false;
+  }
+  size_t len = der[*offset + 1];
+  *offset += 2;
+  if (len == 0 || *offset + len > end) {
+    return false;
+  }
+  if (len == 33) {
+    if (der[*offset] != 0x00) {
+      return false;
+    }
+    (*offset)++;
+    len--;
+  }
+  if (len > 32) {
+    return false;
+  }
+  // Copy the integer prepending 0's
+  memcpy(out + (32 - len), der + *offset, len);
+  *offset += len;
+  return true;
+}
+
+bool der_to_sig(const uint8_t *der, size_t der_len, uint8_t *sig) {
   if (!der || !sig)
-    return;
+    return false;
   memzero(sig, 64);
-  uint8_t len, offset = 0;
-  if (der[offset++] != 0x30)
-    return;    // Verify the starting byte is 0x30
-  offset++;    // Skip the length byte
-  if (der[offset++] != 0x02)
-    return;               // Verify the marker byte is 0x02
-  len = der[offset++];    // Get the length of the r value
-  if (len == 0x21) {
-    offset++;
-    len--;
+  // SEQUENCE with a short-form length that fits in the input
+  if (der_len < 2 || der[0] != 0x30 || (der[1] & 0x80) != 0) {
+    return false;
   }
-  // Copy the r component of signature prepending 0's
-  memcpy(sig + (32 - len), der + offset, len);
-  offset += len;
-  if (der[offset++] != 0x02)
-    return;               // Verify the marker byte is 0x02
-  len = der[offset++];    // Get the length of the s value
-  if (len == 0x21) {
-    offset++;
-    len--;
+  size_t end = 2 + (size_t)der[1];
+  if (end > der_len) {
+    return false;
   }
-  // Copy the s component of signature prepending 0's
-  memcpy(sig + 32 + (32 - len), der + offset, len);
+  size_t offset = 2;
+  if (!der_read_integer(der, end, &offset, sig) ||
+      !der_read_integer(der, end, &offset, sig + 32)) {
+    memzero(sig, 64);
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -544,6 +572,9 @@ bool convert_byte_array_to_decimal_string(
 
   uint8_t offset = 0;
   while (i <= j) {
+    if ((size_t)offset >= amount_decimal_string_size) {
+      return false;
+    }
     if (i == point_index && post_dec_digit) {
       if (!pre_dec_digit) {
         offset += snprintf(amount_decimal_string + offset,
@@ -591,6 +622,8 @@ uint8_t UTIL_CheckBound(const uint8_t *pBaseAddr,
   if ((NULL == pBaseAddr) || (NULL == pCurrentSrcAddr) ||
       ((uint32_t)pCurrentSrcAddr < (uint32_t)pBaseAddr)) {
     returnCode = UTIL_INVALID_ARGUMENTS;
+  } else if (readSize > totalSizeOfChunk) {
+    returnCode = UTIL_OUT_OF_BOUNDS;
   } else {
     if (((uint32_t)(pCurrentSrcAddr + readSize) - (uint32_t)pBaseAddr) <=
         (totalSizeOfChunk)) {

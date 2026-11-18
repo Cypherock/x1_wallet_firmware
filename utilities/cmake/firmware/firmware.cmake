@@ -160,12 +160,13 @@ target_compile_definitions(${EXECUTABLE} PRIVATE
     -DSTM32L486xx )
 
 add_compile_definitions(
-    USE_SIMULATOR=0 
-    USE_BIP32_CACHE=0 
-    USE_BIP39_CACHE=0 
-    STM32L4 
-    USBD_SOF_DISABLED 
-    ENABLE_HID_WEBUSB_COMM=1)
+    USE_SIMULATOR=0
+    USE_BIP32_CACHE=0
+    USE_BIP39_CACHE=0
+    STM32L4
+    USBD_SOF_DISABLED
+    ENABLE_HID_WEBUSB_COMM=1
+    RAND_PLATFORM_INDEPENDENT)
 
 # Add BTC_ONLY compile definition when building BTC-only firmware
 IF(BTC_ONLY)

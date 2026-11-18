@@ -145,7 +145,8 @@ static bool evm_parse_legacy(const uint8_t *data,
   item_bytes_len =
       get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
   offset += decoded_len;
-  if (type != LIST)
+  // the transaction list must span the whole buffer
+  if (type != LIST || decoded_len + item_bytes_len != data_size)
     return false;
 
   // nonce
@@ -161,6 +162,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gas price
   item_bytes_len =
@@ -175,6 +178,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gas limit
   item_bytes_len =
@@ -189,6 +194,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // to address
   item_bytes_len =
@@ -202,6 +209,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // value
   item_bytes_len =
@@ -216,6 +225,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // data
   item_bytes_len =
@@ -240,6 +251,8 @@ static bool evm_parse_legacy(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // r: Should be dummy (i.e. 0); no storage needed
   item_bytes_len =
@@ -466,6 +479,10 @@ bool evm_validate_unsigned_txn(const evm_txn_context_t *txn_context) {
       (is_zero(utxn_ptr->gas_limit, utxn_ptr->gas_limit_size[0])) ||
       // Check if the gas price is non-zero
       (is_zero(utxn_ptr->gas_price, utxn_ptr->gas_price_size[0])) ||
+      // reject gas fields wider than 8 bytes here so the fee
+      // computation's ASSERT (eth_get_fee_string) can never reset the device on
+      // a malformed txn. See evm_txn_helpers.c line 409
+      (utxn_ptr->gas_limit_size[0] > 8 || utxn_ptr->gas_price_size[0] > 8) ||
       // Check if the chain id from app matches with the chain id from the
       // unsigned transaction
       (cy_read_be(utxn_ptr->chain_id, utxn_ptr->chain_id_size[0]) !=
