@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 // Number of entries in whitelisted canisters list
-#define CANTON_WHITELISTED_INSTRUMENT_COUNT 5
+#define CANTON_WHITELISTED_INSTRUMENT_COUNT 11
 
 /*****************************************************************************
  * TYPEDEFS

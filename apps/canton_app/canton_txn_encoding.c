@@ -405,6 +405,9 @@ const static char *CANTON_TRANSFER_INSTRUCTION = "AmuletTransferInstruction";
 const static char *CANTON_TRANSFER_OFFER =
     "TransferOffer";    // Tokens use TransferOffer; atleast CBTC uses this;
                         // Verify when supporting other tokens
+// Cantor8 token registry (eg. aSOL) uses Cantor8.Token.Transfer:
+// TransferInstruction; its `transfer` field is the standard Splice Transfer
+const static char *CANTON_TOKEN_TRANSFER_INSTRUCTION = "TransferInstruction";
 const static char *TRANSFER_LABEL = "transfer";
 const static char *SENDER_LABEL = "sender";
 const static char *RECEIVER_LABEL = "receiver";
@@ -1737,6 +1740,17 @@ static void parse_display_info_from_transfer_record(
   }
 }
 
+/**
+ * @brief Checks if the entity name is of a pending transfer contract
+ * (Amulet, Utility registry or Cantor8 registry) whose `transfer` field holds
+ * the transfer details for accept, reject or withdraw transactions.
+ */
+static bool is_transfer_instruction_entity(const char *entity_name) {
+  return strcmp(entity_name, CANTON_TRANSFER_INSTRUCTION) == 0 ||
+         strcmp(entity_name, CANTON_TRANSFER_OFFER) == 0 ||
+         strcmp(entity_name, CANTON_TOKEN_TRANSFER_INSTRUCTION) == 0;
+}
+
 static void parse_display_info(const char *choice_id,
                                const canton_value_t *chosen_value) {
   if (!choice_id || !chosen_value) {
@@ -1778,13 +1792,10 @@ static void parse_display_info(const char *choice_id,
         strcpy(display_info->amount, tap_value->numeric);
       }
     }
-  } else if (strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) == 0 ||
-             strcmp(choice_id, CANTON_TRANSFER_OFFER) == 0) {
+  } else if (is_transfer_instruction_entity(choice_id)) {
     // txn is either accept, reject or withdraw
     if (!record->has_record_id ||
-        (strcmp(record->record_id.entity_name, CANTON_TRANSFER_INSTRUCTION) !=
-             0 &&
-         strcmp(record->record_id.entity_name, CANTON_TRANSFER_OFFER) != 0)) {
+        !is_transfer_instruction_entity(record->record_id.entity_name)) {
       return;
     }
     parse_display_info_from_transfer_record(record, display_info);
