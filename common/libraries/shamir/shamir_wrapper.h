@@ -12,6 +12,7 @@
 #ifndef SHAMIR_WRAPPER_H
 #define SHAMIR_WRAPPER_H
 
+#include <stdbool.h>
 #include <stdint.h>
 /**
  * @brief
@@ -51,7 +52,7 @@ void convert_to_shares(uint8_t secret_len,
  *
  * @note memory to be allocated by client
  */
-void recover_secret_from_shares(
+bool recover_secret_from_shares(
     uint8_t number_of_bytes,    // visualise this as horizontal length
     uint8_t num_shares,    // threshold. shares is a 2D array. visualise this as
                            // vertical height
@@ -73,7 +74,7 @@ void recover_secret_from_shares(
  *
  * @note
  */
-void recover_share_from_shares(
+bool recover_share_from_shares(
     uint8_t number_of_bytes,    // visualise this as horizontal length
     uint8_t num_shares,    // threshold. shares is a 2D array. visualise this as
                            // vertical height

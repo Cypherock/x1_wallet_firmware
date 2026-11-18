@@ -223,8 +223,10 @@ static uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret) {
   uint8_t io_key[IO_KEY_SIZE];
   atecc_data.retries = DEFAULT_ATECC_RETRIES;
 
-  if (get_io_protection_key(io_key) != SUCCESS_)
+  if (get_io_protection_key(io_key) != SUCCESS_) {
+    memzero(io_key, sizeof(io_key));
     return -1;
+  }
 
   bool usb_irq_enable_on_entry = NVIC_GetEnableIRQ(OTG_FS_IRQn);
   NVIC_DisableIRQ(OTG_FS_IRQn);
@@ -240,6 +242,7 @@ static uint8_t atecc_nfc_ecdh(const uint8_t *pub_key, uint8_t *shared_secret) {
   if (usb_irq_enable_on_entry == true)
     NVIC_EnableIRQ(OTG_FS_IRQn);
 
+  memzero(io_key, sizeof(io_key));
   return atecc_data.status;
 }
 
@@ -333,6 +336,7 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
   if (ATCA_SUCCESS != status) {
     LOG_CRITICAL("xxec %d:%d", ATECC_ERROR_BASE + status, __LINE__);
     mark_core_error_screen(ui_text_unknown_error_contact_support, false);
+    memzero(pair_data->data + 45, 32);
     return ATECC_ERROR_BASE + status;
   }
 
@@ -346,6 +350,10 @@ static uint32_t pair_card_postprocess(card_pairing_data_t *pair_data,
   set_keystore_key_id(keystore_index, pair_data->data, 4, FLASH_SAVE_LATER);
   set_keystore_used_status(keystore_index, 1, FLASH_SAVE_NOW);
 
+  // the shared secret and the derived pairing key are not needed any more
+  memzero(buffer, sizeof(buffer));
+  memzero(&ctx, sizeof(ctx));
+  memzero(pair_data->data + 45, 32);
   return SUCCESS;
 }
 
@@ -409,6 +417,7 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 
   error_status = pair_card_preprocess(&pair_data);
   if (SUCCESS != error_status) {
+    memzero(&pair_data, sizeof(pair_data));
     if (NULL != status) {
       *status = error_status;
     }
@@ -435,6 +444,7 @@ card_error_type_e card_pair_without_retap(uint8_t card_number,
 
   buzzer_start(BUZZER_DURATION);
   nfc_deselect_card();
+  memzero(&pair_data, sizeof(pair_data));
 
   if (NULL != status) {
     *status = error_status;
@@ -451,6 +461,7 @@ card_error_type_e card_pair_operation(uint8_t card_number,
   card_pairing_data_t pair_data = {0};
 
   if (SUCCESS != pair_card_preprocess(&pair_data)) {
+    memzero(&pair_data, sizeof(pair_data));
     return CARD_OPERATION_ABORT_OPERATION;
   }
 
@@ -490,6 +501,7 @@ card_error_type_e card_pair_operation(uint8_t card_number,
   }
 
   nfc_deselect_card();
+  memzero(&pair_data, sizeof(pair_data));
   return card_data.error_type;
 }
 
@@ -500,6 +512,7 @@ card_error_type_e single_card_pair_operation(char *heading,
   card_pairing_data_t pair_data = {0};
 #if USE_SIMULATOR == 0
   if (SUCCESS != pair_card_preprocess(&pair_data)) {
+    memzero(&pair_data, sizeof(pair_data));
     return CARD_OPERATION_ABORT_OPERATION;
   }
 
@@ -538,6 +551,7 @@ card_error_type_e single_card_pair_operation(char *heading,
   }
 
   nfc_deselect_card();
+  memzero(&pair_data, sizeof(pair_data));
   return card_data.error_type;
 #else
   return CARD_OPERATION_SUCCESS;

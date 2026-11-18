@@ -172,7 +172,8 @@ Card_Data_errors_t validate_wallet(Wallet *wallet) {
     return INVALID_SHAMIR_CONFIG;
   if (wallet->total_number_of_shares != TOTAL_NUMBER_OF_SHARES)
     return INVALID_SHAMIR_CONFIG;
-  if (wallet->xcor >= TOTAL_NUMBER_OF_SHARES)
+  // card shares are the points x = 1..4; x = 5 is the device share
+  if (wallet->xcor < 1 || wallet->xcor >= TOTAL_NUMBER_OF_SHARES)
     return INVALID_SHARE_INDEX;
   if (is_zero(wallet->wallet_id, sizeof(wallet->wallet_id)))
     return INVALID_WALLET_ID;
