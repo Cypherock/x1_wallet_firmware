@@ -350,8 +350,16 @@ card_error_type_e card_handle_errors(card_operation_data_t *card_data) {
     case SW_NOT_PAIRED:
       /* This error would indicates that device has the pairing keys but card
        * doesn't. In practice this would happen if the card was paired with more
-       * than 5 devices after being paired to the device where error occurs. */
-      invalidate_keystore();
+       * than 5 devices after being paired to the device where error occurs.
+       * Only the pairing of the tapped card is dropped; the status word is not
+       * authenticated, so a card must not be able to unpair the other cards. */
+      {
+        int keystore_index =
+            get_paired_card_index(card_data->nfc_data.card_key_id);
+        if (-1 != keystore_index) {
+          set_keystore_used_status(keystore_index, 0, FLASH_SAVE_NOW);
+        }
+      }
       card_data->nfc_data.pairing_error = true;
       NFC_RETURN_ABORT_ERROR(card_data, ui_text_device_and_card_not_paired);
       break;
