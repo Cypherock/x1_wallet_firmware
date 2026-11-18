@@ -118,6 +118,8 @@ bool encrypt_shares() {
                     PADDED_NONCE_SIZE));
     memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
   }
+  memzero(share, sizeof(share));
+  memzero(&ctx, sizeof(ctx));
 
   return true;
 }
@@ -140,6 +142,8 @@ bool decrypt_shares() {
     // TODO: Add mac comparison for decryption verification
     memcpy(wallet_shamir_data.mnemonic_shares[i], share, BLOCK_SIZE);
   }
+  memzero(share, sizeof(share));
+  memzero(&ctx, sizeof(ctx));
   memzero(wallet_credential_data.password_single_hash,
           sizeof(wallet_credential_data.password_single_hash));
   memzero(wallet_shamir_data.share_encryption_data,
