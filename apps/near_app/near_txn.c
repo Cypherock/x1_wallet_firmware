@@ -199,6 +199,7 @@ static bool send_signature(near_query_t *query, const uint8_t *signature);
  * STATIC VARIABLES
  *****************************************************************************/
 static near_txn_context_t *near_txn_context = NULL;
+static bool use_signature_verification = false;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -242,7 +243,7 @@ static bool validate_request_data(const near_sign_txn_request_t *request) {
          sizeof(request->initiate.wallet_id));
   data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-  exchange_app_validate_caq(data);
+  use_signature_verification = exchange_app_validate_caq(data);
 
   return status;
 }
@@ -305,16 +306,42 @@ static bool fetch_valid_input(near_query_t *query) {
   return false;
 }
 
+static bool is_swap_receiver_valid(const near_unsigned_txn *decoded_utxn) {
+  char receiver[200] = "";
+  // the whole receiver must be checked, as it is the account that is credited
+  if (decoded_utxn->receiver_id_length >= sizeof(receiver)) {
+    near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+  snprintf(receiver,
+           sizeof(receiver),
+           "%.*s",
+           (int)decoded_utxn->receiver_id_length,
+           (const char *)decoded_utxn->receiver);
+  return exchange_validate_stored_signature(receiver, sizeof(receiver));
+}
+
 static bool get_user_verification(void) {
   const near_unsigned_txn *decoded_utxn = &near_txn_context->decoded_txn;
   bool user_verified = false;
 
   switch (decoded_utxn->actions_type) {
     case NEAR_ACTION_TRANSFER: {
+      // in a swap, the receiver must be the address signed by the server
+      if (use_signature_verification && !is_swap_receiver_valid(decoded_utxn)) {
+        break;
+      }
       user_verified = user_verification_transfer(decoded_utxn);
       break;
     }
     case NEAR_ACTION_FUNCTION_CALL: {
+      // only a transfer can send swap funds to the exchange
+      if (use_signature_verification) {
+        near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
+        break;
+      }
       user_verified = user_verification_function(decoded_utxn);
       break;
     }

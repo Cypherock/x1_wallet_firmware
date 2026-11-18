@@ -702,6 +702,12 @@ static bool get_user_verification(void) {
     } break;
 
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
+      // a deploy has no recipient to check against the swap signature
+      if (use_signature_verification) {
+        starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+        break;
+      }
       user_verified = get_deploy_txn_user_verification();
 
     } break;

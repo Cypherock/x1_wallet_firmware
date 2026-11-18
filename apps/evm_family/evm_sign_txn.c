@@ -355,6 +355,16 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
 
 STATIC bool get_user_verification() {
   bool status = false;
+  // in a swap, only a transfer has a recipient that is checked against the
+  // server-signed address; any other call could send the funds elsewhere
+  if (txn_context->use_signature_verification &&
+      EVM_TXN_NO_DATA != txn_context->txn_type &&
+      EVM_TXN_TOKEN_TRANSFER_FUNC != txn_context->txn_type) {
+    evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                   ERROR_DATA_FLOW_INVALID_DATA);
+    return status;
+  }
+
   switch (txn_context->txn_type) {
     case EVM_TXN_NO_DATA:
     case EVM_TXN_TOKEN_TRANSFER_FUNC:

@@ -130,6 +130,8 @@ static bool is_token_whitelisted(const uint8_t *address,
  *
  * @param data ABI encoded data field of tron txn
  * @param contract_address contract address of current txn
+ * @param use_signature_verification Whether the recipient must match the
+ * stored swap signature
  * @param status Indicates the result of is_token_whitelisted
  *
  * @return bool Indicating parsing and verification status
@@ -138,6 +140,7 @@ static bool is_token_whitelisted(const uint8_t *address,
  */
 static bool parse_whitelist(uint8_t *data,
                             const uint8_t *contract_address,
+                            bool use_signature_verification,
                             bool *status);
 
 /**
@@ -185,6 +188,7 @@ static bool is_token_whitelisted(const uint8_t *address,
 
 static bool parse_whitelist(uint8_t *data,
                             const uint8_t *contract_address,
+                            bool use_signature_verification,
                             bool *status) {
   const trc20_contracts_t *contract;
   if (!is_token_whitelisted(contract_address, &contract)) {
@@ -205,12 +209,6 @@ static bool parse_whitelist(uint8_t *data,
   }
 
   *status = 1;
-  char msg[100] = "";
-  snprintf(msg, sizeof(msg), "Send \n%s on \n%s", contract->symbol, TRON_NAME);
-  if (!core_confirmation(msg, tron_send_error)) {
-    return false;
-  }
-
   uint8_t to_address[TRON_INITIAL_ADDRESS_LENGTH] = {0};
   to_address[0] = 0x41;
   uint8_t amount[32];
@@ -227,6 +225,19 @@ static bool parse_whitelist(uint8_t *data,
                            address,
                            TRON_ACCOUNT_ADDRESS_LENGTH + 1)) {
     tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    return false;
+  }
+
+  // in a swap, the token recipient must be the address signed by the server
+  if (use_signature_verification) {
+    if (!exchange_validate_stored_signature(address, sizeof(address))) {
+      return false;
+    }
+  }
+
+  char msg[100] = "";
+  snprintf(msg, sizeof(msg), "Send \n%s on \n%s", contract->symbol, TRON_NAME);
+  if (!core_confirmation(msg, tron_send_error)) {
     return false;
   }
 
@@ -360,7 +371,8 @@ static bool transfer_contract_txn(tron_transaction_contract_t *contract,
 }
 
 static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract,
-                                       int64_t fee_limit) {
+                                       int64_t fee_limit,
+                                       bool use_signature_verification) {
   tron_trigger_smart_contract_t trigger_smc_contract =
       TRON_TRIGGER_SMART_CONTRACT_INIT_DEFAULT;
   google_protobuf_any_t any = contract->parameter;
@@ -393,7 +405,15 @@ static bool trigger_smart_contract_txn(tron_transaction_contract_t *contract,
 
   // user verification
   bool is_verified = 0;
-  if (!parse_whitelist(data, contract_address, &is_verified)) {
+  if (!parse_whitelist(
+          data, contract_address, use_signature_verification, &is_verified)) {
+    return false;
+  }
+  // the recipient of an unverified contract call is not known, so it can not
+  // be checked against the swap signature
+  if (0 == is_verified && use_signature_verification) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
   if (0 == is_verified && (!parse_unverified(data, contract_address))) {
@@ -440,7 +460,8 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     }
     case TRON_TRANSACTION_CONTRACT_TRIGGER_SMART_CONTRACT: {
       // TRC20 type
-      if (!trigger_smart_contract_txn(&contract, raw_txn->fee_limit)) {
+      if (!trigger_smart_contract_txn(
+              &contract, raw_txn->fee_limit, use_signature_verification)) {
         return false;
       }
       break;
