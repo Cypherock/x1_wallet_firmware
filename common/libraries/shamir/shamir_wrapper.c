@@ -209,6 +209,8 @@ bool recover_share_from_shares(
     //        share_OUT[j] = (out_x_cor == 0 ? a0 : galois_add(a0, eval(1, &a1,
     //        out_x_cor)));
     share_OUT[j] = galois_add(a0, out_x_cor == 0 ? 0 : eval(1, &a1, out_x_cor));
+    memzero(&a0, sizeof(a0));
+    memzero(&a1, sizeof(a1));
   }
   return true;
 }
@@ -236,6 +238,9 @@ int verify_shares_NC2(
   uint8_t two_shares[2][secret_size];
   uint8_t two_x_coords[2];
   uint8_t secret_calculated[secret_size];
+  // every pair must recover the same secret; the result is accumulated so the
+  // comparison does not leak where the secrets differ
+  uint8_t mismatch = 0;
 
   for (int i = 0; i < number_of_shares; i++) {
     for (int j = i + 1; j < number_of_shares; j++) {
@@ -252,19 +257,27 @@ int verify_shares_NC2(
     two_x_coords[0] = x_coords[pairs[i][0]];
     two_x_coords[1] = x_coords[pairs[i][1]];
 
-    recover_secret_from_shares(secret_size,
-                               MINIMUM_NO_OF_SHARES,
-                               two_shares,
-                               two_x_coords,
-                               secret_calculated);
-    // TODO: Restructure if statements to return 0 by default
+    if (!recover_secret_from_shares(secret_size,
+                                    MINIMUM_NO_OF_SHARES,
+                                    two_shares,
+                                    two_x_coords,
+                                    secret_calculated)) {
+      mismatch = 1;
+    }
     if (i == 0) {
-      memcpy(secret, secret_calculated, BLOCK_SIZE);
+      memcpy(secret, secret_calculated, secret_size);
     }
-    if (memcmp(secret, secret_calculated, BLOCK_SIZE) != 0) {
-      LOG_ERROR("xxx0");
-      return 0;
+    for (uint8_t k = 0; k < secret_size; k++) {
+      mismatch |= secret[k] ^ secret_calculated[k];
     }
+  }
+
+  memzero(two_shares, sizeof(two_shares));
+  memzero(secret_calculated, sizeof(secret_calculated));
+  if (0 != mismatch) {
+    LOG_ERROR("xxx0");
+    memzero(secret, secret_size);
+    return 0;
   }
   return 1;
 }
