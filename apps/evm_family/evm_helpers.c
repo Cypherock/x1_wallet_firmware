@@ -206,6 +206,12 @@ uint64_t get_decode_length(const uint8_t *seq,
                            const uint64_t seq_len,
                            uint64_t *decoded_len,
                            seq_type *type) {
+  *type = NONE;
+  *decoded_len = 0;
+  if (0 == seq_len) {
+    return 0;
+  }
+
   uint8_t first_byte = *seq;
   uint64_t item_bytes_len = 0;
   if (first_byte <= 0x7f) {
@@ -245,6 +251,15 @@ uint64_t get_decode_length(const uint8_t *seq,
     *type = LIST;
   } else {
     // Intentionally unimplemented...
+    return 0;
+  }
+
+  // the header and the item must lie within the sequence; otherwise the
+  // caller would advance past (or, with a 64-bit length, wrap) its buffer
+  if (*decoded_len > seq_len || item_bytes_len > seq_len - *decoded_len) {
+    *type = NONE;
+    *decoded_len = 0;
+    return 0;
   }
 
   return item_bytes_len;

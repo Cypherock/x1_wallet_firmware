@@ -81,9 +81,47 @@
  * PRIVATE TYPEDEFS
  *****************************************************************************/
 
+// Expected Candid types of the transfer argument fields
+typedef enum {
+  SHAPE_BLOB,         // vec nat8
+  SHAPE_NAT,          // nat
+  SHAPE_NAT64,        // nat64
+  SHAPE_TOKENS,       // record { e8s : nat64 }
+  SHAPE_TIMESTAMP,    // record { timestamp_nanos : nat64 }
+  SHAPE_ACCOUNT,      // record { owner : principal; subaccount : opt blob }
+} candid_shape_e;
+
+typedef struct {
+  uint32_t hash;
+  candid_shape_e shape;
+  bool is_opt;    // `opt <shape>`; such a field may also be left out
+} expected_field_t;
+
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icp/candid/ledger.certified.idl.js#L291
+static const expected_field_t icp_transfer_args[] = {
+    {transfer_hash_to, SHAPE_BLOB, false},
+    {transfer_hash_fee, SHAPE_TOKENS, false},
+    {transfer_hash_memo, SHAPE_NAT64, false},
+    {transfer_hash_from_subaccount, SHAPE_BLOB, true},
+    {transfer_hash_created_at_time, SHAPE_TIMESTAMP, true},
+    {transfer_hash_amount, SHAPE_TOKENS, false},
+};
+
+/// Reference:
+// https://github.com/dfinity/ic-js/blob/main/packages/ledger-icrc/candid/icrc_ledger.certified.idl.js#L178
+static const expected_field_t icrc_transfer_args[] = {
+    {transfer_hash_to, SHAPE_ACCOUNT, false},
+    {transfer_hash_fee, SHAPE_NAT, true},
+    {transfer_hash_memo, SHAPE_BLOB, true},
+    {transfer_hash_from_subaccount, SHAPE_BLOB, true},
+    {transfer_hash_created_at_time, SHAPE_NAT64, true},
+    {transfer_hash_amount, SHAPE_NAT, false},
+};
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -96,6 +134,121 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+/// Resolves a type reference to an entry of the type table
+static const IDL_complex_type_t *get_table_type(
+    const IDL_complex_type_t *type_table,
+    size_t num_types,
+    int64_t type) {
+  if (type < 0 || (uint64_t)type >= num_types) {
+    return NULL;
+  }
+  return &type_table[type];
+}
+
+/// Checks a record type that has a single field
+static bool is_single_field_record(const IDL_complex_type_t *record,
+                                   uint64_t hash,
+                                   int64_t type) {
+  return NULL != record && Record == record->type_id &&
+         1 == record->num_fields && hash == record->fields[0].key_hash &&
+         type == record->fields[0].type;
+}
+
+static bool is_shape(const IDL_complex_type_t *type_table,
+                     size_t num_types,
+                     int64_t type,
+                     candid_shape_e shape) {
+  const IDL_complex_type_t *entry = get_table_type(type_table, num_types, type);
+  switch (shape) {
+    case SHAPE_BLOB:
+      return NULL != entry && Vector == entry->type_id &&
+             Nat8 == entry->child_type;
+    case SHAPE_NAT:
+      return Nat == type;
+    case SHAPE_NAT64:
+      return Nat64 == type;
+    case SHAPE_TOKENS:
+      return is_single_field_record(entry, record_hash_e8s, Nat64);
+    case SHAPE_TIMESTAMP:
+      return is_single_field_record(entry, record_hash_timestamp_nanos, Nat64);
+    case SHAPE_ACCOUNT: {
+      // fields are ordered by hash: owner, subaccount
+      if (NULL == entry || Record != entry->type_id || 2 != entry->num_fields ||
+          record_hash_owner != entry->fields[0].key_hash ||
+          Principal != entry->fields[0].type ||
+          record_hash_subaccount != entry->fields[1].key_hash) {
+        return false;
+      }
+      const IDL_complex_type_t *subaccount =
+          get_table_type(type_table, num_types, entry->fields[1].type);
+      return NULL != subaccount && Opt == subaccount->type_id &&
+             is_shape(
+                 type_table, num_types, subaccount->child_type, SHAPE_BLOB);
+    }
+    default:
+      return false;
+  }
+}
+
+/**
+ * The values are decoded with the layout of the expected transfer arguments,
+ * so the declared type of each field must be exactly that layout. Otherwise
+ * the ledger, which decodes by the declared types, could read a different
+ * value than the one shown.
+ */
+static bool is_expected_transfer_args(const IDL_complex_type_t *type_table,
+                                      size_t num_types,
+                                      const IDL_complex_type_t *args,
+                                      bool is_token_transfer) {
+  const expected_field_t *expected =
+      is_token_transfer ? icrc_transfer_args : icp_transfer_args;
+  const size_t expected_count =
+      is_token_transfer
+          ? sizeof(icrc_transfer_args) / sizeof(icrc_transfer_args[0])
+          : sizeof(icp_transfer_args) / sizeof(icp_transfer_args[0]);
+
+  if (Record != args->type_id || args->num_fields > expected_count) {
+    return false;
+  }
+
+  // both field lists are ordered by hash, so they are walked together
+  size_t e = 0;
+  for (uint64_t i = 0; i < args->num_fields; i++) {
+    const record_field_t *field = &args->fields[i];
+    // a missing field is only allowed when it is optional
+    while (e < expected_count && expected[e].hash != field->key_hash) {
+      if (!expected[e].is_opt) {
+        return false;
+      }
+      e++;
+    }
+    if (e == expected_count) {
+      return false;
+    }
+
+    int64_t type = field->type;
+    if (expected[e].is_opt) {
+      const IDL_complex_type_t *opt =
+          get_table_type(type_table, num_types, type);
+      if (NULL == opt || Opt != opt->type_id) {
+        return false;
+      }
+      type = opt->child_type;
+    }
+    if (!is_shape(type_table, num_types, type, expected[e].shape)) {
+      return false;
+    }
+    e++;
+  }
+
+  for (; e < expected_count; e++) {
+    if (!expected[e].is_opt) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -173,14 +326,13 @@ bool read_recipient_account_id(const uint8_t *data,
 
     icp_token_transfer_t *txn = icp_txn_context->raw_icp_token_transfer_txn;
 
-    if (!decode_vec(Nat8,
-                    data,
-                    offset,
-                    txn->to.owner,
-                    sizeof(txn->to.owner),
-                    buffer_size)) {
+    // the principal is shown with the length it was encoded with
+    uint64_t owner_length = decode_vec(
+        Nat8, data, offset, txn->to.owner, sizeof(txn->to.owner), buffer_size);
+    if (0 == owner_length) {
       return false;
     }
+    txn->to.owner_length = (uint8_t)owner_length;
 
     if (*offset >= buffer_size) {
       return false;
@@ -189,17 +341,28 @@ bool read_recipient_account_id(const uint8_t *data,
     (*offset)++;
 
     if (txn->to.has_subaccount) {
-      return decode_vec(Nat8,
-                        data,
-                        offset,
-                        txn->to.subaccount,
-                        sizeof(txn->to.subaccount),
-                        buffer_size);
+      if (ICP_SUBACCOUNT_ID_LEN != decode_vec(Nat8,
+                                              data,
+                                              offset,
+                                              txn->to.subaccount,
+                                              sizeof(txn->to.subaccount),
+                                              buffer_size)) {
+        return false;
+      }
+      // the recipient subaccount is not shown, so only the default
+      // subaccount (the one the shown principal refers to) is accepted
+      for (size_t i = 0; i < ICP_SUBACCOUNT_ID_LEN; i++) {
+        if (0 != txn->to.subaccount[i]) {
+          return false;
+        }
+      }
     }
     return true;
   }
 
-  return decode_vec(Nat8,
+  // the whole account identifier is shown
+  return ICP_ACCOUNT_ID_LENGTH ==
+         decode_vec(Nat8,
                     data,
                     offset,
                     icp_txn_context->raw_icp_coin_transfer_txn->to,
@@ -369,6 +532,12 @@ uint64_t leb_decode(const uint8_t *buffer, size_t *offset, size_t buffer_size) {
     }
     byte = buffer[*offset];
     (*offset)++;
+    // the 10th byte holds bit 63 only; a larger value can not be represented
+    // and must not be shown modulo 2^64
+    if (63 == shift && 0 != (byte & 0xFE)) {
+      *offset = buffer_size + 1;
+      return result;
+    }
     result |= ((uint64_t)(byte & 0x7F) << shift);
     shift += 7;
   } while ((byte & 0x80) != 0);
@@ -500,10 +669,11 @@ bool icp_parse_transfer_txn(const uint8_t *byte_array,
 
   arg_type = type_table[arg_type_index];
 
-  // we expect a single record of 4-6 fields (to, amount, fee, memo,
-  // from_subaccount, created_at_time)
-  if (arg_type.type_id != Record || arg_type.num_fields < 4 ||
-      arg_type.num_fields > 6) {
+  // the argument must be the transfer arguments record of the ledger
+  if (!is_expected_transfer_args(type_table,
+                                 num_types,
+                                 &arg_type,
+                                 icp_txn_context->is_token_transfer_txn)) {
     goto cleanup;
   }
 

@@ -140,7 +140,8 @@ bool sia_parse_transaction(const uint8_t *blob,
   txn->output_count = U64_READ_LE_ARRAY(blob + offset);
   offset += 8;
 
-  if (txn->output_count > SIA_MAX_OUTPUTS) {
+  // the first output is the one shown to the user, so it must exist
+  if (0 == txn->output_count || txn->output_count > SIA_MAX_OUTPUTS) {
     return false;
   }
 

@@ -114,7 +114,8 @@ bool evm_parse_eip2930(const uint8_t *data,
   item_bytes_len =
       get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
   offset += decoded_len;
-  if (type != LIST)
+  // the transaction list must span the whole buffer
+  if (type != LIST || decoded_len + item_bytes_len != data_size)
     return false;
 
   // chain-id
@@ -130,6 +131,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // nonce
   item_bytes_len =
@@ -144,6 +147,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gasPrice
   item_bytes_len =
@@ -158,6 +163,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gasLimit
   item_bytes_len =
@@ -172,6 +179,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // to
   item_bytes_len =
@@ -185,6 +194,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // value
   item_bytes_len =
@@ -199,6 +210,8 @@ bool evm_parse_eip2930(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // data
   item_bytes_len =
@@ -239,7 +252,8 @@ bool evm_parse_eip1559(const uint8_t *data,
   item_bytes_len =
       get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
   offset += decoded_len;
-  if (type != LIST)
+  // the transaction list must span the whole buffer
+  if (type != LIST || decoded_len + item_bytes_len != data_size)
     return false;
 
   // chain-id
@@ -255,6 +269,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // nonce
   item_bytes_len =
@@ -269,6 +285,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // max_priority_fee_per_gas
   item_bytes_len =
@@ -283,6 +301,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // max_fee_per_gas
   item_bytes_len =
@@ -297,6 +317,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // gasLimit
   item_bytes_len =
@@ -311,6 +333,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // to
   item_bytes_len =
@@ -324,6 +348,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // value
   item_bytes_len =
@@ -338,6 +364,8 @@ bool evm_parse_eip1559(const uint8_t *data,
            data_size,
            item_bytes_len,
            &offset);
+  if (offset < 0)
+    return false;
 
   // data
   item_bytes_len =
