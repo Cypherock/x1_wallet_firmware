@@ -97,7 +97,7 @@ extern Wallet_shamir_data wallet_shamir_data;
  * @return a boolean value, which indicates whether the fetched wallet matches
  * the expected values.
  */
-static bool verify_fetched_wallet(uint8_t xcor);
+static bool verify_fetched_wallet(uint8_t xcor, uint8_t tapped_card);
 
 /**
  * @brief Helper function that copies wallet share retrieved from X1 card onto
@@ -105,8 +105,9 @@ static bool verify_fetched_wallet(uint8_t xcor);
  *
  * @param xcor The x-coordinate of the wallet share, this variable represents
  * the share index fetched from the last tapped card.
+ * @param tapped_card The encoded number of the tapped card
  */
-static bool _handle_retrieve_wallet_success(uint8_t xcor);
+static bool _handle_retrieve_wallet_success(uint8_t xcor, uint8_t tapped_card);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -121,7 +122,7 @@ static uint8_t remaining_cards;
  * STATIC FUNCTIONS
  *****************************************************************************/
 
-static bool verify_fetched_wallet(uint8_t xcor) {
+static bool verify_fetched_wallet(uint8_t xcor, uint8_t tapped_card) {
   Flash_Wallet *flash_wallet = NULL;
   bool status =
       get_flash_wallet_by_name((const char *)wallet.wallet_name, &flash_wallet);
@@ -133,6 +134,9 @@ static bool verify_fetched_wallet(uint8_t xcor) {
   compare_status &=
       (0 == memcmp(wallet.wallet_name, flash_wallet->wallet_name, NAME_SIZE));
   compare_status &= (wallet.wallet_info == flash_wallet->wallet_info);
+  // the share x-coordinate is the number of the card it was written to, so
+  // two cards can not present the same point
+  compare_status &= (encode_card_number(wallet.xcor) == tapped_card);
 
   /**
    * For wallets with device share present on flash, fetched wallet nonce is
@@ -165,8 +169,8 @@ static bool verify_fetched_wallet(uint8_t xcor) {
   return compare_status;
 }
 
-static bool _handle_retrieve_wallet_success(uint8_t xcor) {
-  if (!verify_fetched_wallet(xcor)) {
+static bool _handle_retrieve_wallet_success(uint8_t xcor, uint8_t tapped_card) {
+  if (!verify_fetched_wallet(xcor, tapped_card)) {
     LOG_ERROR("Verification failed xxx39");
     return false;
   }
@@ -229,7 +233,8 @@ card_error_type_e card_fetch_share(const card_fetch_share_config_t *config,
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
         remaining_cards = card_data.nfc_data.acceptable_cards;
-        if (!_handle_retrieve_wallet_success(config->xcor)) {
+        if (!_handle_retrieve_wallet_success(config->xcor,
+                                             card_data.nfc_data.tapped_card)) {
           result = card_data.error_type = CARD_OPERATION_VERIFICATION_FAILED;
           card_data.nfc_data.status = SW_RECORD_NOT_FOUND;
           mark_core_error_screen(
