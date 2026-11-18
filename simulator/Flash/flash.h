@@ -10,8 +10,9 @@
 #define FLASH_SIM_PAGE_SIZE LOG_PAGE_SIZE
 #define TRANSLATE_ADDR(addr, base) (addr - base)
 
+/* Lengths are in bytes, like the device's BSP flash functions. */
 int read_file(uint32_t addr, uint32_t *dstAddr, uint32_t length);
 int erase_file(uint32_t page_address, uint32_t noOfpages);
-int write_file(uint32_t *dstAddr, const uint32_t *srcAddr, uint32_t noOfWords);
+int write_file(uint32_t *dstAddr, const uint32_t *srcAddr, uint32_t noOfBytes);
 
 #endif

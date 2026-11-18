@@ -142,8 +142,11 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv);
 static void flash_struct_load() {
   ASSERT((&flash_ram_instance) != NULL);
 #if USE_SIMULATOR == 1
-  uint32_t serialized_flash_metadata[2];
-  read_cmd(FLASH_DATA_ADDRESS, serialized_flash_metadata, 8);
+  /* Bytes, like the device branch below: the tag and length are read byte by
+   * byte (indexes 0..5). A uint32_t[2] made indexes 2..5 read past the array,
+   * so the stored struct was never recognised after a restart. */
+  uint8_t serialized_flash_metadata[8] = {0};
+  read_cmd(FLASH_DATA_ADDRESS, (uint32_t *)serialized_flash_metadata, 8);
 #else
   uint8_t *serialized_flash_metadata = (uint8_t *)FLASH_DATA_ADDRESS;
 #endif
