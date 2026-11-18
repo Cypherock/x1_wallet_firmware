@@ -922,6 +922,17 @@ static bool verify_solana_withdraw_transaction() {
 }
 
 STATIC bool solana_get_user_verification() {
+  // in a swap, only a transfer can send the funds to the server-signed
+  // address; the staking flows have no recipient that could be checked
+  if (use_signature_verification &&
+      (solana_txn_context->extra_data.is_deactivate_operation ||
+       solana_txn_context->extra_data.withdraw_instruction_count > 0 ||
+       solana_txn_context->extra_data.is_stake_operation)) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+
   if (solana_txn_context->extra_data.is_deactivate_operation) {
     return verify_solana_deactivate_transaction();
   } else if (solana_txn_context->extra_data.withdraw_instruction_count > 0) {
