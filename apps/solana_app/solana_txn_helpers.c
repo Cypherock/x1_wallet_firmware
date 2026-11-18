@@ -74,6 +74,14 @@
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
 
+// tag(4) + base(32) + seed length(8), followed by the seed bytes
+#define SOLANA_WITH_SEED_HEADER_LENGTH (4 + SOLANA_ACCOUNT_ADDRESS_LENGTH + 8)
+// tag(4) + Authorized{staker, withdrawer} + Lockup{unix_timestamp:8, epoch:8,
+// custodian:32}
+#define SOLANA_STAKE_INITIALIZE_DATA_LENGTH                                    \
+  (4 + (2 * SOLANA_ACCOUNT_ADDRESS_LENGTH) + 8 + 8 +                           \
+   SOLANA_ACCOUNT_ADDRESS_LENGTH)
+
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
@@ -93,6 +101,25 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+
+/**
+ * Resolves the account at position `pos` of an instruction's account list,
+ * checking both the position and the account index it holds.
+ */
+static bool get_instruction_account(const solana_unsigned_txn *utxn,
+                                    const solana_instruction *instruction,
+                                    uint16_t pos,
+                                    uint8_t **account) {
+  if (pos >= instruction->account_addresses_index_count ||
+      instruction->account_addresses_index[pos] >=
+          utxn->account_addresses_count) {
+    return false;
+  }
+  *account =
+      utxn->account_addresses + (instruction->account_addresses_index[pos] *
+                                 SOLANA_ACCOUNT_ADDRESS_LENGTH);
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -246,16 +273,15 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                                              SOLANA_ACCOUNT_ADDRESS_LENGTH,
                system_program_id[SOLANA_SOL_TRANSFER_PROGRAM_ID_INDEX],
                SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
+      // every system instruction starts with a 4-byte tag
       if (utxn->instruction[i].account_addresses_index_count == 0 ||
-          utxn->instruction[i].opaque_data_length == 0)
+          utxn->instruction[i].opaque_data_length < 4)
         return SOL_D_MIN_LENGTH;
 
       extra_data->is_token_transfer = false;    // System
 
       uint32_t instruction_enum =
-          (utxn->instruction[i].opaque_data_length >= 4)
-              ? U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data)
-              : 0xFFFFFFFFU;
+          U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
 
       switch (instruction_enum) {
         case SSI_TRANSFER:    // transfer instruction
@@ -282,87 +308,82 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
               U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 4);
           break;
 
-        case SSI_CREATE_ACCOUNT_WITH_SEED:
+        case SSI_CREATE_ACCOUNT_WITH_SEED: {
           if (extra_data->create_account_with_seed_instruction_index != -1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
-          if (utxn->instruction[i].account_addresses_index_count < 2)
+
+          solana_instruction *ins = &utxn->instruction[i];
+          solana_create_account_with_seed_data *cas =
+              &ins->program.create_account_with_seed;
+          // 0: from_account, 1: new_account, 2: base_account optional as per
+          // spec when base == from_account, may or maynot be present
+          if (!get_instruction_account(utxn, ins, 0, &cas->from_account) ||
+              !get_instruction_account(utxn, ins, 1, &cas->new_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
+          if (ins->account_addresses_index_count >= 3) {
+            if (!get_instruction_account(utxn, ins, 2, &cas->base_account))
+              return SOL_V_INDEX_OUT_OF_RANGE;
+          } else {
+            cas->base_account = cas->from_account;
+          }
+
+          if (ins->opaque_data_length < SOLANA_WITH_SEED_HEADER_LENGTH)
+            return SOL_D_MIN_LENGTH;
+          uint64_t seed_len = (uint64_t)U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          if (seed_len > 32)
+            return SOL_D_READ_SIZE_MISMATCH;
+          uint32_t after_seed = SOLANA_WITH_SEED_HEADER_LENGTH + seed_len;
+          // lamports(8) + space(8) + owner(32)
+          if (ins->opaque_data_length <
+              after_seed + 16 + SOLANA_ACCOUNT_ADDRESS_LENGTH)
             return SOL_D_MIN_LENGTH;
 
           extra_data->transfer_instruction_index = i;
           extra_data->is_stake_operation = true;
           extra_data->create_account_with_seed_instruction_index = i;
 
-          utxn->instruction[i].program.create_account_with_seed.from_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 0) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          // 0: from_account, 1: new_account, 2: base_account optional as per
-          // spec when base == from_account, may or maynot be present
-          utxn->instruction[i].program.create_account_with_seed.base_account =
-              (utxn->instruction[i].account_addresses_index_count >= 3)
-                  ? utxn->account_addresses +
-                        (*(utxn->instruction[i].account_addresses_index + 2) *
-                         SOLANA_ACCOUNT_ADDRESS_LENGTH)
-                  : utxn->instruction[i]
-                        .program.create_account_with_seed.from_account;
-
-          utxn->instruction[i].program.create_account_with_seed.base =
-              utxn->instruction[i].opaque_data + 4;
-          {
-            uint64_t seed_len =
-                (uint64_t)U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data +
-                                            4 + SOLANA_ACCOUNT_ADDRESS_LENGTH);
-            if (seed_len > 32) {
-              return SOL_D_READ_SIZE_MISMATCH;
-            }
-            uint16_t after_seed =
-                4 + SOLANA_ACCOUNT_ADDRESS_LENGTH + 8 + seed_len;
-            utxn->instruction[i].program.create_account_with_seed.lamports =
-                U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data +
-                                  after_seed);
-            // then we have 8 bytes of "space"
-            utxn->instruction[i].program.create_account_with_seed.owner =
-                utxn->instruction[i].opaque_data + after_seed + 16;
-          }
+          cas->base = ins->opaque_data + 4;
+          cas->lamports = U64_READ_LE_ARRAY(ins->opaque_data + after_seed);
+          // then we have 8 bytes of "space"
+          cas->owner = ins->opaque_data + after_seed + 16;
           break;
+        }
 
-        case SSI_ALLOCATE_WITH_SEED:
+        case SSI_ALLOCATE_WITH_SEED: {
           if (allocate_with_seed_seen)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
-          if (utxn->instruction[i].account_addresses_index_count < 2)
+
+          solana_instruction *ins = &utxn->instruction[i];
+          solana_allocate_with_seed_data *aws =
+              &ins->program.allocate_with_seed;
+          // 0: new_account, 1: base_account
+          if (!get_instruction_account(utxn, ins, 0, &aws->new_account) ||
+              !get_instruction_account(utxn, ins, 1, &aws->base_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
+
+          if (ins->opaque_data_length < SOLANA_WITH_SEED_HEADER_LENGTH)
+            return SOL_D_MIN_LENGTH;
+          uint64_t seed_len = (uint64_t)U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          if (seed_len > 32)
+            return SOL_D_READ_SIZE_MISMATCH;
+          uint32_t after_seed = SOLANA_WITH_SEED_HEADER_LENGTH + seed_len;
+          // space(8) + owner(32)
+          if (ins->opaque_data_length <
+              after_seed + 8 + SOLANA_ACCOUNT_ADDRESS_LENGTH)
             return SOL_D_MIN_LENGTH;
 
           extra_data->is_stake_operation = true;
           extra_data->is_deactivate_operation = true;
           allocate_with_seed_seen = true;
 
-          utxn->instruction[i].parsed_kind = SOLANA_PARSED_ALLOCATE_WITH_SEED;
-          // 0: new_account, 1: base_account
-          utxn->instruction[i].program.allocate_with_seed.new_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 0) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.allocate_with_seed.base_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 1) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-
-          utxn->instruction[i].program.allocate_with_seed.base =
-              utxn->instruction[i].opaque_data + 4;
-          {
-            uint64_t seed_len =
-                (uint64_t)U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data +
-                                            4 + SOLANA_ACCOUNT_ADDRESS_LENGTH);
-            if (seed_len > 32) {
-              return SOL_D_READ_SIZE_MISMATCH;
-            }
-            uint16_t after_seed =
-                4 + SOLANA_ACCOUNT_ADDRESS_LENGTH + 8 + seed_len;
-            // then we have 8 bytes of "space"
-            utxn->instruction[i].program.allocate_with_seed.owner =
-                utxn->instruction[i].opaque_data + after_seed + 8;
-          }
+          ins->parsed_kind = SOLANA_PARSED_ALLOCATE_WITH_SEED;
+          aws->base = ins->opaque_data + 4;
+          // then we have 8 bytes of "space"
+          aws->owner = ins->opaque_data + after_seed + 8;
           break;
+        }
 
         default:
           break;
@@ -468,116 +489,108 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
                               SOLANA_ACCOUNT_ADDRESS_LENGTH,
                       system_program_id[SOLANA_STAKE_PROGRAM_ID_INDEX],
                       SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      if (utxn->instruction[i].opaque_data_length == 0)
+      // every stake instruction starts with a 4-byte tag
+      if (utxn->instruction[i].opaque_data_length < 4)
         return SOL_D_MIN_LENGTH;
 
       extra_data->is_stake_operation = true;
 
+      solana_instruction *ins = &utxn->instruction[i];
       // See:
       // https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html
-      uint32_t instruction_enum =
-          U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
+      uint32_t instruction_enum = U32_READ_LE_ARRAY(ins->opaque_data);
 
       switch (instruction_enum) {
-        case SPI_INITIALIZE:
+        case SPI_INITIALIZE: {
           if (extra_data->stake_initialize_instruction_index != -1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
+          solana_stake_initialize_data *init = &ins->program.stake_initialize;
+          // 0: stake account
+          if (!get_instruction_account(utxn, ins, 0, &init->stake_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
           // Opaque data: tag(4) + Authorized{staker:32, withdrawer:32} + Lockup
-          // which is unused here
-          if (utxn->instruction[i].account_addresses_index_count < 1)
+          if (ins->opaque_data_length < SOLANA_STAKE_INITIALIZE_DATA_LENGTH)
             return SOL_D_MIN_LENGTH;
 
           extra_data->stake_initialize_instruction_index = i;
-          utxn->instruction[i].program.stake_initialize.staker =
-              utxn->instruction[i].opaque_data + 4;
-          utxn->instruction[i].program.stake_initialize.withdrawer =
-              utxn->instruction[i].opaque_data + 4 +
-              SOLANA_ACCOUNT_ADDRESS_LENGTH;
+          init->staker = ins->opaque_data + 4;
+          init->withdrawer =
+              ins->opaque_data + 4 + SOLANA_ACCOUNT_ADDRESS_LENGTH;
+          init->lockup_unix_timestamp = U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + (2 * SOLANA_ACCOUNT_ADDRESS_LENGTH));
+          init->lockup_epoch = U64_READ_LE_ARRAY(
+              ins->opaque_data + 4 + (2 * SOLANA_ACCOUNT_ADDRESS_LENGTH) + 8);
           break;
+        }
 
-        case SPI_DELEGATE_STAKE:
+        case SPI_DELEGATE_STAKE: {
           if (extra_data->stake_delegate_instruction_index != -1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
-          if (utxn->instruction[i].account_addresses_index_count < 6)
+          if (ins->account_addresses_index_count < 6)
             return SOL_D_MIN_LENGTH;
+          solana_stake_delegate_data *dg = &ins->program.stake_delegate;
+          // 0: stake account, 1: vote account, 5: stake authority
+          if (!get_instruction_account(utxn, ins, 0, &dg->stake_account) ||
+              !get_instruction_account(utxn, ins, 1, &dg->vote_account) ||
+              !get_instruction_account(utxn, ins, 5, &dg->authorized_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
 
           extra_data->stake_delegate_instruction_index = i;
-
-          utxn->instruction[i].program.stake_delegate.vote_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 1) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_delegate.authorized_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 5) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
           break;
+        }
 
-        case SPI_SPLIT:
+        case SPI_SPLIT: {
           if (extra_data->split_instruction_index != -1)
             return SOL_V_UNSUPPORTED_SPLIT_COUNT;
-          if (utxn->instruction[i].account_addresses_index_count < 3)
+          solana_stake_split_data *split = &ins->program.stake_split;
+          // 1: destination stake account, 2: stake authority
+          if (!get_instruction_account(
+                  utxn, ins, 1, &split->destination_stake_account) ||
+              !get_instruction_account(
+                  utxn, ins, 2, &split->authorized_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
+          // Opaque data: tag(4) + lamports(u64)
+          if (ins->opaque_data_length < 12)
             return SOL_D_MIN_LENGTH;
 
           extra_data->split_instruction_index = i;
-          utxn->instruction[i].parsed_kind = SOLANA_PARSED_STAKE_SPLIT;
-          utxn->instruction[i].program.stake_split.destination_stake_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 1) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_split.authorized_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 2) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_split.lamports =
-              U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 4);
+          ins->parsed_kind = SOLANA_PARSED_STAKE_SPLIT;
+          split->lamports = U64_READ_LE_ARRAY(ins->opaque_data + 4);
           break;
+        }
 
-        case SPI_WITHDRAW:
-          if (utxn->instruction[i].account_addresses_index_count < 5)
-            return SOL_D_MIN_LENGTH;
+        case SPI_WITHDRAW: {
+          solana_stake_withdraw_data *wd = &ins->program.stake_withdraw;
+          // 0: stake account, 1: recipient, 4: withdraw authority
+          if (!get_instruction_account(utxn, ins, 0, &wd->stake_account) ||
+              !get_instruction_account(utxn, ins, 1, &wd->recipient_account) ||
+              !get_instruction_account(utxn, ins, 4, &wd->withdraw_authority))
+            return SOL_V_INDEX_OUT_OF_RANGE;
           // Opaque data: tag(4) + lamports(u64)
-          if (utxn->instruction[i].opaque_data_length < 12)
+          if (ins->opaque_data_length < 12)
             return SOL_D_MIN_LENGTH;
 
           extra_data->withdraw_instruction_count++;
 
-          utxn->instruction[i].parsed_kind = SOLANA_PARSED_STAKE_WITHDRAW;
-          utxn->instruction[i].program.stake_withdraw.stake_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 0) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_withdraw.recipient_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 1) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_withdraw.withdraw_authority =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 4) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_withdraw.lamports =
-              U64_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 4);
-          extra_data->total_withdraw_lamports +=
-              utxn->instruction[i].program.stake_withdraw.lamports;
+          ins->parsed_kind = SOLANA_PARSED_STAKE_WITHDRAW;
+          wd->lamports = U64_READ_LE_ARRAY(ins->opaque_data + 4);
+          extra_data->total_withdraw_lamports += wd->lamports;
           break;
+        }
 
-        case SPI_DEACTIVATE:
-          if (utxn->instruction[i].account_addresses_index_count < 3)
-            return SOL_D_MIN_LENGTH;
+        case SPI_DEACTIVATE: {
+          solana_stake_deactivate_data *da = &ins->program.stake_deactivate;
+          // 0: stake account, 2: stake authority
+          if (!get_instruction_account(utxn, ins, 0, &da->stake_account) ||
+              !get_instruction_account(utxn, ins, 2, &da->authorized_account))
+            return SOL_V_INDEX_OUT_OF_RANGE;
 
           extra_data->is_deactivate_operation = true;
           extra_data->deactivate_instruction_count++;
 
-          utxn->instruction[i].parsed_kind = SOLANA_PARSED_STAKE_DEACTIVATE;
-          utxn->instruction[i].program.stake_deactivate.stake_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 0) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
-          utxn->instruction[i].program.stake_deactivate.authorized_account =
-              utxn->account_addresses +
-              (*(utxn->instruction[i].account_addresses_index + 2) *
-               SOLANA_ACCOUNT_ADDRESS_LENGTH);
+          ins->parsed_kind = SOLANA_PARSED_STAKE_DEACTIVATE;
           break;
+        }
 
         default:
           break;
@@ -643,6 +656,8 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   bool transfer_instruction_found = false;
   bool stake_initialize_found = false;
   int stake_initialize_index = -1;
+  int create_account_with_seed_index = -1;
+  int stake_delegate_index = -1;
   bool is_deactivate_operation = false;
   bool create_flow_found = false;
   int split_count = 0;
@@ -681,6 +696,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
             return SOL_ERROR;
           transfer_instruction_found = true;
           create_flow_found = true;
+          create_account_with_seed_index = i;
 
           const solana_create_account_with_seed_data *cas =
               &utxn->instruction[i].program.create_account_with_seed;
@@ -778,17 +794,25 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data);
 
       switch (instruction_enum) {
-        case SPI_INITIALIZE:
+        case SPI_INITIALIZE: {
+          const solana_stake_initialize_data *init =
+              &utxn->instruction[i].program.stake_initialize;
+          // a lockup in force (custodian set by the host) would lock the
+          // user's stake; only a lockup that has no effect is accepted
+          if (init->lockup_unix_timestamp != 0 || init->lockup_epoch != 0)
+            return SOL_V_STAKE_AUTHORITY_MISMATCH;
           stake_initialize_found = true;
           stake_initialize_index = i;
           create_flow_found = true;
           break;
+        }
 
         case SPI_DELEGATE_STAKE: {
           // Must immediately follow Initialize
           if (!stake_initialize_found || stake_initialize_index != i - 1)
             return SOL_V_STAKE_SEQUENCE_MISMATCH;
           create_flow_found = true;
+          stake_delegate_index = i;
 
           const solana_stake_delegate_data *dg =
               &utxn->instruction[i].program.stake_delegate;
@@ -843,6 +867,33 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
 
   if (create_flow_found && is_deactivate_operation)
     return SOL_V_MIXED_STAKE_OPERATION;
+
+  // Split is only expected when partially deactivating
+  if (split_count > 0 && !is_deactivate_operation)
+    return SOL_V_MIXED_STAKE_OPERATION;
+
+  if (create_flow_found) {
+    // CreateAccountWithSeed -> Initialize -> Delegate, all on the newly funded
+    // stake account; otherwise the funded account could be left uninitialised
+    // and initialised by anyone
+    if (create_account_with_seed_index == -1 || stake_initialize_index == -1 ||
+        stake_delegate_index == -1 ||
+        create_account_with_seed_index > stake_initialize_index)
+      return SOL_V_STAKE_SEQUENCE_MISMATCH;
+
+    const uint8_t *stake_account =
+        utxn->instruction[create_account_with_seed_index]
+            .program.create_account_with_seed.new_account;
+    if (memcmp(utxn->instruction[stake_initialize_index]
+                   .program.stake_initialize.stake_account,
+               stake_account,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0 ||
+        memcmp(utxn->instruction[stake_delegate_index]
+                   .program.stake_delegate.stake_account,
+               stake_account,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)
+      return SOL_V_STAKE_AUTHORITY_MISMATCH;
+  }
 
   if (is_deactivate_operation == true && deactivate_instruction_count == 0)
     return SOL_V_MIXED_STAKE_OPERATION;
@@ -930,6 +981,11 @@ bool solana_verify_stake_authorities(const solana_unsigned_txn *utxn,
     }
     return true;
   }
+
+  if (extra_data->create_account_with_seed_instruction_index < 0 ||
+      extra_data->stake_initialize_instruction_index < 0 ||
+      extra_data->stake_delegate_instruction_index < 0)
+    return false;
 
   const solana_create_account_with_seed_data *cas =
       &utxn->instruction[extra_data->create_account_with_seed_instruction_index]

@@ -509,6 +509,12 @@ static bool verify_solana_stake_transaction() {
   size_t address_size = sizeof(address);
 
   const solana_txn_extra_data *extra_data = &solana_txn_context->extra_data;
+  if (extra_data->create_account_with_seed_instruction_index < 0 ||
+      extra_data->stake_delegate_instruction_index < 0) {
+    solana_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
   const solana_create_account_with_seed_data *cas =
       &solana_txn_context->transaction_info
            .instruction[extra_data->create_account_with_seed_instruction_index]

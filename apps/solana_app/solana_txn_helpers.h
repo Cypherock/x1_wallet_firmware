@@ -206,6 +206,7 @@ typedef struct solana_create_account_with_seed_data {
   // base. new_account isnt stored/validated, System Program enforces
   // new_account == create_with_seed(base, seed, owner) on-chain
   uint8_t *from_account;
+  uint8_t *new_account;    // accounts_index[1]: the stake account funded
   uint8_t *base_account;
   uint8_t *base;
   uint64_t lamports;
@@ -218,13 +219,17 @@ typedef struct solana_create_account_with_seed_data {
    https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.Initialize
  */
 typedef struct solana_stake_initialize_data {
+  uint8_t *stake_account;    // accounts_index[0]
   uint8_t *staker;
   uint8_t *withdrawer;
+  uint64_t lockup_unix_timestamp;
+  uint64_t lockup_epoch;
 } solana_stake_initialize_data;
 
 // See:
 // https://docs.rs/solana-sdk/1.10.8/solana_sdk/stake/instruction/enum.StakeInstruction.html#variant.DelegateStake
 typedef struct solana_stake_delegate_data {
+  uint8_t *stake_account;    // accounts_index[0]
   uint8_t *vote_account;
   uint8_t *authorized_account;
 } solana_stake_delegate_data;
