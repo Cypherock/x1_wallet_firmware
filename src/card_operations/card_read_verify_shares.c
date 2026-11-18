@@ -65,6 +65,7 @@
 #include "card_operation_typedefs.h"
 #include "card_read_verify_share.h"
 #include "card_utils.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
 #include "options.h"
@@ -95,6 +96,18 @@
  * @param xcor The x-coordinate of the share contained in the X1 card
  */
 static void read_card_share_post_process(uint8_t xcor);
+
+/**
+ * @brief Checks that the wallet read from the card is the requested wallet and
+ * that its share belongs to the tapped card.
+ *
+ * @param expected_name Name of the requested wallet
+ * @param xcor The index of the card that was read (card number - 1)
+ * @param tapped_card The encoded number of the tapped card
+ */
+static bool verify_read_wallet(const uint8_t *expected_name,
+                               uint8_t xcor,
+                               uint8_t tapped_card);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -128,6 +141,29 @@ static void read_card_share_post_process(uint8_t xcor) {
   return;
 }
 
+static bool verify_read_wallet(const uint8_t *expected_name,
+                               uint8_t xcor,
+                               uint8_t tapped_card) {
+  Flash_Wallet *flash_wallet = NULL;
+  if (SUCCESS != get_flash_wallet_by_name((const char *)expected_name,
+                                          &flash_wallet) ||
+      NULL == flash_wallet) {
+    return false;
+  }
+
+  // the shares are later checked against this wallet id, so it must come
+  // from flash rather than from the card
+  bool status =
+      (0 == memcmp(wallet.wallet_name, flash_wallet->wallet_name, NAME_SIZE));
+  status &=
+      (0 == memcmp(wallet.wallet_id, flash_wallet->wallet_id, WALLET_ID_SIZE));
+  status &= (wallet.wallet_info == flash_wallet->wallet_info);
+  // the share x-coordinate is the number of the card it was written to
+  status &= (wallet.xcor == xcor + 1);
+  status &= (encode_card_number(wallet.xcor) == tapped_card);
+  return status;
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -137,6 +173,10 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
   card_operation_data_t card_data = {0};
   card_data.nfc_data.retries = 5;
   card_data.nfc_data.init_session_keys = true;
+
+  // the card response overwrites the wallet, so keep the requested name
+  uint8_t expected_name[NAME_SIZE] = {0};
+  memcpy(expected_name, wallet.wallet_name, NAME_SIZE);
 
   while (1) {
     memcpy(card_data.nfc_data.family_id, get_family_id(), FAMILY_ID_SIZE);
@@ -150,6 +190,18 @@ bool read_card_share(uint8_t xcor, const char *heading, const char *msg) {
       card_data.nfc_data.status = nfc_retrieve_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
+        if (!verify_read_wallet(
+                expected_name, xcor, card_data.nfc_data.tapped_card)) {
+          memzero(wallet.arbitrary_data_share,
+                  sizeof(wallet.arbitrary_data_share));
+          memzero(wallet.wallet_share_with_mac_and_nonce,
+                  sizeof(wallet.wallet_share_with_mac_and_nonce));
+          mark_core_error_screen(
+              ui_text_wallet_verification_failed_in_reconstruction, false);
+          result = false;
+          break;
+        }
+
         buzzer_start(BUZZER_DURATION);
         if (xcor != 3) {
           wait_for_card_removal();
