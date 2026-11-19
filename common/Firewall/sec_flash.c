@@ -350,7 +350,7 @@ static void sec_flash_struct_load() {
                        serialized_flash_instance,
                        serialized_flash_size + 6);
     deserialize_sec_fs(&sec_flash_instance, serialized_flash_instance);
-    memzero(serialized_flash_instance, sizeof(sec_flash_instance));
+    memzero(serialized_flash_instance, serialized_flash_size + 6);
     free(serialized_flash_instance);
     serialized_flash_instance = NULL;
   } else {
