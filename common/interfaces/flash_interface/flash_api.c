@@ -173,6 +173,9 @@ int add_wallet_to_flash(const Flash_Wallet *fwallet, uint32_t *index_OUT) {
       return ALREADY_EXISTS;
     }
   }
+  // the count can disagree with the slots if flash was corrupt
+  if (first_empty_index < 0)
+    return MEMORY_OVERFLOW;
   *index_OUT = first_empty_index;
   memcpy(
       &flash_ram_instance.wallets[*index_OUT], fwallet, sizeof(Flash_Wallet));
@@ -207,6 +210,9 @@ int add_wallet_share_to_sec_flash(const Flash_Wallet *fwallet,
       return ALREADY_EXISTS;
     }
   }
+  // the count can disagree with the slots if flash was corrupt
+  if (first_empty_index < 0)
+    return MEMORY_OVERFLOW;
   *index_OUT = first_empty_index;
   memcpy(sec_flash_instance.wallet_share_data[*index_OUT].wallet_id,
          fwallet->wallet_id,

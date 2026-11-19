@@ -132,7 +132,9 @@ typedef enum Flash_tlv_tags {
 Flash_Struct flash_ram_instance;
 bool is_flash_ram_instance_loaded = false;
 
-static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv);
+static void deserialize_fs(Flash_Struct *flash_struct,
+                           const uint8_t *tlv,
+                           uint32_t tlv_size);
 static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv);
 
 /**
@@ -166,7 +168,9 @@ static void flash_struct_load() {
     read_cmd(FLASH_DATA_ADDRESS,
              (uint32_t *)serialized_flash_instance,
              serialized_flash_size_tagged);
-    deserialize_fs(&flash_ram_instance, serialized_flash_instance);
+    deserialize_fs(&flash_ram_instance,
+                   serialized_flash_instance,
+                   serialized_flash_size_tagged);
     free(serialized_flash_instance);
     serialized_flash_instance = NULL;
   } else {
@@ -179,6 +183,20 @@ static void flash_struct_load() {
 
   if (flash_ram_instance.wallet_count == DEFAULT_UINT32_IN_FLASH) {
     flash_ram_instance.wallet_count = 0;
+  }
+
+  // a corrupt count is rebuilt from the wallet slots, as callers rely on it
+  // being at most MAX_WALLETS_ALLOWED
+  if (flash_ram_instance.wallet_count > MAX_WALLETS_ALLOWED) {
+    flash_ram_instance.wallet_count = 0;
+    for (uint8_t i = 0; i < MAX_WALLETS_ALLOWED; i++) {
+      uint8_t state = flash_ram_instance.wallets[i].state;
+      if (VALID_WALLET == state || UNVERIFIED_VALID_WALLET == state ||
+          INVALID_WALLET == state ||
+          VALID_WALLET_WITHOUT_DEVICE_SHARE == state) {
+        flash_ram_instance.wallet_count++;
+      }
+    }
   }
 }
 
@@ -441,6 +459,24 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
 }
 
 /**
+ * @brief Copies a TLV value into a field if it fits, so a corrupt length read
+ * from flash can not overflow the field.
+ *
+ * @param field Destination field
+ * @param field_size Size of the destination field
+ * @param value TLV value
+ * @param size Length of the TLV value
+ */
+static void copy_fs_field(void *field,
+                          const size_t field_size,
+                          const uint8_t *value,
+                          const uint16_t size) {
+  if (size <= field_size) {
+    memcpy(field, value, size);
+  }
+}
+
+/**
  * @brief Helper function to extract values of Flash_Pow from TLV.
  *
  * @param flash_pow Pointer to Flash_Pow instance to store the values
@@ -451,34 +487,52 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
 static void deserialize_fs_pow(Flash_Pow *flash_pow,
                                const uint8_t *tlv,
                                const uint16_t len) {
-  uint16_t index = 0;
-  while (index < len) {
+  uint32_t index = 0;
+
+  // each element is a tag, a 2-byte length and the value; parsing stops at an
+  // element that runs past the challenge
+  while (index + 3 <= len) {
     Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > len - index) {
+      break;
+    }
+    const uint8_t *value = tlv + index;
 
     switch (tag) {
       case TAG_FLASH_WALLET_CHALLENGE_TARGET: {
-        memcpy(flash_pow->target, tlv + index + 2, size);
+        copy_fs_field(
+            flash_pow->target, sizeof(flash_pow->target), value, size);
         break;
       }
 
       case TAG_FLASH_WALLET_CHALLENGE_RANDOM_NUMBER: {
-        memcpy(flash_pow->random_number, tlv + index + 2, size);
+        copy_fs_field(flash_pow->random_number,
+                      sizeof(flash_pow->random_number),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_CHALLENGE_NONCE: {
-        memcpy(flash_pow->nonce, tlv + index + 2, size);
+        copy_fs_field(flash_pow->nonce, sizeof(flash_pow->nonce), value, size);
         break;
       }
 
       case TAG_FLASH_WALLET_CHALLENGE_CARD_LOCKED: {
-        memcpy(&(flash_pow->card_locked), tlv + index + 2, size);
+        copy_fs_field(&(flash_pow->card_locked),
+                      sizeof(flash_pow->card_locked),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_CHALLENGE_TIME_LOCKED: {
-        memcpy(&(flash_pow->time_to_unlock_in_secs), tlv + index + 2, size);
+        copy_fs_field(&(flash_pow->time_to_unlock_in_secs),
+                      sizeof(flash_pow->time_to_unlock_in_secs),
+                      value,
+                      size);
         break;
       }
 
@@ -486,7 +540,7 @@ static void deserialize_fs_pow(Flash_Pow *flash_pow,
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
 }
 
@@ -501,45 +555,68 @@ static void deserialize_fs_pow(Flash_Pow *flash_pow,
 static void deserialize_fs_wallet(Flash_Wallet *flash_wallet,
                                   const uint8_t *tlv,
                                   const uint16_t len) {
-  uint16_t index = 0;
+  uint32_t index = 0;
 
-  while (index < len) {
+  // each element is a tag, a 2-byte length and the value; parsing stops at an
+  // element that runs past the wallet
+  while (index + 3 <= len) {
     Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > len - index) {
+      break;
+    }
+    const uint8_t *value = tlv + index;
 
     switch (tag) {
       case TAG_FLASH_WALLET_STATE: {
-        memcpy(&(flash_wallet->state), tlv + index + 2, size);
+        copy_fs_field(
+            &(flash_wallet->state), sizeof(flash_wallet->state), value, size);
         break;
       }
 
       case TAG_FLASH_WALLET_CARD_STATE: {
-        memcpy(&(flash_wallet->cards_states), tlv + index + 2, size);
+        copy_fs_field(&(flash_wallet->cards_states),
+                      sizeof(flash_wallet->cards_states),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_INFO: {
-        memcpy(&(flash_wallet->wallet_info), tlv + index + 2, size);
+        copy_fs_field(&(flash_wallet->wallet_info),
+                      sizeof(flash_wallet->wallet_info),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_NAME: {
-        memcpy(&(flash_wallet->wallet_name), tlv + index + 2, size);
+        copy_fs_field(flash_wallet->wallet_name,
+                      sizeof(flash_wallet->wallet_name),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_LOCKED: {
-        memcpy(&(flash_wallet->is_wallet_locked), tlv + index + 2, size);
+        copy_fs_field(&(flash_wallet->is_wallet_locked),
+                      sizeof(flash_wallet->is_wallet_locked),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_CHALLENGE: {
-        deserialize_fs_pow(&(flash_wallet->challenge), tlv + index + 2, size);
+        deserialize_fs_pow(&(flash_wallet->challenge), value, size);
         break;
       }
 
       case TAG_FLASH_WALLET_ID: {
-        memcpy(flash_wallet->wallet_id, tlv + index + 2, size);
+        copy_fs_field(flash_wallet->wallet_id,
+                      sizeof(flash_wallet->wallet_id),
+                      value,
+                      size);
         break;
       }
 
@@ -547,75 +624,124 @@ static void deserialize_fs_wallet(Flash_Wallet *flash_wallet,
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
+
+  // names are at most NAME_SIZE - 1 characters; the terminator keeps string
+  // functions inside the field even if flash is corrupt
+  flash_wallet->wallet_name[NAME_SIZE - 1] = 0;
 }
 
 /**
  * @brief Function to extract values of Flash_Struct from TLV.
+ * @details Every length is read from flash, so each one is checked against
+ * the enclosing element before use. Parsing stops at the first element that
+ * does not fit, which leaves the rest of the structure as it was.
  *
  * @param flash_struct Pointer to Flash_Struct instance to store the values
- * @param tlv TLV byte array
+ * @param tlv TLV byte array, starting with the header
+ * @param tlv_size Size of the tlv buffer, including the header
  */
-static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
-  uint16_t index = 4;    // First 4 bytes are the TAG_FLASH_STRUCT
-  uint16_t len = tlv[index] + (tlv[index + 1] << 8) + 6;
+static void deserialize_fs(Flash_Struct *flash_struct,
+                           const uint8_t *tlv,
+                           uint32_t tlv_size) {
+  // First 4 bytes are the TAG_FLASH_STRUCT, followed by the length
+  uint32_t len = tlv[4] + (tlv[5] << 8) + 6;
+  uint32_t index = 6;
 
-  index += 2;
+  if (len > tlv_size) {
+    len = tlv_size;
+  }
 
-  while (index < len) {
+  while (index + 3 <= len) {
     Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > len - index) {
+      break;
+    }
+    const uint8_t *value = tlv + index;
+    const uint32_t list_end = index + size;
 
     switch (tag) {
       case TAG_FLASH_FAMILY_ID: {
-        memcpy(flash_struct->family_id, tlv + index + 2, size);
+        copy_fs_field(flash_struct->family_id,
+                      sizeof(flash_struct->family_id),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_COUNT: {
-        memcpy(&(flash_struct->wallet_count), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->wallet_count),
+                      sizeof(flash_struct->wallet_count),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_WALLET_LIST: {
-        uint16_t offset = index + 2;
+        uint32_t offset = index;
         for (uint8_t wallet_index = 0; wallet_index < MAX_WALLETS_ALLOWED;
              wallet_index++) {
+          if (offset >= list_end) {
+            break;
+          }
           if (tlv[offset++] == TAG_FLASH_WALLET) {
+            if (offset + 2 > list_end) {
+              break;
+            }
             uint16_t wallet_len = tlv[offset] + (tlv[offset + 1] << 8);
+            offset += 2;
+            if (wallet_len > list_end - offset) {
+              break;
+            }
             deserialize_fs_wallet(&(flash_struct->wallets[wallet_index]),
-                                  tlv + offset + 2,
+                                  tlv + offset,
                                   wallet_len);
-            offset += wallet_len + 2;
+            offset += wallet_len;
           }
         }
-        // TODO: ASSERT(offset == index + size + 2);
         break;
       }
 
       case TAG_FLASH_DISPLAY_ROTATION: {
-        memcpy(&(flash_struct->displayRotation), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->displayRotation),
+                      sizeof(flash_struct->displayRotation),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_TOGGLE_PASSPHRASE: {
-        memcpy(&(flash_struct->enable_passphrase), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->enable_passphrase),
+                      sizeof(flash_struct->enable_passphrase),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_TOGGLE_LOGS: {
-        memcpy(&(flash_struct->enable_log), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->enable_log),
+                      sizeof(flash_struct->enable_log),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_ONBOARDING_STEP: {
-        memcpy(&(flash_struct->onboarding_step), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->onboarding_step),
+                      sizeof(flash_struct->onboarding_step),
+                      value,
+                      size);
         break;
       }
 
       case TAG_FLASH_TOGGLE_RAW_CALLDATA: {
-        memcpy(&(flash_struct->enable_raw_calldata), tlv + index + 2, size);
+        copy_fs_field(&(flash_struct->enable_raw_calldata),
+                      sizeof(flash_struct->enable_raw_calldata),
+                      value,
+                      size);
         break;
       }
 
@@ -623,6 +749,6 @@ static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
 }
