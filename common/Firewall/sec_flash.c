@@ -122,7 +122,9 @@ static void fill_flash_tlv(uint8_t *array,
                            uint16_t length,
                            const uint8_t *data);
 static uint16_t serialize_sec_fs(const Sec_Flash_Struct *sec_fs, uint8_t *tlv);
-static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs, const uint8_t *tlv);
+static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs,
+                               const uint8_t *tlv,
+                               uint32_t tlv_size);
 static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
                                          const uint8_t *tlv,
                                          uint32_t size);
@@ -421,7 +423,9 @@ static void sec_flash_struct_load() {
                              sec_fs_tlv_header,
                              sizeof(sec_fs_tlv_header));
   if (read_ok) {
-    deserialize_sec_fs(&sec_flash_instance, serialized_flash_instance);
+    deserialize_sec_fs(&sec_flash_instance,
+                       serialized_flash_instance,
+                       serialized_flash_size_tagged);
   }
   // the buffer holds the device shares and card pairing keys
   memzero(serialized_flash_instance, serialized_flash_size_tagged);
@@ -720,6 +724,24 @@ static uint16_t serialize_sec_fs(const Sec_Flash_Struct *sec_fs, uint8_t *tlv) {
 }
 
 /**
+ * @brief Copies a TLV value into a field if it fits, so a corrupt length read
+ * from flash can not overflow the field.
+ *
+ * @param field Destination field
+ * @param field_size Size of the destination field
+ * @param value TLV value
+ * @param size Length of the TLV value
+ */
+static void copy_sec_fs_field(void *field,
+                              const size_t field_size,
+                              const uint8_t *value,
+                              const uint16_t size) {
+  if (size <= field_size) {
+    memcpy(field, value, size);
+  }
+}
+
+/**
  * @brief Helper function to extract values of Card_Keystore from TLV.
  *
  * @param flash_keystore Pointer to Card_Keystore instance to store the values
@@ -732,25 +754,39 @@ static uint16_t serialize_sec_fs(const Sec_Flash_Struct *sec_fs, uint8_t *tlv) {
 static void deserialize_sec_fs_keystore(Card_Keystore *flash_keystore,
                                         const uint8_t *tlv,
                                         const uint16_t len) {
-  uint16_t index = 0;
+  uint32_t index = 0;
 
-  while (index < len) {
+  // each element is a tag, a 2-byte length and the value; parsing stops at an
+  // element that runs past the entry
+  while (index + 3 <= len) {
     Sec_Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > len - index) {
+      break;
+    }
+    const uint8_t *value = tlv + index;
 
     switch (tag) {
       case TAG_SEC_FLASH_KEYSTORE_USED: {
-        memcpy(&(flash_keystore->used), tlv + index + 2, size);
+        copy_sec_fs_field(
+            &(flash_keystore->used), sizeof(flash_keystore->used), value, size);
         break;
       }
 
       case TAG_SEC_FLASH_KEYSTORE_KEYID: {
-        memcpy(flash_keystore->key_id, tlv + index + 2, size);
+        copy_sec_fs_field(flash_keystore->key_id,
+                          sizeof(flash_keystore->key_id),
+                          value,
+                          size);
         break;
       }
 
       case TAG_SEC_FLASH_KEYSTORE_PAIRING_KEY: {
-        memcpy(flash_keystore->pairing_key, tlv + index + 2, size);
+        copy_sec_fs_field(flash_keystore->pairing_key,
+                          sizeof(flash_keystore->pairing_key),
+                          value,
+                          size);
         break;
       }
 
@@ -758,7 +794,7 @@ static void deserialize_sec_fs_keystore(Card_Keystore *flash_keystore,
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
 }
 
@@ -775,25 +811,41 @@ static void deserialize_sec_fs_keystore(Card_Keystore *flash_keystore,
 static void deserialize_sec_fs_wallet(Wallet_Share_Data *wallet_share_data,
                                       const uint8_t *tlv,
                                       uint16_t len) {
-  uint16_t index = 0;
+  uint32_t index = 0;
 
-  while (index < len) {
+  // each element is a tag, a 2-byte length and the value; parsing stops at an
+  // element that runs past the entry
+  while (index + 3 <= len) {
     Sec_Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > len - index) {
+      break;
+    }
+    const uint8_t *value = tlv + index;
 
     switch (tag) {
       case TAG_SEC_FLASH_WALLET_SHARE: {
-        memcpy(wallet_share_data->wallet_share, tlv + index + 2, size);
+        copy_sec_fs_field(wallet_share_data->wallet_share,
+                          sizeof(wallet_share_data->wallet_share),
+                          value,
+                          size);
         break;
       }
 
       case TAG_SEC_FLASH_WALLET_NONCE: {
-        memcpy(wallet_share_data->wallet_nonce, tlv + index + 2, size);
+        copy_sec_fs_field(wallet_share_data->wallet_nonce,
+                          sizeof(wallet_share_data->wallet_nonce),
+                          value,
+                          size);
         break;
       }
 
       case TAG_SEC_FLASH_WALLET_ID: {
-        memcpy(wallet_share_data->wallet_id, tlv + index + 2, size);
+        copy_sec_fs_field(wallet_share_data->wallet_id,
+                          sizeof(wallet_share_data->wallet_id),
+                          value,
+                          size);
         break;
       }
 
@@ -801,58 +853,86 @@ static void deserialize_sec_fs_wallet(Wallet_Share_Data *wallet_share_data,
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
 }
 
 /**
  * @brief Function to extract values of Flash_Struct from TLV.
+ * @details Every length is read from flash, so each one is checked against
+ * the enclosing element before use. Parsing stops at the first element that
+ * does not fit, which leaves the rest of the structure as it was.
  *
  * @param flash_struct Pointer to Flash_Struct instance to store the values
- * @param tlv TLV byte array
+ * @param tlv TLV byte array, starting with the header
+ * @param tlv_size Size of the tlv buffer, including the header
  *
  * @since v1.0.0
  */
-static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs, const uint8_t *tlv) {
-  uint16_t index = 4;    // First 4 bytes are the TAG_FLASH_STRUCT
-  uint16_t len = tlv[index] + (tlv[index + 1] << 8);
+static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs,
+                               const uint8_t *tlv,
+                               uint32_t tlv_size) {
+  // the header (tag and length) was checked by the caller
+  uint32_t index = SEC_FLASH_HEADER_SIZE;
 
-  index += 2;
-
-  while (index < len) {
+  while (index + 3 <= tlv_size) {
     Sec_Flash_tlv_tags tag = tlv[index++];
     uint16_t size = tlv[index] + (tlv[index + 1] << 8);
+    index += 2;
+    if (size > tlv_size - index) {
+      break;
+    }
+    const uint32_t list_end = index + size;
+
     switch (tag) {
       case TAG_SEC_FLASH_WALLET_SHARE_STRUCT_LIST: {
-        uint16_t offset = index + 2;
+        uint32_t offset = index;
         for (uint8_t wallet_index = 0; wallet_index < MAX_WALLETS_ALLOWED;
              wallet_index++) {
+          if (offset >= list_end) {
+            break;
+          }
           if (tlv[offset++] == TAG_SEC_FLASH_WALLET_SHARE_STRUCT) {
+            if (offset + 2 > list_end) {
+              break;
+            }
             uint16_t wallet_len = tlv[offset] + (tlv[offset + 1] << 8);
+            offset += 2;
+            if (wallet_len > list_end - offset) {
+              break;
+            }
             deserialize_sec_fs_wallet(
                 &(sec_fs->wallet_share_data[wallet_index]),
-                tlv + offset + 2,
+                tlv + offset,
                 wallet_len);
-            offset += wallet_len + 2;
+            offset += wallet_len;
           }
         }
-        // TODO: ASSERT(offset == index + size + 2);
         break;
       }
 
       case TAG_SEC_FLASH_KEYSTORE_LIST: {
-        uint16_t offset = index + 2;
+        uint32_t offset = index;
         for (uint8_t keystore_index = 0; keystore_index < MAX_KEYSTORE_ENTRY;
              keystore_index++) {
+          if (offset >= list_end) {
+            break;
+          }
           if (tlv[offset++] == TAG_SEC_FLASH_KEYSTORE) {
+            if (offset + 2 > list_end) {
+              break;
+            }
             uint16_t keystore_len = tlv[offset] + (tlv[offset + 1] << 8);
+            offset += 2;
+            if (keystore_len > list_end - offset) {
+              break;
+            }
             deserialize_sec_fs_keystore(&(sec_fs->keystore[keystore_index]),
-                                        tlv + offset + 2,
+                                        tlv + offset,
                                         keystore_len);
-            offset += keystore_len + 2;
+            offset += keystore_len;
           }
         }
-        // TODO: ASSERT(offset == index + size + 2);
         break;
       }
 
@@ -860,7 +940,7 @@ static void deserialize_sec_fs(Sec_Flash_Struct *sec_fs, const uint8_t *tlv) {
         break;
       }
     }
-    index += (size + 2);
+    index += size;
   }
 }
 
