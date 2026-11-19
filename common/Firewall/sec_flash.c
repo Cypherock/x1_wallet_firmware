@@ -77,6 +77,13 @@
    (MAX_KEYSTORE_ENTRY * ((4 * 3) + sizeof(Card_Keystore))))
 
 #define FLASH_WRITE_PERM_STRUCTURE_SIZE sizeof(Flash_Perm_Struct) / 4
+
+/// Size of the TAG_SEC_FLASH_STRUCT tag and the 2-byte length
+#define SEC_FLASH_HEADER_SIZE 6
+/// Firewall callgate status for a successful task (SEC_TRUE in bootloader)
+#define FIREWALL_TASK_SUCCESS 0xAAAAAAAAU
+/// Attempts for a firewall read, and for confirming an invalid header
+#define SEC_FLASH_READ_ATTEMPTS 3
 typedef enum Sec_Flash_tlv_tags {
   TAG_SEC_FLASH_STRUCT = 0x5555AAAA,
 
@@ -321,42 +328,106 @@ static uint32_t FW_delete_flash_data(const uint32_t dest_addr) {
 }
 
 /**
+ * @brief   Reads FW P2 data, retrying a failed firewall read
+ *
+ * @param [in]  source_addr address to read from
+ * @param [out] data        buffer to read into
+ * @param [in]  size        number of bytes to read
+ *
+ * @return bool true if the firewall reported a successful read
+ */
+static bool sec_flash_read(const uint32_t source_addr,
+                           uint8_t *data,
+                           const uint32_t size) {
+  for (uint8_t attempt = 0; attempt < SEC_FLASH_READ_ATTEMPTS; attempt++) {
+    uint32_t status = FW_read_flash_data(source_addr, data, size);
+#if USE_SIMULATOR == 0
+    if (FIREWALL_TASK_SUCCESS == status) {
+      return true;
+    }
+#else
+    // the simulator has no firewall and reports every task as 0
+    (void)status;
+    return true;
+#endif
+  }
+  return false;
+}
+
+/**
+ * @brief   Checks the FW P2 header and extracts the size of the serialized
+ * structure
+ *
+ * @param [in]  header      first SEC_FLASH_HEADER_SIZE bytes of FW P2
+ * @param [out] size_out    size of the serialized structure after the header
+ *
+ * @return bool true if the tag matches and the structure fits in the page
+ */
+static bool sec_flash_parse_header(const uint8_t *header, uint16_t *size_out) {
+  uint32_t tag = header[0] + (header[1] << 8) + (header[2] << 16) +
+                 ((uint32_t)header[3] << 24);
+  uint16_t size = header[4] + (header[5] << 8);
+
+  *size_out = size;
+  // the firewall can not read beyond its page
+  return (TAG_SEC_FLASH_STRUCT == tag &&
+          (uint32_t)size + SEC_FLASH_HEADER_SIZE <= FLASH_PAGE_SIZE);
+}
+
+/**
  * @brief   Used to load tlv data from FW P2 data into ram instance
  * `sec_flash_instance`
  * @details This function must be called before read/write to the
- * `sec_flash_instance`
+ * `sec_flash_instance`. An invalid header erases FW P2, which holds every
+ * device share and card pairing key. A failed read is therefore never treated
+ * as an invalid header: the device resets instead. The page is erased only
+ * when every attempt reads an invalid header.
  *
  * @since v1.0.0
  */
 static void sec_flash_struct_load() {
-  uint8_t sec_fs_tlv_header[6] = {0};
-  FW_read_flash_data(
-      FIREWALL_APPLICATION_DATA_START_ADDR, sec_fs_tlv_header, 6);
+  uint8_t sec_fs_tlv_header[SEC_FLASH_HEADER_SIZE] = {0};
+  uint16_t serialized_flash_size = 0;
+  bool header_valid = false;
 
-  uint32_t serialized_flash_struct_tag =
-      sec_fs_tlv_header[0] + (sec_fs_tlv_header[1] << 8) +
-      (sec_fs_tlv_header[2] << 16) + (sec_fs_tlv_header[3] << 24);
-  uint16_t serialized_flash_size =
-      sec_fs_tlv_header[4] + (sec_fs_tlv_header[5] << 8);
+  for (uint8_t attempt = 0; attempt < SEC_FLASH_READ_ATTEMPTS && !header_valid;
+       attempt++) {
+    memzero(sec_fs_tlv_header, sizeof(sec_fs_tlv_header));
+    bool read_ok = sec_flash_read(FIREWALL_APPLICATION_DATA_START_ADDR,
+                                  sec_fs_tlv_header,
+                                  sizeof(sec_fs_tlv_header));
+    ASSERT(read_ok);
+    header_valid =
+        sec_flash_parse_header(sec_fs_tlv_header, &serialized_flash_size);
+  }
 
-  if (serialized_flash_struct_tag == TAG_SEC_FLASH_STRUCT &&
-      serialized_flash_size <= FLASH_DATA_SIZE_LIMIT) {
-    // 6 is added to include the TAG_FLASH_STRUCT and length of the serialized
-    // structure
-    uint8_t *serialized_flash_instance =
-        (uint8_t *)malloc(serialized_flash_size + 6);
-    ASSERT(serialized_flash_instance != NULL);
-    FW_read_flash_data(FIREWALL_APPLICATION_DATA_START_ADDR,
-                       serialized_flash_instance,
-                       serialized_flash_size + 6);
-    deserialize_sec_fs(&sec_flash_instance, serialized_flash_instance);
-    memzero(serialized_flash_instance, serialized_flash_size + 6);
-    free(serialized_flash_instance);
-    serialized_flash_instance = NULL;
-  } else {
+  if (!header_valid) {
     FW_delete_flash_data(FIREWALL_APPLICATION_DATA_START_ADDR);
     memzero(&sec_flash_instance, sizeof(sec_flash_instance));
+    return;
   }
+
+  const uint32_t serialized_flash_size_tagged =
+      serialized_flash_size + SEC_FLASH_HEADER_SIZE;
+  uint8_t *serialized_flash_instance =
+      (uint8_t *)malloc(serialized_flash_size_tagged);
+  ASSERT(serialized_flash_instance != NULL);
+
+  // the full read must succeed and carry the header that was checked above
+  bool read_ok = sec_flash_read(FIREWALL_APPLICATION_DATA_START_ADDR,
+                                serialized_flash_instance,
+                                serialized_flash_size_tagged) &&
+                 0 == memcmp(serialized_flash_instance,
+                             sec_fs_tlv_header,
+                             sizeof(sec_fs_tlv_header));
+  if (read_ok) {
+    deserialize_sec_fs(&sec_flash_instance, serialized_flash_instance);
+  }
+  // the buffer holds the device shares and card pairing keys
+  memzero(serialized_flash_instance, serialized_flash_size_tagged);
+  free(serialized_flash_instance);
+  serialized_flash_instance = NULL;
+  ASSERT(read_ok);
 }
 
 /**
