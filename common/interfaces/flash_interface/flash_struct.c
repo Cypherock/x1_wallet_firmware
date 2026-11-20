@@ -79,14 +79,14 @@
  * structure size. In the calculation 3 is the size of TAG (1 byte) + size of
  * LENGTH (2 bytes) and 15 is the number of times the TAG, LENGTH, VALUE
  * combination occurs in Flash_Wallet. The number of tags of Flash_Pow are
- * included in the 15 number.
+ * included in the 15 number. and 4 bytes for magic number for verification
  */
 #define FLASH_STRUCT_TLV_SIZE                                                  \
   (6 + 3 + FAMILY_ID_SIZE + 3 + sizeof(uint32_t) + 3 +                         \
    (MAX_WALLETS_ALLOWED * ((15 * 3) + sizeof(Flash_Wallet))) + 3 +             \
    sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 + sizeof(uint8_t) + 3 +           \
    sizeof(uint8_t)) +                                                          \
-      3 + sizeof(uint8_t)
+      3 + sizeof(uint8_t) + 4
 
 /// The size of tlv that will be read and written to flash. Since we read/write
 /// in multiples of 4 hence it is essential to make the size divisible by 4.
@@ -95,6 +95,8 @@
    (FLASH_STRUCT_TLV_SIZE % 4 == 0 ? 0 : 4 - (FLASH_STRUCT_TLV_SIZE % 4)))
 
 #define FLASH_WRITE_STRUCTURE_SIZE sizeof(Flash_Struct)
+
+#define TAG_FLASH_STRUCT_END 0xBBBBBBBB
 
 /// Tags  for TLV
 typedef enum Flash_tlv_tags {
@@ -154,6 +156,8 @@ static void flash_struct_load() {
   uint16_t serialized_flash_size =
       serialized_flash_metadata[4] + (serialized_flash_metadata[5] << 8);
 
+  bool primary_valid = false;
+
   if (serialized_flash_struct_tag == TAG_FLASH_STRUCT &&
       serialized_flash_size <= FLASH_DATA_SIZE_LIMIT) {
     // 6 is added to include the TAG_FLASH_STRUCT and length of the serialized
@@ -166,15 +170,74 @@ static void flash_struct_load() {
     read_cmd(FLASH_DATA_ADDRESS,
              (uint32_t *)serialized_flash_instance,
              serialized_flash_size_tagged);
-    deserialize_fs(&flash_ram_instance, serialized_flash_instance);
+
+    uint32_t end_marker =
+        serialized_flash_instance[serialized_flash_size_tagged - 4] +
+        (serialized_flash_instance[serialized_flash_size_tagged - 3] << 8) +
+        (serialized_flash_instance[serialized_flash_size_tagged - 2] << 16) +
+        (serialized_flash_instance[serialized_flash_size_tagged - 1] << 24);
+
+    if (end_marker == TAG_FLASH_STRUCT_END) {
+      deserialize_fs(&flash_ram_instance, serialized_flash_instance);
+      primary_valid = true;
+    }
     free(serialized_flash_instance);
     serialized_flash_instance = NULL;
-  } else {
+  }
+
+  // always check the backup too, even if primary was fine - otherwise a
+  // corrupted backup would sit unnoticed until primary also fails
+  bool backup_valid = false;
+#if USE_SIMULATOR == 1
+  uint32_t backup_metadata[2];
+  read_cmd(FLASH_DATA_BACKUP_ADDRESS, backup_metadata, 8);
+  uint8_t *serialized_backup_metadata = (uint8_t *)backup_metadata;
+#else
+  uint8_t *serialized_backup_metadata = (uint8_t *)FLASH_DATA_BACKUP_ADDRESS;
+#endif
+  uint32_t backup_tag = serialized_backup_metadata[0] +
+                        (serialized_backup_metadata[1] << 8) +
+                        (serialized_backup_metadata[2] << 16) +
+                        (serialized_backup_metadata[3] << 24);
+  uint16_t backup_size =
+      serialized_backup_metadata[4] + (serialized_backup_metadata[5] << 8);
+
+  if (backup_tag == TAG_FLASH_STRUCT && backup_size <= FLASH_DATA_SIZE_LIMIT) {
+    uint16_t backup_size_tagged = backup_size + 6;
+
+    uint8_t *backup_instance = (uint8_t *)malloc(backup_size_tagged);
+    ASSERT(backup_instance != NULL);
+    read_cmd(FLASH_DATA_BACKUP_ADDRESS,
+             (uint32_t *)backup_instance,
+             backup_size_tagged);
+
+    uint32_t backup_end_marker =
+        backup_instance[backup_size_tagged - 4] +
+        (backup_instance[backup_size_tagged - 3] << 8) +
+        (backup_instance[backup_size_tagged - 2] << 16) +
+        (backup_instance[backup_size_tagged - 1] << 24);
+
+    if (backup_end_marker == TAG_FLASH_STRUCT_END) {
+      backup_valid = true;
+      // only decode from backup if primary didn't already give us the data
+      if (!primary_valid) {
+        deserialize_fs(&flash_ram_instance, backup_instance);
+      }
+    }
+    free(backup_instance);
+    backup_instance = NULL;
+  }
+
+  if (!primary_valid && !backup_valid) {
     LOG_CRITICAL("xxxa");
     erase_cmd(FLASH_DATA_ADDRESS, FLASH_STRUCT_TLV_SIZE);
+    erase_cmd(FLASH_DATA_BACKUP_ADDRESS, FLASH_STRUCT_TLV_SIZE);
     memset(&flash_ram_instance,
            DEFAULT_VALUE_IN_FLASH,
            FLASH_WRITE_STRUCTURE_SIZE);
+  } else if (primary_valid != backup_valid) {
+    // one slot is bad, the other is good - resave to heal the bad one
+    flash_struct_save();
   }
 
   if (flash_ram_instance.wallet_count == DEFAULT_UINT32_IN_FLASH) {
@@ -183,7 +246,7 @@ static void flash_struct_load() {
 }
 
 /**
- * @brief
+ * @brief save flash struct instance
  *
  */
 void flash_struct_save() {
@@ -195,6 +258,12 @@ void flash_struct_save() {
   write_cmd(FLASH_DATA_ADDRESS,
             (uint32_t *)serialized_flash_instance,
             FLASH_STRUCT_TLV_SIZE);
+
+  erase_cmd(FLASH_DATA_BACKUP_ADDRESS, FLASH_STRUCT_TLV_SIZE);
+  write_cmd(FLASH_DATA_BACKUP_ADDRESS,
+            (uint32_t *)serialized_flash_instance,
+            FLASH_STRUCT_TLV_SIZE);
+
   free(serialized_flash_instance);
   serialized_flash_instance = NULL;
 }
@@ -220,6 +289,8 @@ const Flash_Struct *get_flash_ram_instance() {
  */
 void flash_erase() {
   erase_cmd(FLASH_DATA_ADDRESS, FLASH_STRUCT_TLV_SIZE);
+  erase_cmd(FLASH_DATA_BACKUP_ADDRESS, FLASH_STRUCT_TLV_SIZE);
+
   memset(
       &flash_ram_instance, DEFAULT_VALUE_IN_FLASH, FLASH_WRITE_STRUCTURE_SIZE);
 
@@ -433,6 +504,11 @@ static uint16_t serialize_fs(const Flash_Struct *flash_struct, uint8_t *tlv) {
                  TAG_FLASH_TOGGLE_RAW_CALLDATA,
                  sizeof(flash_struct->enable_raw_calldata),
                  &(flash_struct->enable_raw_calldata));
+  // add the magic number at the end
+  tlv[index++] = (uint8_t)(TAG_FLASH_STRUCT_END);
+  tlv[index++] = (uint8_t)(TAG_FLASH_STRUCT_END >> 8);
+  tlv[index++] = (uint8_t)(TAG_FLASH_STRUCT_END >> 16);
+  tlv[index++] = (uint8_t)(TAG_FLASH_STRUCT_END >> 24);
 
   tlv[4] = index - 6;
   tlv[5] = (index - 6) >> 8;
@@ -559,7 +635,8 @@ static void deserialize_fs_wallet(Flash_Wallet *flash_wallet,
  */
 static void deserialize_fs(Flash_Struct *flash_struct, uint8_t *tlv) {
   uint16_t index = 4;    // First 4 bytes are the TAG_FLASH_STRUCT
-  uint16_t len = tlv[index] + (tlv[index + 1] << 8) + 6;
+  uint16_t len = tlv[index] + (tlv[index + 1] << 8) + 6 -
+                 4;    // remove the magic from length
 
   index += 2;
 
