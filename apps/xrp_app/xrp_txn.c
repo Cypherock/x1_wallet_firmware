@@ -515,6 +515,20 @@ void xrp_sign_transaction(xrp_query_t *query) {
   }
 
   if (xrp_txn_context) {
+    // the buffers are allocated while fetching the transaction and must be
+    // released on every path, or each sign attempt leaks up to 64 KB of heap
+    if (NULL != xrp_txn_context->transaction) {
+      // only allocated when this size passed the check in fetch_valid_input
+      memzero(xrp_txn_context->transaction,
+              xrp_txn_context->init_info.transaction_size);
+      free(xrp_txn_context->transaction);
+      xrp_txn_context->transaction = NULL;
+    }
+    if (NULL != xrp_txn_context->raw_txn) {
+      memzero(xrp_txn_context->raw_txn, sizeof(xrp_unsigned_txn));
+      free(xrp_txn_context->raw_txn);
+      xrp_txn_context->raw_txn = NULL;
+    }
     free(xrp_txn_context);
     xrp_txn_context = NULL;
   }
