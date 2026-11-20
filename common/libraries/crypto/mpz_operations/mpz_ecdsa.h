@@ -150,6 +150,12 @@ int mpz_curve_point_is_negative_of(const mpz_curve_point *p,
                                    const mpz_curve_point *q);
 
 /**
+ * @brief Makes mini-gmp wipe every buffer it frees or reallocates, so key and
+ * nonce limbs are not left in the heap. Safe to call more than once.
+ */
+void mpz_use_zeroizing_allocator(void);
+
+/**
  * @brief Generates ecdsa signature on mpz curve; currently configured for stark
  * curves(f252)
  */
