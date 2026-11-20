@@ -458,24 +458,29 @@ static bool sign_txn(der_sig_t *der_signature) {
              digest);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(xrp_txn_context->init_info.derivation_path,
-                          xrp_txn_context->init_info.derivation_path_count,
-                          SECP256K1_NAME,
-                          seed,
-                          &hdnode);
+  uint8_t signature[64] = {0};
+  // the signature is verified before release (deterministic nonce)
+  bool status =
+      derive_hdnode_from_path(xrp_txn_context->init_info.derivation_path,
+                              xrp_txn_context->init_info.derivation_path_count,
+                              SECP256K1_NAME,
+                              seed,
+                              &hdnode) &&
+      ecdsa_sign_digest_checked(
+          &secp256k1, &hdnode, digest, signature, NULL, NULL);
 
-  uint8_t signature[64];
-  ecdsa_sign_digest(
-      &secp256k1, hdnode.private_key, digest, signature, NULL, NULL);
-
-  der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
+  if (status) {
+    der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
+  } else {
+    xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
 
   memzero(digest, sizeof(digest));
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
   memzero(signature, sizeof(signature));
 
-  return true;
+  return status;
 }
 
 static bool send_signature(xrp_query_t *query, const der_sig_t *der_signature) {

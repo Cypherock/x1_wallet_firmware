@@ -991,25 +991,35 @@ static bool send_signature(solana_query_t *query,
     return false;
 
   // sign updated transaction
-  if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode))
+  if (!derive_hdnode_from_path(hd_path, depth, ED25519_NAME, seed, &hdnode)) {
+    memzero(&hdnode, sizeof(hdnode));
+    memzero(seed, 64);
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     return false;
+  }
 
   if (!solana_verify_stake_authorities(&solana_txn_context->transaction_info,
                                        &solana_txn_context->extra_data,
                                        hdnode.public_key + 1)) {
     memzero(&hdnode, sizeof(hdnode));
-    memzero(seed, sizeof(seed));
+    memzero(seed, 64);
     return false;
   }
 
-  ed25519_sign(solana_txn_context->transaction,
-               solana_txn_context->init_info.transaction_size,
-               hdnode.private_key,
-               hdnode.public_key + 1,
-               sig->signature);
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status =
+      ed25519_sign_checked(solana_txn_context->transaction,
+                           solana_txn_context->init_info.transaction_size,
+                           hdnode.private_key,
+                           hdnode.public_key + 1,
+                           sig->signature);
 
   memzero(&hdnode, sizeof(hdnode));
-  memzero(seed, sizeof(seed));
+  memzero(seed, 64);
+  if (!status) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
 
   memcpy(&result.sign_txn.signature,
          sig,

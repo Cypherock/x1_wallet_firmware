@@ -557,8 +557,8 @@ static bool get_msg_data_signature(
     uint8_t digest[SHA512_DIGEST_LENGTH] = {0};
     uint8_t signature[64] = {0};
     if (!constellation_get_msg_data_digest(&sign_msg_ctx, digest) ||
-        (0 != ecdsa_sign_digest(
-                  curve, node.private_key, digest, signature, NULL, NULL))) {
+        !ecdsa_sign_digest_checked(
+            curve, &node, digest, signature, NULL, NULL)) {
       constellation_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
       status = false;
     }

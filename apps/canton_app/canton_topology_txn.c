@@ -530,12 +530,18 @@ static bool sign_topology_txn(canton_topology_sig_t *sig) {
                   digest);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(
-      canton_topology_txn_context->init_info.derivation_path,
-      canton_topology_txn_context->init_info.derivation_path_count,
-      ED25519_NAME,
-      seed,
-      &hdnode);
+  if (!derive_hdnode_from_path(
+          canton_topology_txn_context->init_info.derivation_path,
+          canton_topology_txn_context->init_info.derivation_path_count,
+          ED25519_NAME,
+          seed,
+          &hdnode)) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    memzero(&hdnode, sizeof(hdnode));
+    memzero(digest, sizeof(digest));
+    memzero(seed, sizeof(seed));
+    return false;
+  }
 
   // match public key with the public key in the proposal
   if (!canton_topology_txn_context->unsigned_topology_txn.has_party_id ||
@@ -550,17 +556,21 @@ static bool sign_topology_txn(canton_topology_sig_t *sig) {
     return false;
   }
 
-  ed25519_sign(digest,
-               CANTON_HASH_SIZE,
-               hdnode.private_key,
-               hdnode.public_key + 1,
-               sig->signature);
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status = ed25519_sign_checked(digest,
+                                     CANTON_HASH_SIZE,
+                                     hdnode.private_key,
+                                     hdnode.public_key + 1,
+                                     sig->signature);
 
   memzero(digest, sizeof(digest));
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
 
-  return true;
+  if (!status) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
+  return status;
 }
 
 static bool send_signature(canton_query_t *query,

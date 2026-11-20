@@ -63,6 +63,7 @@
 
 #include <stdint.h>
 
+#include "coin_utils.h"
 #include "composable_app_queue.h"
 #include "constant_texts.h"
 #include "ed25519.h"
@@ -507,9 +508,12 @@ static int sia_create_signature(const uint8_t *private_key,
 
   uint8_t public_key[32];
   ed25519_publickey(private_key, public_key);
-  ed25519_sign(transaction_hash, 32, private_key, public_key, signature);
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status = ed25519_sign_checked(
+      transaction_hash, 32, private_key, public_key, signature);
+  memzero(transaction_hash, sizeof(transaction_hash));
 
-  return 0;
+  return status ? 0 : -1;
 }
 
 static bool sign_txn(uint8_t *signature) {

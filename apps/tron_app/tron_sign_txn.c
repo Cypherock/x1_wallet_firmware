@@ -422,17 +422,20 @@ static bool send_signature(tron_query_t *query,
              tron_txn_context->init_info.transaction_size,
              txid);
 
-  // sign transaction
-  if (!derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode))
-    return false;
-
+  // sign transaction; the signature is verified before release
   uint8_t v_value = 0;
-  ecdsa_sign_digest(
-      &secp256k1, hdnode.private_key, txid, sig->signature, &v_value, NULL);
-  sig->signature[64] = v_value;
+  bool status =
+      derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode) &&
+      ecdsa_sign_digest_checked(
+          &secp256k1, &hdnode, txid, sig->signature, &v_value, NULL);
 
   memzero(&hdnode, sizeof(hdnode));
-  memzero(seed, sizeof(seed));
+  memzero(seed, 64);
+  if (!status) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+  sig->signature[64] = v_value;
 
   memcpy(&result.sign_txn.signature,
          sig,
