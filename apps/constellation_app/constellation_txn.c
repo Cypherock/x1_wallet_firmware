@@ -297,7 +297,8 @@ static bool handle_initiate_query(const constellation_query_t *query) {
 }
 
 static bool fetch_valid_input(constellation_query_t *query) {
-  if (!constellation_get_query(query, CONSTELLATION_QUERY_SIGN_TXN_TAG) &&
+  // both the query and the request inside it must be the expected ones
+  if (!constellation_get_query(query, CONSTELLATION_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query,
                            CONSTELLATION_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
     return false;
@@ -306,6 +307,8 @@ static bool fetch_valid_input(constellation_query_t *query) {
   const constellation_sign_txn_data_t *sign_txn_data =
       &query->sign_txn.txn_data;
   if (sign_txn_data->has_txn == false) {
+    constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
 
