@@ -51,6 +51,31 @@
 void exchange_initiate_flow(exchange_query_t *query);
 
 /**
+ * @brief Initiates the Private Send flow by pushing data onto the composable
+ * app queue: attest recipient, fetch signature, store signature, send.
+ *
+ * @param query Pointer to the exchange query structure.
+ */
+void exchange_initiate_private_send(exchange_query_t *query);
+
+/**
+ * @brief Tells whether the flow that was last initiated is a Private Send
+ * (true) or a swap (false). Only used to choose the on-screen text.
+ *
+ * @return bool true if the active flow is a Private Send
+ */
+bool exchange_is_private_send_flow(void);
+
+/**
+ * @brief Shows the Private Send recipient on the device and, on user
+ * confirmation, signs the canonical "PS1:<chain>:<address>" message with the
+ * device key and stores the signature in the shared context.
+ *
+ * @param query Pointer to the exchange query structure.
+ */
+void exchange_attest_recipient(exchange_query_t *query);
+
+/**
  * @brief Retrieves the signature from the shared context and sends it as a
  * result.
  *

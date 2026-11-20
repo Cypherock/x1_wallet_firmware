@@ -160,7 +160,12 @@ void exchange_main(usb_event_t usb_evt, const void *app_config) {
   LOG_SWV("%s (%d) - Query:%d\n", __func__, __LINE__, query.which_request);
   switch ((uint8_t)query.which_request) {
     case EXCHANGE_QUERY_INITIATE_FLOW_TAG: {
-      exchange_initiate_flow(&query);
+      if (query.initiate_flow.which_request ==
+          EXCHANGE_INITIATE_FLOW_REQUEST_INITIATE_PRIVATE_SEND_TAG) {
+        exchange_initiate_private_send(&query);
+      } else {
+        exchange_initiate_flow(&query);
+      }
       break;
     }
     case EXCHANGE_QUERY_GET_SIGNATURE_TAG: {
@@ -173,6 +178,10 @@ void exchange_main(usb_event_t usb_evt, const void *app_config) {
     }
     case EXCHANGE_QUERY_CLOSE_FLOW_TAG: {
       exchange_close_flow(&query);
+      break;
+    }
+    case EXCHANGE_QUERY_ATTEST_RECIPIENT_TAG: {
+      exchange_attest_recipient(&query);
       break;
     }
     default: {

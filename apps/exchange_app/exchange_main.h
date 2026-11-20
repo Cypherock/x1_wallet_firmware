@@ -33,6 +33,7 @@ typedef enum EXCHANGE_FLOW_TAGS {
   EXCHANGE_FLOW_TAG_FETCH_SIGNATURE,
   EXCHANGE_FLOW_TAG_STORE_SIGNATURE,
   EXCHANGE_FLOW_TAG_SEND,
+  EXCHANGE_FLOW_TAG_ATTEST,
 } exchange_flow_tag_e;
 
 /*****************************************************************************
