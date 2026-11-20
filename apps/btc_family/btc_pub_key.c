@@ -151,12 +151,14 @@ static size_t btc_get_address(const uint8_t *seed,
                               char *address);
 
 /**
- * @brief Takes and sends the uncompressed public key to the host as
+ * @brief Takes and sends the uncompressed public key and address to the host as
  * btc_result_t
  *
  * @param public_key An immutable reference to uncompressed public key buffer
+ * @param address An immutable reference to the address buffer
  */
-static void send_public_key(const uint8_t *public_key);
+static void send_public_key_response(const uint8_t *public_key,
+                                     const char *address);
 
 /*****************************************************************************
  * STATIC VARIABLES
@@ -260,11 +262,13 @@ static size_t btc_get_address(const uint8_t *seed,
   return address_length;
 }
 
-static void send_public_key(const uint8_t *public_key) {
+static void send_public_key_response(const uint8_t *public_key,
+                                     const char *address) {
   btc_result_t response = init_btc_result(BTC_RESULT_GET_PUBLIC_KEY_TAG);
   response.get_public_key.which_response =
       BTC_GET_PUBLIC_KEY_RESPONSE_RESULT_TAG;
   memcpy(response.get_public_key.result.public_key, public_key, 65);
+  memcpy(response.get_public_key.result.address, address, strnlen(address, 70));
   btc_send_result(&response);
 }
 
@@ -328,7 +332,7 @@ void btc_get_pub_key(btc_query_t *query) {
   if (0 < length &&
       true == core_scroll_page(ui_text_receive_on, msg, btc_send_error)) {
     set_app_flow_status(BTC_GET_PUBLIC_KEY_STATUS_VERIFY);
-    send_public_key(public_key);
+    send_public_key_response(public_key, msg);
     delay_scr_init(ui_text_check_cysync_app, DELAY_TIME);
   }
 }
