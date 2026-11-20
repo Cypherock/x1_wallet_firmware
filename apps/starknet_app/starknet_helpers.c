@@ -210,7 +210,7 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   mpz_t priv_key;
   mpz_init(priv_key);
   byte_array_to_mpz(priv_key, stark_private_key, STARKNET_BIGNUM_SIZE);
-  mpz_curve_point_multiply(stark_curve, priv_key, &stark_curve->G, &p);
+  mpz_curve_point_multiply_secret(stark_curve, priv_key, &stark_curve->G, &p);
   mpz_clear(priv_key);    // clear priv key when no longer required
   memzero(stark_private_key, sizeof(stark_private_key));
 
