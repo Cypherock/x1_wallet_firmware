@@ -732,14 +732,18 @@ static bool sign_txn(uint8_t *signature_buffer) {
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
   uint8_t stark_key[STARKNET_BIGNUM_SIZE] = {0};
-  if (starknet_derive_key_from_seed(
-          seed,
-          starknet_txn_context->init_info.derivation_path,
-          starknet_txn_context->init_info.derivation_path_count,
-          stark_key,
-          NULL)) {
-  } else {
-    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  bool key_derived = starknet_derive_key_from_seed(
+      seed,
+      starknet_txn_context->init_info.derivation_path,
+      starknet_txn_context->init_info.derivation_path_count,
+      stark_key,
+      NULL);
+  memzero(seed, sizeof(seed));
+  if (!key_derived) {
+    // the error was already sent by the derivation; do not sign with an
+    // all-zero key
+    memzero(stark_key, sizeof(stark_key));
+    return false;
   }
 
   // calculate txn hash
@@ -762,14 +766,14 @@ static bool sign_txn(uint8_t *signature_buffer) {
   felt_t_to_hex(hash_felt, hash);
 
   // generate signature
-  if (starknet_sign_digest(stark_curve, stark_key, hash, signature_buffer) !=
-      0) {
+  int sign_status =
+      starknet_sign_digest(stark_curve, stark_key, hash, signature_buffer);
+  memzero(stark_key, sizeof(stark_key));
+  if (0 != sign_status) {
+    memzero(signature_buffer, 64);
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
     return false;
   }
-
-  memzero(seed, sizeof(seed));
-  memzero(stark_key, sizeof(stark_key));
 
   return true;
 }
