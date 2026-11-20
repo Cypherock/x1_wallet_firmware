@@ -471,6 +471,11 @@ void tron_sign_transaction(tron_query_t *query) {
   if (NULL != tron_txn_context->transaction) {
     free(tron_txn_context->transaction);
   }
+  // the decoded transaction was never freed, leaking on every sign attempt
+  if (NULL != tron_txn_context->raw_txn) {
+    memzero(tron_txn_context->raw_txn, sizeof(tron_transaction_raw_t));
+    free(tron_txn_context->raw_txn);
+  }
   if (NULL != tron_txn_context) {
     free(tron_txn_context);
     tron_txn_context = NULL;
