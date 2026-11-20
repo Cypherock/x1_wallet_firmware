@@ -954,7 +954,7 @@ STATIC bool fetch_seed(solana_query_t *query, uint8_t *seed_out) {
   if (!reconstruct_seed(solana_txn_context->init_info.wallet_id,
                         seed_out,
                         solana_send_error)) {
-    memzero(seed_out, sizeof(seed_out));
+    memzero(seed_out, 64);
     return false;
   }
   set_app_flow_status(SOLANA_SIGN_TXN_STATUS_SEED_GENERATED);

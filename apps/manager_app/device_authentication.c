@@ -393,7 +393,7 @@ void device_authentication_flow(manager_query_t *query) {
     }
 
     /* Zeroize decoded_query structure */
-    memzero(query, sizeof(query));
+    memzero(query, sizeof(*query));
 
     /* Get next query */
     if (!manager_get_query(query, MANAGER_QUERY_AUTH_DEVICE_TAG)) {

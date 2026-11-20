@@ -393,7 +393,7 @@ static bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
 
   if (!reconstruct_seed(
           tron_txn_context->init_info.wallet_id, seed_out, tron_send_error)) {
-    memzero(seed_out, sizeof(seed_out));
+    memzero(seed_out, 64);
     return false;
   }
 
