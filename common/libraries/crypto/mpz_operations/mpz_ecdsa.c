@@ -80,10 +80,19 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+/// Random bits of the multiple of the group order added to a secret scalar
+#define SCALAR_BLINDING_BITS 64
+
+/// Limbs that hold any value reduced modulo the (at most 256-bit) prime
+#define REDUCED_LIMBS ((256 / (8 * sizeof(mp_limb_t))) + 1)
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
  *****************************************************************************/
+/// Point in Jacobian coordinates: (X, Y, Z) is the affine point (X/Z^2, Y/Z^3)
+typedef struct {
+  mpz_t X, Y, Z;
+} mpz_jacobian_point;
 
 /*****************************************************************************
  * STATIC FUNCTION PROTOTYPES
@@ -156,6 +165,187 @@ static void generate_k_random_mpz(mpz_t k, const mpz_t prime) {
   mpz_to_bn(&k_bn, k);
   generate_k_random(&k_bn, &prime_bn);
   bn_to_mpz(k, &k_bn);
+}
+
+static void jacobian_init(mpz_jacobian_point *p) {
+  mpz_init(p->X);
+  mpz_init(p->Y);
+  mpz_init(p->Z);
+}
+
+static void jacobian_clear(mpz_jacobian_point *p) {
+  mpz_clear(p->X);
+  mpz_clear(p->Y);
+  mpz_clear(p->Z);
+}
+
+static void mod_mul(mpz_t r, const mpz_t a, const mpz_t b, const mpz_t m) {
+  mpz_mul(r, a, b);
+  mpz_mod(r, r, m);
+}
+
+static void mod_sub(mpz_t r, const mpz_t a, const mpz_t b, const mpz_t m) {
+  mpz_sub(r, a, b);
+  mpz_mod(r, r, m);
+}
+
+// p = 2p (dbl-2007-bl, any curve coefficient a)
+static void jacobian_double(const mpz_curve *curve, mpz_jacobian_point *p) {
+  const mpz_srcptr m = curve->prime;
+  mpz_t xx, yy, yyyy, zz, s, t;
+  mpz_init(xx);
+  mpz_init(yy);
+  mpz_init(yyyy);
+  mpz_init(zz);
+  mpz_init(s);
+  mpz_init(t);
+
+  mod_mul(xx, p->X, p->X, m);
+  mod_mul(yy, p->Y, p->Y, m);
+  mod_mul(yyyy, yy, yy, m);
+  mod_mul(zz, p->Z, p->Z, m);
+
+  // s = 2 * ((X + YY)^2 - XX - YYYY)
+  mpz_add(s, p->X, yy);
+  mod_mul(s, s, s, m);
+  mpz_sub(s, s, xx);
+  mpz_sub(s, s, yyyy);
+  mpz_mul_2exp(s, s, 1);
+  mpz_mod(s, s, m);
+
+  // t = 3 * XX + a * ZZ^2 (named M in the formula)
+  mod_mul(t, zz, zz, m);
+  mod_mul(t, t, curve->a, m);
+  mpz_addmul_ui(t, xx, 3);
+  mpz_mod(t, t, m);
+
+  // Z3 = (Y + Z)^2 - YY - ZZ
+  mpz_add(p->Z, p->Y, p->Z);
+  mod_mul(p->Z, p->Z, p->Z, m);
+  mpz_sub(p->Z, p->Z, yy);
+  mod_sub(p->Z, p->Z, zz, m);
+
+  // X3 = M^2 - 2 * s
+  mod_mul(p->X, t, t, m);
+  mpz_submul_ui(p->X, s, 2);
+  mpz_mod(p->X, p->X, m);
+
+  // Y3 = M * (s - X3) - 8 * YYYY
+  mod_sub(s, s, p->X, m);
+  mod_mul(p->Y, t, s, m);
+  mpz_submul_ui(p->Y, yyyy, 8);
+  mpz_mod(p->Y, p->Y, m);
+
+  mpz_clear(xx);
+  mpz_clear(yy);
+  mpz_clear(yyyy);
+  mpz_clear(zz);
+  mpz_clear(s);
+  mpz_clear(t);
+}
+
+// q = p + q (add-2007-bl). p and q must differ and neither may be infinity;
+// in the ladder q - p is always the input point, so this holds.
+static void jacobian_add(const mpz_curve *curve,
+                         const mpz_jacobian_point *p,
+                         mpz_jacobian_point *q) {
+  const mpz_srcptr m = curve->prime;
+  mpz_t z1z1, z2z2, u1, u2, s1, s2, h, i, j, r, v;
+  mpz_init(z1z1);
+  mpz_init(z2z2);
+  mpz_init(u1);
+  mpz_init(u2);
+  mpz_init(s1);
+  mpz_init(s2);
+  mpz_init(h);
+  mpz_init(i);
+  mpz_init(j);
+  mpz_init(r);
+  mpz_init(v);
+
+  mod_mul(z1z1, p->Z, p->Z, m);
+  mod_mul(z2z2, q->Z, q->Z, m);
+  mod_mul(u1, p->X, z2z2, m);
+  mod_mul(u2, q->X, z1z1, m);
+  mod_mul(s1, p->Y, q->Z, m);
+  mod_mul(s1, s1, z2z2, m);
+  mod_mul(s2, q->Y, p->Z, m);
+  mod_mul(s2, s2, z1z1, m);
+
+  mod_sub(h, u2, u1, m);
+  // i = (2h)^2, j = h * i, r = 2 * (s2 - s1), v = u1 * i
+  mpz_mul_2exp(i, h, 1);
+  mod_mul(i, i, i, m);
+  mod_mul(j, h, i, m);
+  mpz_sub(r, s2, s1);
+  mpz_mul_2exp(r, r, 1);
+  mpz_mod(r, r, m);
+  mod_mul(v, u1, i, m);
+
+  // Z3 = ((Z1 + Z2)^2 - Z1Z1 - Z2Z2) * h
+  mpz_add(q->Z, p->Z, q->Z);
+  mod_mul(q->Z, q->Z, q->Z, m);
+  mpz_sub(q->Z, q->Z, z1z1);
+  mpz_sub(q->Z, q->Z, z2z2);
+  mod_mul(q->Z, q->Z, h, m);
+
+  // X3 = r^2 - j - 2 * v
+  mod_mul(q->X, r, r, m);
+  mpz_sub(q->X, q->X, j);
+  mpz_submul_ui(q->X, v, 2);
+  mpz_mod(q->X, q->X, m);
+
+  // Y3 = r * (v - X3) - 2 * s1 * j
+  mod_sub(v, v, q->X, m);
+  mod_mul(q->Y, r, v, m);
+  mod_mul(s1, s1, j, m);
+  mpz_submul_ui(q->Y, s1, 2);
+  mpz_mod(q->Y, q->Y, m);
+
+  mpz_clear(z1z1);
+  mpz_clear(z2z2);
+  mpz_clear(u1);
+  mpz_clear(u2);
+  mpz_clear(s1);
+  mpz_clear(s2);
+  mpz_clear(h);
+  mpz_clear(i);
+  mpz_clear(j);
+  mpz_clear(r);
+  mpz_clear(v);
+}
+
+// Swaps a and b when bit is 1, without branching on bit. Both values must be
+// reduced (non-negative and below 2^256).
+static void mpz_cswap(mpz_t a, mpz_t b, const mp_limb_t bit) {
+  const mp_limb_t mask = (mp_limb_t)0 - bit;
+  const unsigned int size_mask = (unsigned int)0 - (unsigned int)bit;
+
+  // the whole limb range is swapped, so both must have it allocated
+  if (a->_mp_alloc < (int)REDUCED_LIMBS) {
+    mpz_realloc2(a, REDUCED_LIMBS * 8 * sizeof(mp_limb_t));
+  }
+  if (b->_mp_alloc < (int)REDUCED_LIMBS) {
+    mpz_realloc2(b, REDUCED_LIMBS * 8 * sizeof(mp_limb_t));
+  }
+
+  for (size_t i = 0; i < REDUCED_LIMBS; i++) {
+    mp_limb_t t = mask & (a->_mp_d[i] ^ b->_mp_d[i]);
+    a->_mp_d[i] ^= t;
+    b->_mp_d[i] ^= t;
+  }
+  unsigned int t =
+      size_mask & ((unsigned int)a->_mp_size ^ (unsigned int)b->_mp_size);
+  a->_mp_size = (int)((unsigned int)a->_mp_size ^ t);
+  b->_mp_size = (int)((unsigned int)b->_mp_size ^ t);
+}
+
+static void jacobian_cswap(mpz_jacobian_point *a,
+                           mpz_jacobian_point *b,
+                           const mp_limb_t bit) {
+  mpz_cswap(a->X, b->X, bit);
+  mpz_cswap(a->Y, b->Y, bit);
+  mpz_cswap(a->Z, b->Z, bit);
 }
 
 /*****************************************************************************
@@ -371,6 +561,80 @@ void mpz_curve_point_multiply(const mpz_curve *curve,
   mpz_curve_point_clear(&R);
 }
 
+void mpz_curve_point_multiply_secret(const mpz_curve *curve,
+                                     const mpz_t k,
+                                     const mpz_curve_point *p,
+                                     mpz_curve_point *res) {
+  mpz_t scalar, blind, lambda;
+  mpz_init(scalar);
+  mpz_init(blind);
+  mpz_init(lambda);
+
+  mpz_mod(scalar, k, curve->order);
+  if (mpz_curve_point_is_infinity(p) || 0 == mpz_cmp_ui(scalar, 0)) {
+    mpz_curve_point_set_infinity(res);
+    mpz_clear(scalar);
+    mpz_clear(blind);
+    mpz_clear(lambda);
+    return;
+  }
+
+  // scalar = k + blind * order, with the top blinding bit set so that the
+  // ladder always has well over 256 steps
+  generate_k_random_mpz(blind, curve->order);
+  mpz_fdiv_r_2exp(blind, blind, SCALAR_BLINDING_BITS);
+  mpz_setbit(blind, SCALAR_BLINDING_BITS - 1);
+  mpz_addmul(scalar, blind, curve->order);
+
+  // R0 = p in random Jacobian coordinates (lambda^2 x, lambda^3 y, lambda)
+  mpz_jacobian_point r0, r1;
+  jacobian_init(&r0);
+  jacobian_init(&r1);
+  generate_k_random_mpz(lambda, curve->prime);
+  mpz_set(r0.Z, lambda);
+  mod_mul(lambda, lambda, lambda, curve->prime);
+  mod_mul(r0.X, p->x, lambda, curve->prime);
+  mod_mul(lambda, lambda, r0.Z, curve->prime);
+  mod_mul(r0.Y, p->y, lambda, curve->prime);
+
+  // R1 = 2p; the top bit of the scalar is set, so the ladder starts at
+  // (p, 2p) and never meets the point at infinity
+  mpz_set(r1.X, r0.X);
+  mpz_set(r1.Y, r0.Y);
+  mpz_set(r1.Z, r0.Z);
+  jacobian_double(curve, &r1);
+
+  // Montgomery ladder: R1 - R0 == p throughout; every bit does one addition
+  // and one doubling, and the bit only selects through a conditional swap
+  for (int i = (int)mpz_sizeinbase(scalar, 2) - 2; i >= 0; i--) {
+    const mp_limb_t bit = (mp_limb_t)mpz_tstbit(scalar, i);
+    jacobian_cswap(&r0, &r1, bit);
+    jacobian_add(curve, &r0, &r1);
+    jacobian_double(curve, &r0);
+    jacobian_cswap(&r0, &r1, bit);
+  }
+
+  // back to affine: x = X / Z^2, y = Y / Z^3. Z is 0 only in cases with
+  // negligible probability; the result is then infinity (a signer retries)
+  if (0 == mpz_invert(lambda, r0.Z, curve->prime)) {
+    mpz_curve_point_set_infinity(res);
+  } else {
+    mpz_t lambda2;
+    mpz_init(lambda2);
+    mod_mul(lambda2, lambda, lambda, curve->prime);
+    mod_mul(res->x, r0.X, lambda2, curve->prime);
+    mod_mul(lambda2, lambda2, lambda, curve->prime);
+    mod_mul(res->y, r0.Y, lambda2, curve->prime);
+    mpz_clear(lambda2);
+  }
+
+  jacobian_clear(&r0);
+  jacobian_clear(&r1);
+  mpz_clear(scalar);
+  mpz_clear(blind);
+  mpz_clear(lambda);
+}
+
 int bn_bit_length(const mpz_t k) {
   if (mpz_cmp_ui(k, 0) == 0) {
     return 0;
@@ -417,7 +681,7 @@ int starknet_sign_digest(const mpz_curve *curve,
     generate_k_random_mpz(k, curve->order);
 #endif
     // compute k*G
-    mpz_curve_point_multiply(curve, k, &curve->G, &R);
+    mpz_curve_point_multiply_secret(curve, k, &curve->G, &R);
     mpz_mod(R.x, R.x, curve->order);
     // r = (rx mod n)
     if (!(mpz_cmp(R.x, curve->order) < 0)) {
