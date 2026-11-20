@@ -61,6 +61,8 @@
  *****************************************************************************/
 #include "ui_state_machine.h"
 
+#include "ui_input_text.h"
+
 /*****************************************************************************
  * EXTERN VARIABLES
  *****************************************************************************/
@@ -123,6 +125,9 @@ uint32_t get_state_on_input_scr(uint32_t state_on_text_input,
 
   if (true == event.p0_event.flag) {
     next_state = state_on_p0_event;
+    // a timeout or abort leaves the input screen up; clear it here so the
+    // partially entered PIN or passphrase is wiped and its buffer freed
+    input_text_destructor();
   } else {
     ui_event_types_t ui_event = event.ui_event.event_type;
     if (UI_EVENT_REJECT == ui_event) {
