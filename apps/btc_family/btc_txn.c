@@ -684,8 +684,11 @@ static bool validate_change_address(const HDNode *acc_node) {
   }
 
   memcpy(&t_node, acc_node, sizeof(HDNode));
-  hdnode_private_ckd(&t_node, 1);
-  hdnode_private_ckd(&t_node, output->changes_index);
+  if (!hdnode_private_ckd(&t_node, 1) ||
+      !hdnode_private_ckd(&t_node, output->changes_index)) {
+    memzero(&t_node, sizeof(HDNode));
+    return status;
+  }
   hdnode_fill_public_key(&t_node);
   status = btc_check_script_address(output->script_pub_key.bytes,
                                     output->script_pub_key.size,
@@ -731,8 +734,14 @@ static bool sign_input(scrip_sig_t *signatures) {
   for (int idx = 0; idx < btc_txn_context->metadata.input_count; idx++) {
     // generate the input digest and respective private key
     memcpy(&t_node, &node, sizeof(HDNode));
-    hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].change_index);
-    hdnode_private_ckd(&t_node, btc_txn_context->inputs[idx].address_index);
+    if (!hdnode_private_ckd(&t_node,
+                            btc_txn_context->inputs[idx].change_index) ||
+        !hdnode_private_ckd(&t_node,
+                            btc_txn_context->inputs[idx].address_index)) {
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      status = false;
+      break;
+    }
     hdnode_fill_public_key(&t_node);
 
     // detect input type
@@ -751,28 +760,42 @@ static bool sign_input(scrip_sig_t *signatures) {
     }
 
     status = btc_digest_input(btc_txn_context, idx, buffer);
-    if (PURPOSE_TAPROOT == hd_path[0]) {
-      // Sign with Schnorr signature
+    if (false == status) {
+      // digest could not be calculated
+    } else if (PURPOSE_TAPROOT == hd_path[0]) {
+      // Sign with Schnorr signature; the signature is verified before use
       if (schnorrsig_sign32_taproot(t_node.private_key,
                                     t_node.public_key,
                                     buffer,
                                     signatures[idx].bytes) != 0) {
         status = false;
-        break;
-      }
-      // add public key to the signature
-      memcpy(signatures[idx].bytes + 64, t_node.public_key, 33);
+      } else {
+        // add public key to the signature
+        memcpy(signatures[idx].bytes + 64, t_node.public_key, 33);
 
-      // Taproot signatures are 64 bytes (no script sig encoding needed)
-      signatures[idx].size = 64 + 33;
+        // Taproot signatures are 64 bytes (no script sig encoding needed)
+        signatures[idx].size = 64 + 33;
+      }
     } else {
-      ecdsa_sign_digest(
-          curve, t_node.private_key, buffer, signatures[idx].bytes, NULL, NULL);
-      signatures[idx].size = btc_sig_to_script_sig(
-          signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+      // verify the signature before releasing it: with deterministic nonces,
+      // one faulty signature next to a good one reveals the private key
+      if (0 != ecdsa_sign_digest(curve,
+                                 t_node.private_key,
+                                 buffer,
+                                 signatures[idx].bytes,
+                                 NULL,
+                                 NULL) ||
+          0 != ecdsa_verify_digest(
+                   curve, t_node.public_key, signatures[idx].bytes, buffer)) {
+        memzero(signatures[idx].bytes, 64);
+        status = false;
+      } else {
+        signatures[idx].size = btc_sig_to_script_sig(
+            signatures[idx].bytes, t_node.public_key, signatures[idx].bytes);
+      }
     }
     if (0 == signatures[idx].size || false == status) {
-      // early exit as digest could not be calculated
+      // early exit as the digest or signature could not be calculated
       btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
       status = false;
       break;

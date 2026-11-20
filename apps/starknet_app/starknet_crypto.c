@@ -157,6 +157,9 @@ static void stark_pedersen_init() {
  *****************************************************************************/
 
 void starknet_init() {
+  // installed first so every mini-gmp buffer, including the curve constants,
+  // is wiped when freed
+  mpz_use_zeroizing_allocator();
   stark_curve_init();
   stark_pedersen_init();
 }

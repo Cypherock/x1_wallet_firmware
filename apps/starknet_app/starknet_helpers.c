@@ -131,6 +131,8 @@ bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
       mpz_clear(f_key);
       mpz_clear(strk_key);
       mpz_clear(strk_limit);
+      memzero(key, sizeof(key));
+      memzero(&ctx, sizeof(ctx));
       return true;
     }
   }
@@ -141,6 +143,8 @@ bool grind_key(const uint8_t *grind_seed, uint8_t *out) {
   // clear mpz variables
   mpz_clear(strk_key);
   mpz_clear(strk_limit);
+  memzero(key, sizeof(key));
+  memzero(&ctx, sizeof(ctx));
   return false;
 }
 
@@ -186,8 +190,13 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   uint8_t stark_private_key[STARKNET_BIGNUM_SIZE] = {0};
   mpz_curve_point p;
   mpz_curve_point_init(&p);
-  if (!grind_key(stark_child_node.private_key, stark_private_key)) {
+  bool grind_status =
+      grind_key(stark_child_node.private_key, stark_private_key);
+  // the secp256k1 node is only needed to grind the stark key
+  memzero(&stark_child_node, sizeof(HDNode));
+  if (!grind_status) {
     mpz_curve_point_clear(&p);
+    memzero(stark_private_key, sizeof(stark_private_key));
     return false;
   }
 
@@ -203,6 +212,7 @@ bool starknet_derive_key_from_seed(const uint8_t *seed,
   byte_array_to_mpz(priv_key, stark_private_key, STARKNET_BIGNUM_SIZE);
   mpz_curve_point_multiply(stark_curve, priv_key, &stark_curve->G, &p);
   mpz_clear(priv_key);    // clear priv key when no longer required
+  memzero(stark_private_key, sizeof(stark_private_key));
 
   uint8_t stark_public_key[STARKNET_BIGNUM_SIZE] = {0};
   mpz_to_byte_array(p.x, stark_public_key, STARKNET_PUB_KEY_SIZE);

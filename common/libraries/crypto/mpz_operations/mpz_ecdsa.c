@@ -65,8 +65,11 @@
 
 #include "mini-gmp-helpers.h"
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "assert_conf.h"
+#include "memzero.h"
 #include "mini-gmp.h"
 #include "rfc6979.h"
 
@@ -89,6 +92,31 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static void *mpz_zeroizing_alloc(size_t size) {
+  void *p = malloc(size);
+  ASSERT(p != NULL);
+  return p;
+}
+
+// mini-gmp passes the size of the block it allocated, so all of it is wiped
+static void mpz_zeroizing_free(void *p, size_t size) {
+  if (NULL == p) {
+    return;
+  }
+  memzero(p, size);
+  free(p);
+}
+
+// realloc could leave the old block in the heap, so it is copied by hand
+static void *mpz_zeroizing_realloc(void *old, size_t old_size, size_t size) {
+  void *p = mpz_zeroizing_alloc(size);
+  if (NULL != old) {
+    memcpy(p, old, old_size < size ? old_size : size);
+    mpz_zeroizing_free(old, old_size);
+  }
+  return p;
+}
+
 static void mpz_to_bn(bignum256 *bn, const mpz_t mpz) {
   uint8_t out[STARKNET_BIGNUM_SIZE] = {0};
   mpz_to_byte_array(mpz, out, STARKNET_BIGNUM_SIZE);
@@ -133,6 +161,10 @@ static void generate_k_random_mpz(mpz_t k, const mpz_t prime) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+void mpz_use_zeroizing_allocator(void) {
+  mp_set_memory_functions(
+      mpz_zeroizing_alloc, mpz_zeroizing_realloc, mpz_zeroizing_free);
+}
 
 void mpz_curve_point_init(mpz_curve_point *p) {
   mpz_init(p->x);
@@ -433,10 +465,8 @@ int starknet_sign_digest(const mpz_curve *curve,
     mpz_to_byte_array(R.x, sig, STARKNET_BIGNUM_SIZE);
     mpz_to_byte_array(*s, sig + STARKNET_BIGNUM_SIZE, STARKNET_BIGNUM_SIZE);
 
-    // clear all the temporary variables
-    memzero(&k, sizeof(k));
-    memzero(&randk, sizeof(randk));
-
+    // clear all the temporary variables; the limbs are wiped on free by the
+    // zeroizing allocator (wiping the mpz_t header first would skip the free)
     mpz_clear(k);
     mpz_clear(randk);
     mpz_clear(z);
@@ -450,9 +480,6 @@ int starknet_sign_digest(const mpz_curve *curve,
 
   // Too many retries without a valid signature
   // -> fail with an error
-  memzero(&k, sizeof(k));
-  memzero(&randk, sizeof(randk));
-
   mpz_clear(k);
   mpz_clear(randk);
   mpz_clear(z);

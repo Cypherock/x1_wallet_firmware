@@ -580,6 +580,57 @@ STATIC int schnorrsig_sign(const uint8_t *tweaked_private_key,
   return 0;
 }
 
+/// BIP340 verification of a signature (R.x || s) over a 32-byte digest for an
+/// x-only public key.
+/// Ref:
+/// https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#verification
+STATIC bool schnorrsig_verify(const uint8_t *public_key_x,
+                              const uint8_t *digest,
+                              const uint8_t *signature_bytes) {
+  const ecdsa_curve *curve = &secp256k1;
+  curve_point P = {0}, R = {0}, sG = {0};
+  bignum256 r = {0}, s = {0}, e = {0};
+  uint8_t challenge_data[32 + 32 + 32] = {0};    // R.x || P.x || msg
+  uint8_t challenge_hash[32] = {0};
+
+  // P = lift_x(public key), the point with even y
+  bn_read_be(public_key_x, &P.x);
+  if (!bn_is_less(&P.x, &curve->prime)) {
+    return false;
+  }
+  uncompress_coords(curve, 0, &P.x, &P.y);
+  if (!ecdsa_validate_pubkey(curve, &P)) {
+    return false;
+  }
+
+  bn_read_be(signature_bytes, &r);
+  bn_read_be(signature_bytes + 32, &s);
+  if (!bn_is_less(&r, &curve->prime) || !bn_is_less(&s, &curve->order) ||
+      bn_is_zero(&s)) {
+    return false;
+  }
+
+  // e = tagged_hash("BIP0340/challenge", R.x || P.x || m) mod n
+  memcpy(challenge_data, signature_bytes, 32);
+  memcpy(challenge_data + 32, public_key_x, 32);
+  memcpy(challenge_data + 64, digest, 32);
+  bip340_tagged_hash("BIP0340/challenge", challenge_hash, challenge_data, 96);
+  bn_read_be(challenge_hash, &e);
+  bn_mod(&e, &curve->order);
+  if (bn_is_zero(&e)) {
+    return false;
+  }
+
+  // R = s*G - e*P
+  scalar_multiply(curve, &s, &sG);
+  point_multiply(curve, &e, &P, &R);
+  bn_subtract(&curve->prime, &R.y, &R.y);
+  point_add(curve, &sG, &R);
+
+  // R must be a finite point with even y whose x equals r
+  return !point_is_infinity(&R) && !bn_is_odd(&R.y) && bn_is_equal(&R.x, &r);
+}
+
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
@@ -753,6 +804,18 @@ int schnorrsig_sign32_taproot(const uint8_t *private_key,
 
   memzero(tweaked_private_key, sizeof(tweaked_private_key));
   memzero(aux, sizeof(aux));
+
+  // verify against the output key derived from the public key, so a faulty
+  // signature (e.g. from a glitch) is never released
+  uint8_t tweaked_public_key[32] = {0};
+  if (0 == result &&
+      (!bip340_tweak_public_key(public_key, NULL, tweaked_public_key) ||
+       !schnorrsig_verify(tweaked_public_key, digest, signature_bytes))) {
+    result = -1;
+  }
+  if (0 != result) {
+    memzero(signature_bytes, 64);
+  }
 
   return result;
 }

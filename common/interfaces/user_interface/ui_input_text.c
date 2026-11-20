@@ -80,6 +80,12 @@ static struct Input_Text_Object *obj = NULL;
  */
 static void input_text_create();
 
+/**
+ * @brief Wipes and frees the screen's data (it holds the entered PIN or
+ * passphrase) and object list, without touching the screen.
+ */
+static void input_text_free(void);
+
 int get_entered_text_px_width() {
   lv_obj_t *label = lv_obj_get_child(obj->text_entered, NULL);
   lv_label_ext_t *ext = lv_obj_get_ext_attr(label);
@@ -113,6 +119,9 @@ void ui_input_text(const char *input_list,
   ASSERT(max_input_size != 0);
 
   lv_obj_clean(lv_scr_act());
+
+  // a previous input screen left by a timeout or abort must not leak its data
+  input_text_free();
 
   data = malloc(sizeof(struct Input_Text_Data));
   obj = malloc(sizeof(struct Input_Text_Object));
@@ -180,6 +189,10 @@ void input_text_init(const char *input_list,
  */
 void input_text_destructor(void) {
   lv_obj_clean(lv_scr_act());
+  input_text_free();
+}
+
+static void input_text_free(void) {
   if (data != NULL) {
     memzero(data, sizeof(struct Input_Text_Data));
     free(data);
