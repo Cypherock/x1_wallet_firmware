@@ -509,10 +509,17 @@ static int stellar_create_signature(const uint8_t *private_key,
   sha256_Final(&ctx, transaction_hash);
 
   // Sign the hash
+  // the signature is verified before release (Ed25519 is deterministic)
   ed25519_signature sig = {0};
-  ed25519_sign(
-      transaction_hash, SHA256_DIGEST_LENGTH, private_key, public_key, sig);
+  if (!ed25519_sign_checked(transaction_hash,
+                            SHA256_DIGEST_LENGTH,
+                            private_key,
+                            public_key,
+                            sig)) {
+    return -1;
+  }
   memcpy(signature, sig, STELLAR_SIGNATURE_SIZE);
+  memzero(sig, sizeof(sig));
 
   return 0;
 }

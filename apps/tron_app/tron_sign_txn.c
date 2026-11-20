@@ -393,7 +393,7 @@ static bool fetch_seed(tron_query_t *query, uint8_t *seed_out) {
 
   if (!reconstruct_seed(
           tron_txn_context->init_info.wallet_id, seed_out, tron_send_error)) {
-    memzero(seed_out, sizeof(seed_out));
+    memzero(seed_out, 64);
     return false;
   }
 
@@ -422,17 +422,20 @@ static bool send_signature(tron_query_t *query,
              tron_txn_context->init_info.transaction_size,
              txid);
 
-  // sign transaction
-  if (!derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode))
-    return false;
-
+  // sign transaction; the signature is verified before release
   uint8_t v_value = 0;
-  ecdsa_sign_digest(
-      &secp256k1, hdnode.private_key, txid, sig->signature, &v_value, NULL);
-  sig->signature[64] = v_value;
+  bool status =
+      derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode) &&
+      ecdsa_sign_digest_checked(
+          &secp256k1, &hdnode, txid, sig->signature, &v_value, NULL);
 
   memzero(&hdnode, sizeof(hdnode));
-  memzero(seed, sizeof(seed));
+  memzero(seed, 64);
+  if (!status) {
+    tron_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
+  sig->signature[64] = v_value;
 
   memcpy(&result.sign_txn.signature,
          sig,
@@ -467,6 +470,11 @@ void tron_sign_transaction(tron_query_t *query) {
 
   if (NULL != tron_txn_context->transaction) {
     free(tron_txn_context->transaction);
+  }
+  // the decoded transaction was never freed, leaking on every sign attempt
+  if (NULL != tron_txn_context->raw_txn) {
+    memzero(tron_txn_context->raw_txn, sizeof(tron_transaction_raw_t));
+    free(tron_txn_context->raw_txn);
   }
   if (NULL != tron_txn_context) {
     free(tron_txn_context);

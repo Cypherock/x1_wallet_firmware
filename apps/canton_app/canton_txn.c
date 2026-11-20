@@ -909,11 +909,18 @@ static bool sign_txn(canton_sig_t *sig) {
   sha256_Raw(canton_txn_context->encoded_txn, ENCODED_TXN_LENGTH, digest);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(canton_txn_context->init_info.derivation_path,
-                          canton_txn_context->init_info.derivation_path_count,
-                          ED25519_NAME,
-                          seed,
-                          &hdnode);
+  if (!derive_hdnode_from_path(
+          canton_txn_context->init_info.derivation_path,
+          canton_txn_context->init_info.derivation_path_count,
+          ED25519_NAME,
+          seed,
+          &hdnode)) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    memzero(digest, sizeof(digest));
+    memzero(seed, sizeof(seed));
+    memzero(&hdnode, sizeof(hdnode));
+    return false;
+  }
 
   // match partyId(derivied from public key) with the partyId in the transfer
   // pre-approval transaction
@@ -934,17 +941,21 @@ static bool sign_txn(canton_sig_t *sig) {
     }
   }
 
-  ed25519_sign(digest,
-               SHA256_DIGEST_LENGTH,
-               hdnode.private_key,
-               hdnode.public_key + 1,
-               sig->signature);
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status = ed25519_sign_checked(digest,
+                                     SHA256_DIGEST_LENGTH,
+                                     hdnode.private_key,
+                                     hdnode.public_key + 1,
+                                     sig->signature);
 
   memzero(digest, sizeof(digest));
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
 
-  return true;
+  if (!status) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
+  return status;
 }
 
 static bool send_signature(canton_query_t *query, const canton_sig_t *sig) {

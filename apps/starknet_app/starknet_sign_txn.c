@@ -347,7 +347,8 @@ static bool is_resource_bounds_valid(const starknet_resource_bounds_t *bounds) {
 }
 
 static bool fetch_valid_input(starknet_query_t *query) {
-  if (!starknet_get_query(query, STARKNET_QUERY_SIGN_TXN_TAG) &&
+  // both the query and the request inside it must be the expected ones
+  if (!starknet_get_query(query, STARKNET_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query, STARKNET_SIGN_TXN_REQUEST_TXN_TAG)) {
     return false;
   }

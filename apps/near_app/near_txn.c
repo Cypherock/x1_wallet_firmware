@@ -376,11 +376,19 @@ static bool sign_txn(uint8_t *signature_buffer) {
              digest);
 
   HDNode t_node = {0};
-  derive_hdnode_from_path(near_txn_context->init_info.derivation_path,
-                          near_txn_context->init_info.derivation_path_count,
-                          ED25519_NAME,
-                          seed,
-                          &t_node);
+  if (!derive_hdnode_from_path(
+          near_txn_context->init_info.derivation_path,
+          near_txn_context->init_info.derivation_path_count,
+          ED25519_NAME,
+          seed,
+          &t_node)) {
+    // never sign with a partly derived (or all-zero) key
+    memzero(digest, sizeof(digest));
+    memzero(seed, sizeof(seed));
+    memzero(&t_node, sizeof(t_node));
+    near_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
 
   ed25519_public_key public_key = {0};
   ed25519_publickey(t_node.private_key, public_key);
@@ -399,7 +407,8 @@ static bool sign_txn(uint8_t *signature_buffer) {
     return false;
   }
 
-  ed25519_sign(
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status = ed25519_sign_checked(
       digest, sizeof(digest), t_node.private_key, public_key, signature_buffer);
 
   memzero(digest, sizeof(digest));
@@ -407,7 +416,10 @@ static bool sign_txn(uint8_t *signature_buffer) {
   memzero(&t_node, sizeof(t_node));
   memzero(public_key, sizeof(public_key));
 
-  return true;
+  if (!status) {
+    near_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
+  return status;
 }
 
 static bool send_signature(near_query_t *query, const uint8_t *signature) {

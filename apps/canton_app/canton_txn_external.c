@@ -341,7 +341,8 @@ static bool parse_hash_and_validate_transaction_external(
               payload,
               payload_size,
               CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_FIELDS,
-              &decoded_proposal) ||
+              &decoded_proposal,
+              sizeof(decoded_proposal)) ||
           !validate_and_store_namespace_delegation_proposal(&decoded_proposal,
                                                             ut_txn)) {
         return false;
@@ -480,12 +481,17 @@ static bool sign_txn_external(canton_external_sig_t *sig) {
   set_app_flow_status(CANTON_SIGN_TXN_EXTERNAL_STATUS_SEED_GENERATED);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(
-      canton_txn_external_context->init_info.derivation_path,
-      canton_txn_external_context->init_info.derivation_path_count,
-      ED25519_NAME,
-      seed,
-      &hdnode);
+  if (!derive_hdnode_from_path(
+          canton_txn_external_context->init_info.derivation_path,
+          canton_txn_external_context->init_info.derivation_path_count,
+          ED25519_NAME,
+          seed,
+          &hdnode)) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    memzero(seed, sizeof(seed));
+    memzero(&hdnode, sizeof(hdnode));
+    return false;
+  }
 
   if (ut_txn_info->txn_type == CANTON_SUPPORTED_TXN_TYPE_NAMESPACE_DELEGATION &&
       memcmp(hdnode.public_key + 1,
@@ -498,16 +504,20 @@ static bool sign_txn_external(canton_external_sig_t *sig) {
     return false;
   }
 
-  ed25519_sign(ut_txn_info->hash,
-               CANTON_HASH_SIZE,
-               hdnode.private_key,
-               hdnode.public_key + 1,
-               sig->signature);
+  // the signature is verified before release (Ed25519 is deterministic)
+  bool status = ed25519_sign_checked(ut_txn_info->hash,
+                                     CANTON_HASH_SIZE,
+                                     hdnode.private_key,
+                                     hdnode.public_key + 1,
+                                     sig->signature);
 
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
 
-  return true;
+  if (!status) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
+  return status;
 }
 
 static bool send_signature(canton_query_t *query,

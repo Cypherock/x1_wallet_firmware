@@ -662,18 +662,19 @@ static bool sign_txn(sig_t *signature) {
   sha256_Raw(result, SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN, digest);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(icp_txn_context->init_info.derivation_path,
-                          icp_txn_context->init_info.derivation_path_count,
-                          SECP256K1_NAME,
-                          seed,
-                          &hdnode);
-
-  ecdsa_sign_digest(&secp256k1,
-                    hdnode.private_key,
-                    digest,
-                    signature->transfer_req_signature,
-                    NULL,
-                    NULL);
+  // both signatures are verified before release (deterministic nonce)
+  bool status =
+      derive_hdnode_from_path(icp_txn_context->init_info.derivation_path,
+                              icp_txn_context->init_info.derivation_path_count,
+                              SECP256K1_NAME,
+                              seed,
+                              &hdnode) &&
+      ecdsa_sign_digest_checked(&secp256k1,
+                                &hdnode,
+                                digest,
+                                signature->transfer_req_signature,
+                                NULL,
+                                NULL);
 
   uint8_t read_state_request_id[SHA256_DIGEST_LENGTH] = {0};
   get_icp_read_state_request_id(read_state_request_id,
@@ -693,12 +694,13 @@ static bool sign_txn(sig_t *signature) {
              SHA256_DIGEST_LENGTH + ICP_DOMAIN_SEPARATOR_LEN,
              read_state_request_digest);
 
-  ecdsa_sign_digest(&secp256k1,
-                    hdnode.private_key,
-                    read_state_request_digest,
-                    signature->read_state_req_signature,
-                    NULL,
-                    NULL);
+  status =
+      status && ecdsa_sign_digest_checked(&secp256k1,
+                                          &hdnode,
+                                          read_state_request_digest,
+                                          signature->read_state_req_signature,
+                                          NULL,
+                                          NULL);
 
   memzero(request_id, sizeof(request_id));
   memzero(read_state_request_id, sizeof(read_state_request_id));
@@ -709,7 +711,11 @@ static bool sign_txn(sig_t *signature) {
   memzero(seed, sizeof(seed));
   memzero(&hdnode, sizeof(hdnode));
 
-  return true;
+  if (!status) {
+    memzero(signature, sizeof(sig_t));
+    icp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
+  return status;
 }
 
 static bool send_signature(icp_query_t *query, const sig_t *signature) {

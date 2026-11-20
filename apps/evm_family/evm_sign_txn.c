@@ -432,8 +432,9 @@ static bool sign_transaction(evm_sign_txn_signature_response_t *sig) {
                txn_context->init_info.transaction_size,
                buffer);
 
-    if (0 != ecdsa_sign_digest(
-                 curve, node.private_key, buffer, sig->r, sig->v, NULL)) {
+    // the signature is verified before release (deterministic nonce)
+    if (!ecdsa_sign_digest_checked(
+            curve, &node, buffer, sig->r, sig->v, NULL)) {
       evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
       status = false;
     }

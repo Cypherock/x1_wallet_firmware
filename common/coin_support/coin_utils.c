@@ -58,6 +58,8 @@
  */
 #include "coin_utils.h"
 
+#include "ed25519-donna/ed25519.h"
+#include "memzero.h"
 #include "segwit_addr.h"
 
 #ifndef BTC_ONLY_BUILD
@@ -100,6 +102,35 @@ bool derive_hdnode_from_path(const uint32_t *path,
     }
   }
   hdnode_fill_public_key(hdnode);
+  return true;
+}
+
+bool ecdsa_sign_digest_checked(const ecdsa_curve *curve,
+                               const HDNode *node,
+                               const uint8_t *digest,
+                               uint8_t *sig,
+                               uint8_t *pby,
+                               int (*is_canonical)(uint8_t by,
+                                                   uint8_t sig[64])) {
+  if (0 != ecdsa_sign_digest(
+               curve, node->private_key, digest, sig, pby, is_canonical) ||
+      0 != ecdsa_verify_digest(curve, node->public_key, sig, digest)) {
+    memzero(sig, 64);
+    return false;
+  }
+  return true;
+}
+
+bool ed25519_sign_checked(const uint8_t *msg,
+                          size_t msg_len,
+                          const uint8_t *private_key,
+                          const uint8_t *public_key,
+                          uint8_t *sig) {
+  ed25519_sign(msg, msg_len, private_key, public_key, sig);
+  if (0 != ed25519_sign_open(msg, msg_len, public_key, sig)) {
+    memzero(sig, 64);
+    return false;
+  }
   return true;
 }
 

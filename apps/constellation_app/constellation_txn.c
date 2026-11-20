@@ -297,7 +297,8 @@ static bool handle_initiate_query(const constellation_query_t *query) {
 }
 
 static bool fetch_valid_input(constellation_query_t *query) {
-  if (!constellation_get_query(query, CONSTELLATION_QUERY_SIGN_TXN_TAG) &&
+  // both the query and the request inside it must be the expected ones
+  if (!constellation_get_query(query, CONSTELLATION_QUERY_SIGN_TXN_TAG) ||
       !check_which_request(query,
                            CONSTELLATION_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
     return false;
@@ -306,6 +307,8 @@ static bool fetch_valid_input(constellation_query_t *query) {
   const constellation_sign_txn_data_t *sign_txn_data =
       &query->sign_txn.txn_data;
   if (sign_txn_data->has_txn == false) {
+    constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
 
@@ -399,18 +402,22 @@ static bool sign_txn(der_sig_t *der_signature) {
   sha512_Raw((uint8_t *)sha256_hex_str, strlen(sha256_hex_str), sha512_digest);
 
   HDNode hdnode = {0};
-  derive_hdnode_from_path(
-      constellation_txn_context->init_info.derivation_path,
-      constellation_txn_context->init_info.derivation_path_count,
-      SECP256K1_NAME,
-      seed,
-      &hdnode);
-
   uint8_t signature[64] = {0};
-  ecdsa_sign_digest(
-      &secp256k1, hdnode.private_key, sha512_digest, signature, NULL, NULL);
+  // the signature is verified before release (deterministic nonce)
+  bool status = derive_hdnode_from_path(
+                    constellation_txn_context->init_info.derivation_path,
+                    constellation_txn_context->init_info.derivation_path_count,
+                    SECP256K1_NAME,
+                    seed,
+                    &hdnode) &&
+                ecdsa_sign_digest_checked(
+                    &secp256k1, &hdnode, sha512_digest, signature, NULL, NULL);
 
-  der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
+  if (status) {
+    der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
+  } else {
+    constellation_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+  }
 
   memzero(serialized_txn, sizeof(serialized_txn));
   memzero(sha256_digest, sizeof(sha256_digest));
@@ -419,7 +426,7 @@ static bool sign_txn(der_sig_t *der_signature) {
   memzero(&hdnode, sizeof(hdnode));
   memzero(signature, sizeof(signature));
 
-  return true;
+  return status;
 }
 
 static bool send_signature(constellation_query_t *query,

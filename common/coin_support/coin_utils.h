@@ -294,6 +294,49 @@ bool derive_hdnode_from_path(const uint32_t *path,
                              const uint8_t *seed,
                              HDNode *hdnode);
 
+/**
+ * @brief Signs a digest with ECDSA and verifies the signature against the
+ * node's public key before it is released.
+ * @details Signatures use deterministic (RFC6979) nonces, so one faulty
+ * signature (e.g. from a glitch) next to a correct one of the same digest
+ * reveals the private key. The signature is therefore checked first.
+ *
+ * @param [in] curve        Curve parameters (e.g. &secp256k1)
+ * @param [in] node         Node with private_key and filled public_key
+ * @param [in] digest       32-byte digest to sign
+ * @param [out] sig         64-byte signature (r || s), zeroed on failure
+ * @param [out] pby         Recovery id, may be NULL
+ * @param [in] is_canonical Canonical check passed to ecdsa_sign_digest, may be
+ * NULL
+ *
+ * @return bool true if the signature was produced and verifies
+ */
+bool ecdsa_sign_digest_checked(const ecdsa_curve *curve,
+                               const HDNode *node,
+                               const uint8_t *digest,
+                               uint8_t *sig,
+                               uint8_t *pby,
+                               int (*is_canonical)(uint8_t by,
+                                                   uint8_t sig[64]));
+
+/**
+ * @brief Signs a message with Ed25519 and verifies the signature before it is
+ * released (Ed25519 is deterministic, see ecdsa_sign_digest_checked).
+ *
+ * @param [in] msg          Message to sign
+ * @param [in] msg_len      Length of the message
+ * @param [in] private_key  32-byte private key
+ * @param [in] public_key   32-byte public key of private_key
+ * @param [out] sig         64-byte signature, zeroed on failure
+ *
+ * @return bool true if the signature verifies
+ */
+bool ed25519_sign_checked(const uint8_t *msg,
+                          size_t msg_len,
+                          const uint8_t *private_key,
+                          const uint8_t *public_key,
+                          uint8_t *sig);
+
 void bech32_addr_encode(char *output,
                         char *hrp,
                         uint8_t *address_bytes,
