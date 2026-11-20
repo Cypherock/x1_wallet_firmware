@@ -514,6 +514,8 @@ static void flash_perm_key_save(uint8_t tag,
   fill_flash_tlv(tlv, &length, tag, size, data);
   if (length % 8 != 0)
     length += (8 - length % 8);
+  // the whole record must fit in the one-time page
+  ASSERT((uint32_t)fs_offset + length <= FLASH_PAGE_SIZE);
   FW_write_oneTime(FIREWALL_NVDATA_APP_KEYS_ADDR + fs_offset, tlv, length);
 }
 
@@ -965,10 +967,17 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
     LOG_CRITICAL("xxx10");
     return;
   }
-  while (index < size) {
+  // each record is a tag, a 2-byte length and the value, padded to 8 bytes
+  while (index + 3 <= size) {
     tag = tlv[index++];
     length = U16_READ_LE_ARRAY(tlv + index);
     index += 2;
+    // a record running past the page is corrupt (or erased space): stop
+    if (length > (int64_t)size - index) {
+      return;
+    }
+    // the next record follows the stored length, even if the copy was capped
+    const int64_t next_index = index + length;
     switch (tag) {
       case TAG_PERM_FLASH_EXT_DATA_IOKEY:
         s_memcpy(perm_fs->permKeyData.io_protection_key,
@@ -1021,6 +1030,12 @@ static void deserialize_perm_fs_key_data(Flash_Perm_Struct *perm_fs,
       default:
         return;
     }
+    // s_memcpy sets index to -1 on failure; continuing would realign it to the
+    // start of the page and loop forever
+    if (index < 0) {
+      return;
+    }
+    index = next_index;
     if (index % 8 != 0)
       index += (8 - index % 8);
   }
