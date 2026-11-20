@@ -413,6 +413,7 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
   const common_chunk_payload_chunk_t *chunk = &(payload->chunk);
   uint32_t total_size = 0;
   uint32_t size = 0;
+  uint32_t chunk_index = 0;
   while (1) {
     // req plain data chunk from host
     if (!inheritance_get_query(query, INHERITANCE_QUERY_DECRYPT_TAG)) {
@@ -424,19 +425,27 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
             INHERITANCE_DECRYPT_DATA_WITH_PIN_REQUEST_ENCRYPTED_DATA_TAG)) {
       return false;
     }
-    if (size == 0) {
+    // chunks must arrive in order, fit the buffer and add up to the size
+    // announced with the first one (its size plus the remaining size)
+    if (false == query->decrypt.encrypted_data.has_chunk_payload ||
+        payload->chunk_index != chunk_index ||
+        payload->chunk_index >= payload->total_chunks ||
+        payload->remaining_size > INHERITANCE_PACKET_MAX_SIZE ||
+        size + chunk->size > INHERITANCE_PACKET_MAX_SIZE) {
+      SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
+      return false;
+    }
+    if (0 == chunk_index) {
       total_size = chunk->size + payload->remaining_size;
     }
-
-    if (false == query->decrypt.encrypted_data.has_chunk_payload ||
-        payload->chunk_index >= payload->total_chunks ||
-        size + chunk->size > INHERITANCE_PACKET_MAX_SIZE) {
+    if (size + chunk->size + payload->remaining_size != total_size) {
       SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
       return false;
     }
 
     memcpy(encoded_data + size, chunk->bytes, chunk->size);
     size += chunk->size;
+    chunk_index++;
 
     // Send chunk ack to host
     response.decrypt.which_response =
@@ -451,8 +460,13 @@ static bool inheritance_get_encrypted_data(inheritance_query_t *query) {
       break;
     }
   }
+  // decode only what was received, never the size claimed by the host
+  if (size != total_size) {
+    SET_ERROR_TYPE(DECRYPTION_CHUNK_DATA_INVALID_ERROR);
+    return false;
+  }
   if (!decode_inheritance_encrypted_data(
-          encoded_data, total_size, &decryption_context->encrypted_data)) {
+          encoded_data, size, &decryption_context->encrypted_data)) {
     return false;
   }
 
