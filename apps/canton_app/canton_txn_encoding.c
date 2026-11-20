@@ -2100,7 +2100,8 @@ bool parse_and_hash_canton_metadata_input_contract(
   if (!decode_canton_serialized_data(txn_serialized_input_contract,
                                      txn_input_contract_size,
                                      CANTON_METADATA_INPUT_CONTRACT_FIELDS,
-                                     &decoded_input_contract)) {
+                                     &decoded_input_contract,
+                                     sizeof(decoded_input_contract))) {
     return false;
   }
 
@@ -2139,7 +2140,8 @@ bool parse_and_hash_canton_txn_node(const uint8_t *txn_serialized_node,
   if (!decode_canton_serialized_data(txn_serialized_node,
                                      txn_node_size,
                                      CANTON_DAML_TRANSACTION_D_NODE_FIELDS,
-                                     &decoded_d_node)) {
+                                     &decoded_d_node,
+                                     sizeof(decoded_d_node))) {
     return false;
   }
 

@@ -203,17 +203,18 @@ bool canton_get_query(canton_query_t *query, pb_size_t exp_query_tag) {
 }
 
 bool decode_canton_serialized_data(const uint8_t *data,
-                                   uint16_t data_size,
+                                   size_t data_size,
                                    const pb_msgdesc_t *fields,
-                                   void *dest_struct) {
+                                   void *dest_struct,
+                                   size_t dest_size) {
   if (NULL == data || 0 == data_size || NULL == fields || NULL == dest_struct) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_DECODING_FAILED);
     return false;
   }
 
-  /* zero dest_struct for safety */
-  memzero(dest_struct, sizeof(dest_struct));
+  /* zero dest_struct for safety (the whole struct, not just a pointer) */
+  memzero(dest_struct, dest_size);
 
   /* DAML values nest recursively; pb_decode has no depth limit */
   if (!pb_check_depth(data, data_size, fields, CANTON_PB_MAX_DEPTH)) {

@@ -116,10 +116,12 @@ bool canton_get_query(canton_query_t *query, pb_size_t exp_query_tag);
  * @param[in] data_size Size of pb encoded bytestream
  * @param[in] fields Fields to be decoded
  * @param[out] dest_struct Destination struct to store the decoded data
+ * @param[in] dest_size Size of the destination struct
  * @returns bool Indicating whether decoding succeeded or not
  */
 bool decode_canton_serialized_data(const uint8_t *data,
-                                   uint16_t data_size,
+                                   size_t data_size,
                                    const pb_msgdesc_t *fields,
-                                   void *dest_struct);
+                                   void *dest_struct,
+                                   size_t dest_size);
 #endif

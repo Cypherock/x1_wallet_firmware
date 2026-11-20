@@ -453,7 +453,8 @@ static bool parse_and_hash_party_txn_proposal(
           payload,
           payload_size,
           CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_FIELDS,
-          &decoded_proposal)) {
+          &decoded_proposal,
+          sizeof(decoded_proposal))) {
     canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                       ERROR_DATA_FLOW_INVALID_DATA);
     return false;

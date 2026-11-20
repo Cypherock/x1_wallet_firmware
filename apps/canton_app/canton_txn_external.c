@@ -341,7 +341,8 @@ static bool parse_hash_and_validate_transaction_external(
               payload,
               payload_size,
               CANTON_GENERATE_TRANSACTION_REQUEST_PROPOSAL_FIELDS,
-              &decoded_proposal) ||
+              &decoded_proposal,
+              sizeof(decoded_proposal)) ||
           !validate_and_store_namespace_delegation_proposal(&decoded_proposal,
                                                             ut_txn)) {
         return false;
