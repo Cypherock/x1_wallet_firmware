@@ -93,86 +93,80 @@
  *****************************************************************************/
 
 /**
- * @brief Decodes a variable-length integer (VarInt) from the byte stream.
- *
- * This function reads the first byte from the stream to determine how many more
- * bytes are needed to decode the full integer. The number of bytes varies based
- * on the value of the first byte (0xfd, 0xfe, or 0xff for extended length
- * encoding).
- *
- * @param stream Pointer to the byte stream from which the VarInt is decoded.
- * @param hash_ctx Pointer to an SHA256 context for updating the hash
- * (optional).
+ * @brief Decodes the rest of a variable-length integer (CompactSize) whose
+ * first byte was already read from the stream.
+ * @details 0xfd, 0xfe and 0xff announce a 2, 4 or 8 byte little-endian value.
+ * Only the canonical (shortest) encoding is accepted, as in Bitcoin Core, so
+ * a transaction can not be parsed in two ways.
  *
  * ref:
  * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
  *
- * @return The decoded 64-bit integer value.
- * @note If the stream is invalid, or if there's an error reading from the
- * stream, 0 is returned.
+ * @param stream Pointer to the byte stream from which the VarInt is decoded.
+ * @param hash_ctx Pointer to an SHA256 context for updating the hash
+ * (optional).
+ * @param first_byte The first byte of the VarInt.
+ * @param value Output for the decoded value.
+ *
+ * @return bool false on a stream error or a non-canonical encoding.
  */
-static uint64_t decode_varint(byte_stream_t *stream, SHA256_CTX *hash_ctx) {
+static bool decode_varint_rest(byte_stream_t *stream,
+                               SHA256_CTX *hash_ctx,
+                               uint8_t first_byte,
+                               uint64_t *value) {
   uint8_t buffer[MAX_VARINT_SIZE] = {0};
-  if (stream == NULL) {
-    return 0;
+  uint8_t length = 0;
+  uint64_t minimum = 0;
+
+  buffer[0] = first_byte;
+  *value = first_byte;
+  if (0xfd == first_byte) {
+    length = 2;
+    minimum = 0xfd;
+  } else if (0xfe == first_byte) {
+    length = 4;
+    minimum = 0x10000;
+  } else if (0xff == first_byte) {
+    length = 8;
+    minimum = 0x100000000;
   }
+
+  if (0 < length) {
+    if (BYTE_STREAM_SUCCESS !=
+        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, length)) {
+      return false;
+    }
+    *value = 0;
+    for (uint8_t i = 0; i < length; i++) {
+      *value |= (uint64_t)buffer[TX_IN_INDEX_OFFSET + i] << (8 * i);
+    }
+    if (*value < minimum) {
+      return false;
+    }
+  }
+
+  if (hash_ctx != NULL) {
+    sha256_Update(hash_ctx, buffer, 1 + length);
+  }
+  return true;
+}
+
+/**
+ * @brief Decodes a variable-length integer (CompactSize) from the byte stream.
+ * @see decode_varint_rest
+ *
+ * @return bool false on a stream error or a non-canonical encoding; errors are
+ * no longer turned into a value of 0, so callers stop at once.
+ */
+static bool decode_varint(byte_stream_t *stream,
+                          SHA256_CTX *hash_ctx,
+                          uint64_t *value) {
   uint8_t first_byte = 0;
-
-  {
-    byte_stream_status_e status = read_byte_stream(stream, buffer, 1);
-    if (status != BYTE_STREAM_SUCCESS) {
-      return 0;
-    }
-    first_byte = buffer[0];
+  if (stream == NULL ||
+      BYTE_STREAM_SUCCESS != read_byte_stream(stream, &first_byte, 1)) {
+    return false;
   }
-
-  if (first_byte < 0xfd) {
-    if (hash_ctx != NULL) {
-      sha256_Update(hash_ctx, buffer, 1);
-    }
-
-    return first_byte;
-  }
-
-  if (first_byte == 0xfd) {
-    byte_stream_status_e status =
-        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 2);
-    if (status != BYTE_STREAM_SUCCESS) {
-      return 0;
-    }
-
-    if (hash_ctx != NULL) {
-      sha256_Update(hash_ctx, buffer, 3);
-    }
-    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
-  }
-
-  if (first_byte == 0xfe) {
-    byte_stream_status_e status =
-        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 4);
-    if (status != BYTE_STREAM_SUCCESS) {
-      return 0;
-    }
-
-    if (hash_ctx != NULL) {
-      sha256_Update(hash_ctx, buffer, 5);
-    }
-    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
-  }
-
-  if (first_byte == 0xff) {
-    byte_stream_status_e status =
-        read_byte_stream(stream, buffer + TX_IN_INDEX_OFFSET, 8);
-    if (status != BYTE_STREAM_SUCCESS) {
-      return 0;
-    }
-
-    if (hash_ctx != NULL) {
-      sha256_Update(hash_ctx, buffer, 9);
-    }
-    return U32_READ_LE_ARRAY(&buffer[TX_IN_INDEX_OFFSET]);
-  }
-  return 0;
+  return decode_varint_rest(stream, hash_ctx, first_byte, value);
 }
 
 btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
@@ -193,17 +187,25 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   }
   sha256_Update(&hash_ctx, version_no, sizeof(version_no));
 
-  // optional flag
-  if (stream->offset < stream->capacity &&
-      stream->stream_pointer[stream->offset] == 0) {
-    status = skip_byte_stream(stream, 2);
-    if (status != BYTE_STREAM_SUCCESS) {
+  // optional segwit marker (0x00) and flag; otherwise this byte starts the
+  // input count. The byte is read rather than peeked, so a marker at a chunk
+  // boundary is not missed.
+  uint8_t first_byte = 0;
+  status = read_byte_stream(stream, &first_byte, 1);
+  if (status != BYTE_STREAM_SUCCESS) {
+    return BTC_VALIDATE_ERR_READ_STREAM;
+  }
+  uint64_t in_counter = 0;
+  if (0 == first_byte) {
+    status = skip_byte_stream(stream, 1);
+    if (status != BYTE_STREAM_SUCCESS ||
+        !decode_varint(stream, &hash_ctx, &in_counter)) {
       return BTC_VALIDATE_ERR_READ_STREAM;
     }
     is_segwit = true;
+  } else if (!decode_varint_rest(stream, &hash_ctx, first_byte, &in_counter)) {
+    return BTC_VALIDATE_ERR_READ_STREAM;
   }
-
-  uint64_t in_counter = decode_varint(stream, &hash_ctx);
   uint64_t in_index = 0;
   while (in_index < in_counter) {
     uint8_t prev_transaction_hash[SHA256_DIGEST_LENGTH] = {0};
@@ -223,7 +225,10 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
     }
     sha256_Update(&hash_ctx, prev_tx_out_index, sizeof(prev_tx_out_index));
 
-    uint64_t tx_in_script_length = decode_varint(stream, &hash_ctx);
+    uint64_t tx_in_script_length = 0;
+    if (!decode_varint(stream, &hash_ctx, &tx_in_script_length)) {
+      return BTC_VALIDATE_ERR_READ_STREAM;
+    }
     while (tx_in_script_length > 0) {
       uint64_t length_to_parse = SLICE_SIZE;
       if (tx_in_script_length < length_to_parse) {
@@ -251,7 +256,10 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
     in_index++;
   }
 
-  uint64_t out_counter = decode_varint(stream, &hash_ctx);
+  uint64_t out_counter = 0;
+  if (!decode_varint(stream, &hash_ctx, &out_counter)) {
+    return BTC_VALIDATE_ERR_READ_STREAM;
+  }
   // https://en.bitcoin.it/wiki/Transaction#General_format_.28inside_a_block.29_of_each_output_of_a_transaction_-_Txout
   uint64_t out_index = 0;
   while (out_index < out_counter) {
@@ -268,7 +276,10 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
       found_output_value_for_input_index = output_value;
     }
 
-    uint64_t tx_out_script_length = decode_varint(stream, &hash_ctx);
+    uint64_t tx_out_script_length = 0;
+    if (!decode_varint(stream, &hash_ctx, &tx_out_script_length)) {
+      return BTC_VALIDATE_ERR_READ_STREAM;
+    }
     while (tx_out_script_length > 0) {
       uint64_t length_to_parse = SLICE_SIZE;
       if (tx_out_script_length < length_to_parse) {
@@ -293,9 +304,15 @@ btc_validation_error_e btc_validate_inputs(byte_stream_t *stream,
   // https://bitcoin.stackexchange.com/questions/113697/what-are-the-parts-of-a-bitcoin-transaction-in-segwit-format
   if (is_segwit) {
     while (in_counter--) {
-      uint64_t witness_count = decode_varint(stream, NULL);
+      uint64_t witness_count = 0;
+      if (!decode_varint(stream, NULL, &witness_count)) {
+        return BTC_VALIDATE_ERR_READ_STREAM;
+      }
       while (witness_count--) {
-        uint64_t witness_component_length = decode_varint(stream, NULL);
+        uint64_t witness_component_length = 0;
+        if (!decode_varint(stream, NULL, &witness_component_length)) {
+          return BTC_VALIDATE_ERR_READ_STREAM;
+        }
         while (witness_component_length > 0) {
           uint64_t length_to_parse = SLICE_SIZE;
           if (witness_component_length < length_to_parse) {
