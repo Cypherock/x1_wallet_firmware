@@ -391,6 +391,8 @@ ISO7816 nfc_add_wallet(const struct Wallet *wallet) {
   LOG_SWV("Add wallet in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     if (recv_len != ADD_WALLET_EXPECTED_LENGTH)
@@ -421,6 +423,8 @@ ISO7816 nfc_retrieve_wallet(struct Wallet *wallet) {
   LOG_SWV("Retrieve wallet in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     status_word = (recv_apdu[recv_len - 2] * 256);
@@ -462,6 +466,8 @@ ISO7816 nfc_delete_wallet(const struct Wallet *wallet) {
   LOG_SWV("Delete wallet in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     if (recv_len != DELETE_WALLET_EXPECTED_LENGTH)
@@ -491,6 +497,8 @@ ISO7816 nfc_ecdsa(uint8_t data_inOut[ECDSA_SIGNATURE_SIZE],
   LOG_SWV("ECDSA in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   }
 
@@ -533,6 +541,8 @@ ISO7816 nfc_verify_challenge(const uint8_t name[NAME_SIZE],
   LOG_SWV("Verify challenge in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     status_word = (recv_apdu[recv_len - 2] * 256);
@@ -563,6 +573,8 @@ ISO7816 nfc_get_challenge(const uint8_t name[NAME_SIZE],
   LOG_SWV("Get challenge in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     status_word = (recv_apdu[recv_len - 2] * 256);
@@ -609,6 +621,8 @@ ISO7816 nfc_encrypt_data(const uint8_t name[NAME_SIZE],
   LOG_SWV("Encrypt data in %lums\n", uwTick - system_clock);
 
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     status_word = (recv_apdu[recv_len - 2] * 256);
@@ -667,6 +681,8 @@ ISO7816 nfc_decrypt_data(const uint8_t name[NAME_SIZE],
 
   LOG_SWV("Decrypt data in %lums\n", uwTick - system_clock);
   if (err_code != STM_SUCCESS) {
+    // the buffer may hold the plaintext request or a partial response
+    memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
     status_word = (recv_apdu[recv_len - 2] * 256);

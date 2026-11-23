@@ -473,9 +473,9 @@ static bool decode_inheritance_plain_data(
 }
 
 // TODO: Make chunking logic generic to be used by any flow
-static bool inheritance_get_plain_data(inheritance_query_t *query) {
-  SET_FLOW_TAG(ENCRYPTION_PLAIN_DATA_GET_FLOW);
-  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
+static bool inheritance_receive_plain_data(
+    inheritance_query_t *query,
+    uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE]) {
   inheritance_result_t response =
       init_inheritance_result(INHERITANCE_RESULT_ENCRYPT_TAG);
   const inheritance_encrypt_data_with_pin_plain_data_t *plain_data =
@@ -538,6 +538,15 @@ static bool inheritance_get_plain_data(inheritance_query_t *query) {
   }
 
   return true;
+}
+
+static bool inheritance_get_plain_data(inheritance_query_t *query) {
+  SET_FLOW_TAG(ENCRYPTION_PLAIN_DATA_GET_FLOW);
+  uint8_t encoded_data[INHERITANCE_PACKET_MAX_SIZE] = {0};
+  bool status = inheritance_receive_plain_data(query, encoded_data);
+  // the buffer holds the plaintext inheritance messages
+  memzero(encoded_data, sizeof(encoded_data));
+  return status;
 }
 
 STATIC bool inheritance_encryption_get_user_verification(void) {

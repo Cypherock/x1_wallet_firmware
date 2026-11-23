@@ -739,6 +739,10 @@ static bool send_signature(icp_query_t *query, const sig_t *signature) {
 
 void icp_sign_transaction(icp_query_t *query) {
   icp_txn_context = (icp_txn_context_t *)malloc(sizeof(icp_txn_context_t));
+  if (NULL == icp_txn_context) {
+    icp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(icp_txn_context, sizeof(icp_txn_context_t));
 
   sig_t signature = {0};

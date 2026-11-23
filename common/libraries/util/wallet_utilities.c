@@ -88,6 +88,10 @@ void calculate_wallet_id(uint8_t wallet_id[WALLET_ID_SIZE],
 
   sha256_Raw(node.public_key, sizeof(node.public_key), wallet_id);
   sha256_Raw(wallet_id, SHA256_DIGEST_LENGTH, wallet_id);
+
+  // the seed and node are the wallet's master secrets
+  memzero(seed, sizeof(seed));
+  memzero(&node, sizeof(node));
 }
 
 bool verify_wallet_id(const uint8_t wallet_id[WALLET_ID_SIZE],
@@ -129,6 +133,10 @@ void derive_beneficiary_key(
   bytes_copied += BENEFICIARY_KEY_SIZE;
   memcpy(
       iv_for_beneficiary_key, hash + bytes_copied, IV_FOR_BENEFICIARY_KEY_SIZE);
+
+  memzero(seed, sizeof(seed));
+  memzero(&node, sizeof(node));
+  memzero(hash, sizeof(hash));
 }
 
 void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics) {
@@ -148,6 +156,10 @@ void derive_wallet_key(uint8_t key[KEY_SIZE], const char *mnemonics) {
   uint8_t hash[KEY_SIZE];
   sha256_Raw(node.private_key, sizeof(node.private_key), hash);
   memcpy(key, hash, KEY_SIZE);
+
+  memzero(seed, sizeof(seed));
+  memzero(&node, sizeof(node));
+  memzero(hash, sizeof(hash));
 }
 
 Card_Data_errors_t validate_wallet(Wallet *wallet) {

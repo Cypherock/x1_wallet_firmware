@@ -163,21 +163,24 @@ static wallet_unlock_state_e wallet_unlock_handler(
     wallet_unlock_state_e state,
     const Flash_Wallet *flash_wallet) {
   wallet_unlock_state_e next_state = WALLET_UNLOCK_EXIT;
+  // set up before the switch: entering at WALLET_UNLOCK_REFETCH_CHALLENGE
+  // jumps past the FETCH case, which left these uninitialised
+  char heading[50] = "";
+  card_operation_frontend_t frontend = {.heading = heading,
+                                        .msg = ui_text_place_card_below};
+  snprintf(heading,
+           sizeof(heading),
+           UI_TEXT_TAP_CARD,
+           decode_card_number(flash_wallet->challenge.card_locked));
+
   switch (state) {
     case WALLET_UNLOCK_FETCH_CHALLENGE:
       if (false == check_default_nonce(flash_wallet->challenge.nonce)) {
         next_state = WALLET_UNLOCK_SOLVE_CHALLENGE;
         break;
       }
-
-      char heading[50] = "";
-      card_operation_frontend_t frontend = {.heading = heading,
-                                            .msg = ui_text_place_card_below};
-      snprintf(heading,
-               sizeof(heading),
-               UI_TEXT_TAP_CARD,
-               decode_card_number(flash_wallet->challenge.card_locked));
       instruction_scr_init(ui_text_place_card_below, heading);
+      // fall through
 
     case WALLET_UNLOCK_REFETCH_CHALLENGE: {
       card_error_type_e error =

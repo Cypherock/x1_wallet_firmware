@@ -13,6 +13,9 @@ static composable_app_queue_t *composable_app_queue = NULL;
 
 static caq_node_t *caq_new_node(caq_node_data_t data) {
   caq_node_t *temp = (caq_node_t *)malloc(sizeof(caq_node_t));
+  if (NULL == temp) {
+    return NULL;
+  }
   temp->data = data;
   temp->next = NULL;
   return temp;
@@ -21,6 +24,9 @@ static caq_node_t *caq_new_node(caq_node_data_t data) {
 static composable_app_queue_t *caq_create_queue() {
   composable_app_queue_t *queue =
       (composable_app_queue_t *)malloc(sizeof(composable_app_queue_t));
+  if (NULL == queue) {
+    return NULL;
+  }
   queue->front = queue->rear = NULL;
   queue->count = 0;
   return queue;
@@ -30,17 +36,24 @@ bool caq_is_empty() {
   return (composable_app_queue == NULL || composable_app_queue->count == 0);
 }
 
-void caq_push(caq_node_data_t data) {
+bool caq_push(caq_node_data_t data) {
+  if (NULL == composable_app_queue) {
+    return false;
+  }
   caq_node_t *temp = caq_new_node(data);
+  if (NULL == temp) {
+    return false;
+  }
   composable_app_queue->count++;
 
   if (composable_app_queue->rear == NULL) {
     composable_app_queue->front = composable_app_queue->rear = temp;
-    return;
+    return true;
   }
 
   composable_app_queue->rear->next = temp;
   composable_app_queue->rear = temp;
+  return true;
 }
 
 bool caq_pop() {

@@ -444,6 +444,10 @@ static bool fetch_valid_input(btc_query_t *query) {
     }
     // copy prevtxn details for later verification
     btc_sign_txn_input_t *txin = malloc(sizeof(btc_sign_txn_input_t));
+    if (NULL == txin) {
+      btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+      return false;
+    }
     memcpy(txin, &query->sign_txn.input, sizeof(btc_sign_txn_input_t));
 
     // P2PK 68, P2PKH 25 (21 excluding OP_CODES), P2WPKH 22, P2MS ~, P2SH 23 (21
@@ -829,6 +833,10 @@ static bool send_script_sig(btc_query_t *query, const scrip_sig_t *sigs) {
 
 void btc_sign_transaction(btc_query_t *query) {
   btc_txn_context = (btc_txn_context_t *)malloc(sizeof(btc_txn_context_t));
+  if (NULL == btc_txn_context) {
+    btc_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(btc_txn_context, sizeof(btc_txn_context_t));
   scrip_sig_t signatures[TXN_MAX_INPUTS] = {0};
 

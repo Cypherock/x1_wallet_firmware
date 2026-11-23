@@ -444,6 +444,10 @@ static bool send_signature(near_query_t *query, const uint8_t *signature) {
 
 void near_sign_transaction(near_query_t *query) {
   near_txn_context = (near_txn_context_t *)malloc(sizeof(near_txn_context_t));
+  if (NULL == near_txn_context) {
+    near_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(near_txn_context, sizeof(near_txn_context_t));
 
   uint8_t signature[64] = {0};

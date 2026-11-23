@@ -63,25 +63,28 @@
 
 #if VENDOR_ID == 0    // cypherock
 LV_IMG_DECLARE(cypherock_logo);
-#define VENDOR_LOGO_LIST cypherock_logo
+#define VENDOR_LOGO_LIST &cypherock_logo
 #define VENDOR_LOGO_COUNT 1
 
 #elif VENDOR_ID == 1    // odix
 LV_IMG_DECLARE(odix_logo);
 LV_IMG_DECLARE(cypherock_vendor_logo);
-#define VENDOR_LOGO_LIST odix_logo, cypherock_vendor_logo
+#define VENDOR_LOGO_LIST &odix_logo, &cypherock_vendor_logo
 #define VENDOR_LOGO_COUNT 2
 
 #endif
 
 void logo_scr_init(const uint16_t delay_in_ms) {
-  const lv_img_dsc_t logos[] = {VENDOR_LOGO_LIST};
+  // the screen keeps the image pointer after this function returns (its task
+  // re-sets the image), so it must point at the global descriptors, not at a
+  // copy on this stack
+  static const lv_img_dsc_t *const logos[] = {VENDOR_LOGO_LIST};
 
   for (int i = 0; i < VENDOR_LOGO_COUNT; i++) {
     instruction_content_t logo_content = {
-        .img = &logos[i],
-        .img_x_offset = (128 - (logos[i].header.w)) >> 1,
-        .img_y_offset = (64 - (logos[i].header.h)) >> 1,
+        .img = logos[i],
+        .img_x_offset = (128 - (logos[i]->header.w)) >> 1,
+        .img_y_offset = (64 - (logos[i]->header.h)) >> 1,
         .text = "",
         .text_align = LV_ALIGN_CENTER};
 

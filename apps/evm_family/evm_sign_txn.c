@@ -241,7 +241,9 @@ static bool validate_request_data(const evm_sign_txn_request_t *request) {
    * this limit can be removed once the RLP decoder can operate on running
    * transaction buffer stream and get user confirmations on the go
    */
-  if (EVM_TRANSACTION_SIZE_CAP < request->initiate.transaction_size) {
+  // an empty transaction would make the decoder read past a 0-byte buffer
+  if (0 == request->initiate.transaction_size ||
+      EVM_TRANSACTION_SIZE_CAP < request->initiate.transaction_size) {
     evm_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
     status = false;
@@ -310,6 +312,10 @@ STATIC bool fetch_valid_transaction(evm_query_t *query) {
   result.sign_txn.data_accepted.has_chunk_ack = true;
   // allocate memory for storing transaction
   txn_context->transaction = (uint8_t *)malloc(total_size);
+  if (NULL == txn_context->transaction) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   while (true) {
     if (!evm_get_query(query, EVM_QUERY_SIGN_TXN_TAG) ||
         !check_which_request(query, EVM_SIGN_TXN_REQUEST_TXN_DATA_TAG)) {
@@ -465,6 +471,10 @@ static bool send_signature(evm_query_t *query,
 
 void evm_sign_transaction(evm_query_t *query) {
   txn_context = (evm_txn_context_t *)malloc(sizeof(evm_txn_context_t));
+  if (NULL == txn_context) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(txn_context, sizeof(evm_txn_context_t));
   evm_sign_txn_signature_response_t sig = {0};
 
@@ -481,4 +491,7 @@ void evm_sign_transaction(evm_query_t *query) {
     free(txn_context);
     txn_context = NULL;
   }
+  // display nodes are only freed on the success path while verifying; free
+  // them on every exit
+  cy_free();
 }

@@ -108,8 +108,10 @@ static cy_linked_list_t *memory_list = NULL;
 void *cy_malloc(size_t mem_size) {
   cy_linked_list_t *new_entry =
       (cy_linked_list_t *)malloc(sizeof(cy_linked_list_t));
+  // checked before the entry is written to
+  ASSERT(new_entry != NULL);
   new_entry->mem_entry.mem = malloc(mem_size);
-  ASSERT(new_entry != NULL && new_entry->mem_entry.mem != NULL);
+  ASSERT(new_entry->mem_entry.mem != NULL);
 
   new_entry->next = memory_list;
   new_entry->mem_entry.mem_size = mem_size;

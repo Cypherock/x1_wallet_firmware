@@ -154,6 +154,7 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
         reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                   (uint32_t)get_card_error_from_nfc_status(status));
       }
+      memzero(plain_data_buffer, sizeof(plain_data_buffer));
       return status;
     }
 
@@ -165,6 +166,7 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
         reject_cb(ERROR_COMMON_ERROR_CARD_ERROR_TAG,
                   (uint32_t)SW_OUT_OF_BOUNDARY);
       }
+      memzero(plain_data_buffer, sizeof(plain_data_buffer));
       return SW_OUT_OF_BOUNDARY;
     }
 
@@ -175,6 +177,8 @@ static card_error_status_word_e encrypt_secure_data(secure_data_t *message,
            encrypted_data_buffer_size);
     message->encrypted_data_size += encrypted_data_buffer_size;
 
+    // the chunk buffer holds plaintext inheritance data
+    memzero(plain_data_buffer, sizeof(plain_data_buffer));
     offset += plain_data_buffer_size;
   }
   return SW_NO_ERROR;

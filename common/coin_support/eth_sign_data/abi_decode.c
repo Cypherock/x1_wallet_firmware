@@ -57,6 +57,7 @@
  ******************************************************************************
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "abi.h"
@@ -64,6 +65,22 @@
 #include "assert_conf.h"
 #include "evm_priv.h"
 #include "utils.h"
+
+/* Static functions
+ *****************************************************************************/
+/**
+ * @brief Checks that a 32-byte ABI offset/length word fits the 32 bits that
+ * are read from it (the EVM rejects words with any upper byte set, so the
+ * value shown must not ignore them)
+ */
+static bool abi_word_fits_u32(const uint8_t *word) {
+  for (uint8_t i = 0; i < ABI_DYN_METADATA_OFFET_BE; i++) {
+    if (0 != word[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /* Global functions
  *****************************************************************************/
@@ -93,6 +110,10 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
       uint32_t offsetDynamicData;
       offsetDynamicData =
           U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      if (!abi_word_fits_u32(pAbiTypeData)) {
+        returnCode = ABI_PROCESS_INCOMPLETE;
+        break;
+      }
 
       /* Goto offset of the dynamic input */
       pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
@@ -113,6 +134,10 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
       uint32_t numBytesInData;
       numBytesInData =
           U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      if (!abi_word_fits_u32(pAbiTypeData)) {
+        returnCode = ABI_PROCESS_INCOMPLETE;
+        break;
+      }
 
       /* Increment pAbiTypeData by ABI_ELEMENT_SZ_IN_BYTES so that it points to
        * the bytes */
@@ -140,6 +165,10 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
       uint32_t offsetDynamicData;
       offsetDynamicData =
           U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      if (!abi_word_fits_u32(pAbiTypeData)) {
+        returnCode = ABI_PROCESS_INCOMPLETE;
+        break;
+      }
 
       /* Goto offset of the dynamic input */
       pAbiTypeData = ((uint8_t *)pAbiTypeDataBase) + offsetDynamicData;
@@ -160,6 +189,10 @@ uint8_t Abi_DynamicHelp(Abi_Type_e inputAbiType,
       uint32_t numElementsInDataArr;
       numElementsInDataArr =
           U32_READ_BE_ARRAY(pAbiTypeData + ABI_DYN_METADATA_OFFET_BE);
+      if (!abi_word_fits_u32(pAbiTypeData)) {
+        returnCode = ABI_PROCESS_INCOMPLETE;
+        break;
+      }
 
       /* Increment pAbiTypeData by ABI_ELEMENT_SZ_IN_BYTES so that it points to
        * the array */

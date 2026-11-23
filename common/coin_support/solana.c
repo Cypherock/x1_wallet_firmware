@@ -122,8 +122,8 @@ int solana_update_blockhash_in_byte_array(uint8_t *byte_array,
   if (offset >= byte_array_size)
     return SOL_D_READ_SIZE_MISMATCH;
   // Account addresses
-  offset +=
-      get_compact_array_size(byte_array + offset, &addresses_count, &status);
+  offset += get_compact_array_size(
+      byte_array + offset, byte_array_size - offset, &addresses_count, &status);
   if (status != SOL_OK)
     return status;
   if (addresses_count == 0)

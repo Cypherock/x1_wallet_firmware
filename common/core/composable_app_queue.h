@@ -54,8 +54,10 @@ bool caq_is_empty(void);
  * @brief Pushes data onto the composable app queue.
  *
  * @param data The data to be pushed onto the queue.
+ * @return true if the data was queued; false if the queue is not initialized
+ * or memory could not be allocated
  */
-void caq_push(caq_node_data_t data);
+bool caq_push(caq_node_data_t data);
 
 /**
  * @brief Pops data from the composable app queue.

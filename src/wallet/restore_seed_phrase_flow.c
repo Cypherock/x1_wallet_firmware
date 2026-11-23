@@ -406,6 +406,7 @@ restore_wallet_state_e restore_wallet_state_handler(
       mnemonic_clear();
 
       if (!result) {
+        memzero(single_line_mnemonics, sizeof(single_line_mnemonics));
         mark_core_error_screen(ui_text_incorrect_mnemonics, false);
         next_state = EARLY_EXIT;
         break;
@@ -415,6 +416,9 @@ restore_wallet_state_e restore_wallet_state_handler(
       calculate_wallet_id(temp_wallet_id, single_line_mnemonics);
       if (get_first_matching_index_by_id(temp_wallet_id, &wallet_index) ==
           SUCCESS_) {
+        // a valid mnemonic of an existing wallet: wipe it before leaving
+        memzero(single_line_mnemonics, sizeof(single_line_mnemonics));
+        memzero(temp_wallet_id, sizeof(temp_wallet_id));
         mark_core_error_screen(ui_text_wallet_with_same_mnemo_exists, false);
         next_state = EARLY_EXIT;
         break;

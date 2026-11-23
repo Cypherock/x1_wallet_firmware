@@ -562,7 +562,8 @@ void icp_get_pub_keys(icp_query_t *query) {
     set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_ACCOUNT_ID_VERIFY);
 
     icp_result_t result = init_icp_result(which_response);
-    result.sign_txn.which_response =
+    // both public-key results share this response type
+    result.get_public_keys.which_response =
         ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
     icp_send_result(&result);
 
@@ -578,7 +579,8 @@ void icp_get_pub_keys(icp_query_t *query) {
     set_app_flow_status(ICP_GET_PUBLIC_KEYS_STATUS_PRINCIPAL_ID_VERIFY);
   } else {
     icp_result_t result = init_icp_result(which_response);
-    result.sign_txn.which_response =
+    // both public-key results share this response type
+    result.get_public_keys.which_response =
         ICP_GET_PUBLIC_KEYS_RESPONSE_VERIFY_ACCOUNT_ID_TAG;
     icp_send_result(&result);
   }

@@ -78,6 +78,8 @@ void list_init(const char option_list[MAX_UI_LIST_WORDS][MAX_UI_LIST_CHAR_LEN],
                bool dynamic_heading) {
   ASSERT(option_list != NULL);
   ASSERT(heading != NULL);
+  // the options are copied into a fixed array of MAX_UI_LIST_WORDS entries
+  ASSERT(0 < number_of_options && MAX_UI_LIST_WORDS >= number_of_options);
 
   lv_obj_clean(lv_scr_act());
 
@@ -396,7 +398,7 @@ void list_create() {
     snprintf(
         buffer, sizeof(buffer), "%s%d", data->heading, data->current_index + 1);
   } else {
-    strcpy(buffer, data->heading);
+    snprintf(buffer, sizeof(buffer), "%s", data->heading);
   }
 
   obj->heading = lv_label_create(lv_scr_act(), NULL);

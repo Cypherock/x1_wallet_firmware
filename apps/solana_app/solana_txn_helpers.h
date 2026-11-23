@@ -347,11 +347,14 @@ typedef struct {
  * @brief Get the compact array size and number of bytes used to store the size
  *
  * @param data the compact array
+ * @param remaining bytes available at data; reads never go beyond it
  * @param size the size of the compact array
+ * @param error set to SOL_OK, or an error for a truncated or invalid encoding
  * @return uint16_t number of bytes used to store the size
  */
 
 uint16_t get_compact_array_size(const uint8_t *data,
+                                uint32_t remaining,
                                 uint16_t *size,
                                 int *error);
 

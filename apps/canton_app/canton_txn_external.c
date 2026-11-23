@@ -547,6 +547,10 @@ static bool send_signature(canton_query_t *query,
 void canton_sign_txn_external(canton_query_t *query) {
   canton_txn_external_context = (canton_txn_external_context_t *)malloc(
       sizeof(canton_txn_external_context_t));
+  if (NULL == canton_txn_external_context) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(canton_txn_external_context, sizeof(canton_txn_external_context_t));
 
   canton_external_sig_t sig = {0};

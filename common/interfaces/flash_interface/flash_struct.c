@@ -208,6 +208,10 @@ void flash_struct_save() {
   ASSERT((&flash_ram_instance) != NULL);
   uint8_t *serialized_flash_instance = (uint8_t *)malloc(FLASH_STRUCT_TLV_SIZE);
   ASSERT(serialized_flash_instance != NULL);
+  // serialize_fs fills less than the buffer; the rest must not carry stale
+  // heap bytes into flash, so it is set to the erased value
+  memset(
+      serialized_flash_instance, DEFAULT_VALUE_IN_FLASH, FLASH_STRUCT_TLV_SIZE);
   serialize_fs(&flash_ram_instance, serialized_flash_instance);
   erase_cmd(FLASH_DATA_ADDRESS, FLASH_STRUCT_TLV_SIZE);
   write_cmd(FLASH_DATA_ADDRESS,

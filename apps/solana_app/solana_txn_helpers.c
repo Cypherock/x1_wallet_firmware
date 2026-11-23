@@ -125,24 +125,38 @@ static bool get_instruction_account(const solana_unsigned_txn *utxn,
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 uint16_t get_compact_array_size(const uint8_t *data,
+                                uint32_t remaining,
                                 uint16_t *size,
                                 int *error) {
   uint16_t offset = 0;
   uint32_t value = 0;
   *error = 0;
+  *size = 0;
 
-  while (offset < 3) {
-    value |= (*(data + offset) & 0x7F) << offset * 7;
-    if ((*(data + offset) & 0x80) == 0)
-      break;
+  // compact-u16: up to 3 bytes, 7 bits each, high bit set when more follow
+  while (true) {
+    if (offset >= remaining) {
+      *error = SOL_D_READ_SIZE_MISMATCH;
+      return offset;
+    }
+    uint8_t byte = *(data + offset);
+    value |= (uint32_t)(byte & 0x7F) << (offset * 7);
     offset++;
+    if (0 == (byte & 0x80)) {
+      break;
+    }
+    if (3 == offset) {
+      // a third byte can not announce a fourth
+      *error = SOL_D_COMPACT_U16_OVERFLOW;
+      return offset;
+    }
   }
 
   if (value > UINT16_MAX)
     *error = SOL_D_COMPACT_U16_OVERFLOW;    // overflow
 
   *size = value;
-  return offset + 1;
+  return offset;
 }
 
 int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
@@ -173,7 +187,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
   // Account addresses
   offset += get_compact_array_size(
-      byte_array + offset, &(utxn->account_addresses_count), &error);
+      byte_array + offset,
+      offset < byte_array_size ? byte_array_size - offset : 0,
+      &(utxn->account_addresses_count),
+      &error);
   if (error != SOL_OK)
     return error;
   if (utxn->account_addresses_count == 0)
@@ -190,7 +207,10 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
   // Instructions
   offset += get_compact_array_size(
-      byte_array + offset, &(utxn->instructions_count), &error);
+      byte_array + offset,
+      offset < byte_array_size ? byte_array_size - offset : 0,
+      &(utxn->instructions_count),
+      &error);
   if (error != SOL_OK)
     return error;
   if (utxn->instructions_count == 0)
@@ -249,6 +269,7 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
     offset += get_compact_array_size(
         byte_array + offset,
+        offset < byte_array_size ? byte_array_size - offset : 0,
         &(utxn->instruction[i].account_addresses_index_count),
         &error);
     if (error != SOL_OK)
@@ -256,9 +277,11 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
 
     utxn->instruction[i].account_addresses_index = byte_array + offset;
     offset += utxn->instruction[i].account_addresses_index_count;
-    offset += get_compact_array_size(byte_array + offset,
-                                     &(utxn->instruction[i].opaque_data_length),
-                                     &error);
+    offset += get_compact_array_size(
+        byte_array + offset,
+        offset < byte_array_size ? byte_array_size - offset : 0,
+        &(utxn->instruction[i].opaque_data_length),
+        &error);
     if (error != SOL_OK)
       return error;
 
@@ -602,8 +625,11 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   // which never appears in account_addresses, and cant verifed in firmware
   if (is_versioned) {
     uint16_t lookup_count = 0;
-    offset +=
-        get_compact_array_size(byte_array + offset, &lookup_count, &error);
+    offset += get_compact_array_size(
+        byte_array + offset,
+        offset < byte_array_size ? byte_array_size - offset : 0,
+        &lookup_count,
+        &error);
     if (error != SOL_OK)
       return error;
     if (lookup_count != 0)
@@ -907,6 +933,11 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
     if (transfer_instruction_found != allocate_with_seed_found)
       return SOL_V_MIXED_STAKE_OPERATION;
     if (allocate_with_seed_found) {
+      // the funding transfer must be a System transfer: only it has a
+      // recipient (a token transfer would leave it NULL and be displayed as
+      // the wrong union member)
+      if (NULL == transfer_recipient)
+        return SOL_V_MIXED_STAKE_OPERATION;
       if (memcmp(transfer_recipient,
                  allocate_new_account,
                  SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0)

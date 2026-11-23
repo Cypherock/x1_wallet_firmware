@@ -423,6 +423,8 @@ static void sec_flash_struct_load() {
                              sec_fs_tlv_header,
                              sizeof(sec_fs_tlv_header));
   if (read_ok) {
+    // start from zero so no stale secret survives an entry missing from flash
+    memzero(&sec_flash_instance, sizeof(sec_flash_instance));
     deserialize_sec_fs(&sec_flash_instance,
                        serialized_flash_instance,
                        serialized_flash_size_tagged);
@@ -473,6 +475,8 @@ const Sec_Flash_Struct *get_sec_flash_ram_instance() {
  */
 void sec_flash_erase() {
   FW_delete_flash_data(FIREWALL_APPLICATION_DATA_START_ADDR);
+  // the RAM copy holds the device shares and card pairing keys
+  memzero(&sec_flash_instance, sizeof(sec_flash_instance));
   is_sec_flash_ram_instance_loaded = false;
 }
 
@@ -487,6 +491,8 @@ static void flash_perm_struct_load() {
   FW_read_NVData(FIREWALL_NVDATA_APP_KEYS_ADDR, fw_raw_data, FLASH_PAGE_SIZE);
   deserialize_perm_fs_key_data(
       &flash_perm_instance, fw_raw_data, FLASH_PAGE_SIZE);
+  // the page holds the IO protection key and the device's card pairing key
+  memzero(fw_raw_data, sizeof(fw_raw_data));
   FW_GetBootData(&(flash_perm_instance.bootData));
   flash_perm_instance.bootCount = FW_GetBootCount();
 }
@@ -517,6 +523,9 @@ static void flash_perm_key_save(uint8_t tag,
   // the whole record must fit in the one-time page
   ASSERT((uint32_t)fs_offset + length <= FLASH_PAGE_SIZE);
   FW_write_oneTime(FIREWALL_NVDATA_APP_KEYS_ADDR + fs_offset, tlv, length);
+  // both buffers hold key material (the page and the key being saved)
+  memzero(fw_raw_data, sizeof(fw_raw_data));
+  memzero(tlv, sizeof(tlv));
 }
 
 void flash_perm_struct_save_IOProtectKey() {

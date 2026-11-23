@@ -112,6 +112,15 @@ void logger(char *fmt, ...) {
 
     n = snprintf(
         temp_str2, LOG_MAX_SIZE, "%d. %s\n", sg_log_data.log_count, temp_str1);
+    if (n < 0) {
+      return;
+    }
+    // snprintf returns the untruncated length; a long line is cut to the buffer
+    // (keeping the newline) so the padding and the flash write stay inside it
+    if (n > LOG_MAX_SIZE - 1) {
+      n = LOG_MAX_SIZE - 1;
+      temp_str2[n - 1] = '\n';
+    }
     cnt2 = n % sizeof(uint64_t);
     cnt2 = cnt2 == 0
                ? 0
