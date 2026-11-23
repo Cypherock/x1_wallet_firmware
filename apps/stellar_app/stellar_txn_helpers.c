@@ -143,6 +143,10 @@ static int parse_memo_data(const uint8_t *xdr,
                            uint32_t *offset,
                            uint32_t xdr_len,
                            stellar_transaction_t *txn) {
+  // every fixed-size read is checked against the transaction length
+  if ((uint64_t)*offset + 4 > xdr_len) {
+    return -1;
+  }
   txn->memo_type = (stellar_memo_type_t)U32_READ_BE_ARRAY(xdr + *offset);
   *offset += 4;
 
@@ -162,6 +166,9 @@ static int parse_memo_data(const uint8_t *xdr,
     } break;
 
     case STELLAR_MEMO_ID:
+      if ((uint64_t)*offset + 8 > xdr_len) {
+        return -1;
+      }
       txn->memo.id = U64_READ_BE_ARRAY(xdr + *offset);
       *offset += 8;
       break;
@@ -343,6 +350,9 @@ int stellar_parse_transaction(const uint8_t *xdr,
 
   *tagged_txn_len = offset;
 
+  if (offset + 4 > xdr_len) {
+    return -1;
+  }
   uint32_t signature_count = U32_READ_BE_ARRAY(xdr + offset);
   offset += 4;
   if (signature_count != 0) {
