@@ -116,6 +116,9 @@ ui_display_node *extract_data(uint8_t *data) {
     }
   }
   if (!is_valid) {
+    // tell the host, otherwise it keeps waiting for a response
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
     return NULL;
   }
   char address[TRON_ACCOUNT_ADDRESS_LENGTH + 1] = {0};

@@ -524,6 +524,8 @@ void starknet_get_pub_keys(starknet_query_t *query) {
   if (!status) {
     // send unknown error; do not know failure reason
     starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 2);
+    // the curve state from starknet_init must be released on every exit
+    stark_clear();
     return;
   }
 
@@ -551,6 +553,7 @@ void starknet_get_pub_keys(starknet_query_t *query) {
     }
 
     if (!core_scroll_page(ui_text_receive_on, address, starknet_send_error)) {
+      stark_clear();
       return;
     }
 

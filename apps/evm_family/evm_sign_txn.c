@@ -491,4 +491,7 @@ void evm_sign_transaction(evm_query_t *query) {
     free(txn_context);
     txn_context = NULL;
   }
+  // display nodes are only freed on the success path while verifying; free
+  // them on every exit
+  cy_free();
 }

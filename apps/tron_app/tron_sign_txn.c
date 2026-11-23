@@ -480,4 +480,7 @@ void tron_sign_transaction(tron_query_t *query) {
     free(tron_txn_context);
     tron_txn_context = NULL;
   }
+  // display nodes are only freed on the success path while verifying; free
+  // them on every exit
+  cy_free();
 }
