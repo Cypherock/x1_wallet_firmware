@@ -65,9 +65,11 @@ static const uint8_t EXPONENT_TABLE[] =
 
 uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]) {
   uint16_t number_bits_set = 0U;
-  uint8_t index = SHA256_SIZE - 1U;
+  // signed index: with an unsigned one `index >= 0` is always true, so an
+  // all-0xff target walked off the start of the array
+  int16_t index = SHA256_SIZE - 1;
 
-  for (; index >= 0U; index--) {
+  for (; index >= 0; index--) {
     if (target[index] == 0xffU)
       number_bits_set++;
     else
@@ -76,7 +78,7 @@ uint16_t pow_count_set_bits(const uint8_t target[SHA256_SIZE]) {
 
   number_bits_set = number_bits_set * 8U;    // number of bits set in target
 
-  if (index >= 0U) {
+  if (index >= 0) {
     uint16_t i = 0U;
     for (; i < 7U; i++) {
       if (EXPONENT_TABLE[i] < target[index] &&
