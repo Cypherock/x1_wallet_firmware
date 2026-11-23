@@ -86,6 +86,9 @@ void menu_init_with_choice(const char *option_list[],
                            const bool back_button_allowed) {
   ASSERT(NULL != option_list);
   ASSERT(NULL != heading);
+  // the options are copied into a fixed array, and the count is used as a
+  // divisor when moving through them
+  ASSERT(0 < number_of_options && MAX_LEN_OF_MENU_OPTIONS >= number_of_options);
 
   lv_obj_clean(lv_scr_act());
 
@@ -97,7 +100,11 @@ void menu_init_with_choice(const char *option_list[],
 
   if (data != NULL) {
     data->number_of_options = number_of_options;
-    data->current_index = initial_selection;
+    // a stale or out-of-range choice starts at the first option
+    data->current_index =
+        (0 <= initial_selection && initial_selection < number_of_options)
+            ? initial_selection
+            : 0;
     data->back_button_allowed = back_button_allowed;
     snprintf(data->heading, sizeof(data->heading), "%s", heading);
 

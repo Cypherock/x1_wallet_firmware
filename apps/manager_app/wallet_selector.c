@@ -134,7 +134,7 @@ static void fill_wallet(manager_wallet_item_t *wallet, uint8_t wallet_idx);
  *****************************************************************************/
 static bool check_which_request(const manager_query_t *query,
                                 pb_size_t which_request) {
-  if (which_request != query->get_wallets.which_request) {
+  if (which_request != query->select_wallet.which_request) {
     manager_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                        ERROR_DATA_FLOW_INVALID_REQUEST);
     return false;
@@ -185,6 +185,17 @@ void manager_wallet_selector(manager_query_t *query) {
   static uint16_t choice_idx = 0;
   uint8_t option_count = get_wallet_list(&options[0]);
 
+  // nothing to select from; the menu also needs at least one option
+  if (0 == option_count) {
+    manager_send_error(ERROR_COMMON_ERROR_WALLET_NOT_FOUND_TAG,
+                       ERROR_WALLET_NOT_FOUND_UNKNOWN);
+    return;
+  }
+  // the choice is kept across requests, and wallets may have been deleted
+  if (choice_idx >= option_count) {
+    choice_idx = 0;
+  }
+
   while (true) {
     menu_init_with_choice(
         options, option_count, "Wallet Select", choice_idx, true);
@@ -202,9 +213,15 @@ void manager_wallet_selector(manager_query_t *query) {
     }
 
     uint8_t flash_wallet_idx = 0;
+    ASSERT(UI_EVENT_LIST_CHOICE == events.ui_event.event_type);
+    // selections are 1-based; anything else would index past the options
+    if (1 > events.ui_event.list_selection ||
+        option_count < events.ui_event.list_selection) {
+      choice_idx = 0;
+      continue;
+    }
     choice_idx = events.ui_event.list_selection - 1;
 
-    ASSERT(UI_EVENT_LIST_CHOICE == events.ui_event.event_type);
     ASSERT(SUCCESS ==
            get_index_by_name(options[choice_idx], &flash_wallet_idx));
     if (get_wallet_data_by_id(get_wallet_id(flash_wallet_idx), &wallet, NULL)) {
