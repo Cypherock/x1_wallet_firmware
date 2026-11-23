@@ -488,6 +488,7 @@ STATIC int schnorrsig_sign(const uint8_t *tweaked_private_key,
   // Load and validate private key
   bn_read_be(tweaked_private_key, &sk);
   if (bn_is_zero(&sk) || !bn_is_less(&sk, &curve->order)) {
+    memzero(&sk, sizeof(sk));
     return -1;
   }
 
@@ -523,6 +524,11 @@ STATIC int schnorrsig_sign(const uint8_t *tweaked_private_key,
 
   // Ensure k != 0
   if (bn_is_zero(&k)) {
+    memzero(&sk, sizeof(sk));
+    memzero(sk_bytes, sizeof(sk_bytes));
+    memzero(nonce_data, sizeof(nonce_data));
+    memzero(nonce_hash, sizeof(nonce_hash));
+    memzero(aux_hash, sizeof(aux_hash));
     return -1;
   }
 

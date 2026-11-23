@@ -323,12 +323,15 @@ static bool auth_wallet_get_wallet_entropy() {
       } else {
         SET_ERROR_TYPE(AUTH_WALLET_CARD_ENCRYPTION_ERROR);
       }
+      memzero(msgs, sizeof(msgs));
       return false;
     }
     memcpy((void *)auth->wallet_based_data.entropy,
            msgs[0].encrypted_data,
            msgs[0].encrypted_data_size);
     auth->wallet_based_data.entropy_size = msgs[0].encrypted_data_size;
+    // the card-derived entropy now lives only in the auth context
+    memzero(msgs, sizeof(msgs));
     auth->wallet_based_data.has_data = true;
     // wallet id encryption complete
     set_app_flow_status(

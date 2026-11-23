@@ -351,6 +351,8 @@ bool bip340_tweak_private_key(const uint8_t *private_key,
   const ecdsa_curve *curve = &secp256k1;
   curve_point public_key_point = {0};
   if (!ecdsa_read_pubkey(curve, public_key, &public_key_point)) {
+    memzero(&sk, sizeof(sk));
+    memzero(tweak_hash, sizeof(tweak_hash));
     return false;
   }
 

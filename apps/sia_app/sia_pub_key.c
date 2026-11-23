@@ -309,8 +309,9 @@ static bool get_public_key(const uint8_t *seed,
 
   ed25519_publickey(private_key, public_key);
 
-  memset(buffer, 0, 40);
-  memset(private_key, 0, 32);
+  // memzero, not memset: a final memset can be dropped as a dead store
+  memzero(buffer, sizeof(buffer));
+  memzero(private_key, sizeof(private_key));
 
   return (result == 0);
 }

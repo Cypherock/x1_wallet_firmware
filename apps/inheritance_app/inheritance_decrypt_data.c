@@ -556,14 +556,14 @@ static bool send_decrypted_data(inheritance_query_t *query) {
       buffer[INHERITANCE_DECRYPT_DATA_WITH_PIN_DECRYPTED_DATA_STRUCTURE_SIZE] =
           {0};
   size_t bytes_encoded = 0;
-  if (!get_pb_encoded_buffer(&decryption_context->response_payload,
-                             buffer,
-                             sizeof(buffer),
-                             &bytes_encoded) ||
-      !inheritance_send_in_chunks(query, buffer, bytes_encoded)) {
-    return false;
-  }
-  return true;
+  bool status = get_pb_encoded_buffer(&decryption_context->response_payload,
+                                      buffer,
+                                      sizeof(buffer),
+                                      &bytes_encoded) &&
+                inheritance_send_in_chunks(query, buffer, bytes_encoded);
+  // the buffer holds the decrypted messages
+  memzero(buffer, sizeof(buffer));
+  return status;
 }
 
 static bool decrypt_packet(void) {
