@@ -142,6 +142,10 @@ void exchange_initiate_flow(exchange_query_t *query) {
 
   delay_scr_init("Swap flow initiated", DELAY_TIME);
 
+  // every step must be queued, or later flows could run without the swap
+  // checks
+  bool pushed = true;
+
   // Receive flow
   {
     caq_node_data_t data = {.applet_id =
@@ -153,7 +157,7 @@ void exchange_initiate_flow(exchange_query_t *query) {
            sizeof(query->initiate_flow.initiate.to.wallet_id));
     data.params[32] = EXCHANGE_FLOW_TAG_RECEIVE;
 
-    caq_push(data);
+    pushed = pushed && caq_push(data);
   }
 
   // Fetch signature for receive address
@@ -163,7 +167,7 @@ void exchange_initiate_flow(exchange_query_t *query) {
     memzero(data.params, sizeof(data.params));
     data.params[0] = EXCHANGE_FLOW_TAG_FETCH_SIGNATURE;
 
-    caq_push(data);
+    pushed = pushed && caq_push(data);
   }
 
   // Store signature for receiver address in send flow
@@ -173,7 +177,7 @@ void exchange_initiate_flow(exchange_query_t *query) {
     memzero(data.params, sizeof(data.params));
     data.params[0] = EXCHANGE_FLOW_TAG_STORE_SIGNATURE;
 
-    caq_push(data);
+    pushed = pushed && caq_push(data);
   }
 
   // Send flow
@@ -187,7 +191,13 @@ void exchange_initiate_flow(exchange_query_t *query) {
            sizeof(query->initiate_flow.initiate.from.wallet_id));
     data.params[32] = EXCHANGE_FLOW_TAG_SEND;
 
-    caq_push(data);
+    pushed = pushed && caq_push(data);
+  }
+
+  if (!pushed) {
+    caq_clear();
+    exchange_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
   }
 
   result.initiate_flow.which_response =
