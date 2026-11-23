@@ -444,6 +444,9 @@ bool evm_decode_unsigned_txn(const uint8_t *data,
                              size_t data_size,
                              evm_txn_context_t *txn_context) {
   bool status = false;
+  if (NULL == data || 0 == data_size) {
+    return false;
+  }
   uint8_t txn_version = data[0] > 0x7f ? 0 : data[0];
   switch (txn_version) {
     case 0:

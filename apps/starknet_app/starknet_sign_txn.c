@@ -803,6 +803,11 @@ void starknet_sign_transaction(starknet_query_t *query) {
   starknet_init();
   starknet_txn_context =
       (starknet_txn_context_t *)malloc(sizeof(starknet_txn_context_t));
+  if (NULL == starknet_txn_context) {
+    stark_clear();
+    starknet_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(starknet_txn_context, sizeof(starknet_txn_context_t));
 
   uint8_t signature[64] = {0};

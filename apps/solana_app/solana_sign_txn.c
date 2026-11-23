@@ -1036,6 +1036,10 @@ static bool send_signature(solana_query_t *query,
 void solana_sign_transaction(solana_query_t *query) {
   solana_txn_context =
       (solana_txn_context_t *)malloc(sizeof(solana_txn_context_t));
+  if (NULL == solana_txn_context) {
+    solana_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(solana_txn_context, sizeof(solana_txn_context_t));
   solana_sign_txn_signature_response_t sig = {0};
   uint8_t seed[64] = {0};

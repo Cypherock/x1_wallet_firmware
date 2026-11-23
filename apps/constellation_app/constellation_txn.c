@@ -456,6 +456,10 @@ static bool send_signature(constellation_query_t *query,
 void constellation_sign_transaction(constellation_query_t *query) {
   constellation_txn_context = (constellation_txn_context_t *)malloc(
       sizeof(constellation_txn_context_t));
+  if (NULL == constellation_txn_context) {
+    constellation_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(constellation_txn_context, sizeof(constellation_txn_context_t));
 
   der_sig_t der_signature = {0};

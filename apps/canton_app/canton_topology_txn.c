@@ -601,6 +601,10 @@ static bool send_signature(canton_query_t *query,
 void canton_sign_topology_transaction(canton_query_t *query) {
   canton_topology_txn_context = (canton_topology_txn_context_t *)malloc(
       sizeof(canton_topology_txn_context_t));
+  if (NULL == canton_topology_txn_context) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(canton_topology_txn_context, sizeof(canton_topology_txn_context_t));
 
   canton_topology_sig_t sig = {0};

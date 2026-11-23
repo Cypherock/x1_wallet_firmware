@@ -366,6 +366,10 @@ static bool fetch_valid_input(stellar_query_t *query) {
 
   stellar_txn_context->txn =
       (stellar_transaction_t *)malloc(sizeof(stellar_transaction_t));
+  if (NULL == stellar_txn_context->txn) {
+    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
 
   if (stellar_parse_transaction(stellar_txn_context->transaction,
                                 total_size,
@@ -592,6 +596,10 @@ static bool send_signature(stellar_query_t *query,
 void stellar_sign_transaction(stellar_query_t *query) {
   stellar_txn_context =
       (stellar_txn_context_t *)malloc(sizeof(stellar_txn_context_t));
+  if (NULL == stellar_txn_context) {
+    stellar_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(stellar_txn_context, sizeof(stellar_txn_context_t));
 
   stellar_sig_t sig = {0};

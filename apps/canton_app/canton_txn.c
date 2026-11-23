@@ -980,6 +980,10 @@ static bool send_signature(canton_query_t *query, const canton_sig_t *sig) {
 void canton_sign_transaction(canton_query_t *query) {
   canton_txn_context =
       (canton_txn_context_t *)malloc(sizeof(canton_txn_context_t));
+  if (NULL == canton_txn_context) {
+    canton_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return;
+  }
   memzero(canton_txn_context, sizeof(canton_txn_context_t));
   canton_txn_context->unsigned_txn.txn_display_info.txn_type =
       CANTON_TXN_TYPE_UNRECOGNIZED;
