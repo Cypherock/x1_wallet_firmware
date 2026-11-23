@@ -144,6 +144,30 @@ static inline void encode_int32(int32_t value, uint8_t *buf);
 static inline void encode_int64(int64_t value, uint8_t *buf);
 
 /**
+ * @brief Returns the string, or "" for an absent one
+ * @details Host-supplied strings are decoded as FT_POINTER fields, so an
+ * absent field is NULL. Proto3 treats an absent string as empty, so it is
+ * sized, encoded and compared as "".
+ */
+static const char *cstr(const char *str) {
+  return (NULL == str) ? "" : str;
+}
+
+/**
+ * @brief Size of a dotted name (e.g. a module name) encoded as a count and its
+ * non-empty parts, each as a length-prefixed string
+ */
+static size_t get_encoded_dotted_name_size(const char *name);
+
+/**
+ * @brief Encodes a dotted name as a count and its non-empty parts, each as a
+ * length-prefixed string. Empty parts are skipped, as strtok did before.
+ *
+ * @return size_t Number of bytes written
+ */
+static size_t encode_dotted_name(const char *name, uint8_t *out_buf);
+
+/**
  * @brief Encodes string to out buffer
  *
  * @param str[in] String to encode
@@ -559,6 +583,7 @@ static bool encode_string(const char *str, uint8_t *out_buf, size_t *out_len) {
   //    return false;
   //  }
 
+  str = cstr(str);
   int32_t len = (int32_t)strlen(str);
   encode_int32(len, out_buf);
   memcpy(out_buf + 4, str, len);
@@ -571,6 +596,7 @@ static bool encode_hex_string(const char *str,
                               size_t *out_len) {
   // decode straight into out_buf (sized 4 + strlen(str) / 2 by the callers);
   // only whole hex pairs are decoded
+  str = cstr(str);
   size_t byte_len = strlen(str) / 2;
   encode_int32((int32_t)byte_len, out_buf);
   hex_string_to_byte_array(str, byte_len * 2, out_buf + 4);
@@ -604,7 +630,7 @@ size_t get_encoded_value_size(const canton_value_t *value) {
       break;
     }
     case CANTON_VALUE_NUMERIC_TAG: {
-      return 1 + 4 + strlen(value->numeric);
+      return 1 + 4 + strlen(cstr(value->numeric));
       break;
     }
     case CANTON_VALUE_TIMESTAMP_TAG: {
@@ -616,15 +642,15 @@ size_t get_encoded_value_size(const canton_value_t *value) {
       break;
     }
     case CANTON_VALUE_PARTY_TAG: {
-      return 1 + 4 + strlen(value->party);
+      return 1 + 4 + strlen(cstr(value->party));
       break;
     }
     case CANTON_VALUE_TEXT_TAG: {
-      return 1 + 4 + strlen(value->text);
+      return 1 + 4 + strlen(cstr(value->text));
       break;
     }
     case CANTON_VALUE_CONTRACT_ID_TAG: {
-      return 1 + 4 + (int32_t)(strlen(value->contract_id) / 2);
+      return 1 + 4 + (int32_t)(strlen(cstr(value->contract_id)) / 2);
       break;
     }
     case CANTON_VALUE_OPTIONAL_TAG: {
@@ -643,7 +669,7 @@ size_t get_encoded_value_size(const canton_value_t *value) {
     case CANTON_VALUE_TEXT_MAP_TAG: {
       size_t total_size = 1 + 4;
       for (size_t i = 0; i < value->text_map->entries_count; i++) {
-        total_size += 4 + strlen(value->text_map->entries[i].key);
+        total_size += 4 + strlen(cstr(value->text_map->entries[i].key));
         total_size += get_encoded_value_size(value->text_map->entries[i].value);
       }
       return total_size;
@@ -663,7 +689,7 @@ size_t get_encoded_value_size(const canton_value_t *value) {
       for (size_t i = 0; i < value->record->fields_count; i++) {
         // optional label field
         total_size += 1;    // flag
-        size_t label_size = strlen(value->record->fields[i].label);
+        size_t label_size = strlen(cstr(value->record->fields[i].label));
         if (0 < label_size) {
           total_size += 4 + label_size;
         }
@@ -684,7 +710,7 @@ size_t get_encoded_value_size(const canton_value_t *value) {
       }
 
       // constructor string
-      total_size += 4 + strlen(value->variant->constructor);
+      total_size += 4 + strlen(cstr(value->variant->constructor));
 
       // sub value
       total_size += get_encoded_value_size(value->variant->value);
@@ -701,7 +727,7 @@ size_t get_encoded_value_size(const canton_value_t *value) {
       }
 
       // constructor
-      total_size += 4 + strlen(value->enum_t.constructor);
+      total_size += 4 + strlen(cstr(value->enum_t.constructor));
 
       return total_size;
     }
@@ -725,27 +751,48 @@ size_t get_encoded_value_size(const canton_value_t *value) {
   return 0;
 }
 
+static size_t get_encoded_dotted_name_size(const char *name) {
+  size_t total_size = 4;    // count
+  const char *part = cstr(name);
+  while ('\0' != *part) {
+    size_t len = strcspn(part, ".");
+    if (0 < len) {
+      total_size += 4 + len;
+    }
+    part += len;
+    if ('.' == *part) {
+      part++;
+    }
+  }
+  return total_size;
+}
+
+static size_t encode_dotted_name(const char *name, uint8_t *out_buf) {
+  size_t offset = 4;    // count is written last
+  int32_t count = 0;
+  const char *part = cstr(name);
+  while ('\0' != *part) {
+    size_t len = strcspn(part, ".");
+    if (0 < len) {
+      encode_int32((int32_t)len, out_buf + offset);
+      memcpy(out_buf + offset + 4, part, len);
+      offset += 4 + len;
+      count++;
+    }
+    part += len;
+    if ('.' == *part) {
+      part++;
+    }
+  }
+  encode_int32(count, out_buf);
+  return offset;
+}
+
 size_t get_encoded_identifier_size(const canton_identifier_t *ident) {
   size_t total_size = 0;
-  total_size += 4 + strlen(ident->package_id);
-
-  total_size += 4;    // count
-  char *module_copy = strdup(ident->module_name);
-  char *part = strtok(module_copy, ".");
-  while (part != NULL) {
-    total_size += 4 + strlen(part);
-    part = strtok(NULL, ".");
-  }
-  free(module_copy);
-
-  total_size += 4;    // count
-  char *entity_copy = strdup(ident->entity_name);
-  part = strtok(entity_copy, ".");
-  while (part != NULL) {
-    total_size += 4 + strlen(part);
-    part = strtok(NULL, ".");
-  }
-  free(entity_copy);
+  total_size += 4 + strlen(cstr(ident->package_id));
+  total_size += get_encoded_dotted_name_size(ident->module_name);
+  total_size += get_encoded_dotted_name_size(ident->entity_name);
   return total_size;
 }
 
@@ -757,16 +804,16 @@ static size_t get_encoded_fetch_node_size(const canton_fetch_t *node,
   total_buf_size += 1;
 
   // lf_version: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->lf_version);
+  total_buf_size += 4 + strlen(cstr(node->lf_version));
 
   // fetch node tag ; 1 byte: 0x02
   total_buf_size += 1;
 
   // contract_id: 4 + strlen()/2 : hex string
-  total_buf_size += 4 + (int)strlen(node->contract_id) / 2;
+  total_buf_size += 4 + (int)strlen(cstr(node->contract_id)) / 2;
 
   // package_name: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->package_name);
+  total_buf_size += 4 + strlen(cstr(node->package_name));
 
   // template_id: get_encoded_identifier_size
   total_buf_size += get_encoded_identifier_size(&node->template_id);
@@ -777,7 +824,7 @@ static size_t get_encoded_fetch_node_size(const canton_fetch_t *node,
   // signatories: strings
   for (size_t i = 0; i < node->signatories_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->signatories[i]);
+    total_buf_size += 4 + strlen(cstr(node->signatories[i]));
   }
 
   // stakeholders: 4 bytes : int32
@@ -786,7 +833,7 @@ static size_t get_encoded_fetch_node_size(const canton_fetch_t *node,
   // stakeholders: strings
   for (size_t i = 0; i < node->stakeholders_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->stakeholders[i]);
+    total_buf_size += 4 + strlen(cstr(node->stakeholders[i]));
   }
 
   // interface_id: `optional` flag
@@ -802,7 +849,7 @@ static size_t get_encoded_fetch_node_size(const canton_fetch_t *node,
   // acting_parties: strings
   for (size_t i = 0; i < node->acting_parties_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->acting_parties[i]);
+    total_buf_size += 4 + strlen(cstr(node->acting_parties[i]));
   }
 
   return total_buf_size;
@@ -816,7 +863,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   total_buf_size += 1;
 
   // lf_version: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->lf_version);
+  total_buf_size += 4 + strlen(cstr(node->lf_version));
 
   // create node tag ; 1 byte: 0x01
   total_buf_size += 1;
@@ -824,15 +871,16 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   // hash of seed
   const canton_node_seed_t *seed = get_node_seed_from_node_id(node_id);
   if (seed == NULL) {
-    return -1;
+    // an exercise node must have a seed; 0 makes the encoder fail
+    return 0;
   }
   total_buf_size += seed->seed.size;
 
   // contract_id: 4 + strlen()/2 : hex string
-  total_buf_size += 4 + (int32_t)strlen(node->contract_id) / 2;
+  total_buf_size += 4 + (int32_t)strlen(cstr(node->contract_id)) / 2;
 
   // package_name: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->package_name);
+  total_buf_size += 4 + strlen(cstr(node->package_name));
 
   // template_id: get_encoded_identifier_size
   total_buf_size += get_encoded_identifier_size(&node->template_id);
@@ -843,7 +891,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   // signatories: strings
   for (size_t i = 0; i < node->signatories_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->signatories[i]);
+    total_buf_size += 4 + strlen(cstr(node->signatories[i]));
   }
 
   // stakeholders: 4 bytes : int32
@@ -852,7 +900,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   // stakeholders: strings
   for (size_t i = 0; i < node->stakeholders_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->stakeholders[i]);
+    total_buf_size += 4 + strlen(cstr(node->stakeholders[i]));
   }
 
   // acting_parties: 4 bytes: int32
@@ -861,7 +909,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   // acting_parties: strings
   for (size_t i = 0; i < node->acting_parties_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->acting_parties[i]);
+    total_buf_size += 4 + strlen(cstr(node->acting_parties[i]));
   }
 
   // interface_id: `optional` flag
@@ -872,7 +920,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   }
 
   // 4 + strlen() : strings
-  total_buf_size += 4 + strlen(node->choice_id);
+  total_buf_size += 4 + strlen(cstr(node->choice_id));
 
   //  chosen_value: Value type
   total_buf_size += get_encoded_value_size(node->chosen_value);
@@ -894,7 +942,7 @@ static size_t get_encoded_exercise_node_size(const canton_exercise_t *node,
   // choice_observers: strings
   for (size_t i = 0; i < node->choice_observers_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->choice_observers[i]);
+    total_buf_size += 4 + strlen(cstr(node->choice_observers[i]));
   }
 
   // children_count: int32
@@ -916,7 +964,7 @@ static size_t get_encoded_create_node_size(const canton_create_t *node,
   total_buf_size += 1;
 
   // lf_version: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->lf_version);
+  total_buf_size += 4 + strlen(cstr(node->lf_version));
 
   // create node tag ; 1 byte: 0x00
   total_buf_size += 1;
@@ -929,10 +977,10 @@ static size_t get_encoded_create_node_size(const canton_create_t *node,
   }
 
   // contract_id: 4 + strlen()/2 : hex string
-  total_buf_size += 4 + (int)strlen(node->contract_id) / 2;
+  total_buf_size += 4 + (int)strlen(cstr(node->contract_id)) / 2;
 
   // package_name: 4 + strlen() : string
-  total_buf_size += 4 + strlen(node->package_name);
+  total_buf_size += 4 + strlen(cstr(node->package_name));
 
   // template_id: get_encoded_identifier_size
   total_buf_size += get_encoded_identifier_size(&node->template_id);
@@ -946,7 +994,7 @@ static size_t get_encoded_create_node_size(const canton_create_t *node,
   // signatories: strings
   for (size_t i = 0; i < node->signatories_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->signatories[i]);
+    total_buf_size += 4 + strlen(cstr(node->signatories[i]));
   }
 
   // stakeholders: 4 bytes : int32
@@ -955,7 +1003,7 @@ static size_t get_encoded_create_node_size(const canton_create_t *node,
   // stakeholders: strings
   for (size_t i = 0; i < node->stakeholders_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(node->stakeholders[i]);
+    total_buf_size += 4 + strlen(cstr(node->stakeholders[i]));
   }
 
   return total_buf_size;
@@ -995,20 +1043,20 @@ static size_t get_encoded_metadata_size(
   // calc: submitter_info.act_as : strings
   for (size_t i = 0; i < metadata->submitter_info.act_as_count; i++) {
     // 4 + strlen() : strings
-    total_buf_size += 4 + strlen(metadata->submitter_info.act_as[i]);
+    total_buf_size += 4 + strlen(cstr(metadata->submitter_info.act_as[i]));
   }
 
   // calc: submitter_info.command_id : 4 + strlen() : string
-  total_buf_size += 4 + strlen(metadata->submitter_info.command_id);
+  total_buf_size += 4 + strlen(cstr(metadata->submitter_info.command_id));
 
   // calc: transaction_uuid : 1 + strlen() : string
-  total_buf_size += 4 + strlen(metadata->transaction_uuid);
+  total_buf_size += 4 + strlen(cstr(metadata->transaction_uuid));
 
   // calc: mediator_group : 4 : int32
   total_buf_size += 4;
 
   // calc: synchronizer_id : 4 + strlen() : string
-  total_buf_size += 4 + strlen(metadata->synchronizer_id);
+  total_buf_size += 4 + strlen(cstr(metadata->synchronizer_id));
 
   // calc: min_ledger_effective_time
   total_buf_size += 1;    // optional flag
@@ -1147,7 +1195,7 @@ static void encode_value(const canton_value_t *value, uint8_t *buf) {
         // optional label
         *(buf + offset) = 0x00;
         offset += 1;
-        if (0 < strlen(field->label)) {
+        if (0 < strlen(cstr(field->label))) {
           *(buf + offset - 1) = 0x01;
           size_t tmp = 0;
           encode_string(field->label, buf + offset, &tmp);
@@ -1229,65 +1277,11 @@ static void encode_value(const canton_value_t *value, uint8_t *buf) {
 static void encode_identifier(const canton_identifier_t *ident,
                               uint8_t *out_buf,
                               size_t *out_len) {
-  // encode package id
-  size_t tmp_offset = 0;
-  *out_len = 0;
-  encode_string(ident->package_id, out_buf, &tmp_offset);
-  *out_len += tmp_offset;
-
-  // count number of divided parts
-  size_t count = 0;
-  char *module_copy = strdup(ident->module_name);
-  char *part = strtok(module_copy, ".");
-  while (part != NULL) {
-    count++;
-    part = strtok(NULL, ".");
-  }
-  free(module_copy);
-
-  // encode count
-  encode_int32((int32_t)count, out_buf + tmp_offset);
-  tmp_offset += 4;
-  *out_len += 4;
-
-  // encode individual strings
-  module_copy = strdup(ident->module_name);
-  part = strtok(module_copy, ".");
-  while (part != NULL) {
-    size_t loop_offset = 0;
-    encode_string(part, out_buf + tmp_offset, &loop_offset);
-    tmp_offset += loop_offset;
-    *out_len += loop_offset;
-    part = strtok(NULL, ".");
-  }
-  free(module_copy);
-
-  // count number of divided parts
-  count = 0;
-  char *entity_copy = strdup(ident->entity_name);
-  part = strtok(entity_copy, ".");
-  while (part != NULL) {
-    count++;
-    part = strtok(NULL, ".");
-  }
-  free(entity_copy);
-
-  // encode count
-  encode_int32((int32_t)count, out_buf + tmp_offset);
-  tmp_offset += 4;
-  *out_len += 4;
-
-  entity_copy = strdup(ident->entity_name);
-  part = strtok(entity_copy, ".");
-  while (part != NULL) {
-    size_t loop_offset = 0;
-    encode_string(part, out_buf + tmp_offset, &loop_offset);
-    tmp_offset += loop_offset;
-    *out_len += loop_offset;
-    part = strtok(NULL, ".");
-  }
-
-  free(entity_copy);
+  size_t offset = 0;
+  encode_string(ident->package_id, out_buf, &offset);
+  offset += encode_dotted_name(ident->module_name, out_buf + offset);
+  offset += encode_dotted_name(ident->entity_name, out_buf + offset);
+  *out_len = offset;
 }
 
 static uint8_t *encode_fetch_node(const canton_fetch_t *node,
@@ -1371,6 +1365,9 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
                                      int32_t node_id,
                                      size_t *out_len) {
   *out_len = get_encoded_exercise_node_size(node, node_id);
+  if (0 == *out_len) {
+    return NULL;
+  }
   uint8_t *buf = (uint8_t *)malloc(*out_len);
   if (!buf) {
     return NULL;
@@ -1521,6 +1518,12 @@ static uint8_t *encode_exercise_node(const canton_exercise_t *node,
 static uint8_t *encode_create_node(const canton_create_t *node,
                                    int32_t node_id,
                                    size_t *out_len) {
+  // the size always counts the template id, so a create node without one
+  // would leave unwritten (uninitialised) bytes in the hashed buffer
+  if (!node->has_template_id) {
+    *out_len = 0;
+    return NULL;
+  }
   *out_len = get_encoded_create_node_size(node, node_id);
   uint8_t *buf = (uint8_t *)malloc(*out_len);
   if (!buf) {
@@ -1647,8 +1650,11 @@ static uint8_t *encode_rollback_node(const canton_rollback_t *node,
 static uint8_t *encode_node_v1(const canton_node_t *node,
                                char *node_id,
                                size_t *out_len) {
-  int32_t node_id_l = strtol(node_id, NULL, 10);
   *out_len = 0;
+  if (NULL == node_id) {
+    return NULL;
+  }
+  int32_t node_id_l = strtol(node_id, NULL, 10);
   switch (node->which_node_type) {
     case CANTON_NODE_CREATE_TAG: {
       return encode_create_node(&node->create, node_id_l, out_len);
@@ -1741,6 +1747,9 @@ static uint8_t *encode_metadata(
 
 static bool copy_party_id(char *dst, size_t dst_size, const char *src) {
   // party ids are host supplied (FT_POINTER) with no decode-time bound
+  if (NULL == src) {
+    return false;
+  }
   size_t len = strnlen(src, dst_size);
   if (len >= dst_size) {
     return false;
@@ -1763,7 +1772,7 @@ static bool parse_display_info_from_transfer_record(
       continue;
     }
 
-    if (strcmp(transfer_field->label, TRANSFER_LABEL) == 0) {
+    if (strcmp(cstr(transfer_field->label), TRANSFER_LABEL) == 0) {
       if (CANTON_VALUE_RECORD_TAG != transfer_value->which_sum) {
         continue;
       }
@@ -1779,7 +1788,7 @@ static bool parse_display_info_from_transfer_record(
           continue;
         }
 
-        if (strcmp(display_field->label, SENDER_LABEL) == 0) {
+        if (strcmp(cstr(display_field->label), SENDER_LABEL) == 0) {
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
@@ -1789,7 +1798,7 @@ static bool parse_display_info_from_transfer_record(
             return false;
           }
 
-        } else if (strcmp(display_field->label, RECEIVER_LABEL) == 0) {
+        } else if (strcmp(cstr(display_field->label), RECEIVER_LABEL) == 0) {
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
@@ -1799,7 +1808,7 @@ static bool parse_display_info_from_transfer_record(
             return false;
           }
 
-        } else if (strcmp(display_field->label, AMOUNT_LABEL) == 0) {
+        } else if (strcmp(cstr(display_field->label), AMOUNT_LABEL) == 0) {
           if (CANTON_VALUE_NUMERIC_TAG != display_value->which_sum) {
             continue;
           }
@@ -1807,17 +1816,18 @@ static bool parse_display_info_from_transfer_record(
                    sizeof(display_info->amount),
                    "%s",
                    display_value->numeric);
-        } else if (strcmp(display_field->label, START_TIME_LABEL) == 0) {
+        } else if (strcmp(cstr(display_field->label), START_TIME_LABEL) == 0) {
           if (CANTON_VALUE_TIMESTAMP_TAG != display_value->which_sum) {
             continue;
           }
           display_info->start_time = display_value->timestamp;
-        } else if (strcmp(display_field->label, EXPIRY_TIME_LABEL) == 0) {
+        } else if (strcmp(cstr(display_field->label), EXPIRY_TIME_LABEL) == 0) {
           if (CANTON_VALUE_TIMESTAMP_TAG != display_value->which_sum) {
             continue;
           }
           display_info->expiry_time = display_value->timestamp;
-        } else if (strcmp(display_field->label, INSTRUMENT_ID_LABEL) == 0) {
+        } else if (strcmp(cstr(display_field->label), INSTRUMENT_ID_LABEL) ==
+                   0) {
           if (CANTON_VALUE_RECORD_TAG != display_value->which_sum) {
             continue;
           }
@@ -1830,7 +1840,7 @@ static bool parse_display_info_from_transfer_record(
               continue;
             }
 
-            if (strcmp(instrument_field->label, ID_LABEL) == 0) {
+            if (strcmp(cstr(instrument_field->label), ID_LABEL) == 0) {
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
@@ -1838,7 +1848,8 @@ static bool parse_display_info_from_transfer_record(
                        sizeof(display_info->instrument.id),
                        "%s",
                        instrument_value->text);
-            } else if (strcmp(instrument_field->label, ADMIN_LABEL) == 0) {
+            } else if (strcmp(cstr(instrument_field->label), ADMIN_LABEL) ==
+                       0) {
               if (CANTON_VALUE_PARTY_TAG != instrument_value->which_sum) {
                 continue;
               }
@@ -1898,7 +1909,7 @@ static bool parse_display_info(const char *choice_id,
         continue;
       }
 
-      if (strcmp(tap_field->label, RECEIVER_LABEL) == 0) {
+      if (strcmp(cstr(tap_field->label), RECEIVER_LABEL) == 0) {
         if (CANTON_VALUE_PARTY_TAG != tap_value->which_sum) {
           continue;
         }
@@ -1908,7 +1919,7 @@ static bool parse_display_info(const char *choice_id,
           return false;
         }
 
-      } else if (0 == strcmp(tap_field->label, AMOUNT_LABEL)) {
+      } else if (0 == strcmp(cstr(tap_field->label), AMOUNT_LABEL)) {
         if (CANTON_VALUE_NUMERIC_TAG != tap_value->which_sum) {
           continue;
         }
@@ -1921,10 +1932,10 @@ static bool parse_display_info(const char *choice_id,
   } else if (strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) == 0 ||
              strcmp(choice_id, CANTON_TRANSFER_OFFER) == 0) {
     // txn is either accept, reject or withdraw
-    if (!record->has_record_id ||
-        (strcmp(record->record_id.entity_name, CANTON_TRANSFER_INSTRUCTION) !=
-             0 &&
-         strcmp(record->record_id.entity_name, CANTON_TRANSFER_OFFER) != 0)) {
+    if (!record->has_record_id || (strcmp(cstr(record->record_id.entity_name),
+                                          CANTON_TRANSFER_INSTRUCTION) != 0 &&
+                                   strcmp(cstr(record->record_id.entity_name),
+                                          CANTON_TRANSFER_OFFER) != 0)) {
       return true;
     }
     *recognized = true;
@@ -1939,8 +1950,8 @@ static bool parse_display_info(const char *choice_id,
     *recognized = true;
     display_info->txn_type = CANTON_TXN_TYPE_REJECT;
   } else if (strcmp(choice_id, PREAPPROVAL_CHOICE_ID) == 0) {
-    if (!record->has_record_id ||
-        strcmp(record->record_id.entity_name, PREAPPROVAL_CHOICE_ID) != 0) {
+    if (!record->has_record_id || strcmp(cstr(record->record_id.entity_name),
+                                         PREAPPROVAL_CHOICE_ID) != 0) {
       return true;
     }
     *recognized = true;
@@ -1954,7 +1965,7 @@ static bool parse_display_info(const char *choice_id,
         continue;
       }
 
-      if (strcmp(preapproval_field->label, RECEIVER_LABEL) == 0) {
+      if (strcmp(cstr(preapproval_field->label), RECEIVER_LABEL) == 0) {
         if (CANTON_VALUE_PARTY_TAG != preapproval_value->which_sum) {
           continue;
         }
@@ -1967,7 +1978,7 @@ static bool parse_display_info(const char *choice_id,
     }
   } else if (strcmp(choice_id, MERGE_DELEGATION_PROPOSAL_CHOICE_ID) == 0) {
     if (!record->has_record_id ||
-        strcmp(record->record_id.entity_name,
+        strcmp(cstr(record->record_id.entity_name),
                MERGE_DELEGATION_PROPOSAL_CHOICE_ID) != 0) {
       return true;
     }
@@ -1984,8 +1995,8 @@ static bool parse_display_info(const char *choice_id,
         continue;
       }
 
-      if (strcmp(merge_delegation_proposal_field->label, DELEGATION_LABEL) ==
-          0) {
+      if (strcmp(cstr(merge_delegation_proposal_field->label),
+                 DELEGATION_LABEL) == 0) {
         if (CANTON_VALUE_RECORD_TAG !=
             merge_delegation_proposal_value->which_sum) {
           continue;
@@ -1994,8 +2005,9 @@ static bool parse_display_info(const char *choice_id,
         canton_record_t *merge_delegation_proposal_record =
             merge_delegation_proposal_value->record;
         if (!merge_delegation_proposal_record->has_record_id ||
-            strcmp(merge_delegation_proposal_record->record_id.entity_name,
-                   MERGE_DELEGATION_CHOICE_ID) != 0) {
+            strcmp(
+                cstr(merge_delegation_proposal_record->record_id.entity_name),
+                MERGE_DELEGATION_CHOICE_ID) != 0) {
           continue;
         }
 
@@ -2010,7 +2022,7 @@ static bool parse_display_info(const char *choice_id,
             continue;
           }
 
-          if (strcmp(merge_delegation_field->label, OWNER_LABEL) == 0) {
+          if (strcmp(cstr(merge_delegation_field->label), OWNER_LABEL) == 0) {
             if (CANTON_VALUE_PARTY_TAG != merge_delegation_value->which_sum) {
               continue;
             }
@@ -2048,7 +2060,8 @@ uint8_t *encode_canton_txn_node(const canton_daml_transaction_d_node_t *d_node,
 uint8_t *encode_canton_metadata_input_contract(
     const canton_metadata_input_contract_t *input_contract,
     size_t *const out_len) {
-  if (!input_contract || !out_len) {
+  if (!input_contract || !out_len ||
+      CANTON_METADATA_INPUT_CONTRACT_V1_TAG != input_contract->which_contract) {
     return NULL;
   }
 
@@ -2110,6 +2123,8 @@ bool parse_and_hash_canton_metadata_input_contract(
   uint8_t *encoded_input_contract = encode_canton_metadata_input_contract(
       &decoded_input_contract, &input_contract_out_len);
   if (!encoded_input_contract) {
+    // the decoded contract's allocations must be released on failure too
+    pb_release(CANTON_METADATA_INPUT_CONTRACT_FIELDS, &decoded_input_contract);
     return false;
   }
 
