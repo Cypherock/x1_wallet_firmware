@@ -123,10 +123,11 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
     case EVM_EIP_712_DATA_TYPE_ADDRESS:
     default:
       snprintf(buffer, sizeof(buffer), "0x");
+      // the hex starts after "0x", so 2 bytes of the buffer are already used
       byte_array_to_hex_string(data_node->data->bytes,
                                data_node->data->size,
                                buffer + 2,
-                               sizeof(buffer) - 1);
+                               sizeof(buffer) - 2);
       break;
   }
   snprintf(output, output_size, "%s: %s", data_node->struct_name, buffer);
