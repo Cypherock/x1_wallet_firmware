@@ -254,7 +254,9 @@ static size_t btc_get_address(const uint8_t *seed,
         get_curve_by_name(SECP256K1_NAME)->params, node.public_key, public_key);
   }
   if (NULL != address) {
+    // the buffer is reused (it held the prompt), so terminate the address
     memcpy(address, addr, address_length);
+    address[address_length] = '\0';
   }
   memzero(&node, sizeof(HDNode));
   return address_length;
@@ -320,7 +322,7 @@ void btc_get_pub_key(btc_query_t *query) {
   memzero(seed, sizeof(seed));
 
 #ifndef BTC_ONLY_BUILD
-  if (sign_address) {
+  if (sign_address && 0 < length) {
     exchange_sign_address(msg, sizeof(msg));
   }
 #endif    // BTC_ONLY_BUILD
