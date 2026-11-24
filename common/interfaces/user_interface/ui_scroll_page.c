@@ -747,6 +747,9 @@ void ui_scrollable_page(const char *p_page_ui_heading,
   gp_scrollabe_page_data =
       (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));
   ASSERT(NULL != gp_scrollabe_page_data);
+  // start from zero: fields not set below (e.g. whether only the first page
+  // shows the heading) would otherwise hold stale heap bytes
+  memset(gp_scrollabe_page_data, 0, sizeof(scrolling_page_data_t));
 
   gp_scrollabe_page_data->p_ui_heading = p_page_ui_heading;
   gp_scrollabe_page_data->p_ui_body = p_page_ui_body;
@@ -786,6 +789,9 @@ void ui_scrollable_page_with_options(const char *p_page_ui_heading,
   gp_scrollabe_page_data =
       (scrolling_page_data_t *)malloc(sizeof(scrolling_page_data_t));
   ASSERT(NULL != gp_scrollabe_page_data);
+  // start from zero: fields not set below (e.g. whether only the first page
+  // shows the heading) would otherwise hold stale heap bytes
+  memset(gp_scrollabe_page_data, 0, sizeof(scrolling_page_data_t));
 
   gp_scrollabe_page_data->p_ui_heading = p_page_ui_heading;
   gp_scrollabe_page_data->p_ui_body = p_page_ui_body;
