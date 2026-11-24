@@ -88,8 +88,10 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
                                data_node->size,
                                hex_string,
                                sizeof(hex_string));
-      convert_byte_array_to_decimal_string(
+      // values are validated to at most 32 bytes, so they always fit
+      bool converted = convert_byte_array_to_decimal_string(
           data_node->size * 2, 0, hex_string, buffer, sizeof(buffer));
+      ASSERT(converted);
     } break;
     case EVM_EIP_712_DATA_TYPE_INT: {
       char hex_string[65] = {0};
@@ -107,11 +109,14 @@ void fill_string_with_data(const evm_sign_typed_data_node_t *data_node,
 
       byte_array_to_hex_string(
           array, data_node->size, hex_string, sizeof(hex_string));
-      convert_byte_array_to_decimal_string(data_node->size * 2,
-                                           0,
-                                           hex_string,
-                                           buffer + offset,
-                                           sizeof(buffer) - offset);
+      // values are validated to at most 32 bytes, so they always fit
+      bool converted =
+          convert_byte_array_to_decimal_string(data_node->size * 2,
+                                               0,
+                                               hex_string,
+                                               buffer + offset,
+                                               sizeof(buffer) - offset);
+      ASSERT(converted);
     } break;
     case EVM_EIP_712_DATA_TYPE_BOOL:
       if (eip712_bool_value(data_node) == 1)

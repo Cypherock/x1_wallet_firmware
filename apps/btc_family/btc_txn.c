@@ -95,6 +95,8 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+/// Highest change address index accepted (non-hardened, scannable)
+#define BTC_MAX_CHANGE_INDEX 0xFFFFF
 
 #define TXN_MAX_INPUTS 200
 #define TXN_MAX_OUTPUTS 200
@@ -573,8 +575,10 @@ static bool fetch_valid_output(btc_query_t *query) {
     }
     const btc_script_type_e type = btc_get_script_type(
         output->script_pub_key.bytes, output->script_pub_key.size);
-    if (SCRIPT_TYPE_P2MS == type || SCRIPT_TYPE_P2PK == type ||
-        SCRIPT_TYPE_NONSTANDARD == type ||
+    // a negative value would be shown (and summed into the fee) as a
+    // different amount than any node accepts
+    if (0 > output->value || SCRIPT_TYPE_P2MS == type ||
+        SCRIPT_TYPE_P2PK == type || SCRIPT_TYPE_NONSTANDARD == type ||
         (SCRIPT_TYPE_NULL_DATA == type && 0 != output->value) ||
         (true == change_detected && true == output->is_change) ||
         (true == output->is_change && !is_change_script_type_valid(type))) {
@@ -688,7 +692,10 @@ static bool validate_change_address(const HDNode *acc_node) {
   }
 
   memcpy(&t_node, acc_node, sizeof(HDNode));
-  if (!hdnode_private_ckd(&t_node, 1) ||
+  // the change index is hidden from the user: keep it non-hardened and
+  // within reach of wallet scanning, or the change would look lost
+  if (BTC_MAX_CHANGE_INDEX < output->changes_index ||
+      !hdnode_private_ckd(&t_node, 1) ||
       !hdnode_private_ckd(&t_node, output->changes_index)) {
     memzero(&t_node, sizeof(HDNode));
     return status;

@@ -424,10 +424,23 @@ static bool send_signature(tron_query_t *query,
 
   // sign transaction; the signature is verified before release
   uint8_t v_value = 0;
+  uint8_t public_key[65] = {0};
   bool status =
-      derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode) &&
-      ecdsa_sign_digest_checked(
-          &secp256k1, &hdnode, txid, sig->signature, &v_value, NULL);
+      derive_hdnode_from_path(hd_path, depth, SECP256K1_NAME, seed, &hdnode);
+  if (status) {
+    // the transaction must spend from this key's own account
+    ecdsa_get_public_key65(&secp256k1, hdnode.private_key, public_key);
+    if (!tron_is_own_account_txn(tron_txn_context->raw_txn, public_key)) {
+      memzero(&hdnode, sizeof(hdnode));
+      memzero(seed, 64);
+      tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
+  }
+  status =
+      status && ecdsa_sign_digest_checked(
+                    &secp256k1, &hdnode, txid, sig->signature, &v_value, NULL);
 
   memzero(&hdnode, sizeof(hdnode));
   memzero(seed, 64);

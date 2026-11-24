@@ -139,8 +139,12 @@ ui_display_node *extract_data(uint8_t *data) {
   char staticBufferInUTF8[200];
   memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
   byte_array_to_hex_string(amount, 32, &(staticBufferInUTF8[0]), 65);
-  convert_byte_array_to_decimal_string(
-      64, 0, &(staticBufferInUTF8[0]), &(staticBufferInUTF8[100]), 100);
+  if (!convert_byte_array_to_decimal_string(
+          64, 0, &(staticBufferInUTF8[0]), &(staticBufferInUTF8[100]), 100)) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return NULL;
+  }
 
   (ui_node)->next = ui_create_display_node(
       "Datatype:uint256\0", 25, &(staticBufferInUTF8[100]), 100);

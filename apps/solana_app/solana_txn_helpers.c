@@ -694,6 +694,12 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   const uint8_t *split_destination = NULL;
   int withdraw_instruction_count = 0;
   int compute_budget_instruction_count = 0;
+  // associated token account creation: rent is paid by the user but the
+  // instruction is not shown, so only the recipient's account of the token
+  // being sent may be created
+  int ata_instruction_count = 0;
+  int ata_instruction_index = -1;
+  int transfer_checked_index = -1;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
     if (!(0 < utxn->instruction[i].program_id_index &&
@@ -781,6 +787,7 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
           if (transfer_instruction_found)
             return SOL_ERROR;
           transfer_instruction_found = true;
+          transfer_checked_index = i;
           break;
         default:
           return SOL_V_UNSUPPORTED_INSTRUCTION;
@@ -792,8 +799,8 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
                            SOLANA_ACCOUNT_ADDRESS_LENGTH,
                    system_program_id[SOLANA_ASSOCIATED_TOKEN_PROGRAM_ID_INDEX],
                    SOLANA_ACCOUNT_ADDRESS_LENGTH) == 0) {
-      // no opaque data or instruction enum to validate
-      // do nothing
+      ata_instruction_count++;
+      ata_instruction_index = i;
 
     } else if (memcmp(utxn->account_addresses +
                           utxn->instruction[i].program_id_index *
@@ -897,6 +904,32 @@ int solana_validate_unsigned_txn(const solana_unsigned_txn *utxn) {
   // Split is only expected when partially deactivating
   if (split_count > 0 && !is_deactivate_operation)
     return SOL_V_MIXED_STAKE_OPERATION;
+
+  if (1 < ata_instruction_count)
+    return SOL_V_UNSUPPORTED_INSTRUCTION;
+  if (1 == ata_instruction_count) {
+    // only with a token transfer, and only for its destination account of the
+    // transferred mint: accounts are [payer, account, owner, mint, ...]
+    const solana_instruction *ata = &utxn->instruction[ata_instruction_index];
+    uint8_t *ata_account = NULL;
+    uint8_t *ata_mint = NULL;
+    if (-1 == transfer_checked_index ||
+        !get_instruction_account(utxn, ata, 1, &ata_account) ||
+        !get_instruction_account(utxn, ata, 3, &ata_mint))
+      return SOL_V_UNSUPPORTED_INSTRUCTION;
+    // Create (no data or 0) or CreateIdempotent (1); not RecoverNested
+    if (1 < ata->opaque_data_length ||
+        (1 == ata->opaque_data_length && 1 < ata->opaque_data[0]))
+      return SOL_V_UNSUPPORTED_INSTRUCTION;
+    const solana_token_transfer_checked_data *transfer =
+        &utxn->instruction[transfer_checked_index].program.transfer_checked;
+    if (memcmp(ata_account,
+               transfer->destination,
+               SOLANA_ACCOUNT_ADDRESS_LENGTH) != 0 ||
+        memcmp(ata_mint, transfer->token_mint, SOLANA_ACCOUNT_ADDRESS_LENGTH) !=
+            0)
+      return SOL_V_UNSUPPORTED_INSTRUCTION;
+  }
 
   if (create_flow_found) {
     // CreateAccountWithSeed -> Initialize -> Delegate, all on the newly funded

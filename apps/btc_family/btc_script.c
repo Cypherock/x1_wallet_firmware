@@ -198,6 +198,11 @@ int btc_get_script_pub_address(const uint8_t *script,
       if (out_len < 73 + BECH32_HRP_SIZE) {
         return -3;
       }
+      // coins without segwit (DOGE, DASH) have no HRP; such an output would be
+      // shown as a "1q..." string while being an anyone-can-spend program
+      if ('\0' == g_btc_app->bech32_hrp[0]) {
+        return -1;
+      }
 
       int version = (script[0] == 0 ? 0 : script[0] - 0x50);
       // get null-terminated string output address

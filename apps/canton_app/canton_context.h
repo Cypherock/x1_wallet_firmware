@@ -101,7 +101,8 @@ typedef struct {
   canton_transaction_type_t txn_type;
   char sender_party_id[CANTON_PARTY_ID_STR_SIZE_MAX];
   char receiver_party_id[CANTON_PARTY_ID_STR_SIZE_MAX];
-  char amount[30];
+  // a Numeric(38,10) needs up to 40 characters with sign and point
+  char amount[48];
   uint64_t start_time;
   uint64_t expiry_time;
   char owner_party_id[CANTON_PARTY_ID_STR_SIZE_MAX];

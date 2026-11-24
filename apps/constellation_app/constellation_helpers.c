@@ -147,9 +147,15 @@ size_t encode_txn(const constellation_transaction_t *txn, char *output) {
   output_len += dest_length_string_len + dest_length;
 
   // Amount length and value (hex string)
-  char hex_str_amount[16] = "";
+  // a u64 needs up to 16 hex digits plus the NUL; use the length actually
+  // written, so the encoded amount can never be cut short
+  char hex_str_amount[17] = "";
+  snprintf(hex_str_amount,
+           sizeof(hex_str_amount),
+           "%llx",
+           (unsigned long long)txn->amount);
   size_t hex_str_amount_length =
-      snprintf(hex_str_amount, sizeof(hex_str_amount), "%llx", txn->amount);
+      strnlen(hex_str_amount, sizeof(hex_str_amount));
   size_t hex_str_amount_length_string_len =
       snprintf(buffer, sizeof(buffer), "%u", hex_str_amount_length);
   strncat(temp, buffer, hex_str_amount_length_string_len);

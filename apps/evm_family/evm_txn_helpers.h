@@ -222,8 +222,9 @@ uint32_t eth_get_value(const evm_txn_context_t *txn_context, char *value);
  * and gas_price
  * @param fee_decimal_string    Output decimal string of at least 30 character
  * long
+ * @return false if the fee does not fit the output (nothing may be shown)
  */
-void eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
+bool eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
                         char *fee_decimal_string,
                         uint8_t size,
                         uint8_t decimal);

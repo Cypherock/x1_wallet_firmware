@@ -279,153 +279,168 @@ static bool validate_and_store_party_txn_proposal(
     return false;
   }
 
-  if (proposal->has_mapping) {
-    switch (proposal->mapping.which_mapping) {
-      case CANTON_TOPOLOGY_MAPPING_NAMESPACE_DELEGATION_TAG: {
-        canton_namespace_delegation_t namespace_delegation =
-            proposal->mapping.namespace_delegation;
-        if (namespace_delegation.which_restriction !=
-            CANTON_NAMESPACE_DELEGATION_CAN_SIGN_ALL_MAPPINGS_TAG) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-        if (!namespace_delegation.has_target_key) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
+  // a proposal without a mapping would be signed without being validated
+  if (!proposal->has_mapping) {
+    canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                      ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
-        // TODO: research about the first 12 bytes in the public key field
-        uint8_t *public_key = namespace_delegation.target_key.public_key + 12;
-        if (ut_txn->has_public_key == true) {
-          if (memcmp(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE) !=
-              0) {
-            canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                              ERROR_DATA_FLOW_INVALID_DATA);
-            return false;
-          }
-        } else {
-          memcpy(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE);
-          ut_txn->has_public_key = true;
-        }
-
-        // derive party id from the public key
-        char party_id[CANTON_PARTY_ID_SIZE] = {0};
-        get_party_id(public_key, party_id);
-
-        if (ut_txn->has_party_id == true) {
-          if (strcmp(ut_txn->party_id, party_id) != 0) {
-            canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                              ERROR_DATA_FLOW_INVALID_DATA);
-            return false;
-          }
-        } else {
-          memcpy(ut_txn->party_id, party_id, CANTON_PARTY_ID_SIZE);
-          ut_txn->has_party_id = true;
-        }
-
-        // compare the namespace(fingerprint) with the namespace in the
-        // proposal
-        char *namespace_ptr = party_id + CANTON_PARTY_HINT_STR_SIZE +
-                              CANTON_PARTY_ID_SEPARATOR_SIZE - 2;
-        if (strcmp(namespace_delegation.namespace, namespace_ptr) != 0) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-
-        // TODO: validate other fields
-        break;
-      }
-
-      case CANTON_TOPOLOGY_MAPPING_PARTY_TO_PARTICIPANT_TAG: {
-        canton_party_to_participant_t party_to_participant =
-            proposal->mapping.party_to_participant;
-        if (ut_txn->has_party_id == true) {
-          if (strcmp(ut_txn->party_id, party_to_participant.party) != 0) {
-            canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                              ERROR_DATA_FLOW_INVALID_DATA);
-            return false;
-          }
-        } else {
-          memcpy(ut_txn->party_id,
-                 party_to_participant.party,
-                 CANTON_PARTY_ID_SIZE);
-          ut_txn->has_party_id = true;
-        }
-
-        if (party_to_participant.threshold != 1 ||
-            party_to_participant.participants_count != 1) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-
-        if (party_to_participant.participants[0].permission !=
-            CANTON_PARTICIPANT_PERMISSION_CONFIRMATION) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-
-        // TODO: validate the participant id
-        break;
-      }
-
-      case CANTON_TOPOLOGY_MAPPING_PARTY_TO_KEY_MAPPING_TAG: {
-        canton_party_to_key_mapping_t party_to_key_mapping =
-            proposal->mapping.party_to_key_mapping;
-        if (party_to_key_mapping.threshold != 1 ||
-            party_to_key_mapping.signing_keys_count != 1) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-
-        uint8_t *public_key =
-            party_to_key_mapping.signing_keys[0].public_key + 12;
-        if (ut_txn->has_public_key == true) {
-          if (memcmp(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE) !=
-              0) {
-            canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                              ERROR_DATA_FLOW_INVALID_DATA);
-            return false;
-          }
-        } else {
-          memcpy(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE);
-          ut_txn->has_public_key = true;
-        }
-
-        // derive party id from the public key
-        char party_id[CANTON_PARTY_ID_SIZE] = {0};
-        get_party_id(public_key, party_id);
-
-        if (strcmp(party_to_key_mapping.party, party_id) != 0) {
-          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                            ERROR_DATA_FLOW_INVALID_DATA);
-          return false;
-        }
-
-        if (ut_txn->has_party_id == true) {
-          if (strcmp(ut_txn->party_id, party_id) != 0) {
-            canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
-                              ERROR_DATA_FLOW_INVALID_DATA);
-            return false;
-          }
-        } else {
-          memcpy(ut_txn->party_id, party_id, CANTON_PARTY_ID_SIZE);
-          ut_txn->has_party_id = true;
-        }
-
-        break;
-      }
-
-      default: {
+  switch (proposal->mapping.which_mapping) {
+    case CANTON_TOPOLOGY_MAPPING_NAMESPACE_DELEGATION_TAG: {
+      canton_namespace_delegation_t namespace_delegation =
+          proposal->mapping.namespace_delegation;
+      if (namespace_delegation.which_restriction !=
+          CANTON_NAMESPACE_DELEGATION_CAN_SIGN_ALL_MAPPINGS_TAG) {
         canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                           ERROR_DATA_FLOW_INVALID_DATA);
         return false;
       }
+      if (!namespace_delegation.has_target_key) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      // the key is a DER SubjectPublicKeyInfo: a fixed 12-byte Ed25519
+      // header followed by the raw key
+      uint8_t *public_key = (uint8_t *)canton_ed25519_key_from_spki(
+          namespace_delegation.target_key.public_key);
+      if (NULL == public_key) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+      if (ut_txn->has_public_key == true) {
+        if (memcmp(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE) != 0) {
+          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+          return false;
+        }
+      } else {
+        memcpy(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE);
+        ut_txn->has_public_key = true;
+      }
+
+      // derive party id from the public key
+      char party_id[CANTON_PARTY_ID_SIZE] = {0};
+      get_party_id(public_key, party_id);
+
+      if (ut_txn->has_party_id == true) {
+        if (strcmp(ut_txn->party_id, party_id) != 0) {
+          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+          return false;
+        }
+      } else {
+        memcpy(ut_txn->party_id, party_id, CANTON_PARTY_ID_SIZE);
+        ut_txn->has_party_id = true;
+      }
+
+      // compare the namespace(fingerprint) with the namespace in the
+      // proposal
+      char *namespace_ptr = party_id + CANTON_PARTY_HINT_STR_SIZE +
+                            CANTON_PARTY_ID_SEPARATOR_SIZE - 2;
+      if (strcmp(namespace_delegation.namespace, namespace_ptr) != 0) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      // TODO: validate other fields
+      break;
+    }
+
+    case CANTON_TOPOLOGY_MAPPING_PARTY_TO_PARTICIPANT_TAG: {
+      canton_party_to_participant_t party_to_participant =
+          proposal->mapping.party_to_participant;
+      if (ut_txn->has_party_id == true) {
+        if (strcmp(ut_txn->party_id, party_to_participant.party) != 0) {
+          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+          return false;
+        }
+      } else {
+        memcpy(
+            ut_txn->party_id, party_to_participant.party, CANTON_PARTY_ID_SIZE);
+        ut_txn->has_party_id = true;
+      }
+
+      if (party_to_participant.threshold != 1 ||
+          party_to_participant.participants_count != 1) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      if (party_to_participant.participants[0].permission !=
+          CANTON_PARTICIPANT_PERMISSION_CONFIRMATION) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      // TODO: validate the participant id
+      break;
+    }
+
+    case CANTON_TOPOLOGY_MAPPING_PARTY_TO_KEY_MAPPING_TAG: {
+      canton_party_to_key_mapping_t party_to_key_mapping =
+          proposal->mapping.party_to_key_mapping;
+      if (party_to_key_mapping.threshold != 1 ||
+          party_to_key_mapping.signing_keys_count != 1) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      // DER SubjectPublicKeyInfo: fixed Ed25519 header then the raw key
+      uint8_t *public_key = (uint8_t *)canton_ed25519_key_from_spki(
+          party_to_key_mapping.signing_keys[0].public_key);
+      if (NULL == public_key) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+      if (ut_txn->has_public_key == true) {
+        if (memcmp(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE) != 0) {
+          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+          return false;
+        }
+      } else {
+        memcpy(ut_txn->public_key, public_key, CANTON_PUB_KEY_SIZE);
+        ut_txn->has_public_key = true;
+      }
+
+      // derive party id from the public key
+      char party_id[CANTON_PARTY_ID_SIZE] = {0};
+      get_party_id(public_key, party_id);
+
+      if (strcmp(party_to_key_mapping.party, party_id) != 0) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
+
+      if (ut_txn->has_party_id == true) {
+        if (strcmp(ut_txn->party_id, party_id) != 0) {
+          canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                            ERROR_DATA_FLOW_INVALID_DATA);
+          return false;
+        }
+      } else {
+        memcpy(ut_txn->party_id, party_id, CANTON_PARTY_ID_SIZE);
+        ut_txn->has_party_id = true;
+      }
+
+      break;
+    }
+
+    default: {
+      canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
     }
   }
   return true;

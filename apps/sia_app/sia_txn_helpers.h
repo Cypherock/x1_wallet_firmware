@@ -36,12 +36,19 @@
  *****************************************************************************/
 
 /**
- * @brief Convert lo/hi hastings values to SC for display
+ * @brief Formats a lo/hi hastings amount as SC (1 SC = 10^24 hastings) for
+ * display, exactly: at least 6 decimals (as "%.6f" showed), plus any further
+ * non-zero decimals instead of rounding them away
  * @param lo Lower 64 bits of hastings amount
  * @param hi Upper 64 bits of hastings amount
- * @return double Amount in SC units
+ * @param out Output buffer; SIA_SC_STRING_SIZE bytes always fit
+ * @param out_size Size of the output buffer
+ * @return bool false if the output buffer is too small
  */
-double sia_convert_to_sc(uint64_t lo, uint64_t hi);
+bool sia_format_sc(uint64_t lo, uint64_t hi, char *out, size_t out_size);
+
+/// Longest SC string: 39 integer digits, the point, 24 decimals and the NUL
+#define SIA_SC_STRING_SIZE (39 + 1 + 24 + 1)
 
 /**
  * @brief Parse Sia transaction blob into structured format

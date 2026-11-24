@@ -556,10 +556,21 @@ STATIC bool inheritance_encryption_get_user_verification(void) {
         &encryption_context->plain_data.data[i];
 
     if (data->has_is_verified_on_device && data->is_verified_on_device) {
-      if (!core_scroll_non_sticky_heading_page(
-              UI_TEXT_VERIFY_MESSAGE,
-              (const char *)&data->message.bytes,
-              inheritance_send_error)) {
+      // the message is stored with its full length; a NUL would hide the rest
+      // of it from the user, so such a message is rejected
+      if (data->message.size > sizeof(data->message.bytes) ||
+          NULL != memchr(data->message.bytes, '\0', data->message.size)) {
+        // the error is sent to the host by encryption_handle_errors()
+        SET_ERROR_TYPE(ENCRYPTION_INVALID_DATA_ERROR);
+        return false;
+      }
+      // a full-size message has no terminator; show a terminated copy
+      char message[sizeof(data->message.bytes) + 1] = {0};
+      memcpy(message, data->message.bytes, data->message.size);
+      bool verified = core_scroll_non_sticky_heading_page(
+          UI_TEXT_VERIFY_MESSAGE, message, inheritance_send_error);
+      memzero(message, sizeof(message));
+      if (!verified) {
         SET_ERROR_TYPE(ENCRYPTION_VERIFICATION_FAIL_ERROR);
         return false;
       }

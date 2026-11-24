@@ -459,21 +459,33 @@ static bool sign_txn(der_sig_t *der_signature) {
 
   HDNode hdnode = {0};
   uint8_t signature[64] = {0};
-  // the signature is verified before release (deterministic nonce)
+  uint8_t account_id[20] = {0};
+  const xrp_unsigned_txn *utxn = xrp_txn_context->raw_txn;
   bool status =
       derive_hdnode_from_path(xrp_txn_context->init_info.derivation_path,
                               xrp_txn_context->init_info.derivation_path_count,
                               SECP256K1_NAME,
                               seed,
-                              &hdnode) &&
-      ecdsa_sign_digest_checked(
-          &secp256k1, &hdnode, digest, signature, NULL, NULL);
+                              &hdnode);
+  if (status) {
+    // the signing key and the sending account (neither is shown) must be this
+    // key's own: AccountID = RIPEMD160(SHA256(public key))
+    ecdsa_get_pubkeyhash(hdnode.public_key, HASHER_SHA2_RIPEMD, account_id);
+    status = 0 == memcmp(utxn->SigningPubKey,
+                         hdnode.public_key,
+                         sizeof(utxn->SigningPubKey)) &&
+             0 == memcmp(utxn->Account, account_id, sizeof(utxn->Account));
+  }
+  // the signature is verified before release (deterministic nonce)
+  status = status && ecdsa_sign_digest_checked(
+                         &secp256k1, &hdnode, digest, signature, NULL, NULL);
 
   if (status) {
     der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
   } else {
     xrp_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
+  memzero(account_id, sizeof(account_id));
 
   memzero(digest, sizeof(digest));
   memzero(seed, sizeof(seed));

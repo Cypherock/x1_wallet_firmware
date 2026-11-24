@@ -345,7 +345,8 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
           ui_display_node *pItemNode =
               ABI_Stringify(Abi_uint256_e, pStaticData, 0);
           if (NULL == pItemNode) {
-            continue;
+            // every element must be shown
+            return ETH_UTXN_BAD_PAYLOAD;
           }
           if (NULL == pAbiDispNode) {
             pAbiDispNode = pItemNode;
@@ -359,6 +360,11 @@ uint8_t ETH_ExtractArguments(const uint8_t *pAbiPayload,
     {
       pAbiDispNode =
           ABI_Stringify(pArgumentAbiType[currArgument], pCurrHeadPtr, 0);
+      // a uint256 that could not be formatted must not be skipped silently
+      if (NULL == pAbiDispNode &&
+          Abi_uint256_e == pArgumentAbiType[currArgument]) {
+        return ETH_UTXN_BAD_PAYLOAD;
+      }
     }
 
     pCurrHeadPtr += ABI_ELEMENT_SZ_IN_BYTES;

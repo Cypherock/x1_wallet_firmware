@@ -81,6 +81,12 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+/// Decimal amount: a 256-bit value has up to 78 digits, plus the point and the
+/// terminator (the 34 bytes used before cut large token amounts short)
+#define EVM_AMOUNT_STR_SIZE 80
+/// Amount screen: the prompt, the amount and the unit (40 bytes dropped the
+/// unit and digits)
+#define EVM_DISPLAY_STR_SIZE 160
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -111,9 +117,9 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   const uint8_t *to_address = NULL;
   const char *unit = evm_get_asset_symbol(txn_context);
-  char value[34] = {'\0'};
+  char value[EVM_AMOUNT_STR_SIZE] = {'\0'};
   char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
-  char display[80] = "";
+  char display[EVM_DISPLAY_STR_SIZE] = "";
 
   // TODO: verify transaction nonce; this is pending on settings option
 #if 0
@@ -156,8 +162,11 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
 
   // verify transaction fee
   unit = g_evm_app->lunit_name;
-  eth_get_fee_string(
-      &txn_context->transaction_info, value, sizeof(value), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, value, sizeof(value), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return status;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, value, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return status;
@@ -171,9 +180,9 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   const uint8_t *to_address = NULL;
   const char *unit = g_evm_app->lunit_name;
   char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
-  char value[34] = {'\0'};
-  char fee[34] = "";
-  char display[40] = "";
+  char value[EVM_AMOUNT_STR_SIZE] = {'\0'};
+  char fee[EVM_AMOUNT_STR_SIZE] = "";
+  char display[EVM_DISPLAY_STR_SIZE] = "";
 
   // show warning for not-whitelisted contracts; take user consent
   to_address = txn_context->transaction_info.to_address;
@@ -204,8 +213,11 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   }
 
   // verify transaction fee
-  eth_get_fee_string(
-      &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return false;
@@ -231,9 +243,9 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   bool status = false;
   const uint8_t *to_address = NULL;
   char address[43] = "0x";
-  char fee[34] = "";
-  char display[40] = "";
-  char amount_display[40] = "";
+  char fee[EVM_AMOUNT_STR_SIZE] = "";
+  char display[EVM_DISPLAY_STR_SIZE] = "";
+  char amount_display[EVM_DISPLAY_STR_SIZE] = "";
   uint8_t zeros[32] = {0};
   bool verify_amount = false;
   const char *unit = g_evm_app->lunit_name;
@@ -243,8 +255,11 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
 
-  eth_get_fee_string(
-      &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
 
   // verify recipient amount
@@ -253,7 +268,7 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
              txn_context->transaction_info.value_size[0]) != 0) {
     verify_amount = true;
     char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
-    char value[34] = {'\0'};
+    char value[EVM_AMOUNT_STR_SIZE] = {'\0'};
     uint8_t len = eth_get_value(txn_context, hex_str);
     if (!convert_byte_array_to_decimal_string(
             len, evm_get_decimal(txn_context), hex_str, value, sizeof(value))) {
@@ -313,9 +328,9 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
 bool evm_verify_staking(const evm_txn_context_t *txn_context) {
   char address[43] = "0x";
   char hex_str[ETH_VALUE_HEX_STR_SIZE] = {'\0'};
-  char value[34] = {'\0'};
-  char fee[34] = {'\0'};
-  char display[80] = "";
+  char value[EVM_AMOUNT_STR_SIZE] = {'\0'};
+  char fee[EVM_AMOUNT_STR_SIZE] = {'\0'};
+  char display[EVM_DISPLAY_STR_SIZE] = "";
   const char *unit = g_evm_app->lunit_name;
   const char *amount_unit = evm_get_asset_symbol(txn_context);
   const evm_unsigned_txn *utxn = &txn_context->transaction_info;
@@ -409,7 +424,10 @@ bool evm_verify_staking(const evm_txn_context_t *txn_context) {
     }
   }
 
-  eth_get_fee_string(utxn, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(utxn, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return false;

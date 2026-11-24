@@ -566,26 +566,36 @@ bool convert_byte_array_to_decimal_string(
   const uint8_t dec_val_len =
       sizeof(decimal_val_s) /
       sizeof(decimal_val_s[0]);    // logbase10(2pow256) roughly equals 78
+  // at most 256-bit input (64 hex digits) fits the 96-digit accumulator; more
+  // decimals than digits would wrap the decimal point index
+  if (len > 64 || decimal > dec_val_len || amount_decimal_string_size < 2) {
+    return false;
+  }
   convertbase16tobase10(len, amount_string, decimal_val_s, dec_val_len);
 
   int i = 0, j = dec_val_len - 1;
   bool pre_dec_digit = false, post_dec_digit = false;
   uint8_t point_index = dec_val_len - decimal;
 
-  uint8_t offset = 0;
+  size_t offset = 0;
+  int written = 0;
+  // appends to the output; a value that does not fit fails instead of being
+  // shown cut short
+#define APPEND_OR_FAIL(...)                                                    \
+  do {                                                                         \
+    written = snprintf(amount_decimal_string + offset,                         \
+                       amount_decimal_string_size - offset,                    \
+                       __VA_ARGS__);                                           \
+    if (written < 0 || (size_t)written >= amount_decimal_string_size - offset) \
+      return false;                                                            \
+    offset += written;                                                         \
+  } while (0)
   while (i <= j) {
-    if ((size_t)offset >= amount_decimal_string_size) {
-      return false;
-    }
     if (i == point_index && post_dec_digit) {
       if (!pre_dec_digit) {
-        offset += snprintf(amount_decimal_string + offset,
-                           (amount_decimal_string_size)-offset,
-                           "0");
+        APPEND_OR_FAIL("0");
       }
-      offset += snprintf(amount_decimal_string + offset,
-                         (amount_decimal_string_size)-offset,
-                         ".");
+      APPEND_OR_FAIL(".");
     }
     if (j >= point_index) {
       if (!decimal_val_s[j] && !post_dec_digit) {
@@ -600,13 +610,11 @@ bool convert_byte_array_to_decimal_string(
     if (pre_dec_digit || decimal_val_s[i]) {
       // attach non zero leading value detected or decimal digits till j(should
       // be the last non zero decimal digit index).
-      offset += snprintf(amount_decimal_string + offset,
-                         (amount_decimal_string_size)-offset,
-                         "%d",
-                         decimal_val_s[i]);
+      APPEND_OR_FAIL("%d", decimal_val_s[i]);
     }
     i++;
   }
+#undef APPEND_OR_FAIL
   if (!post_dec_digit && !pre_dec_digit) {
     snprintf(amount_decimal_string, (amount_decimal_string_size)-1, "0");
   }

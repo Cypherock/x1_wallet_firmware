@@ -654,12 +654,19 @@ bool btc_get_txn_fee(const btc_txn_context_t *txn_ctx, uint64_t *fee) {
   uint64_t output = 0;
   *fee = UINT64_MAX;
 
+  // the sums must not wrap, or the fee shown would be wrong
   for (int idx = 0; idx < txn_ctx->metadata.input_count; idx++) {
-    input += txn_ctx->inputs[idx].value;
+    if (__builtin_add_overflow(input, txn_ctx->inputs[idx].value, &input)) {
+      return false;
+    }
   }
 
   for (int idx = 0; idx < txn_ctx->metadata.output_count; idx++) {
-    output += txn_ctx->outputs[idx].value;
+    if (0 > txn_ctx->outputs[idx].value ||
+        __builtin_add_overflow(
+            output, (uint64_t)txn_ctx->outputs[idx].value, &output)) {
+      return false;
+    }
   }
 
   if (input < output) {

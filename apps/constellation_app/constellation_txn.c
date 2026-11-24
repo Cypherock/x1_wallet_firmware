@@ -216,6 +216,51 @@ static bool use_signature_verification = false;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+/**
+ * @brief Formats an amount in 1e-8 units exactly, as %.8g did for normal
+ * values ("1.5", "2", "0.00000001") but without rounding or exponent notation
+ */
+static void format_e8_amount(uint64_t value, char *out, size_t out_size) {
+  uint64_t whole = value / 100000000;
+  uint64_t fraction = value % 100000000;
+  if (0 == fraction) {
+    snprintf(out, out_size, "%llu", (unsigned long long)whole);
+    return;
+  }
+  snprintf(out,
+           out_size,
+           "%llu.%08llu",
+           (unsigned long long)whole,
+           (unsigned long long)fraction);
+  // drop trailing zeros of the fraction
+  size_t len = strnlen(out, out_size);
+  while (0 < len && '0' == out[len - 1]) {
+    out[--len] = '\0';
+  }
+}
+
+/**
+ * @brief Checks that the transaction's source is the address of the signing
+ * key: the source is signed but never shown. Sends an error otherwise.
+ */
+static bool is_own_source_address(const HDNode *node) {
+  uint8_t pubkey[CONSTELLATION_PUB_KEY_SIZE] = {0};
+  char address[CONSTELLATION_ACCOUNT_ADDRESS_SIZE + 1] = "";
+  ecdsa_uncompress_pubkey(&secp256k1, node->public_key, pubkey);
+  // generate_dag_address sends its own error on failure
+  if (!generate_dag_address(address, pubkey)) {
+    return false;
+  }
+  if (0 != strncmp(address,
+                   constellation_txn_context->txn->source,
+                   sizeof(address))) {
+    constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+  return true;
+}
+
 static bool check_which_request(const constellation_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_txn.which_request) {
@@ -337,9 +382,7 @@ static bool get_user_verification(void) {
 
   // verify recipient amount
   char amount_string[30] = {'\0'};
-  double decimal_amount = (double)txn->amount;
-  decimal_amount *= 1e-8;
-  snprintf(amount_string, sizeof(amount_string), "%.*g", 8, decimal_amount);
+  format_e8_amount(txn->amount, amount_string, sizeof(amount_string));
 
   char display[100] = {'\0'};
   snprintf(display,
@@ -355,9 +398,7 @@ static bool get_user_verification(void) {
 
   // verify fee
   char fee_string[30] = {'\0'};
-  double decimal_fee = (double)txn->fee;
-  decimal_fee *= 1e-8;
-  snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
+  format_e8_amount(txn->fee, fee_string, sizeof(fee_string));
 
   char fee_display[100] = {'\0'};
   snprintf(
@@ -403,19 +444,23 @@ static bool sign_txn(der_sig_t *der_signature) {
 
   HDNode hdnode = {0};
   uint8_t signature[64] = {0};
+  bool derived = derive_hdnode_from_path(
+      constellation_txn_context->init_info.derivation_path,
+      constellation_txn_context->init_info.derivation_path_count,
+      SECP256K1_NAME,
+      seed,
+      &hdnode);
+  // the source address is signed but not shown: it must be this key's
+  bool own_source = derived && is_own_source_address(&hdnode);
   // the signature is verified before release (deterministic nonce)
-  bool status = derive_hdnode_from_path(
-                    constellation_txn_context->init_info.derivation_path,
-                    constellation_txn_context->init_info.derivation_path_count,
-                    SECP256K1_NAME,
-                    seed,
-                    &hdnode) &&
+  bool status = own_source &&
                 ecdsa_sign_digest_checked(
                     &secp256k1, &hdnode, sha512_digest, signature, NULL, NULL);
 
   if (status) {
     der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
-  } else {
+  } else if (!derived || own_source) {
+    // a source mismatch has already sent its error
     constellation_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
 

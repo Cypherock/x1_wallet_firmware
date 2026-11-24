@@ -401,10 +401,15 @@ static bool get_user_verification(void) {
 
   // Verify amount
 
-  double amount_sc = sia_convert_to_sc(decoded_txn->outputs[0].value_lo,
-                                       decoded_txn->outputs[0].value_hi);
-  char amount_str[50];
-  snprintf(amount_str, sizeof(amount_str), "%.6f", amount_sc);
+  // exact: a double rounded to 6 decimals showed small amounts as 0.000000
+  char amount_str[SIA_SC_STRING_SIZE] = {0};
+  if (!sia_format_sc(decoded_txn->outputs[0].value_lo,
+                     decoded_txn->outputs[0].value_hi,
+                     amount_str,
+                     sizeof(amount_str))) {
+    sia_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
 
   char amount_display[100] = {0};
   snprintf(amount_display,
@@ -418,9 +423,12 @@ static bool get_user_verification(void) {
   }
 
   // Verify fee
-  double fee_sc = sia_convert_to_sc(decoded_txn->fee_lo, decoded_txn->fee_hi);
-  char fee_str[50];
-  snprintf(fee_str, sizeof(fee_str), "%.6f", fee_sc);
+  char fee_str[SIA_SC_STRING_SIZE] = {0};
+  if (!sia_format_sc(
+          decoded_txn->fee_lo, decoded_txn->fee_hi, fee_str, sizeof(fee_str))) {
+    sia_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   char fee_display[100] = {0};
   snprintf(
       fee_display, sizeof(fee_display), UI_TEXT_VERIFY_FEE, fee_str, SIA_LUNIT);

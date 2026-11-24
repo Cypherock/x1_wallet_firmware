@@ -697,6 +697,11 @@ static void get_expiry_display(uint64_t expiry_time,
   diff %= hours_factor;
   mins = diff / mins_factor;
 
+  if (0 == days && 0 == hours && 0 == mins) {
+    // nothing would be shown for an expiry under a minute
+    strcat(expiry_display, "less than 1 min");
+    return;
+  }
   if (days > 0) {
     char display[30] = {'\0'};
     snprintf(display, sizeof(display), UI_TEXT_DAYS, days);
@@ -880,6 +885,12 @@ static bool get_user_verification(void) {
   // verify expiry
   if (txn_type == CANTON_TXN_TYPE_TRANSFER && display_info->start_time != 0 &&
       display_info->expiry_time != 0) {
+    // an expiry before the start would wrap around to a huge duration
+    if (display_info->expiry_time < display_info->start_time) {
+      canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
+      return false;
+    }
     char expiry_display[100] = {'\0'};
     get_expiry_display(
         display_info->expiry_time, display_info->start_time, expiry_display);
