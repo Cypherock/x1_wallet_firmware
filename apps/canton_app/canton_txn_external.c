@@ -303,8 +303,13 @@ static bool validate_and_store_namespace_delegation_proposal(
     return false;
   }
 
-  // TODO: research about the first 12 bytes in the public key field
-  uint8_t *public_key = namespace_delegation.target_key.public_key + 12;
+  // the key is a DER SubjectPublicKeyInfo: a fixed 12-byte Ed25519 header
+  // followed by the raw key
+  const uint8_t *public_key =
+      canton_ed25519_key_from_spki(namespace_delegation.target_key.public_key);
+  if (NULL == public_key) {
+    return false;
+  }
 
   memcpy(ut_txn->display_info.namespace_delegation.target_public_key,
          public_key,

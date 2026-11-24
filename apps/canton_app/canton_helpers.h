@@ -115,4 +115,15 @@ bool get_party_id(const uint8_t *public_key, char *party_id);
  * @retval false otherwise
  */
 bool verify_party_id(uint8_t *public_key, char *party_id);
+
+/**
+ * @brief Returns the raw Ed25519 key of a 44-byte serialized signing key, which
+ * must be a DER SubjectPublicKeyInfo (12-byte header + 32-byte key)
+ *
+ * @param[in] serialized_key 44-byte serialized public key
+ *
+ * @return const uint8_t* The 32-byte raw key, or NULL if the header is not
+ * the Ed25519 SubjectPublicKeyInfo header
+ */
+const uint8_t *canton_ed25519_key_from_spki(const uint8_t *serialized_key);
 #endif    // CANTON_HELPERS_H

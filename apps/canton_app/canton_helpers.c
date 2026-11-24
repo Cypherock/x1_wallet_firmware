@@ -264,3 +264,15 @@ bool verify_party_id(uint8_t *public_key, char *party_id) {
 
   return true;
 }
+
+const uint8_t *canton_ed25519_key_from_spki(const uint8_t *serialized_key) {
+  // DER: SEQUENCE { SEQUENCE { OID 1.3.101.112 (Ed25519) } BIT STRING (32) }
+  static const uint8_t ed25519_spki_header[12] = {
+      0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00};
+  if (NULL == serialized_key || 0 != memcmp(serialized_key,
+                                            ed25519_spki_header,
+                                            sizeof(ed25519_spki_header))) {
+    return NULL;
+  }
+  return serialized_key + sizeof(ed25519_spki_header);
+}
