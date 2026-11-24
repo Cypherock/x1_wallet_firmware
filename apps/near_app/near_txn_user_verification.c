@@ -98,6 +98,27 @@
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+/**
+ * @brief Copies a host-supplied account id (not NUL terminated) for display
+ *
+ * @return false if it does not fit or has a byte that is not printable ASCII
+ * (an embedded NUL would hide the rest of the signed id)
+ */
+static bool format_account_id(char *out,
+                              size_t out_size,
+                              const char *id,
+                              size_t id_length) {
+  if (id_length >= out_size) {
+    return false;
+  }
+  for (size_t i = 0; i < id_length; i++) {
+    if (id[i] < 0x21 || id[i] > 0x7e) {
+      return false;
+    }
+  }
+  snprintf(out, out_size, "%.*s", (int)id_length, id);
+  return true;
+}
 
 /*****************************************************************************
  * GLOBAL FUNCTIONS
@@ -112,12 +133,16 @@ bool user_verification_transfer(const near_unsigned_txn *decoded_utxn) {
            UI_TEXT_REVIEW_TXN_PROMPT,
            ui_text_near_transfer_action_type);
 
-  snprintf(address,
-           CY_MIN(decoded_utxn->receiver_id_length + 1, sizeof(address)),
-           "%s",
-           decoded_utxn->receiver);
-
-  get_amount_string(decoded_utxn->action.transfer.amount, value, sizeof(value));
+  if (!format_account_id(address,
+                         sizeof(address),
+                         (const char *)decoded_utxn->receiver,
+                         decoded_utxn->receiver_id_length) ||
+      !get_amount_string(
+          decoded_utxn->action.transfer.amount, value, sizeof(value))) {
+    near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   if (!core_scroll_page(NULL, transaction, near_send_error) ||
       !core_scroll_page(ui_text_verify_address, address, near_send_error) ||
@@ -139,18 +164,23 @@ bool user_verification_function(const near_unsigned_txn *decoded_utxn) {
            UI_TEXT_REVIEW_TXN_PROMPT,
            ui_text_near_create_account_method);
 
-  snprintf(address,
-           CY_MIN(decoded_utxn->signer_id_length, sizeof(address)),
-           "%s",
-           decoded_utxn->signer);
-
-  snprintf(account,
-           sizeof(account),
-           "%.*s",
-           (int)decoded_utxn->action.fn_call.new_account_id_length,
-           (const char *)decoded_utxn->action.fn_call.new_account_id);
-
-  get_amount_string(decoded_utxn->action.fn_call.deposit, value, sizeof(value));
+  // the signer was cut by one character (the length did not count the
+  // terminator); all ids are now copied with their exact length
+  if (!format_account_id(address,
+                         sizeof(address),
+                         (const char *)decoded_utxn->signer,
+                         decoded_utxn->signer_id_length) ||
+      !format_account_id(
+          account,
+          sizeof(account),
+          (const char *)decoded_utxn->action.fn_call.new_account_id,
+          decoded_utxn->action.fn_call.new_account_id_length) ||
+      !get_amount_string(
+          decoded_utxn->action.fn_call.deposit, value, sizeof(value))) {
+    near_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   if (!core_scroll_page(NULL, transaction, near_send_error) ||
       !core_scroll_page(ui_text_verify_create_from, address, near_send_error) ||
