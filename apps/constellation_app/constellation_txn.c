@@ -239,6 +239,28 @@ static void format_e8_amount(uint64_t value, char *out, size_t out_size) {
   }
 }
 
+/**
+ * @brief Checks that the transaction's source is the address of the signing
+ * key: the source is signed but never shown. Sends an error otherwise.
+ */
+static bool is_own_source_address(const HDNode *node) {
+  uint8_t pubkey[CONSTELLATION_PUB_KEY_SIZE] = {0};
+  char address[CONSTELLATION_ACCOUNT_ADDRESS_SIZE + 1] = "";
+  ecdsa_uncompress_pubkey(&secp256k1, node->public_key, pubkey);
+  // generate_dag_address sends its own error on failure
+  if (!generate_dag_address(address, pubkey)) {
+    return false;
+  }
+  if (0 != strncmp(address,
+                   constellation_txn_context->txn->source,
+                   sizeof(address))) {
+    constellation_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                             ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
+  return true;
+}
+
 static bool check_which_request(const constellation_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_txn.which_request) {
@@ -422,19 +444,23 @@ static bool sign_txn(der_sig_t *der_signature) {
 
   HDNode hdnode = {0};
   uint8_t signature[64] = {0};
+  bool derived = derive_hdnode_from_path(
+      constellation_txn_context->init_info.derivation_path,
+      constellation_txn_context->init_info.derivation_path_count,
+      SECP256K1_NAME,
+      seed,
+      &hdnode);
+  // the source address is signed but not shown: it must be this key's
+  bool own_source = derived && is_own_source_address(&hdnode);
   // the signature is verified before release (deterministic nonce)
-  bool status = derive_hdnode_from_path(
-                    constellation_txn_context->init_info.derivation_path,
-                    constellation_txn_context->init_info.derivation_path_count,
-                    SECP256K1_NAME,
-                    seed,
-                    &hdnode) &&
+  bool status = own_source &&
                 ecdsa_sign_digest_checked(
                     &secp256k1, &hdnode, sha512_digest, signature, NULL, NULL);
 
   if (status) {
     der_signature->size = ecdsa_sig_to_der(signature, der_signature->bytes);
-  } else {
+  } else if (!derived || own_source) {
+    // a source mismatch has already sent its error
     constellation_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
   }
 

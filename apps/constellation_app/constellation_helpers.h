@@ -52,6 +52,17 @@
 bool constellation_derivation_path_guard(const uint32_t *path, uint8_t levels);
 
 /**
+ * @brief Generates the DAG address of an uncompressed public key.
+ * @details Sends an error to the host if the address can not be encoded.
+ *
+ * @param[out] address  Buffer of CONSTELLATION_ACCOUNT_ADDRESS_SIZE + 1 bytes
+ * @param[in] pubkey    Uncompressed public key (CONSTELLATION_PUB_KEY_SIZE)
+ *
+ * @return bool true if the address was generated
+ */
+bool generate_dag_address(char *address, const uint8_t *pubkey);
+
+/**
  * @brief Serializes a constellation_transaction_t.
  * @details Encodes the transaction as per dag4.js library and
  * serializes the encoded txn with kryo_serialize
