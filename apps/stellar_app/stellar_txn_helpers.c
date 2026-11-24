@@ -161,6 +161,13 @@ static int parse_memo_data(const uint8_t *xdr,
       if (memo_len == 0 || memo_len >= sizeof(txn->memo.text)) {
         return -1;
       }
+      // the memo is shown as a C string: an embedded NUL would hide the rest
+      // of the signed memo, and control characters do not display
+      for (uint32_t i = 0; i < memo_len; i++) {
+        if ((uint8_t)temp_memo[i] < 0x20 || (uint8_t)temp_memo[i] == 0x7f) {
+          return -1;
+        }
+      }
       strncpy(txn->memo.text, temp_memo, memo_len);
       txn->memo.text[memo_len] = '\0';
     } break;
