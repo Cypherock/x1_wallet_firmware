@@ -188,6 +188,10 @@ bool evm_parse_eip2930(const uint8_t *data,
   offset += decoded_len;
   if (type != STRING)
     return false;
+  // contract creation (empty `to`) or a short address would be shown as a
+  // send to a zero-padded address; only plain 20-byte recipients are signed
+  if (EVM_ADDRESS_LENGTH != item_bytes_len)
+    return false;
   s_memcpy(utxn_ptr->to_address,
            sizeof(utxn_ptr->to_address),
            data,
@@ -341,6 +345,10 @@ bool evm_parse_eip1559(const uint8_t *data,
       get_decode_length(data + offset, data_size - offset, &decoded_len, &type);
   offset += decoded_len;
   if (type != STRING)
+    return false;
+  // contract creation (empty `to`) or a short address would be shown as a
+  // send to a zero-padded address; only plain 20-byte recipients are signed
+  if (EVM_ADDRESS_LENGTH != item_bytes_len)
     return false;
   s_memcpy(utxn_ptr->to_address,
            sizeof(utxn_ptr->to_address),

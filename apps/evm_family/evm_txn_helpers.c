@@ -203,6 +203,10 @@ static bool evm_parse_legacy(const uint8_t *data,
   offset += decoded_len;
   if (type != STRING)
     return false;
+  // contract creation (empty `to`) or a short address would be shown as a
+  // send to a zero-padded address; only plain 20-byte recipients are signed
+  if (EVM_ADDRESS_LENGTH != item_bytes_len)
+    return false;
   s_memcpy(utxn_ptr->to_address,
            sizeof(utxn_ptr->to_address),
            data,
