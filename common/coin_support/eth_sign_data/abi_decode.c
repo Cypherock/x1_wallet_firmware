@@ -247,8 +247,14 @@ ui_display_node *ABI_Stringify(Abi_Type_e inputAbiType,
 
       byte_array_to_hex_string(pAbiTypeData, 32, &(staticBufferInUTF8[0]), 65);
 
-      convert_byte_array_to_decimal_string(
-          64, 0, &(staticBufferInUTF8[0]), &(staticBufferInUTF8[100]), 100);
+      // NULL tells the caller the value could not be shown
+      if (!convert_byte_array_to_decimal_string(64,
+                                                0,
+                                                &(staticBufferInUTF8[0]),
+                                                &(staticBufferInUTF8[100]),
+                                                100)) {
+        break;
+      }
 
       ui_node = ui_create_display_node(
           "Datatype:uint256\0", 25, &(staticBufferInUTF8[100]), 100);

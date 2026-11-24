@@ -533,7 +533,7 @@ uint32_t eth_get_value(const evm_txn_context_t *txn_context, char *value) {
   }
 }
 
-void eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
+bool eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
                         char *fee_decimal_string,
                         uint8_t size,
                         uint8_t decimal) {
@@ -557,11 +557,11 @@ void eth_get_fee_string(const evm_unsigned_txn *utxn_ptr,
   cy_reverse_byte_array(fee, sizeof(fee));
   byte_array_to_hex_string(
       fee, sizeof(fee), fee_hex_string, sizeof(fee_hex_string));
-  convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1,
-                                       decimal,
-                                       fee_hex_string,
-                                       fee_decimal_string,
-                                       size);
+  return convert_byte_array_to_decimal_string(sizeof(fee_hex_string) - 1,
+                                              decimal,
+                                              fee_hex_string,
+                                              fee_decimal_string,
+                                              size);
 }
 
 uint8_t evm_get_decimal(const evm_txn_context_t *txn_context) {

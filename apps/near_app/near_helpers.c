@@ -136,24 +136,27 @@ void near_get_new_account_id_from_fn_args(const char *args,
   return;
 }
 
-void get_amount_string(const uint8_t *amount,
+bool get_amount_string(const uint8_t *amount,
                        char *string,
                        size_t size_of_string) {
   char amount_string[40] = "";
-  char amount_decimal_string[40] = "";
+  // a u128 needs up to 39 digits, the point and the terminator
+  char amount_decimal_string[48] = "";
   byte_array_to_hex_string(
       amount, NEAR_DEPOSIT_SIZE_BYTES, amount_string, sizeof(amount_string));
 
-  convert_byte_array_to_decimal_string(NEAR_DEPOSIT_SIZE_BYTES * 2,
-                                       NEAR_DECIMAL,
-                                       amount_string,
-                                       amount_decimal_string,
-                                       sizeof(amount_decimal_string));
+  if (!convert_byte_array_to_decimal_string(NEAR_DEPOSIT_SIZE_BYTES * 2,
+                                            NEAR_DECIMAL,
+                                            amount_string,
+                                            amount_decimal_string,
+                                            sizeof(amount_decimal_string))) {
+    return false;
+  }
 
   snprintf(string,
            size_of_string,
            UI_TEXT_VERIFY_AMOUNT,
            amount_decimal_string,
            near_app.lunit_name);
-  return;
+  return true;
 }

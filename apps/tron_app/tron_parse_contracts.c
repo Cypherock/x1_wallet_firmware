@@ -249,11 +249,15 @@ static bool parse_whitelist(uint8_t *data,
   char staticBufferInUTF8[200];
   memzero(staticBufferInUTF8, sizeof(staticBufferInUTF8));
   byte_array_to_hex_string(amount, 32, &(staticBufferInUTF8[0]), 65);
-  convert_byte_array_to_decimal_string(64,
-                                       contract->decimal,
-                                       &(staticBufferInUTF8[0]),
-                                       &(staticBufferInUTF8[100]),
-                                       100);
+  if (!convert_byte_array_to_decimal_string(64,
+                                            contract->decimal,
+                                            &(staticBufferInUTF8[0]),
+                                            &(staticBufferInUTF8[100]),
+                                            100)) {
+    tron_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                    ERROR_DATA_FLOW_INVALID_DATA);
+    return false;
+  }
 
   char display_amount[200] = "";
   snprintf(display_amount,

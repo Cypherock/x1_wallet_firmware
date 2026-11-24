@@ -71,7 +71,7 @@ void near_get_new_account_id_from_fn_args(const char *args,
  * populated
  * @param size_of_string Maximum size of the char buffer
  */
-void get_amount_string(const uint8_t *amount,
+bool get_amount_string(const uint8_t *amount,
                        char *string,
                        size_t size_of_string);
 

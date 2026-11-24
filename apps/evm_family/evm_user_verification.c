@@ -162,8 +162,11 @@ bool evm_verify_transfer(const evm_txn_context_t *txn_context) {
 
   // verify transaction fee
   unit = g_evm_app->lunit_name;
-  eth_get_fee_string(
-      &txn_context->transaction_info, value, sizeof(value), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, value, sizeof(value), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return status;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, value, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return status;
@@ -210,8 +213,11 @@ bool evm_verify_clear_signing(const evm_txn_context_t *txn_context) {
   }
 
   // verify transaction fee
-  eth_get_fee_string(
-      &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return false;
@@ -249,8 +255,11 @@ bool evm_verify_blind_signing(const evm_txn_context_t *txn_context) {
   ethereum_address_checksum(
       to_address, &address[2], false, g_evm_app->chain_id);
 
-  eth_get_fee_string(
-      &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(
+          &txn_context->transaction_info, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
 
   // verify recipient amount
@@ -415,7 +424,10 @@ bool evm_verify_staking(const evm_txn_context_t *txn_context) {
     }
   }
 
-  eth_get_fee_string(utxn, fee, sizeof(fee), ETH_DECIMAL);
+  if (!eth_get_fee_string(utxn, fee, sizeof(fee), ETH_DECIMAL)) {
+    evm_send_error(ERROR_COMMON_ERROR_UNKNOWN_ERROR_TAG, 1);
+    return false;
+  }
   snprintf(display, sizeof(display), UI_TEXT_SEND_TXN_FEE, fee, unit);
   if (!core_scroll_page(UI_TEXT_TXN_FEE, display, evm_send_error)) {
     return false;
