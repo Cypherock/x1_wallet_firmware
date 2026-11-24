@@ -102,14 +102,48 @@
  * GLOBAL FUNCTIONS
  *****************************************************************************/
 
-double sia_convert_to_sc(uint64_t lo, uint64_t hi) {
-  // Converting SC to hastings and is approximate for display purposes
-  if (hi == 0) {
-    return (double)lo / 1e24;
-  } else {
-    double hi_part = (double)hi * (double)(1ULL << 32) * (double)(1ULL << 32);
-    return (hi_part + (double)lo) / 1e24;
+bool sia_format_sc(uint64_t lo, uint64_t hi, char *out, size_t out_size) {
+  // the 128-bit value as 32-bit limbs, most significant last
+  uint32_t limbs[4] = {
+      (uint32_t)lo, (uint32_t)(lo >> 32), (uint32_t)hi, (uint32_t)(hi >> 32)};
+  // decimal digits, least significant first (2^128 has 39 digits)
+  char digits[39 + 24 + 1] = {0};
+  size_t count = 0;
+  do {
+    uint64_t remainder = 0;
+    for (int i = 3; i >= 0; i--) {
+      uint64_t current = (remainder << 32) | limbs[i];
+      limbs[i] = (uint32_t)(current / 10);
+      remainder = current % 10;
+    }
+    digits[count++] = (char)('0' + remainder);
+  } while (0 != limbs[0] || 0 != limbs[1] || 0 != limbs[2] || 0 != limbs[3]);
+
+  // at least one integer digit before the 24 decimals
+  while (count < 24 + 1) {
+    digits[count++] = '0';
   }
+
+  // keep at least 6 decimals, and every non-zero one after them
+  size_t lowest_kept = 0;
+  while (lowest_kept < 24 - 6 && '0' == digits[lowest_kept]) {
+    lowest_kept++;
+  }
+
+  size_t needed = (count - 24) + 1 + (24 - lowest_kept) + 1;
+  if (NULL == out || needed > out_size) {
+    return false;
+  }
+  size_t offset = 0;
+  for (size_t i = count; i > 24; i--) {
+    out[offset++] = digits[i - 1];
+  }
+  out[offset++] = '.';
+  for (size_t i = 24; i > lowest_kept; i--) {
+    out[offset++] = digits[i - 1];
+  }
+  out[offset] = '\0';
+  return true;
 }
 
 bool sia_parse_transaction(const uint8_t *blob,
