@@ -179,7 +179,11 @@ static bool check_which_request(const btc_query_t *query,
 static bool validate_request_data(btc_get_public_key_request_t *request) {
   bool status = true;
 
-  if (!btc_derivation_path_guard(request->initiate.derivation_path,
+  // an address needs the full path: the device signs only for
+  // account/change/index keys, so an account-level "address" could never be
+  // spent from the device
+  if (BTC_ACC_ADDR_DEPTH != request->initiate.derivation_path_count ||
+      !btc_derivation_path_guard(request->initiate.derivation_path,
                                  request->initiate.derivation_path_count)) {
     btc_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                    ERROR_DATA_FLOW_INVALID_DATA);
