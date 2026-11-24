@@ -76,6 +76,7 @@
 #include "hasher.h"
 #include "secp256k1.h"
 #include "sha2.h"
+#include "sha3.h"
 #include "status_api.h"
 #include "tron_api.h"
 #include "tron_contracts.h"
@@ -477,4 +478,45 @@ bool extract_contract_info(tron_transaction_raw_t *raw_txn,
     }
   }
   return true;
+}
+
+bool tron_is_own_account_txn(const tron_transaction_raw_t *raw_txn,
+                             const uint8_t public_key[65]) {
+  if (NULL == raw_txn || 1 != raw_txn->contract_count) {
+    return false;
+  }
+  const tron_transaction_contract_t *contract = &raw_txn->contract[0];
+  if (0 != contract->permission_id) {
+    return false;
+  }
+
+  uint8_t owner[TRON_INITIAL_ADDRESS_LENGTH] = {0};
+  pb_istream_t stream = pb_istream_from_buffer(contract->parameter.value.bytes,
+                                               contract->parameter.value.size);
+  switch (contract->type) {
+    case TRON_TRANSACTION_CONTRACT_TRANSFER_CONTRACT: {
+      tron_transfer_contract_t transfer = TRON_TRANSFER_CONTRACT_INIT_ZERO;
+      if (!pb_decode(&stream, TRON_TRANSFER_CONTRACT_FIELDS, &transfer)) {
+        return false;
+      }
+      memcpy(owner, transfer.owner_address, sizeof(owner));
+      break;
+    }
+    case TRON_TRANSACTION_CONTRACT_TRIGGER_SMART_CONTRACT: {
+      tron_trigger_smart_contract_t trigger =
+          TRON_TRIGGER_SMART_CONTRACT_INIT_ZERO;
+      if (!pb_decode(&stream, TRON_TRIGGER_SMART_CONTRACT_FIELDS, &trigger)) {
+        return false;
+      }
+      memcpy(owner, trigger.owner_address, sizeof(owner));
+      break;
+    }
+    default:
+      return false;
+  }
+
+  // address = 0x41 || keccak256(x || y)[12..32)
+  uint8_t digest[32] = {0};
+  keccak_256(public_key + 1, 64, digest);
+  return 0x41 == owner[0] && 0 == memcmp(owner + 1, digest + 12, 20);
 }

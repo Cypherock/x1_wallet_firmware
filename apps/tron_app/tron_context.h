@@ -44,4 +44,18 @@ typedef struct {
 bool extract_contract_info(tron_transaction_raw_t *raw_txn,
                            bool use_signature_verification);
 
+/**
+ * @brief Checks that the transaction spends from the signing key's own account
+ * @details The owner address and the permission id are signed but not shown:
+ * a host could otherwise make the device sign for another account that
+ * granted this key a permission. The contract owner must be the address of
+ * the given key and the permission must be the default (0).
+ *
+ * @param[in] raw_txn decoded tron raw transaction
+ * @param[in] public_key 65-byte uncompressed public key of the signing key
+ * @return bool true if the owner is the key's address and permission_id is 0
+ */
+bool tron_is_own_account_txn(const tron_transaction_raw_t *raw_txn,
+                             const uint8_t public_key[65]);
+
 #endif /* TRON_CONTEXT_H */
