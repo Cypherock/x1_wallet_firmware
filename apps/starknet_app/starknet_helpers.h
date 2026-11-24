@@ -51,6 +51,19 @@
 bool starknet_derivation_path_guard(const uint32_t *path, uint8_t levels);
 
 /**
+ * @brief Checks that an address is the Argent account of a stark public key
+ * @details The deploy-account flow shows the host-provided address; it must be
+ * the user's own account (the same address the receive flow shows), or the
+ * user would sign the deployment of an account they do not control.
+ *
+ * @param pub_key Stark public key (x coordinate, 32 bytes)
+ * @param address Account address to check (32 bytes, big endian)
+ * @return bool true if address is the key's Argent account address
+ */
+bool starknet_is_own_argent_address(const uint8_t *pub_key,
+                                    const uint8_t *address);
+
+/**
  * @brief Derives stark keys (public and/or private) from given seed
  *
  * @param private_key Stores derived stark private key

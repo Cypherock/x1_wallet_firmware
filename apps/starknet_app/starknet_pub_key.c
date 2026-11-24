@@ -466,6 +466,25 @@ static void starknet_derive_argent_address(const uint8_t *pub_key, char *addr) {
 /*****************************************************************************
  * GLOBAL FUNCTIONS
  *****************************************************************************/
+bool starknet_is_own_argent_address(const uint8_t *pub_key,
+                                    const uint8_t *address) {
+  char raw_address[100] = {0};
+  starknet_derive_argent_address(pub_key, raw_address);
+
+  // the derived hex has no leading zeros; compare as 64 hex digits
+  size_t raw_len = strnlen(raw_address, sizeof(raw_address));
+  if (64 < raw_len) {
+    return false;
+  }
+  char expected[65] = {0};
+  memset(expected, '0', 64 - raw_len);
+  memcpy(expected + 64 - raw_len, raw_address, raw_len);
+
+  uint8_t expected_bytes[STARKNET_BIGNUM_SIZE] = {0};
+  hex_string_to_byte_array(expected, 64, expected_bytes);
+  return 0 == memcmp(expected_bytes, address, STARKNET_BIGNUM_SIZE);
+}
+
 void starknet_get_pub_keys(starknet_query_t *query) {
   char wallet_name[NAME_SIZE] = "";
   uint8_t seed[64] = {0};

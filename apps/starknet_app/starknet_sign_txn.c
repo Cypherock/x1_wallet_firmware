@@ -733,17 +733,30 @@ static bool sign_txn(uint8_t *signature_buffer) {
   set_app_flow_status(STARKNET_SIGN_TXN_STATUS_SEED_GENERATED);
 
   uint8_t stark_key[STARKNET_BIGNUM_SIZE] = {0};
+  uint8_t stark_pub_key[STARKNET_PUB_KEY_SIZE] = {0};
   bool key_derived = starknet_derive_key_from_seed(
       seed,
       starknet_txn_context->init_info.derivation_path,
       starknet_txn_context->init_info.derivation_path_count,
       stark_key,
-      NULL);
+      stark_pub_key);
   memzero(seed, sizeof(seed));
   if (!key_derived) {
     // the error was already sent by the derivation; do not sign with an
     // all-zero key
     memzero(stark_key, sizeof(stark_key));
+    return false;
+  }
+
+  // a deployment must be of the user's own account, the one the receive flow
+  // shows for this key
+  if (STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG ==
+          starknet_txn_context->which_type &&
+      !starknet_is_own_argent_address(
+          stark_pub_key, starknet_txn_context->deploy_txn->contract_address)) {
+    memzero(stark_key, sizeof(stark_key));
+    starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                        ERROR_DATA_FLOW_INVALID_DATA);
     return false;
   }
 
