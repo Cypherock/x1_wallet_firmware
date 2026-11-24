@@ -1745,8 +1745,10 @@ static uint8_t *encode_metadata(
   return buf;
 }
 
-static bool copy_party_id(char *dst, size_t dst_size, const char *src) {
-  // party ids are host supplied (FT_POINTER) with no decode-time bound
+static bool copy_display_string(char *dst, size_t dst_size, const char *src) {
+  // displayed strings (party ids, amounts, instrument ids) are host supplied
+  // (FT_POINTER) with no decode-time bound; a string that does not fit is
+  // rejected rather than truncated
   if (NULL == src) {
     return false;
   }
@@ -1792,9 +1794,9 @@ static bool parse_display_info_from_transfer_record(
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
-          if (!copy_party_id(display_info->sender_party_id,
-                             sizeof(display_info->sender_party_id),
-                             display_value->party)) {
+          if (!copy_display_string(display_info->sender_party_id,
+                                   sizeof(display_info->sender_party_id),
+                                   display_value->party)) {
             return false;
           }
 
@@ -1802,9 +1804,9 @@ static bool parse_display_info_from_transfer_record(
           if (CANTON_VALUE_PARTY_TAG != display_value->which_sum) {
             continue;
           }
-          if (!copy_party_id(display_info->receiver_party_id,
-                             sizeof(display_info->receiver_party_id),
-                             display_value->party)) {
+          if (!copy_display_string(display_info->receiver_party_id,
+                                   sizeof(display_info->receiver_party_id),
+                                   display_value->party)) {
             return false;
           }
 
@@ -1812,10 +1814,12 @@ static bool parse_display_info_from_transfer_record(
           if (CANTON_VALUE_NUMERIC_TAG != display_value->which_sum) {
             continue;
           }
-          snprintf(display_info->amount,
-                   sizeof(display_info->amount),
-                   "%s",
-                   display_value->numeric);
+          // reject what does not fit instead of showing a truncated amount
+          if (!copy_display_string(display_info->amount,
+                                   sizeof(display_info->amount),
+                                   display_value->numeric)) {
+            return false;
+          }
         } else if (strcmp(cstr(display_field->label), START_TIME_LABEL) == 0) {
           if (CANTON_VALUE_TIMESTAMP_TAG != display_value->which_sum) {
             continue;
@@ -1844,18 +1848,20 @@ static bool parse_display_info_from_transfer_record(
               if (CANTON_VALUE_TEXT_TAG != instrument_value->which_sum) {
                 continue;
               }
-              snprintf(display_info->instrument.id,
-                       sizeof(display_info->instrument.id),
-                       "%s",
-                       instrument_value->text);
+              // a truncated id would be whitelisted and shown as another one
+              if (!copy_display_string(display_info->instrument.id,
+                                       sizeof(display_info->instrument.id),
+                                       instrument_value->text)) {
+                return false;
+              }
             } else if (strcmp(cstr(instrument_field->label), ADMIN_LABEL) ==
                        0) {
               if (CANTON_VALUE_PARTY_TAG != instrument_value->which_sum) {
                 continue;
               }
-              if (!copy_party_id(display_info->instrument.admin,
-                                 sizeof(display_info->instrument.admin),
-                                 instrument_value->party)) {
+              if (!copy_display_string(display_info->instrument.admin,
+                                       sizeof(display_info->instrument.admin),
+                                       instrument_value->party)) {
                 return false;
               }
             }
@@ -1913,9 +1919,9 @@ static bool parse_display_info(const char *choice_id,
         if (CANTON_VALUE_PARTY_TAG != tap_value->which_sum) {
           continue;
         }
-        if (!copy_party_id(display_info->receiver_party_id,
-                           sizeof(display_info->receiver_party_id),
-                           tap_value->party)) {
+        if (!copy_display_string(display_info->receiver_party_id,
+                                 sizeof(display_info->receiver_party_id),
+                                 tap_value->party)) {
           return false;
         }
 
@@ -1923,10 +1929,12 @@ static bool parse_display_info(const char *choice_id,
         if (CANTON_VALUE_NUMERIC_TAG != tap_value->which_sum) {
           continue;
         }
-        snprintf(display_info->amount,
-                 sizeof(display_info->amount),
-                 "%s",
-                 tap_value->numeric);
+        // reject what does not fit instead of showing a truncated amount
+        if (!copy_display_string(display_info->amount,
+                                 sizeof(display_info->amount),
+                                 tap_value->numeric)) {
+          return false;
+        }
       }
     }
   } else if (strcmp(choice_id, CANTON_TRANSFER_INSTRUCTION) == 0 ||
@@ -1969,9 +1977,9 @@ static bool parse_display_info(const char *choice_id,
         if (CANTON_VALUE_PARTY_TAG != preapproval_value->which_sum) {
           continue;
         }
-        if (!copy_party_id(display_info->receiver_party_id,
-                           sizeof(display_info->receiver_party_id),
-                           preapproval_value->party)) {
+        if (!copy_display_string(display_info->receiver_party_id,
+                                 sizeof(display_info->receiver_party_id),
+                                 preapproval_value->party)) {
           return false;
         }
       }
@@ -2026,9 +2034,9 @@ static bool parse_display_info(const char *choice_id,
             if (CANTON_VALUE_PARTY_TAG != merge_delegation_value->which_sum) {
               continue;
             }
-            if (!copy_party_id(display_info->owner_party_id,
-                               sizeof(display_info->owner_party_id),
-                               merge_delegation_value->party)) {
+            if (!copy_display_string(display_info->owner_party_id,
+                                     sizeof(display_info->owner_party_id),
+                                     merge_delegation_value->party)) {
               return false;
             }
           }
