@@ -216,6 +216,29 @@ static bool use_signature_verification = false;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+/**
+ * @brief Formats an amount in 1e-8 units exactly, as %.8g did for normal
+ * values ("1.5", "2", "0.00000001") but without rounding or exponent notation
+ */
+static void format_e8_amount(uint64_t value, char *out, size_t out_size) {
+  uint64_t whole = value / 100000000;
+  uint64_t fraction = value % 100000000;
+  if (0 == fraction) {
+    snprintf(out, out_size, "%llu", (unsigned long long)whole);
+    return;
+  }
+  snprintf(out,
+           out_size,
+           "%llu.%08llu",
+           (unsigned long long)whole,
+           (unsigned long long)fraction);
+  // drop trailing zeros of the fraction
+  size_t len = strnlen(out, out_size);
+  while (0 < len && '0' == out[len - 1]) {
+    out[--len] = '\0';
+  }
+}
+
 static bool check_which_request(const constellation_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_txn.which_request) {
@@ -337,9 +360,7 @@ static bool get_user_verification(void) {
 
   // verify recipient amount
   char amount_string[30] = {'\0'};
-  double decimal_amount = (double)txn->amount;
-  decimal_amount *= 1e-8;
-  snprintf(amount_string, sizeof(amount_string), "%.*g", 8, decimal_amount);
+  format_e8_amount(txn->amount, amount_string, sizeof(amount_string));
 
   char display[100] = {'\0'};
   snprintf(display,
@@ -355,9 +376,7 @@ static bool get_user_verification(void) {
 
   // verify fee
   char fee_string[30] = {'\0'};
-  double decimal_fee = (double)txn->fee;
-  decimal_fee *= 1e-8;
-  snprintf(fee_string, sizeof(fee_string), "%.*g", 8, decimal_fee);
+  format_e8_amount(txn->fee, fee_string, sizeof(fee_string));
 
   char fee_display[100] = {'\0'};
   snprintf(
