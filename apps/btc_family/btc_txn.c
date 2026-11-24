@@ -95,6 +95,8 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+/// Highest change address index accepted (non-hardened, scannable)
+#define BTC_MAX_CHANGE_INDEX 0xFFFFF
 
 #define TXN_MAX_INPUTS 200
 #define TXN_MAX_OUTPUTS 200
@@ -688,7 +690,10 @@ static bool validate_change_address(const HDNode *acc_node) {
   }
 
   memcpy(&t_node, acc_node, sizeof(HDNode));
-  if (!hdnode_private_ckd(&t_node, 1) ||
+  // the change index is hidden from the user: keep it non-hardened and
+  // within reach of wallet scanning, or the change would look lost
+  if (BTC_MAX_CHANGE_INDEX < output->changes_index ||
+      !hdnode_private_ckd(&t_node, 1) ||
       !hdnode_private_ckd(&t_node, output->changes_index)) {
     memzero(&t_node, sizeof(HDNode));
     return status;
