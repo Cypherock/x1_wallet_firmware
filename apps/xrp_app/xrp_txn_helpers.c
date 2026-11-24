@@ -372,9 +372,28 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
   bool seen_signing_pub_key = false;
   bool seen_account = false;
   bool seen_destination = false;
+  bool seen_flags = false;
+  bool seen_destination_tag = false;
+  bool seen_last_ledger_sequence = false;
 
+  // the hash prefix for a transaction signature, "STX\0"; other prefixes would
+  // sign hashes of other kinds of data under the user's key
+  if (byte_array_size < 4 || 0x53 != byte_array[0] || 0x54 != byte_array[1] ||
+      0x58 != byte_array[2] || 0x00 != byte_array[3]) {
+    return false;
+  }
   uint16_t offset = 0;
   offset += 4;    // network prefix
+
+  // a field given twice would be parsed once and signed twice (the last value
+  // wins here, but not necessarily on the ledger)
+#define XRP_SEEN_ONCE(flag)                                                    \
+  do {                                                                         \
+    if (flag) {                                                                \
+      return false;                                                            \
+    }                                                                          \
+    flag = true;                                                               \
+  } while (0)
 
   while (offset < byte_array_size) {
     uint8_t type_code;
@@ -395,7 +414,7 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
           return false;
         }
         if (field_code == TransactionType) {
-          seen_transaction_type = true;
+          XRP_SEEN_ONCE(seen_transaction_type);
         }
         offset += bytes_read;
         break;
@@ -407,7 +426,13 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
           return false;
         }
         if (field_code == Sequence) {
-          seen_sequence = true;
+          XRP_SEEN_ONCE(seen_sequence);
+        } else if (field_code == Flags) {
+          XRP_SEEN_ONCE(seen_flags);
+        } else if (field_code == DestinationTag) {
+          XRP_SEEN_ONCE(seen_destination_tag);
+        } else if (field_code == LastLedgerSequence) {
+          XRP_SEEN_ONCE(seen_last_ledger_sequence);
         }
         offset += bytes_read;
         break;
@@ -419,9 +444,9 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
           return false;
         }
         if (field_code == Amount) {
-          seen_amount = true;
+          XRP_SEEN_ONCE(seen_amount);
         } else if (field_code == Fee) {
-          seen_fee = true;
+          XRP_SEEN_ONCE(seen_fee);
         }
         offset += bytes_read;
         break;
@@ -433,7 +458,7 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
           return false;
         }
         if (field_code == SigningPubKey) {
-          seen_signing_pub_key = true;
+          XRP_SEEN_ONCE(seen_signing_pub_key);
         }
         offset += bytes_read;
         break;
@@ -445,9 +470,9 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
           return false;
         }
         if (field_code == Account) {
-          seen_account = true;
+          XRP_SEEN_ONCE(seen_account);
         } else if (field_code == Destination) {
-          seen_destination = true;
+          XRP_SEEN_ONCE(seen_destination);
         }
         offset += bytes_read;
         break;
@@ -457,13 +482,17 @@ bool xrp_parse_transaction(const uint8_t *byte_array,
     }
   }
 
+#undef XRP_SEEN_ONCE
+
   if (offset != byte_array_size) {
     return false;
   }
 
-  // reject a technically well-formed but incomplete transaction
+  // reject a technically well-formed but incomplete transaction, and anything
+  // but a Payment (type 0), the only type that is shown
   if (!seen_transaction_type || !seen_sequence || !seen_amount || !seen_fee ||
-      !seen_signing_pub_key || !seen_account || !seen_destination) {
+      !seen_signing_pub_key || !seen_account || !seen_destination ||
+      0 != txn->TransactionType) {
     return false;
   }
 
