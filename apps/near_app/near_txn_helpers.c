@@ -221,8 +221,9 @@ bool near_parse_transaction(const uint8_t *byte_array,
   offset += 4;
   utxn->actions_type = byte_array[offset++];
 
-  // Currently, our decoder only supports 1 action
-  if (1 < utxn->action_count) {
+  // exactly 1 action: with 0 the decoded "action" would be shown but not be
+  // part of the signed transaction
+  if (1 != utxn->action_count) {
     return false;
   }
 
@@ -234,6 +235,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
              sizeof(utxn->action.transfer.amount));
       cy_reverse_byte_array(utxn->action.transfer.amount,
                             sizeof(utxn->action.transfer.amount));
+      offset += sizeof(utxn->action.transfer.amount);
       break;
     }
 
@@ -288,6 +290,7 @@ bool near_parse_transaction(const uint8_t *byte_array,
              sizeof(utxn->action.fn_call.deposit));
       cy_reverse_byte_array(utxn->action.fn_call.deposit,
                             sizeof(utxn->action.fn_call.deposit));
+      offset += sizeof(utxn->action.fn_call.deposit);
       break;
     }
 
@@ -301,10 +304,6 @@ bool near_parse_transaction(const uint8_t *byte_array,
   // Reverse byte order
   cy_reverse_byte_array(utxn->nonce, sizeof(utxn->nonce));
 
-  // TODO: Offset validation should occur at every read
-  if (offset <= byte_array_size) {
-    return true;
-  }
-
-  return false;
+  // every byte must have been parsed: trailing bytes are signed but not shown
+  return offset == byte_array_size;
 }

@@ -105,7 +105,7 @@ TEST(near_txn_user_verification_test,
       raw_txn);
 
   near_unsigned_txn utxn = {0};
-  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 130, &utxn));
+  TEST_ASSERT_TRUE(near_parse_transaction(raw_txn, 134, &utxn));
 
   TEST_ASSERT_TRUE(user_verification_transfer(&utxn));
 }
