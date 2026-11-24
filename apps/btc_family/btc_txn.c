@@ -575,8 +575,10 @@ static bool fetch_valid_output(btc_query_t *query) {
     }
     const btc_script_type_e type = btc_get_script_type(
         output->script_pub_key.bytes, output->script_pub_key.size);
-    if (SCRIPT_TYPE_P2MS == type || SCRIPT_TYPE_P2PK == type ||
-        SCRIPT_TYPE_NONSTANDARD == type ||
+    // a negative value would be shown (and summed into the fee) as a
+    // different amount than any node accepts
+    if (0 > output->value || SCRIPT_TYPE_P2MS == type ||
+        SCRIPT_TYPE_P2PK == type || SCRIPT_TYPE_NONSTANDARD == type ||
         (SCRIPT_TYPE_NULL_DATA == type && 0 != output->value) ||
         (true == change_detected && true == output->is_change) ||
         (true == output->is_change && !is_change_script_type_valid(type))) {
