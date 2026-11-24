@@ -447,10 +447,14 @@ static bool get_user_verification(void) {
   }
 
   // Verify amount
+  // stroops to XLM with integer arithmetic: a double loses precision above
+  // 2^53 stroops and rounds the last digit
   char amount_string[30] = {'\0'};
-  double decimal_amount = (double)decoded_txn->operations[0].amount;
-  decimal_amount *= 1e-7;    // Convert stroops to XLM
-  snprintf(amount_string, sizeof(amount_string), "%.7f", decimal_amount);
+  snprintf(amount_string,
+           sizeof(amount_string),
+           "%llu.%07llu",
+           (unsigned long long)(decoded_txn->operations[0].amount / 10000000),
+           (unsigned long long)(decoded_txn->operations[0].amount % 10000000));
 
   char display[100] = {'\0'};
   snprintf(display,
@@ -465,9 +469,11 @@ static bool get_user_verification(void) {
 
   // Verify fee
   char fee_string[30] = {'\0'};
-  double decimal_fee = (double)decoded_txn->fee;
-  decimal_fee *= 1e-7;    // Convert stroops to XLM
-  snprintf(fee_string, sizeof(fee_string), "%.7f", decimal_fee);
+  snprintf(fee_string,
+           sizeof(fee_string),
+           "%llu.%07llu",
+           (unsigned long long)(decoded_txn->fee / 10000000),
+           (unsigned long long)(decoded_txn->fee % 10000000));
 
   char fee_display[50] = {'\0'};
   snprintf(fee_display,
