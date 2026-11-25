@@ -172,8 +172,9 @@ card_error_type_e card_fetch_wallet_list(
   }
 
   if (response->card_info.tapped_family_id) {
-    memcpy(card_data.nfc_data.family_id,
-           config->operation.expected_family_id,
+    // hand the tapped card's family id back to the caller
+    memcpy(response->card_info.tapped_family_id,
+           card_data.nfc_data.family_id,
            FAMILY_ID_SIZE);
   }
   response->card_info.pairing_error = card_data.nfc_data.pairing_error;

@@ -62,6 +62,8 @@
 #include "card_internal.h"
 #include "card_operation_typedefs.h"
 #include "card_utils.h"
+#include "constant_texts.h"
+#include "core_error.h"
 #include "flash_api.h"
 #include "nfc.h"
 #include "ui_instruction.h"
@@ -97,22 +99,27 @@ static void write_card_pre_process(uint8_t card_num);
  *
  * @param card_num represents the number of the card on which write operation is
  * being attempted.
+ *
+ * @return bool false if the wallet could not be saved on flash
  */
-static void record_card_write_attempt_on_flash(uint8_t card_num);
+static bool record_card_write_attempt_on_flash(uint8_t card_num);
 
 /**
  * @brief Handles post-processing required during the wallet share write
  * operation on the X1 card.
  *
  * @param card_num The card number to which the share is written
+ *
+ * @return bool false if the wallet could not be saved on flash
  */
-static void write_card_share_post_process(uint8_t card_num);
+static bool write_card_share_post_process(uint8_t card_num);
 
 /*****************************************************************************
  * STATIC VARIABLES
  *****************************************************************************/
-static uint32_t wallet_index;    // What's the index of the wallet in flash to
-                                 // which we are talking to
+// What's the index of the wallet in flash to which we are talking to; only
+// valid after card 1 has added the wallet in this flow
+static uint32_t wallet_index = MAX_WALLETS_ALLOWED;
 
 /*****************************************************************************
  * GLOBAL VARIABLES
@@ -137,7 +144,7 @@ static void write_card_pre_process(uint8_t card_num) {
   return;
 }
 
-static void record_card_write_attempt_on_flash(uint8_t card_num) {
+static bool record_card_write_attempt_on_flash(uint8_t card_num) {
   Flash_Wallet *wallet_for_flash = get_flash_wallet();
   uint8_t attempt_card_state = encode_card_number(card_num) << 4;
 
@@ -145,26 +152,28 @@ static void record_card_write_attempt_on_flash(uint8_t card_num) {
       (attempt_card_state & wallet_for_flash->cards_states)) {
     // Attempt card state already recorded on flash, no need to write to flash
     // again. Reached here probably due to retry attempt on same card.
-    return;
+    return true;
   }
 
   wallet_for_flash->cards_states |= attempt_card_state;
   if (card_num == 1) {
     wallet_for_flash->state = UNVERIFIED_VALID_WALLET;
-    add_wallet_to_flash(wallet_for_flash, &wallet_index);
-  } else {
-    put_wallet_flash(wallet_index, wallet_for_flash);
+    // a failed add must not leave the index of a wallet from an earlier flow
+    wallet_index = MAX_WALLETS_ALLOWED;
+    return SUCCESS_ == add_wallet_to_flash(wallet_for_flash, &wallet_index);
   }
-  return;
+  return MAX_WALLETS_ALLOWED > wallet_index &&
+         SUCCESS_ == put_wallet_flash(wallet_index, wallet_for_flash);
 }
 
-static void write_card_share_post_process(uint8_t card_num) {
+static bool write_card_share_post_process(uint8_t card_num) {
   Flash_Wallet *wallet_for_flash = get_flash_wallet();
 
   wallet_for_flash->cards_states &= 0x0F;
   wallet_for_flash->cards_states |= encode_card_number(card_num);
 
-  put_wallet_flash(wallet_index, wallet_for_flash);
+  bool saved = MAX_WALLETS_ALLOWED > wallet_index &&
+               SUCCESS_ == put_wallet_flash(wallet_index, wallet_for_flash);
 
   if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info))
     memset(((uint8_t *)wallet_shamir_data.arbitrary_data_shares) +
@@ -180,7 +189,7 @@ static void write_card_share_post_process(uint8_t card_num) {
              (card_num - 1) * wallet.arbitrary_data_size,
          0,
          wallet.arbitrary_data_size);
-  return;
+  return saved;
 }
 
 /*****************************************************************************
@@ -208,12 +217,20 @@ bool write_card_share(uint8_t card_num, const char *heading, const char *msg) {
     card_initialize_applet(&card_data);
 
     if (CARD_OPERATION_SUCCESS == card_data.error_type) {
-      record_card_write_attempt_on_flash(card_num);
+      // a wallet that could not be saved on flash must not be written to the
+      // cards, and a failed save must not write over another wallet's record
+      if (!record_card_write_attempt_on_flash(card_num)) {
+        mark_core_error_screen(ui_text_unknown_error_contact_support, false);
+        result = false;
+        break;
+      }
       card_data.nfc_data.status = nfc_add_wallet(&wallet);
 
       if (card_data.nfc_data.status == SW_NO_ERROR) {
-        write_card_share_post_process(card_num);
-        result = true;
+        result = write_card_share_post_process(card_num);
+        if (!result) {
+          mark_core_error_screen(ui_text_unknown_error_contact_support, false);
+        }
         break;
       } else {
         card_handle_errors(&card_data);

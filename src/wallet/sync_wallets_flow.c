@@ -237,12 +237,21 @@ static sync_state_e sync_wallet_handler(sync_state_e state) {
                 sizeof(wallet_credential_data.password_single_hash));
       }
 
-      uint32_t wallet_index;
-      get_index_by_name((const char *)wallet.wallet_name,
-                        (uint8_t *)(&wallet_index));
+      // the index was written as one byte into an uninitialised 4-byte value
+      uint8_t wallet_index = MAX_WALLETS_ALLOWED;
       memcpy(&wallet_for_flash, flash_wallet, sizeof(Flash_Wallet));
-      put_wallet_share_sec_flash(
-          wallet_index, wallet_shamir_data.mnemonic_shares[4], wallet_nonce);
+      if (SUCCESS_ != get_index_by_name((const char *)wallet.wallet_name,
+                                        &wallet_index) ||
+          SUCCESS_ !=
+              put_wallet_share_sec_flash(wallet_index,
+                                         wallet_shamir_data.mnemonic_shares[4],
+                                         wallet_nonce)) {
+        memzero(wallet_shamir_data.mnemonic_shares,
+                sizeof(wallet_shamir_data.mnemonic_shares));
+        mark_core_error_screen(ui_text_unknown_error_contact_support, false);
+        next_state = SYNC_COMPLETED_WITH_ERRORS;
+        break;
+      }
 
       next_state = SYNC_COMPLETED;
       break;
