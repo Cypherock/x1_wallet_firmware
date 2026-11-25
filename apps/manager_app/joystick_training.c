@@ -125,9 +125,8 @@ static void send_training_response(manager_train_joystick_response_t *resp);
  * @brief Used to handle each joystick training
  * @details The function will render display with received message and then
  * listen for UI event for the expected user action on joystick.
- * The function **ignores timeout events** since currently, there is not
- * way to disable it. Also, in case of abort, it will clear usb event
- * (usb_clear_event) and silently return.
+ * On a timeout or abort (P0 event) it returns false and leaves the event to
+ * the core, which reports it to the host.
  * Upon receiving the UI event, the function will then update the core flow
  * status.
  *
@@ -164,8 +163,9 @@ static bool training_step(const joystick_step_t *step) {
   joystick_train_init(step->instruction, step->user_action);
   do {
     events = get_events(EVENT_CONFIG_UI, MAX_INACTIVITY_TIMEOUT);
-    if (events.p0_event.abort_evt) {
-      usb_clear_event();
+    // an unhandled inactivity event stays set and makes get_events return at
+    // once, spinning this loop; the core handles both P0 events
+    if (events.p0_event.flag) {
       return false;
     }
   } while (!events.ui_event.event_occured);
