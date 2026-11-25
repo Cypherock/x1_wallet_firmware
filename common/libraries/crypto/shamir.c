@@ -48,7 +48,7 @@ static void bitslice(uint32_t r[8], const uint8_t *x, size_t len) {
   for (arr_idx = 0; arr_idx < len; arr_idx++) {
     cur = (uint32_t)x[arr_idx];
     for (bit_idx = 0; bit_idx < 8; bit_idx++) {
-      r[bit_idx] |= ((cur & (1 << bit_idx)) >> bit_idx) << arr_idx;
+      r[bit_idx] |= ((cur & (1U << bit_idx)) >> bit_idx) << arr_idx;
     }
   }
 }
@@ -61,7 +61,7 @@ static void unbitslice(uint8_t *r, const uint32_t x[8], size_t len) {
   for (bit_idx = 0; bit_idx < 8; bit_idx++) {
     cur = (uint32_t)x[bit_idx];
     for (arr_idx = 0; arr_idx < len; arr_idx++) {
-      r[arr_idx] |= ((cur & (1 << arr_idx)) >> arr_idx) << bit_idx;
+      r[arr_idx] |= ((cur & (1U << arr_idx)) >> arr_idx) << bit_idx;
     }
   }
 }
@@ -264,6 +264,9 @@ bool shamir_interpolate(uint8_t *result, uint8_t result_index,
                         const uint8_t *share_indices,
                         const uint8_t **share_values, uint8_t share_count,
                         size_t len) {
+  /* At least one share, which also keeps the arrays below non-empty */
+  if (0 == share_count || len > SHAMIR_MAX_LEN) return false;
+
   size_t i = 0, j = 0;
   uint32_t x[8] = {0};
   uint32_t xs[share_count][8];
@@ -275,8 +278,6 @@ bool shamir_interpolate(uint8_t *result, uint8_t result_index,
   uint32_t tmp[8] = {0};
   uint32_t secret[8] = {0};
   bool ret = true;
-
-  if (len > SHAMIR_MAX_LEN) return false;
 
   /* Collect the x and y values */
   for (i = 0; i < share_count; i++) {
