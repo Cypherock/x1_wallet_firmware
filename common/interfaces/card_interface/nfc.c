@@ -83,17 +83,6 @@ static uint8_t nfc_device_key_id[4];
 static bool nfc_secure_comm = true;
 static uint8_t request_chain_pkt[] = {0x00, 0xCF, 0x00, 0x00};
 
-/**
- * @brief Check if any error is received from NFC.
- *
- * @param err_code Error code with err macro.
- */
-void my_error_check(ret_code_t err_code) {
-  // Some kind of error handler which can be defined globally
-  if (err_code != STM_SUCCESS) {
-  }
-}
-
 ret_code_t nfc_init() {
   // Init PN532. Call this at start of program
   return adafruit_pn532_init(false);
@@ -207,7 +196,7 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[],
   if (err_code != STM_SUCCESS) {
     return err_code;
   } else {
-    uint8_t actual_family_id[FAMILY_ID_SIZE + 2], card_number;
+    uint8_t actual_family_id[FAMILY_ID_SIZE + 2], card_number = 0;
 
     status_word = extract_card_detail_from_apdu(recv_apdu,
                                                 recv_len,
@@ -222,6 +211,9 @@ ISO7816 nfc_select_applet(uint8_t expected_family_id[],
       bool first_time = true;
       if (_version[0] == 0x01)
         return SW_INCOMPATIBLE_APPLET;
+      // the card number picks a bit of the 4-card mask below
+      if (card_number < 1 || card_number > 4)
+        return SW_CONDITIONS_NOT_SATISFIED;
       if (version)
         memcpy(version, _version, CARD_VERSION_SIZE);
 
@@ -395,8 +387,11 @@ ISO7816 nfc_add_wallet(const struct Wallet *wallet) {
     memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
-    if (recv_len != ADD_WALLET_EXPECTED_LENGTH)
-      my_error_check(STM_ERROR_INVALID_LENGTH);
+    // the card answers with a bare status word
+    if (recv_len != ADD_WALLET_EXPECTED_LENGTH) {
+      memzero(recv_apdu, sizeof(send_apdu));
+      return STM_ERROR_INVALID_LENGTH;
+    }
     status_word = (recv_apdu[recv_len - 2] * 256);
     status_word += recv_apdu[recv_len - 1];
   }
@@ -470,8 +465,11 @@ ISO7816 nfc_delete_wallet(const struct Wallet *wallet) {
     memzero(send_apdu, sizeof(send_apdu));
     return err_code;
   } else {
-    if (recv_len != DELETE_WALLET_EXPECTED_LENGTH)
-      my_error_check(STM_ERROR_INVALID_LENGTH);
+    // the card answers with a bare status word
+    if (recv_len != DELETE_WALLET_EXPECTED_LENGTH) {
+      memzero(recv_apdu, sizeof(send_apdu));
+      return STM_ERROR_INVALID_LENGTH;
+    }
     status_word = (recv_apdu[recv_len - 2] * 256);
     status_word += recv_apdu[recv_len - 1];
   }
@@ -725,7 +723,9 @@ ret_code_t nfc_exchange_apdu(uint8_t *send_apdu,
 
   memcpy(header, send_apdu, OFFSET_CDATA);
   if (nfc_secure_comm) {
-    if (send_apdu[OFFSET_LC] > 0) {
+    // decide from the real data length: Lc is one byte and wraps to 0 for a
+    // 256-byte body, which would send the data in plaintext
+    if (send_len > OFFSET_CDATA) {
       send_len -= OFFSET_CDATA;
       if ((err_code = apdu_encrypt_data(send_apdu + OFFSET_CDATA, &send_len)) !=
           STM_SUCCESS)
