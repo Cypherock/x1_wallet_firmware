@@ -346,6 +346,48 @@ static bool is_resource_bounds_valid(const starknet_resource_bounds_t *bounds) {
          is_gas_amount_valid(&bounds->level_2);
 }
 
+static bool is_felt_in_field(const uint8_t *bytes, pb_size_t size) {
+  // p = 2^251 + 17 * 2^192 + 1, big-endian
+  static const uint8_t field_prime[STARKNET_BIGNUM_SIZE] = {
+      0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+  if (STARKNET_BIGNUM_SIZE < size) {
+    return false;
+  }
+  uint8_t padded[STARKNET_BIGNUM_SIZE] = {0};
+  memcpy(padded + (STARKNET_BIGNUM_SIZE - size), bytes, size);
+  return 0 > memcmp(padded, field_prime, STARKNET_BIGNUM_SIZE);
+}
+
+static bool is_call_data_in_field(const starknet_compiled_call_data_t *data) {
+  for (pb_size_t i = 0; i < data->value_count; i++) {
+    if (!is_felt_in_field(data->value[i].bytes, data->value[i].size)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The hash reduces every felt modulo p, so a value >= p signs the same hash as
+ * value - p: the device would show one value while the signature also
+ * authorises another. Starknet felts are always below p, so such values are
+ * rejected.
+ */
+static bool is_invoke_txn_in_field(const starknet_sign_txn_invoke_txn_t *txn) {
+  return is_felt_in_field(txn->sender_address, STARKNET_BIGNUM_SIZE) &&
+         is_call_data_in_field(&txn->calldata);
+}
+
+static bool is_deploy_txn_in_field(
+    const starknet_sign_txn_deploy_account_txn_t *txn) {
+  return is_felt_in_field(txn->contract_address, STARKNET_BIGNUM_SIZE) &&
+         is_felt_in_field(txn->class_hash, STARKNET_BIGNUM_SIZE) &&
+         is_felt_in_field(txn->salt, STARKNET_BIGNUM_SIZE) &&
+         is_call_data_in_field(&txn->constructor_call_data);
+}
+
 static bool fetch_valid_input(starknet_query_t *query) {
   // both the query and the request inside it must be the expected ones
   if (!starknet_get_query(query, STARKNET_QUERY_SIGN_TXN_TAG) ||
@@ -359,7 +401,8 @@ static bool fetch_valid_input(starknet_query_t *query) {
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_INVOKE_TXN_TAG: {
       starknet_txn_context->invoke_txn = &query->sign_txn.txn.invoke_txn;
       if (!is_resource_bounds_valid(
-              &starknet_txn_context->invoke_txn->resource_bound)) {
+              &starknet_txn_context->invoke_txn->resource_bound) ||
+          !is_invoke_txn_in_field(starknet_txn_context->invoke_txn)) {
         starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                             ERROR_DATA_FLOW_INVALID_DATA);
         return false;
@@ -369,7 +412,8 @@ static bool fetch_valid_input(starknet_query_t *query) {
     case STARKNET_SIGN_TXN_UNSIGNED_TXN_DEPLOY_TXN_TAG: {
       starknet_txn_context->deploy_txn = &query->sign_txn.txn.deploy_txn;
       if (!is_resource_bounds_valid(
-              &starknet_txn_context->deploy_txn->resource_bounds)) {
+              &starknet_txn_context->deploy_txn->resource_bounds) ||
+          !is_deploy_txn_in_field(starknet_txn_context->deploy_txn)) {
         starknet_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
                             ERROR_DATA_FLOW_INVALID_DATA);
         return false;
