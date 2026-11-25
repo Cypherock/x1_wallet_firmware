@@ -80,8 +80,6 @@
 
 /// Size of the TAG_SEC_FLASH_STRUCT tag and the 2-byte length
 #define SEC_FLASH_HEADER_SIZE 6
-/// Firewall callgate status for a successful task (SEC_TRUE in bootloader)
-#define FIREWALL_TASK_SUCCESS 0xAAAAAAAAU
 /// Attempts for a firewall read, and for confirming an invalid header
 #define SEC_FLASH_READ_ATTEMPTS 3
 typedef enum Sec_Flash_tlv_tags {
@@ -493,7 +491,26 @@ static void flash_perm_struct_load() {
       &flash_perm_instance, fw_raw_data, FLASH_PAGE_SIZE);
   // the page holds the IO protection key and the device's card pairing key
   memzero(fw_raw_data, sizeof(fw_raw_data));
-  FW_GetBootData(&(flash_perm_instance.bootData));
+  bool boot_data_read = false;
+  for (uint8_t attempt = 0; attempt < SEC_FLASH_READ_ATTEMPTS; attempt++) {
+    uint32_t status = FW_GetBootData(&(flash_perm_instance.bootData));
+#if USE_SIMULATOR == 0
+    if (FIREWALL_TASK_SUCCESS == status) {
+      boot_data_read = true;
+      break;
+    }
+#else
+    // the simulator has no firewall and reports every task as 0
+    (void)status;
+    boot_data_read = true;
+    break;
+#endif
+  }
+  if (!boot_data_read) {
+    // "authenticated" is encoded as 0 (the bootloader's value), so a failed
+    // read must not leave the zeroed struct saying the device is authentic
+    flash_perm_instance.bootData.auth_state = DEVICE_NOT_AUTHENTICATED;
+  }
   flash_perm_instance.bootCount = FW_GetBootCount();
 }
 

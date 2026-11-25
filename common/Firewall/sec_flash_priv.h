@@ -17,6 +17,9 @@
 #include "sec_flash.h"
 #include "wallet.h"
 
+/// Firewall callgate status for a successful task (SEC_TRUE in bootloader)
+#define FIREWALL_TASK_SUCCESS 0xAAAAAAAAU
+
 /**
  * @brief Updates `auth_state` value in firewall boot marker page
  * @details On firmware update Bootloader updates `auth_state` variable to
