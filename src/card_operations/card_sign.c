@@ -79,6 +79,10 @@
 /*****************************************************************************
  * PRIVATE MACROS AND DEFINES
  *****************************************************************************/
+/// Attempts at a card signature when the card answers with a bad length
+#define CARD_SIGN_MAX_ATTEMPTS 5
+/// Attempts after unknown card errors, kept across taps
+#define CARD_SIGN_MAX_RETRIES 5
 
 /*****************************************************************************
  * PRIVATE TYPEDEFS
@@ -136,11 +140,14 @@ static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
    * expected of 64-bytes. When such a case is encountered, we do a retry
    * attempt to
    */
+  uint8_t attempts = 0;
   do {
     sign_data_size_inout = sign_data_size;
     memcpy(sign_data_inout, sign_data, sign_data_size);
     status = nfc_ecdsa(sign_data_inout, &sign_data_size_inout);
-  } while (CARD_SIGNATURE_INCORRECT_LEN == status);
+    attempts++;
+  } while (CARD_SIGNATURE_INCORRECT_LEN == status &&
+           CARD_SIGN_MAX_ATTEMPTS > attempts);
 
   if (SW_NO_ERROR == status) {
     memcpy(signature, sign_data_inout, ECDSA_SIGNATURE_SIZE);
@@ -152,9 +159,14 @@ static card_error_status_word_e get_card_auth_signature(uint8_t *sign_data,
 static void handle_card_sign_data_operation(
     card_operation_data_t *card_data,
     card_sign_data_config_t *sign_data) {
-  /* TODO: Keep retries and card_removed_retries when intializing nfc_data */
+  // the retry counters must survive the re-initialisation on every tap, or
+  // the abort after repeated errors never happens
+  uint8_t retries = card_data->nfc_data.retries;
+  uint8_t card_absent_retries = card_data->nfc_data.card_absent_retries;
   card_data->nfc_data = init_nfc_connection_data(sign_data->family_id,
                                                  sign_data->acceptable_cards);
+  card_data->nfc_data.retries = retries;
+  card_data->nfc_data.card_absent_retries = card_absent_retries;
   card_initialize_applet(card_data);
 
   if (CARD_OPERATION_SUCCESS == card_data->error_type) {
@@ -187,6 +199,7 @@ card_error_type_e card_sign_auth_data(card_sign_data_config_t *sign_data) {
   ASSERT(NULL != sign_data && NULL != sign_data->data);
 
   card_operation_data_t card_data = {0};
+  card_data.nfc_data.retries = CARD_SIGN_MAX_RETRIES;
 
   while (1) {
     handle_card_sign_data_operation(&card_data, sign_data);
