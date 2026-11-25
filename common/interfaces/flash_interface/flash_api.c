@@ -904,11 +904,18 @@ int set_enable_passphrase(const passphrase_config enable_passphrase,
 
 int set_auth_state(const device_auth_state _auth_state) {
   get_flash_perm_instance();
-  FW_update_auth_state(_auth_state);
+  uint32_t status = FW_update_auth_state(_auth_state);
 
   // force read from firewall
   is_flash_perm_instance_loaded = false;
   get_flash_perm_instance();
+#if USE_SIMULATOR == 0
+  // the firewall reports whether the boot marker was written
+  if (FIREWALL_TASK_SUCCESS != status)
+    return 0;
+#else
+  (void)status;
+#endif
   if (flash_perm_instance.bootData.auth_state == _auth_state)
     return 1;
   else
@@ -1023,7 +1030,11 @@ uint32_t get_first_boot_on_update() {
 
 device_auth_state get_auth_state() {
   get_flash_perm_instance();
-  return flash_perm_instance.bootData.auth_state;
+  // anything but the exact "authenticated" value reads as not authenticated
+  if (DEVICE_AUTHENTICATED != flash_perm_instance.bootData.auth_state) {
+    return DEVICE_NOT_AUTHENTICATED;
+  }
+  return DEVICE_AUTHENTICATED;
 }
 
 uint32_t get_fwSize() {

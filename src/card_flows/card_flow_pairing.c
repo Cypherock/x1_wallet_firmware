@@ -129,11 +129,15 @@ bool card_flow_pairing(uint8_t *cards_paired) {
     card_error_type_e card_error = CARD_OPERATION_ABORT_OPERATION;
     card_error =
         card_pair_operation(card_number, display, ui_text_place_card_below);
-    if (CARD_OPERATION_ABORT_OPERATION == card_error) {
+    if (CARD_OPERATION_ABORT_OPERATION == card_error ||
+        CARD_OPERATION_P0_OCCURED == card_error) {
       return false;
     }
 
-    cards_paired_in_flow += 1;
+    // only a completed pairing counts; on other errors move to the next card
+    if (CARD_OPERATION_SUCCESS == card_error) {
+      cards_paired_in_flow += 1;
+    }
   }
 
   if (NULL != cards_paired) {

@@ -56,6 +56,7 @@
  *
  ******************************************************************************
  */
+#include "assert_conf.h"
 #include "crypto_random.h"
 #include "logger.h"
 #include "string.h"
@@ -173,6 +174,11 @@ void convert_to_shares(const uint8_t secret_len,
                        const uint8_t total_number_of_shares,
                        const uint8_t threshold_number_of_shares,
                        uint8_t shares_OUT[total_number_of_shares][secret_len]) {
+  // shares are recombined with two-point interpolation, so any other threshold
+  // gives shares that can not be recovered, and a threshold below 2 makes
+  // every share equal to the secret
+  ASSERT(MINIMUM_NO_OF_SHARES == threshold_number_of_shares &&
+         threshold_number_of_shares <= total_number_of_shares);
   for (uint8_t j = 0; j < secret_len; j++) {
     uint8_t coeffs[threshold_number_of_shares - 1];
     FillRandomVectorInARange(threshold_number_of_shares - 1, coeffs, 1, 255);
@@ -232,6 +238,11 @@ int verify_shares_NC2(
     const uint8_t recovered_shamir_data_ver[number_of_shares][secret_size],
     const uint8_t x_coords[number_of_shares],
     uint8_t secret[secret_size]) {
+  // every pair of shares is checked: fewer than two shares give no pair (and
+  // zero-length arrays below)
+  if (number_of_shares < MINIMUM_NO_OF_SHARES || 0 == secret_size) {
+    return 0;
+  }
   uint16_t combinations = 0, count = 0;
   combinations = number_of_shares * (number_of_shares - 1) / 2;
   uint8_t pairs[combinations][2];

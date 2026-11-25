@@ -242,12 +242,24 @@ int verify_card_share_data() {
   uint8_t wallet_id[WALLET_ID_SIZE] = {0};
 
   wallet_shamir_data.share_x_coords[4] = 5;
-  get_flash_wallet_share_by_name((const char *)wallet.wallet_name,
-                                 wallet_shamir_data.mnemonic_shares[4]);
+  // without the device share the check below can not pass
+  bool have_shares = SUCCESS_ == get_flash_wallet_share_by_name(
+                                     (const char *)wallet.wallet_name,
+                                     wallet_shamir_data.mnemonic_shares[4]);
 
-  if (WALLET_IS_PIN_SET(wallet.wallet_info))
-    decrypt_shares();
-  if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
+  if (have_shares && WALLET_IS_PIN_SET(wallet.wallet_info))
+    have_shares = decrypt_shares();
+  if (!have_shares) {
+    status = 0;
+    memzero(wallet_credential_data.password_single_hash,
+            sizeof(wallet_credential_data.password_single_hash));
+    memzero(wallet_shamir_data.share_encryption_data,
+            sizeof(wallet_shamir_data.share_encryption_data));
+    memzero(wallet_shamir_data.arbitrary_data_shares,
+            sizeof(wallet_shamir_data.arbitrary_data_shares));
+    memzero(wallet_shamir_data.mnemonic_shares,
+            sizeof(wallet_shamir_data.mnemonic_shares));
+  } else if (WALLET_IS_ARBITRARY_DATA(wallet.wallet_info)) {
     status = generate_data_5C2(wallet.arbitrary_data_size,
                                wallet_shamir_data.arbitrary_data_shares,
                                wallet_shamir_data.share_x_coords,
@@ -275,10 +287,15 @@ int verify_card_share_data() {
     mnemonic_clear();
   }
 
-  // both checks complete; accordingly update on flash
-  uint8_t wallet_index;
-  get_index_by_name((const char *)wallet.wallet_name, &wallet_index);
-  set_wallet_state(wallet_index, status == 1 ? VALID_WALLET : INVALID_WALLET);
+  // both checks complete; accordingly update on flash (only the slot that
+  // holds this wallet)
+  uint8_t wallet_index = MAX_WALLETS_ALLOWED;
+  if (SUCCESS_ ==
+      get_index_by_name((const char *)wallet.wallet_name, &wallet_index)) {
+    set_wallet_state(wallet_index, status == 1 ? VALID_WALLET : INVALID_WALLET);
+  } else {
+    status = 0;
+  }
 
   memzero(secret, sizeof(secret));
   return status;

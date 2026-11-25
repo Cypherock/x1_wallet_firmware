@@ -121,7 +121,7 @@ session_error_t session_error;
  * @return true if the server's public key is successfully derived.
  * @return false otherwise.
  */
-static void derive_server_public_key(uint8_t *server_verification_pub_key);
+static bool derive_server_public_key(uint8_t *server_verification_pub_key);
 
 /**
  * @brief Verifies the session signature, critical for proceeding.
@@ -193,8 +193,8 @@ static void session_handle_errors() {
   }
 }
 
-static void derive_server_public_key(uint8_t *server_verification_pub_key) {
-  HDNode node;
+static bool derive_server_public_key(uint8_t *server_verification_pub_key) {
+  HDNode node = {0};
   char xpub[XPUB_SIZE] = {'\0'};
 
   base58_encode_check(get_card_root_xpub(),
@@ -203,11 +203,15 @@ static void derive_server_public_key(uint8_t *server_verification_pub_key) {
                       xpub,
                       XPUB_SIZE);
 
-  hdnode_deserialize_public(
-      (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL);
-  hdnode_public_ckd(&node, SESSION_KEY_INDEX);
+  // a missing or corrupt root xpub must not leave stack bytes as the key
+  if (0 != hdnode_deserialize_public(
+               (char *)xpub, 0x0488b21e, NIST256P1_NAME, &node, NULL) ||
+      1 != hdnode_public_ckd(&node, SESSION_KEY_INDEX)) {
+    return false;
+  }
 
   memcpy(server_verification_pub_key, node.public_key, SESSION_PUB_KEY_SIZE);
+  return true;
 }
 
 static bool derive_session_iv_and_session_key() {
@@ -320,14 +324,28 @@ static bool session_verify_server_signature() {
     return false;
   }
   // derive verification pub key
-  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE];
-  derive_server_public_key(server_verification_pub_key);
+  uint8_t server_verification_pub_key[SESSION_PUB_KEY_SIZE] = {0};
+  if (!derive_server_public_key(server_verification_pub_key)) {
+    SET_ERROR_TYPE(SESSION_SIGNATURE_VERIFICATION_ERROR);
+    return false;
+  }
   uint8_t hash[SHA256_DIGEST_LENGTH] = {0};
   sha256_Raw(server_message_payload, offset, hash);
-  if (ecdsa_verify_digest(&nist256p1,
+  // verified twice so that one skipped compare can not accept a signature
+  volatile int verify_status =
+      ecdsa_verify_digest(&nist256p1,
                           server_verification_pub_key,
                           server_message_payload + offset,
-                          hash) != 0) {
+                          hash);
+  if (0 != verify_status) {
+    SET_ERROR_TYPE(SESSION_SIGNATURE_VERIFICATION_ERROR);
+    return false;
+  }
+  verify_status = ecdsa_verify_digest(&nist256p1,
+                                      server_verification_pub_key,
+                                      server_message_payload + offset,
+                                      hash);
+  if (0 != verify_status) {
     SET_ERROR_TYPE(SESSION_SIGNATURE_VERIFICATION_ERROR);
     return false;
   }

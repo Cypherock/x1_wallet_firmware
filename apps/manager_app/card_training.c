@@ -150,9 +150,13 @@ void manager_card_training(manager_query_t *query) {
   }
   result.result.card_paired = pair_result.is_paired;
   if (U32_READ_BE_ARRAY(pair_result.family_id) !=
-      U32_READ_BE_ARRAY(get_family_id())) {
-    /* Always update the tapped family-id if it's different. We need to allow
-     * all the next steps without family-id errors.
+          U32_READ_BE_ARRAY(get_family_id()) &&
+      MANAGER_ONBOARDING_STEP_COMPLETE != onboarding_get_last_step() &&
+      0 == get_keystore_used_count()) {
+    /* Update the tapped family-id if it's different, so that the next
+     * onboarding steps run without family-id errors. Once onboarding is done
+     * or cards are paired, a test tap must not re-bind the device to another
+     * card set.
      */
     set_family_id_flash(pair_result.family_id);
   }

@@ -764,7 +764,13 @@ int apdu_decrypt_data(uint8_t *InOut_data, uint8_t *len) {
           InOut_data + 16, payload, sizeof(payload), iv, &enc_ctx) !=
       EXIT_SUCCESS)
     return NFC_SC_MAC_ERROR;
-  if (memcmp(payload + data_len - 16, InOut_data, 16) != 0)
+  // constant-time compare: the time taken must not show how much of the MAC
+  // matched
+  uint8_t mac_diff = 0;
+  for (uint8_t i = 0; i < 16; i++) {
+    mac_diff |= payload[data_len - 16 + i] ^ InOut_data[i];
+  }
+  if (0 != mac_diff)
     return NFC_SC_MAC_MISMATCH;
   if (aes_decrypt_key256(session_enc_key, &dec_ctx) != EXIT_SUCCESS)
     return NFC_SC_DEC_KEY_ERROR;

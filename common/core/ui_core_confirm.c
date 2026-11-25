@@ -109,7 +109,10 @@ static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
     // core will handle p0 events, exit now
     return false;
   }
-  if (UI_EVENT_REJECT == events.ui_event.event_type) {
+  // only an explicit confirm approves; a reject or any other event does not
+  volatile bool confirmed = events.ui_event.event_occured &&
+                            UI_EVENT_CONFIRM == events.ui_event.event_type;
+  if (!confirmed) {
     // user rejected, send error and return false
     if (NULL != reject_cb) {
       reject_cb(ERROR_COMMON_ERROR_USER_REJECTION_TAG,
@@ -118,6 +121,10 @@ static bool wait_for_event(ui_core_rejection_cb *reject_cb) {
     return false;
   }
 
+  // checked again so that one skipped compare can not approve
+  if (UI_EVENT_CONFIRM != events.ui_event.event_type || !confirmed) {
+    return false;
+  }
   return true;
 }
 
