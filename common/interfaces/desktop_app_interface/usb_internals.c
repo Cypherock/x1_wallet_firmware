@@ -187,6 +187,12 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
     return APP_BUFFER_BLOCKED;
   if (comm_status.curr_cmd_state == CMD_STATE_EXECUTING)
     return BUSY_PREVIOUS_CMD;
+  // chunks are numbered from 1; a 0/0 chunk would complete a command without
+  // any of the checks below
+  if (0 == rx_packet->header.chunk_number)
+    return INVALID_CHUNK_NO;
+  if (0 == rx_packet->header.total_chunks)
+    return INVALID_CHUNK_COUNT;
 
   // Set active host interface if not set already
   if (comm_status.active_interface == COMM_LIBUSB__UNDEFINED) {
@@ -195,7 +201,6 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
     return APP_BUSY_WITH_OTHER_INTERFACE;
   }
 
-  comm_status.curr_cmd_state = CMD_STATE_RECEIVING;
   if (comm_status.curr_cmd_seq_no != rx_packet->header.sequence_no ||
       rx_packet->header.chunk_number == 1)
     comm_reset();    // Clear current status and start new command
@@ -207,8 +212,9 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
 
   comm_status.curr_cmd_seq_no = rx_packet->header.sequence_no;
   if (comm_status.curr_cmd_chunk_no + 1 == rx_packet->header.chunk_number) {
-    // Duplicate packets are ignored; Only packets in expected sequence are
-    // appended to buffer
+    // Duplicate packets are ignored (and leave the state as it is); Only
+    // packets in expected sequence are appended to buffer
+    comm_status.curr_cmd_state = CMD_STATE_RECEIVING;
     comm_status.curr_cmd_chunk_no = rx_packet->header.chunk_number;
 
     if ((COMM_BUFFER_SIZE - comm_status.curr_cmd_received_length) <
@@ -237,15 +243,16 @@ static comm_error_code_t comm_process_cmd_packet(const packet_t *rx_packet) {
         comm_set_payload_struct(
             U16_READ_BE_ARRAY(comm_io_buffer),
             U16_READ_BE_ARRAY(comm_io_buffer + sizeof(uint16_t)));
+        // only a final chunk that was appended and length-checked completes
+        // the command; a repeated final chunk must not hand the old buffer
+        // (by then the device's own response) to the core again
+        comm_status.curr_cmd_state = CMD_STATE_RECEIVED;
+        usb_set_event(comm_payload->proto_data_length,
+                      comm_payload->proto_data,
+                      comm_payload->raw_data_length,
+                      comm_payload->raw_data);
       }
     }
-  }
-  if (rx_packet->header.chunk_number == rx_packet->header.total_chunks) {
-    comm_status.curr_cmd_state = CMD_STATE_RECEIVED;
-    usb_set_event(comm_payload->proto_data_length,
-                  comm_payload->proto_data,
-                  comm_payload->raw_data_length,
-                  comm_payload->raw_data);
   }
   send_cmd_ack_packet(rx_packet);
   LOG_SWV("#ORG#bs=%d, cs=%d, seq=%d, ccn=%d, ccc=%d, rl=%d\n",
