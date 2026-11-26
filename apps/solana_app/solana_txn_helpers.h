@@ -303,6 +303,12 @@ typedef struct solana_instruction {
  * Ref: https://solana.com/docs/core/transactions#limits */
 #define SOLANA_MAX_INSTRUCTION_COUNT 22
 
+/* Compute budget defaults applied by the runtime when a transaction has no
+ * SetComputeUnitLimit (the largest per-instruction default is used).
+ * Ref: https://solana.com/docs/core/fees#compute-unit-limit */
+#define SOLANA_DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT 200000
+#define SOLANA_MAX_COMPUTE_UNIT_LIMIT 1400000
+
 // Reference :
 // https://docs.solana.com/developing/programming-model/transactions#anatomy-of-a-transaction
 typedef struct solana_unsigned_txn {

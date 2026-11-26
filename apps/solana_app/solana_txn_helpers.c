@@ -261,6 +261,8 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
   extra_data->deactivate_instruction_count = 0;
   bool allocate_with_seed_seen = false;
   extra_data->is_token_transfer = false;
+  bool compute_unit_limit_seen = false;
+  uint16_t compute_budget_instruction_count = 0;
 
   for (int i = 0; i < utxn->instructions_count; i++) {
     if (offset >= byte_array_size)
@@ -483,12 +485,14 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
       if (utxn->instruction[i].opaque_data_length == 0)
         return SOL_D_MIN_LENGTH;
 
+      compute_budget_instruction_count++;
       uint8_t instruction_enum = *(utxn->instruction[i].opaque_data);
       switch (instruction_enum) {
         case SCBI_SET_COMPUTE_UNIT_LIMIT:
           // 1-byte enum + 4-byte u32 must be present.
           if (utxn->instruction[i].opaque_data_length < 5)
             return SOL_D_READ_SIZE_MISMATCH;
+          compute_unit_limit_seen = true;
           extra_data->compute_unit_limit =
               utxn->instruction[i].program.compute_unit_limit_data.units =
                   U32_READ_LE_ARRAY(utxn->instruction[i].opaque_data + 1);
@@ -619,6 +623,21 @@ int solana_byte_array_to_unsigned_txn(uint8_t *byte_array,
           break;
       }
     }
+  }
+
+  // Without SetComputeUnitLimit the runtime applies a default limit per
+  // instruction, so a price alone still costs a fee. Show the largest default
+  // instead of 0, and cap an explicit limit the way the runtime does.
+  if (!compute_unit_limit_seen) {
+    uint64_t default_limit =
+        (uint64_t)SOLANA_DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT *
+        (utxn->instructions_count - compute_budget_instruction_count);
+    extra_data->compute_unit_limit =
+        (default_limit > SOLANA_MAX_COMPUTE_UNIT_LIMIT)
+            ? SOLANA_MAX_COMPUTE_UNIT_LIMIT
+            : (uint32_t)default_limit;
+  } else if (extra_data->compute_unit_limit > SOLANA_MAX_COMPUTE_UNIT_LIMIT) {
+    extra_data->compute_unit_limit = SOLANA_MAX_COMPUTE_UNIT_LIMIT;
   }
 
   // v0 txns appends an array of MessageAddressTableLookup after instructions
