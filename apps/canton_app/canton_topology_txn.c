@@ -193,6 +193,16 @@ static bool send_signature(canton_query_t *query,
  *****************************************************************************/
 static canton_topology_txn_context_t *canton_topology_txn_context = NULL;
 
+// participants allowed to host the user's party: Cypherock's mainnet
+// participant and the testnet one. A participant uid ends in its namespace
+// fingerprint, so another participant can not reuse it.
+static const char *const allowed_participant_uids[] = {
+    "cypherock-mainnet-1::"
+    "1220583c5b03a866fd8e5f09737cdb51818c7b4b52a8e8c9b0cc2f4d1b082e95b6d9",
+    "openvector-testnet-1::"
+    "1220808cf538c53d879a8c318c11f9e002b96879ee28925fecfa07c0273cd6e334cb",
+};
+
 /*****************************************************************************
  * GLOBAL VARIABLES
  *****************************************************************************/
@@ -200,6 +210,17 @@ static canton_topology_txn_context_t *canton_topology_txn_context = NULL;
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
+static bool is_allowed_participant(const char *participant_uid) {
+  for (size_t i = 0; i < sizeof(allowed_participant_uids) /
+                             sizeof(allowed_participant_uids[0]);
+       i++) {
+    if (0 == strcmp(participant_uid, allowed_participant_uids[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool check_which_request(const canton_query_t *query,
                                 pb_size_t which_request) {
   if (which_request != query->sign_topology_txn.which_request) {
@@ -380,7 +401,14 @@ static bool validate_and_store_party_txn_proposal(
         return false;
       }
 
-      // TODO: validate the participant id
+      // the party must be hosted by a known participant, else a host could
+      // move it to a participant that sees and confirms its transactions
+      if (!is_allowed_participant(
+              party_to_participant.participants[0].participant_uid)) {
+        canton_send_error(ERROR_COMMON_ERROR_CORRUPT_DATA_TAG,
+                          ERROR_DATA_FLOW_INVALID_DATA);
+        return false;
+      }
       break;
     }
 
