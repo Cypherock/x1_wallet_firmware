@@ -110,6 +110,27 @@ void mpz_curve_point_multiply(const mpz_curve *curve,
                               mpz_curve_point *res);
 
 /**
+ * @brief Multiply a curve point by a secret scalar.
+ * @details Same result as mpz_curve_point_multiply, but hardened for secret
+ * scalars (signing nonce, private key) against power, EM and timing analysis:
+ * the scalar is blinded with a random multiple of the group order, the point
+ * is put in randomized Jacobian coordinates, and a Montgomery ladder does one
+ * addition and one doubling per bit, with the bit applied through a
+ * branch-free conditional swap. mini-gmp itself is not constant time, so the
+ * remaining timing depends on the randomized values, not on the scalar bits.
+ * mpz_curve_point_multiply stays for public scalars (e.g. Pedersen hashing).
+ *
+ * @param curve Curve defining the group operation.
+ * @param k Secret scalar multiplier.
+ * @param p curve point to multiply.
+ * @param res Resulting curve point is stored here.
+ */
+void mpz_curve_point_multiply_secret(const mpz_curve *curve,
+                                     const mpz_t k,
+                                     const mpz_curve_point *p,
+                                     mpz_curve_point *res);
+
+/**
  * @brief Set a curve point to infinity.
  * @details Configures a curve point to represent the point at infinity.
  *
